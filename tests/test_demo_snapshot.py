@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import math
+import sys
 from pathlib import Path
 
 import pytest
@@ -22,6 +24,19 @@ UNIVERSE = [
 @pytest.fixture(scope="module")
 def document():
     return json.loads(DATA_PATH.read_bytes())
+
+
+def test_demo_data_does_not_trip_leak_gate():
+    spec = importlib.util.spec_from_file_location(
+        "check_leak_gate", REPO / "tools" / "check_leak.py",
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    rel = DATA_PATH.relative_to(REPO).as_posix()
+    assert rel in module.THIRDPARTY_SKIP_PREFIXES
+    assert not [finding for finding in module.scan() if rel in finding]
 
 
 def test_snapshot_header_and_size(document):
