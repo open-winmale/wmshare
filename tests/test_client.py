@@ -10,6 +10,7 @@ import pytest
 
 from wmshare.catalog import load
 from wmshare.client import Client, WmshareError, _xs_literal
+from wmshare.errors import UsageError
 
 
 class FakeSession:
@@ -116,6 +117,10 @@ def test_param_validation(client):
         client.call("moneyflow.query_bars", limit=5)
     with pytest.raises(KeyError, match="未知函数"):
         client.call("kline.no_such_fn", sym="600519")
+    with pytest.raises(WmshareError, match="需要 int"):
+        client.call("kline.query_bars", sym="600519", limit="30")
+    with pytest.raises(WmshareError, match="不在允许值"):
+        client.call("rptdom.statement", sym="600519", domain="not.a.statement")
 
 
 def test_batch_name_must_be_catalog_function(client):
@@ -176,6 +181,30 @@ def test_partial_credentials_rejected():
     with pytest.raises(WmshareError, match="成对"):
         Client(base_url="https://t", client_secret="only-sec",
                catalog=load(), session=FakeSession())
+
+
+@pytest.mark.parametrize("kwargs,match", [
+    ({"market": "jp"}, "market 只支持"),
+    ({"base_url": "http://api.example.com"}, "HTTPS"),
+    ({"base_url": "not-a-url"}, "HTTPS"),
+    ({"timeout": 0}, "timeout"),
+    ({"timeout": -1}, "timeout"),
+    ({"retries": -1}, "retries"),
+    ({"backoff": -1}, "backoff"),
+    ({"max_limit": 0}, "max_limit"),
+])
+def test_client_options_fail_fast(kwargs, match):
+    options = {"client_id": "id", "client_secret": "sec", "base_url": "https://t"}
+    options.update(kwargs)
+    with pytest.raises(UsageError, match=match):
+        Client(**options)
+
+
+def test_client_accepts_default_market_and_local_http_base_url():
+    local = Client(base_url="http://localhost:8080", client_id="id",
+                   client_secret="sec", catalog=load())
+    assert local.base_url == "http://localhost:8080"
+    assert local.market == "cn"
 
 
 def test_from_env_prefers_explicit_env():
