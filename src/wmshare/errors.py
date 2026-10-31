@@ -43,6 +43,11 @@ class LimitError(WmshareError):
     重试建议和申请自己的 AppID 的步骤。
     """
 
+    def __init__(self, message: str, *, code: str = "", status: int | None = None,
+                 retry_after: float | None = None):
+        super().__init__(message, code=code, status=status)
+        self.retry_after = retry_after
+
 
 class TransportError(WmshareError):
     """网络层失败（连接/超时，重试耗尽）。"""

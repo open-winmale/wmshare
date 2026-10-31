@@ -11,11 +11,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `BatchResult.requested`、`BatchResult.error_details` 与 `BatchError`：批量结果可核对
+  请求标的数，并按 code/status/retryable 程序化分类票级或批级错误。
+- `Client(backoff_jitter=...)`、`Client(max_retry_after=...)` 与 `LimitError.retry_after`：
+  支持重试抖动，并在服务端要求的等待超过上限时立即返回结构化限流信息。
 - 目录同步至上游 `d8c900bb`：指标目录 `2158→2752`，新增行情振幅、技术指标、分析师
   覆盖、行业与公司资料等可查指标码；底层函数表面保持 252 个。同步 API/OpenAPI/LLMS
   生成物，并把 extractor 的公开文本净化策略设为内置默认，避免数据源名称进入发布物。
 - `StatementsApi.compare(..., _units="base"|"native")`：合并 vs 母公司比较显式暴露
   单位逃生口，与文档口径一致。
+
+### Changed
+- 批量 raise 模式检测上游 MAP 缺失标的，不再静默返回少于请求数的结果。
+- OAuth token 刷新改为双重检查锁，避免并发首次调用重复请求。
+- `NoticePoller` 将轮询串行锁与状态锁分离，用户回调不再阻塞 `status()`。
+- SDK 默认向网关发送 `wmshare/<version>` User-Agent。
 
 ### Changed
 - `Client` 构造参数与目录调用参数在发起 HTTP 前本地校验：市场、HTTPS base URL、

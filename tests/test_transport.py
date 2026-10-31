@@ -6,7 +6,7 @@ import pytest
 import requests
 
 from wmshare.catalog import load
-from wmshare.client import Client, WmshareError
+from wmshare.client import Client, SDK_VERSION, WmshareError
 from wmshare.errors import AuthError, LimitError
 
 
@@ -32,9 +32,13 @@ class SeqSession:
         self.eval_responses = list(eval_responses)
         self.calls = []
         self.token_count = 0
+        self.headers = {}
 
     def post(self, url, json=None, data=None, headers=None, timeout=None):
-        self.calls.append({"url": url, "headers": headers, "timeout": timeout})
+        self.calls.append({
+            "url": url, "headers": {**self.headers, **(headers or {})},
+            "timeout": timeout,
+        })
         if url.endswith("/v1/oauth/token"):
             self.token_count += 1
             return Resp(json_body={"data": {"access_token": f"tok-{self.token_count}",
@@ -51,7 +55,8 @@ class SeqSession:
 def make(responses, **kw):
     s = SeqSession(responses)
     c = Client(base_url="https://t", client_id="i", client_secret="s",
-               catalog=load(), session=s, backoff=0.5, **kw)
+               catalog=load(), session=s, backoff=0.5,
+               backoff_jitter=kw.pop("backoff_jitter", 0.0), **kw)
     sleeps: list[float] = []
     c._sleep = lambda seconds: sleeps.append(seconds)
     return c, s, sleeps
@@ -81,6 +86,32 @@ def test_retry_after_header_honored():
     c, s, sleeps = make([("status", 429, {"Retry-After": "2"}), ("json", 1)])
     c.call("kline.query_last", sym="600519")
     assert sleeps == [2.0]
+
+
+def test_retry_after_above_limit_is_not_retried():
+    c, s, sleeps = make(
+        [("status", 429, {"Retry-After": "61"})], max_retry_after=10.0,
+    )
+    with pytest.raises(LimitError) as ei:
+        c.call("kline.query_last", sym="600519")
+    assert ei.value.retry_after == 61.0
+    assert sleeps == [] and len(eval_calls(s)) == 1
+
+
+def test_backoff_jitter_is_applied():
+    c, s, sleeps = make(
+        [("status", 500), ("json", 1)], backoff_jitter=0.5,
+    )
+    c._uniform = lambda left, right: right  # +50%
+    c.call("kline.query_last", sym="600519")
+    assert sleeps == [0.75]
+
+
+def test_user_agent_is_sent_on_all_posts():
+    c, s, _ = make([("json", 1)])
+    c.call("kline.query_last", sym="600519")
+    assert all(call["headers"]["User-Agent"] == f"wmshare/{SDK_VERSION}"
+               for call in s.calls)
 
 
 def test_network_error_retried_then_succeeds():
