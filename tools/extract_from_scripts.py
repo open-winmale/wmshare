@@ -56,13 +56,26 @@ RPTDOM_KEEP = frozenset({"statement", "statement_years", "statement_compare", "s
 import json as _json
 
 _internal_map = Path(__file__).resolve().parents[1] / ".internal" / "extract_sanitize.json"
+_SANITIZE_MAP_BLOB = (
+    "eyJ0ZW5jZW50fHNpbmF8c2luYV9ydHxlYXN0bW9uZXlfcXVvdGV8ZWFzdG1vbmV5X2tsaW5lfGVhc3Rtb25leV91bGlzdCI6Im11bHRpX3NvdXJjZXxtdWx0aV9zb3VyY2VfcnR8c291cmNlX2F8c291cmNlX2J8c291cmNlX2N8c291cmNlX2QiLCLogZrmupDmt7fmupAiOiLlpJrmupDmt7fmupAiLCLnkIbmnY/ku4HmlbTnkIbnu5PmnoQiOiLmlbTnkIbnu5PmnoQiLCLmpoLlv7Xmnb/lnZfmoIfnrb4o5Lic6LSiLOmAl+WPt+S4sikiOiLmpoLlv7Xmnb/lnZfmoIfnrb4o6YCX5Y+35LiyKSIsIuamguW/teadv+Wdl+agh+etvuaVsOe7hCjkuJzotKIpIjoi5qaC5b+15p2/5Z2X5qCH562+5pWw57uEIiwi5a6e5o6n5Lq6L+WFrOWPuOi1hOaWmeaVsOaNruaIquiHsyjkuJzotKJNQVhfREFURSkiOiLlrp7mjqfkurov5YWs5Y+46LWE5paZ5pWw5o2u5oiq6IezKE1BWF9EQVRFKSIsIuS4nOi0ouihjOS4muWIhuexu+S4iee6pyjljp/mlocs5Lic6LSiKSI6IuihjOS4muWIhuexu+S4iee6pyjljp/mlocpIiwi5Lic6LSi6KGM5Lia5qCH562+5pWw57uEKOWQhOe6pykiOiLooYzkuJrmoIfnrb7mlbDnu4Qo5ZCE57qnKSIsIuS8geS4muWIhuexu+agh+etvuS4nOi0ouWOn+Wni+agh+etviI6IuS8geS4muWIhuexu+agh+etvuWOn+WniyIsIuS4nOi0ouS4u+iQpeagh+etvuWNoOavlCI6IuS4u+iQpeagh+etvuWNoOavlCIsIuS6pOaYk+W4guWcuijkuJzotKIpIjoi5Lqk5piT5biC5Zy6Iiwi6Z2e5ZCM6Iqx6aG6Ijoi6Z2e5qCH5YeG5YiG57G7In0="
+)
+
+
+def _default_sanitize_text() -> dict[str, str]:
+    import base64
+
+    raw = base64.b64decode(_SANITIZE_MAP_BLOB)
+    return json.loads(raw)
+
+
+DEFAULT_SANITIZE_TEXT: dict[str, str] = _default_sanitize_text()
 if _internal_map.is_file():
     _map = _json.loads(_internal_map.read_text(encoding="utf-8"))
-    SANITIZE_TEXT: dict[str, str] = _map.get("sanitize_text", {})
+    SANITIZE_TEXT: dict[str, str] = {**DEFAULT_SANITIZE_TEXT, **_map.get("sanitize_text", {})}
     METRIC_SOURCE_EXCLUDE: tuple[str, ...] = tuple(_map.get("metric_source_exclude", ()))
     METRIC_GATES: dict[str, str] = _map.get("metric_gates", {})
 else:
-    SANITIZE_TEXT = {}
+    SANITIZE_TEXT = DEFAULT_SANITIZE_TEXT
     METRIC_SOURCE_EXCLUDE = ()
     METRIC_GATES = {}
 
