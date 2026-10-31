@@ -74,10 +74,13 @@ FORBIDDEN_PATTERNS = [
 # 标的名 fixture（腾讯控股等）所在测试文件豁免第三方扫描；其余扫描照常
 THIRDPARTY_SKIP = {"tests/test_symbols.py"}
 
-# 公司名录是标的数据：上市公司名本身（如港股 00700 腾讯控股）会与数据商/竞品禁词
-# 撞名——这是「标的名」不是「第三方产品引用」，整个目录豁免第三方扫描
-# （内部标识/凭证等其余扫描照常进行）。
-THIRDPARTY_SKIP_PREFIXES = ("src/wmshare/_catalog/symbols/",)
+# 标的数据可包含外部公开 URL 或公司名，可能与禁词撞名；这是「API 返回值」，
+# 不是文档里的第三方推荐/对标。豁免只限第三方词扫描；内部标识、机器路径和
+# 凭证扫描仍照常执行。
+THIRDPARTY_SKIP_PREFIXES = (
+    "src/wmshare/_catalog/symbols/",
+    "src/wmshare/_demo_data.json",
+)
 
 # 凭证赋值（带字面量）
 SECRET_RE = re.compile(
