@@ -25,9 +25,10 @@ def main(cli=None, demo: bool = False) -> None:
         else:
             cli = wmshare.Client.from_env()
 
-    # ---- 1) 全市场证券列表（代码池底座） ----
+    # ---- 1) 证券列表（真实 Client 全市场；demo 为演示宇宙） ----
     rows = cli.stocks.list()
-    print(f"全市场共 {len(rows)} 家（字段：{sorted(rows[0].keys())}）")
+    scope = "演示宇宙" if demo else "全市场"
+    print(f"{scope}共 {len(rows)} 家（字段：{sorted(rows[0].keys())}）")
 
     # ---- 2) 行业目录 + 行业成分（中文名/代码皆可） ----
     hint = os.environ.get("BANK_HINT", "银行")
@@ -45,11 +46,11 @@ def main(cli=None, demo: bool = False) -> None:
         print(f"行业解析失败：{e}")
         return
 
-    # ---- 3) 批量取数：全市场分批（A 股 12 次请求，逐票要 5691 次会撞 429） ----
+    # ---- 3) 批量取数：真实全市场分批；demo 是演示宇宙一次批量 ----
     all_codes = [r["symbol"] for r in rows]
     res = cli.batch_all("kline.snapshot", all_codes)
     naive = len(all_codes)
-    print(f"全市场 {len(res.results)} 家：批量 {res.requests} 次请求"
+    print(f"{scope} {len(res.results)} 家：批量 {res.requests} 次请求"
           f"（逐票需 {naive} 次，免费档 500 次/小时 → 省 {naive // max(res.requests, 1)} 倍配额）")
     if res.errors:
         print(f"失败批 {len(res.errors)}：{list(res.errors)[:3]}")

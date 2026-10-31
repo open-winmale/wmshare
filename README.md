@@ -7,7 +7,7 @@
 > 2,752 precomputed metric codes (TTM / percentile / dividend), a screener facade and whole-market
 > batch (5,691 symbols = 12 requests); ships an offline catalog, base-unit data guards and an
 > AI-agent skill. **Credentials required** — get them on the open platform (open.winmale.com);
-> try offline first with `wmshare.demo_client()`. **Install**: `pip install wmshare`.
+> try offline first with `wmshare.demo_client()` (frozen 2026-10-30 API snapshot; not live). **Install**: `pip install wmshare`.
 
 给 Python 量化开发者的中文财经数据 SDK：一行接口拿到清洗好的 A股/港股/美股数据——
 估值分位、TTM 股息率等指标**服务端算好直出**，全市场批量 **12 次请求**绕开限流。
@@ -82,7 +82,9 @@ for s, n, v, pe, pct in rows[:8]:                            # 取前 8 行打�
     print(f"{s}  {n}  股息率 {v:.2%}  PE {pe:.1f}  十年分位 {pct:.1%}")
 ```
 
-没配凭证也能先看调用面：`cli = wmshare.demo_client()`（同签名、随包快照、不联网），换成 `Client.from_env()` 即接真实数据。
+没配凭证也能先看调用面：`cli = wmshare.demo_client()`（同签名、不联网）。这是
+2026-10-30 真实 API 固定快照：10 只演示宇宙 + 当日全市场 screener，非实时数据；
+换成 `Client.from_env()` 即接真实数据。
 
 ## 能力一览
 
