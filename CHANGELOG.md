@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- 目录同步至上游 `d8c900bb`：指标目录 `2158→2752`，新增行情振幅、技术指标、分析师
+  覆盖、行业与公司资料等可查指标码；底层函数表面保持 252 个。同步 API/OpenAPI/LLMS
+  生成物，并把 extractor 的公开文本净化策略设为内置默认，避免数据源名称进入发布物。
 - `StatementsApi.compare(..., _units="base"|"native")`：合并 vs 母公司比较显式暴露
   单位逃生口，与文档口径一致。
 

@@ -1,11 +1,17 @@
-"""离线演示客户端：随包罐头数据（真实 probe 样本的固定快照），零凭证、不联网。
+"""离线演示客户端：真实 API 固定快照回放，零凭证、不联网。
 
-定位：先看输出再配凭证的首跑路径、示例离线试跑、教学演示。数据与真实返回
-同构同单位（率/分位=小数、金额=元、量=股、K 线按日期降序），但**不是实时
-行情**——接真实数据用 ``wmshare.Client.from_env()``。
+快照日为 2026-10-30，由维护者用 ``tools/generate_demo_snapshot.py`` 生成。
+数据覆盖 examples 的 demo 路径：10 只 A 股演示宇宙 + 当日真实全市场 screener。
+它不是实时行情，也不承诺覆盖全部 252 个目录函数；接真实数据用
+``wmshare.Client.from_env()``。
 """
 from __future__ import annotations
 
+import hashlib
+import json
+import math
+from collections.abc import Mapping
+from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Callable
 
@@ -13,235 +19,670 @@ from wmshare.client import BatchResult
 from wmshare.errors import UsageError
 from wmshare.notice_stream import NoticeStreamEvent
 
-SYMBOLS: tuple[str, ...] = ("600519", "000001", "300750")
-WATCHLIST: tuple[str, ...] = ("600519", "000858", "601088", "600900", "601318")
+_DATA_PATH = Path(__file__).with_name("_demo_data.json")
+_SNAPSHOT_SCHEMA_VERSION = 1
+_AS_OF = "2026-10-30"
+_CATALOG_REV = "d9bbd944"
+_SDK_VERSION = "1.10.0"
+_UNIVERSE = (
+    "600519", "000858", "601088", "600900", "601318",
+    "000001", "600036", "000333", "300750", "688981",
+)
+_MAX_BARS = 120
+_MAX_MONEYFLOW_BARS = 30
+_MAX_DIVIDEND_HISTORY = 20
+_MAX_BANK_MEMBERS = 20
 
-# 公告变更事件罐头（字段与 notice_stream.NoticeStreamEvent 对齐）
-_NOTICE_EVENTS: list[dict[str, Any]] = [
-    {"seq": 42, "eid": "demo-ev-1", "market": "cn", "code": "600519",
-     "name": "贵州茅台", "type": "回购", "title": "关于回购股份的公告",
-     "date": "2026-10-28", "announce_date": "2026-10-28",
-     "available_at": "2026-10-28 18:05:00",
-     "url": "https://example.com/demo-notice.pdf", "pdf_url": ""},
-]
-
-_INCOME_ROWS: list[dict[str, Any]] = [
-    {"k": "revenue", "cn": "营业收入",
-     "vals": {"2025": 1.741e11, "2024": 1.709e11}},
-    {"k": "operating_cost", "cn": "营业成本",
-     "vals": {"2025": 2.91e10, "2024": 2.87e10}},
-    {"k": "operating_profit", "cn": "营业利润",
-     "vals": {"2025": 1.172e11, "2024": 1.148e11}},
-    {"k": "net_profit", "cn": "净利润",
-     "vals": {"2025": 8.72e10, "2024": 8.59e10}},
-    {"k": "np_parent_company", "cn": "归属于母公司股东的净利润",
-     "vals": {"2025": 8.65e10, "2024": 8.52e10}},
-]
-_BALANCE_ROWS: list[dict[str, Any]] = [
-    {"k": "total_assets", "cn": "资产总计",
-     "vals": {"2025": 2.976e11, "2024": 2.789e11}},
-    {"k": "total_liabilities", "cn": "负债合计",
-     "vals": {"2025": 4.24e10, "2024": 3.94e10}},
-    {"k": "total_equity", "cn": "股东权益合计",
-     "vals": {"2025": 2.552e11, "2024": 2.395e11}},
-]
-_CASHFLOW_ROWS: list[dict[str, Any]] = [
-    {"k": "operating_cash_flow", "cn": "经营活动产生的现金流量净额",
-     "vals": {"2025": 9.12e10, "2024": 9.24e10}},
-    {"k": "investing_cash_flow", "cn": "投资活动产生的现金流量净额",
-     "vals": {"2025": -2.31e9, "2024": -1.87e9}},
-]
-_STATEMENT_ROWS = {"income": _INCOME_ROWS, "balance": _BALANCE_ROWS,
-                   "cashflow": _CASHFLOW_ROWS}
+_SNAPSHOT: dict[str, Any] | None = None
 
 
-def _slice_years(rows: list[dict[str, Any]], n: int) -> list[dict[str, Any]]:
-    # 与真实行为一致：years=N → vals 至多 N 期（test_live 同款不变量）
-    return [{**r, "vals": dict(list(r["vals"].items())[:n])} for r in rows]
+def _is_finite_number(value: Any) -> bool:
+    return (isinstance(value, (int, float)) and not isinstance(value, bool)
+            and math.isfinite(float(value)))
 
 
-def _compare_rows(rows: list[dict[str, Any]], n: int) -> list[dict[str, Any]]:
+def _canonical_data_hash(data: Mapping[str, Any]) -> str:
+    payload = json.dumps(
+        data, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False,
+    ).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _require_mapping(value: Any, where: str) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise ValueError(f"{where} 必须是 MAP，收到 {type(value).__name__}")
+    return value
+
+
+def _require_rows(value: Any, where: str) -> list[dict[str, Any]]:
+    if not isinstance(value, list) or not all(isinstance(row, dict) for row in value):
+        raise ValueError(f"{where} 必须是 MAP 行数组")
+    return value
+
+
+def _check_finite(value: Any, where: str) -> None:
+    if not _is_finite_number(value):
+        raise ValueError(f"{where} 必须是有限数字：{value!r}")
+
+
+def _check_date_not_after(value: Any, where: str) -> None:
+    text = str(value or "")[:10]
+    if len(text) != 10 or text > _AS_OF:
+        raise ValueError(f"{where} 日期非法或晚于 {text}（as_of={_AS_OF}）")
+
+
+def _check_date_if_present(value: Any, where: str) -> None:
+    if value not in (None, ""):
+        _check_date_not_after(value, where)
+
+
+def _check_url(value: Any, where: str) -> None:
+    text = str(value or "")
+    if text and not text.startswith("https://"):
+        raise ValueError(f"{where} 只允许 HTTPS 或空 URL：{text}")
+
+
+def _validate_snapshot(document: Any) -> dict[str, Any]:
+    doc = _require_mapping(document, "_demo_data.json")
+    if doc.get("schema_version") != _SNAPSHOT_SCHEMA_VERSION:
+        raise ValueError(f"demo snapshot schema_version 不兼容：{doc.get('schema_version')!r}")
+    if doc.get("as_of") != _AS_OF:
+        raise ValueError(f"demo snapshot as_of 应为 {_AS_OF}：{doc.get('as_of')!r}")
+    if doc.get("market") != "cn":
+        raise ValueError(f"demo snapshot market 应为 cn：{doc.get('market')!r}")
+    if doc.get("sdk_version") != _SDK_VERSION:
+        raise ValueError(f"demo snapshot sdk_version 不匹配：{doc.get('sdk_version')!r}")
+    if doc.get("catalog_rev") != _CATALOG_REV:
+        raise ValueError(f"demo snapshot catalog_rev 不匹配：{doc.get('catalog_rev')!r}")
+    data = _require_mapping(doc.get("data"), "data")
+    if doc.get("content_hash") != _canonical_data_hash(data):
+        raise ValueError("demo snapshot content_hash 校验失败")
+
+    universe = data.get("universe")
+    if universe != list(_UNIVERSE):
+        raise ValueError(f"demo universe 与固定清单不一致：{universe!r}")
+    if not isinstance(doc.get("capture_requests"), int) or doc["capture_requests"] < 0:
+        raise ValueError("capture_requests 必须是非负整数")
+    if not isinstance(doc.get("generated_at"), str) or not doc["generated_at"]:
+        raise ValueError("generated_at 必须是非空字符串")
+
+    stocks_rows = _require_rows(data.get("stocks_list"), "stocks_list")
+    if [row.get("symbol") for row in stocks_rows] != list(_UNIVERSE):
+        raise ValueError("stocks_list 必须按演示宇宙顺序包含 10 只标的")
+    industries = _require_rows(data.get("industries"), "industries")
+    if not industries:
+        raise ValueError("industries 不能为空")
+    bank_rows = _require_rows(data.get("industry_members_bank"), "industry_members_bank")
+    if not bank_rows or len(bank_rows) > _MAX_BANK_MEMBERS:
+        raise ValueError("industry_members_bank 必须包含 1~20 行")
+
+    kline = _require_mapping(data.get("kline_bars"), "kline_bars")
+    snapshots = _require_mapping(data.get("kline_snapshot"), "kline_snapshot")
+    if set(kline) != set(_UNIVERSE) or not set(_UNIVERSE).issubset(snapshots):
+        raise ValueError("K 线必须覆盖演示宇宙；快照必须至少覆盖演示宇宙")
+    for sym in _UNIVERSE:
+        rows = _require_rows(kline[sym], f"kline_bars[{sym}]")
+        if not rows or len(rows) > _MAX_BARS:
+            raise ValueError(f"kline_bars[{sym}] 必须有 1~120 行")
+        for i, row in enumerate(rows):
+            where = f"kline_bars[{sym}][{i}]"
+            _check_date_not_after(row.get("date"), f"{where}.date")
+            for field in ("close", "volume", "amount", "percent"):
+                _check_finite(row.get(field), f"{where}.{field}")
+            if float(row["volume"]) < 0 or float(row["amount"]) < 0:
+                raise ValueError(f"{where} volume/amount 不能为负")
+            if abs(float(row["percent"])) > 1:
+                raise ValueError(f"{where}.percent 不是小数口径")
+        dates = [str(row.get("date", ""))[:10] for row in rows]
+        if dates != sorted(dates, reverse=True):
+            raise ValueError(f"kline_bars[{sym}] 不是日期降序")
+        snapshot = _require_mapping(snapshots[sym], f"kline_snapshot[{sym}]")
+        _check_finite(snapshot.get("close"), f"kline_snapshot[{sym}].close")
+        _check_date_not_after(snapshot.get("kline_date"), f"kline_snapshot[{sym}].kline_date")
+        if str(snapshot.get("kline_date", ""))[:10] != dates[0]:
+            raise ValueError(f"{sym} snapshot.kline_date 与最新 bar.date 不一致")
+        _check_finite(rows[0].get("close"), f"kline_bars[{sym}][0].close")
+        if not math.isclose(float(snapshot["close"]), float(rows[0]["close"]),
+                            rel_tol=0.0, abs_tol=1e-9):
+            raise ValueError(f"{sym} snapshot.close 与最新 bar.close 不一致")
+
+    for group, max_len in (("moneyflow_bars", _MAX_MONEYFLOW_BARS),
+                           ("dividend_history", _MAX_DIVIDEND_HISTORY)):
+        source = data["dividend"]["history"] if group == "dividend_history" else data.get(group)
+        rows_by_symbol = _require_mapping(source, group)
+        if set(rows_by_symbol) != set(_UNIVERSE):
+            raise ValueError(f"{group} 必须完整覆盖演示宇宙")
+        for sym, rows in rows_by_symbol.items():
+            if len(rows) > max_len:
+                raise ValueError(f"{group}[{sym}] 超过 {max_len} 行")
+            for i, row in enumerate(_require_rows(rows, f"{group}[{sym}]")):
+                if "date" in row:
+                    _check_date_not_after(row.get("date"), f"{group}[{sym}][{i}].date")
+                for field in ("ex_div", "pay"):
+                    if field in row:
+                        _check_date_if_present(row.get(field), f"{group}[{sym}][{i}].{field}")
+                if "net_mf" in row:
+                    _check_finite(row.get("net_mf"), f"{group}[{sym}][{i}].net_mf")
+
+    moneyflow_last = _require_mapping(data.get("moneyflow_last"), "moneyflow_last")
+    for sym, row in moneyflow_last.items():
+        if isinstance(row, dict):
+            _check_date_not_after(row.get("date"), f"moneyflow_last[{sym}].date")
+
+    dividend_last = _require_mapping(data["dividend"].get("last"), "dividend.last")
+    for sym, row in dividend_last.items():
+        if isinstance(row, dict):
+            for field in ("ex_div", "pay"):
+                _check_date_if_present(row.get(field), f"dividend.last[{sym}].{field}")
+
+    dividend = _require_mapping(data.get("dividend"), "dividend")
+    variants = _require_rows(
+        dividend.get("screen_quality_by_args"), "dividend.screen_quality_by_args",
+    )
+    for variant in variants:
+        if not isinstance(variant.get("args"), dict) or not isinstance(variant.get("results"), dict):
+            raise ValueError("screen_quality_by_args 格式不合法")
+
+    statements = _require_mapping(data.get("statements"), "statements")
+    years = statements.get("years")
+    if not isinstance(years, list) or years != sorted(years, reverse=True):
+        raise ValueError("statements.years 必须非空且降序")
+    for kind in ("income", "balance", "cashflow"):
+        rows = _require_rows(statements.get(kind), f"statements.{kind}")
+        if not any(row.get("vals") for row in rows):
+            raise ValueError(f"statements.{kind} 缺少非空 vals")
+    for i, row in enumerate(_require_rows(statements.get("compare"), "statements.compare")):
+        diff, pct, combined = row.get("diff"), row.get("diffp"), row.get("c")
+        if not isinstance(diff, dict) or not isinstance(pct, dict) \
+                or not isinstance(combined, dict):
+            continue
+        for key, diff_value in diff.items():
+            if key not in pct or key not in combined:
+                continue
+            p, d, c = pct[key], diff_value, combined[key]
+            if not all(_is_finite_number(x) for x in (p, d, c)) or float(c) == 0:
+                continue
+            expected = float(d) / float(c)
+            if abs(float(p) - expected) > max(1e-9, abs(expected) * 1e-6):
+                raise ValueError(f"statements.compare[{i}][{key}] 的 diffp 不一致")
+
+    indicators = _require_mapping(data.get("indicators"), "indicators")
+    for code, value in indicators.items():
+        _check_finite(value, f"indicators[{code}]")
+        if code != "$PE_TTM_LAST" and not 0 <= float(value) <= 1:
+            raise ValueError(f"indicators[{code}] 不是小数分位/比率")
+    valuation = _require_mapping(data.get("valuation"), "valuation")
+    for key in ("current", "median", "min", "max", "pct"):
+        _check_finite(valuation.get(key), f"valuation.{key}")
+    if not 0 <= float(valuation["pct"]) <= 1:
+        raise ValueError("valuation.pct 不是小数口径")
+
+    screener = _require_mapping(data.get("screener"), "screener")
+    summary = _require_mapping(screener.get("breadth_summary"), "breadth_summary")
+    for key in ("up_pct", "down_pct", "flat_pct"):
+        if key in summary:
+            _check_finite(summary[key], f"breadth_summary.{key}")
+            if float(summary[key]) < 0:
+                raise ValueError(f"breadth_summary.{key} 不能为负")
+    _check_finite(summary.get("median_pct"), "breadth_summary.median_pct")
+    for i, row in enumerate(_require_rows(screener.get("breadth_bins"), "breadth_bins")):
+        _check_finite(row.get("pct_of_total"), f"breadth_bins[{i}].pct_of_total")
+        if float(row["pct_of_total"]) < 0:
+            raise ValueError(f"breadth_bins[{i}].pct_of_total 不能为负")
+    for group in ("top_movers_up", "top_movers_down"):
+        for i, row in enumerate(_require_rows(screener.get(group), group)):
+            _check_finite(row.get("percent"), f"{group}[{i}].percent")
+            if abs(float(row["percent"])) > 1:
+                raise ValueError(f"{group}[{i}].percent 不是小数口径")
+
+    notices = _require_rows(data.get("notices"), "notices")
+    for i, row in enumerate(notices):
+        _check_date_not_after(row.get("date"), f"notices[{i}].date")
+        _check_date_not_after(row.get("announce_date"), f"notices[{i}].announce_date")
+        _check_date_if_present(
+            str(row.get("available_at", ""))[:10] or None,
+            f"notices[{i}].available_at",
+        )
+    if not notices:
+        raise ValueError("notices 不能为空")
+    event = _require_mapping(data.get("notice_event"), "notice_event")
+    _check_url(event.get("url"), "notice_event.url")
+    _check_url(event.get("pdf_url"), "notice_event.pdf_url")
+    if not event.get("url") and not event.get("pdf_url"):
+        raise ValueError("notice_event 必须有 URL")
+    NoticeStreamEvent.from_dict(event)
+
+    return doc
+
+
+def load_demo_snapshot() -> dict[str, Any]:
+    """加载、校验并返回打包的 demo 快照（内部函数，测试和生成器校验可用）。"""
+    global _SNAPSHOT
+    if _SNAPSHOT is None:
+        try:
+            raw = _DATA_PATH.read_bytes()
+        except OSError as e:
+            raise RuntimeError(f"demo 快照缺失或不可读：{_DATA_PATH.name}") from e
+        if len(raw) > 512 * 1024:
+            raise RuntimeError("demo 快照超过 512 KiB")
+        try:
+            document = json.loads(raw)
+        except (json.JSONDecodeError, UnicodeDecodeError) as e:
+            raise RuntimeError("demo 快照不是合法 JSON") from e
+        _SNAPSHOT = _validate_snapshot(document)
+    return _SNAPSHOT
+
+
+def _quality_args_key(min_yield: float | None, payout_min: float | None,
+                      payout_max: float | None) -> str:
+    return json.dumps(
+        {"min_yield": min_yield, "payout_min": payout_min, "payout_max": payout_max},
+        ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+    )
+
+
+def _slice_years(values: dict[str, Any], years: int) -> dict[str, Any]:
+    """Select the latest N reported periods while preserving upstream key order."""
+    if years <= 0:
+        return {}
+    latest = set(sorted(values, key=str, reverse=True)[:years])
+    return {key: value for key, value in values.items() if key in latest}
+
+
+def _slice_statement_rows(rows: list[dict[str, Any]], years: int) -> list[dict[str, Any]]:
     out: list[dict[str, Any]] = []
-    for i, r in enumerate(_slice_years(rows, n)):
-        c = r["vals"]
-        if i == 0:  # 首个科目母公司未披露：p 仅参考、差额为空
-            out.append({"k": r["k"], "cn": r["cn"], "c": c,
-                        "p": {y: round(v * 0.97, 2) for y, v in c.items()},
-                        "diff": None, "diffp": None})
-        else:
-            p = {y: round(v * 0.98, 2) for y, v in c.items()}
-            diff = {y: c[y] - p[y] for y in c}
-            out.append({"k": r["k"], "cn": r["cn"], "c": c, "p": p,
-                        "diff": diff, "diffp": {y: diff[y] / c[y] for y in c}})
+    for row in rows:
+        item = dict(row)
+        if isinstance(item.get("vals"), dict):
+            item["vals"] = _slice_years(item["vals"], years)
+        for key in ("c", "p", "diff", "diffp"):
+            if isinstance(item.get(key), dict):
+                item[key] = _slice_years(item[key], years)
+        out.append(item)
     return out
 
 
-def _bars(n: int, start: float = 1300.0) -> list[dict[str, Any]]:
-    # 与真实 API 同构：按日期降序（最新在前）——消费方须自己升序后再算指标
-    rows = [{"date": f"2026-{3 + i // 28:02d}-{1 + i % 28:02d}", "close": start + i,
-             "percent": 0.01, "volume": 3_000_000.0, "amount": 4.5e9}
-            for i in range(n)]
-    return rows[::-1]
+class DemoPoller:
+    """零网络公告轮询桩：复刻首轮交付、ack 后不重投与 seek 语义。"""
 
+    def __init__(self, event: dict[str, Any],
+                 on_events: Callable[[list[NoticeStreamEvent]], Any] | None = None):
+        self._event = NoticeStreamEvent.from_dict(event)
+        self._on_events = on_events
+        self._acked = False
 
-def _maybe_df(rows: list[dict[str, Any]], _df: bool) -> Any:
-    if not _df:
-        return rows
-    try:
-        import pandas as pd
-    except ImportError as e:
-        raise UsageError("_df=True 需要 pandas：pip install \"wmshare[dataframe]\"") from e
-    return pd.DataFrame(rows)
+    def poll_now(self) -> list[NoticeStreamEvent]:
+        if self._acked:
+            return []
+        self._acked = True
+        events = [self._event]
+        if self._on_events is not None:
+            self._on_events(events)
+        return events
+
+    def seek_oldest(self, market: str = "cn") -> int:
+        if market != "cn":
+            raise UsageError("demo 快照只支持 cn 市场", code="demo_market")
+        self._acked = False
+        return self._event.seq
+
+    def start(self) -> None:
+        return None
+
+    def stop(self, timeout: float = 5.0) -> None:
+        return None
+
+    @property
+    def running(self) -> bool:
+        return False
+
+    def __enter__(self) -> "DemoPoller":
+        return self
+
+    def __exit__(self, *exc: Any) -> None:
+        return None
 
 
 class DemoClient:
-    """``wmshare.Client`` 的离线演示替身：同调用面、罐头数据、零网络零凭证。
-
-    repr 与文档均明示「演示数据、固定快照」；量级守护与单位换算不在此复现
-    （罐头数据本身就是基础单位口径）。未覆盖的底层函数返回空表。
-    """
+    """``wmshare.Client`` 的固定快照替身：覆盖 examples 和公开文档调用面。"""
 
     def __init__(self) -> None:
-        def batch_all(name: str, symbols: list[str], **kw: Any) -> BatchResult:
-            return BatchResult(results={s: {"close": 1.0} for s in symbols},
-                               requests=-(-len(symbols) // 500))
-
-        def batch_iter(name: str, symbols: list[str], **kw: Any) -> Any:
-            yield batch_all(name, symbols, **kw)
-
-        def call_batch(name: str, symbols: list[str], **kw: Any) -> BatchResult:
-            if name == "bonus.snapshot_yield_ttm":
-                return BatchResult(results={s: 0.0396 for s in symbols}, requests=1)
-            return BatchResult(results={s: {"close": 1.0} for s in symbols}, requests=1)
-
-        indicator_values = {"$PE_TTM_LAST": 20.0, "$ROE_TTM_LAST": 0.3324,
-                            "$PCT_PE_TTM_10Y_LAST": 0.42,
-                            "$CUR_IND_ROE_PCT_LAST": 1.0}
-
-        def notice_poller(*, group: str, consumer: str,
-                          on_events: Callable | None = None, **kw: Any) -> SimpleNamespace:
-            acked = False
-
-            def poll_now() -> list[NoticeStreamEvent]:
-                nonlocal acked
-                if acked:  # 进度已确认：与真实轮询器一致，ack 后不重投
-                    return []
-                acked = True
-                evs = [NoticeStreamEvent.from_dict(r, market="cn")
-                       for r in _NOTICE_EVENTS]
-                if on_events is not None:
-                    on_events(evs)
-                return evs
-
-            return SimpleNamespace(
-                poll_now=poll_now,
-                start=lambda: None,
-                stop=lambda timeout: None,
-                seek_oldest=lambda market: 0,
-                running=lambda: False,
-            )
-
-        self.kline = SimpleNamespace(
-            bars=lambda *a, **k: _maybe_df(_bars(k.get("n") or 5), k.get("_df", False)),
-            snapshot=lambda *a, **k: {"close": 1309.69, "chg_20d": 0.0123},
-        )
+        document = load_demo_snapshot()
+        self._doc = document
+        self._data: dict[str, Any] = document["data"]
+        self._universe = tuple(self._data["universe"])
+        self.kline = SimpleNamespace(bars=self._kline_bars, snapshot=self._kline_snapshot)
         self.moneyflow = SimpleNamespace(
-            last=lambda *a, **k: {"net_mf": 821186700.0},
-            bars=lambda *a, **k: _maybe_df([{"net_mf": 100.0} for _ in range(20)],
-                                           k.get("_df", False)),
+            last=self._moneyflow_last, bars=self._moneyflow_bars,
         )
         self.statements = SimpleNamespace(
-            income=lambda *a, **k: _slice_years(_INCOME_ROWS, k.get("years") or 5),
-            balance=lambda *a, **k: _slice_years(_BALANCE_ROWS, k.get("years") or 5),
-            cashflow=lambda *a, **k: _slice_years(_CASHFLOW_ROWS, k.get("years") or 5),
-            years=lambda symbol, kind="income", _df=False: ["2025", "2024"],
-            compare=lambda symbol, kind="income", years=2, _df=False:
-                _compare_rows(_STATEMENT_ROWS.get(kind, _INCOME_ROWS), years or 2),
-            audit=lambda symbol: {"2024": "标准无保留意见", "2023": "标准无保留意见"},
+            income=self._statement("income"),
+            balance=self._statement("balance"),
+            cashflow=self._statement("cashflow"),
+            years=self._statement_years,
+            compare=self._statement_compare,
+            audit=self._statement_audit,
         )
-        self.indicator = SimpleNamespace(
-            get=lambda symbol, code: indicator_values.get(code),
-            metrics=lambda symbol, codes: {c: indicator_values.get(c) for c in codes},
-        )
-        self.notice = SimpleNamespace(
-            list=lambda *a, **k: [{"date": "2026-10-28", "title": "关于回购股份的公告"}],
-            has_buyback=lambda *a, **k: True,
-        )
+        self.indicator = SimpleNamespace(get=self._indicator_get)
+        self.notice = SimpleNamespace(list=self._notice_list)
         self.dividend = SimpleNamespace(
-            last=lambda *a, **k: {"ex_div": "2026-06-26", "dps": 28.02, "total": 3.5e10},
-            yield_ttm=lambda *a, **k: 0.0396,
-            screen_quality=lambda *a, **k: True,
-            history=lambda *a, **k: _maybe_df(
-                [{"ex_div": f"2026-0{i}-26", "dps": 28.0 + i, "payout_ratio": 0.8}
-                 for i in range(1, 4)], k.get("_df", False)),
-            index_where_high_yield_5=lambda *a, **k: "index_where: bonus_yield_5y > 0.03",
+            last=self._dividend_last,
+            yield_ttm=self._dividend_yield,
+            history=self._dividend_history,
+            screen_quality=self._dividend_screen_quality,
+            index_where_high_yield_5=self._dividend_expression,
         )
-        self.info = SimpleNamespace(
-            profile=lambda *a, **k: {"name": "贵州茅台", "industry": "白酒",
-                                     "listing_date": "2001-08-27"},
-        )
+        self.info = SimpleNamespace(profile=self._profile)
         self.stocks = SimpleNamespace(
-            list=lambda *a, **k: [
-                {"symbol": "600519", "name": "贵州茅台", "exchange": "SSE",
-                 "industry_name": "白酒", "is_st": False, "listed": "2001-08-27"},
-                {"symbol": "000001", "name": "平安银行", "exchange": "SZSE",
-                 "industry_name": "银行", "is_st": False, "listed": "1991-04-03"},
-                {"symbol": "300750", "name": "宁德时代", "exchange": "SZSE",
-                 "industry_name": "电池", "is_st": False, "listed": "2018-06-11"},
-            ],
-            industries=lambda level, *a, **k: [{"symbol": "S48", "name": "白酒"},
-                                               {"symbol": "S49", "name": "银行"}],
-            industry_members=lambda hint, *a, **k: [
-                {"symbol": s, "name": n, "industry_name": "银行", "is_st": False,
-                 "listed": "2001-08-27"}
-                for s, n in zip(WATCHLIST, ("贵州茅台", "五粮液", "中国神华",
-                                            "长江电力", "中国平安"))],
+            list=self._stocks_list,
+            industries=self._industries,
+            industry_members=self._industry_members,
         )
         self.screener = SimpleNamespace(
-            screen_limit_up=lambda *a, **k: False,
-            screen_above_ma20=lambda *a, **k: True,
-            screen_volume_spike=lambda *a, **k: False,
-            screen_up_today=lambda *a, **k: True,
-            index_breadth_summary=lambda *a, **k: {
-                "total": 5685, "up": 4567, "down": 934, "flat": 184,
-                "up_pct": 80.3, "down_pct": 16.4, "flat_pct": 3.2,
-                "median_pct": 0.015363},
-            index_breadth_bins=lambda *a, **k: [
-                {"label": "涨停", "count": 23, "pct_of_total": 0.4},
-                {"label": "大涨", "count": 210, "pct_of_total": 3.7},
-                {"label": "上涨", "count": 4334, "pct_of_total": 76.2}],
-            index_top_movers=lambda *a, **k: [
-                {"symbol": "600519", "name": "贵州茅台", "percent": 0.0521},
-                {"symbol": "000858", "name": "五粮液", "percent": 0.0311}],
+            screen_limit_up=lambda sym: self._screen(sym, "limit_up"),
+            screen_above_ma20=lambda sym: self._screen(sym, "above_ma20"),
+            screen_volume_spike=lambda sym: self._screen(sym, "volume_spike"),
+            screen_up_today=lambda sym: self._screen(sym, "up_today"),
+            index_breadth_summary=lambda: dict(self._data["screener"]["breadth_summary"]),
+            index_breadth_bins=lambda: [dict(row) for row in self._data["screener"]["breadth_bins"]],
+            index_top_movers=self._top_movers,
         )
-        self.valuation = SimpleNamespace(
-            hist_stats=lambda *a, **k: {"avg": 21.43, "current": 21.42698311427773,
-                                        "max": 28.724504202872666, "median": 20.621,
-                                        "min": 17.661621153011183, "pct": 0.5374,
-                                        "count": 749, "series": []},
+        self.valuation = SimpleNamespace(hist_stats=self._valuation_hist_stats)
+        self.batch_all = self._batch_all
+        self.batch_iter = self._batch_iter
+        self.call_batch = self._call_batch
+        self.notice_poller = self._notice_poller
+        self.call = self._call
+
+    def _require_symbol(self, symbol: str) -> str:
+        sym = str(symbol)
+        if sym not in self._universe:
+            raise UsageError(
+                f"demo 快照只支持演示宇宙标的：{', '.join(self._universe)}；收到 {sym!r}",
+                code="demo_symbol",
+            )
+        return sym
+
+    def _require_snapshot_symbol(self, symbol: str) -> str:
+        sym = str(symbol)
+        if sym not in self._data["kline_snapshot"]:
+            raise UsageError(
+                f"demo snapshot 只支持演示宇宙与银行成分；收到 {sym!r}", code="demo_symbol",
+            )
+        return sym
+
+    def _maybe_df(self, rows: list[dict[str, Any]], df_flag: bool) -> Any:
+        if not df_flag:
+            return rows
+        try:
+            import pandas as pd
+        except ImportError as e:
+            raise UsageError('_df=True 需要 pandas：pip install "wmshare[dataframe]"') from e
+        return pd.DataFrame(rows)
+
+    # ---- market data ----
+    def _kline_bars(self, symbol: str, n: int | None = None, adj: str | None = None,
+                    begin: str | None = None, end: str | None = None,
+                    _raw: bool = False, _df: bool = False) -> Any:
+        if adj is not None or begin is not None or end is not None or _raw:
+            raise UsageError(
+                "demo 快照只覆盖不复权、不带日期区间的 kline.bars(n<=120)",
+                code="demo_unsupported",
+            )
+        count = 120 if n is None else int(n)
+        if count <= 0:
+            raise UsageError("n 必须为正整数", code="params")
+        if count > _MAX_BARS:
+            raise UsageError(
+                f"demo 快照最多保存 {_MAX_BARS} 根日 K，收到 {count}", code="demo_limit",
+            )
+        sym = self._require_symbol(symbol)
+        rows = [dict(row) for row in self._data["kline_bars"][sym][:count]]
+        return self._maybe_df(rows, _df)
+
+    def _kline_snapshot(self, symbol: str) -> dict[str, Any]:
+        sym = self._require_snapshot_symbol(symbol)
+        return dict(self._data["kline_snapshot"][sym])
+
+    def _moneyflow_last(self, symbol: str, _raw: bool = False) -> Any:
+        if _raw:
+            raise UsageError("demo 快照不提供 _raw 原始口径", code="demo_unsupported")
+        sym = self._require_symbol(symbol)
+        value = self._data["moneyflow_last"][sym]
+        return dict(value) if isinstance(value, dict) else value
+
+    def _moneyflow_bars(self, symbol: str, n: int = 20, _raw: bool = False,
+                        _df: bool = False) -> Any:
+        if _raw:
+            raise UsageError("demo 快照不提供 _raw 原始口径", code="demo_unsupported")
+        count = int(n)
+        if count <= 0 or count > _MAX_MONEYFLOW_BARS:
+            raise UsageError(
+                f"demo 快照最多保存 {_MAX_MONEYFLOW_BARS} 根资金流，收到 {count}",
+                code="demo_limit",
+            )
+        sym = self._require_symbol(symbol)
+        rows = [dict(row) for row in self._data["moneyflow_bars"][sym][:count]]
+        return self._maybe_df(rows, _df)
+
+    # ---- fundamentals ----
+    def _statement(self, kind: str):
+        def method(symbol: str, years: int = 5, scope: str = "合并",
+                   _df: bool = False) -> Any:
+            if scope != "合并":
+                raise UsageError("demo 快照只保存合并报表", code="demo_unsupported")
+            if int(years) <= 0:
+                raise UsageError("years 必须为正整数", code="params")
+            sym = self._require_symbol(symbol)
+            if sym != "600519":
+                raise UsageError("demo 报表快照只覆盖 600519", code="demo_symbol")
+            rows = _slice_statement_rows(self._data["statements"][kind], int(years))
+            return self._maybe_df(rows, _df)
+        return method
+
+    def _statement_years(self, symbol: str, kind: str = "income", _df: bool = False) -> list[str]:
+        self._require_symbol(symbol)
+        if kind not in ("income", "balance", "cashflow"):
+            raise UsageError(f"未知报表 kind={kind!r}", code="params")
+        return list(self._data["statements"]["years"])
+
+    def _statement_compare(self, symbol: str, kind: str = "income", years: int = 2,
+                           _df: bool = False) -> Any:
+        if kind != "income":
+            raise UsageError("demo compare 快照只保存 income", code="demo_unsupported")
+        if int(years) <= 0 or int(years) > 2:
+            raise UsageError("demo compare 快照最多 2 期", code="demo_limit")
+        self._require_symbol(symbol)
+        rows = _slice_statement_rows(self._data["statements"]["compare"], int(years))
+        return self._maybe_df(rows, _df)
+
+    def _statement_audit(self, symbol: str) -> dict[str, str]:
+        self._require_symbol(symbol)
+        return dict(self._data["statements"]["audit"])
+
+    def _indicator_get(self, symbol: str, code: str) -> Any:
+        self._require_symbol(symbol)
+        try:
+            return self._data["indicators"][code]
+        except KeyError:
+            raise UsageError(
+                f"demo 快照只保存 indicators：{', '.join(self._data['indicators'])}",
+                code="demo_unsupported",
+            ) from None
+
+    # ---- disclosure ----
+    def _notice_list(self, symbol: str, window: str = "3m", keyword: str = "",
+                     limit: int = 20, _raw: bool = False, _df: bool = False) -> Any:
+        self._require_symbol(symbol)
+        rows = [dict(row) for row in self._data["notices"][:max(0, int(limit))]]
+        return self._maybe_df(rows, _df)
+
+    def _dividend_last(self, symbol: str, _raw: bool = False) -> Any:
+        if _raw:
+            raise UsageError("demo 快照不提供 _raw 原始口径", code="demo_unsupported")
+        sym = self._require_symbol(symbol)
+        value = self._data["dividend"]["last"][sym]
+        return dict(value) if isinstance(value, dict) else value
+
+    def _dividend_yield(self, symbol: str) -> Any:
+        return self._data["dividend"]["yield_ttm"][self._require_symbol(symbol)]
+
+    def _dividend_history(self, symbol: str, limit: int | None = None,
+                          begin: str | None = None, end: str | None = None,
+                          _raw: bool = False, _df: bool = False) -> Any:
+        if begin is not None or end is not None or _raw:
+            raise UsageError("demo 分红快照只支持 limit 查询", code="demo_unsupported")
+        count = 20 if limit is None else int(limit)
+        if count <= 0 or count > _MAX_DIVIDEND_HISTORY:
+            raise UsageError(
+                f"demo 分红快照最多 {_MAX_DIVIDEND_HISTORY} 行，收到 {count}", code="demo_limit",
+            )
+        sym = self._require_symbol(symbol)
+        rows = [dict(row) for row in self._data["dividend"]["history"][sym][:count]]
+        return self._maybe_df(rows, _df)
+
+    def _dividend_screen_quality(self, symbol: str, min_yield: float | None = None,
+                                 payout_min: float | None = None,
+                                 payout_max: float | None = None,
+                                 _raw: bool = False, _df: bool = False) -> bool:
+        if _raw or _df:
+            raise UsageError("demo screen_quality 只返回布尔值", code="demo_unsupported")
+        sym = self._require_symbol(symbol)
+        wanted = _quality_args_key(min_yield, payout_min, payout_max)
+        for variant in self._data["dividend"]["screen_quality_by_args"]:
+            actual = _quality_args_key(
+                variant["args"].get("min_yield"), variant["args"].get("payout_min"),
+                variant["args"].get("payout_max"),
+            )
+            if actual == wanted and sym in variant["results"]:
+                return bool(variant["results"][sym])
+        raise UsageError(
+            "demo 快照未捕获该 screen_quality 阈值组合；可先切换真实 Client",
+            code="demo_unsupported",
         )
-        self.batch_all = batch_all
-        self.batch_iter = batch_iter
-        self.call_batch = call_batch
-        self.notice_poller = notice_poller
-        self.call = lambda name, **kw: (
-            _bars(kw.get("limit") or 5) if name == "kline.query_bars" else [])
+
+    def _dividend_expression(self) -> str:
+        return str(self._data["dividend"]["index_where_high_yield_5"])
+
+    # ---- reference ----
+    def _profile(self, symbol: str) -> dict[str, Any]:
+        self._require_symbol(symbol)
+        if symbol != "600519":
+            raise UsageError("demo profile 只覆盖 600519", code="demo_symbol")
+        return dict(self._data["profile"])
+
+    def _stocks_list(self, _df: bool = False) -> Any:
+        rows = [dict(row) for row in self._data["stocks_list"]]
+        return self._maybe_df(rows, _df)
+
+    def _industries(self, level: int | None = None, _df: bool = False) -> Any:
+        if level is not None and int(level) != 1:
+            raise UsageError("demo 快照只保存一级行业", code="demo_limit")
+        rows = [dict(row) for row in self._data["industries"]]
+        return self._maybe_df(rows, _df)
+
+    def _industry_members(self, industry: str, top_n: int | None = None,
+                          _df: bool = False) -> Any:
+        if str(industry) not in ("银行", "S48"):
+            raise UsageError(
+                "demo 快照只保存「银行」行业成分；可传 银行 或 S48", code="demo_symbol",
+            )
+        rows = [dict(row) for row in self._data["industry_members_bank"]]
+        if top_n is not None:
+            rows = rows[:max(0, int(top_n))]
+        return self._maybe_df(rows, _df)
+
+    # ---- screener ----
+    def _screen(self, symbol: str, key: str) -> bool:
+        sym = self._require_symbol(symbol)
+        return bool(self._data["screener"]["screens"][sym][key])
+
+    def _top_movers(self, limit: int = 20, desc: bool = True,
+                    idx: str | None = None, _df: bool = False) -> Any:
+        if idx is not None:
+            raise UsageError("demo 快照只保存默认全市场索引", code="demo_unsupported")
+        if int(limit) <= 0 or int(limit) > 10:
+            raise UsageError("demo 涨跌榜最多保存 10 行", code="demo_limit")
+        key = "top_movers_up" if desc else "top_movers_down"
+        rows = [dict(row) for row in self._data["screener"][key][:int(limit)]]
+        return self._maybe_df(rows, _df)
+
+    def _valuation_hist_stats(self, symbol: str, metric: str = "pe",
+                              window: str = "3y") -> dict[str, Any]:
+        if metric != "pe" or window != "3y":
+            raise UsageError("demo valuation 快照只保存 pe/3y", code="demo_unsupported")
+        self._require_symbol(symbol)
+        return dict(self._data["valuation"])
+
+    # ---- generic and batch surfaces ----
+    def _notice_poller(self, *, group: str, consumer: str,
+                       on_events: Callable[[list[NoticeStreamEvent]], Any] | None = None,
+                       **kw: Any) -> DemoPoller:
+        if not str(group).strip() or not str(consumer).strip():
+            raise UsageError("group 与 consumer 必填", code="params")
+        return DemoPoller(self._data["notice_event"], on_events)
+
+    def _batch(self, name: str, symbols: list[str], **kwargs: Any) -> BatchResult:
+        if name == "kline.snapshot":
+            results = {self._require_snapshot_symbol(s): self._kline_snapshot(s)
+                       for s in symbols}
+        elif name == "bonus.snapshot_yield_ttm":
+            results = {self._require_symbol(s): self._dividend_yield(s) for s in symbols}
+        else:
+            raise UsageError(f"demo 快照不支持批量函数 {name!r}", code="demo_unsupported")
+        return BatchResult(results=results, requests=max(1, -(-len(results) // 500)))
+
+    def _batch_all(self, name: str, symbols: list[str], /, batch_size: int | None = None,
+                   on_batch_error: str = "raise", _raw: bool = False,
+                   _units: str = "base", **kwargs: Any) -> BatchResult:
+        if on_batch_error != "raise":
+            raise UsageError("demo 批量只支持 on_batch_error='raise'", code="demo_unsupported")
+        return self._batch(name, list(symbols))
+
+    def _batch_iter(self, name: str, symbols: list[str], /, batch_size: int | None = None,
+                    on_batch_error: str = "raise", _raw: bool = False,
+                    _units: str = "base", **kwargs: Any):
+        yield self._batch(name, list(symbols))
+
+    def _call_batch(self, name: str, symbols: list[str], /, on_error: str = "raise",
+                    _raw: bool = False, _df: bool = False, _units: str = "base",
+                    **kwargs: Any) -> BatchResult:
+        if on_error not in ("raise", "skip"):
+            raise UsageError("on_error 只支持 raise 或 skip", code="params")
+        return self._batch(name, list(symbols))
+
+    def _call(self, name: str, /, _raw: bool = False, _df: bool = False,
+              _units: str = "base", **kwargs: Any) -> Any:
+        symbol = kwargs.get("symbol") or kwargs.get("sym") or ""
+        if name == "kline.query_bars":
+            return self._kline_bars(symbol, n=kwargs.get("n") or kwargs.get("limit") or 120,
+                                    _raw=_raw, _df=_df)
+        if name == "kline.snapshot":
+            return self._kline_snapshot(symbol)
+        if name == "bonus.snapshot_yield_ttm":
+            return self._dividend_yield(symbol)
+        return []
+
+    def close(self) -> None:
+        return None
+
+    def __enter__(self) -> "DemoClient":
+        return self
+
+    def __exit__(self, *exc: Any) -> None:
+        self.close()
 
     def __repr__(self) -> str:
-        return ("wmshare.demo_client()  # 离线演示数据（固定快照，非真实行情）；"
-                "接真实数据请 wmshare.Client.from_env()")
+        return (
+            f"wmshare.demo_client()  # 真实 API 固定快照（as_of={self._doc['as_of']}, "
+            f"10 只演示宇宙，非实时行情）；接真实数据请 wmshare.Client.from_env()"
+        )
 
 
 def demo_client() -> DemoClient:
-    """创建离线演示客户端：零凭证、不联网，数据为随包固定快照（非真实行情）。
+    """创建零凭证、离线、固定快照的演示客户端。
 
-    与 ``Client`` 同调用面（门面命名空间 + 批量入口 + 公告轮询器桩），
-    覆盖 README 首跑块与 examples/ 全部演示路径::
-
-        import wmshare
-
-        cli = wmshare.demo_client()
-        print(cli.dividend.yield_ttm("600519"))   # 0.0396（演示快照，小数）
-        print(cli.indicator.get("600519", "$PCT_PE_TTM_10Y_LAST"))   # 0.42
+    快照来自真实 API 的 2026-10-30 固定日，包含 10 只演示宇宙与当日全市场 screener。
+    与真实 Client 不同处：数据不更新、只覆盖公开示例调用面、未知演示标的报错。
     """
     return DemoClient()

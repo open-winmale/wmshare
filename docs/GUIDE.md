@@ -18,8 +18,9 @@ pip install "wmshare[dataframe]"     # 可选：pandas 支持（_df=True）
 python3 -c "import wmshare; print(wmshare.__version__)"   # 验证安装
 ```
 
-不配凭证先试：`cli = wmshare.demo_client()`——随包离线演示客户端（罐头快照，
-**非真实行情**），调用面与真实客户端一致；examples/ 的凭证示例都支持
+不配凭证先试：`cli = wmshare.demo_client()`——随包离线演示客户端（2026-10-30
+真实 API 固定快照；10 只演示宇宙 + 当日真实全市场 screener，
+**非实时数据**），调用面覆盖公开示例；examples/ 的凭证示例都支持
 `--demo` 旗标零凭证试跑。看真实数据按下节配凭证。
 
 凭证在开放平台（`https://open.winmale.com`）控制台的「我的 → 开放平台 → 我的应用」页获取，
@@ -339,7 +340,7 @@ poller.start()               # 或切后台：daemon 线程定时轮询；退出
 
 - **和直接下交易所数据比，图什么？** 目录先行 + 单位统一 + 数据守护 + 批量限流治理——
   取数正确性的工程问题 SDK 替你管了。
-- **数据能离线吗？** 目录（252 函数/2158 指标码/代码表）随包离线；行情财报数据在云端，
+- **数据能离线吗？** 目录（252 函数/2752 指标码/代码表）随包离线；行情财报数据在云端，
   需凭证与额度。
 - **支持哪些 Python？** ≥3.10；pandas 为可选依赖。
 - **怎么贡献/报漏洞？** 见 [CONTRIBUTING](../CONTRIBUTING.md) 与 [SECURITY](../SECURITY.md)；
