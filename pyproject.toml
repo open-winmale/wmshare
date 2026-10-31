@@ -55,6 +55,7 @@ where = ["src"]
 [tool.setuptools.package-data]
 wmshare = [
     "py.typed",
+    "_demo_data.json",
     "_catalog/schema/*.json",
     "_catalog/domains/*.yaml",
     "_catalog/generated/*.json",

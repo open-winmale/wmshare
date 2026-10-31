@@ -169,6 +169,18 @@ def test_call_batch_guards(cli):
 
 
 # ---------------------------------------------------------------- 错误体系
+def test_catalog_error_message_has_no_keyerror_quotes():
+    err = CatalogError("未知函数 'x'", code="function")
+    assert str(err) == "未知函数 'x'"
+
+
+def test_statement_compare_supports_native_units(cli):
+    cli.statements.compare("600519", "income", years=2, _units="native")
+    body = last_ev(cli)
+    assert body["args"]["print.plain"] is True
+    assert "_units" not in body["xs_lines"][-1]
+
+
 def test_error_hierarchy_and_exports():
     for cls in (AuthError, UsageError, LimitError, TransportError, ApiError, CatalogError):
         assert issubclass(cls, WmshareError)

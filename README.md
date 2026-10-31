@@ -4,10 +4,10 @@
 
 > **English TL;DR** — `wmshare` is a BSD-3-Clause Python SDK for China A-share / Hong Kong / US
 > market data: k-line (3 adjustments), intraday snapshots, money flow, financial statements,
-> 2,158 precomputed metric codes (TTM / percentile / dividend), a screener facade and whole-market
+> 2,752 precomputed metric codes (TTM / percentile / dividend), a screener facade and whole-market
 > batch (5,691 symbols = 12 requests); ships an offline catalog, base-unit data guards and an
 > AI-agent skill. **Credentials required** — get them on the open platform (open.winmale.com);
-> try offline first with `wmshare.demo_client()`. **Install**: `pip install wmshare`.
+> try offline first with `wmshare.demo_client()` (frozen 2026-10-30 API snapshot; not live). **Install**: `pip install wmshare`.
 
 给 Python 量化开发者的中文财经数据 SDK：一行接口拿到清洗好的 A股/港股/美股数据——
 估值分位、TTM 股息率等指标**服务端算好直出**，全市场批量 **12 次请求**绕开限流。
@@ -30,10 +30,10 @@
 - **数据要准**——财报按最新会计准则归一，跨年跨公司直接比较；全库基础单位
   （比率/涨跌幅=小数、金额=元、量=股），每次返回做量级守护与不变量校验，错误的量级到不了你的代码。
 - **特色数据**——盘中实时快照与当日 1 分钟分时；`cli.screener` 筛选一行直出，全市场涨跌
-  全景/分桶/行业分布/涨跌榜走服务端预计算索引，毫秒级响应；2,158 个指标码（TTM、3/5/10 年
+  全景/分桶/行业分布/涨跌榜走服务端预计算索引，毫秒级响应；2,752 个指标码（TTM、3/5/10 年
   历史分位、192 个行业内分位、TTM 股息率/派息率 + 11 个质量筛选器）服务端算好直出。
 - **凭证即用**——开放平台签发 client_id/api-key，环境变量、凭证文件、构造参数任选其一配置；遇到 401/403/429 错误消息即完整指引。
-- **目录随包 + AI 原生**——252 个底层函数、116 个核心接口、2,158 个指标码离线可查；
+- **目录随包 + AI 原生**——252 个底层函数、116 个核心接口、2,752 个指标码离线可查；
   附 Agent Skills 格式 skill（`wmshare.skill_dir()`），复制进 AI agent 即可正确使用。
 
 ## 快速上手
@@ -82,11 +82,13 @@ for s, n, v, pe, pct in rows[:8]:                            # 取前 8 行打�
     print(f"{s}  {n}  股息率 {v:.2%}  PE {pe:.1f}  十年分位 {pct:.1%}")
 ```
 
-没配凭证也能先看调用面：`cli = wmshare.demo_client()`（同签名、随包快照、不联网），换成 `Client.from_env()` 即接真实数据。
+没配凭证也能先看调用面：`cli = wmshare.demo_client()`（同签名、不联网）。这是
+2026-10-30 真实 API 固定快照：10 只演示宇宙 + 当日全市场 screener，非实时数据；
+换成 `Client.from_env()` 即接真实数据。
 
 ## 能力一览
 
-随包离线目录：**17 个数据域 · 252 个底层函数 · 2158 个指标代码**；友好层 **116 个核心接口**，
+随包离线目录：**17 个数据域 · 252 个底层函数 · 2752 个指标代码**；友好层 **116 个核心接口**，
 按使用视角组织为（11 个指标组、74 个精选常用指标代码，`cat.search("中文")` 可编程检索）：
 
 | 门面 | 核心能力 | 单位口径 |
@@ -117,7 +119,7 @@ for s, n, v, pe, pct in rows[:8]:                            # 取前 8 行打�
 | 数据能力 | A股 cn | 港股 hk | 美股 us |
 |---|---|---|---|
 | 日 K 三种复权 / 1 分钟分时 / 盘中快照 | ✅ 全量 | ✅ | 快照/盘中新鲜；历史日 K 停更（见注记） |
-| 指标库（2,158 码：估值/盈利/成长/分红/分位） | ✅ | ✅ | ✅（用裸代码 `AAPL`；`AAPL.O` 由 SDK 归一） |
+| 指标库（2,752 码：估值/盈利/成长/分红/分位） | ✅ | ✅ | ✅（用裸代码 `AAPL`；`AAPL.O` 由 SDK 归一） |
 | 分红：历史、TTM 股息率/派息率、质量筛选 | ✅ | ✅ | ✅（窗口口径固定） |
 | 公告与披露信号 | ✅ | ✅ | — |
 | 财报清单与最新披露 | ✅ | ✅ | — |

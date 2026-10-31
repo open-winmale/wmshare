@@ -215,7 +215,7 @@ class _Api:
 
 # ---------------------------------------------------------------- 行情 market
 class KlineApi(_Api):
-    """行情与 K 线。单位：价格=元，量=手(A股)，额=本币，涨跌幅=小数（0.01=1%）。"""
+    """行情与 K 线。单位：价格=元，量=股(A股默认换算；`native` 保留手)，涨跌幅=小数。"""
 
     def bars(self, symbol: str, n: int | None = None, adj: str | None = None,
              begin: str | None = None, end: str | None = None,
@@ -676,7 +676,8 @@ class StatementsApi(_Api):
                             opts={"scope": scope, "n": years}, _raw=_raw, _df=_df)
 
     def compare(self, symbol: str, kind: str = "income", years: int = 2,
-                _raw: bool = False, _df: bool = False) -> Any:
+                _raw: bool = False, _df: bool = False,
+                _units: str = "base") -> Any:
         """合并 vs 母公司比较：科目行 + 合并值/母公司值/差额/差额占比。
 
         差额占比为**小数**（diffp = 差额 / 合并值，0.078 = 7.8%；SDK 自动由脚本
@@ -684,7 +685,7 @@ class StatementsApi(_Api):
         """
         return self._c.call("rptdom.statement_compare", sym=symbol,
                             domain=self._domain(kind), opts={"n": years},
-                            _raw=_raw, _df=_df)
+                            _raw=_raw, _df=_df, _units=_units)
 
     def tree(self, symbol: str, kind: str = "balance", years: int = 5,
              scope: str = "合并", _raw: bool = False, _df: bool = False) -> Any:

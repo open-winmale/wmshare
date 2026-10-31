@@ -13,6 +13,7 @@ import re
 import threading
 import time
 from importlib.metadata import PackageNotFoundError, version
+from urllib.parse import urlsplit
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterator, NoReturn
@@ -196,6 +197,32 @@ class Client:
         max_retry_after: float = 10.0,
         validate: bool = True,
     ):
+        market = str(market or "cn").strip().lower()
+        if market not in ("cn", "hk", "us"):
+            raise UsageError(
+                f"market 只支持 cn/hk/us，收到 {market!r}", code="market")
+        if base_url is not None and (not isinstance(base_url, str) or not base_url.strip()):
+            raise UsageError("base_url 必须是非空 URL", code="config")
+        if base_url is not None:
+            parsed = urlsplit(base_url.strip())
+            host = (parsed.hostname or "").lower()
+            local_hosts = {"localhost", "127.0.0.1", "::1"}
+            if parsed.scheme != "https" and not (
+                    parsed.scheme == "http" and host in local_hosts):
+                raise UsageError(
+                    "base_url 必须使用 HTTPS；本地网关可用 http://localhost、"
+                    "http://127.0.0.1 或 http://[::1]", code="config")
+        if isinstance(timeout, bool) or not isinstance(timeout, (int, float)) \
+                or not float(timeout) > 0 or not math.isfinite(float(timeout)):
+            raise UsageError("timeout 必须为正有限秒数", code="config")
+        if isinstance(retries, bool) or not isinstance(retries, int) or retries < 0:
+            raise UsageError("retries 必须为非负整数", code="config")
+        if isinstance(backoff, bool) or not isinstance(backoff, (int, float)) \
+                or not float(backoff) >= 0 or not math.isfinite(float(backoff)):
+            raise UsageError("backoff 必须为非负有限秒数", code="config")
+        if max_limit is not None and (isinstance(max_limit, bool)
+                                      or not isinstance(max_limit, int) or max_limit <= 0):
+            raise UsageError("max_limit 必须为正整数或 None", code="config")
         self.base_url = (base_url or DEFAULT_BASE_URL).rstrip("/")
         self.client_id = client_id or ""
         self.client_secret = client_secret or ""
@@ -521,6 +548,32 @@ class Client:
                          *, sym_override: str | None = None,
                          sym_param: str | None = None) -> str:
         """校验参数并生成单次调用字面量（含标的一体化归一）。"""
+        def _validate(p: dict, value: Any) -> None:
+            kind = p.get("type", "any")
+            valid = True
+            if kind == "string":
+                valid = isinstance(value, str)
+            elif kind == "int":
+                valid = isinstance(value, int) and not isinstance(value, bool)
+            elif kind == "float":
+                valid = (isinstance(value, (int, float)) and not isinstance(value, bool)
+                         and math.isfinite(float(value)))
+            elif kind == "bool":
+                valid = isinstance(value, bool)
+            elif kind == "array":
+                valid = isinstance(value, (list, tuple))
+            elif kind == "object":
+                valid = isinstance(value, dict)
+            if not valid:
+                raise UsageError(
+                    f"{name}: 参数 {p['name']} 需要 {kind}，收到 {type(value).__name__}",
+                    code="params")
+            allowed = p.get("enum")
+            if allowed is not None and value not in allowed:
+                raise UsageError(
+                    f"{name}: 参数 {p['name']}={value!r} 不在允许值 {allowed} 内",
+                    code="params")
+
         known = {p["name"] for p in params}
         unknown = set(kwargs) - known
         if unknown:
@@ -528,6 +581,8 @@ class Client:
                              code="params")
         for p in params:
             provided = p["name"] in kwargs or (sym_override is not None and p["name"] == sym_param)
+            if p["name"] in kwargs:
+                _validate(p, kwargs[p["name"]])
             if not provided and "default" not in p and p.get("required"):
                 raise UsageError(f"{name}: 缺少必填参数 {p['name']}", code="params")
         if self.max_limit is not None:
