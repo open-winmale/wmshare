@@ -1,6 +1,6 @@
 {
  "schema_version": 2,
- "upstream_rev": "d9bbd944",
+ "upstream_rev": "d8c900bb",
  "domains": {
   "bonus": {
    "entry": "sys/bonus/init.xs",
@@ -4774,7 +4774,7 @@
      {
       "name": "source",
       "type": "string",
-      "cn": "来源标识枚举",
+      "cn": "multi_source|multi_source_rt|source_a|source_b|source_c|source_d",
       "optional": true
      }
     ]
@@ -6717,7 +6717,7 @@
   },
   {
    "name": "rptdom.statement_audit",
-   "cn": "审计意见（多源混合，Q4 年轴）",
+   "cn": "审计意见（多源混源，Q4 年轴）",
    "example": "rptdom.statement_audit(\"600519\")",
    "returns": "MAP",
    "returns_shape": null,
@@ -6753,7 +6753,7 @@
   },
   {
    "name": "rptdom.statement_tree",
-   "cn": "三表目录树视图（树序+比率/占比行，标准目录结构）",
+   "cn": "三表目录树视图（树序+比率/占比行，整理结构）",
    "example": "rptdom.statement_tree(\"600519\", \"fin.balance_sheet\", {\"scope\": \"合并\", \"n\": 5})",
    "returns": "ARR",
    "returns_shape": null,
@@ -7053,7 +7053,7 @@
   },
   {
    "name": "segments.query_income",
-   "cn": "数据源主营标签占比",
+   "cn": "主营标签占比",
    "example": "segments.query_income(\"600519\", {})",
    "returns": "ARR",
    "returns_shape": {
