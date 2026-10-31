@@ -76,3 +76,7 @@ class StreamResetError(WmshareError):
 
 class CatalogError(WmshareError, KeyError):
     """目录中不存在该函数/域/指标/不兼容版本（同时兼容 KeyError 捕获）。"""
+
+    def __str__(self) -> str:
+        # KeyError.__str__ 会再加一层 repr 引号；SDK 用户看到的应是普通消息。
+        return str(self.args[0]) if self.args else ""
