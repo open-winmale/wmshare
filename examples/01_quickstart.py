@@ -55,10 +55,11 @@ def main(cli=None, demo: bool = False) -> None:
     profile = cli.info.profile(SYMBOL)
     print(f"{profile.get('name')} · {profile.get('industry')} · 上市 {profile.get('listing_date')}")
 
-    # ---- 批量取数：全市场只用 12 次请求（逐票要 5,691 次，必撞 429 限流） ----
+    # ---- 批量取数：真实 Client 是全市场；demo 是 10 只演示宇宙 ----
     codes = [r["symbol"] for r in cli.stocks.list()]
+    scope = "演示宇宙" if demo else "全市场"
     res = cli.batch_all("kline.snapshot", codes)
-    print(f"全市场 {len(res.results)} 家：{res.requests} 次请求"
+    print(f"{scope} {len(res.results)} 家：{res.requests} 次请求"
           f"（逐票需 {len(codes)} 次；免费档限额 500 次/小时）")
     # 逐批处理（长任务边取边落盘）：for part in cli.batch_iter("kline.snapshot", codes): ...
 

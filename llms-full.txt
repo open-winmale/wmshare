@@ -15,7 +15,7 @@
 > 2,158 precomputed metric codes (TTM / percentile / dividend), a screener facade and whole-market
 > batch (5,691 symbols = 12 requests); ships an offline catalog, base-unit data guards and an
 > AI-agent skill. **Credentials required** — get them on the open platform (open.winmale.com);
-> try offline first with `wmshare.demo_client()`. **Install**: `pip install wmshare`.
+> try offline first with `wmshare.demo_client()` (frozen 2026-10-30 API snapshot; not live). **Install**: `pip install wmshare`.
 
 给 Python 量化开发者的中文财经数据 SDK：一行接口拿到清洗好的 A股/港股/美股数据——
 估值分位、TTM 股息率等指标**服务端算好直出**，全市场批量 **12 次请求**绕开限流。
@@ -90,7 +90,9 @@ for s, n, v, pe, pct in rows[:8]:                            # 取前 8 行打�
     print(f"{s}  {n}  股息率 {v:.2%}  PE {pe:.1f}  十年分位 {pct:.1%}")
 ```
 
-没配凭证也能先看调用面：`cli = wmshare.demo_client()`（同签名、随包快照、不联网），换成 `Client.from_env()` 即接真实数据。
+没配凭证也能先看调用面：`cli = wmshare.demo_client()`（同签名、不联网）。这是
+2026-10-30 真实 API 固定快照：10 只演示宇宙 + 当日全市场 screener，非实时数据；
+换成 `Client.from_env()` 即接真实数据。
 
 ## 能力一览
 
@@ -323,7 +325,7 @@ python3 -c "import wmshare; print(wmshare.__version__)"   # 探测
 pip install -i https://pypi.tuna.tsinghua.edu.cn/simple wmshare
 ```
 
-零凭证语法试跑：`cli = wmshare.demo_client()`（随包罐头快照，**非真实行情**），调用面与真实客户端一致，用于无凭证时验证代码形态；真实取数必须配置下方凭证。
+零凭证语法试跑：`cli = wmshare.demo_client()`（2026-10-30 真实 API 固定快照；10 只演示宇宙 + 当日全市场 screener，**非实时数据**），调用面覆盖公开示例，用于无凭证时验证代码形态；真实取数必须配置下方凭证。
 
 凭证必填（SDK 不再内置体验 AppID）：在开放平台获取 client_id/api-key，
 配置其一（构造参数 / WMSHARE_CLIENT_ID+WMSHARE_CLIENT_SECRET 环境变量 /
@@ -521,8 +523,9 @@ pip install "wmshare[dataframe]"     # 可选：pandas 支持（_df=True）
 python3 -c "import wmshare; print(wmshare.__version__)"   # 验证安装
 ```
 
-不配凭证先试：`cli = wmshare.demo_client()`——随包离线演示客户端（罐头快照，
-**非真实行情**），调用面与真实客户端一致；examples/ 的凭证示例都支持
+不配凭证先试：`cli = wmshare.demo_client()`——随包离线演示客户端（2026-10-30
+真实 API 固定快照；10 只演示宇宙 + 当日真实全市场 screener，
+**非实时数据**），调用面覆盖公开示例；examples/ 的凭证示例都支持
 `--demo` 旗标零凭证试跑。看真实数据按下节配凭证。
 
 凭证在开放平台（`https://open.winmale.com`）控制台的「我的 → 开放平台 → 我的应用」页获取，
@@ -905,7 +908,7 @@ cp -r "$(python3 -c 'import wmshare; print(wmshare.skill_dir())')" ~/.agents/ski
 
 ## 路径 C：报错驱动（零配置兜底）
 
-没有凭证、只想验证 AI 写的调用语法？用 `wmshare.demo_client()`——随包离线演示客户端（罐头快照，非真实行情），调用面与真实客户端一致：让 AI 先在演示客户端上跑通代码形态，再接真实凭证取数。
+没有凭证、只想验证 AI 写的调用语法？用 `wmshare.demo_client()`——随包离线演示客户端（2026-10-30 真实 API 固定快照，非实时数据），调用面覆盖公开示例：让 AI 先在演示客户端上跑通代码形态，再接真实凭证取数。
 
 错误消息本身就是为了"贴给 AI 能直接修"设计的：
 
