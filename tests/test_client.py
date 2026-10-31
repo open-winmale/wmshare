@@ -5,11 +5,13 @@ FakeSession 复现 OpenAPI 合同：
   POST /v1/analysis/xs/eval → {"success": true, "data": {"result": ...}}
 """
 import json
+import threading
 
 import pytest
 
 from wmshare.catalog import load
-from wmshare.client import Client, WmshareError, _xs_literal
+from wmshare.client import Client, LimitError, WmshareError, _xs_literal
+from wmshare.errors import ApiError
 
 
 class FakeSession:
@@ -255,6 +257,36 @@ def test_token_cached(client):
     assert client.session.token_count == 1
 
 
+def test_concurrent_clients_share_one_token_refresh():
+    started = threading.Event()
+    release = threading.Event()
+
+    class SlowTokenSession(FakeSession):
+        def post(self, url, json=None, data=None, headers=None, timeout=None):
+            response = super().post(url, json=json, data=data, headers=headers,
+                                    timeout=timeout)
+            if url.endswith("/v1/oauth/token"):
+                started.set()
+                assert release.wait(1)
+            return response
+
+    session = SlowTokenSession()
+    client = Client(base_url="https://t", client_id="id", client_secret="sec",
+                    catalog=load(), session=session)
+    threads = [threading.Thread(target=client.eval_result,
+                                args=("return $PE_TTM_LAST",))
+               for _ in range(2)]
+    threads[0].start()
+    assert started.wait(1)
+    threads[1].start()
+    release.set()
+    for thread in threads:
+        thread.join(1)
+    assert session.token_count == 1
+    assert len([call for call in session.calls
+                if call["url"].endswith("/xs/eval")]) == 2
+
+
 def test_eval_error_surfaced(client):
     class FailSession(FakeSession):
         def post(self, url, **kw):
@@ -316,6 +348,35 @@ def test_batch_result_to_df_long_table(client):
     assert {"symbol", "close", "percent"} <= set(df.columns)
 
 
+def test_batch_result_tracks_requested_and_detects_missing_keys(client):
+    client.session.eval_result = {
+        "600519": {"close": 1}, "000001": {"close": 2},
+    }
+    out = client.call_batch("kline.snapshot", ["600519", "000001"])
+    assert out.requested == 2
+    client.session.eval_result = {"600519": {"close": 1}}
+    with pytest.raises(WmshareError, match="批量返回缺少"):
+        client.call_batch("kline.snapshot", ["600519", "000001"])
+
+
+def test_batch_iter_skip_records_structured_error(client, monkeypatch):
+    calls: list[list[str]] = []
+
+    def fail_batch(name, symbols, /, **_kwargs):
+        calls.append(list(symbols))
+        raise ApiError("isolated failure", code="isolated", status=400)
+
+    monkeypatch.setattr(client, "call_batch", fail_batch)
+    parts = list(client.batch_iter("kline.snapshot", ["600519", "000001"],
+                                   batch_size=1, on_batch_error="skip"))
+    assert len(parts) == 2 and calls == [["600519"], ["000001"]]
+    assert all(part.requested == 1 and part.requests == 1 for part in parts)
+    keys = ["batch#1[0:1]", "batch#2[1:2]"]
+    assert all(part.error_details[key].code == "isolated"
+               and not part.error_details[key].retryable
+               for part, key in zip(parts, keys))
+
+
 def test_us_symbol_suffix_canonicalized_everywhere():
     """美股交易所后缀/类别股写法在 eval 锚点、目录调用、批量三处都归一。"""
     s = FakeSession()
@@ -327,6 +388,7 @@ def test_us_symbol_suffix_canonicalized_everywhere():
     ev = last_eval(c)
     assert ev["json"]["symbol"] == "BRK_B"
     assert any('kline.query_bars("BRK_B", 1)' in ln for ln in ev["json"]["xs_lines"])
+    c.session.eval_result = {"AAPL": {"close": 1}, "BRK_B": {"close": 2}}
     c.call_batch("kline.snapshot", ["AAPL.O", "BRK-B"])
     xs = "\n".join(last_eval(c)["json"]["xs_lines"])
     assert '"AAPL"' in xs and '"BRK_B"' in xs and "AAPL.O" not in xs and "BRK-B" not in xs

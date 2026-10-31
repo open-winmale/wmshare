@@ -7,9 +7,12 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import re
+import threading
 import time
+from importlib.metadata import PackageNotFoundError, version
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterator, NoReturn
@@ -27,6 +30,7 @@ from wmshare.errors import (
 from wmshare.units import apply_units
 
 DEFAULT_BASE_URL = "https://api.winmale.com"
+SDK_VERSION = version("wmshare")
 
 # 无标的参数函数的求值锚点：网关按注册表校验 symbol 与 market 匹配，
 # 固定 A 股锚点在 hk/us 客户端会 MARKET_MISMATCH（400）。
@@ -96,6 +100,8 @@ class BatchResult:
     results: dict[str, Any] = field(default_factory=dict)
     errors: dict[str, str] = field(default_factory=dict)
     requests: int = 0
+    requested: int = 0
+    error_details: dict[str, "BatchError"] = field(default_factory=dict)
 
     def to_df(self) -> Any:
         """转长表 DataFrame：每标的一行（值为 MAP 时字段展平，symbol 列在最前）。
@@ -107,6 +113,17 @@ class BatchResult:
             rows.append({"symbol": sym, **v} if isinstance(v, dict)
                         else {"symbol": sym, "value": v})
         return _to_dataframe(rows)
+
+
+@dataclass(frozen=True)
+class BatchError:
+    """Structured metadata for a failed symbol or batch key in BatchResult."""
+
+    key: str
+    message: str
+    code: str = ""
+    status: int | None = None
+    retryable: bool = False
 
 
 def _chunked(seq: list[Any], size: int) -> Iterator[list[Any]]:
@@ -175,6 +192,8 @@ class Client:
         max_limit: int | None = 500,
         retries: int = 2,
         backoff: float = 0.5,
+        backoff_jitter: float = 0.1,
+        max_retry_after: float = 10.0,
         validate: bool = True,
     ):
         self.base_url = (base_url or DEFAULT_BASE_URL).rstrip("/")
@@ -198,12 +217,26 @@ class Client:
         self.catalog = catalog or load()
         self._owns_session = session is None
         self.session = session or requests.Session()
+        session_headers = getattr(self.session, "headers", None)
+        if session_headers is not None:
+            session_headers.setdefault("User-Agent", f"wmshare/{SDK_VERSION}")
         self.timeout = timeout
         self.max_limit = max_limit
         self.retries = max(0, int(retries))
         self.backoff = backoff
+        if isinstance(backoff_jitter, bool) or not isinstance(backoff_jitter, (int, float)) \
+                or not 0 <= float(backoff_jitter) < 1 \
+                or not math.isfinite(float(backoff_jitter)):
+            raise UsageError("backoff_jitter 需在 [0, 1)", code="config")
+        if isinstance(max_retry_after, bool) or not isinstance(max_retry_after, (int, float)) \
+                or not float(max_retry_after) >= 0 or not math.isfinite(float(max_retry_after)):
+            raise UsageError("max_retry_after 必须为非负有限秒数", code="config")
+        self.backoff_jitter = float(backoff_jitter)
+        self.max_retry_after = float(max_retry_after)
         self._validate = validate  # False=关闭单位量级/不变量校验（换算仍执行）
         self._sleep = time.sleep  # 测试注入点：不真实等待
+        self._uniform = __import__("random").uniform
+        self._token_lock = threading.Lock()
         self._token: str = ""
         self._token_exp: float = 0.0
 
@@ -234,16 +267,34 @@ class Client:
     # ---- 传输 ----
     RETRY_STATUS = frozenset({429, 500, 502, 503, 504})
 
+    def _retry_after(self, resp: requests.Response | None) -> float | None:
+        if resp is None or not hasattr(resp, "headers"):
+            return None
+        raw = resp.headers.get("Retry-After")
+        if not raw:
+            return None
+        try:
+            return max(0.0, float(raw))
+        except (TypeError, ValueError):
+            return None
+
     def _delay(self, attempt: int, resp: requests.Response | None) -> float:
-        """退避秒数：优先 Retry-After，其次指数退避（封顶 10s）。"""
-        if resp is not None:
-            ra = resp.headers.get("Retry-After") if hasattr(resp, "headers") else None
-            if ra:
-                try:
-                    return min(10.0, max(0.0, float(ra)))
-                except (TypeError, ValueError):
-                    pass
-        return min(10.0, self.backoff * (2 ** attempt))
+        """退避秒数：优先 Retry-After，其次指数退避；可配置对称 jitter。"""
+        retry_after = self._retry_after(resp)
+        if retry_after is not None:
+            base = min(self.max_retry_after, retry_after)
+        else:
+            base = min(self.max_retry_after, self.backoff * (2 ** attempt))
+        if self.backoff_jitter:
+            base *= 1.0 + self._uniform(-self.backoff_jitter, self.backoff_jitter)
+        return base
+
+    def _sleep_for_retry(self, attempt: int, resp: requests.Response | None) -> None:
+        retry_after = self._retry_after(resp)
+        if retry_after is not None and retry_after > self.max_retry_after:
+            assert resp is not None  # Retry-After 只会来自响应
+            self._raise_http_error(resp, stage="request")
+        self._sleep(self._delay(attempt, resp))
 
     def _request(self, url: str, **kw: Any) -> requests.Response:
         """POST + 429/5xx 指数退避重试；网络异常同样重试并在耗尽后转 WmshareError。"""
@@ -258,11 +309,11 @@ class Client:
                         f"网络请求失败（已重试 {self.retries} 次）：{e}。"
                         "请检查网络连接与代理设置（国内直连不稳定时可配置 HTTPS_PROXY）。",
                         code="network") from e
-                self._sleep(self._delay(i, None))
+                self._sleep_for_retry(i, None)
                 continue
             last = resp
             if resp.status_code in self.RETRY_STATUS and i < attempts - 1:
-                self._sleep(self._delay(i, resp))
+                self._sleep_for_retry(i, resp)
                 continue
             return resp
         assert last is not None  # 循环必然 return 或 raise
@@ -300,7 +351,7 @@ class Client:
             raise LimitError(
                 f"请求被限流（{label}）{wait}{suffix}。请稍后重试，或申请自己的 AppID 提升额度。"
                 f"{APPID_GUIDANCE}",
-                code="rate_limited", status=status)
+                code="rate_limited", status=status, retry_after=self._retry_after(resp))
         if stage == "oauth" and status in (400, 401, 403):
             raise AuthError(
                 f"OAuth 认证失败（{label}）{suffix}。"
@@ -330,38 +381,42 @@ class Client:
     def _get_token(self) -> str:
         if self._token and time.time() < self._token_exp - 60:
             return self._token
-        resp = self._request(
-            f"{self.base_url}/v1/oauth/token",
-            data={
-                "grant_type": "client_credentials",
-                "client_id": self.client_id,
-                "client_secret": self.client_secret,
-            },
-            timeout=self.timeout,
-        )
-        if resp.status_code != 200:
-            self._raise_http_error(resp, stage="oauth")
-        try:
-            doc = resp.json()
-        except ValueError as e:
-            raise ApiError(
-                f"OAuth 响应不是合法 JSON（HTTP {resp.status_code}）：{resp.text[:200]}",
-                code="oauth_response", status=resp.status_code) from e
-        if not isinstance(doc, dict):
-            raise ApiError(f"OAuth 响应格式异常：{json.dumps(doc, ensure_ascii=False)[:300]}",
-                           code="oauth_response", status=resp.status_code)
-        data = doc.get("data") or doc
-        if not isinstance(data, dict):
-            data = {}
-        token = data.get("access_token")
-        if not token:
-            raise AuthError(
-                f"OAuth 未返回 access_token：{json.dumps(doc, ensure_ascii=False)[:300]}。"
-                f"{APPID_GUIDANCE}",
-                code="oauth", status=resp.status_code)
-        self._token = token
-        self._token_exp = time.time() + float(data.get("expires_in", 3600))
-        return token
+        with self._token_lock:
+            if self._token and time.time() < self._token_exp - 60:
+                return self._token
+            resp = self._request(
+                f"{self.base_url}/v1/oauth/token",
+                data={
+                    "grant_type": "client_credentials",
+                    "client_id": self.client_id,
+                    "client_secret": self.client_secret,
+                },
+                timeout=self.timeout,
+            )
+            if resp.status_code != 200:
+                self._raise_http_error(resp, stage="oauth")
+            try:
+                doc = resp.json()
+            except ValueError as e:
+                raise ApiError(
+                    f"OAuth 响应不是合法 JSON（HTTP {resp.status_code}）：{resp.text[:200]}",
+                    code="oauth_response", status=resp.status_code) from e
+            if not isinstance(doc, dict):
+                raise ApiError(
+                    f"OAuth 响应格式异常：{json.dumps(doc, ensure_ascii=False)[:300]}",
+                    code="oauth_response", status=resp.status_code)
+            data = doc.get("data") or doc
+            if not isinstance(data, dict):
+                data = {}
+            token = data.get("access_token")
+            if not token:
+                raise AuthError(
+                    f"OAuth 未返回 access_token：{json.dumps(doc, ensure_ascii=False)[:300]}。"
+                    f"{APPID_GUIDANCE}",
+                    code="oauth", status=resp.status_code)
+            self._token = token
+            self._token_exp = time.time() + float(data.get("expires_in", 3600))
+            return token
 
     def _post_authed(self, path: str, body: dict[str, Any]) -> requests.Response:
         """带 OAuth Bearer 的 POST；401 清令牌刷新后重试一次（仅一次，避免环路）。"""
@@ -577,6 +632,7 @@ class Client:
         syms = list(dict.fromkeys(self._canon_symbol(s) for s in symbols))
         if not syms:
             return BatchResult()
+        requested = len(syms)
         self._assert_same_market(name, syms)
         if self.max_limit is not None and len(syms) > self.max_limit:
             raise LimitError(
@@ -587,14 +643,22 @@ class Client:
         if on_error == "skip":
             results: dict[str, Any] = {}
             errors: dict[str, str] = {}
+            error_details: dict[str, BatchError] = {}
             for s in syms:
                 try:
                     results[s] = self.call(name, _raw=_raw, _df=_df, _units=_units,
                                            **kwargs, **{sym_param: s})
                 except WmshareError as e:
                     errors[s] = str(e)
+                    error_details[s] = BatchError(
+                        key=s, message=str(e), code=getattr(e, "code", ""),
+                        status=getattr(e, "status", None),
+                        retryable=(getattr(e, "status", None) in self.RETRY_STATUS
+                                   or isinstance(e, (TransportError, ServerError))),
+                    )
             # skip 模式逐票请求：N 个标的 = N 次请求（会快速耗尽限流额度）
-            return BatchResult(results=results, errors=errors, requests=len(syms))
+            return BatchResult(results=results, errors=errors, requests=len(syms),
+                               requested=requested, error_details=error_details)
 
         normalizer = fn.get("normalize_with")
         pairs = []
@@ -606,6 +670,13 @@ class Client:
         result = self.eval_result(xs, symbol=syms[0])
         if not isinstance(result, dict):
             raise ApiError(f"{name}: 批量返回不是 MAP（{type(result).__name__}）", code="batch")
+        missing = [sym for sym in syms if sym not in result]
+        if missing:
+            raise ApiError(
+                f"{name}: 批量返回缺少 {len(missing)} 个标的：{missing[:10]}"
+                + (f" 等 {len(missing)} 个" if len(missing) > 10 else ""),
+                code="batch_missing",
+            )
         if not _raw and _units == "base":
             for s, v in result.items():
                 result[s] = apply_units(v, fn, fname=name, validate=self._validate,
@@ -613,7 +684,7 @@ class Client:
         if _df:
             result = {k: _to_dataframe(v) for k, v in result.items()}
         # raise 模式把 N 个标的压进一次 eval：1 次请求
-        return BatchResult(results=result, requests=1)
+        return BatchResult(results=result, requests=1, requested=requested)
 
     # ---- 分批执行器（批量绕开 429 的正式入口） ----
     def _assert_same_market(self, name: str, syms: list[str]) -> None:
@@ -733,7 +804,15 @@ class Client:
             except WmshareError as e:
                 if on_batch_error == "skip":
                     key = f"batch#{idx}[{start}:{start + len(chunk)}]"
-                    yield BatchResult(errors={key: str(e)}, requests=1)
+                    yield BatchResult(
+                        errors={key: str(e)}, requests=1, requested=len(chunk),
+                        error_details={key: BatchError(
+                            key=key, message=str(e), code=getattr(e, "code", ""),
+                            status=getattr(e, "status", None),
+                            retryable=(getattr(e, "status", None) in self.RETRY_STATUS
+                                       or isinstance(e, (TransportError, ServerError))),
+                        )},
+                    )
                     continue
                 raise
 
@@ -764,6 +843,8 @@ class Client:
             out.results.update(part.results)
             out.errors.update(part.errors)
             out.requests += part.requests
+            out.requested += part.requested
+            out.error_details.update(part.error_details)
         return out
 
     def notice_poller(self, *, group: str, consumer: str, on_events: Any = None,

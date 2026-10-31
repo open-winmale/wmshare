@@ -10,6 +10,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `BatchResult.requested`、`BatchResult.error_details` 与 `BatchError`：批量结果可核对
+  请求标的数，并按 code/status/retryable 程序化分类票级或批级错误。
+- `Client(backoff_jitter=...)`、`Client(max_retry_after=...)` 与 `LimitError.retry_after`：
+  支持重试抖动，并在服务端要求的等待超过上限时立即返回结构化限流信息。
+
+### Changed
+- 批量 raise 模式检测上游 MAP 缺失标的，不再静默返回少于请求数的结果。
+- OAuth token 刷新改为双重检查锁，避免并发首次调用重复请求。
+- `NoticePoller` 将轮询串行锁与状态锁分离，用户回调不再阻塞 `status()`。
+- SDK 默认向网关发送 `wmshare/<version>` User-Agent。
+
 ### Changed
 - README 首屏演示从动画 GIF 换成**真实 JupyterLab 实拍截图** `docs/img/quickstart.png`：
   本地起真 Jupyter 打开 `docs/notebooks/quickstart.ipynb`（选股实战：批量拿全市场股息率

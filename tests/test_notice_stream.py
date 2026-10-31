@@ -198,6 +198,25 @@ def test_callback_exception_redelivers():
     assert p.status().consecutive_errors == 0
 
 
+def test_status_is_not_blocked_by_user_callback():
+    callback_started = threading.Event()
+    release_callback = threading.Event()
+
+    def slow_callback(_events):
+        callback_started.set()
+        assert release_callback.wait(1)
+
+    p, _ = make(events=[ev(1)], on_events=slow_callback)
+    worker = threading.Thread(target=p.poll_now)
+    worker.start()
+    assert callback_started.wait(1)
+    status = p.status()  # 旧实现持有状态锁执行回调，这里会阻塞。
+    release_callback.set()
+    worker.join(1)
+    assert not worker.is_alive()
+    assert status.polls == 1 and status.progress["cn"].head == 1
+
+
 # ---- read 不动游标；ack 写入的是「下一条要交付的 seq」 ----
 def test_read_is_idempotent_until_ack():
     p, server = make(events=[ev(1), ev(2), ev(3)])

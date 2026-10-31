@@ -140,6 +140,7 @@ class NoticePoller:
         self._uniform = random.uniform
         self._now = time.time
         self._stop_event = threading.Event()
+        self._poll_lock = threading.Lock()
         self._thread: threading.Thread | None = None
         self._lock = threading.RLock()
         self._acked: dict[str, int] = {}  # 服务端进度的本地镜像（probe/ack 后刷新）
@@ -205,11 +206,14 @@ class NoticePoller:
             market = self._markets[0]
         if market not in self._markets:
             raise UsageError(f"market 只支持本订阅的 {self._markets}", code="params")
+        if after is None:
+            with self._lock:
+                after = self._acked.get(market, 0)
         body = {
             "group": self._group,
             "consumer": self._consumer,
             "market": market,
-            "after_seq": int(after if after is not None else self._acked.get(market, 0)),
+            "after_seq": int(after),
             "limit": max(1, min(int(limit or self._limit), MAX_LIMIT)),
         }
         data = self._read_body(body)
@@ -264,9 +268,11 @@ class NoticePoller:
         """
         if market not in self._markets:
             raise UsageError(f"market 只支持本订阅的 {self._markets}", code="params")
+        with self._lock:
+            cursor = self._acked.get(market, 0)
         data = self._read_body({"group": self._group, "consumer": self._consumer,
                                 "market": market,
-                                "after_seq": self._acked.get(market, 0), "limit": 1})
+                                "after_seq": cursor, "limit": 1})
         oldest = int(data.get("oldest") or 0)
         return self.ack(oldest, market=market)
 
@@ -275,17 +281,20 @@ class NoticePoller:
         """执行一轮：探针 → 逐市场 read 分批拉平 → 回调 → ack。返回本轮交付的事件。"""
         delivered: list[NoticeStreamEvent] = []
         had_error = False
-        with self._lock:
+        with self._poll_lock:
             progress = self.probe()
-            self._status.polls += 1
+            with self._lock:
+                self._status.polls += 1
             for m in self._markets:
                 head = progress[m].head
                 while head > 0:
-                    cursor = self._acked.get(m, 0)
+                    with self._lock:
+                        cursor = self._acked.get(m, 0)
                     if cursor > head:
                         break
                     events = self.read(m)
-                    self._status.reads += 1
+                    with self._lock:
+                        self._status.reads += 1
                     if not events:
                         break  # head 与事件短暂不一致：下轮追平
                     delivered.extend(events)
@@ -297,10 +306,11 @@ class NoticePoller:
                             had_error = True
                             break
                     self.ack(events[-1], market=m)
-            if not had_error:
-                self._status.consecutive_errors = 0
-                self._status.last_success_ts = self._now()
-            self._status.events_delivered += len(delivered)
+            with self._lock:
+                if not had_error:
+                    self._status.consecutive_errors = 0
+                    self._status.last_success_ts = self._now()
+                self._status.events_delivered += len(delivered)
         return delivered
 
     # ---- 本地定时器 ----
