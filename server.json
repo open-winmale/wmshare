@@ -1,0 +1,21 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.open-winmale/wmshare",
+  "description": "Local wmshare MCP server for catalog discovery and market data tools.",
+  "repository": {
+    "url": "https://github.com/open-winmale/wmshare",
+    "source": "github"
+  },
+  "version": "1.11.0",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "wmshare",
+      "version": "1.11.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "runtimeHint": "wmshare-mcp"
+    }
+  ]
+}

@@ -63,11 +63,11 @@ def build_llms_txt() -> str:
         "",
         f"- [README]({RAW}/README.md)：安装、凭证配置、选股实战（10 行全市场筛选）、能力与市场覆盖矩阵",
         f"- [使用指南 GUIDE]({RAW}/docs/GUIDE.md)：单票菜谱、批量取数、多市场、pandas、故障排查",
-        f"- [AI 用法]({RAW}/docs/AI.md)：让 AI 正确使用 SDK 的三条路径、提示词模板、安全红线",
+        f"- [AI 用法]({RAW}/docs/AI.md)：MCP server、skill、文档上下文与报错驱动的 Agent 接入路径",
         f"- [API 参考]({RAW}/docs/API.md)：116 个核心接口的参数 / 返回 / 单位口径",
         f"- [Agent Skill]({RAW}/src/wmshare/skills/wmshare/SKILL.md)：随包分发的 agent 用法合同"
         "（目录先行、单位铁律、决策树、坑位）",
-        f"- [可运行示例]({RAW}/examples/README.md)：9 个编号示例（3 个离线可跑），CI 端到端覆盖",
+        f"- [可运行示例]({RAW}/examples/README.md)：12 个编号示例（4 个离线可跑），CI 端到端覆盖",
         f"- [CHANGELOG]({RAW}/CHANGELOG.md)：版本历史",
         "",
         "## Key Concepts",
@@ -76,6 +76,8 @@ def build_llms_txt() -> str:
         "金额=元、量=股；唯一例外是 cli.screener 宽度接口的 `*_pct`（百分数数值）",
         "- **目录先行**：`wmshare.load()` 后 `cat.search(\"中文\")` 检索函数与指标码、"
         '`cat.function(name)["params"]` 查合同；禁止编造指标码（未知名在发请求前即报错）',
+        "- **MCP 优先**：`pip install \"wmshare[mcp]\"` 后先用 `wmshare_search` / "
+        "`wmshare_contract`，再用 quote/history/metrics/company/screen/disclosures/batch/call",
         "- **批量绕 429**：服务端按请求次数限流（免费档 500 次/小时、5,000 次/日）；"
         "`cli.batch_all(name, codes)` 把 A 股 5,691 家压成 12 次请求；"
         "容错用批级 `on_batch_error=\"skip\"`，勿用票级逐票放大；一个批次只能同一个市场",

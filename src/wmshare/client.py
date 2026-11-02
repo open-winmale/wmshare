@@ -854,7 +854,8 @@ class Client:
                         "服务端按请求次数限流（免费档 500 次/小时、5000 次/日）；"
                         f"请稍后续跑：batch_all({name!r}, codes[{start}:])；"
                         "或调大 batch_size 减少请求次数、申请更高档位。"
-                        f"原始错误：{e}", code="rate_limited", status=429) from e
+                        f"原始错误：{e}", code="rate_limited", status=429,
+                        retry_after=getattr(e, "retry_after", None)) from e
                 raise
             except WmshareError as e:
                 if on_batch_error == "skip":

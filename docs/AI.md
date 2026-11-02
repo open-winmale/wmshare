@@ -1,19 +1,67 @@
 # 用 AI 学会并用好 wmshare
 
 本页回答一个问题：**怎么让 AI（Claude Code、ZCode、Cursor、自建 agent…）第一次就写对
-wmshare 取数代码**。三条接入路径按成本从低到高排列，任选其一或叠加。
+wmshare 取数代码**。优先用 MCP；没有 MCP 时用 skill 或文档上下文。
 
 ## 为什么这个 SDK 对 AI 友好
 
 - **目录先行**：指标码与函数可编程检索（`cat.search("中文")`），AI 不需要"背"接口，
   查一下再用；编造的码在发请求前就被 `CatalogError` 拦下。
+- **本地 MCP server**：20 个 task tools 覆盖发现、行情、财务、治理、披露、港美与批量；
+  116 个 friendly API 仍可经 `wmshare_call(mode="api")` 兜底。输出统一 units/rows/next_action。
 - **skill 随包分发**：单位铁律、意图→接口决策树、坑位清单、错误速查，装进 agent 即生效
   （`wmshare.skill_dir()`）。
 - **错误消息即修复指引**：401/403/429 的消息里就是申请与配置步骤，429 附批量续跑位置。
 - **llms.txt**：仓库根的 AI 友好文档索引（[llms.txt 规范](https://llmstxt.org)），
   `llms-full.txt` 是全文拼接版，可直接投喂。
 
-## 路径 A：装 skill（推荐，一条命令）
+## 路径 A：MCP server（推荐，AI 直接调工具）
+
+```bash
+pip install "wmshare[mcp]"
+wmshare-mcp setup --client-id <AppId> --client-secret-stdin --market cn
+                                                        # 提示后粘贴 API Key
+wmshare-mcp doctor && wmshare-mcp --check
+```
+
+客户端配置只写启动命令，不写密钥。JSON 型客户端：
+
+```json
+{"mcpServers":{"wmshare":{"command":"wmshare-mcp","args":[]}}}
+```
+
+TOML 型客户端：
+
+```toml
+[mcp_servers.wmshare]
+command = "wmshare-mcp"
+args = []
+```
+
+doctor 成功时看 `ok=true`、`credentials.configured=true`、`client_constructed=true`；失败时
+`ok=false` 会给出凭证或 client 错误。零凭证仍可用 `wmshare_status`、`wmshare_search(kind="api")`、
+`wmshare_contract(kind="api")` 发现合同；真实取数返回 `credential_required` 修复步骤，不静默降级。
+
+Agent 工作流：
+
+1. `wmshare_status` 看市场、凭证、目录和 capability coverage；
+2. `wmshare_search` / `wmshare_contract` 找标的、函数、指标码、friendly API 与参数；
+3. 高频意图优先用 20 个 task tools（statement、segments、dividend、estimates、corporate、
+   market、intl、notice 等领域面都已 first-class 暴露）；
+4. 多标的用 `wmshare_batch`；`params/raw/units` 会透传给 SDK `batch_iter`；
+5. 长尾目录函数用 `wmshare_call(mode="catalog")`，长尾 friendly API 用
+   `wmshare_call(mode="api")`；
+6. 超限结果先读 `meta.next_action`，再改 `output=summary/count` 或缩小范围；
+7. 429 时保留 `partial=true`、已完成结果、`resume_start`、`resume_symbols` 和
+   `retry_after_seconds`，等待后续跑，不重试已完成部分。
+
+429 响应关键字段示例：
+
+```json
+{"ok":false,"partial":true,"meta":{"resume_start":500,"resume_symbols":["600519"],"retry_after_seconds":3},"error":{"kind":"LimitError","code":"rate_limited"}}
+```
+
+## 路径 B：装 skill（无 MCP 时一条命令）
 
 ```bash
 cp -r "$(python3 -c 'import wmshare; print(wmshare.skill_dir())')" ~/.agents/skills/wmshare
@@ -28,7 +76,7 @@ cp -r "$(python3 -c 'import wmshare; print(wmshare.skill_dir())')" ~/.agents/ski
 `cli.indicator.get("600519", "$PCT_PE_TTM_10Y_LAST")`；涨跌幅/股息率/分位读小数
 （0.0396 = 3.96%），不做二次换算。
 
-## 路径 B：文档作上下文（无 skill 机制的 agent）
+## 路径 C：文档作上下文（无 skill / 无 MCP 的 agent）
 
 把以下材料之一放进 system prompt / 项目上下文（按上下文预算从大到小）：
 `llms-full.txt`（全文）→ `README.md + docs/GUIDE.md` → `docs/GUIDE.md + docs/API.md`。
@@ -49,7 +97,7 @@ cp -r "$(python3 -c 'import wmshare; print(wmshare.skill_dir())')" ~/.agents/ski
 代码里用 wmshare.Client.from_env()，不要把密钥写进代码。
 ```
 
-## 路径 C：报错驱动（零配置兜底）
+## 路径 D：报错驱动（零配置兜底）
 
 没有凭证、只想验证 AI 写的调用语法？用 `wmshare.demo_client()`——随包离线演示客户端（2026-10-30 真实 API 固定快照，非实时数据），调用面覆盖公开示例：让 AI 先在演示客户端上跑通代码形态，再接真实凭证取数。
 
@@ -71,6 +119,7 @@ cp -r "$(python3 -c 'import wmshare; print(wmshare.skill_dir())')" ~/.agents/ski
 | 凭记忆编造指标码 | `CatalogError` | "先 `cat.search` 确认码存在，再写取数代码" |
 | 把小数又 ×100 | 全部数值错 100 倍 | "返回值已是小数，展示时才格式化成百分比" |
 | `for code in codes:` 逐票请求 | 全市场必撞 429 | "改 `cli.batch_all(name, codes)`，5,691 家=12 次请求" |
+| MCP 长结果塞爆上下文 | 后续推理变慢 | "改 `output=summary/count`，或缩小日期/标的范围" |
 | 一个批次混 A 股与港股 | 数据静默错误 | "一个 Client 只服务一个市场，分三次跑（共 29 批）" |
 | try/except 吞 `DataError` | 错误量级入库 | "DataError 是数据报警，先看消息再决定" |
 | `up_pct` 当小数 | 差 100 倍 | "宽度接口的 `*_pct` 是百分数数值（80.3 = 80.3%）" |
@@ -94,5 +143,7 @@ python3 -c "import wmshare; print(wmshare.load().metric('\$PE_TTM_LAST'))"
   agent；`llms.txt` 是带注释的链接索引，适合按需抓取。
 - **skill 源文件**：`wmshare.skill_dir()` 返回随包路径，可直接读 `SKILL.md` 原文
   （不装目录、只要 AI 读一遍也有效）。
+- **MCP 自检**：`wmshare-mcp --check` 零凭证校验 20 个工具注册；`wmshare-mcp doctor`
+  额外检查凭证与市场配置；MCP resource `wmshare://coverage` 暴露能力矩阵。
 - **编程自查**：`cat.search / cat.function / cat.metric / cat.symbols_search` 全部
   离线零额度，适合做 agent 工具调用前的静态校验。

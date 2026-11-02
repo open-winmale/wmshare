@@ -3,11 +3,9 @@
 [![PyPI](https://img.shields.io/pypi/v/wmshare)](https://pypi.org/project/wmshare/) [![Python](https://img.shields.io/pypi/pyversions/wmshare)](https://pypi.org/project/wmshare/) [![CI](https://github.com/open-winmale/wmshare/actions/workflows/ci.yml/badge.svg)](https://github.com/open-winmale/wmshare/actions/workflows/ci.yml) [![License: BSD-3-Clause](https://img.shields.io/badge/license-BSD--3--Clause-blue)](LICENSE)
 
 > **English TL;DR** — `wmshare` is a BSD-3-Clause Python SDK for China A-share / Hong Kong / US
-> market data: k-line (3 adjustments), intraday snapshots, money flow, financial statements,
-> 2,752 precomputed metric codes (TTM / percentile / dividend), a screener facade and whole-market
-> batch (5,691 symbols = 12 requests); ships an offline catalog, base-unit data guards and an
-> AI-agent skill. **Credentials required** — get them on the open platform (open.winmale.com);
-> try offline first with `wmshare.demo_client()` (frozen 2026-10-30 API snapshot; not live). **Install**: `pip install wmshare`.
+> market data: k-line, intraday, money flow, statements, 2,752 metrics, screener and whole-market
+> batch; ships an offline catalog, data guards and AI skill. **Credentials required** on open.winmale.com;
+> try offline first with `wmshare.demo_client()` (frozen snapshot; not live). **Install**: `pip install wmshare`.
 
 给 Python 量化开发者的中文财经数据 SDK：一行接口拿到清洗好的 A股/港股/美股数据——
 估值分位、TTM 股息率等指标**服务端算好直出**，全市场批量 **12 次请求**绕开限流。
@@ -15,7 +13,7 @@
 
 ## 目录
 
-[特性](#特性) · [快速上手](#快速上手) · [能力一览](#能力一览) ·
+[特性](#特性) · [快速上手](#快速上手) · [MCP server](#mcp-server) · [能力一览](#能力一览) ·
 [市场覆盖](#市场覆盖) · [我想做 X → 用哪一行](#我想做-x--用哪一行) · [批量取数](#批量取数) ·
 [单位与数据守护](#单位与数据守护) · [许可与数据服务](#许可与数据服务) · [更多](#更多)
 
@@ -23,10 +21,8 @@
 
 ## 特性
 
-- **数据要全**——17 个数据域、116 个核心接口一站取全：K 线（三种复权、1 分钟分时、
-  盘中快照、ETF/指数）、分红、三大报表、资金流、公告、业绩预告、股东治理（十大股东/
-  质押（明细/比例/分布）/限售解禁/机构持仓/沪港通/国家队/高管增减持/股本结构）、回购、并购重组、
-  融资融券、可转债、盈利预测、指数成分与估值、全市场列表、港美股披露。
+- **数据要全**——17 个数据域、116 个核心接口：K 线/盘中、报表、资金流、公告业绩、
+  股东治理、回购并购、两融、可转债、盈利预测、指数、全市场列表与港美披露。
 - **数据要准**——财报按最新会计准则归一，跨年跨公司直接比较；全库基础单位
   （比率/涨跌幅=小数、金额=元、量=股），每次返回做量级守护与不变量校验，错误的量级到不了你的代码。
 - **特色数据**——盘中实时快照与当日 1 分钟分时；`cli.screener` 筛选一行直出，全市场涨跌
@@ -34,7 +30,7 @@
   历史分位、192 个行业内分位、TTM 股息率/派息率 + 11 个质量筛选器）服务端算好直出。
 - **凭证即用**——开放平台签发 client_id/api-key，环境变量、凭证文件、构造参数任选其一配置；遇到 401/403/429 错误消息即完整指引。
 - **目录随包 + AI 原生**——252 个底层函数、116 个核心接口、2,752 个指标码离线可查；
-  附 Agent Skills 格式 skill（`wmshare.skill_dir()`），复制进 AI agent 即可正确使用。
+  附 Agent Skills 格式 skill 与本地 MCP server。
 
 ## 快速上手
 
@@ -43,6 +39,7 @@
 ```bash
 pip install wmshare                  # 基础安装
 pip install "wmshare[dataframe]"     # 可选：pandas 支持（_df=True）
+pip install "wmshare[mcp]"           # 可选：本地 MCP server
 python3 -c "import wmshare; print(wmshare.__version__)"   # 验证安装
 ```
 
@@ -57,6 +54,21 @@ export WMSHARE_CLIENT_ID=<AppId> WMSHARE_CLIENT_SECRET=<API Key>   # 方式一�
 # 方式二：~/.wmshare/credentials.env（KEY=VALUE 每行一条）
 # 方式三：构造参数 cli = wmshare.Client(client_id="...", client_secret="...")
 ```
+
+<!-- mcp-name: io.github.open-winmale/wmshare -->
+
+### MCP server
+
+本地 MCP 让 AI 直接调用目录发现与取数工具，凭证仍由本机 SDK 读取：
+
+```bash
+wmshare-mcp setup --client-id <AppId> --client-secret-stdin --market cn # 提示后粘贴 API Key
+wmshare-mcp doctor            # 真实取数前检查配置
+wmshare-mcp --check           # 零凭证检查 server 安装
+```
+
+AI 客户端最小配置（不写入凭证）：`{"mcpServers":{"wmshare":{"command":"wmshare-mcp","args":[]}}}`。
+20 个 task tools 覆盖 `status/search/contract/symbols/quote/history/metrics/company/screen/disclosures/statement/segments/dividend/estimates/corporate/market/intl/notice/batch/call`；116 个 friendly API 可继续用 `wmshare_call(target=..., mode="api")` 兜底。
 
 ### 选股实战：10 行筛出「高股息 + PE 十年低位」
 
@@ -266,26 +278,14 @@ for i, part in enumerate(cli.batch_iter("dividend.history", codes), 1):
 ## 许可与数据服务
 
 - 代码采用 [BSD-3-Clause](LICENSE)：可自由使用、修改、再分发（**含商业用途**），保留版权声明即可。
-- 云端数据服务需 [开放平台](https://open.winmale.com) 账号：免费档为 500 次/小时、5,000 次/日，
-  更高额度与服务条款以开放平台为准。
+- 云端数据服务需 [开放平台](https://open.winmale.com) 账号：免费档 500 次/小时、5,000 次/日，更高额度以平台为准。
 - 数据仅供研究参考，不构成任何投资建议。
 
 ## 更多
 
-- **AI agent skill（随包分发）**：复制进 agent 的发现目录，AI 即可正确使用 SDK（目录先行防臆造指标码、单位铁律、错误引导都在 skill 里）：
-
-  ```bash
-  cp -r "$(python3 -c 'import wmshare; print(wmshare.skill_dir())')" ~/.agents/skills/wmshare
-  ```
-  源文件：[src/wmshare/skills/wmshare/SKILL.md](src/wmshare/skills/wmshare/SKILL.md)（LLM 可直接读取；项目级按工具放入 .zcode/skills/ 或 .claude/skills/）。
-
-- 生态工具 [big-winner](https://github.com/open-winmale/big-winner)：基于本 SDK 构建的开源工具（收息与估值区间参考）。
+- **AI 原生**：随包 [SKILL.md](src/wmshare/skills/wmshare/SKILL.md)、[AI 用法](docs/AI.md)、
+  本地 MCP server；skill 可复制进 `.agents/skills/`、`.zcode/skills/` 或 `.claude/skills/`。
+- 生态工具 [big-winner](https://github.com/open-winmale/big-winner)：基于本 SDK 的开源工具。
 - **文档中心 [docs/](docs/README.md)**：使用指南 GUIDE（单票菜谱/批量/多市场/故障排查）· AI 用法 · llms.txt 索引 · [API 参考](docs/API.md)（四大类 116 个核心接口 + 指标组）
-- **示例课程 [examples/](examples/README.md)**：11 个编号示例（入门→进阶→生产→AI），全部支持演示客户端离线试跑，CI 端到端覆盖
-- **Notebook 实战 [docs/notebooks/quickstart.ipynb](docs/notebooks/quickstart.ipynb)**：首屏选股实战的可执行 notebook（含真实运行输出），配好凭证按序执行即可复跑，也可上传到任意云端 Notebook 环境
-- **OpenAPI / Swagger**：[docs/openapi.json](docs/openapi.json)（OpenAPI 3.1，可导入 Apifox /
-  Postman）；[docs/swagger.html](docs/swagger.html)（已内联 spec，浏览器直接打开；UI 资源走 CDN，
-  若限制 `file://` 可在 docs 目录起 `python -m http.server`）
-- 类型化门面：全部目录命名空间带类型签名与 docstring（`py.typed`），IDE 直接补全；单次拉取上限 `Client(max_limit=500)` 可调
+- **示例课程 [examples/](examples/README.md)**：12 个编号示例（入门→进阶→生产→AI），全部支持演示客户端离线试跑，CI 端到端覆盖
 - [贡献指南](CONTRIBUTING.md)：提交门禁、内容规范、许可政策
-- 运行测试：`pytest`（不联网）；`WMSHARE_LIVE=1 pytest tests/test_live.py`（真实冒烟）

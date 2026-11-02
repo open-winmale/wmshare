@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "wmshare"
-version = "1.10.0"
+version = "1.11.0"
 description = "覆盖 A 股、港股、美股的 Python 财经数据 SDK：随包内置机器可读数据目录 + 云端取数客户端（BSD-3-Clause 开源，注册开放平台即得凭证）"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -41,13 +41,18 @@ dev = [
     "pytest-cov>=5",
     "jsonschema>=4",
     "mypy>=1.8",
+    "mcp>=1.7,<2",
 ]
 dataframe = ["pandas>=1.5"]
+mcp = ["mcp>=1.7,<2"]
 
 [project.urls]
 Homepage = "https://github.com/open-winmale/wmshare"
 Documentation = "https://github.com/open-winmale/wmshare/blob/main/docs/API.md"
 Issues = "https://github.com/open-winmale/wmshare/issues"
+
+[project.scripts]
+wmshare-mcp = "wmshare.mcp.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

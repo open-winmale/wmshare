@@ -10,7 +10,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-11-02
+
 ### Added
+- 本地 MCP server（`pip install "wmshare[mcp]"`）：`wmshare-mcp` 提供 stdio server 与
+  `setup` / `doctor` / `--check`；注册 20 个工具，新增报表、分部、分红、预测、公司治理、
+  市场、港美专项和公告高级查询领域面。输出统一基础单位、截断、摘要和错误修复指引。
+  `wmshare_call(mode="api")` 动态内省全部 116 个 friendly API；`wmshare_batch` 支持
+  `params/raw/units`。新增 `server.json`、`wmshare://coverage` 与 schema 描述硬化。
+  真实取数 User-Agent 标记为 `wmshare-mcp/<version>`。
+- MCP setup 推荐 `--client-secret-stdin`，避免 API Key 进入 shell history；请求元数据
+  按实际 market 返回；429 部分成功返回 `partial` 与续跑 offset。MCP 依赖暂时约束 `<2`。
+- MCP 公开文档与随包 skill 补充 Agent 优先路径；新增 `examples/12_mcp_server.py`
+  离线自检课程。
 - `BatchResult.requested`、`BatchResult.error_details` 与 `BatchError`：批量结果可核对
   请求标的数，并按 code/status/retryable 程序化分类票级或批级错误。
 - `Client(backoff_jitter=...)`、`Client(max_retry_after=...)` 与 `LimitError.retry_after`：
@@ -22,12 +34,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   单位逃生口，与文档口径一致。
 
 ### Changed
+- `wmshare_call` 使用 `target/mode` 替代旧实现期的 `function` 参数；`target` 明确区分
+  catalog function 与 friendly API，并在发请求前校验私有选项。
 - 批量 raise 模式检测上游 MAP 缺失标的，不再静默返回少于请求数的结果。
 - OAuth token 刷新改为双重检查锁，避免并发首次调用重复请求。
 - `NoticePoller` 将轮询串行锁与状态锁分离，用户回调不再阻塞 `status()`。
 - SDK 默认向网关发送 `wmshare/<version>` User-Agent。
-
-### Changed
 - `Client` 构造参数与目录调用参数在发起 HTTP 前本地校验：市场、HTTPS base URL、
   timeout/retries/backoff/max_limit、参数类型与 enum 非法值立即抛 `UsageError`，
   减少无效请求和上游静默错误。

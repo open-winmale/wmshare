@@ -44,7 +44,7 @@ def test_snapshot_header_and_size(document):
     assert document["schema_version"] == 1
     assert document["as_of"] == AS_OF
     assert document["market"] == "cn"
-    assert document["sdk_version"] == "1.10.0"
+    assert document["sdk_version"] == "1.11.0"
     assert document["catalog_rev"] == "d9bbd944"
     assert isinstance(document["generated_at"], str) and document["generated_at"]
     assert isinstance(document["capture_requests"], int)

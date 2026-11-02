@@ -2,7 +2,7 @@
 
 **编号即学习路径**：每个脚本独立可跑；输出里的数值都带单位注释——读输出就能学会
 「率/分位=小数（0.0396 = 3.96%）、金额=元、量=股」的基础口径。
-3 个离线示例在 CI 里以子进程真实执行，8 个凭证示例注入演示客户端（`main(cli=None)`）
+4 个离线示例在 CI 里以子进程真实执行，8 个凭证示例注入演示客户端（`main(cli=None)`）
 端到端跑过——可放心照抄。
 
 ## 运行
@@ -33,6 +33,7 @@ python examples/01_quickstart.py
 | 09 | `09_ai_skill_setup.py` | AI | **离线** | skill 自检与装入 agent；AI 正确行为的验证标准 | AI.md（全文） |
 | 10 | `10_notice_monitor.py` | 进阶 | 凭证 | 公告轮询器：poll_now 手动一轮、ack/at-least-once、seek_oldest 重置 | GUIDE·公告变更订阅 |
 | 11 | `11_statements_tour.py` | 进阶 | 凭证 | 三大报表科目行结构、合并 vs 母公司（diffp 小数）、审计意见 | GUIDE·单票菜谱 |
+| 12 | `12_mcp_server.py` | AI | **离线自检** | `wmshare-mcp` 安装自检、凭证写入、最小 MCP 配置、20 个工具入口与 friendly API 兜底 | README·MCP server、AI·MCP 路径 |
 
 ## 约定（新增示例请遵守）
 

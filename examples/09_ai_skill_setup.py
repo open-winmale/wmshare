@@ -3,7 +3,7 @@
 前提：离线可跑（不联网、零凭证）
 运行：python examples/09_ai_skill_setup.py
 学到：skill_dir() 定位随包用法说明；agent 发现路径；AI 正确行为的验证标准
-文档：docs/AI.md（三条接入路径、提示词模板、常见错误对照表）
+文档：docs/AI.md（MCP/skill/文档/报错接入路径、提示词模板、常见错误对照表）
 """
 from pathlib import Path
 

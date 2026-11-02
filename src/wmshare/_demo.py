@@ -23,7 +23,7 @@ _DATA_PATH = Path(__file__).with_name("_demo_data.json")
 _SNAPSHOT_SCHEMA_VERSION = 1
 _AS_OF = "2026-10-30"
 _CATALOG_REV = "d9bbd944"
-_SDK_VERSION = "1.10.0"
+_SDK_VERSION = "1.11.0"
 _UNIVERSE = (
     "600519", "000858", "601088", "600900", "601318",
     "000001", "600036", "000333", "300750", "688981",
@@ -351,7 +351,13 @@ class DemoClient:
         self._doc = document
         self._data: dict[str, Any] = document["data"]
         self._universe = tuple(self._data["universe"])
-        self.kline = SimpleNamespace(bars=self._kline_bars, snapshot=self._kline_snapshot)
+        self.kline = SimpleNamespace(
+            bars=self._kline_bars,
+            snapshot=self._kline_snapshot,
+            live=self._kline_snapshot,
+            last=self._kline_snapshot,
+            batch_live=self._kline_batch_live,
+        )
         self.moneyflow = SimpleNamespace(
             last=self._moneyflow_last, bars=self._moneyflow_bars,
         )
@@ -363,7 +369,10 @@ class DemoClient:
             compare=self._statement_compare,
             audit=self._statement_audit,
         )
-        self.indicator = SimpleNamespace(get=self._indicator_get)
+        self.indicator = SimpleNamespace(
+            get=self._indicator_get,
+            metrics=self._indicator_metrics,
+        )
         self.notice = SimpleNamespace(list=self._notice_list)
         self.dividend = SimpleNamespace(
             last=self._dividend_last,
@@ -444,6 +453,10 @@ class DemoClient:
         sym = self._require_snapshot_symbol(symbol)
         return dict(self._data["kline_snapshot"][sym])
 
+    def _kline_batch_live(self, symbols: list[str]) -> dict[str, dict[str, Any]]:
+        return {self._require_snapshot_symbol(s): self._kline_snapshot(s)
+                for s in symbols}
+
     def _moneyflow_last(self, symbol: str, _raw: bool = False) -> Any:
         if _raw:
             raise UsageError("demo 快照不提供 _raw 原始口径", code="demo_unsupported")
@@ -509,6 +522,9 @@ class DemoClient:
                 f"demo 快照只保存 indicators：{', '.join(self._data['indicators'])}",
                 code="demo_unsupported",
             ) from None
+
+    def _indicator_metrics(self, symbol: str, codes: list[str]) -> dict[str, Any]:
+        return {code: self._indicator_get(symbol, code) for code in codes}
 
     # ---- disclosure ----
     def _notice_list(self, symbol: str, window: str = "3m", keyword: str = "",

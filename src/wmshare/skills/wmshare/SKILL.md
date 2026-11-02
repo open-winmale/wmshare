@@ -1,6 +1,6 @@
 ---
 name: wmshare
-description: 用 wmshare Python SDK 取 A 股数据：K 线（三种复权）、盘中快照、1 分钟分时、资金流、三大报表、2752 个指标码、选股筛选与全市场涨跌全景、分红、公告、公司档案。配置开放平台凭证后即可取数；随包离线目录可编程查询，指标码/函数名先查目录、禁止臆造。用户要 A 股行情/财务/指标/选股/分红/公告数据时用本 skill，即使用户没点名 wmshare。
+description: 用 wmshare Python SDK 或本地 MCP server 取 A 股数据：K 线（三种复权）、盘中快照、1 分钟分时、资金流、三大报表、2752 个指标码、选股筛选与全市场涨跌全景、分红、公告、公司档案。配置开放平台凭证后即可取数；随包离线目录可编程查询，指标码/函数名先查目录、禁止臆造。用户要 A 股行情/财务/指标/选股/分红/公告数据时用本 skill，即使用户没点名 wmshare。
 when_to_use: 用户需要 A 股个股或全市场数据（价格、财务、指标、筛选、分红、公告）来回答问题、做分析或写代码时。
 ---
 
@@ -8,6 +8,12 @@ when_to_use: 用户需要 A 股个股或全市场数据（价格、财务、指�
 
 wmshare 是覆盖 A 股、港股、美股的 Python 财经数据 SDK（BSD-3-Clause 开源，云端数据服务需账号与配额）。本 skill 教你怎么把它
 用对：先装好、先查目录、按单位铁律读数、按决策树选接口。
+
+**MCP 优先级**：如果当前 AI 客户端已连接 `wmshare` MCP server，先用 `wmshare_search` /
+`wmshare_contract` 发现合同，再优先用 20 个 task tools（quote/history/metrics/company/screen/
+disclosures/statement/segments/dividend/estimates/corporate/market/intl/notice 等）；
+多标的用 `wmshare_batch(params=...)`。长尾目录函数和 friendly API 分别用
+`wmshare_call(mode="catalog")` / `wmshare_call(mode="api")`。没有 MCP 时继续按下面的 SDK 决策树写代码。
 
 **它不是**：回测框架（没有撮合/仓位管理）；数据库（数据经云端 API 运行时获取，
 不随包分发）；全品类数据超市（17 个数据域，覆盖 A 股个股常用研究数据，
@@ -22,6 +28,14 @@ pip install -i https://pypi.tuna.tsinghua.edu.cn/simple wmshare
 ```
 
 零凭证语法试跑：`cli = wmshare.demo_client()`（2026-10-30 真实 API 固定快照；10 只演示宇宙 + 当日全市场 screener，**非实时数据**），调用面覆盖公开示例，用于无凭证时验证代码形态；真实取数必须配置下方凭证。
+
+MCP 安装与凭证写入：
+
+```bash
+pip install "wmshare[mcp]"
+wmshare-mcp setup --client-id ... --client-secret-stdin --market cn
+wmshare-mcp doctor
+```
 
 凭证必填（SDK 不再内置体验 AppID）：在开放平台获取 client_id/api-key，
 配置其一（构造参数 / WMSHARE_CLIENT_ID+WMSHARE_CLIENT_SECRET 环境变量 /
