@@ -41,6 +41,18 @@ METHOD_EXAMPLE_VALUES = {
     ("cbond", "call_hits"): {"trig": "130.0"},
     # 行业成分：中文名示例（引擎原生解析；SDK 侧另有模糊匹配兜底）
     ("stocks", "industry_members"): {"industry": '"银行"'},
+    # 宏观（v1.11.0）：示例取活体实证过的取值（不可用股票指标码占位）
+    ("macro", "query"): {"code": '"$CPI"', "n": "6"},
+    ("macro", "asof"): {"code": '"$CPI"'},
+    ("macro", "spots"): {"code": '"$GDP"', "n": "4"},
+    ("macro", "sampling_of"): {"code": '"$GDP"'},
+    ("macro", "bond_curve"): {"curve_name": '"中债国债收益率曲线"', "tenor": '"10年"'},
+    ("macro", "nev_monthly"): {"brand": '"零跑"', "field": '"sales"'},
+    ("macro", "nev_weekly"): {"brand": '"零跑"', "field": '"sales"'},
+    ("macro", "avc_monthly"): {"category": '"消费级摄像头"', "field": '"volume"'},
+    ("macro", "chinaiol_monthly"): {"category": '"洗衣机"', "field": '"volume"'},
+    ("macro", "cpca_top"): {"manufacturer": '"比亚迪汽车"', "field": '"wholesale"'},
+    ("macro", "phone_share"): {"brand": '"小米"', "field": '"share"'},
 }
 
 # 返回说明覆盖（目录 shape 过粗的动态列表返回，按上游实现补字段级说明；

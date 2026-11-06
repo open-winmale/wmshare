@@ -28,11 +28,75 @@ GUIDE_MD = (REPO / "docs" / "GUIDE.md").read_text(encoding="utf-8")
 AI_MD = (REPO / "docs" / "AI.md").read_text(encoding="utf-8")
 CAT = load()
 
-CORE_ROW = re.compile(
-    r"^\| `cli\.(\w+)\.(\w+)\(\.\.\.\)` \| (.*?) \| `([^`]*)` \| (.*?) \| `(cli\.[^`]*)` \|$")
+# 每接口小节（gen_api_docs.interface_block 的输出合同）：
+#   #### `cli.ns.method` — 中文名 → 输入参数表 →（输出字段表 | 输出说明行）→ 示例代码块
+IFACE_HEAD = re.compile(r"^#### `cli\.(\w+)\.(\w+)` — (.+)$")
+PARAM_ROW = re.compile(r"^\| `(\w+)` \| ([\w?]+) \| (是|否) \| (.*?) \| (.*?) \|$")
 GROUP_HEAD = re.compile(r"^#### 指标组 (.+?)（([\w.]+)）$")
 GROUP_ROW = re.compile(r"^\| `(\$[\w.]+)` \| (.*?) \| (.*?) \|$")
 FN_ROW = re.compile(r"^\| `([a-z][\w]*\.[a-z][\w]*)` \| (.*?) \| (?:原始数据|指标) \|")
+
+# 签名注解 → 文档 json 类型（与 gen_api_docs/_introspect 的映射语义一致，独立复刻防同错）
+_ANN2JSON = {"str": "string", "int": "integer", "float": "number", "bool": "boolean",
+             "list": "array", "list[str]": "array", "dict": "object",
+             "dict[str, Any]": "object", "Any": "object"}
+
+
+def interface_blocks() -> list[dict]:
+    """解析 API.md 的每接口小节为结构化块（ns/method/cn/params/ret/example）。"""
+    blocks: list[dict] = []
+    cur: dict | None = None
+    in_example = False
+    for line in API_MD.splitlines():
+        if line.startswith("#"):  # 任何标题终止当前块（含新接口/指标组/附录域）
+            in_example = False
+            m = IFACE_HEAD.match(line)
+            if m:
+                cur = {"ns": m.group(1), "method": m.group(2), "cn": m.group(3),
+                       "params": [], "ret": "", "example": None}
+                blocks.append(cur)
+            else:
+                cur = None
+            continue
+        if cur is None:
+            continue
+        if in_example:
+            if line.strip() == "```":
+                in_example = False
+            elif cur["example"] is None and line.strip():
+                cur["example"] = line
+            continue
+        if line.strip() == "```python":
+            in_example = True
+            continue
+        if (pm := PARAM_ROW.match(line)):
+            cur["params"].append(pm.groups())
+        elif line.startswith("**输出**："):
+            cur["ret"] = line[len("**输出**："):].strip()
+    return blocks
+
+
+def core_rows() -> list[tuple[str, str, str, str, str]]:
+    """兼容旧形态：[(ns, method, params_cell, ret, example)]（params_cell 已弃用为空）。"""
+    return [(b["ns"], b["method"],
+             "|".join(p[0] for p in b["params"]), b["ret"], b["example"])
+            for b in interface_blocks()]
+
+
+def _expected_params(ns: str, method: str) -> list[tuple[str, str, str, str]]:
+    """签名 → (参数, json类型, 必填, 默认) 期望行（默认渲染规则与生成器一致）。"""
+    sig = inspect.signature(getattr(FRIENDLY_NAMESPACES[ns], method))
+    out = []
+    for name, p in sig.parameters.items():
+        if name == "self" or name.startswith("_"):
+            continue
+        ann = p.annotation if isinstance(p.annotation, str) else str(p.annotation)
+        base = ann.split("|", 1)[0].strip()
+        jt = _ANN2JSON.get(ann.strip()) or _ANN2JSON.get(base, "object")
+        has_default = p.default is not inspect.Parameter.empty
+        out.append((name, jt, "否" if has_default else "是",
+                    repr(p.default) if has_default else "—"))
+    return out
 
 
 class FakeSession:
@@ -67,32 +131,11 @@ def cli():
                   catalog=CAT, session=FakeSession())
 
 
-def core_rows() -> list[tuple[str, str, str, str, str]]:
-    rows = []
-    for line in API_MD.splitlines():
-        m = CORE_ROW.match(line)
-        if m:
-            rows.append((m.group(1), m.group(2), m.group(4).replace("\\|", "|"),
-                         m.group(5), m.group(6)))
-    return rows
-
-
-def parse_sig_cell(cell: str) -> list[tuple[str, str, str | None]]:
-    """'symbol:str, n:int=120, adj:str | None=None' → [(name, annotation, default)]。"""
-    out = []
-    for part in [p.strip() for p in cell.split(",") if p.strip()]:
-        if part == "—":
-            continue
-        name, _, ann = part.partition(":")
-        ann = ann.strip()
-        optional = ann.endswith("?")
-        if optional:
-            ann = ann[:-1]
-        default = None
-        if "=" in ann:
-            ann, _, default = ann.partition("=")
-        out.append((name.strip(), ann.strip(), default))
-    return out
+def test_block_parser_finds_all_interfaces():
+    """块解析器必须恰好解析出 FRIENDLY_INDEX 数量的小节（防解析器自身漏块）。"""
+    blocks = interface_blocks()
+    assert len(blocks) == len(FRIENDLY_INDEX), \
+        f"解析出 {len(blocks)} 个接口小节，FRIENDLY_INDEX 有 {len(FRIENDLY_INDEX)} 个"
 
 
 # ---------------------------------------------------------------- 计数与清单
@@ -129,36 +172,50 @@ def test_api_module_docstring_counts_match_catalog():
 
 
 def test_api_md_core_interfaces_exact():
-    rows = core_rows()
-    got = [(ns, m) for ns, m, _, _, _ in rows]
+    blocks = interface_blocks()
+    got = [(b["ns"], b["method"]) for b in blocks]
     want = [(ns, m) for _, ns, m, _, _ in FRIENDLY_INDEX]
-    assert sorted(got) == sorted(want), "核心接口表与 FRIENDLY_INDEX 不一致"
-    assert len(got) == len(set(got)), "核心接口表存在重复行"
+    assert sorted(got) == sorted(want), "核心接口小节与 FRIENDLY_INDEX 不一致"
+    assert len(got) == len(set(got)), "核心接口小节存在重复"
 
 
 def test_api_md_params_match_signatures():
-    for ns, method, cell, _, _ in core_rows():
-        sig = inspect.signature(getattr(FRIENDLY_NAMESPACES[ns], method))
-        expected = []
-        for name, p in sig.parameters.items():
-            if name == "self" or name.startswith("_"):
-                continue
-            ann = p.annotation if isinstance(p.annotation, str) else str(p.annotation)
-            default = None if p.default is inspect.Parameter.empty else repr(p.default)
-            expected.append((name, ann, default))
-        parsed = parse_sig_cell(cell)
-        assert parsed == expected, f"{ns}.{method} 文档参数 {parsed} != 签名 {expected}"
+    for b in interface_blocks():
+        expected = _expected_params(b["ns"], b["method"])
+        got = [(p[0], p[1], p[2], p[3].strip("`")) for p in b["params"]]
+        assert got == expected, \
+            f"{b['ns']}.{b['method']} 文档参数表 {got} != 签名 {expected}"
 
 
 def test_api_md_last_rows_are_map():
-    """last() 包装返回单行/None，不能沿用底层数组的 ARR 描述。"""
+    """last() 包装返回单行/None，输出必须是字段表（MAP 形态），不得沿用底层数组。"""
     wanted = {("kline", "last"), ("moneyflow", "last"), ("dividend", "last")}
     seen = set()
-    for ns, method, _cell, ret, _ in core_rows():
-        if (ns, method) in wanted:
-            seen.add((ns, method))
-            assert "MAP" in ret and "ARR" not in ret, f"{ns}.{method}: {ret}"
+    for b in interface_blocks():
+        key = (b["ns"], b["method"])
+        if key in wanted:
+            seen.add(key)
+            block = _block_text(b)
+            assert "**输出字段**" in block, f"{key}: 期望字段表形态"
+            assert "**输出**：ARR" not in block, f"{key}: 不得是数组说明"
     assert seen == wanted
+
+
+def _block_text(block: dict) -> str:
+    """块起止之间的原文（用于形态断言）：从接口标题到下一个标题。"""
+    lines = API_MD.splitlines()
+    start = None
+    for i, ln in enumerate(lines):
+        if ln.startswith(f"#### `cli.{block['ns']}.{block['method']}`"):
+            start = i
+            break
+    assert start is not None
+    out = []
+    for ln in lines[start + 1:]:
+        if ln.startswith("#"):
+            break
+        out.append(ln)
+    return "\n".join(out)
 
 
 def test_indicator_units_documented_as_decimal():

@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Render docs/API.md from the packaged catalog + friendly API registry.
 
-核心优先结构：主体 = 四大类核心接口表（友好层）+ 指标组；全量底层函数目录收进
-文末折叠附录。Deterministic; `--check` verifies the on-disk doc matches (drift gate).
+按资产类别分章的核心参考：每章（行情/可转债/指数/期货/宏观/财务/披露/港美/参考）
+内按命名空间分节，每个核心接口一个独立小节（说明/输入参数表/输出字段表/示例），
+对齐主流数据平台逐接口文档形态；全量底层函数目录收进文末折叠附录。
+Deterministic; `--check` verifies the on-disk doc matches (drift gate).
 
 Usage:
   python3 tools/gen_api_docs.py          # write docs/API.md
@@ -21,7 +23,7 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _introspect import (  # noqa: E402
-    FALLBACK_RETURNS, RETURNS_OVERRIDES, method_example, method_params,
+    FALLBACK_RETURNS, RETURNS_OVERRIDES, method_doc, method_example, method_params,
     return_shape_for, underlying_fn,
 )
 from wmshare.api import FRIENDLY_INDEX, FRIENDLY_NAMESPACES  # noqa: E402
@@ -37,6 +39,39 @@ KIND_CN = {"raw": "原始数据", "computed": "指标", "mixed": "混合"}
 CATEGORY_CN = {"market": "市场行情", "fundamentals": "财务基本面",
                "disclosure": "信息披露", "reference": "参考数据"}
 CATEGORY_ORDER = ["market", "fundamentals", "disclosure", "reference"]
+
+# 资产类别分章（文档主轴，对齐主流数据平台的目录形态）：
+# 每章内按命名空间分节；无友好层命名空间的章（期货）为指标码专题。
+# 断言：FRIENDLY_INDEX 的每个 ns 恰好归入一章（build() 内校验，防漂移漏收）。
+CHAPTERS: list[tuple[str, list[str]]] = [
+    ("A 股行情与选股", ["kline", "screener", "moneyflow", "margin", "stocks"]),
+    ("可转债", ["cbond"]),
+    ("指数", ["index"]),
+    ("期货", []),  # $FUT_* 指标码专题（指标码层，无函数级域）
+    ("宏观", ["macro"]),
+    ("财务基本面", ["statements", "segments", "valuation", "estimates", "indicator"]),
+    ("信息披露与公司行动", ["notice", "filings", "forecast", "dividend", "equity", "workout"]),
+    ("港股与美股", ["intl"]),
+    ("参考数据", ["info"]),
+]
+# 指标组挂靠章：该 category 的域（fund.indicators）指标组渲染在章内接口之后
+CHAPTER_METRIC_CATEGORIES: dict[str, list[str]] = {"财务基本面": ["fundamentals"]}
+
+# 友好层参数说明兜底表（docstring 未写 :param 的高频参数；其余落「—」）
+PARAM_DOCS: dict[str, str] = {
+    "symbol": "6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码）",
+    "n": "根数",
+    "limit": "条数上限",
+    "begin": "开始日期 YYYY-MM-DD（含端点）",
+    "end": "结束日期 YYYY-MM-DD（含端点）",
+    "window": "窗口（\"7d\"/\"1m\"/…/\"5y\" 或天数）",
+    "keyword": "标题/类型正则（可空）",
+    "top_n": "只取前 N 条",
+    "sort_by": "排序字段",
+    "years": "最近 N 个报告期",
+    "idx": "宽度索引（None=服务端解析全市场）",
+    "points": "采样点数",
+}
 
 
 def esc(s: object) -> str:
@@ -192,41 +227,106 @@ def ns_title(ns: str) -> str:
     return head or ns
 
 
-def core_table(cat: str, merged: dict[str, dict]) -> list[str]:
-    """核心接口表：接口｜说明｜参数｜返回｜示例（自友好层签名与目录 shape 机械生成）。
+# ---------------------------------------------------------------- 每接口小节
+def _param_desc(ns: str, method: str, p, fn: dict) -> str:
+    """参数说明：友好层 docstring :param → 目录同名参数 desc → 通用兜底表 → —。"""
+    if getattr(p, "desc", ""):
+        return esc(p.desc)
+    for cp in fn.get("params") or []:
+        if cp.get("name") == p.name and cp.get("desc"):
+            return esc(cp["desc"])
+    return PARAM_DOCS.get(p.name, "—")
 
-    同一命名空间的接口归入一个 `###` 小节（保持 FRIENDLY_INDEX 顺序），文档
-    组织随门面结构走：新命名空间自动成节。
+
+def interface_block(ns: str, method: str, cn: str, underlying: str,
+                    merged: dict[str, dict]) -> list[str]:
+    """单接口小节：标题 + 一句话说明 + 输入参数表 + 输出 + 示例代码块。
+
+    结构即测试合同（tests/test_docs.py 的解析正则与本函数同步演化）。
     """
-    rows = [r for r in FRIENDLY_INDEX if r[0] == cat]
-    if not rows:
-        return []
-    groups: list[tuple[str, list[tuple[str, str, str, str, str]]]] = []
-    for r in rows:
-        if not groups or groups[-1][0] != r[1]:
-            groups.append((r[1], []))
-        groups[-1][1].append(r)
-    out: list[str] = []
-    for ns, grp in groups:
-        out += [f"### {ns_title(ns)}（`cli.{ns}`）", ""]
-        out += ["| 接口 | 说明 | 参数 | 返回 | 示例 |", "|---|---|---|---|---|"]
-        for _, ns_, method, cn, underlying in grp:
-            cls = FRIENDLY_NAMESPACES[ns]
-            params = method_params(cls, method)
-            sig = ", ".join(
-                f"{p.name}:{p.py_ann}" if p.required else f"{p.name}:{p.py_ann}={p.default}"
-                for p in params) or "—"
-            fn_key = underlying_fn(underlying)
-            if fn_key:
-                shape = return_shape_for(CAT, ns, method, underlying)
-                ret = fmt_returns(merged.get(fn_key, {}), INV.get(fn_key, {}), shape=shape)
-                ret = RETURNS_OVERRIDES.get((ns, method), ret)
-            else:
-                ret = FALLBACK_RETURNS.get((ns, method), "—")
-            ex = method_example(ns, method, params)
-            out.append(f"| `cli.{ns}.{method}(...)` | {esc(cn)} | `{esc(sig)}` | {ret} | `{esc(ex)}` |")
+    cls = FRIENDLY_NAMESPACES[ns]
+    params = method_params(cls, method)
+    fn_key = underlying_fn(underlying)
+    fn = merged.get(fn_key, {}) if fn_key else {}
+    inv = INV.get(fn_key, {}) if fn_key else {}
+    desc = method_doc(cls, method)[0] or cn
+
+    out = [f"#### `cli.{ns}.{method}` — {esc(cn)}", "", esc(desc), ""]
+
+    # 输入参数表
+    if params:
+        out += ["**输入参数**", "",
+                "| 参数 | 类型 | 必填 | 默认 | 说明 |", "|---|---|---|---|---|"]
+        for p in params:
+            req = "是" if p.required else "否"
+            dflt = f"`{p.default}`" if p.default is not None else "—"
+            out.append(f"| `{p.name}` | {p.json_type} | {req} | {dflt} "
+                       f"| {_param_desc(ns, method, p, fn)} |")
         out.append("")
+    else:
+        out += ["**输入参数**：无。", ""]
+
+    # 输出：shape 字段表优先，退化为说明行
+    shape = return_shape_for(CAT, ns, method, underlying) if fn_key else None
+    if fn_key:
+        ret = fmt_returns(fn, inv, shape=shape)
+        ret = RETURNS_OVERRIDES.get((ns, method), ret)
+    else:
+        ret = FALLBACK_RETURNS.get((ns, method), "—")
+    fields = []
+    if shape:
+        fields = (shape.get("items") or shape).get("fields") or []
+    if fields and (ns, method) not in RETURNS_OVERRIDES:
+        out += ["**输出字段**", "",
+                "| 字段 | 类型 | 说明 |", "|---|---|---|"]
+        for f in fields:
+            t = TYPE_SHORT.get(f.get("type", "any"), f.get("type", "any"))
+            if f.get("optional"):
+                t += "?"
+            out.append(f"| `{f['name']}` | {t} | {esc(f.get('cn', '')) or '—'} |")
+        out.append("")
+    else:
+        out += [f"**输出**：{ret}", ""]
+
+    ex = method_example(ns, method, params)
+    out += ["**示例**", "", "```python", ex, "```", ""]
     return out
+
+
+def futures_section() -> list[str]:
+    """期货章：$FUT_* 指标码专题（数据在 mkt.futures_kline，管线已在生产）。"""
+    rows = [m for m in CAT.metrics["metrics"] if m["code"].startswith("$FUT")]
+    out = [
+        "期货数据走**指标码层**：主力连续 K 线指标（日/周/月三族），经 `cli.indicator` 取数。",
+        "",
+        "调用姿势（指标实现引用期间上下文，`symbol` 传任意 A 股代码即可；合约键经"
+        " `fut_symbol` 指定，国内带市场前缀、后缀不是 .CZCE；外盘为 `global.` 前缀的 V2 键；"
+        "eval 引擎须为 cn 客户端）：",
+        "",
+        "```python",
+        'cli.indicator.get("600519", "$FUT_CLOSE")                          # 缺省合约 cn.SR.ZCE',
+        'cli.indicator.get("600519", "$FUT_CLOSE", fut_symbol="cn.RB.SHF")  # 上期所螺纹钢主力',
+        'cli.indicator.get("600519", "$FUT_CLOSE", fut_symbol="global.CL")  # 外盘 WTI 原油',
+        "```",
+        "",
+        "| 指标代码 | 中文 | 市场 |", "|---|---|---|",
+    ]
+    for m in rows:
+        out.append(f"| `{m['code']}` | {esc(m.get('cn', ''))} | "
+                   f"{'/'.join(m.get('markets') or []) or '—'} |")
+    out += ["", "量纲：价=报价单位（元/吨等随品种）、volume/oi=手、amount=万元（原生口径）。", ""]
+    return out
+
+
+def etf_note() -> list[str]:
+    """A 股行情章内的场内 ETF 说明（ETF 日K与个股同构，无分钟线）。"""
+    return [
+        "### 场内 ETF 说明",
+        "",
+        "ETF 日 K 与个股同构：`cli.kline.bars(\"510300\", n=30)`；`cli.kline.is_etf(...)` "
+        "判别场内基金。ETF 无分钟线/分时数据源，盘中用 `cli.kline.live` / `snapshot`。",
+        "",
+    ]
 
 
 def metric_groups_lines(doc: dict) -> list[str]:
@@ -292,12 +392,8 @@ def render_domain(doc: dict) -> list[str]:
     return lines
 
 
-def client_batch_section() -> list[str]:
-    """Client 批量方法章：签名随源码实时取，天然不漂移。
-
-    示例均为可离线执行形态（FakeSession/ReadmeClient 皆有 batch_* 桩）；
-    行格式刻意避开 CORE_ROW 五列正则（那是 FRIENDLY_INDEX 专属表式）。
-    """
+def client_batch_section(total_fn: int) -> list[str]:
+    """Client 批量方法章：签名随源码实时取，天然不漂移。"""
     import inspect
 
     from wmshare.client import Client
@@ -340,7 +436,7 @@ def client_batch_section() -> list[str]:
         "——它是票级逐票请求，会放大请求数正好制造 429；③ 单批撞 `CALC_LIMIT_EXCEEDED`"
         "（算力超限）减小 `batch_size`，遇 429 停止并按消息里的 `codes[done:]` 续跑。",
         "",
-        "**指标码不是批量 `name`**：`name` 必须是目录函数名（252 个，如 `kline.snapshot`），"
+        f"**指标码不是批量 `name`**：`name` 必须是目录函数名（{total_fn} 个，如 `kline.snapshot`），"
         "传 `indicator.get` 会报 CatalogError。一票多码用 `cli.indicator.metrics(sym, codes)`；"
         "全市场指标码没有批量入口，需逐票调用（指标取数是按 `(标的, 码)` 寻址，不是按标的切片）。",
         "",
@@ -388,6 +484,19 @@ def build() -> str:
     by_cat = {cat: sorted((x for x in docs if x["category"] == cat), key=lambda x: x["id"])
               for cat in CATEGORY_ORDER}
     merged = {fn["name"]: fn for d in docs for fn in (d.get("functions") or [])}
+
+    # 分章完备性：FRIENDLY_INDEX 每个 ns 恰好归入一章，防漂移漏收
+    chapter_ns = [ns for _, nss in CHAPTERS for ns in nss]
+    index_ns = {ns for _, ns, _, _, _ in FRIENDLY_INDEX}
+    assert len(chapter_ns) == len(set(chapter_ns)), "CHAPTERS 命名空间重复"
+    assert index_ns <= set(chapter_ns), f"未归章命名空间：{sorted(index_ns - set(chapter_ns))}"
+    assert set(chapter_ns) - index_ns == set(), \
+        f"章节含无核心接口的命名空间：{sorted(set(chapter_ns) - index_ns)}"
+    by_chapter: dict[str, list[tuple]] = {title: [] for title, _ in CHAPTERS}
+    ns_chapter = {ns: title for title, nss in CHAPTERS for ns in nss}
+    for r in FRIENDLY_INDEX:
+        by_chapter[ns_chapter[r[1]]].append(r)
+
     out = [
         "# API 参考",
         "",
@@ -395,7 +504,8 @@ def build() -> str:
         "",
         f"共 **{len(docs)}** 个数据域 · **{len(FRIENDLY_INDEX)}** 个核心接口 · "
         f"**{total_groups}** 个指标组（指标目录全量 {metric_count} 个指标代码）；"
-        f"全量 {total_fn} 个底层函数见文末折叠附录。",
+        f"全量 {total_fn} 个底层函数见文末折叠附录。核心接口按资产类别分章，"
+        "每接口一节（输入参数 / 输出字段 / 示例）。",
         "",
         "## 能力总览",
         "",
@@ -454,16 +564,46 @@ def build() -> str:
         "| `cat.stats()` | 域 / 函数 / 指标计数与 upstream rev |",
         "",
     ]
-    out += client_batch_section()
+    out += client_batch_section(total_fn)
+    out += [
+        "---",
+        "",
+        "# 核心接口参考（按资产类别）",
+        "",
+    ]
 
-    for cat in CATEGORY_ORDER:
-        out.append(f"## {CATEGORY_CN[cat]}")
+    for title, nss in CHAPTERS:
+        out.append(f"## {title}")
         out.append("")
-        out += core_table(cat, merged)
-        if any(d.get("metric_groups") for d in by_cat[cat]):
-            out += ["---", ""]
-        for d in by_cat[cat]:
-            out += metric_groups_lines(d)
+        if title == "期货":
+            out += futures_section()
+            continue
+        for ns in nss:
+            rows = [r for r in by_chapter[title] if r[1] == ns]
+            if not rows:
+                continue
+            out += [f"### {ns_title(ns)}（`cli.{ns}`）", ""]
+            for _, ns_, method, cn, underlying in rows:
+                out += interface_block(ns_, method, cn, underlying, merged)
+            if ns == "kline":
+                out += etf_note()
+        if title == "港股与美股":
+            out += [
+                "### 多市场切换",
+                "",
+                "`Client(market=\"cn\" | \"hk\" | \"us\")` 决定数据市场：A 股 6 位裸码、"
+                "港股 5 位、美股裸字母码（`AAPL.O` 等交易所后缀自动归一）；跨市场混批"
+                "显式报错。港美股行情（K 线/快照/盘中）走 `cli.kline`，本页 intl 为港美"
+                "**专域披露**（CCASS/沽空/评级等）。",
+                "",
+            ]
+        metric_cats = CHAPTER_METRIC_CATEGORIES.get(title)
+        if metric_cats:
+            groups = [d for d in docs if d.get("category") in metric_cats and d.get("metric_groups")]
+            if groups:
+                out += ["---", ""]
+                for d in groups:
+                    out += metric_groups_lines(d)
 
     out += [
         "## 附录：全量底层函数目录（进阶）",

@@ -9,7 +9,7 @@ wmshare 的文档按「教程 / 怎么做 / 参考 / 解释」四层组织
 | 5 分钟装好并跑通第一行 | [README](../README.md) | 店面：特性、安装、选股实战（真实数据）、凭证、离线演示 |
 | 系统学一遍（可运行课程） | [examples/](../examples/README.md) | 12 个编号示例：离线优先、CI 全覆盖、输出带单位注释 |
 | 完成某个具体任务 | [GUIDE.md](GUIDE.md) | 单票菜谱、全市场与行业、批量绕 429、多市场、pandas、公告订阅 |
-| 查某个接口的参数与返回 | [API.md](API.md) | 116 个核心接口参考（生成物，随目录合同更新）；机器可读 [openapi.json](openapi.json) / [swagger.html](swagger.html) |
+| 查某个接口的参数与返回 | [API.md](API.md) | 127 个核心接口参考（生成物，按资产类别分章：行情与选股/可转债/指数/期货/宏观/财务/披露/港美/参考，每接口一节含参数表/输出字段/示例）；机器可读 [openapi.json](openapi.json) / [swagger.html](swagger.html) |
 | 理解设计口径 | GUIDE · [核心概念](GUIDE.md#2-核心概念) | 双层 API、目录先行、单位铁律、限流模型 |
 | 排查报错 | GUIDE · [故障排查](GUIDE.md#9-故障排查) | 错误家族表 + 按症状查 |
 | 让 AI 正确使用本 SDK | [AI.md](AI.md) | MCP server / 装 skill / 文档作上下文 / 报错驱动；提示词模板与安全红线 |

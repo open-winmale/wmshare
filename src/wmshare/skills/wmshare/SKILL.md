@@ -16,7 +16,7 @@ disclosures/statement/segments/dividend/estimates/corporate/market/intl/notice �
 `wmshare_call(mode="catalog")` / `wmshare_call(mode="api")`。没有 MCP 时继续按下面的 SDK 决策树写代码。
 
 **它不是**：回测框架（没有撮合/仓位管理）；数据库（数据经云端 API 运行时获取，
-不随包分发）；全品类数据超市（17 个数据域，覆盖 A 股个股常用研究数据，
+不随包分发）；全品类数据超市（18 个数据域，覆盖 A 股个股常用研究数据、宏观时序与期货主力连续指标码，
 基金净值/期货/期权/债券未覆盖）。
 
 ## 1. 环境前置
@@ -108,11 +108,13 @@ cat.metrics_in_group("dividend")                         # 指标组内全部精
 | 公告 / 有无回购 | `cli.notice.list(sym, window="3m")` / `cli.notice.has_buyback(sym, "6m")` |
 | 业绩预告 | `cli.forecast.yjyg_latest(sym)` |
 | 公司档案 | `cli.info.profile(sym)` |
+| 宏观时序 / 最新单值 | `cli.macro.query("$CPI", 6)`（价格指数=点）/ `cli.macro.asof("$GDP")`（元） |
+| 期货主力连续 | `cli.indicator.get("600519", "$FUT_CLOSE", fut_symbol="cn.RB.SHF")`（symbol 传任意 A 股码；外盘 global.CL） |
 | 全市场代码池（A/港/美全表） | `cli.stocks.list()`（行含 symbol/name/exchange/industry/listed；港/美换 `Client(market=...)`） |
 | 行业目录 / 行业成分 | `cli.stocks.industries(1)`（申万/恒生；美股目录树暂缺）/ `cli.stocks.industry_members("银行")`（中文名或代码 S48） |
 | 少量标的单批（≤500） | `cli.call_batch("kline.snapshot", ["600519", "000001"])` 或任意单标的接口传 list：`cli.kline.last(["600519", "000001"])`；`to_df()` 出每标的一行长表 |
 
-完整 116 个核心接口与全部底层函数：仓库用户看 docs/GUIDE.md（上手）与
+完整 127 个核心接口与全部底层函数：仓库用户看 docs/GUIDE.md（上手）与
 docs/API.md（参考）；pip 用户用 `cat.search(...)` / `cat.function(...)` 查（同一份合同）。
 
 ## 5. 工作流示例（返回长这样，从这些字段读）

@@ -10,39 +10,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.11.0] - 2026-11-02
-
 ### Added
-- 本地 MCP server（`pip install "wmshare[mcp]"`）：`wmshare-mcp` 提供 stdio server 与
-  `setup` / `doctor` / `--check`；注册 20 个工具，新增报表、分部、分红、预测、公司治理、
-  市场、港美专项和公告高级查询领域面。输出统一基础单位、截断、摘要和错误修复指引。
-  `wmshare_call(mode="api")` 动态内省全部 116 个 friendly API；`wmshare_batch` 支持
-  `params/raw/units`。新增 `server.json`、`wmshare://coverage` 与 schema 描述硬化。
-  真实取数 User-Agent 标记为 `wmshare-mcp/<version>`。
-- MCP setup 推荐 `--client-secret-stdin`，避免 API Key 进入 shell history；请求元数据
-  按实际 market 返回；429 部分成功返回 `partial` 与续跑 offset。MCP 依赖暂时约束 `<2`。
-- MCP 公开文档与随包 skill 补充 Agent 优先路径；新增 `examples/12_mcp_server.py`
-  离线自检课程。
-- `BatchResult.requested`、`BatchResult.error_details` 与 `BatchError`：批量结果可核对
-  请求标的数，并按 code/status/retryable 程序化分类票级或批级错误。
-- `Client(backoff_jitter=...)`、`Client(max_retry_after=...)` 与 `LimitError.retry_after`：
-  支持重试抖动，并在服务端要求的等待超过上限时立即返回结构化限流信息。
-- 目录同步至上游 `d8c900bb`：指标目录 `2158→2752`，新增行情振幅、技术指标、分析师
-  覆盖、行业与公司资料等可查指标码；底层函数表面保持 252 个。同步 API/OpenAPI/LLMS
-  生成物，并把 extractor 的公开文本净化策略设为内置默认，避免数据源名称进入发布物。
-- `StatementsApi.compare(..., _units="base"|"native")`：合并 vs 母公司比较显式暴露
-  单位逃生口，与文档口径一致。
+- **宏观数据域 `cli.macro`（market.macro，11 函数）**：宏观指标时序/单值/原生期点/采样频率
+  （`macro.query/asof/spots/sampling_of`，指标码与 $ 前缀可省）、中债收益率按曲线名+期限
+  （`bond_curve`，小数口径）、行业情报单值（乘联会厂商排行/手机品牌周份额/新势力周销量与
+  月交付/家电月度产销）。宏观数值为上游原生口径：$CPI 等价格指数=点（上年同期=100）、
+  $GDP/$M2=元——11 函数全部经 PROD 活体探针实证后定版
+- **期货指标码层**：`$FUT_*` 主力连续 K 线 27 码补齐 `markets=["cn"]` 市场标注（此前共享
+  路径无标注，hk/us 客户端调用必 500）；`cli.indicator.get/metrics` 新增 `fut_symbol` 参数
+  （ARGS 透传合约键：国内 `cn.SR.ZCE`/`cn.RB.SHF`，外盘 `global.CL`；`symbol` 传任意 A 股
+  代码绑定期间上下文）。函数级 sys/fut 域挂账 ROADMAP
+- **美股日 K 恢复入库**：上游 us_kline_daily 管线（外部行情源主源+互证腿）已落库，
+  README 市场覆盖矩阵与注记更新（调度常态化验收中，偶发 T-1/T-2）；`cli.kline.bars("AAPL")`
+  不再返回停更快照；test_live 新增美股日K结构断言（新鲜度门禁待调度常态化后收紧）
+- 文档参考层重构（对齐主流数据平台逐接口形态）：docs/API.md 按资产类别分章（A 股行情与
+  选股/可转债/指数/期货/宏观/财务基本面/信息披露与公司行动/港股与美股/参考数据），每核心
+  接口独立小节（说明/输入参数表/输出字段表/可执行示例），期货章为 `$FUT_*` 指标码专题表；
+  test_docs 解析层同步重写（块解析 + 参数表逐签名对账）
+- examples 新增 `13_futures_macro.py`（期货指标码姿势 + 宏观时序/中债收益率，--demo 可试跑）；
+  演示客户端补 macro 域与期货指标罐头
 
 ### Changed
-- `wmshare_call` 使用 `target/mode` 替代旧实现期的 `function` 参数；`target` 明确区分
-  catalog function 与 friendly API，并在发请求前校验私有选项。
-- 批量 raise 模式检测上游 MAP 缺失标的，不再静默返回少于请求数的结果。
-- OAuth token 刷新改为双重检查锁，避免并发首次调用重复请求。
-- `NoticePoller` 将轮询串行锁与状态锁分离，用户回调不再阻塞 `status()`。
-- SDK 默认向网关发送 `wmshare/<version>` User-Agent。
-- `Client` 构造参数与目录调用参数在发起 HTTP 前本地校验：市场、HTTPS base URL、
-  timeout/retries/backoff/max_limit、参数类型与 enum 非法值立即抛 `UsageError`，
-  减少无效请求和上游静默错误。
+- 计数口径：18 个数据域 / 263 个底层函数 / 127 个核心接口（+macro 11 接口）；README 顶格
+  291 行，能力一览补 `cli.macro` 行、我想做 X 补宏观/期货行
+- GUIDE 新增 §6.1 宏观与期货（含美股日 K 注记更新）；SKILL.md 同步计数与意图表
+- 指标码目录基线定为 **2639**：以 1.11.0 同步的 d8c900bb 为锚，剔除 20 个 ops 弃用
+  drop-stub 与 93 个选股策略克隆幽灵（全目录实测实锤无数据/收割残留），保留 iwencai
+  采集的 481 个真数据码（振幅/技术面/分析师覆盖/公司资料）；extractor 源排除表按此更新
+
 - README 首屏演示从动画 GIF 换成**真实 JupyterLab 实拍截图** `docs/img/quickstart.png`：
   本地起真 Jupyter 打开 `docs/notebooks/quickstart.ipynb`（选股实战：批量拿全市场股息率
   12 次请求 → 逐票取 PE/十年分位 → 筛出「高股息 + 低估值」前 8），PROD 真跑后截图；

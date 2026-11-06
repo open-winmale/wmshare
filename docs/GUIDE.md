@@ -261,11 +261,34 @@ hk.intl.query_sellshort("00700")      # 沽空
 
 us = wmshare.Client.from_env(market="us")
 us.kline.snapshot("AAPL")             # {'close': 348.91, 'percent': 0.0148}（当日新鲜）
+us.kline.bars("AAPL", n=5)            # 美股日 K 已恢复入库（上游日更管线，见注记）
 us.intl.query_sellshort("AAPL")       # 美股沽空
 ```
 
-注记：美股历史日 K 为停更快照（上游对美股价量走 live-only），最新价量用
-`kline.live/snapshot`；港美专项覆盖矩阵见 [README](../README.md)「市场覆盖」。
+注记：美股日 K 已恢复入库（上游日更管线调度验收中，偶发 T-1/T-2 滞后），最新价量以
+`kline.live/snapshot` 为权威；港美专项覆盖矩阵见 [README](../README.md)「市场覆盖」。
+
+### 6.1 宏观与期货
+
+宏观走 `cli.macro`（上游原生口径：$CPI 等价格指数=点、$GDP/$M2=元；中债收益率=小数）：
+
+```python
+cli.macro.query("$CPI", 6)            # 时序：series 每点含 sas/annual/sampling/value（最新在前）
+cli.macro.asof("$GDP")                # 最新单值（元；实测 107107120000000 ≈ 107.1 万亿）
+cli.macro.sampling_of("$CPI")         # 原生频率 "month"/"quarter"/"year"/"day"
+cli.macro.bond_curve("中债国债收益率曲线", "10年")   # 0.0168 = 1.68%（小数）
+cli.macro.nev_monthly("零跑", "sales")               # 行业情报单值（名单精确匹配，掉榜 None）
+```
+
+期货走指标码层（主力连续，日/周/月三族；`symbol` 传任意 A 股代码绑定期间上下文，
+合约键经 `fut_symbol` 指定——国内 `cn.SR.ZCE`（后缀非 .CZCE）/`cn.RB.SHF`，外盘 `global.CL`）：
+
+```python
+cli.indicator.get("600519", "$FUT_CLOSE")                           # 缺省 cn.SR.ZCE
+cli.indicator.get("600519", "$FUT_CLOSE", fut_symbol="global.CL")   # 外盘 WTI
+```
+
+代码表与口径详见 [API.md](API.md)「期货」「宏观」两章。
 
 ## 7. pandas 与 DataFrame
 

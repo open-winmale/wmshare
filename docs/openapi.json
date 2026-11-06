@@ -3,7 +3,7 @@
   "info": {
     "title": "wmshare 数据 API",
     "version": "1.11.0",
-    "description": "覆盖 A 股、港股、美股的财经数据核心接口（Python SDK，`pip install wmshare`；`import wmshare`）。凭证必填：在开放平台（open.winmale.com）获取 client_id/api-key；遇到 401/403/429 错误消息即完整的申请与配置指引。覆盖行情 K 线（不复权/前复权/后复权、盘中、分时、ETF、指数）、三大报表（多期、合并 vs 母公司、树视图、新旧会计准则归一）、分红（历史/DPS/窗口/TTM 率）、公告与业绩披露、资金流与指标层。平台指标经 /indicator/get、/indicator/metrics 按指标代码寻址，全量 2752 个指标代码随包内置目录分发（分组清单见 docs/API.md）。",
+    "description": "覆盖 A 股、港股、美股的财经数据核心接口（Python SDK，`pip install wmshare`；`import wmshare`）。凭证必填：在开放平台（open.winmale.com）获取 client_id/api-key；遇到 401/403/429 错误消息即完整的申请与配置指引。覆盖行情 K 线（不复权/前复权/后复权、盘中、分时、ETF、指数）、三大报表（多期、合并 vs 母公司、树视图、新旧会计准则归一）、分红（历史/DPS/窗口/TTM 率）、公告与业绩披露、资金流与指标层。平台指标经 /indicator/get、/indicator/metrics 按指标代码寻址，全量 2639 个指标代码随包内置目录分发（分组清单见 docs/API.md）。",
     "license": {
       "name": "BSD-3-Clause",
       "url": "https://github.com/open-winmale/wmshare/blob/main/LICENSE"
@@ -297,7 +297,7 @@
                     },
                     "source": {
                       "type": "string",
-                      "description": "multi_source|multi_source_rt|source_a|source_b|source_c|source_d"
+                      "description": "来源标识枚举"
                     }
                   }
                 }
@@ -2264,7 +2264,7 @@
       "post": {
         "operationId": "indicator_get",
         "summary": "取单个指标当前值，如 cli.indicator.get(\"600519\", \"$PE_TTM_LAST\")。",
-        "description": "指标代码直查。SDK 调用：`cli.indicator.get(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "description": "期货码传 fut_symbol（如 \"global.CL\"），symbol 传任意 A 股代码。、指标代码直查。SDK 调用：`cli.indicator.get(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "财务基本面"
         ],
@@ -2279,6 +2279,9 @@
                     "type": "string"
                   },
                   "code": {
+                    "type": "string"
+                  },
+                  "fut_symbol": {
                     "type": "string"
                   }
                 },
@@ -2308,7 +2311,7 @@
       "post": {
         "operationId": "indicator_metrics",
         "summary": "批量取多个指标当前值，返回 {code: value}（精选代码带换算与量级守护）。",
-        "description": "指标代码批量直查。SDK 调用：`cli.indicator.metrics(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "description": "期货码传 fut_symbol（如 \"cn.SR.ZCE\"），symbol 传任意 A 股代码。、指标代码批量直查。SDK 调用：`cli.indicator.metrics(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "财务基本面"
         ],
@@ -2324,6 +2327,9 @@
                   },
                   "codes": {
                     "type": "array"
+                  },
+                  "fut_symbol": {
+                    "type": "string"
                   }
                 },
                 "required": [
@@ -6652,6 +6658,483 @@
               "application/json": {
                 "schema": {
                   "description": "发行行"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/macro/query": {
+      "post": {
+        "operationId": "macro_query",
+        "summary": "宏观指标时序：{frequency, periods, latest, series[{sas, annual, sampling, value}]}。",
+        "description": "底层目录函数 `macro.query`。SDK 调用：`cli.macro.query(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "参考数据"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "description": "指标码或名称（``$CPI`` / ``cpi`` 均可，服务端归一）"
+                  },
+                  "n": {
+                    "type": "integer",
+                    "description": "期数（1–48）"
+                  }
+                },
+                "required": [
+                  "code"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/macro/asof": {
+      "post": {
+        "operationId": "macro_asof",
+        "summary": "宏观指标最新一期原生值（无数据返回 None；人口类序列勿用）。",
+        "description": "底层目录函数 `macro.asof`。SDK 调用：`cli.macro.asof(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "参考数据"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "code"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/macro/spots": {
+      "post": {
+        "operationId": "macro_spots",
+        "summary": "宏观指标原生采样期点（降序，如 [\"2026:M09\", \"2026:M08\"]）。",
+        "description": "底层目录函数 `macro.spots`。SDK 调用：`cli.macro.spots(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "参考数据"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  },
+                  "n": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "code"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/macro/sampling_of": {
+      "post": {
+        "operationId": "macro_sampling_of",
+        "summary": "宏观指标原生采样频率：\"month\"/\"quarter\"/\"year\"/\"day\"。",
+        "description": "底层目录函数 `macro.sampling_of`。SDK 调用：`cli.macro.sampling_of(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "参考数据"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "code"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/macro/bond_curve": {
+      "post": {
+        "operationId": "macro_bond_curve",
+        "summary": "中债收益率按曲线名+期限取最新值（小数口径，0.0168 = 1.68%）。",
+        "description": "底层目录函数 `macro.bond_curve`。SDK 调用：`cli.macro.bond_curve(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "参考数据"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "curve_name": {
+                    "type": "string",
+                    "description": "曲线披露名（如「中债国债收益率曲线」）"
+                  },
+                  "tenor": {
+                    "type": "string",
+                    "description": "期限列名（如「10年」「1年」）"
+                  }
+                },
+                "required": [
+                  "curve_name",
+                  "tenor"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/macro/nev_monthly": {
+      "post": {
+        "operationId": "macro_nev_monthly",
+        "summary": "新势力月交付按品牌取值（field=sales/rank；掉榜返回 None）。",
+        "description": "底层目录函数 `macro.nev_monthly`。SDK 调用：`cli.macro.nev_monthly(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "参考数据"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "brand": {
+                    "type": "string"
+                  },
+                  "field": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "brand",
+                  "field"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/macro/nev_weekly": {
+      "post": {
+        "operationId": "macro_nev_weekly",
+        "summary": "新势力周销量按品牌取值（field=sales/rank；当期无行返回 None）。",
+        "description": "底层目录函数 `macro.nev_weekly`。SDK 调用：`cli.macro.nev_weekly(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "参考数据"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "brand": {
+                    "type": "string"
+                  },
+                  "field": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "brand",
+                  "field"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/macro/avc_monthly": {
+      "post": {
+        "operationId": "macro_avc_monthly",
+        "summary": "奥维家电品类月度取值（field=volume/volume_yoy/value/value_yoy）。",
+        "description": "品类名须与披露名单精确匹配，名单不含/掉榜返回 None。、底层目录函数 `macro.avc_monthly`。SDK 调用：`cli.macro.avc_monthly(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "参考数据"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "category": {
+                    "type": "string"
+                  },
+                  "field": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "category",
+                  "field"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/macro/chinaiol_monthly": {
+      "post": {
+        "operationId": "macro_chinaiol_monthly",
+        "summary": "家电产销月度取值（field=volume=内销量/volume_yoy/value=内销额/value_yoy）。",
+        "description": "品类名须与披露名单精确匹配，名单不含/掉榜返回 None。、底层目录函数 `macro.chinaiol_monthly`。SDK 调用：`cli.macro.chinaiol_monthly(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "参考数据"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "category": {
+                    "type": "string"
+                  },
+                  "field": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "category",
+                  "field"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/macro/cpca_top": {
+      "post": {
+        "operationId": "macro_cpca_top",
+        "summary": "乘联会厂商排行取值（如 field=wholesale；掉榜返回 None）。",
+        "description": "底层目录函数 `macro.cpca_top`。SDK 调用：`cli.macro.cpca_top(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "参考数据"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "manufacturer": {
+                    "type": "string"
+                  },
+                  "field": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "manufacturer",
+                  "field"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/macro/phone_share": {
+      "post": {
+        "operationId": "macro_phone_share",
+        "summary": "手机品牌周份额取值（field=share/rank，披露原值；掉榜返回 None）。",
+        "description": "底层目录函数 `macro.phone_share`。SDK 调用：`cli.macro.phone_share(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "参考数据"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "brand": {
+                    "type": "string"
+                  },
+                  "field": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "brand"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
                 }
               }
             }

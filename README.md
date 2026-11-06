@@ -3,7 +3,7 @@
 [![PyPI](https://img.shields.io/pypi/v/wmshare)](https://pypi.org/project/wmshare/) [![Python](https://img.shields.io/pypi/pyversions/wmshare)](https://pypi.org/project/wmshare/) [![CI](https://github.com/open-winmale/wmshare/actions/workflows/ci.yml/badge.svg)](https://github.com/open-winmale/wmshare/actions/workflows/ci.yml) [![License: BSD-3-Clause](https://img.shields.io/badge/license-BSD--3--Clause-blue)](LICENSE)
 
 > **English TL;DR** — `wmshare` is a BSD-3-Clause Python SDK for China A-share / Hong Kong / US
-> market data: k-line, intraday, money flow, statements, 2,752 metrics, screener and whole-market
+> market data: k-line, intraday, money flow, statements, 2,639 metrics, screener and whole-market
 > batch; ships an offline catalog, data guards and AI skill. **Credentials required** on open.winmale.com;
 > try offline first with `wmshare.demo_client()` (frozen snapshot; not live). **Install**: `pip install wmshare`.
 
@@ -21,16 +21,16 @@
 
 ## 特性
 
-- **数据要全**——17 个数据域、116 个核心接口：K 线/盘中、报表、资金流、公告业绩、
-  股东治理、回购并购、两融、可转债、盈利预测、指数、全市场列表与港美披露。
+- **数据要全**——18 个数据域、127 个核心接口一站取全：K 线/盘中/ETF/指数、分红、报表、资金流、
+  公告业绩、股东治理、回购并购、两融、可转债、盈利预测、指数、全市场列表、港美披露、宏观与期货。
 - **数据要准**——财报按最新会计准则归一，跨年跨公司直接比较；全库基础单位
   （比率/涨跌幅=小数、金额=元、量=股），每次返回做量级守护与不变量校验，错误的量级到不了你的代码。
 - **特色数据**——盘中实时快照与当日 1 分钟分时；`cli.screener` 筛选一行直出，全市场涨跌
-  全景/分桶/行业分布/涨跌榜走服务端预计算索引，毫秒级响应；2,752 个指标码（TTM、3/5/10 年
+  全景/分桶/行业分布/涨跌榜走服务端预计算索引，毫秒级响应；2,639 个指标码（TTM、3/5/10 年
   历史分位、192 个行业内分位、TTM 股息率/派息率 + 11 个质量筛选器）服务端算好直出。
 - **凭证即用**——开放平台签发 client_id/api-key，环境变量、凭证文件、构造参数任选其一配置；遇到 401/403/429 错误消息即完整指引。
-- **目录随包 + AI 原生**——252 个底层函数、116 个核心接口、2,752 个指标码离线可查；
-  附 Agent Skills 格式 skill 与本地 MCP server。
+- **目录随包 + AI 原生**——263 个底层函数、127 个核心接口、2,639 个指标码离线可查；
+  附 Agent Skills 格式 skill（`wmshare.skill_dir()`）与本地 MCP server（`wmshare-mcp`）。
 
 ## 快速上手
 
@@ -59,16 +59,14 @@ export WMSHARE_CLIENT_ID=<AppId> WMSHARE_CLIENT_SECRET=<API Key>   # 方式一�
 
 ### MCP server
 
-本地 MCP 让 AI 直接调用目录发现与取数工具，凭证仍由本机 SDK 读取：
+本地 MCP 让 AI 直接调用目录发现与取数工具（20 个 task tools；其余 127 个 friendly API 用 `wmshare_call(target=..., mode="api")` 兜底），凭证仍由本机 SDK 读取：
 
 ```bash
 wmshare-mcp setup --client-id <AppId> --client-secret-stdin --market cn # 提示后粘贴 API Key
-wmshare-mcp doctor            # 真实取数前检查配置
-wmshare-mcp --check           # 零凭证检查 server 安装
+wmshare-mcp doctor            # 真实取数前检查配置；--check 零凭证检查安装
 ```
 
 AI 客户端最小配置（不写入凭证）：`{"mcpServers":{"wmshare":{"command":"wmshare-mcp","args":[]}}}`。
-20 个 task tools 覆盖 `status/search/contract/symbols/quote/history/metrics/company/screen/disclosures/statement/segments/dividend/estimates/corporate/market/intl/notice/batch/call`；116 个 friendly API 可继续用 `wmshare_call(target=..., mode="api")` 兜底。
 
 ### 选股实战：10 行筛出「高股息 + PE 十年低位」
 
@@ -100,7 +98,7 @@ for s, n, v, pe, pct in rows[:8]:                            # 取前 8 行打�
 
 ## 能力一览
 
-随包离线目录：**17 个数据域 · 252 个底层函数 · 2752 个指标代码**；友好层 **116 个核心接口**，
+随包离线目录：**18 个数据域 · 263 个底层函数 · 2639 个指标代码**；友好层 **127 个核心接口**，
 按使用视角组织为（11 个指标组、74 个精选常用指标代码，`cat.search("中文")` 可编程检索）：
 
 | 门面 | 核心能力 | 单位口径 |
@@ -124,14 +122,15 @@ for s, n, v, pe, pct in rows[:8]:                            # 取前 8 行打�
 | `cli.index` | 指数键列表、成分股（市值/估值中枢）、权重股、宽基估值时序 | 市值=元、比率=小数、权重=小数 |
 | `cli.stocks` | 全市场证券列表（代码/名称/交易所/三级行业/上市日/ST）、行业目录（申万/恒生）、行业成分股（中文名直达） | listed=YYYY-MM-DD、is_st=布尔 |
 | `cli.intl` | 港股 CCASS（中央结算持仓）/主要股东/机构评级/盈利预测，港美沽空，美股发行信息 | 量=股、占比=小数、价格=披露币种 |
+| `cli.macro` | 宏观时序/as-of/采样频率（$CPI/$GDP/$M2…）、中债收益率按期限、行业情报单值 | 上游原值（价格指数=点、流量存量=元、收益率=小数） |
 | `cli.info` | 公司档案（名称/行业/组织类型/上市日期） | — |
 
 ## 市场覆盖
 
 | 数据能力 | A股 cn | 港股 hk | 美股 us |
 |---|---|---|---|
-| 日 K 三种复权 / 1 分钟分时 / 盘中快照 | ✅ 全量 | ✅ | 快照/盘中新鲜；历史日 K 停更（见注记） |
-| 指标库（2,752 码：估值/盈利/成长/分红/分位） | ✅ | ✅ | ✅（用裸代码 `AAPL`；`AAPL.O` 由 SDK 归一） |
+| 日 K 三种复权 / 1 分钟分时 / 盘中快照 | ✅ 全量 | ✅ | 日 K 已恢复入库（调度验收中，见注记）；快照/盘中新鲜 |
+| 指标库（2,639 码：估值/盈利/成长/分红/分位/振幅/技术面） | ✅ | ✅ | ✅（用裸代码 `AAPL`；`AAPL.O` 由 SDK 归一） |
 | 分红：历史、TTM 股息率/派息率、质量筛选 | ✅ | ✅ | ✅（窗口口径固定） |
 | 公告与披露信号 | ✅ | ✅ | — |
 | 财报清单与最新披露 | ✅ | ✅ | — |
@@ -148,11 +147,10 @@ for s, n, v, pe, pct in rows[:8]:                            # 取前 8 行打�
 市场切换：`Client(market="cn" / "hk" / "us")`，缺省 cn；代码与市场不匹配会被服务端直接拒绝（如 cn 市场查
 `00700` 报 market mismatch）。美股用裸代码（`AAPL`/`BRK_B`），`AAPL.O`/`BRK.B` 由 SDK 按代码表自动归一；`cli.intl` 港美股披露也要用对应市场客户端调用。
 
-如实注记（2026-10-30 实测）：港/美列 ✅ 均经 live 探针逐族验证；**美股代码用裸代码**（`AAPL` / `BRK_B`）——
-带交易所后缀的 `AAPL.O`/`BRK.N` 会被上游当成宏观序列（symbol 未绑定：`_LAST` 族 500、分位静默返 0），
-SDK 已按随包代码表自动归一，裸代码实测正常（AAPL PE 39.5、10 年分位 78.6%）；美股日 K 停更于
-2026-03-13（live-only），最新价量用 `cli.kline.live / snapshot`；港美 K 线量额单位已随 1.x 修复；
-深研宽表暂仅 cn，港美科目级数据经指标码可查；hk 十大流通股东与回购数据管线已有、SDK 接口待路由。
+如实注记（2026-11-07 实测）：港/美列 ✅ 均经 live 探针逐族验证；**美股代码用裸代码**（`AAPL` / `BRK_B`）——
+带交易所后缀的 `AAPL.O`/`BRK.N` 会被上游当成宏观序列，SDK 已按随包代码表自动归一（裸代码实测正常）；
+美股日 K 已恢复入库（上游日更管线调度验收中，实测最新到 2026-11-04），最新价量用
+`cli.kline.live / snapshot`；深研宽表暂仅 cn；hk 十大流通股东与回购数据管线已有、SDK 接口待路由。
 
 ## 我想做 X → 用哪一行
 
@@ -178,6 +176,8 @@ SDK 已按随包代码表自动归一，裸代码实测正常（AAPL PE 39.5、1
 | 合并与母公司差多少 | `cli.statements.compare(sym)` | 双表对齐→逐科目相除 |
 | 拿全市场代码池 | `cli.stocks.list()` | 逐页拼列表→核对代码格式 |
 | 银行股都有谁 | `cli.stocks.industry_members("银行")` | 查行业分类→逐票打标签 |
+| 取 CPI/GDP 宏观时序 | `cli.macro.query("$CPI", 6)` | 找数据源→对齐期间→自己建时序 |
+| 看期货主力连续行情 | `cli.indicator.get(sym, "$FUT_CLOSE", fut_symbol="cn.RB.SHF")` | 找期货源→清洗对齐 |
 
 **常用示例（输出为预期量级；`cli.kline.bars` / `statements.income` 等其余接口同风格）**：
 
@@ -246,7 +246,7 @@ for i, part in enumerate(cli.batch_iter("dividend.history", codes), 1):
 
 `name`/`symbols` 都是**位置参数**；`_raw=True`、`_units="native"` 三个入口通用。**`on_batch_error`
 （批级：跳过整批）≠ `on_error`（票级：逐票请求）**。长表用 `to_df()`，批量入口不提供 `_df`。
-**指标码不是批量 `name`**：`name` 必须是目录函数名（252 个，如 `kline.snapshot`）；一票多码用 `cli.indicator.metrics(sym, codes)`，全市场指标码只能逐票调用。
+**指标码不是批量 `name`**：`name` 必须是目录函数名（263 个，如 `kline.snapshot`）；一票多码用 `cli.indicator.metrics(sym, codes)`，全市场指标码只能逐票调用。
 
 **分批策略由你定，SDK 负责切片与执行**：代码池来自 `cli.stocks.list()`（全市场）、
 `cli.stocks.industry_members("银行")`（按行业）或自己的筛选结果，`batch_size=`（默认 500、
@@ -286,6 +286,6 @@ for i, part in enumerate(cli.batch_iter("dividend.history", codes), 1):
 - **AI 原生**：随包 [SKILL.md](src/wmshare/skills/wmshare/SKILL.md)、[AI 用法](docs/AI.md)、
   本地 MCP server；skill 可复制进 `.agents/skills/`、`.zcode/skills/` 或 `.claude/skills/`。
 - 生态工具 [big-winner](https://github.com/open-winmale/big-winner)：基于本 SDK 的开源工具。
-- **文档中心 [docs/](docs/README.md)**：使用指南 GUIDE（单票菜谱/批量/多市场/故障排查）· AI 用法 · llms.txt 索引 · [API 参考](docs/API.md)（四大类 116 个核心接口 + 指标组）
-- **示例课程 [examples/](examples/README.md)**：12 个编号示例（入门→进阶→生产→AI），全部支持演示客户端离线试跑，CI 端到端覆盖
+- **文档中心 [docs/](docs/README.md)**：使用指南 GUIDE（单票菜谱/批量/多市场/故障排查）· AI 用法 · llms.txt 索引 · [API 参考](docs/API.md)（按资产类别分章的 127 个核心接口 + 指标组）
+- **示例课程 [examples/](examples/README.md)**：13 个编号示例（入门→进阶→生产→AI），全部支持演示客户端离线试跑，CI 端到端覆盖
 - [贡献指南](CONTRIBUTING.md)：提交门禁、内容规范、许可政策
