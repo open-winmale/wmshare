@@ -35,8 +35,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   291 行，能力一览补 `cli.macro` 行、我想做 X 补宏观/期货行
 - GUIDE 新增 §6.1 宏观与期货（含美股日 K 注记更新）；SKILL.md 同步计数与意图表
 - 指标码目录基线定为 **2639**：以 1.11.0 同步的 d8c900bb 为锚，剔除 20 个 ops 弃用
-  drop-stub 与 93 个选股策略克隆幽灵（全目录实测实锤无数据/收割残留），保留 iwencai
-  采集的 481 个真数据码（振幅/技术面/分析师覆盖/公司资料）；extractor 源排除表按此更新
+  drop-stub 与 93 个选股策略克隆幽灵（全目录实测实锤无数据/收割残留），保留上游扩展采集的 481 个真数据码（振幅/技术面/分析师
+  覆盖/公司资料）；extractor 源排除表按此更新
 
 - README 首屏演示从动画 GIF 换成**真实 JupyterLab 实拍截图** `docs/img/quickstart.png`：
   本地起真 Jupyter 打开 `docs/notebooks/quickstart.ipynb`（选股实战：批量拿全市场股息率

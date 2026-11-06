@@ -122,6 +122,7 @@ ALLOWED_PATHS = {
     "llms.txt",
     "llms-full.txt",
     "pyproject.toml",
+    "server.json",
     ".gitignore",
 }
 

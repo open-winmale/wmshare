@@ -117,7 +117,7 @@ def build_server(runtime: MCPRuntime | None = None) -> FastMCP:
         query: Annotated[str, Field(description="中文关键词、英文函数名、指标码、标的名或代码")],
         kind: Annotated[
             Literal["all", "function", "metric", "symbol", "api"],
-            Field(description="检索类型；api 搜索 116 个 SDK friendly API"),
+            Field(description="检索类型；api 搜索 127 个 SDK friendly API"),
         ] = "all",
         market: MarketArg = None,
         limit: Annotated[int, Field(ge=1, le=50, description="最多返回条数")] = 10,

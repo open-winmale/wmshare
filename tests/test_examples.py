@@ -46,7 +46,7 @@ def _load(name: str):
 # ---- 离线示例：子进程真实执行（不联网、零凭证） ----
 
 @pytest.mark.parametrize("name,needles", [
-    ("02_catalog_tour.py", ["数据域：18", "指标代码：精选 74 / 目录全量 2752"]),
+    ("02_catalog_tour.py", ["数据域：18", "指标代码：精选 74 / 目录全量 2639"]),
     ("03_error_handling.py", ["[auth]", "[limit]", "open.winmale.com",
                               "WMSHARE_CLIENT_ID"]),
     ("09_ai_skill_setup.py", ["skill 位置", "skill 自检", "cat.search"]),

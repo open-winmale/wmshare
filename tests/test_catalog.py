@@ -9,7 +9,7 @@ def test_load_and_stats():
     assert s["domains"] == 18, s
     assert s["functions"] == 263, s
     assert s["raw"] == 183 and s["computed"] == 80, s
-    assert s["metric_catalog_total"] == 2158, s
+    assert s["metric_catalog_total"] == 2639, s
     assert s["upstream_rev"], "inventory 应锚定 upstream rev"
 
 
