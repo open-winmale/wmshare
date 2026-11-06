@@ -1,0 +1,114 @@
+id: market.macro
+version: 1.0.0
+cn: 宏观
+kind: raw
+category: reference
+priority: P2
+description: 宏观与行业时序——宏观指标原生点列/as-of/采样频率（$CPI/$GDP/$M2 等指标码
+  经本域取数）、中债收益率曲线按曲线名+期限取值，以及乘联会厂商排行、手机品牌周份额、
+  新势力周销量与月交付、家电月度产销等市场情报单值查询。指标码层（cli.indicator）可
+  直接取宏观当前值；本域提供时序结构与原生频率。
+data_origin: [平台数据服务]
+units:
+  value: 上游原值（宏观指标为原生口径，非全库小数比率口径；见 notes）
+requires: {path: sys/macro/init.xs, preloaded: true}
+notes:
+  - '宏观数值为上游原生口径不做换算：$CPI 等价格指数=点（上年同期=100，实测 100.9），
+    $GDP/$M2 等流量存量=元（asof 实测 $GDP 107107120000000 ≈ 107.1 万亿元）；使用时
+    按指标含义解读，勿套用全库小数比率口径'
+  - 'bond_curve 返回小数口径收益率（10年 0.0168 = 1.68%，2026-11 实测）；曲线名/期限
+    须与服务端披露名一致'
+  - 'query.series 与 spots 按期降序（最新在前），期点格式如 "2026:M09"/"2026:Q3"；
+    指标码大小写与 $ 前缀可省（"cpi" 等价 "$CPI"）'
+  - '行业情报按披露名单精确匹配取值（厂商「比亚迪汽车」、品牌「小米」），当期无行/
+    名单不含该名返回 nil（实测 nev_weekly/avc/chinaiol 部分名单在库为空即返回 nil）；
+    share/rank 为披露原值（小米 share=11、rank=4）'
+  - '指标码层等价物：cli.indicator.get(sym, "$CPI") 与宏观 as-of 同源（指标码层走
+    单位换算管线，本域返回上游原值）'
+functions:
+  - name: macro.query
+    cn: 宏观时序
+    layer: L0
+    params:
+      - {name: code, type: string, required: true, desc: 指标码或名称（$CPI / cpi 均可，服务端自动归一为 $CPI 形态）}
+      - {name: n, type: int, required: false, default: 4, desc: 期数（1–48，超出按边界取）}
+    returns: {desc: 'MAP · ok/metric/store/frequency/periods/latest/series（series 每点含 sas/annual/sampling/value）'}
+    example: 'macro.query("$CPI", 6)'
+  - name: macro.asof
+    cn: 宏观 as-of 单点
+    layer: L0
+    params:
+      - {name: code, type: string, required: true, desc: 指标码或名称（同 query；人口类序列勿用）}
+    returns: {desc: 最新一期原生值（无数据返回 nil）}
+    example: 'macro.asof("$CPI")'
+  - name: macro.spots
+    cn: 宏观原生点列
+    layer: L0
+    params:
+      - {name: code, type: string, required: true, desc: 指标码或名称}
+      - {name: n, type: int, required: false, default: 4, desc: 期数（1–48）}
+    returns: {desc: ARR · 原生采样期点}
+    example: 'macro.spots("$GDP", 4)'
+  - name: macro.sampling_of
+    cn: 宏观指标原生采样频率
+    layer: L0
+    params:
+      - {name: code, type: string, required: true, desc: 指标码或名称}
+    returns: {desc: '"month"/"quarter"/"year"/"day"（无法判定时回退 "month"）'}
+    example: 'macro.sampling_of("$CPI")'
+  - name: macro.bond_curve
+    cn: 中债收益率按曲线名+期限
+    layer: L0
+    params:
+      - {name: curve_name, type: string, required: true, desc: 曲线披露名（如「中债国债收益率曲线」）}
+      - {name: tenor, type: string, required: true, desc: 期限列名（如「10年」「1年」）}
+    returns: {desc: 该曲线该期限的最新收益率原值}
+    example: 'macro.bond_curve("中债国债收益率曲线", "10年")'
+  - name: macro.nev_monthly
+    cn: 新势力月交付
+    layer: L0
+    params:
+      - {name: brand, type: string, required: true, desc: 品牌披露名（如「零跑」「小米」）}
+      - {name: field, type: string, required: true, desc: 取值列（sales/rank）}
+    returns: {desc: 当月单值（掉榜返回 nil）}
+    example: 'macro.nev_monthly("零跑", "sales")'
+  - name: macro.nev_weekly
+    cn: 新势力周销量
+    layer: L0
+    params:
+      - {name: brand, type: string, required: true, desc: 品牌披露名}
+      - {name: field, type: string, required: true, desc: 取值列（sales/rank）}
+    returns: {desc: 当周单值（掉榜返回 nil）}
+    example: 'macro.nev_weekly("小米", "sales")'
+  - name: macro.avc_monthly
+    cn: 奥维家电品类月度
+    layer: L0
+    params:
+      - {name: category, type: string, required: true, desc: 品类披露名（如「消费级摄像头」）}
+      - {name: field, type: string, required: true, desc: 取值列（volume/volume_yoy/value/value_yoy）}
+    returns: {desc: 当月单值（掉榜返回 nil）}
+    example: 'macro.avc_monthly("消费级摄像头", "volume")'
+  - name: macro.chinaiol_monthly
+    cn: 家电产销月度
+    layer: L0
+    params:
+      - {name: category, type: string, required: true, desc: 品类披露名（如「洗衣机」）}
+      - {name: field, type: string, required: true, desc: 取值列（volume=内销量/volume_yoy/value=内销额/value_yoy）}
+    returns: {desc: 当月单值（掉榜返回 nil）}
+    example: 'macro.chinaiol_monthly("洗衣机", "volume")'
+  - name: macro.cpca_top
+    cn: 乘联会厂商排行
+    layer: L0
+    params:
+      - {name: manufacturer, type: string, required: true, desc: 厂商披露名（如「比亚迪汽车」）}
+      - {name: field, type: string, required: true, desc: 取值列（如 wholesale/retail）}
+    returns: {desc: 当月单值（掉榜返回 nil）}
+    example: 'macro.cpca_top("比亚迪汽车", "wholesale")'
+  - name: macro.phone_share
+    cn: 手机品牌周份额
+    layer: L0
+    params:
+      - {name: brand, type: string, required: true, desc: 品牌披露名（如「小米」）}
+      - {name: field, type: string, required: false, default: share, desc: 取值列（share/rank）}
+    returns: {desc: 当周单值（掉榜返回 nil）}
+    example: 'macro.phone_share("小米", "share")'

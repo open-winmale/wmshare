@@ -30,11 +30,13 @@ NEW_DOMAINS: dict[str, dict[str, str]] = {
     "fund.estimates": {"ns": "estimates", "category": "fundamentals", "kind": "raw"},
     "market.index": {"ns": "indices", "dir": "index", "category": "market", "kind": "computed"},
     "market.intl": {"ns": "intl", "category": "reference", "kind": "raw"},
+    "market.macro": {"ns": "macro", "category": "reference", "kind": "raw"},
 }
 DOMAIN_IDS = sorted(NEW_DOMAINS)
 # 单位契约：这些域的数据已是基础单位，函数级不应声明换算
 # （cbond 1.1.0 起有审计核验的 percent 声明：premiumRatio/couponIr）
-NO_UNITS_DOMAINS = {"market.margin", "fund.estimates", "disc.workout"}
+# macro v1.11.0：宏观数值为上游原生口径（价格指数点/元），函数级不声明换算
+NO_UNITS_DOMAINS = {"market.margin", "fund.estimates", "disc.workout", "market.macro"}
 # 仅 ranges 守护（换算声明经审计移除）
 RANGES_ONLY_DOMAINS = {"market.index"}
 # 规范化行域（normalize_with→fmt_*）：其余三域（cbond/workout/index）无规范化行
@@ -80,6 +82,7 @@ EXPLICIT_CALL_CASES: dict[str, tuple[str, dict[str, Any]]] = {
     "fund.estimates": ("query_rating", {"symbol": "600519", "limit": 1}),
     "market.index": ("keys", {}),
     "market.intl": ("issue_info", {"symbol": "600519"}),
+    "market.macro": ("asof", {"code": "$CPI"}),
 }
 
 # 上游预载链差异：cbond/workout 不在 preloaded_libs，取数脚本需自动补 xs.require

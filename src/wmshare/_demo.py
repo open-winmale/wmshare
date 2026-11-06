@@ -32,6 +32,9 @@ _MAX_BARS = 120
 _MAX_MONEYFLOW_BARS = 30
 _MAX_DIVIDEND_HISTORY = 20
 _MAX_BANK_MEMBERS = 20
+# 期货与宏观罐头（v1.11 后新数据面）：PROD 活体探针实证值（2026-11-07），不在
+# 2026-10-30 快照采集范围内，故不进 _demo_data.json（避免破坏快照哈希合同）
+_FUT_CANS: dict[str, float] = {"$FUT_CLOSE": 5354.0, "$FUT_VOLUME": 302888.0}
 
 _SNAPSHOT: dict[str, Any] | None = None
 
@@ -373,6 +376,33 @@ class DemoClient:
             get=self._indicator_get,
             metrics=self._indicator_metrics,
         )
+        # 宏观域罐头：形状与真实返回同构（series 最新在前、CPI=价格指数点、GDP=元）
+        self.macro = SimpleNamespace(
+            query=lambda code, n=6: {
+                "ok": True, "metric": "$CPI", "store": "cpi", "frequency": "month",
+                "periods": 3,
+                "latest": {"sas": "600519:2026:M09", "annual": 2026,
+                           "sampling": "M09", "value": 100.9},
+                "series": [
+                    {"sas": "600519:2026:M09", "annual": 2026, "sampling": "M09",
+                     "value": 100.9},
+                    {"sas": "600519:2026:M08", "annual": 2026, "sampling": "M08",
+                     "value": 100.8},
+                    {"sas": "600519:2026:M07", "annual": 2026, "sampling": "M07",
+                     "value": 100.5},
+                ][:n],
+            },
+            asof=lambda code: 107107120000000,
+            spots=lambda code, n=4: ["2026:Q3", "2026:Q2", "2026:Q1", "2025:Q4"][:n],
+            sampling_of=lambda code: "quarter",
+            bond_curve=lambda curve_name, tenor: 0.016822,
+            nev_monthly=lambda brand, field: 40000,
+            nev_weekly=lambda brand, field: None,
+            avc_monthly=lambda category, field: None,
+            chinaiol_monthly=lambda category, field: None,
+            cpca_top=lambda manufacturer, field: 45.5113,
+            phone_share=lambda brand, field="share": 11,
+        )
         self.notice = SimpleNamespace(list=self._notice_list)
         self.dividend = SimpleNamespace(
             last=self._dividend_last,
@@ -513,7 +543,9 @@ class DemoClient:
         self._require_symbol(symbol)
         return dict(self._data["statements"]["audit"])
 
-    def _indicator_get(self, symbol: str, code: str) -> Any:
+    def _indicator_get(self, symbol: str, code: str, **kw: Any) -> Any:
+        if code in _FUT_CANS:  # 期货主力连续（合约键仅透传，罐头不随合约变化）
+            return _FUT_CANS[code]
         self._require_symbol(symbol)
         try:
             return self._data["indicators"][code]
@@ -523,8 +555,8 @@ class DemoClient:
                 code="demo_unsupported",
             ) from None
 
-    def _indicator_metrics(self, symbol: str, codes: list[str]) -> dict[str, Any]:
-        return {code: self._indicator_get(symbol, code) for code in codes}
+    def _indicator_metrics(self, symbol: str, codes: list[str], **kw: Any) -> dict[str, Any]:
+        return {code: self._indicator_get(symbol, code, **kw) for code in codes}
 
     # ---- disclosure ----
     def _notice_list(self, symbol: str, window: str = "3m", keyword: str = "",

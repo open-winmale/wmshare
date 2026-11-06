@@ -55,6 +55,10 @@
     "kline.snapshot"
    ]
   },
+  "macro": {
+   "entry": "sys/macro/init.xs",
+   "exports": []
+  },
   "margin": {
    "entry": "sys/margin/init.xs",
    "exports": []
@@ -92,12 +96,13 @@
   "indices",
   "intl",
   "kline",
+  "macro",
   "margin",
   "moneyflow",
   "notice",
   "segments"
  ],
- "function_count": 258,
+ "function_count": 269,
  "functions": [
   {
    "name": "bonus.dps_rpt",
@@ -4774,7 +4779,7 @@
      {
       "name": "source",
       "type": "string",
-      "cn": "multi_source|multi_source_rt|source_a|source_b|source_c|source_d",
+      "cn": "来源标识枚举",
       "optional": true
      }
     ]
@@ -5287,6 +5292,196 @@
     {
      "name": "sym",
      "type": "string"
+    }
+   ]
+  },
+  {
+   "name": "macro.asof",
+   "cn": "宏观 as-of 单点（last；人口勿用）",
+   "example": "macro.asof(\"$CPI\")",
+   "returns": "any",
+   "returns_shape": null,
+   "min_args": null,
+   "params": [
+    {
+     "name": "code",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "macro.avc_monthly",
+   "cn": "奥维家电品类月度按品类名取字段（volume/volume_yoy/value/value_yoy）",
+   "example": "macro.avc_monthly(\"消费级摄像头\",\"volume\")",
+   "returns": "any",
+   "returns_shape": null,
+   "min_args": null,
+   "params": [
+    {
+     "name": "category",
+     "type": "any"
+    },
+    {
+     "name": "field",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "macro.bond_curve",
+   "cn": "中债收益率按曲线名+期限",
+   "example": "macro.bond_curve(\"中债国债收益率曲线\",\"10年\")",
+   "returns": "any",
+   "returns_shape": null,
+   "min_args": null,
+   "params": [
+    {
+     "name": "curve_name",
+     "type": "any"
+    },
+    {
+     "name": "tenor",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "macro.chinaiol_monthly",
+   "cn": "家电产销月度按品类名取字段（volume=内销量/volume_yoy/value=内销额/value_yoy）",
+   "example": "macro.chinaiol_monthly(\"洗衣机\",\"volume\")",
+   "returns": "any",
+   "returns_shape": null,
+   "min_args": null,
+   "params": [
+    {
+     "name": "category",
+     "type": "any"
+    },
+    {
+     "name": "field",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "macro.cpca_top",
+   "cn": "乘联会厂商排行按厂商名取字段",
+   "example": "macro.cpca_top(\"比亚迪汽车\",\"wholesale\")",
+   "returns": "any",
+   "returns_shape": null,
+   "min_args": null,
+   "params": [
+    {
+     "name": "manufacturer",
+     "type": "any"
+    },
+    {
+     "name": "field",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "macro.nev_monthly",
+   "cn": "新势力月交付按品牌名取字段（sales/rank）",
+   "example": "macro.nev_monthly(\"零跑\",\"sales\")",
+   "returns": "any",
+   "returns_shape": null,
+   "min_args": null,
+   "params": [
+    {
+     "name": "brand",
+     "type": "any"
+    },
+    {
+     "name": "field",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "macro.nev_weekly",
+   "cn": "新势力周销量按品牌名取字段（sales/rank）",
+   "example": "macro.nev_weekly(\"小米\",\"sales\")",
+   "returns": "any",
+   "returns_shape": null,
+   "min_args": null,
+   "params": [
+    {
+     "name": "brand",
+     "type": "any"
+    },
+    {
+     "name": "field",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "macro.phone_share",
+   "cn": "手机品牌周份额按品牌名取字段（share/rank）",
+   "example": "macro.phone_share(\"小米\",\"share\")",
+   "returns": "any",
+   "returns_shape": null,
+   "min_args": null,
+   "params": [
+    {
+     "name": "brand",
+     "type": "any"
+    },
+    {
+     "name": "field",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "macro.query",
+   "cn": "宏观时序",
+   "example": "macro.query(\"$CPI\", 6)",
+   "returns": "MAP",
+   "returns_shape": null,
+   "min_args": null,
+   "params": [
+    {
+     "name": "code",
+     "type": "any"
+    },
+    {
+     "name": "n",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "macro.sampling_of",
+   "cn": "宏观指标原生采样频率",
+   "example": "macro.sampling_of(\"$CPI\")",
+   "returns": "string",
+   "returns_shape": null,
+   "min_args": null,
+   "params": [
+    {
+     "name": "code",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "macro.spots",
+   "cn": "宏观原生点列",
+   "example": "macro.spots(\"$GDP\", 4)",
+   "returns": "ARR",
+   "returns_shape": null,
+   "min_args": null,
+   "params": [
+    {
+     "name": "code",
+     "type": "any"
+    },
+    {
+     "name": "n",
+     "type": "any"
     }
    ]
   },
@@ -6717,7 +6912,7 @@
   },
   {
    "name": "rptdom.statement_audit",
-   "cn": "审计意见（多源混源，Q4 年轴）",
+   "cn": "审计意见（多源混合，Q4 年轴）",
    "example": "rptdom.statement_audit(\"600519\")",
    "returns": "MAP",
    "returns_shape": null,
@@ -6753,7 +6948,7 @@
   },
   {
    "name": "rptdom.statement_tree",
-   "cn": "三表目录树视图（树序+比率/占比行，整理结构）",
+   "cn": "三表目录树视图（树序+比率/占比行，标准目录结构）",
    "example": "rptdom.statement_tree(\"600519\", \"fin.balance_sheet\", {\"scope\": \"合并\", \"n\": 5})",
    "returns": "ARR",
    "returns_shape": null,

@@ -8,7 +8,7 @@
     ``_raw=True`` 取未规范化原始行（仅部分方法）；
   - 本层是目录合同的薄翻译：高频方法显式包装；目录内其余函数经 ``__getattr__``
     属性直达（如 ``cli.kline.screen_above_ma20``、``cli.dividend.screen_quality``），
-    目录之外的名字显式 AttributeError——252 个底层函数零遮蔽。
+    目录之外的名字显式 AttributeError——263 个底层函数零遮蔽。
   - 选股能力集中在 ``cli.screener``：单票筛选器（bool）与全市场宽度（服务端
     预计算索引直出）显式包装，kline 目录的其余筛选函数经属性直达。
 
@@ -156,6 +156,7 @@ _FRIENDLY_NS_TO_CATALOG: dict[str, str] = {
     "index": "indices",
     "stocks": "stocks",
     "intl": "intl",
+    "macro": "macro",
 }
 
 
@@ -838,36 +839,53 @@ class IndicatorApi(_Api):
     美股标的按随包代码表归一，``AAPL.O``/``BRK.B`` 与裸码 ``AAPL``/``BRK_B`` 等价
     （见 ``normalize_symbol``）；上游仍报 ``symbol`` 未绑定时翻译成带代码写法指引的
     DataError，而不是把引擎返回的 0 静默放行。
+
+    期货指标码（``$FUT_*``）用 ``fut_symbol`` 指定合约键：国内带市场前缀
+    （``cn.SR.ZCE`` 郑商所、``cn.RB.SHF`` 上期所；后缀不是 .CZCE），外盘用
+    ``global.CL`` 等 V2 键；``symbol`` 传任意 A 股代码（绑定期期间上下文），
+    缺省合约 ``cn.SR.ZCE``。eval 引擎须为 cn 客户端。
     """
 
-    def get(self, symbol: str, code: str) -> Any:
-        """取单个指标当前值，如 cli.indicator.get("600519", "$PE_TTM_LAST")。"""
+    def get(self, symbol: str, code: str, fut_symbol: str | None = None) -> Any:
+        """取单个指标当前值，如 cli.indicator.get("600519", "$PE_TTM_LAST")。
+
+        期货码传 fut_symbol（如 "global.CL"），symbol 传任意 A 股代码。
+        """
         meta = self._c.catalog.metric_meta(code)
         if meta is None and self._c.catalog.metric(code) is None:
             raise CatalogError(f"未知指标 {code!r}（防编造：code 必须在指标目录内）",
                                code="metric")
-        value = self._eval_metric(f"return {code}", symbol=symbol, label=code)
+        value = self._eval_metric(f"return {code}", symbol=symbol, label=code,
+                                  fut_symbol=fut_symbol)
         return finish_metric(value, meta, code=code, validate=self._c._validate)
 
-    def metrics(self, symbol: str, codes: list[str]) -> dict:
-        """批量取多个指标当前值，返回 {code: value}（精选代码带换算与量级守护）。"""
+    def metrics(self, symbol: str, codes: list[str],
+                fut_symbol: str | None = None) -> dict:
+        """批量取多个指标当前值，返回 {code: value}（精选代码带换算与量级守护）。
+
+        期货码传 fut_symbol（如 "cn.SR.ZCE"），symbol 传任意 A 股代码。
+        """
         missing = [c for c in codes if self._c.catalog.metric(c) is None]
         if missing:
             raise CatalogError(f"未知指标 {missing}（防编造：code 必须在指标目录内）",
                                code="metric")
         body = ", ".join(f'"{c}": {c}' for c in codes)
         values = self._eval_metric(f"return {{{body}}}", symbol=symbol,
-                                   label=", ".join(codes)) or {}
+                                   label=", ".join(codes),
+                                   fut_symbol=fut_symbol) or {}
         if not isinstance(values, dict):  # 上游恒返回 MAP；异常形态原样透传
             return values
         return {c: finish_metric(v, self._c.catalog.metric_meta(c), code=c,
                                  validate=self._c._validate)
                 for c, v in values.items()}
 
-    def _eval_metric(self, xs: str, *, symbol: str, label: str) -> Any:
+    def _eval_metric(self, xs: str, *, symbol: str, label: str,
+                     fut_symbol: str | None = None) -> Any:
         """执行指标求值；把「标的没被识别成公司代码」的上游错误翻译成可执行的提示。"""
         try:
-            return self._c.eval_result(xs, symbol=symbol)
+            return self._c.eval_result(xs, symbol=symbol,
+                                       args=({"fut.symbol": fut_symbol}
+                                             if fut_symbol else None))
         except ServerError as e:
             if 'undefined variable "symbol"' in str(e):
                 mk = str(self._c.market or "cn").lower()
@@ -1378,6 +1396,75 @@ class IntlApi(_Api):
         return self._c.call("intl.issue_info", sym=symbol)
 
 
+class MacroApi(_Api):
+    """宏观与行业时序。
+
+    覆盖宏观指标时序/as-of/采样频率、中债收益率、行业情报单值。宏观数值为
+    上游原生口径（非全库小数比率口径）：$CPI 等价格指数=点（上年同期=100）、
+    $GDP/$M2 等流量存量=元；bond_curve 收益率为小数（0.0168 = 1.68%）。
+    指标码层等价物：``cli.indicator.get(sym, "$CPI")`` 与 ``asof`` 同源
+    （指标码层走单位换算管线）。时序最新在前。
+    """
+
+    def query(self, code: str, n: int = 6) -> Any:
+        """宏观指标时序：{frequency, periods, latest, series[{sas, annual, sampling, value}]}。
+
+        :param code: 指标码或名称（``$CPI`` / ``cpi`` 均可，服务端归一）
+        :param n: 期数（1–48）
+        """
+        return self._c.call("macro.query", code=code, n=n)
+
+    def asof(self, code: str) -> Any:
+        """宏观指标最新一期原生值（无数据返回 None；人口类序列勿用）。"""
+        return self._c.call("macro.asof", code=code)
+
+    def spots(self, code: str, n: int = 4) -> Any:
+        """宏观指标原生采样期点（降序，如 ["2026:M09", "2026:M08"]）。"""
+        return self._c.call("macro.spots", code=code, n=n)
+
+    def sampling_of(self, code: str) -> Any:
+        """宏观指标原生采样频率："month"/"quarter"/"year"/"day"。"""
+        return self._c.call("macro.sampling_of", code=code)
+
+    def bond_curve(self, curve_name: str, tenor: str) -> Any:
+        """中债收益率按曲线名+期限取最新值（小数口径，0.0168 = 1.68%）。
+
+        :param curve_name: 曲线披露名（如「中债国债收益率曲线」）
+        :param tenor: 期限列名（如「10年」「1年」）
+        """
+        return self._c.call("macro.bond_curve", curve_name=curve_name, tenor=tenor)
+
+    def nev_monthly(self, brand: str, field: str) -> Any:
+        """新势力月交付按品牌取值（field=sales/rank；掉榜返回 None）。"""
+        return self._c.call("macro.nev_monthly", brand=brand, field=field)
+
+    def nev_weekly(self, brand: str, field: str) -> Any:
+        """新势力周销量按品牌取值（field=sales/rank；当期无行返回 None）。"""
+        return self._c.call("macro.nev_weekly", brand=brand, field=field)
+
+    def avc_monthly(self, category: str, field: str) -> Any:
+        """奥维家电品类月度取值（field=volume/volume_yoy/value/value_yoy）。
+
+        品类名须与披露名单精确匹配，名单不含/掉榜返回 None。
+        """
+        return self._c.call("macro.avc_monthly", category=category, field=field)
+
+    def chinaiol_monthly(self, category: str, field: str) -> Any:
+        """家电产销月度取值（field=volume=内销量/volume_yoy/value=内销额/value_yoy）。
+
+        品类名须与披露名单精确匹配，名单不含/掉榜返回 None。
+        """
+        return self._c.call("macro.chinaiol_monthly", category=category, field=field)
+
+    def cpca_top(self, manufacturer: str, field: str) -> Any:
+        """乘联会厂商排行取值（如 field=wholesale；掉榜返回 None）。"""
+        return self._c.call("macro.cpca_top", manufacturer=manufacturer, field=field)
+
+    def phone_share(self, brand: str, field: str = "share") -> Any:
+        """手机品牌周份额取值（field=share/rank，披露原值；掉榜返回 None）。"""
+        return self._c.call("macro.phone_share", brand=brand, field=field)
+
+
 FRIENDLY_NAMESPACES: dict[str, type[_Api]] = {
     "kline": KlineApi,
     "screener": ScreenerApi,
@@ -1399,6 +1486,7 @@ FRIENDLY_NAMESPACES: dict[str, type[_Api]] = {
     "info": InfoApi,
     "equity": EquityApi,
     "intl": IntlApi,
+    "macro": MacroApi,
 }
 
 # 文档索引用注册表：(category, namespace, method, cn, 底层函数)
@@ -1536,6 +1624,18 @@ FRIENDLY_INDEX: list[tuple[str, str, str, str, str]] = [
      "intl.query_profit_forecast"),
     ("reference", "intl", "query_sellshort", "港美沽空", "intl.query_sellshort"),
     ("reference", "intl", "issue_info", "美股发行信息", "intl.issue_info"),
+    # ---- macro：宏观时序与行业情报（v1.11.0）----
+    ("reference", "macro", "query", "宏观指标时序", "macro.query"),
+    ("reference", "macro", "asof", "宏观最新单值", "macro.asof"),
+    ("reference", "macro", "spots", "宏观原生期点", "macro.spots"),
+    ("reference", "macro", "sampling_of", "宏观原生采样频率", "macro.sampling_of"),
+    ("reference", "macro", "bond_curve", "中债收益率按期限", "macro.bond_curve"),
+    ("reference", "macro", "nev_monthly", "新势力月交付", "macro.nev_monthly"),
+    ("reference", "macro", "nev_weekly", "新势力周销量", "macro.nev_weekly"),
+    ("reference", "macro", "avc_monthly", "奥维家电月度", "macro.avc_monthly"),
+    ("reference", "macro", "chinaiol_monthly", "家电产销月度", "macro.chinaiol_monthly"),
+    ("reference", "macro", "cpca_top", "乘联会厂商排行", "macro.cpca_top"),
+    ("reference", "macro", "phone_share", "手机品牌周份额", "macro.phone_share"),
 ]
 
 # 类型化门面（生成层）：目录命名空间的完整类型签名；运行时仍走 client.call()。

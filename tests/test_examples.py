@@ -46,7 +46,7 @@ def _load(name: str):
 # ---- 离线示例：子进程真实执行（不联网、零凭证） ----
 
 @pytest.mark.parametrize("name,needles", [
-    ("02_catalog_tour.py", ["数据域：17", "指标代码：精选 74 / 目录全量 2752"]),
+    ("02_catalog_tour.py", ["数据域：18", "指标代码：精选 74 / 目录全量 2752"]),
     ("03_error_handling.py", ["[auth]", "[limit]", "open.winmale.com",
                               "WMSHARE_CLIENT_ID"]),
     ("09_ai_skill_setup.py", ["skill 位置", "skill 自检", "cat.search"]),
@@ -93,6 +93,17 @@ def test_05_dividend_screener(snapshot, capsys):
     expected = snapshot["data"]["dividend"]["yield_ttm"]["600519"]
     assert f"TTM股息率={expected:.4f}" in out
     assert "筛选表达式" in out
+
+
+def test_12_futures_macro(capsys):
+    _load("13_futures_macro.py").main(fake_client())
+    out = capsys.readouterr().out
+    assert "郑糖主力收盘 = 5354.0" in out
+    assert "外盘 WTI = 5354.0" in out
+    assert "$CPI 频率=month" in out               # 时序结构：frequency 字段
+    assert "（价格指数点，上年同期=100）" in out    # 原生口径注释（非小数比率）
+    assert "107.1 万亿元" in out                   # GDP 原值=元
+    assert "0.016822（小数，即 1.68%）" in out     # 中债收益率小数口径
 
 
 def test_06_indicator_tour(snapshot, capsys):
@@ -149,7 +160,7 @@ def test_examples_index_covers_dir():
     """examples/README.md 课程表必须覆盖目录里每个脚本（防孤儿示例）。"""
     index = (EXAMPLES / "README.md").read_text(encoding="utf-8")
     scripts = sorted(p.name for p in EXAMPLES.glob("*.py"))
-    assert len(scripts) == 12, f"示例应恰为 12 个（编号课程），实际 {len(scripts)}：{scripts}"
+    assert len(scripts) == 13, f"示例应恰为 13 个（编号课程），实际 {len(scripts)}：{scripts}"
     for name in scripts:
         assert f"`{name}`" in index, f"examples/README.md 缺 {name} 的索引行"
 

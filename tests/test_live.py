@@ -617,6 +617,58 @@ def test_stocks_universe_hk_us_markets():
     assert isinstance(l1, list)  # hsi 一级 12 个；美股目录树暂缺不在此断言
 
 
+def test_macro_domain_smoke(cli):
+    """v1.11.0 宏观域：时序结构 + 原生口径数值型断言（业务值随发布漂移不绑死）。"""
+    q = _call_or_xfail(lambda: cli.macro.query("$CPI", 3))
+    assert isinstance(q, dict) and q.get("ok") is True
+    assert q.get("frequency") == "month" and q.get("periods") == 3
+    assert isinstance(q.get("series"), list) and len(q["series"]) == 3
+    assert {"sas", "annual", "sampling", "value"} <= set(q["latest"].keys())
+    asof = _call_or_xfail(lambda: cli.macro.asof("$CPI"))
+    assert _is_num(asof)  # 价格指数点（上年同期=100），原生口径
+    assert _call_or_xfail(lambda: cli.macro.sampling_of("$GDP")) == "quarter"
+    spots = _call_or_xfail(lambda: cli.macro.spots("$GDP", 3))
+    assert isinstance(spots, list) and len(spots) == 3
+    curve = _call_or_xfail(lambda: cli.macro.bond_curve("中债国债收益率曲线", "10年"))
+    assert _is_num(curve)  # 小数口径（0.0168 = 1.68%）
+    # 行业情报按披露名单精确匹配；掉榜/名单为空合法返回 None——只断言类型契约
+    for r in (
+        _call_or_xfail(lambda: cli.macro.nev_monthly("零跑", "sales")),
+        _call_or_xfail(lambda: cli.macro.nev_weekly("零跑", "sales")),
+        _call_or_xfail(lambda: cli.macro.avc_monthly("消费级摄像头", "volume")),
+        _call_or_xfail(lambda: cli.macro.chinaiol_monthly("洗衣机", "volume")),
+        _call_or_xfail(lambda: cli.macro.cpca_top("比亚迪汽车", "wholesale")),
+        _call_or_xfail(lambda: cli.macro.phone_share("小米", "share")),
+    ):
+        assert r is None or _is_num(r)
+
+
+def test_futures_metric_posture(cli):
+    """$FUT_* 期货指标码姿势：symbol 绑任意 A 股代码（供 annual/sampling 上下文），
+    合约键经 fut_symbol 经 ARGS 透传（国内 cn.SR.ZCE、外盘 global.CL）。"""
+    v = _call_or_xfail(lambda: cli.indicator.get("600519", "$FUT_CLOSE"))
+    assert _is_num(v), f"期货主力连续收盘应返数值，got {v!r}"
+    batch = _call_or_xfail(lambda: cli.indicator.metrics(
+        "600519", ["$FUT_CLOSE", "$FUT_VOLUME"], fut_symbol="global.CL"))
+    assert isinstance(batch, dict) and _is_num(batch.get("$FUT_CLOSE"))
+    has = _call_or_xfail(lambda: cli.indicator.get("600519", "$FUT_HAS"))
+    assert has is True
+
+
+def test_us_kline_daily_bars():
+    """美股日 K（上游 us_kline_daily 管线已落库）：合同级断言。
+
+    新鲜度门禁（末根 == 最新交易日）待上游调度常态化（daily DAG 启用 +
+    us_dayk_eod 翻转）后收紧；当前调度验收期允许 T-n 滞后，只锁结构与降序。
+    """
+    us = Client.from_env(market="us")
+    bars = _call_or_xfail(lambda: us.kline.bars("AAPL", n=5))
+    assert isinstance(bars, list) and len(bars) == 5
+    assert {"date", "close", "volume"} <= set(bars[0].keys())
+    dates = [b["date"] for b in bars]
+    assert dates == sorted(dates, reverse=True), "bars 应按日期降序（最新在前）"
+
+
 # ---------------------------------------------------------------- 覆盖面守护
 def test_all_core_interfaces_are_exercised_here():
     """本文件必须覆盖 FRIENDLY_INDEX 的每个核心接口（防冒烟面回退）。"""

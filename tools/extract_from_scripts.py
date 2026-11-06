@@ -47,6 +47,8 @@ INCLUDED_NS = frozenset({
     # 域库曾因此被沙箱拒绑（selector policy violation）且 CI 构建全挂
     # v1.9.0：证券基础库（全市场列表 / 行业目录 / 行业成分）
     "stocks",
+    # v1.11.0：宏观时序域（中债曲线/宏观指标采样/行业月度）
+    "macro",
 })
 # rptdom 只保留三表透视族（年报 PDF 提取类 rows/notes/note_index 不发布）
 RPTDOM_KEEP = frozenset({"statement", "statement_years", "statement_compare", "statement_tree", "statement_audit"})
@@ -255,8 +257,9 @@ def extract_metrics(sr: Path) -> dict:
         # 市场/模式作用域元数据：从定义路径或 __midx 门控如实推导（shared=全市场，
         # 不写字段）。loader 文件（sys/metric/us.xs）与 IF(__midx==3, METRIC(…)) 门控
         # 里的码属于对应市场引擎，用错市场客户端探测必 500。
-        markets = _source_markets(src) or _midx_gate_market(sr, src,
+        markets = (_source_markets(src) or _midx_gate_market(sr, src,
                                                             (v or {}).get("line"))
+                   or _shared_required_market(sr, src))
         if markets:
             row["markets"] = markets
         gate = METRIC_GATES.get(src)
@@ -323,6 +326,27 @@ def _midx_gate_market(sr: Path, src: str, line: object) -> list[str]:
         return []
     m = _MIDX_GATE.search(lines[line - 1])
     return [_MIDX_MARKET[int(m.group(1))]] if m else []
+
+
+def _shared_required_market(sr: Path, src: str) -> list[str]:
+    """shared 指标文件被哪个市场 loader require → 只属于那个市场引擎。
+
+    例：sys/metric/shared/futures_kline.xs 仅被 sys/metric/cn.xs require，
+    其 $FUT_* 码在 hk/us 引擎不存在，用错市场客户端必 500——从上游 require
+    图如实推导，不做硬编码（上游将来多市场装载时标注自动消失）。
+    """
+    if not re.match(r"^sys/metric/shared/", src or ""):
+        return []
+    owners = []
+    for mk in ("cn", "hk", "us"):
+        loader = sr / "sys" / "metric" / f"{mk}.xs"
+        try:
+            text = loader.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        if f'xs.require("{src}")' in text or f"xs.require('{src}')" in text:
+            owners.append(mk)
+    return owners if len(owners) == 1 else []
 
 
 def build(sr: Path) -> tuple[dict, dict]:

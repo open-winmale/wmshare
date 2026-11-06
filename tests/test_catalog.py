@@ -6,11 +6,33 @@ from wmshare.catalog import load
 def test_load_and_stats():
     cat = load()
     s = cat.stats()
-    assert s["domains"] == 17, s
-    assert s["functions"] == 252, s
-    assert s["raw"] == 172 and s["computed"] == 80, s
-    assert s["metric_catalog_total"] == 2752, s
+    assert s["domains"] == 18, s
+    assert s["functions"] == 263, s
+    assert s["raw"] == 183 and s["computed"] == 80, s
+    assert s["metric_catalog_total"] == 2158, s
     assert s["upstream_rev"], "inventory 应锚定 upstream rev"
+
+
+def test_macro_domain_contract():
+    """v1.11.0 宏观域：11 函数全 L0、params 精修齐、预加载。"""
+    cat = load()
+    dom = cat.domain("market.macro")
+    assert dom["kind"] == "raw" and dom["category"] == "reference"
+    assert len(dom["functions"]) == 11
+    fn = cat.function("macro.query")
+    assert [p["name"] for p in fn["params"]] == ["code", "n"]
+    assert fn["params"][1]["default"] == 4
+    assert "macro" in cat.inventory["preloaded_libs"]
+
+
+def test_fut_metric_market_scope():
+    """$FUT_* 共享路径指标码必须带 markets=["cn"]（用错市场客户端必 500）。"""
+    cat = load()
+    row = cat.metric("$FUT_CLOSE")
+    assert row is not None and row.get("markets") == ["cn"], row
+    fut = [m for m in cat.metrics["metrics"] if m["code"].startswith("$FUT")]
+    assert len(fut) == 27
+    assert all(m.get("markets") == ["cn"] for m in fut)
 
 
 def test_function_contract():
@@ -57,7 +79,7 @@ def test_namespaces_and_metrics():
     cat = load()
     assert {"kline", "moneyflow", "notice", "filings", "forecast",
             "bonus", "rptdom", "segments", "equity", "margin", "estimates",
-            "cbond", "workout", "indices", "intl", "stocks"} == cat.namespaces()
+            "cbond", "workout", "indices", "intl", "stocks", "macro"} == cat.namespaces()
     m = cat.metric("$PE_TTM_LAST")
     assert m and m["cn"]
     assert cat.metric("$NOT_EXIST") is None
@@ -111,6 +133,6 @@ def test_catalog_shipped_inside_package():
     cdir = catmod.catalog_dir()
     assert cdir == pkg_root / "_catalog"
     assert (cdir / "schema" / "domain.schema.json").is_file()
-    assert len(list((cdir / "domains").glob("*.yaml"))) == 17
+    assert len(list((cdir / "domains").glob("*.yaml"))) == 18
     for g in ("inventory.json", "metrics.json"):
         assert (cdir / "generated" / g).is_file()

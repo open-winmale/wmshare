@@ -1138,6 +1138,126 @@ class KlineNS(_Ns):
         """涨跌幅分桶格式化"""
         return self._client.call("kline.fmt_bins", bins_raw=bins_raw, total_count=total_count, _raw=_raw, _df=_df)
 
+class MacroNS(_Ns):
+    """宏观（market.macro）"""
+
+    def query(self, code: str, n: int = 4, _raw: bool = False, _df: bool = False) -> Any:
+        """宏观时序
+
+:param code: 指标码或名称（$CPI / cpi 均可，服务端自动归一为 $CPI 形态）
+:param n: 期数（1–48，超出按边界取）
+
+:returns: MAP · ok/metric/store/frequency/periods/latest/series（series 每点含 sas/annual/sampling/value）
+        """
+        kw: dict[str, Any] = {"code": code}
+        if n is not None:
+            kw["n"] = n
+        return self._client.call("macro.query", **kw, _raw=_raw, _df=_df)
+
+    def asof(self, code: str, _raw: bool = False, _df: bool = False) -> Any:
+        """宏观 as-of 单点
+
+:param code: 指标码或名称（同 query；人口类序列勿用）
+
+:returns: 最新一期原生值（无数据返回 nil）
+        """
+        return self._client.call("macro.asof", code=code, _raw=_raw, _df=_df)
+
+    def spots(self, code: str, n: int = 4, _raw: bool = False, _df: bool = False) -> Any:
+        """宏观原生点列
+
+:param code: 指标码或名称
+:param n: 期数（1–48）
+
+:returns: ARR · 原生采样期点
+        """
+        kw: dict[str, Any] = {"code": code}
+        if n is not None:
+            kw["n"] = n
+        return self._client.call("macro.spots", **kw, _raw=_raw, _df=_df)
+
+    def sampling_of(self, code: str, _raw: bool = False, _df: bool = False) -> Any:
+        """宏观指标原生采样频率
+
+:param code: 指标码或名称
+
+:returns: "month"/"quarter"/"year"/"day"（无法判定时回退 "month"）
+        """
+        return self._client.call("macro.sampling_of", code=code, _raw=_raw, _df=_df)
+
+    def bond_curve(self, curve_name: str, tenor: str, _raw: bool = False, _df: bool = False) -> Any:
+        """中债收益率按曲线名+期限
+
+:param curve_name: 曲线披露名（如「中债国债收益率曲线」）
+:param tenor: 期限列名（如「10年」「1年」）
+
+:returns: 该曲线该期限的最新收益率原值
+        """
+        return self._client.call("macro.bond_curve", curve_name=curve_name, tenor=tenor, _raw=_raw, _df=_df)
+
+    def nev_monthly(self, brand: str, field: str, _raw: bool = False, _df: bool = False) -> Any:
+        """新势力月交付
+
+:param brand: 品牌披露名（如「零跑」「小米」）
+:param field: 取值列（sales/rank）
+
+:returns: 当月单值（掉榜返回 nil）
+        """
+        return self._client.call("macro.nev_monthly", brand=brand, field=field, _raw=_raw, _df=_df)
+
+    def nev_weekly(self, brand: str, field: str, _raw: bool = False, _df: bool = False) -> Any:
+        """新势力周销量
+
+:param brand: 品牌披露名
+:param field: 取值列（sales/rank）
+
+:returns: 当周单值（掉榜返回 nil）
+        """
+        return self._client.call("macro.nev_weekly", brand=brand, field=field, _raw=_raw, _df=_df)
+
+    def avc_monthly(self, category: str, field: str, _raw: bool = False, _df: bool = False) -> Any:
+        """奥维家电品类月度
+
+:param category: 品类披露名（如「消费级摄像头」）
+:param field: 取值列（volume/volume_yoy/value/value_yoy）
+
+:returns: 当月单值（掉榜返回 nil）
+        """
+        return self._client.call("macro.avc_monthly", category=category, field=field, _raw=_raw, _df=_df)
+
+    def chinaiol_monthly(self, category: str, field: str, _raw: bool = False, _df: bool = False) -> Any:
+        """家电产销月度
+
+:param category: 品类披露名（如「洗衣机」）
+:param field: 取值列（volume=内销量/volume_yoy/value=内销额/value_yoy）
+
+:returns: 当月单值（掉榜返回 nil）
+        """
+        return self._client.call("macro.chinaiol_monthly", category=category, field=field, _raw=_raw, _df=_df)
+
+    def cpca_top(self, manufacturer: str, field: str, _raw: bool = False, _df: bool = False) -> Any:
+        """乘联会厂商排行
+
+:param manufacturer: 厂商披露名（如「比亚迪汽车」）
+:param field: 取值列（如 wholesale/retail）
+
+:returns: 当月单值（掉榜返回 nil）
+        """
+        return self._client.call("macro.cpca_top", manufacturer=manufacturer, field=field, _raw=_raw, _df=_df)
+
+    def phone_share(self, brand: str, field: str = 'share', _raw: bool = False, _df: bool = False) -> Any:
+        """手机品牌周份额
+
+:param brand: 品牌披露名（如「小米」）
+:param field: 取值列（share/rank）
+
+:returns: 当周单值（掉榜返回 nil）
+        """
+        kw: dict[str, Any] = {"brand": brand}
+        if field is not None:
+            kw["field"] = field
+        return self._client.call("macro.phone_share", **kw, _raw=_raw, _df=_df)
+
 class MarginNS(_Ns):
     """融资融券（market.margin）"""
 
@@ -1657,6 +1777,7 @@ NAMESPACES: dict[str, type[_Ns]] = {
     "indices": IndicesNS,
     "intl": IntlNS,
     "kline": KlineNS,
+    "macro": MacroNS,
     "margin": MarginNS,
     "moneyflow": MoneyflowNS,
     "notice": NoticeNS,
