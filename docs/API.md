@@ -961,7 +961,7 @@ cli.cbond.universe_codes()
 
 | 方法 | 签名 | 输出 |
 |---|---|---|
-| `cli.cbond.article` | `article(payload, date=None, campaign=None)` | MAP · {source, wechat, summary, date, campaign}（源稿与公众号稿） |
+| `cli.cbond.article` | `article(payload, date=None, campaign=None, fig_dir='figs')` | MAP · {source, wechat, summary, date, campaign}（源稿与公众号稿） |
 | `cli.cbond.daily` | `daily(as_of=None, top_n=20, budget=30)` | MAP · {facts, derived, gates, states, top, scatter, calendar, featured_band, caliber_layers, coverage}（口径分层 + 三道闸 + 状态机 + 事件日历） |
 | `cli.cbond.figures` | `figures(payload, out_dir, date=None, klines=None)` | MAP · {table, scatter, band_<code>: 图片路径}（需 wmshare[figures]） |
 
@@ -969,11 +969,14 @@ cli.cbond.universe_codes()
 
 数字只从 `payload` 里拷贝，缺条目即抛 `LookupError`——不补猜测值。
 
+演练写临时目录时传绝对路径，配图存在性校验才能定位到真实文件
+
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
 | `payload` | object | 是 | — | ``daily()`` 返回的事实包 |
 | `date` | string | 否 | `None` | 文件名日期 ``YYYYMMDD``（缺省取事实包的快照日） |
 | `campaign` | string | 否 | `None` | UTM campaign（缺省 ``day{date}cb``） |
+| `fig_dir` | string | 否 | `'figs'` | 正文图片链接前缀；正式发布用相对路径 ``figs``， |
 
 **`cli.cbond.daily`** — 跑一期可转债日更，返回事实包（三层口径 + 三道闸 + 状态机 + 事件日历）。
 

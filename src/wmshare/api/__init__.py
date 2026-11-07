@@ -432,7 +432,8 @@ class CbondApi(_Api):
                          config=DailyConfig(top_n=top_n, budget=budget))
 
     def article(self, payload: dict[str, Any], date: str | None = None,
-                campaign: str | None = None) -> dict[str, str]:
+                campaign: str | None = None,
+                fig_dir: str = "figs") -> dict[str, str]:
         """把事实包写成图文稿件：源稿 Markdown + 公众号适配稿 + 摘要。
 
         数字只从 ``payload`` 里拷贝，缺条目即抛 ``LookupError``——不补猜测值。
@@ -440,6 +441,8 @@ class CbondApi(_Api):
         :param payload: ``daily()`` 返回的事实包
         :param date: 文件名日期 ``YYYYMMDD``（缺省取事实包的快照日）
         :param campaign: UTM campaign（缺省 ``day{date}cb``）
+        :param fig_dir: 正文图片链接前缀；正式发布用相对路径 ``figs``，
+            演练写临时目录时传绝对路径，配图存在性校验才能定位到真实文件
         """
         from wmshare.cb import article as A
 
@@ -449,7 +452,7 @@ class CbondApi(_Api):
                              code="params")
         camp = campaign or f"day{d}cb"
         fa = A.Facts(payload)
-        src = A.build_source(fa, d, str(payload.get("date") or ""), camp)
+        src = A.build_source(fa, d, str(payload.get("date") or ""), camp, fig_dir)
         summary = A.build_summary(fa)
         return {"source": src, "wechat": A.build_wechat(src, camp, summary),
                 "summary": summary, "date": d, "campaign": camp}
