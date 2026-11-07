@@ -282,20 +282,39 @@ class CbondNS(_Ns):
     """可转债（market.cbond）"""
 
     def board(self, _raw: bool = False, _df: bool = False) -> Any:
-        """转债全市场面板（快照+最新事件+盘中价+callHits+下修地板价）"""
+        """转债全市场面板（快照+最新事件+盘中价+callHits+下修地板价）
+
+:returns: ARR · 转债面板行（快照行 + event/resetEvent/outstanding/callHits/resetFloor 等）
+        """
         return self._client.call("cbond.board", _raw=_raw, _df=_df)
 
     def quote_list(self, _raw: bool = False, _df: bool = False) -> Any:
-        """转债合约快照全表"""
+        """转债合约快照全表
+
+:returns: ARR · 原始快照行（snake_case，未规范化）
+        """
         return self._client.call("cbond.quote_list", _raw=_raw, _df=_df)
 
     def latest_quotes(self, _raw: bool = False, _df: bool = False) -> Any:
-        """转债最新快照"""
+        """转债最新快照
+
+:returns: ARR · 规范化快照行（每债取 asOf 最新一行）
+        """
         return self._client.call("cbond.latest_quotes", _raw=_raw, _df=_df)
 
     def of_stock(self, stk: Any, _raw: bool = False, _df: bool = False) -> Any:
-        """正股关联转债"""
+        """正股关联转债
+
+:returns: ARR · 该公司全部转债快照行（含已到期历史债，按 outstanding 过滤）
+        """
         return self._client.call("cbond.of_stock", stk=stk, _raw=_raw, _df=_df)
+
+    def fmt_quote(self, row: dict, _raw: bool = False, _df: bool = False) -> Any:
+        """快照行规范化
+
+:returns: MAP · 规范化快照行
+        """
+        return self._client.call("cbond.fmt_quote", row=row, _raw=_raw, _df=_df)
 
     def event_list(self, _raw: bool = False, _df: bool = False) -> Any:
         """转债条款事件列表"""
@@ -309,8 +328,15 @@ class CbondNS(_Ns):
         """按标的查条款事件"""
         return self._client.call("cbond.query", sym=sym, _raw=_raw, _df=_df)
 
+    def fmt_event(self, row: dict, _raw: bool = False, _df: bool = False) -> Any:
+        """条款事件行规范化"""
+        return self._client.call("cbond.fmt_event", row=row, _raw=_raw, _df=_df)
+
     def call_hits(self, code: Any, trig: Any, _raw: bool = False, _df: bool = False) -> Any:
-        """强赎触发计数"""
+        """强赎触发计数
+
+:returns: int · 近 30 个交易日正股收盘 ≥ 触发价的天数
+        """
         return self._client.call("cbond.call_hits", code=code, trig=trig, _raw=_raw, _df=_df)
 
     def kline_window(self, code: Any, n: Any, _raw: bool = False, _df: bool = False) -> Any:
@@ -328,14 +354,6 @@ class CbondNS(_Ns):
     def universe_codes(self, _raw: bool = False, _df: bool = False) -> Any:
         """转债代码全集"""
         return self._client.call("cbond.universe_codes", _raw=_raw, _df=_df)
-
-    def fmt_quote(self, row: dict, _raw: bool = False, _df: bool = False) -> Any:
-        """快照行规范化"""
-        return self._client.call("cbond.fmt_quote", row=row, _raw=_raw, _df=_df)
-
-    def fmt_event(self, row: dict, _raw: bool = False, _df: bool = False) -> Any:
-        """条款事件行规范化"""
-        return self._client.call("cbond.fmt_event", row=row, _raw=_raw, _df=_df)
 
 class EquityNS(_Ns):
     """股东与股本（corp.equity）"""

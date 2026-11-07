@@ -1,6 +1,6 @@
 {
  "schema_version": 2,
- "upstream_rev": "32820e0c",
+ "upstream_rev": "675a59a6",
  "domains": {
   "bonus": {
    "entry": "sys/bonus/init.xs",
@@ -1050,7 +1050,299 @@
    "cn": "转债全市场面板（快照行+最新条款事件+盘中价+强赎触发计数+下修地板价）",
    "example": "cbond.board()",
    "returns": "ARR · board 行（quotes 行 + event/bondPercent/callHits/resetFloor）",
-   "returns_shape": null,
+   "returns_shape": {
+    "kind": "array",
+    "items": {
+     "kind": "object",
+     "cn": "转债面板行",
+     "fields": [
+      {
+       "name": "bondCode",
+       "type": "string",
+       "cn": "转债代码"
+      },
+      {
+       "name": "bondName",
+       "type": "string",
+       "cn": "转债简称"
+      },
+      {
+       "name": "stockCode",
+       "type": "string",
+       "cn": "正股代码"
+      },
+      {
+       "name": "stockName",
+       "type": "string",
+       "cn": "正股简称"
+      },
+      {
+       "name": "convertPrice",
+       "type": "float64",
+       "cn": "当期转股价",
+       "optional": true
+      },
+      {
+       "name": "convertPriceInitial",
+       "type": "float64",
+       "cn": "初始转股价",
+       "optional": true
+      },
+      {
+       "name": "bondPrice",
+       "type": "float64",
+       "cn": "转债价（元，面值 100）",
+       "optional": true
+      },
+      {
+       "name": "stockPrice",
+       "type": "float64",
+       "cn": "正股现价",
+       "optional": true
+      },
+      {
+       "name": "transferValue",
+       "type": "float64",
+       "cn": "转股价值",
+       "optional": true
+      },
+      {
+       "name": "premiumRatio",
+       "type": "float64",
+       "cn": "转股溢价率（百分比数值 4.87 = +4.87%，可为负）",
+       "optional": true
+      },
+      {
+       "name": "remainSize",
+       "type": "float64",
+       "cn": "未转股余额（元）",
+       "optional": true
+      },
+      {
+       "name": "issueScale",
+       "type": "float64",
+       "cn": "发行规模（元）",
+       "optional": true
+      },
+      {
+       "name": "couponExplain",
+       "type": "string",
+       "cn": "票面利率说明（含分年票息表）",
+       "optional": true
+      },
+      {
+       "name": "couponIr",
+       "type": "float64",
+       "cn": "当年票息（百分比数值，随剩余年限变化，非恒定）",
+       "optional": true
+      },
+      {
+       "name": "bondExpire",
+       "type": "float64",
+       "cn": "债券年限（年，不是价格）",
+       "optional": true
+      },
+      {
+       "name": "redeemValue",
+       "type": "float64",
+       "cn": "到期赎回价（元，面值的百分比数值）",
+       "optional": true
+      },
+      {
+       "name": "valueDate",
+       "type": "string",
+       "cn": "转股价值基准日",
+       "optional": true
+      },
+      {
+       "name": "redeemTrig",
+       "type": "float64",
+       "cn": "强赎触发价（正股口径）",
+       "optional": true
+      },
+      {
+       "name": "resaleTrig",
+       "type": "float64",
+       "cn": "回售触发价（正股口径）",
+       "optional": true
+      },
+      {
+       "name": "transferStart",
+       "type": "string",
+       "cn": "转股起始日",
+       "optional": true
+      },
+      {
+       "name": "expireDate",
+       "type": "string",
+       "cn": "到期日 YYYY-MM-DD",
+       "optional": true
+      },
+      {
+       "name": "listDate",
+       "type": "string",
+       "cn": "上市日",
+       "optional": true
+      },
+      {
+       "name": "asOf",
+       "type": "string",
+       "cn": "快照日 YYYY-MM-DD",
+       "optional": true
+      },
+      {
+       "name": "quoteUrl",
+       "type": "string",
+       "cn": "行情页链接",
+       "optional": true
+      },
+      {
+       "name": "detailUrl",
+       "type": "string",
+       "cn": "详情页链接",
+       "optional": true
+      },
+      {
+       "name": "event",
+       "type": "object",
+       "cn": "最新一条条款事件（不分类型，可能是与下修无关的回售/转股结果）",
+       "optional": true
+      },
+      {
+       "name": "resetEvent",
+       "type": "object",
+       "cn": "尚未被实施下修/不修正关掉的提议事件",
+       "optional": true
+      },
+      {
+       "name": "outstanding",
+       "type": "bool",
+       "cn": "在市（remainSize>0 且未到期）",
+       "optional": true
+      },
+      {
+       "name": "bondPercent",
+       "type": "float64",
+       "cn": "转债当日涨跌幅（仅盘中 live 命中时返回）",
+       "optional": true
+      },
+      {
+       "name": "callHits",
+       "type": "int",
+       "cn": "近 30 个交易日正股收盘 ≥ 触发价天数（仅股价已跨线时返回）",
+       "optional": true
+      },
+      {
+       "name": "callWindow",
+       "type": "int",
+       "cn": "计数窗口长度（30）",
+       "optional": true
+      },
+      {
+       "name": "resetFloor",
+       "type": "float64",
+       "cn": "下修地板价",
+       "optional": true
+      },
+      {
+       "name": "resetP1",
+       "type": "float64",
+       "cn": "前 1 日均价",
+       "optional": true
+      },
+      {
+       "name": "resetP20",
+       "type": "float64",
+       "cn": "前 20 日均价",
+       "optional": true
+      },
+      {
+       "name": "resetBps",
+       "type": "float64",
+       "cn": "最近一期审计每股净资产",
+       "optional": true
+      },
+      {
+       "name": "resetBpsYear",
+       "type": "string",
+       "cn": "净资产所属报告期",
+       "optional": true
+      },
+      {
+       "name": "resetEstimate",
+       "type": "bool",
+       "cn": "地板价为估算值",
+       "optional": true
+      },
+      {
+       "name": "resetWaive",
+       "type": "bool",
+       "cn": "按条款可豁免",
+       "optional": true
+      },
+      {
+       "name": "resetMeeting",
+       "type": "string",
+       "cn": "股东会日期",
+       "optional": true
+      },
+      {
+       "name": "resetFamily",
+       "type": "string",
+       "cn": "地板口径族 a/b",
+       "optional": true
+      },
+      {
+       "name": "resetHasPar",
+       "type": "bool",
+       "cn": "条款含面值下限",
+       "optional": true
+      },
+      {
+       "name": "resetBase",
+       "type": "float64",
+       "cn": "条款基准价",
+       "optional": true
+      },
+      {
+       "name": "resetBaseFrom",
+       "type": "string",
+       "cn": "基准价来源",
+       "optional": true
+      },
+      {
+       "name": "resetClause",
+       "type": "string",
+       "cn": "下修条款原文",
+       "optional": true
+      },
+      {
+       "name": "stockMv",
+       "type": "float64",
+       "cn": "正股市值",
+       "optional": true
+      },
+      {
+       "name": "stockPb",
+       "type": "float64",
+       "cn": "正股市净率",
+       "optional": true
+      },
+      {
+       "name": "stockPe",
+       "type": "float64",
+       "cn": "正股市盈率",
+       "optional": true
+      },
+      {
+       "name": "stockDiv",
+       "type": "float64",
+       "cn": "正股股息率",
+       "optional": true
+      }
+     ]
+    }
+   },
    "min_args": 0,
    "params": []
   },
@@ -1114,7 +1406,164 @@
    "cn": "快照行规范化",
    "example": "cbond.fmt_quote(row)",
    "returns": "MAP · 规范化快照行",
-   "returns_shape": null,
+   "returns_shape": {
+    "kind": "object",
+    "cn": "转债快照行",
+    "fields": [
+     {
+      "name": "bondCode",
+      "type": "string",
+      "cn": "转债代码"
+     },
+     {
+      "name": "bondName",
+      "type": "string",
+      "cn": "转债简称"
+     },
+     {
+      "name": "stockCode",
+      "type": "string",
+      "cn": "正股代码"
+     },
+     {
+      "name": "stockName",
+      "type": "string",
+      "cn": "正股简称"
+     },
+     {
+      "name": "convertPrice",
+      "type": "float64",
+      "cn": "当期转股价",
+      "optional": true
+     },
+     {
+      "name": "convertPriceInitial",
+      "type": "float64",
+      "cn": "初始转股价",
+      "optional": true
+     },
+     {
+      "name": "bondPrice",
+      "type": "float64",
+      "cn": "转债价（元，面值 100）",
+      "optional": true
+     },
+     {
+      "name": "stockPrice",
+      "type": "float64",
+      "cn": "正股现价",
+      "optional": true
+     },
+     {
+      "name": "transferValue",
+      "type": "float64",
+      "cn": "转股价值",
+      "optional": true
+     },
+     {
+      "name": "premiumRatio",
+      "type": "float64",
+      "cn": "转股溢价率（百分比数值 4.87 = +4.87%，可为负）",
+      "optional": true
+     },
+     {
+      "name": "remainSize",
+      "type": "float64",
+      "cn": "未转股余额（元）",
+      "optional": true
+     },
+     {
+      "name": "issueScale",
+      "type": "float64",
+      "cn": "发行规模（元）",
+      "optional": true
+     },
+     {
+      "name": "couponExplain",
+      "type": "string",
+      "cn": "票面利率说明（含分年票息表）",
+      "optional": true
+     },
+     {
+      "name": "couponIr",
+      "type": "float64",
+      "cn": "当年票息（百分比数值，随剩余年限变化，非恒定）",
+      "optional": true
+     },
+     {
+      "name": "bondExpire",
+      "type": "float64",
+      "cn": "债券年限（年，不是价格）",
+      "optional": true
+     },
+     {
+      "name": "redeemValue",
+      "type": "float64",
+      "cn": "到期赎回价（元，面值的百分比数值）",
+      "optional": true
+     },
+     {
+      "name": "valueDate",
+      "type": "string",
+      "cn": "转股价值基准日",
+      "optional": true
+     },
+     {
+      "name": "redeemTrig",
+      "type": "float64",
+      "cn": "强赎触发价（正股口径）",
+      "optional": true
+     },
+     {
+      "name": "resaleTrig",
+      "type": "float64",
+      "cn": "回售触发价（正股口径）",
+      "optional": true
+     },
+     {
+      "name": "transferStart",
+      "type": "string",
+      "cn": "转股起始日",
+      "optional": true
+     },
+     {
+      "name": "expireDate",
+      "type": "string",
+      "cn": "到期日 YYYY-MM-DD",
+      "optional": true
+     },
+     {
+      "name": "listDate",
+      "type": "string",
+      "cn": "上市日",
+      "optional": true
+     },
+     {
+      "name": "asOf",
+      "type": "string",
+      "cn": "快照日 YYYY-MM-DD",
+      "optional": true
+     },
+     {
+      "name": "quoteUrl",
+      "type": "string",
+      "cn": "行情页链接",
+      "optional": true
+     },
+     {
+      "name": "detailUrl",
+      "type": "string",
+      "cn": "详情页链接",
+      "optional": true
+     },
+     {
+      "name": "outstanding",
+      "type": "bool",
+      "cn": "在市（未转股余额>0 且未到期）",
+      "optional": false
+     }
+    ]
+   },
    "min_args": 1,
    "params": [
     {
@@ -1146,7 +1595,167 @@
    "cn": "转债最新快照",
    "example": "cbond.latest_quotes()",
    "returns": "ARR · 规范化快照行",
-   "returns_shape": null,
+   "returns_shape": {
+    "kind": "array",
+    "items": {
+     "kind": "object",
+     "cn": "转债快照行",
+     "fields": [
+      {
+       "name": "bondCode",
+       "type": "string",
+       "cn": "转债代码"
+      },
+      {
+       "name": "bondName",
+       "type": "string",
+       "cn": "转债简称"
+      },
+      {
+       "name": "stockCode",
+       "type": "string",
+       "cn": "正股代码"
+      },
+      {
+       "name": "stockName",
+       "type": "string",
+       "cn": "正股简称"
+      },
+      {
+       "name": "convertPrice",
+       "type": "float64",
+       "cn": "当期转股价",
+       "optional": true
+      },
+      {
+       "name": "convertPriceInitial",
+       "type": "float64",
+       "cn": "初始转股价",
+       "optional": true
+      },
+      {
+       "name": "bondPrice",
+       "type": "float64",
+       "cn": "转债价（元，面值 100）",
+       "optional": true
+      },
+      {
+       "name": "stockPrice",
+       "type": "float64",
+       "cn": "正股现价",
+       "optional": true
+      },
+      {
+       "name": "transferValue",
+       "type": "float64",
+       "cn": "转股价值",
+       "optional": true
+      },
+      {
+       "name": "premiumRatio",
+       "type": "float64",
+       "cn": "转股溢价率（百分比数值 4.87 = +4.87%，可为负）",
+       "optional": true
+      },
+      {
+       "name": "remainSize",
+       "type": "float64",
+       "cn": "未转股余额（元）",
+       "optional": true
+      },
+      {
+       "name": "issueScale",
+       "type": "float64",
+       "cn": "发行规模（元）",
+       "optional": true
+      },
+      {
+       "name": "couponExplain",
+       "type": "string",
+       "cn": "票面利率说明（含分年票息表）",
+       "optional": true
+      },
+      {
+       "name": "couponIr",
+       "type": "float64",
+       "cn": "当年票息（百分比数值，随剩余年限变化，非恒定）",
+       "optional": true
+      },
+      {
+       "name": "bondExpire",
+       "type": "float64",
+       "cn": "债券年限（年，不是价格）",
+       "optional": true
+      },
+      {
+       "name": "redeemValue",
+       "type": "float64",
+       "cn": "到期赎回价（元，面值的百分比数值）",
+       "optional": true
+      },
+      {
+       "name": "valueDate",
+       "type": "string",
+       "cn": "转股价值基准日",
+       "optional": true
+      },
+      {
+       "name": "redeemTrig",
+       "type": "float64",
+       "cn": "强赎触发价（正股口径）",
+       "optional": true
+      },
+      {
+       "name": "resaleTrig",
+       "type": "float64",
+       "cn": "回售触发价（正股口径）",
+       "optional": true
+      },
+      {
+       "name": "transferStart",
+       "type": "string",
+       "cn": "转股起始日",
+       "optional": true
+      },
+      {
+       "name": "expireDate",
+       "type": "string",
+       "cn": "到期日 YYYY-MM-DD",
+       "optional": true
+      },
+      {
+       "name": "listDate",
+       "type": "string",
+       "cn": "上市日",
+       "optional": true
+      },
+      {
+       "name": "asOf",
+       "type": "string",
+       "cn": "快照日 YYYY-MM-DD",
+       "optional": true
+      },
+      {
+       "name": "quoteUrl",
+       "type": "string",
+       "cn": "行情页链接",
+       "optional": true
+      },
+      {
+       "name": "detailUrl",
+       "type": "string",
+       "cn": "详情页链接",
+       "optional": true
+      },
+      {
+       "name": "outstanding",
+       "type": "bool",
+       "cn": "在市（未转股余额>0 且未到期）",
+       "optional": false
+      }
+     ]
+    }
+   },
    "min_args": 0,
    "params": []
   },
@@ -1183,7 +1792,167 @@
    "cn": "正股关联转债",
    "example": "cbond.of_stock(\"600519\")",
    "returns": "ARR · 规范化快照行",
-   "returns_shape": null,
+   "returns_shape": {
+    "kind": "array",
+    "items": {
+     "kind": "object",
+     "cn": "转债快照行",
+     "fields": [
+      {
+       "name": "bondCode",
+       "type": "string",
+       "cn": "转债代码"
+      },
+      {
+       "name": "bondName",
+       "type": "string",
+       "cn": "转债简称"
+      },
+      {
+       "name": "stockCode",
+       "type": "string",
+       "cn": "正股代码"
+      },
+      {
+       "name": "stockName",
+       "type": "string",
+       "cn": "正股简称"
+      },
+      {
+       "name": "convertPrice",
+       "type": "float64",
+       "cn": "当期转股价",
+       "optional": true
+      },
+      {
+       "name": "convertPriceInitial",
+       "type": "float64",
+       "cn": "初始转股价",
+       "optional": true
+      },
+      {
+       "name": "bondPrice",
+       "type": "float64",
+       "cn": "转债价（元，面值 100）",
+       "optional": true
+      },
+      {
+       "name": "stockPrice",
+       "type": "float64",
+       "cn": "正股现价",
+       "optional": true
+      },
+      {
+       "name": "transferValue",
+       "type": "float64",
+       "cn": "转股价值",
+       "optional": true
+      },
+      {
+       "name": "premiumRatio",
+       "type": "float64",
+       "cn": "转股溢价率（百分比数值 4.87 = +4.87%，可为负）",
+       "optional": true
+      },
+      {
+       "name": "remainSize",
+       "type": "float64",
+       "cn": "未转股余额（元）",
+       "optional": true
+      },
+      {
+       "name": "issueScale",
+       "type": "float64",
+       "cn": "发行规模（元）",
+       "optional": true
+      },
+      {
+       "name": "couponExplain",
+       "type": "string",
+       "cn": "票面利率说明（含分年票息表）",
+       "optional": true
+      },
+      {
+       "name": "couponIr",
+       "type": "float64",
+       "cn": "当年票息（百分比数值，随剩余年限变化，非恒定）",
+       "optional": true
+      },
+      {
+       "name": "bondExpire",
+       "type": "float64",
+       "cn": "债券年限（年，不是价格）",
+       "optional": true
+      },
+      {
+       "name": "redeemValue",
+       "type": "float64",
+       "cn": "到期赎回价（元，面值的百分比数值）",
+       "optional": true
+      },
+      {
+       "name": "valueDate",
+       "type": "string",
+       "cn": "转股价值基准日",
+       "optional": true
+      },
+      {
+       "name": "redeemTrig",
+       "type": "float64",
+       "cn": "强赎触发价（正股口径）",
+       "optional": true
+      },
+      {
+       "name": "resaleTrig",
+       "type": "float64",
+       "cn": "回售触发价（正股口径）",
+       "optional": true
+      },
+      {
+       "name": "transferStart",
+       "type": "string",
+       "cn": "转股起始日",
+       "optional": true
+      },
+      {
+       "name": "expireDate",
+       "type": "string",
+       "cn": "到期日 YYYY-MM-DD",
+       "optional": true
+      },
+      {
+       "name": "listDate",
+       "type": "string",
+       "cn": "上市日",
+       "optional": true
+      },
+      {
+       "name": "asOf",
+       "type": "string",
+       "cn": "快照日 YYYY-MM-DD",
+       "optional": true
+      },
+      {
+       "name": "quoteUrl",
+       "type": "string",
+       "cn": "行情页链接",
+       "optional": true
+      },
+      {
+       "name": "detailUrl",
+       "type": "string",
+       "cn": "详情页链接",
+       "optional": true
+      },
+      {
+       "name": "outstanding",
+       "type": "bool",
+       "cn": "在市（未转股余额>0 且未到期）",
+       "optional": false
+      }
+     ]
+    }
+   },
    "min_args": 1,
    "params": [
     {

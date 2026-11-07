@@ -541,8 +541,35 @@ class Client:
 
     # 标的参数自动归一；stock_code 用于 notice.query_find 等底层函数。
     # 批量识别只用 BATCH_SYMBOL_PARAMS，避免把 stock_code 误当成可批量首个参数。
-    SYMBOL_PARAMS = ("sym", "symbol", "stk", "stock_code")
-    BATCH_SYMBOL_PARAMS = ("sym", "symbol", "stk")
+    # code 是 cbond/macro 域对标的参数的叫法（cbond.call_hits(code, trig)），
+    # 与 sym/stk 同义，同样归一代码写法。
+    SYMBOL_PARAMS = ("sym", "symbol", "stk", "stock_code", "code")
+    BATCH_SYMBOL_PARAMS = ("sym", "symbol", "stk", "code")
+    # 通用别名 → 函数实际参数名：用户按目录习惯写 symbol= / sym= 时自动落到该
+    # 函数的真实标的名（cbond.of_stock 叫 stk、cbond.call_hits 叫 code）。
+    SYMBOL_ALIASES = ("symbol", "sym")
+
+    def _resolve_symbol_alias(self, name: str, params: list[dict],
+                              kwargs: dict[str, Any]) -> dict[str, Any]:
+        """把通用的 symbol= / sym= 落到该函数真实的标的名上。
+
+        目录里标的参数叫法不统一（kline 用 sym、cbond.of_stock 用 stk、
+        cbond.call_hits 用 code）。用户不该为此记三套名字，故：
+        函数有唯一标的名、且该名未被传、且恰好传了一个别名时，改名。
+        歧义（同时传 sym= 与 symbol=）或函数没有标的名时不动，交给常规校验报错。
+        """
+        sym_names = [p["name"] for p in params if p["name"] in self.SYMBOL_PARAMS]
+        if len(sym_names) != 1:
+            return kwargs
+        real = sym_names[0]
+        if real in kwargs:
+            return kwargs
+        given = [a for a in self.SYMBOL_ALIASES if a in kwargs]
+        if len(given) != 1 or given[0] == real:
+            return kwargs
+        out = dict(kwargs)
+        out[real] = out.pop(given[0])
+        return out
 
     def _build_call_line(self, name: str, params: list[dict], kwargs: dict[str, Any],
                          *, sym_override: str | None = None,
@@ -604,7 +631,10 @@ class Client:
                 args.append(_xs_literal(self._canon_symbol(sym_override)))
             elif p["name"] in kwargs:
                 v = kwargs[p["name"]]
-                if p.get("type") == "string" and p["name"] in self.SYMBOL_PARAMS:
+                # 标的参数不论目录声明为 string 还是 any 都要归一：
+                # cbond.* / macro.* 的标的名在 xs 侧是 any 类型，
+                # 只按 type=="string" 判断会漏掉，导致 "601009.SH" 原样下发。
+                if p["name"] in self.SYMBOL_PARAMS and isinstance(v, str):
                     v = self._canon_symbol(v)
                 args.append(_xs_literal(v))
             elif "default" in p:
@@ -632,11 +662,12 @@ class Client:
                              code="units")
         fn = self._resolve_function(name)
         params = fn.get("params") or self.catalog.inventory_params(name)
+        kwargs = self._resolve_symbol_alias(name, params, kwargs)
         # 传列表即批量：标的参数收到 list/tuple 自动转 call_batch
         # （≤500，超限 LimitError；语义与显式 call_batch 一致）。
         for p in params:
             v = kwargs.get(p["name"])
-            if (p.get("type") == "string" and p["name"] in self.BATCH_SYMBOL_PARAMS
+            if (p["name"] in self.BATCH_SYMBOL_PARAMS
                     and isinstance(v, (list, tuple))):
                 rest = {k: w for k, w in kwargs.items() if k != p["name"]}
                 return self.call_batch(name, list(v), _raw=_raw, _df=_df,
@@ -650,7 +681,7 @@ class Client:
         xs = self._require_lines(name) + lines
         symbol = DEFAULT_SYMBOLS.get(str(self.market or "cn").lower(), "600519")
         for p in params:
-            if p["name"] in kwargs and p["type"] == "string" and p["name"] in self.SYMBOL_PARAMS:
+            if p["name"] in kwargs and p["name"] in self.SYMBOL_PARAMS:
                 symbol = self._canon_symbol(str(kwargs[p["name"]]))
                 break
         result = self.eval_result(xs, symbol=symbol)
@@ -677,9 +708,9 @@ class Client:
         fn = self._resolve_function(name)
         params = fn.get("params") or self.catalog.inventory_params(name)
         sym_param = next((p["name"] for p in params
-                          if p.get("type") == "string" and p["name"] in self.BATCH_SYMBOL_PARAMS), None)
+                          if p["name"] in self.BATCH_SYMBOL_PARAMS), None)
         if sym_param is None:
-            raise UsageError(f"{name}: 没有标的参数（sym/symbol/stk），不支持批量调用",
+            raise UsageError(f"{name}: 没有标的参数（sym/symbol/stk/code），不支持批量调用",
                              code="params")
         if sym_param in kwargs:
             raise UsageError(f"{name}: 批量调用请用 symbols 指定标的，不要在 kwargs 传 {sym_param}",

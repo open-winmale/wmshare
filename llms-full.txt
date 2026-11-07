@@ -1078,7 +1078,7 @@ python3 -c "import wmshare; print(wmshare.load().metric('\$PE_TTM_LAST'))"
 
 | 数据域 | 核心能力 | 单位口径 |
 |---|---|---|
-| `market.cbond`（可转债） | 转债全市场面板（快照+最新事件+盘中价+callHits+下修地板价）、转债合约快照全表、转债最新快照、正股关联转债、转债条款事件列表… | price=元（转债价/转股价/目标价，面值 100 口径）；ratio=小数（转股比例等比率字段） |
+| `market.cbond`（可转债） | 转债全市场面板（快照+最新事件+盘中价+callHits+下修地板价）、转债合约快照全表、转债最新快照、正股关联转债、转债条款事件列表… | price=元（转债价/转股价，面值 100 口径）；ratio=小数（SDK 基础单位；上游 percent 已按 percent 声明换算） |
 | `market.index`（指数） | 指数键列表、指数成分、指数权重股、指数估值时序、指数估值趋势(周频整体法)… | money=元（市值）；ratio=小数（roe_ttm 等比率，指标层口径）；weight=小数（披露权重，上游 fmt 已换算，SDK 不再处理） |
 | `market.kline`（行情K线） | 历史 K 线、最新一根 K 线、是否场内 ETF、盘中日K快照、盘中日K批量快照… | price=元；volume=股（cn 由脚本的手 ×100 换算；港美上游即披露股，不再换算）；amount=元（本币）；percent=小数（0.01 = 1%） |
 | `market.margin`（融资融券） | 个股融资融券、最新两融 | money=元（融资买入额/偿还额/余额）；shares=股（融券卖出量/偿还量/余量） |
@@ -1800,7 +1800,58 @@ cli.stocks.industry_members(industry="银行", top_n=10)
 
 **输入参数**：无。
 
-**输出**：ARR · board 行（quotes 行 + event/bondPercent/callHits/resetFloor）
+**输出字段**
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `bondCode` | string | 转债代码 |
+| `bondName` | string | 转债简称 |
+| `stockCode` | string | 正股代码 |
+| `stockName` | string | 正股简称 |
+| `convertPrice` | float? | 当期转股价 |
+| `convertPriceInitial` | float? | 初始转股价 |
+| `bondPrice` | float? | 转债价（元，面值 100） |
+| `stockPrice` | float? | 正股现价 |
+| `transferValue` | float? | 转股价值 |
+| `premiumRatio` | float? | 转股溢价率（百分比数值 4.87 = +4.87%，可为负） |
+| `remainSize` | float? | 未转股余额（元） |
+| `issueScale` | float? | 发行规模（元） |
+| `couponExplain` | string? | 票面利率说明（含分年票息表） |
+| `couponIr` | float? | 当年票息（百分比数值，随剩余年限变化，非恒定） |
+| `bondExpire` | float? | 债券年限（年，不是价格） |
+| `redeemValue` | float? | 到期赎回价（元，面值的百分比数值） |
+| `valueDate` | string? | 转股价值基准日 |
+| `redeemTrig` | float? | 强赎触发价（正股口径） |
+| `resaleTrig` | float? | 回售触发价（正股口径） |
+| `transferStart` | string? | 转股起始日 |
+| `expireDate` | string? | 到期日 YYYY-MM-DD |
+| `listDate` | string? | 上市日 |
+| `asOf` | string? | 快照日 YYYY-MM-DD |
+| `quoteUrl` | string? | 行情页链接 |
+| `detailUrl` | string? | 详情页链接 |
+| `event` | object? | 最新一条条款事件（不分类型，可能是与下修无关的回售/转股结果） |
+| `resetEvent` | object? | 尚未被实施下修/不修正关掉的提议事件 |
+| `outstanding` | bool? | 在市（remainSize>0 且未到期） |
+| `bondPercent` | float? | 转债当日涨跌幅（仅盘中 live 命中时返回） |
+| `callHits` | int? | 近 30 个交易日正股收盘 ≥ 触发价天数（仅股价已跨线时返回） |
+| `callWindow` | int? | 计数窗口长度（30） |
+| `resetFloor` | float? | 下修地板价 |
+| `resetP1` | float? | 前 1 日均价 |
+| `resetP20` | float? | 前 20 日均价 |
+| `resetBps` | float? | 最近一期审计每股净资产 |
+| `resetBpsYear` | string? | 净资产所属报告期 |
+| `resetEstimate` | bool? | 地板价为估算值 |
+| `resetWaive` | bool? | 按条款可豁免 |
+| `resetMeeting` | string? | 股东会日期 |
+| `resetFamily` | string? | 地板口径族 a/b |
+| `resetHasPar` | bool? | 条款含面值下限 |
+| `resetBase` | float? | 条款基准价 |
+| `resetBaseFrom` | string? | 基准价来源 |
+| `resetClause` | string? | 下修条款原文 |
+| `stockMv` | float? | 正股市值 |
+| `stockPb` | float? | 正股市净率 |
+| `stockPe` | float? | 正股市盈率 |
+| `stockDiv` | float? | 正股股息率 |
 
 **示例**
 
@@ -1814,7 +1865,36 @@ cli.cbond.board()
 
 **输入参数**：无。
 
-**输出**：ARR · 规范化快照行
+**输出字段**
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `bondCode` | string | 转债代码 |
+| `bondName` | string | 转债简称 |
+| `stockCode` | string | 正股代码 |
+| `stockName` | string | 正股简称 |
+| `convertPrice` | float? | 当期转股价 |
+| `convertPriceInitial` | float? | 初始转股价 |
+| `bondPrice` | float? | 转债价（元，面值 100） |
+| `stockPrice` | float? | 正股现价 |
+| `transferValue` | float? | 转股价值 |
+| `premiumRatio` | float? | 转股溢价率（百分比数值 4.87 = +4.87%，可为负） |
+| `remainSize` | float? | 未转股余额（元） |
+| `issueScale` | float? | 发行规模（元） |
+| `couponExplain` | string? | 票面利率说明（含分年票息表） |
+| `couponIr` | float? | 当年票息（百分比数值，随剩余年限变化，非恒定） |
+| `bondExpire` | float? | 债券年限（年，不是价格） |
+| `redeemValue` | float? | 到期赎回价（元，面值的百分比数值） |
+| `valueDate` | string? | 转股价值基准日 |
+| `redeemTrig` | float? | 强赎触发价（正股口径） |
+| `resaleTrig` | float? | 回售触发价（正股口径） |
+| `transferStart` | string? | 转股起始日 |
+| `expireDate` | string? | 到期日 YYYY-MM-DD |
+| `listDate` | string? | 上市日 |
+| `asOf` | string? | 快照日 YYYY-MM-DD |
+| `quoteUrl` | string? | 行情页链接 |
+| `detailUrl` | string? | 详情页链接 |
+| `outstanding` | bool | 在市（未转股余额>0 且未到期） |
 
 **示例**
 
@@ -1832,7 +1912,36 @@ cli.cbond.latest_quotes()
 |---|---|---|---|---|
 | `symbol` | string | 是 | — | 正股代码（6 位裸码） |
 
-**输出**：ARR · 规范化快照行
+**输出字段**
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `bondCode` | string | 转债代码 |
+| `bondName` | string | 转债简称 |
+| `stockCode` | string | 正股代码 |
+| `stockName` | string | 正股简称 |
+| `convertPrice` | float? | 当期转股价 |
+| `convertPriceInitial` | float? | 初始转股价 |
+| `bondPrice` | float? | 转债价（元，面值 100） |
+| `stockPrice` | float? | 正股现价 |
+| `transferValue` | float? | 转股价值 |
+| `premiumRatio` | float? | 转股溢价率（百分比数值 4.87 = +4.87%，可为负） |
+| `remainSize` | float? | 未转股余额（元） |
+| `issueScale` | float? | 发行规模（元） |
+| `couponExplain` | string? | 票面利率说明（含分年票息表） |
+| `couponIr` | float? | 当年票息（百分比数值，随剩余年限变化，非恒定） |
+| `bondExpire` | float? | 债券年限（年，不是价格） |
+| `redeemValue` | float? | 到期赎回价（元，面值的百分比数值） |
+| `valueDate` | string? | 转股价值基准日 |
+| `redeemTrig` | float? | 强赎触发价（正股口径） |
+| `resaleTrig` | float? | 回售触发价（正股口径） |
+| `transferStart` | string? | 转股起始日 |
+| `expireDate` | string? | 到期日 YYYY-MM-DD |
+| `listDate` | string? | 上市日 |
+| `asOf` | string? | 快照日 YYYY-MM-DD |
+| `quoteUrl` | string? | 行情页链接 |
+| `detailUrl` | string? | 详情页链接 |
+| `outstanding` | bool | 在市（未转股余额>0 且未到期） |
 
 **示例**
 
@@ -1869,7 +1978,7 @@ cli.cbond.query("600519")
 | `symbol` | string | 是 | — | 正股代码（6 位裸码） |
 | `trig` | number | 是 | — | 强赎触发价（元，面值 100 口径的正股价） |
 
-**输出**：int
+**输出**：int · 近 30 个交易日正股收盘 ≥ 触发价的天数
 
 **示例**
 
@@ -4383,30 +4492,35 @@ cli.info.profile("600519")
 
 #### 可转债（`market.cbond`）
 
-**性质**：原始数据 · **版本**：1.2.0  
+**性质**：原始数据 · **版本**：1.3.0  
 可转债合约快照、条款事件（下修/回售/赎回等）、正股关联、强赎触发计数、 独立日 K 与盘中 1 分钟。日 K 无复权（转债无除权口径）。
 数据来源：发行条款披露、平台数据服务。
-单位口径：price=元（转债价/转股价/目标价，面值 100 口径）；ratio=小数（转股比例等比率字段）。
-- quote_list/latest_quotes 为全市场快照（按日更新）；of_stock 按正股取关联债
-- call_hits 统计正股无复权收盘 ≥ 强赎触发价的近窗交易日数，勿以单日价判定已满足
-- kline_window 返回 store 列式窗口（open/close/high/low/volume/amount）；min1_live 为缓存命中制，miss 返回 nil
+单位口径：price=元（转债价/转股价，面值 100 口径）；ratio=小数（SDK 基础单位；上游 percent 已按 percent 声明换算）。
+- quote_list/latest_quotes/board 为全市场快照（按日更新）；of_stock 按正股取关联债
+- 在市判据用 outstanding 字段（余额>0 且未到期）。仅判 remainSize>0 会把已到期债当在标
+- callHits 统计正股无复权收盘 ≥ 强赎触发价的近 30 个交易日天数，仅股价已跨线时返回；勿以单日价判定已满足
+- resetFloor / resetMeeting 等 reset* 字段取自 resetEvent（仍在进行中的下修提议），不是 event
+- event 是最新一条公告，不分类型——回售/转股结果会挤掉下修提议，取下修信息须用 resetEvent
+- kline_window 返回 store 列式窗口（open/close/high/low/volume/amount），samplingName 为降序需自行反转
+- min1_live 为缓存命中制，miss 返回 nil
+- event_list 深度是 90 个 YEAR_DAY 文档（约 111 自然日），更老的条款公告不在返回内
 
 | 函数 | 中文 | 性质 | 层 | 参数 | 返回 | 单位与守护 |
 |---|---|---|---|---|---|---|
-| `cbond.board` | 转债全市场面板（快照+最新事件+盘中价+callHits+下修地板价） | 原始数据 | L0 | — | ARR · board 行（quotes 行 + event/bondPercent/callHits/resetFloor） | `premiumRatio`:百分数→小数；`couponIr`:百分数→小数 | 例：`cli.call("cbond.board")`
-| `cbond.quote_list` | 转债合约快照全表 | 原始数据 | L0 | — | ARR · 合约快照行 | — | 例：`cli.call("cbond.quote_list")`
-| `cbond.latest_quotes` | 转债最新快照 | 原始数据 | L0 | — | ARR · 规范化快照行 | `premiumRatio`:百分数→小数；`couponIr`:百分数→小数；量级界 `premiumRatio`、`couponIr` | 例：`cli.call("cbond.latest_quotes")`
-| `cbond.of_stock` | 正股关联转债 | 原始数据 | L0 | `stk:any`（签名） | ARR · 规范化快照行 | — | 例：`cli.call("cbond.of_stock", stk='600519')`
+| `cbond.board` | 转债全市场面板（快照+最新事件+盘中价+callHits+下修地板价） | 原始数据 | L0 | — | ARR · 转债面板行（快照行 + event/resetEvent/outstanding/callHits/resetFloor 等）；字段 bondCode:string（转债代码） / bondName:string（转债简称） / stockCode:string（正股代码） / stockName:string（正股简称） / convertPrice:float?（当期转股价） / convertPriceInitial:float?（初始转股价） / bondPrice:float?（转债价（元，面值 100）） / stockPrice:float?（正股现价） / transferValue:float?（转股价值） / premiumRatio:float?（转股溢价率（百分比数值 4.87 = +4.87%，可为负）） / remainSize:float?（未转股余额（元）） / issueScale:float?（发行规模（元）） / couponExplain:string?（票面利率说明（含分年票息表）） / couponIr:float?（当年票息（百分比数值，随剩余年限变化，非恒定）） / bondExpire:float?（债券年限（年，不是价格）） / redeemValue:float?（到期赎回价（元，面值的百分比数值）） / valueDate:string?（转股价值基准日） / redeemTrig:float?（强赎触发价（正股口径）） / resaleTrig:float?（回售触发价（正股口径）） / transferStart:string?（转股起始日） / expireDate:string?（到期日 YYYY-MM-DD） / listDate:string?（上市日） / asOf:string?（快照日 YYYY-MM-DD） / quoteUrl:string?（行情页链接） / detailUrl:string?（详情页链接） / event:object?（最新一条条款事件（不分类型，可能是与下修无关的回售/转股结果）） / resetEvent:object?（尚未被实施下修/不修正关掉的提议事件） / outstanding:bool?（在市（remainSize>0 且未到期）） / bondPercent:float?（转债当日涨跌幅（仅盘中 live 命中时返回）） / callHits:int?（近 30 个交易日正股收盘 ≥ 触发价天数（仅股价已跨线时返回）） / callWindow:int?（计数窗口长度（30）） / resetFloor:float?（下修地板价） / resetP1:float?（前 1 日均价） / resetP20:float?（前 20 日均价） / resetBps:float?（最近一期审计每股净资产） / resetBpsYear:string?（净资产所属报告期） / resetEstimate:bool?（地板价为估算值） / resetWaive:bool?（按条款可豁免） / resetMeeting:string?（股东会日期） / resetFamily:string?（地板口径族 a/b） / resetHasPar:bool?（条款含面值下限） / resetBase:float?（条款基准价） / resetBaseFrom:string?（基准价来源） / resetClause:string?（下修条款原文） / stockMv:float?（正股市值） / stockPb:float?（正股市净率） / stockPe:float?（正股市盈率） / stockDiv:float?（正股股息率） | `premiumRatio`:百分数→小数；`couponIr`:百分数→小数；量级界 `premiumRatio`、`couponIr` | 例：`cli.call("cbond.board")`
+| `cbond.quote_list` | 转债合约快照全表 | 原始数据 | L0 | — | ARR · 原始快照行（snake_case，未规范化） | `premium_ratio`:百分数→小数；`coupon_ir`:百分数→小数 | 例：`cli.call("cbond.quote_list")`
+| `cbond.latest_quotes` | 转债最新快照 | 原始数据 | L0 | — | ARR · 规范化快照行（每债取 asOf 最新一行）；字段 bondCode:string（转债代码） / bondName:string（转债简称） / stockCode:string（正股代码） / stockName:string（正股简称） / convertPrice:float?（当期转股价） / convertPriceInitial:float?（初始转股价） / bondPrice:float?（转债价（元，面值 100）） / stockPrice:float?（正股现价） / transferValue:float?（转股价值） / premiumRatio:float?（转股溢价率（百分比数值 4.87 = +4.87%，可为负）） / remainSize:float?（未转股余额（元）） / issueScale:float?（发行规模（元）） / couponExplain:string?（票面利率说明（含分年票息表）） / couponIr:float?（当年票息（百分比数值，随剩余年限变化，非恒定）） / bondExpire:float?（债券年限（年，不是价格）） / redeemValue:float?（到期赎回价（元，面值的百分比数值）） / valueDate:string?（转股价值基准日） / redeemTrig:float?（强赎触发价（正股口径）） / resaleTrig:float?（回售触发价（正股口径）） / transferStart:string?（转股起始日） / expireDate:string?（到期日 YYYY-MM-DD） / listDate:string?（上市日） / asOf:string?（快照日 YYYY-MM-DD） / quoteUrl:string?（行情页链接） / detailUrl:string?（详情页链接） / outstanding:bool（在市（未转股余额>0 且未到期）） | `premiumRatio`:百分数→小数；`couponIr`:百分数→小数；量级界 `premiumRatio`、`couponIr` | 例：`cli.call("cbond.latest_quotes")`
+| `cbond.of_stock` | 正股关联转债 | 原始数据 | L0 | `stk:any`（签名） | ARR · 该公司全部转债快照行（含已到期历史债，按 outstanding 过滤）；字段 bondCode:string（转债代码） / bondName:string（转债简称） / stockCode:string（正股代码） / stockName:string（正股简称） / convertPrice:float?（当期转股价） / convertPriceInitial:float?（初始转股价） / bondPrice:float?（转债价（元，面值 100）） / stockPrice:float?（正股现价） / transferValue:float?（转股价值） / premiumRatio:float?（转股溢价率（百分比数值 4.87 = +4.87%，可为负）） / remainSize:float?（未转股余额（元）） / issueScale:float?（发行规模（元）） / couponExplain:string?（票面利率说明（含分年票息表）） / couponIr:float?（当年票息（百分比数值，随剩余年限变化，非恒定）） / bondExpire:float?（债券年限（年，不是价格）） / redeemValue:float?（到期赎回价（元，面值的百分比数值）） / valueDate:string?（转股价值基准日） / redeemTrig:float?（强赎触发价（正股口径）） / resaleTrig:float?（回售触发价（正股口径）） / transferStart:string?（转股起始日） / expireDate:string?（到期日 YYYY-MM-DD） / listDate:string?（上市日） / asOf:string?（快照日 YYYY-MM-DD） / quoteUrl:string?（行情页链接） / detailUrl:string?（详情页链接） / outstanding:bool（在市（未转股余额>0 且未到期）） | `premiumRatio`:百分数→小数；`couponIr`:百分数→小数；量级界 `premiumRatio`、`couponIr` | 例：`cli.call("cbond.of_stock", stk='600519')`
+| `cbond.fmt_quote` | 快照行规范化 | 原始数据 | L1 | `row:object`（签名） | MAP · 转债快照行；字段 bondCode:string（转债代码） / bondName:string（转债简称） / stockCode:string（正股代码） / stockName:string（正股简称） / convertPrice:float?（当期转股价） / convertPriceInitial:float?（初始转股价） / bondPrice:float?（转债价（元，面值 100）） / stockPrice:float?（正股现价） / transferValue:float?（转股价值） / premiumRatio:float?（转股溢价率（百分比数值 4.87 = +4.87%，可为负）） / remainSize:float?（未转股余额（元）） / issueScale:float?（发行规模（元）） / couponExplain:string?（票面利率说明（含分年票息表）） / couponIr:float?（当年票息（百分比数值，随剩余年限变化，非恒定）） / bondExpire:float?（债券年限（年，不是价格）） / redeemValue:float?（到期赎回价（元，面值的百分比数值）） / valueDate:string?（转股价值基准日） / redeemTrig:float?（强赎触发价（正股口径）） / resaleTrig:float?（回售触发价（正股口径）） / transferStart:string?（转股起始日） / expireDate:string?（到期日 YYYY-MM-DD） / listDate:string?（上市日） / asOf:string?（快照日 YYYY-MM-DD） / quoteUrl:string?（行情页链接） / detailUrl:string?（详情页链接） / outstanding:bool（在市（未转股余额>0 且未到期）） | — |
 | `cbond.event_list` | 转债条款事件列表 | 原始数据 | L0 | — | ARR · 条款事件行 | — | 例：`cli.call("cbond.event_list")`
 | `cbond.event_rows_of` | 单标的条款事件 | 原始数据 | L0 | `sym:any`（签名） | ARR · 条款事件行 | — | 例：`cli.call("cbond.event_rows_of", sym='600519')`
 | `cbond.query` | 按标的查条款事件 | 原始数据 | L0 | `sym:any`（签名） | ARR · 规范化事件行 | — | 例：`cli.call("cbond.query", sym='600519')`
-| `cbond.call_hits` | 强赎触发计数 | 原始数据 | L0 | `code:any` · `trig:any`（签名） | int | — | 例：`cli.call("cbond.call_hits", code='113050', trig=130)`
+| `cbond.fmt_event` | 条款事件行规范化 | 原始数据 | L1 | `row:object`（签名） | MAP · 规范化事件行 | — |
+| `cbond.call_hits` | 强赎触发计数 | 原始数据 | L0 | `code:any` · `trig:any`（签名） | int · 近 30 个交易日正股收盘 ≥ 触发价的天数 | — | 例：`cli.call("cbond.call_hits", code='113050', trig=130)`
 | `cbond.kline_window` | 转债日K窗口 | 原始数据 | L0 | `code:any` · `n:any`（签名） | MAP · K线列 | — | 例：`cli.call("cbond.kline_window", code='113050', n=60)`
 | `cbond.min1_live` | 转债盘中1分钟 | 原始数据 | L0 | `code:any`（签名） | MAP · 分钟条 | — | 例：`cli.call("cbond.min1_live", code='113050')`
 | `cbond.min1_meta` | 转债盘中元信息 | 原始数据 | L0 | `code:any`（签名） | MAP · 元信息 | — | 例：`cli.call("cbond.min1_meta", code='113050')`
 | `cbond.universe_codes` | 转债代码全集 | 原始数据 | L0 | — | ARR · 代码 | — | 例：`cli.call("cbond.universe_codes")`
-| `cbond.fmt_quote` | 快照行规范化 | 原始数据 | L1 | `row:object`（签名） | MAP · 规范化快照行 | — |
-| `cbond.fmt_event` | 条款事件行规范化 | 原始数据 | L1 | `row:object`（签名） | MAP · 规范化事件行 | — |
 
 #### 指数（`market.index`）
 

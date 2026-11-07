@@ -361,25 +361,25 @@ class CbondApi(_Api):
     目录内其余函数（quote_list/event_list/min1_live 等）经属性直达。
     """
 
-    def board(self, _df: bool = False) -> Any:
+    def board(self, _raw: bool = False, _df: bool = False) -> Any:
         """转债全市场面板：快照行 + 每债最新条款事件 + 盘中债价 overlay
         + 强赎触发计数（callHits）+ 下修地板价（resetFloor）。
 
         行为 latest_quotes 规范化行的超集（event/bondPercent/callHits/resetFloor）。
         注意：全市场重计算，openapi 沙箱（xs eval）有燃料上限，经 API 端点调用不受限。
         """
-        return self._c.call("cbond.board", _df=_df)
+        return self._c.call("cbond.board", _raw=_raw, _df=_df)
 
-    def latest_quotes(self, _df: bool = False) -> Any:
+    def latest_quotes(self, _raw: bool = False, _df: bool = False) -> Any:
         """全市场转债最新快照（按日更新；行字段经 fmt_quote 规范化）。"""
-        return self._c.call("cbond.latest_quotes", _df=_df)
+        return self._c.call("cbond.latest_quotes", _raw=_raw, _df=_df)
 
-    def of_stock(self, symbol: str, _df: bool = False) -> Any:
+    def of_stock(self, symbol: str, _raw: bool = False, _df: bool = False) -> Any:
         """正股关联的转债快照行。
 
         :param symbol: 正股代码（6 位裸码）
         """
-        return self._c.call("cbond.of_stock", stk=symbol, _df=_df)
+        return self._c.call("cbond.of_stock", stk=symbol, _raw=_raw, _df=_df)
 
     def query(self, symbol: str, _df: bool = False) -> Any:
         """按转债标的查条款事件（下修/回售/赎回等，规范化事件行）。
@@ -404,9 +404,9 @@ class CbondApi(_Api):
         """
         return self._c.call("cbond.kline_window", code=symbol, n=n)
 
-    def universe_codes(self, _df: bool = False) -> Any:
+    def universe_codes(self, _raw: bool = False, _df: bool = False) -> Any:
         """转债代码全集（与快照口径一致）。"""
-        return self._c.call("cbond.universe_codes", _df=_df)
+        return self._c.call("cbond.universe_codes", _raw=_raw, _df=_df)
 
 
 class IndexApi(_Api):

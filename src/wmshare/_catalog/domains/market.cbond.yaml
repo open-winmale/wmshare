@@ -1,5 +1,5 @@
 id: market.cbond
-version: 1.2.0
+version: 1.3.0
 cn: 可转债
 kind: raw
 category: market
@@ -8,26 +8,30 @@ description: 可转债合约快照、条款事件（下修/回售/赎回等）�
   独立日 K 与盘中 1 分钟。日 K 无复权（转债无除权口径）。
 data_origin: [发行条款披露, 平台数据服务]
 units:
-  price: 元（转债价/转股价/目标价，面值 100 口径）
-  ratio: 小数（转股比例等比率字段）
+  price: 元（转债价/转股价，面值 100 口径）
+  ratio: 小数（SDK 基础单位；上游 percent 已按 percent 声明换算）
 requires: {path: sys/cbond/init.xs, preloaded: false}
 notes:
-  - 'quote_list/latest_quotes 为全市场快照（按日更新）；of_stock 按正股取关联债'
-  - 'call_hits 统计正股无复权收盘 ≥ 强赎触发价的近窗交易日数，勿以单日价判定已满足'
-  - 'kline_window 返回 store 列式窗口（open/close/high/low/volume/amount）；min1_live
-    为缓存命中制，miss 返回 nil'
+  - 'quote_list/latest_quotes/board 为全市场快照（按日更新）；of_stock 按正股取关联债'
+  - '在市判据用 outstanding 字段（余额>0 且未到期）。仅判 remainSize>0 会把已到期债当在标'
+  - 'callHits 统计正股无复权收盘 ≥ 强赎触发价的近 30 个交易日天数，仅股价已跨线时返回；勿以单日价判定已满足'
+  - 'resetFloor / resetMeeting 等 reset* 字段取自 resetEvent（仍在进行中的下修提议），不是 event'
+  - 'event 是最新一条公告，不分类型——回售/转股结果会挤掉下修提议，取下修信息须用 resetEvent'
+  - 'kline_window 返回 store 列式窗口（open/close/high/low/volume/amount），samplingName 为降序需自行反转'
+  - 'min1_live 为缓存命中制，miss 返回 nil'
+  - 'event_list 深度是 90 个 YEAR_DAY 文档（约 111 自然日），更老的条款公告不在返回内'
 functions:
-  - {name: cbond.board, cn: 转债全市场面板（快照+最新事件+盘中价+callHits+下修地板价）, layer: L0, units: {premiumRatio: percent, couponIr: percent}}
-  - {name: cbond.quote_list, cn: 转债合约快照全表, layer: L0}
-  - {name: cbond.latest_quotes, cn: 转债最新快照, layer: L0, units: {premiumRatio: percent, couponIr: percent}, ranges: {premiumRatio: [0, 30], couponIr: [0, 0.12]}}
-  - {name: cbond.of_stock, cn: 正股关联转债, layer: L0}
+  - {name: cbond.board, cn: 转债全市场面板（快照+最新事件+盘中价+callHits+下修地板价）, layer: L0, units: {premiumRatio: percent, couponIr: percent}, ranges: {premiumRatio: [-100, 1000], couponIr: [0, 0.15]}, returns: {desc: ARR · 转债面板行（快照行 + event/resetEvent/outstanding/callHits/resetFloor 等）, shape_ref: inventory}, notes: ['bondPercent 仅盘中 live 命中时返回', 'callHits 仅正股收盘已跨触发价时返回']}
+  - {name: cbond.quote_list, cn: 转债合约快照全表, layer: L0, units: {premium_ratio: percent, coupon_ir: percent}, returns: {desc: ARR · 原始快照行（snake_case，未规范化）}}
+  - {name: cbond.latest_quotes, cn: 转债最新快照, layer: L0, units: {premiumRatio: percent, couponIr: percent}, ranges: {premiumRatio: [-100, 1000], couponIr: [0, 0.15]}, returns: {desc: ARR · 规范化快照行（每债取 asOf 最新一行）, shape_ref: inventory}}
+  - {name: cbond.of_stock, cn: 正股关联转债, layer: L0, units: {premiumRatio: percent, couponIr: percent}, ranges: {premiumRatio: [-100, 1000], couponIr: [0, 0.15]}, returns: {desc: ARR · 该公司全部转债快照行（含已到期历史债，按 outstanding 过滤）, shape_ref: inventory}}
+  - {name: cbond.fmt_quote, cn: 快照行规范化, layer: L1, returns: {desc: MAP · 规范化快照行, shape_ref: inventory}}
   - {name: cbond.event_list, cn: 转债条款事件列表, layer: L0}
   - {name: cbond.event_rows_of, cn: 单标的条款事件, layer: L0}
   - {name: cbond.query, cn: 按标的查条款事件, layer: L0}
-  - {name: cbond.call_hits, cn: 强赎触发计数, layer: L0}
+  - {name: cbond.fmt_event, cn: 条款事件行规范化, layer: L1}
+  - {name: cbond.call_hits, cn: 强赎触发计数, layer: L0, returns: {desc: int · 近 30 个交易日正股收盘 ≥ 触发价的天数}}
   - {name: cbond.kline_window, cn: 转债日K窗口, layer: L0}
   - {name: cbond.min1_live, cn: 转债盘中1分钟, layer: L0}
   - {name: cbond.min1_meta, cn: 转债盘中元信息, layer: L0}
   - {name: cbond.universe_codes, cn: 转债代码全集, layer: L0}
-  - {name: cbond.fmt_quote, cn: 快照行规范化, layer: L1}
-  - {name: cbond.fmt_event, cn: 条款事件行规范化, layer: L1}

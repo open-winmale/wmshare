@@ -466,3 +466,54 @@ def test_stocks_industry_fuzzy_candidates(client):
     client.session.eval_result = []
     with pytest.raises(Exception, match="未找到行业"):
         client.stocks._resolve_industry("不存在的行业")
+
+
+def test_symbol_alias_lands_on_real_param_name(client):
+    """目录里标的参数叫法不统一（sym/stk/code），symbol= 应自动落到真实名。"""
+    client.session.eval_result = []
+    client.call("cbond.of_stock", symbol="601009")
+    assert last_eval(client)["json"]["xs_lines"][-1] == 'return cbond.of_stock("601009")'
+
+    client.call("cbond.call_hits", symbol="603129", trig=314.21)
+    assert (last_eval(client)["json"]["xs_lines"][-1]
+            == 'return cbond.call_hits("603129", 314.21)')
+
+    client.call("cbond.query", symbol="113615")
+    assert last_eval(client)["json"]["xs_lines"][-1] == 'return cbond.query("113615")'
+
+
+def test_symbol_alias_does_not_override_explicit_real_name(client):
+    """真实名已传时别名不动它；同时传两个别名视为歧义，交给常规校验报错。"""
+    client.session.eval_result = []
+    client.call("cbond.of_stock", stk="601009")
+    assert last_eval(client)["json"]["xs_lines"][-1] == 'return cbond.of_stock("601009")'
+
+    with pytest.raises(WmshareError, match="未知参数"):
+        client.call("cbond.of_stock", sym="601009", symbol="601009")
+
+
+def test_symbol_alias_absent_for_functions_without_symbol(client):
+    """没有标的参数的函数不受别名影响，symbol= 照旧报未知参数。"""
+    with pytest.raises(WmshareError, match="未知参数"):
+        client.call("cbond.board", symbol="601009")
+
+
+def test_suffixed_code_canonicalized_for_any_typed_symbol(client):
+    """cbond.* 的标的名在 xs 侧是 any 类型，带后缀的代码也必须归一。"""
+    client.session.eval_result = []
+    client.call("cbond.of_stock", stk="601009.SH")
+    assert last_eval(client)["json"]["xs_lines"][-1] == 'return cbond.of_stock("601009")'
+
+    client.call("cbond.kline_window", code="sz.128044", n=5)
+    assert (last_eval(client)["json"]["xs_lines"][-1]
+            == 'return cbond.kline_window("128044", 5)')
+
+
+def test_batch_accepts_any_typed_symbol_param(client):
+    """批量识别不再要求参数声明为 string：cbond.kline_window 的 code 是 any。"""
+    client.session.eval_result = {"128044": {"close": [1.0]}, "113615": {"close": [2.0]}}
+    r = client.call_batch("cbond.kline_window", ["128044", "113615"], n=5)
+    assert r.results == {"128044": {"close": [1.0]}, "113615": {"close": [2.0]}}
+    xs = " ".join(last_eval(client)["json"]["xs_lines"])
+    assert 'cbond.kline_window("128044", 5)' in xs
+    assert 'cbond.kline_window("113615", 5)' in xs
