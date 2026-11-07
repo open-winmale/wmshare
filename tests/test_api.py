@@ -46,13 +46,20 @@ def test_registry_in_sync_with_classes():
         assert ns in FRIENDLY_NAMESPACES, ns
         assert hasattr(FRIENDLY_NAMESPACES[ns], method), f"{ns}.{method}"
         assert cn
-    # 每个公开方法都在注册表中（防漏文档）
+    # 每个公开方法都在注册表中（防漏文档）；组合接口单列 COMPOSITE_METHODS
+    from wmshare.api import COMPOSITE_METHODS
+
     indexed = {(ns, m) for _, ns, m, _, _ in FRIENDLY_INDEX}
+    composite = {(ns, m) for ns, names in COMPOSITE_METHODS.items() for m in names}
     for ns, cls in FRIENDLY_NAMESPACES.items():
         for name, member in inspect.getmembers(cls):
             if name.startswith("_") or not inspect.isfunction(member):
                 continue
-            assert (ns, name) in indexed, f"方法 {ns}.{name} 未登记 FRIENDLY_INDEX"
+            assert (ns, name) in indexed or (ns, name) in composite, \
+                f"方法 {ns}.{name} 未登记 FRIENDLY_INDEX 或 COMPOSITE_METHODS"
+    # 反向：登记的组合接口必须真实存在，防止改名后残留
+    for ns, name in composite:
+        assert hasattr(FRIENDLY_NAMESPACES[ns], name), f"{ns}.{name} 不存在"
 
 
 def test_symbol_param_uniform():

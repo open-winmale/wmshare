@@ -955,6 +955,57 @@ cli.cbond.kline_window("600519", n=30)
 cli.cbond.universe_codes()
 ```
 
+#### 组合接口（研究级封装）
+
+以下方法把「取数 → 规则内核 → 事实包 → 成稿/出图」串成一条链路，内部调用上方的目录接口；返回数字都带 `sources` 与 `as_of`，缺条目时抛错而非补猜测值。
+
+| 方法 | 签名 | 输出 |
+|---|---|---|
+| `cli.cbond.article` | `article(payload, date=None, campaign=None)` | MAP · {source, wechat, summary, date, campaign}（源稿与公众号稿） |
+| `cli.cbond.daily` | `daily(as_of=None, top_n=20, budget=30)` | MAP · {facts, derived, gates, states, top, scatter, calendar, featured_band, caliber_layers, coverage}（口径分层 + 三道闸 + 状态机 + 事件日历） |
+| `cli.cbond.figures` | `figures(payload, out_dir, date=None, klines=None)` | MAP · {table, scatter, band_<code>: 图片路径}（需 wmshare[figures]） |
+
+**`cli.cbond.article`** — 把事实包写成图文稿件：源稿 Markdown + 公众号适配稿 + 摘要。
+
+数字只从 `payload` 里拷贝，缺条目即抛 `LookupError`——不补猜测值。
+
+| 参数 | 类型 | 必填 | 默认 | 说明 |
+|---|---|---|---|---|
+| `payload` | object | 是 | — | ``daily()`` 返回的事实包 |
+| `date` | string | 否 | `None` | 文件名日期 ``YYYYMMDD``（缺省取事实包的快照日） |
+| `campaign` | string | 否 | `None` | UTM campaign（缺省 ``day{date}cb``） |
+
+**`cli.cbond.daily`** — 跑一期可转债日更，返回事实包（三层口径 + 三道闸 + 状态机 + 事件日历）。
+
+取数只发三次请求：全市场面板一次、条款事件一次、榜单前三各一次日 K 通道；`budget` 是硬上限，超出直接报错而不静默降级。
+
+返回 `{facts, derived, gates, states, top, scatter, calendar, featured_band, caliber_layers, coverage}`。每个数字都带 `sources` 与 `as_of`；口径见 `wmshare.cb.facts` 模块文档。
+
+| 参数 | 类型 | 必填 | 默认 | 说明 |
+|---|---|---|---|---|
+| `as_of` | string | 否 | `None` | 期望的快照日 ``YYYY-MM-DD``（缺省取面板自带 asOf） |
+| `top_n` | integer | 否 | `20` | 榜单条数 |
+| `budget` | integer | 否 | `30` | 单期请求上限 |
+
+**`cli.cbond.figures`** — 出当期图：双低榜表格、全市场价差散点、候选个券价格通道。
+
+需要 matplotlib：`pip install "wmshare[figures]"`。
+
+| 参数 | 类型 | 必填 | 默认 | 说明 |
+|---|---|---|---|---|
+| `payload` | object | 是 | — | ``daily()`` 返回的事实包 |
+| `out_dir` | string | 是 | — | 输出目录（不存在则创建） |
+| `date` | string | 否 | `None` | 文件名日期 ``YYYYMMDD``（缺省取事实包快照日） |
+| `klines` | object | 否 | `None` | 通道图用的日 K（缺省取事实包里的 featured_klines） |
+
+**示例**
+
+```python
+payload = cli.cbond.daily(top_n=20)                  # 事实包（3 次请求）
+cli.cbond.article(payload, date="20261107")          # 源稿 + 公众号稿
+cli.cbond.figures(payload, "/tmp/cb", date="20261107")  # 需 wmshare[figures]
+```
+
 ## 指数
 
 ### 指数维度——指数键/成分股/权重股/宽基估值时序（`cli.index`）

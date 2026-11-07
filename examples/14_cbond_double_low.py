@@ -1,4 +1,10 @@
-"""可转债双低榜：board 全市场面板一次取全（快照+事件+强赎/下修观测），客户端算双低。
+"""可转债双低榜：先看 board 面板怎么算双低，再用 daily() 一条链路出日更事实包。
+
+两段刻意分开：
+  1. 手工段——只用 ``cli.cbond.board()`` 的原始字段自己算一遍，看清双低与在市口径；
+  2. 管线段——``cli.cbond.daily()`` 把同一份面板外加三道闸、状态机、事件日历
+     和逐只可追溯的事实条目一起返回；``article()`` / ``figures()`` 直接出图文。
+日常生产用管线段；想核对口径用手工段，两者应当对得上。
 
 前提：凭证必填（export WMSHARE_CLIENT_ID=... WMSHARE_CLIENT_SECRET=...）；演示快照不含 cbond 域，故无 --demo
 运行：python examples/14_cbond_double_low.py
@@ -72,6 +78,43 @@ def main(cli=None) -> None:
     for r in floors[:5]:
         print(f"    {r.get('bondName')}（{r['bondCode']}）地板价 {r['resetFloor']:.2f} 元"
               f"（现价 {r['_price']:.2f} 元）")
+
+    # ---- 管线段：一条链路出日更事实包（同一份面板，多出闸门/状态机/事件日历）----
+    print("\n--- cli.cbond.daily()：取数 → 三道闸 → 事实包 ---")
+    try:
+        payload = cli.cbond.daily(top_n=TOP_N)
+    except (AttributeError, WmshareError) as e:
+        print(f"  组合接口不可用（{e}）：需 1.12 以上版本")
+        payload = None
+    if payload is not None:
+        cov = payload.get("coverage") or {}
+        gates = payload.get("gates") or {}
+        layers = payload.get("caliber_layers") or {}
+        print(f"  请求 {cov.get('requests_made')}/{cov.get('budget')} 次 · "
+              f"快照日 {payload.get('date')}")
+        print(f"  三层口径：全表 {layers.get('total_rows')} 行 → "
+              f"行情基座 {layers.get('quote_base')} → "
+              f"闸门基座 {layers.get('gate_base')} → 过闸 {layers.get('passed_gate')}")
+        print(f"  闸门剔除 {gates.get('excludedN')} 只："
+              + "、".join(f"{k} {v}" for k, v in (gates.get("ruleHits") or {}).items()))
+        # 每个事实都带 sources 与 as_of，可逐项复算：缺条目时成稿会直接抛错
+        sample = next(f for f in payload.get("facts") or [] if f["id"] == "mean_dl")
+        print(f"  事实样例 mean_dl = {sample['value_text']} "
+              f"（sources={sample['sources']}，as_of={sample['as_of']}）")
+        print(f"  榜单前 3：" + "、".join(t["bondName"] for t in (payload.get("top") or [])[:3]))
+
+        art = cli.cbond.article(payload)
+        print(f"\n--- cli.cbond.article()：源稿 {len(art['source'])} 字符 ---")
+        print(f"  摘要：{art['summary']}")
+        print("  正文片段：" + art["source"].splitlines()[0])
+
+        try:
+            figs = cli.cbond.figures(payload, "/tmp/cb_daily")
+            print(f"\n--- cli.cbond.figures()：{len(figs)} 张图 ---")
+            for k, v in figs.items():
+                print(f"  {k}: {v}")
+        except ImportError as e:
+            print(f"\n出图跳过（{e}）")
 
     print("\n完整实战（价差图/估值通道拨测/事件流）：docs/notebooks/cb_double_low.ipynb")
     print("全部输出为数据整理与研究参考，不构成任何投资建议。")

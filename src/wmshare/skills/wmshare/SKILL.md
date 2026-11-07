@@ -108,13 +108,15 @@ cat.metrics_in_group("dividend")                         # 指标组内全部精
 | 公告 / 有无回购 | `cli.notice.list(sym, window="3m")` / `cli.notice.has_buyback(sym, "6m")` |
 | 业绩预告 | `cli.forecast.yjyg_latest(sym)` |
 | 公司档案 | `cli.info.profile(sym)` |
+| 可转债双低榜 / 强赎下修观测 | `cli.cbond.daily()`（全市场面板一次取数 → 三层口径 + 三道闸 + 状态机 + 事件日历，返回带 `sources` 的事实包）；只要原始面板用 `cli.cbond.board()` |
+| 可转债图文成稿 / 出图 | `cli.cbond.article(payload, date="20261107")` / `cli.cbond.figures(payload, "/tmp/cb", date="20261107")`（后者需 `pip install "wmshare[figures]"`） |
 | 宏观时序 / 最新单值 | `cli.macro.query("$CPI", 6)`（价格指数=点）/ `cli.macro.asof("$GDP")`（元） |
 | 期货主力连续 | `cli.indicator.get("600519", "$FUT_CLOSE", fut_symbol="cn.RB.SHF")`（symbol 传任意 A 股码；外盘 global.CL） |
 | 全市场代码池（A/港/美全表） | `cli.stocks.list()`（行含 symbol/name/exchange/industry/listed；港/美换 `Client(market=...)`） |
 | 行业目录 / 行业成分 | `cli.stocks.industries(1)`（申万/恒生；美股目录树暂缺）/ `cli.stocks.industry_members("银行")`（中文名或代码 S48） |
 | 少量标的单批（≤500） | `cli.call_batch("kline.snapshot", ["600519", "000001"])` 或任意单标的接口传 list：`cli.kline.last(["600519", "000001"])`；`to_df()` 出每标的一行长表 |
 
-完整 127 个核心接口与全部底层函数：仓库用户看 docs/GUIDE.md（上手）与
+完整 130 个核心接口 + 3 个可转债组合接口与全部底层函数：仓库用户看 docs/GUIDE.md（上手）与
 docs/API.md（参考）；pip 用户用 `cat.search(...)` / `cat.function(...)` 查（同一份合同）。
 
 ## 5. 工作流示例（返回长这样，从这些字段读）

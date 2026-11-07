@@ -39,6 +39,10 @@ METHOD_EXAMPLE_VALUES = {
     ("equity", "query_capital_change_at"): {"annual": "2024", "sampling": '"Q4"'},
     # 强赎触发价（元，面值 100 口径的正股价示例）
     ("cbond", "call_hits"): {"trig": "130.0"},
+    # 研究级组合接口：示例串成一条完整链路（取数 → 事实 → 成稿/出图）
+    ("cbond", "article"): {"payload": "cli.cbond.daily(top_n=5)", "date": '"20261107"'},
+    ("cbond", "figures"): {"payload": "cli.cbond.daily(top_n=5)",
+                           "out_dir": '"/tmp/cb_figs"', "date": '"20261107"'},
     # 行业成分：中文名示例（引擎原生解析；SDK 侧另有模糊匹配兜底）
     ("stocks", "industry_members"): {"industry": '"银行"'},
     # 宏观（v1.11.0）：示例取活体实证过的取值（不可用股票指标码占位）
@@ -71,6 +75,13 @@ FALLBACK_RETURNS = {
     ("info", "profile"): "MAP · 档案（name/industry/style_industry/org_type/listing_date）",
     ("valuation", "hist_stats"):
         "MAP · {avg, current, median, min, max, pct, count, series:[unix秒,值]}（窗口上限 3 年）",
+    ("cbond", "daily"):
+        "MAP · {facts, derived, gates, states, top, scatter, calendar, featured_band,"
+        " caliber_layers, coverage}（口径分层 + 三道闸 + 状态机 + 事件日历）",
+    ("cbond", "article"):
+        "MAP · {source, wechat, summary, date, campaign}（源稿与公众号稿）",
+    ("cbond", "figures"):
+        "MAP · {table, scatter, band_<code>: 图片路径}（需 wmshare[figures]）",
 }
 
 _PARAM_RE = re.compile(r"^:param (\w+):\s*(.*)$")

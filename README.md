@@ -21,7 +21,7 @@
 
 ## 特性
 
-- **数据要全**——18 个数据域、127 个核心接口一站取全：K 线/盘中/ETF/指数、分红、报表、资金流、
+- **数据要全**——18 个数据域、130 个核心接口一站取全：K 线/盘中/ETF/指数、分红、报表、资金流、
   公告业绩、股东治理、回购并购、两融、可转债、盈利预测、指数、全市场列表、港美披露、宏观与期货。
 - **数据要准**——财报按最新会计准则归一，跨年跨公司直接比较；全库基础单位
   （比率/涨跌幅=小数、金额=元、量=股），每次返回做量级守护与不变量校验，错误的量级到不了你的代码。
@@ -117,7 +117,7 @@ for s, n, v, pe, pct in rows[:8]:                            # 取前 8 行打�
 | `cli.equity` | 股东治理：十大股东/股东户数/质押/解禁/机构持仓/沪港通/国家队/高管增减持/股本/回购/并购重组/关联交易/担保/诉讼 | 比例=小数、金额=元、量=股 |
 | `cli.margin` | 个股融资融券（融资买入/偿还/余额、融券卖出/偿还/余量） | 金额=元、量=股 |
 | `cli.estimates` | 机构盈利预测（逐年 EPS/PE）、预测明细、评级统计、个股研报 | EPS=元/股、PE=倍 |
-| `cli.cbond` | 可转债合约快照、条款事件、正股关联、强赎计数、日 K 与盘中 1 分钟 | 价格=元（面值 100） |
+| `cli.cbond` | 可转债合约快照、条款事件、正股关联、强赎计数、日 K 与盘中 1 分钟；`daily/article/figures` 一条链路出日更图文 | 价格=元（面值 100） |
 | `cli.workout` | 契约套利条款（要约收购/换股/现金选择权）看板与单票查询 | 价格=元 |
 | `cli.index` | 指数键列表、成分股（市值/估值中枢）、权重股、宽基估值时序 | 市值=元、比率=小数、权重=小数 |
 | `cli.stocks` | 全市场证券列表（代码/名称/交易所/三级行业/上市日/ST）、行业目录（申万/恒生）、行业成分股（中文名直达） | listed=YYYY-MM-DD、is_st=布尔 |
@@ -285,7 +285,7 @@ for i, part in enumerate(cli.batch_iter("dividend.history", codes), 1):
 
 - **AI 原生**：随包 [SKILL.md](src/wmshare/skills/wmshare/SKILL.md)、[AI 用法](docs/AI.md)、本地 MCP server（skill 可复制进 .agents/.zcode/.claude 的 skills/）
 - 生态工具 [big-winner](https://github.com/open-winmale/big-winner)：基于本 SDK 的开源工具。
-- **文档中心 [docs/](docs/README.md)**：使用指南 GUIDE（单票菜谱/批量/多市场/故障排查）· AI 用法 · llms.txt 索引 · [API 参考](docs/API.md)（按资产类别分章的 127 个核心接口 + 指标组）
-- **可转债实战 notebook**：[docs/notebooks/cb_double_low.ipynb](docs/notebooks/cb_double_low.ipynb)——双低榜 + 强赎/下修观测 + 通道拨测（board 一次取全市场面板，2026-11-07 真实数据）
+- **文档中心 [docs/](docs/README.md)**：使用指南 GUIDE（单票菜谱/批量/多市场/故障排查）· AI 用法 · llms.txt 索引 · [API 参考](docs/API.md)（按资产类别分章的 130 个核心接口 + 指标组）
+- **可转债日更管线**：`cli.cbond.daily()` → `article()` → `figures()` 一条命令出图文（三层口径 + 三道闸 + 状态机 + 事件日历，每个数字带 `sources` 与 `as_of`，缺条目抛错而非补猜测值）；实战 notebook 见 [docs/notebooks/cb_double_low.ipynb](docs/notebooks/cb_double_low.ipynb)（2026-11-07 真实数据）
 - **示例课程 [examples/](examples/README.md)**：14 个编号示例（入门→进阶→生产→AI），全部支持演示客户端离线试跑，CI 端到端覆盖
 - [贡献指南](CONTRIBUTING.md)：提交门禁、内容规范、许可政策

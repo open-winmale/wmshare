@@ -408,6 +408,76 @@ class CbondApi(_Api):
         """转债代码全集（与快照口径一致）。"""
         return self._c.call("cbond.universe_codes", _raw=_raw, _df=_df)
 
+    # ---- 研究级组合接口：取数 → 规则 → 事实包 → 成稿/出图，一条链路。----
+    # 这些方法**不是**目录函数的薄翻译，故不登记 FRIENDLY_INDEX（那张表是
+    # 「核心接口 ↔ 底层目录函数」的一一映射，生成器靠它回溯 returns_shape）。
+    def daily(self, as_of: str | None = None, top_n: int = 20,
+              budget: int = 30) -> dict[str, Any]:
+        """跑一期可转债日更，返回事实包（三层口径 + 三道闸 + 状态机 + 事件日历）。
+
+        取数只发三次请求：全市场面板一次、条款事件一次、榜单前三各一次日 K
+        通道；``budget`` 是硬上限，超出直接报错而不静默降级。
+
+        返回 ``{facts, derived, gates, states, top, scatter, calendar,
+        featured_band, caliber_layers, coverage}``。每个数字都带 ``sources``
+        与 ``as_of``；口径见 ``wmshare.cb.facts`` 模块文档。
+
+        :param as_of: 期望的快照日 ``YYYY-MM-DD``（缺省取面板自带 asOf）
+        :param top_n: 榜单条数
+        :param budget: 单期请求上限
+        """
+        from wmshare.cb import DailyConfig, run_daily
+
+        return run_daily(self._c, as_of=as_of,
+                         config=DailyConfig(top_n=top_n, budget=budget))
+
+    def article(self, payload: dict[str, Any], date: str | None = None,
+                campaign: str | None = None) -> dict[str, str]:
+        """把事实包写成图文稿件：源稿 Markdown + 公众号适配稿 + 摘要。
+
+        数字只从 ``payload`` 里拷贝，缺条目即抛 ``LookupError``——不补猜测值。
+
+        :param payload: ``daily()`` 返回的事实包
+        :param date: 文件名日期 ``YYYYMMDD``（缺省取事实包的快照日）
+        :param campaign: UTM campaign（缺省 ``day{date}cb``）
+        """
+        from wmshare.cb import article as A
+
+        d = date or str(payload.get("date") or "").replace("-", "")
+        if not d:
+            raise UsageError("缺少日期：请传 date=YYYYMMDD 或使用带 date 的事实包",
+                             code="params")
+        camp = campaign or f"day{d}cb"
+        fa = A.Facts(payload)
+        src = A.build_source(fa, d, str(payload.get("date") or ""), camp)
+        summary = A.build_summary(fa)
+        return {"source": src, "wechat": A.build_wechat(src, camp, summary),
+                "summary": summary, "date": d, "campaign": camp}
+
+    def figures(self, payload: dict[str, Any], out_dir: str,
+                date: str | None = None,
+                klines: dict[str, Any] | None = None) -> dict[str, str]:
+        """出当期图：双低榜表格、全市场价差散点、候选个券价格通道。
+
+        需要 matplotlib：``pip install "wmshare[figures]"``。
+
+        :param payload: ``daily()`` 返回的事实包
+        :param out_dir: 输出目录（不存在则创建）
+        :param date: 文件名日期 ``YYYYMMDD``（缺省取事实包快照日）
+        :param klines: 通道图用的日 K（缺省取事实包里的 featured_klines）
+        """
+        from wmshare.cb import article as A
+        from wmshare.cb import figures as G
+
+        d = date or str(payload.get("date") or "").replace("-", "")
+        if not d:
+            raise UsageError("缺少日期：请传 date=YYYYMMDD 或使用带 date 的事实包",
+                             code="params")
+        fa = A.Facts(payload)
+        outs = G.render_all(fa, out_dir, date=d,
+                            klines=klines or payload.get("featured_klines"))
+        return {k: str(v) for k, v in outs.items()}
+
 
 class IndexApi(_Api):
     """指数维度——指数键/成分股/权重股/宽基估值时序。
@@ -1518,6 +1588,13 @@ class MacroApi(_Api):
         """手机品牌周份额取值（field=share/rank，披露原值；掉榜返回 None）。"""
         return self._c.call("macro.phone_share", brand=brand, field=field)
 
+
+# 组合接口：跨多个目录函数的研究级封装（取数 → 规则 → 事实包 → 成稿/出图）。
+# 不登记 FRIENDLY_INDEX（那张表是「核心接口 ↔ 底层目录函数」的一一映射）；
+# 文档在 docs/API.md 的「组合接口」小节单独成文。
+COMPOSITE_METHODS: dict[str, set[str]] = {
+    "cbond": {"daily", "article", "figures"},
+}
 
 FRIENDLY_NAMESPACES: dict[str, type[_Api]] = {
     "kline": KlineApi,

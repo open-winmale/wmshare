@@ -36,12 +36,15 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# 出图（cb.figures）才需要 matplotlib；SDK 本体保持零重依赖
+figures = ["matplotlib>=3.6"]
 dev = [
     "pytest>=7",
     "pytest-cov>=5",
     "jsonschema>=4",
     "mypy>=1.8",
     "mcp>=1.7,<2",
+    "matplotlib>=3.6",
 ]
 dataframe = ["pandas>=1.5"]
 mcp = ["mcp>=1.7,<2"]
@@ -75,9 +78,11 @@ check_untyped_defs = true
 
 [tool.coverage.run]
 source = ["wmshare"]
+# 纯计算层（cb/valuation、cb/rules、cb/facts、cb/article）有专项测试；
+# 出图层依赖 matplotlib 且以像素输出，按分支覆盖统计意义不大，排除分母。
 # 生成层是逐函数委托 call() 的样板代码；其正确性由合同测试（签名/参数一致性）
 # 与 client.call 的测试覆盖，不重复计入行覆盖率分母。
-omit = ["*/api/_generated.py"]
+omit = ["*/api/_generated.py", "*/cb/figures.py"]
 
 [tool.coverage.report]
 fail_under = 85

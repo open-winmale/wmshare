@@ -90,9 +90,12 @@ def test_registry_covers_every_friendly_api(routes: tuple[Any, ...]) -> None:
         and inspect.getattr_static(cls, method) is not None
     }
     actual = {route.target for route in routes}
-    assert route_count() == 130
+    # 与注册表逐条对齐即可；不要写死数字——每加一个公开方法就要改测试，
+    # 数字一致本身不产生信息（expected 已由反射算出）。
+    assert route_count() == len(expected)
     assert actual == expected
-    assert len(actual) == 130
+    assert len(actual) == len(expected)
+    assert len(expected) >= 130
     for route in routes:
         assert route.description
         assert route.signature
@@ -115,7 +118,7 @@ def test_search_and_contract_friendly_api(runtime: Any) -> None:
 def test_status_reports_capability_coverage(runtime: Any) -> None:
     status = tools.status(runtime)
     caps = status["data"]["capabilities"]
-    assert caps["friendly_apis"] == 130
+    assert caps["friendly_apis"] == route_count()
     assert caps["first_class_tools"] == 20
     assert caps["batchable_catalog_functions"] > 100
     assert "pandas/_df" in caps["excluded_from_mcp"][0]
@@ -240,7 +243,7 @@ def test_mcp_registry_schema_and_resources() -> None:
     names, facts = asyncio.run(inspect_server())
     assert set(names) == set(TOOL_NAMES) and len(names) == 20
     coverage = facts["coverage"]
-    assert coverage["friendly_apis"] == 130
+    assert coverage["friendly_apis"] == route_count()
     assert coverage["first_class_tools"] == 20
     assert coverage["batchable_catalog_functions"] >= 100
     assert "pandas DataFrame / _df=True" in coverage["excluded_from_mcp"]

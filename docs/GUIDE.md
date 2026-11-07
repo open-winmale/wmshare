@@ -2,7 +2,7 @@
 
 本指南是 **how-to + 解释层**：会做什么 → 怎么做好。其他层各有其位——
 教程看 [README](../README.md) 与 [examples/](../examples/README.md)（可运行课程），
-接口参考看 [API.md](API.md)（按资产类别分章的 127 个核心接口，生成物），
+接口参考看 [API.md](API.md)（按资产类别分章的 130 个核心接口，生成物），
 AI 用法看 [AI.md](AI.md)。
 
 > 代码块里的输出注释都是**真实运行结果**（2026-10-29，cn 市场，免费档凭证），
@@ -40,7 +40,7 @@ export WMSHARE_CLIENT_ID=<AppId> WMSHARE_CLIENT_SECRET=<API Key>
 
 ### 2.1 双层 API：门面 + 目录
 
-- **门面层** `cli.<命名空间>.<方法>()`：21 个命名空间、127 个核心接口，方法名动宾化可猜
+- **门面层** `cli.<命名空间>.<方法>()`：21 个命名空间、130 个核心接口，方法名动宾化可猜
   （`kline.bars`、`dividend.yield_ttm`、`screener.screen_limit_up`）。
 - **目录层** `cli.call("<域>.<函数名>", ...)`：263 个底层函数按目录合同直调，
   参数名以 `cat.function(name)["params"]` 为准。门面未包装的函数经属性直达
@@ -172,6 +172,13 @@ evs = cli.cbond.event_list()            # 90 日回看；行含 convert_price_ol
 
 # 可转债：转债日 K（列式 MAP：open/close/high/low/volume/amount；samplingName 日期降序）
 kw = cli.cbond.kline_window("113050", 60)
+
+# 可转债：一条链路跑完一期日更（取数 → 三道闸 → 事实包 → 成稿 → 出图）
+payload = cli.cbond.daily(top_n=20, budget=30)
+# payload 含三层口径（全表 1066 / 行情基座 / 闸门基座）、三道闸剔除明细、
+# 七态强赎与五态下修状态机、事件日历、每只债的可追溯事实条目
+art = cli.cbond.article(payload, date="20261107")   # {source, wechat, summary}
+figs = cli.cbond.figures(payload, "/tmp/cb", date="20261107")  # 需 pip install "wmshare[figures]"
 
 # 完整实战见 docs/notebooks/cb_double_low.ipynb（双低榜 + 强赎/下修观测 + 通道拨测）
 

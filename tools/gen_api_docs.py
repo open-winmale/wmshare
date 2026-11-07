@@ -13,7 +13,9 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import inspect
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -26,7 +28,8 @@ from _introspect import (  # noqa: E402
     FALLBACK_RETURNS, RETURNS_OVERRIDES, method_doc, method_example, method_params,
     return_shape_for, underlying_fn,
 )
-from wmshare.api import FRIENDLY_INDEX, FRIENDLY_NAMESPACES  # noqa: E402
+from wmshare.api import (  # noqa: E402
+    COMPOSITE_METHODS, FRIENDLY_INDEX, FRIENDLY_NAMESPACES)
 from wmshare.catalog import catalog_dir, load  # noqa: E402
 
 DOMAINS = catalog_dir() / "domains"
@@ -290,6 +293,73 @@ def interface_block(ns: str, method: str, cn: str, underlying: str,
 
     ex = method_example(ns, method, params)
     out += ["**示例**", "", "```python", ex, "```", ""]
+    return out
+
+
+def docstring_body(cls: type, method: str) -> list[str]:
+    """方法 docstring 的正文段落：去首行摘要与 :param，按空行分段、段内并成一行。
+
+    docstring 的硬换行只受 79 列约束，直接逐行输出会把一句话切成几个段落。
+    """
+    doc = inspect.getdoc(getattr(cls, method)) or ""
+    paras: list[str] = []
+    buf: list[str] = []
+    for ln in doc.strip().splitlines()[1:]:
+        t = ln.strip()
+        if not t or t.startswith(":param"):
+            if buf:
+                paras.append(" ".join(buf))
+                buf = []
+            continue
+        buf.append(t)
+    if buf:
+        paras.append(" ".join(buf))
+    # docstring 里常用 reST 的双反引号标行内代码，Markdown 用单反引号
+    return [re.sub(r"``([^`]+)``", r"`\1`", p) for p in paras]
+
+
+def composite_section(ns: str) -> list[str]:
+    """组合接口小节：跨目录函数的研究级封装（不回溯单一底层函数）。
+
+    刻意用表 + 示例，而不是 ``#### `cli.ns.method` `` 小节——后者是
+    「核心接口 ↔ 底层目录函数」一一映射的文档形态，被 tests/test_docs.py
+    按 FRIENDLY_INDEX 逐条校验；组合接口没有对应的底层目录函数。
+    """
+    methods = sorted(COMPOSITE_METHODS.get(ns, ()))
+    if not methods:
+        return []
+    cls = FRIENDLY_NAMESPACES[ns]
+    out = ["#### 组合接口（研究级封装）", "",
+           "以下方法把「取数 → 规则内核 → 事实包 → 成稿/出图」串成一条链路，"
+           "内部调用上方的目录接口；返回数字都带 `sources` 与 `as_of`，"
+           "缺条目时抛错而非补猜测值。", "",
+           "| 方法 | 签名 | 输出 |", "|---|---|---|"]
+    for method in methods:
+        params = method_params(cls, method)
+        sig = ", ".join(f"{p.name}={p.default}" if p.default else p.name for p in params)
+        ret = FALLBACK_RETURNS.get((ns, method), "—")
+        out.append(f"| `cli.{ns}.{method}` | `{method}({esc(sig)})` | {esc(ret)} |")
+    out.append("")
+    for method in methods:
+        summary, _ = method_doc(cls, method)
+        out += [f"**`cli.{ns}.{method}`** — {esc(summary)}", ""]
+        # parse_docstring 会把多行正文用「、」串起来（那是给一句话摘要用的），
+        # 组合接口的正文是多段说明，这里直接按原文分行渲染。
+        for line in docstring_body(cls, method):
+            out += [esc(line) if not line.startswith("``") else line, ""]
+        params = method_params(cls, method)
+        if params:
+            out += ["| 参数 | 类型 | 必填 | 默认 | 说明 |", "|---|---|---|---|---|"]
+            for p in params:
+                dflt = f"`{p.default}`" if p.default is not None else "—"
+                out.append(f"| `{p.name}` | {p.json_type} | "
+                           f"{'是' if p.required else '否'} | {dflt} | {esc(p.desc) or '—'} |")
+            out.append("")
+    out += ["**示例**", "", "```python"]
+    out += ["payload = cli.cbond.daily(top_n=20)                  # 事实包（3 次请求）",
+            "cli.cbond.article(payload, date=\"20261107\")          # 源稿 + 公众号稿",
+            "cli.cbond.figures(payload, \"/tmp/cb\", date=\"20261107\")  # 需 wmshare[figures]"]
+    out += ["```", ""]
     return out
 
 
@@ -585,6 +655,7 @@ def build() -> str:
             out += [f"### {ns_title(ns)}（`cli.{ns}`）", ""]
             for _, ns_, method, cn, underlying in rows:
                 out += interface_block(ns_, method, cn, underlying, merged)
+            out += composite_section(ns)
             if ns == "kline":
                 out += etf_note()
         if title == "港股与美股":
