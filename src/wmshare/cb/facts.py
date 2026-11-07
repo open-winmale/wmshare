@@ -534,6 +534,16 @@ def build_facts(rows: list[dict], events: Iterable[dict], as_of: str, *,
         "call_watch": watch,
         "event_stats": ev_stats,
         "featured_band": featured_band,
+        # 通道图要原始日 K：只带 μ/σ 统计量则 article()/figures() 依赖外部
+        # 再次取数，事实包就不再是自足产物。只留画图必需的列。
+        "featured_klines": {
+            code: {"dates": list(kl.get("dates") or []),
+                   "closes": list(kl.get("closes") or []),
+                   "last_bar_date": kl.get("last_bar_date") or "",
+                   "n_bars": kl.get("n_bars") or len(kl.get("closes") or [])}
+            for code, kl in (featured_klines or {}).items()
+            if not kl.get("error") and kl.get("closes")
+        },
         "caliber_layers": layers,
         "hist_series_n": len(hist),
         "thresholds": {
