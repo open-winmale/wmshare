@@ -101,9 +101,12 @@ def fetch_snapshot(cli: Any, *, config: DailyConfig | None = None,
     name_by_code = {str(r.get("bondCode") or ""): (r.get("bondName") or "")
                     for r in base}
     for code in picks:
+        # 预算先记账再发请求，且**必须在 try 之外**：曾经把 spend() 写在
+        # try 里，预算耗尽的 RuntimeError 被"单只失败不拖垮整期"吞掉，
+        # 整期继续超预算取数，请求记账形同虚设。
+        spend()
         try:
             kw = cli.cbond.kline_window(code, cfg.band_bars)
-            spend()
         except Exception as e:  # 单只失败不拖垮整期
             featured_klines[code] = {"name": name_by_code.get(code, code), "error": str(e)}
             continue
