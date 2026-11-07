@@ -427,6 +427,7 @@ class DemoClient:
             index_top_movers=self._top_movers,
         )
         self.valuation = SimpleNamespace(hist_stats=self._valuation_hist_stats)
+        self.index = self._index_ns()
         self.batch_all = self._batch_all
         self.batch_iter = self._batch_iter
         self.call_batch = self._call_batch
@@ -724,6 +725,102 @@ class DemoClient:
         return (
             f"wmshare.demo_client()  # 真实 API 固定快照（as_of={self._doc['as_of']}, "
             f"10 只演示宇宙，非实时行情）；接真实数据请 wmshare.Client.from_env()"
+        )
+
+
+    def _index_ns(self) -> SimpleNamespace:
+        """指数域罐头：universe_keys/keys/valuation/trend（冻结快照 2026-10-30 口径）。"""
+        uni = ["index.hs300", "index.csi500", "index.sz50", "index.cybz", "index.star50",
+               "index.shzs", "index.szcz", "index.zx100", "index.szzzs", "index.gz2000",
+               "index.kc200"]
+        cur = {
+            "index.hs300": {"pe": 13.42, "pb": 1.25, "dv": 0.0231},
+            "index.csi500": {"pe": 27.62, "pb": 2.01, "dv": 0.0154},
+            "index.sz50": {"pe": 11.42, "pb": 1.11, "dv": 0.0267},
+            "index.cybz": {"pe": 27.45, "pb": 4.02, "dv": 0.0127},
+            "index.star50": {"pe": 91.5, "pb": 6.05, "dv": 0.0026},
+            "index.shzs": {"pe": 15.71, "pb": 1.3, "dv": 0.0198},
+            "index.szcz": {"pe": 24.1, "pb": 2.26, "dv": 0.0181},
+            "index.zx100": {"pe": 21.3, "pb": 2.43, "dv": 0.0151},
+            "index.szzzs": {"pe": 33.9, "pb": 2.27, "dv": 0.0149},
+            "index.gz2000": {"pe": 46.8, "pb": 2.14, "dv": 0.0118},
+            "index.kc200": {"pe": 128.0, "pb": 3.52, "dv": 0.0056},
+        }
+
+        def _trend(key: str) -> dict:
+            # 确定性合成周频序列：每键目标分位按 seed 铺开 5%~95%（分位演示各不相同；
+            # 序列形状仍为正弦波，真实数据以 live 为准）
+            import math
+            base = cur.get(key) or {"pe": 20.0, "pb": 2.0}
+            seed = sum(ord(c) for c in key) % 11
+            n = 120
+            amp = 0.12 + 0.012 * seed
+            ph = seed * 0.57
+
+            def _series(scale: float, target_pct: float) -> list[float]:
+                waves = [base[scale == "pe" and "pe" or "pb"] *
+                         (1.0 - amp * math.sin((i / (n - 1)) * 6.28318 + ph))
+                         for i in range(n)]
+                sv = sorted(waves)
+                target = sv[min(n - 1, int((n - 1) * target_pct))]
+                c = target - waves[-1]           # 线性倾斜使终点落在目标分位
+                return [w + c * (i / (n - 1)) for i, w in enumerate(waves)]
+
+            tgt_pe = 0.05 + (seed / 10) * 0.90
+            tgt_pb = 0.05 + (((seed + 5) % 11) / 10) * 0.90
+            pe_s = _series("pe", tgt_pe)
+            pb_s = _series("pb", tgt_pb)
+            pts = [[_demo_date(i, n), round(pe_s[i], 4), round(pb_s[i], 4)]
+                   for i in range(n)]
+            pes = [p[1] for p in pts if p[1] > 0]
+            pbs = [p[2] for p in pts if p[2] > 0]
+            last_pe, last_pb = pts[-1][1], pts[-1][2]
+            pe_pct = (sum(1 for v in pes if v <= last_pe) / len(pes)) if len(pes) >= 60 else None
+            pb_pct = (sum(1 for v in pbs if v <= last_pb) / len(pbs)) if len(pbs) >= 60 else None
+            return {"ok": True, "key": key, "as_of": "2026-10-30", "density": "weekly",
+                    "n": n,
+                    "points": [{"date": p[0], "pe": p[1], "pb": p[2]} for p in pts],
+                    "pe_pct": pe_pct, "pb_pct": pb_pct, "med": []}
+
+        def _demo_date(i: int, n: int) -> str:
+            from datetime import date, timedelta
+            return (date(2024, 6, 7) + timedelta(weeks=i)).isoformat()
+
+        def _valuation(key: str, points: int | None = None):
+            c = cur.get(key)
+            if not c:
+                return {"current": {"pe": None, "pb": None, "dv": None}, "series": []}
+            series = [{"d": _demo_date(i, 8),
+                       "pe": round(c["pe"] * (1 - 0.02 * (7 - i) / 7), 4),
+                       "pb": round(c["pb"] * (1 - 0.02 * (7 - i) / 7), 4)}
+                      for i in range(8)]
+            return {"current": dict(c), "series": series}
+
+        def _members(key: str, sort_by: str = "mv", top_n: int | None = None):
+            rows = [
+                {"symbol": "600519", "name": "贵州茅台", "mv": 1.82e12, "pe_ttm": 21.5,
+                 "pb": 7.8, "ps_ttm": 15.0, "roe_ttm": 0.31, "close": 1450.0, "percent": 0.038},
+                {"symbol": "601939", "name": "建设银行", "mv": 3.12e12, "pe_ttm": 8.8,
+                 "pb": 0.85, "ps_ttm": 3.8, "roe_ttm": 0.1, "close": 11.9, "percent": 0.021},
+            ]
+            return rows[: top_n or len(rows)]
+
+        def _weights(key: str, top_n: int | None = None):
+            rows = [
+                {"symbol": "600519", "name": "贵州茅台", "weight": 0.038, "mv": 1.82e12,
+                 "pe_ttm": 21.5, "roe_ttm": 0.31},
+                {"symbol": "601939", "name": "建设银行", "weight": 0.021, "mv": 3.12e12,
+                 "pe_ttm": 8.8, "roe_ttm": 0.1},
+            ]
+            return rows[: top_n or len(rows)]
+
+        return SimpleNamespace(
+            keys=lambda: list(uni),
+            universe_keys=lambda: list(uni),
+            members=_members,
+            weights=_weights,
+            valuation=_valuation,
+            trend=_trend,
         )
 
 

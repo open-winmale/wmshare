@@ -90,9 +90,9 @@ def test_registry_covers_every_friendly_api(routes: tuple[Any, ...]) -> None:
         and inspect.getattr_static(cls, method) is not None
     }
     actual = {route.target for route in routes}
-    assert route_count() == 127
+    assert route_count() == 130
     assert actual == expected
-    assert len(actual) == 127
+    assert len(actual) == 130
     for route in routes:
         assert route.description
         assert route.signature
@@ -115,7 +115,7 @@ def test_search_and_contract_friendly_api(runtime: Any) -> None:
 def test_status_reports_capability_coverage(runtime: Any) -> None:
     status = tools.status(runtime)
     caps = status["data"]["capabilities"]
-    assert caps["friendly_apis"] == 127
+    assert caps["friendly_apis"] == 130
     assert caps["first_class_tools"] == 20
     assert caps["batchable_catalog_functions"] > 100
     assert "pandas/_df" in caps["excluded_from_mcp"][0]
@@ -130,7 +130,7 @@ def test_catalog_contract_surface_is_complete() -> None:
         for domain in cat.domains.values()
         for function in domain.get("functions", [])
     }
-    assert len(names) == cat.stats()["functions"] == 263
+    assert len(names) == cat.stats()["functions"] == 266
     for name in names:
         assert cat.function(name)
     assert len(batchable_catalog_functions()) >= 100
@@ -240,7 +240,7 @@ def test_mcp_registry_schema_and_resources() -> None:
     names, facts = asyncio.run(inspect_server())
     assert set(names) == set(TOOL_NAMES) and len(names) == 20
     coverage = facts["coverage"]
-    assert coverage["friendly_apis"] == 127
+    assert coverage["friendly_apis"] == 130
     assert coverage["first_class_tools"] == 20
     assert coverage["batchable_catalog_functions"] >= 100
     assert "pandas DataFrame / _df=True" in coverage["excluded_from_mcp"]

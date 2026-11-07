@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.12.0] - 2026-11-07
+
 ### Added
 - **可转债全市场面板 `cli.cbond.board()`（market.cbond v1.2.0）**：一次调用返回全市场
   转债面板 = 快照行 + 每债最新条款事件 + 盘中债价 overlay（`bondPercent`）+ 强赎触发计数
@@ -61,6 +63,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - `CatalogError.__str__` 不再继承 `KeyError` 的 repr 引号；程序化兼容保持不变。
+
+## [1.11.0] - 2026-11-07
+
+### Added
+- 本地 MCP server 入口 `wmshare-mcp`（`[project.scripts]` + 随包 server.json，
+  `examples/12_mcp_server.py` 覆盖安装、setup/doctor 自检与最小 client 配置），
+  新增可选依赖 extra `mcp`
+- 指标码目录同步上游 d8c900bb：上游扩展采集的 481 个真数据码入库
+  （振幅/技术面/分析师覆盖/公司资料）
+
+### Changed
+- 演示客户端重写为快照架构：`_demo_data.json` 固定快照（内容哈希钉死）+ schema 校验
 
 ## [1.10.0] - 2026-10-30
 

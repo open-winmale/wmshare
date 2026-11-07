@@ -796,6 +796,12 @@ def market(
         if key is None:
             raise ValueError("index.valuation 需要 key；先用 action=keys 查可选值")
         data = cli.index.valuation(key, points=points)
+    elif domain == "index" and action == "trend":
+        if key is None:
+            raise ValueError("index.trend 需要 key；先用 action=universe_keys 查可选值")
+        data = cli.index.trend(key)
+    elif domain == "index" and action == "universe_keys":
+        data = cli.index.universe_keys()
     elif domain == "valuation":
         data = cli.valuation.hist_stats(
             _symbol(action, symbol), metric=metric, window=window

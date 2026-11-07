@@ -1,5 +1,5 @@
 id: market.index
-version: 1.2.0
+version: 1.3.0
 cn: 指数
 kind: computed
 category: market
@@ -22,3 +22,5 @@ functions:
   - {name: indices.members, cn: 指数成分, layer: L0}
   - {name: indices.weights, cn: 指数权重股, layer: L0, ranges: {weight: [0, 1]}}
   - {name: indices.valuation, cn: 指数估值时序, layer: L0}
+  - {name: indices.trend, cn: 指数估值趋势(周频整体法), layer: L0}
+  - {name: indices.universe_keys, cn: 指数域可用键, layer: L0}

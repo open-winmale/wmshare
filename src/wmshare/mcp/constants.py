@@ -75,7 +75,7 @@ MARKET_ACTIONS = {
     "moneyflow": ("bars", "last", "live"),
     "margin": ("query", "latest"),
     "cbond": ("universe", "latest_quotes", "of_stock", "query", "call_hits", "kline_window"),
-    "index": ("keys", "members", "weights", "valuation"),
+    "index": ("keys", "members", "weights", "valuation", "trend", "universe_keys"),
     "valuation": ("hist_stats",),
     "stocks": ("list",),
 }
