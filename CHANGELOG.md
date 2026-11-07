@@ -11,6 +11,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **可转债全市场面板 `cli.cbond.board()`（market.cbond v1.2.0）**：一次调用返回全市场
+  转债面板 = 快照行 + 每债最新条款事件 + 盘中债价 overlay（`bondPercent`）+ 强赎触发计数
+  （`callHits`/`callWindow`，服务端 30 交易日窗统计）+ 下修地板价测算
+  （`resetFloor`/`resetP1`/`resetP20`/`resetBps` 等）+ 正股市值/PE/PB/股息
+  （`stockMv`/`stockPe`/`stockPb`/`stockDiv`）。`premiumRatio`/`couponIr` 与
+  `latest_quotes` 同口径（SDK 换算为小数）。notebook 新增
+  `docs/notebooks/cb_double_low.ipynb`（双低榜 + 强赎/下修观测 + 估值通道拨测，
+  2026-11-07 真实数据，守护测试 tests/test_cb_notebook.py）
+- **指数估值趋势 `cli.index.trend(key)` + `cli.index.universe_keys()`（market.index v1.3.0）**：
+  周频整体法 PE/PB 序列（平台 cron 预热缓存）——`trend` 返回 `{ok, as_of, density, n,
+  points:[{date,pe,pb}], pe_pct, pb_pct}`（分位为最新值在序列中的位置，样本 <60 点为 None，
+  指数估值分位的推荐基座）；`universe_keys` 返回已注册成分宇宙的宽基键清单（榜单场景
+  推荐取值域，区别于返回全部注册键的 `keys()`）。notebook 新增 `notebooks/index_daily.ipynb`
+  （指数估值榜 + 通道拨测能力，自包含实现）
 - **宏观数据域 `cli.macro`（market.macro，11 函数）**：宏观指标时序/单值/原生期点/采样频率
   （`macro.query/asof/spots/sampling_of`，指标码与 $ 前缀可省）、中债收益率按曲线名+期限
   （`bond_curve`，小数口径）、行业情报单值（乘联会厂商排行/手机品牌周份额/新势力周销量与

@@ -1,6 +1,6 @@
 {
  "schema_version": 2,
- "upstream_rev": "d52bd179",
+ "upstream_rev": "65dd6fae",
  "domains": {
   "bonus": {
    "entry": "sys/bonus/init.xs",
@@ -102,7 +102,7 @@
   "notice",
   "segments"
  ],
- "function_count": 269,
+ "function_count": 272,
  "functions": [
   {
    "name": "bonus.dps_rpt",
@@ -1044,6 +1044,15 @@
      "type": "string"
     }
    ]
+  },
+  {
+   "name": "cbond.board",
+   "cn": "转债全市场面板（快照行+最新条款事件+盘中价+强赎触发计数+下修地板价）",
+   "example": "cbond.board()",
+   "returns": "ARR · board 行（quotes 行 + event/bondPercent/callHits/resetFloor）",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": []
   },
   {
    "name": "cbond.call_hits",
@@ -3310,6 +3319,29 @@
    ]
   },
   {
+   "name": "indices.trend",
+   "cn": "指数估值趋势(周频整体法)",
+   "example": "indices.trend(\"index.hs300\")",
+   "returns": "MAP · 周频趋势",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "key",
+     "type": "string"
+    }
+   ]
+  },
+  {
+   "name": "indices.universe_keys",
+   "cn": "指数域可用键",
+   "example": "indices.universe_keys()",
+   "returns": "ARR · 指数键",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": []
+  },
+  {
    "name": "indices.valuation",
    "cn": "指数估值时序",
    "example": "indices.valuation(\"index.hs300\", 12)",
@@ -4779,7 +4811,7 @@
      {
       "name": "source",
       "type": "string",
-      "cn": "来源标识枚举",
+      "cn": "multi_source|multi_source_rt|source_a|source_b|source_c|source_d",
       "optional": true
      }
     ]
@@ -6912,7 +6944,7 @@
   },
   {
    "name": "rptdom.statement_audit",
-   "cn": "审计意见（多源混合，Q4 年轴）",
+   "cn": "审计意见（多源混源，Q4 年轴）",
    "example": "rptdom.statement_audit(\"600519\")",
    "returns": "MAP",
    "returns_shape": null,
@@ -6948,7 +6980,7 @@
   },
   {
    "name": "rptdom.statement_tree",
-   "cn": "三表目录树视图（树序+比率/占比行，标准目录结构）",
+   "cn": "三表目录树视图（树序+比率/占比行，整理结构）",
    "example": "rptdom.statement_tree(\"600519\", \"fin.balance_sheet\", {\"scope\": \"合并\", \"n\": 5})",
    "returns": "ARR",
    "returns_shape": null,

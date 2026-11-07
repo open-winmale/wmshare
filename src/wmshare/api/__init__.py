@@ -8,7 +8,7 @@
     ``_raw=True`` 取未规范化原始行（仅部分方法）；
   - 本层是目录合同的薄翻译：高频方法显式包装；目录内其余函数经 ``__getattr__``
     属性直达（如 ``cli.kline.screen_above_ma20``、``cli.dividend.screen_quality``），
-    目录之外的名字显式 AttributeError——263 个底层函数零遮蔽。
+    目录之外的名字显式 AttributeError——266 个底层函数零遮蔽。
   - 选股能力集中在 ``cli.screener``：单票筛选器（bool）与全市场宽度（服务端
     预计算索引直出）显式包装，kline 目录的其余筛选函数经属性直达。
 
@@ -354,11 +354,21 @@ class MarginApi(_Api):
 class CbondApi(_Api):
     """可转债——合约快照/条款事件/正股关联/强赎触发/独立日 K。
 
-    价格为面值 100 口径（元）；转债无除权口径，日 K 不复权。``call_hits``
+    价格为面值 100 口径（元）；转债无除权口径，日 K 不复权。``board`` 是
+    全市场面板（快照 + 最新事件 + 盘中价 + callHits + resetFloor）；``call_hits``
     统计正股无复权收盘 ≥ 强赎触发价的近窗交易日数，勿以单日价判定已满足；
     ``kline_window`` 返回 store 列式窗口（open/close/high/low/volume/amount）。
     目录内其余函数（quote_list/event_list/min1_live 等）经属性直达。
     """
+
+    def board(self, _df: bool = False) -> Any:
+        """转债全市场面板：快照行 + 每债最新条款事件 + 盘中债价 overlay
+        + 强赎触发计数（callHits）+ 下修地板价（resetFloor）。
+
+        行为 latest_quotes 规范化行的超集（event/bondPercent/callHits/resetFloor）。
+        注意：全市场重计算，openapi 沙箱（xs eval）有燃料上限，经 API 端点调用不受限。
+        """
+        return self._c.call("cbond.board", _df=_df)
 
     def latest_quotes(self, _df: bool = False) -> Any:
         """全市场转债最新快照（按日更新；行字段经 fmt_quote 规范化）。"""
@@ -449,6 +459,50 @@ class IndexApi(_Api):
         if points is not None:
             kw["points"] = points
         return self._c.call("indices.valuation", **kw)
+
+    def universe_keys(self) -> Any:
+        """已注册成分宇宙的指数键（榜单/估值场景的推荐取值域）。
+
+        与 ``keys()`` 的区别：keys() 返回服务端全部注册键，本方法只返回
+        有成分宇宙与整体法估值的宽基键（index.hs300 / csi500 / sz50 / cybz /
+        star50 / shzs / szcz / zx100 / szzzs / gz2000 / kc200）。
+        """
+        return self._c.call("indices.universe_keys")
+
+    def trend(self, key: str) -> dict[str, Any]:
+        """周频整体法估值趋势（平台预热缓存，指数估值分位的推荐基座）。
+
+        返回 ``{ok, key, as_of, density, points, pe_pct, pb_pct, med}``：
+        points 为 ``[{date, pe, pb}, ...]`` 升序；pe_pct/pb_pct 为最新值在
+        序列中的分位（0=最低，1=最高；样本 <60 点时为 None 并保留 points）。
+
+        :param key: 指数键（见 ``universe_keys()``）
+        """
+        raw = self._c.call("indices.trend", key=key)
+        if not isinstance(raw, dict):
+            return {"ok": False, "key": key, "as_of": "", "density": "weekly",
+                    "points": [], "pe_pct": None, "pb_pct": None, "med": []}
+        base = raw.get("base") or []
+        pts = [{"date": str(p[0])[:10], "pe": p[1], "pb": p[2]}
+               for p in base if isinstance(p, (list, tuple)) and len(p) >= 3]
+        pes = [p["pe"] for p in pts if isinstance(p.get("pe"), (int, float)) and p["pe"] > 0]
+        pbs = [p["pb"] for p in pts if isinstance(p.get("pb"), (int, float)) and p["pb"] > 0]
+        last_pe = next((p["pe"] for p in reversed(pts)
+                        if isinstance(p.get("pe"), (int, float)) and p["pe"] > 0), None)
+        last_pb = next((p["pb"] for p in reversed(pts)
+                        if isinstance(p.get("pb"), (int, float)) and p["pb"] > 0), None)
+
+        def _pct(cur: float | None, vals: list[float]) -> float | None:
+            if cur is None or len(vals) < 60:
+                return None
+            return sum(1 for v in vals if v <= cur) / len(vals)
+
+        return {"ok": bool(raw.get("ok")), "key": key,
+                "as_of": str(raw.get("asof") or ""),
+                "density": str(raw.get("density") or "weekly"),
+                "n": len(pts), "points": pts,
+                "pe_pct": _pct(last_pe, pes), "pb_pct": _pct(last_pb, pbs),
+                "med": raw.get("med") or []}
 
 
 # ---------------------------------------------------------------- 证券基础 market
@@ -1517,6 +1571,7 @@ FRIENDLY_INDEX: list[tuple[str, str, str, str, str]] = [
     ("market", "screener", "index_top_movers", "涨跌榜", "kline.index_top_movers"),
     ("market", "margin", "query", "个股融资融券历史", "margin.query"),
     ("market", "margin", "latest", "最新两融单行", "margin.latest"),
+    ("market", "cbond", "board", "转债全市场面板", "cbond.board"),
     ("market", "cbond", "latest_quotes", "转债最新快照", "cbond.latest_quotes"),
     ("market", "cbond", "of_stock", "正股关联转债", "cbond.of_stock"),
     ("market", "cbond", "query", "按标的查条款事件", "cbond.query"),
@@ -1527,6 +1582,8 @@ FRIENDLY_INDEX: list[tuple[str, str, str, str, str]] = [
     ("market", "index", "members", "指数成分", "indices.members"),
     ("market", "index", "weights", "指数权重股", "indices.weights"),
     ("market", "index", "valuation", "指数估值时序", "indices.valuation"),
+    ("market", "index", "trend", "指数估值趋势(周频)", "indices.trend"),
+    ("market", "index", "universe_keys", "指数域可用键", "indices.universe_keys"),
     ("market", "stocks", "list", "全市场证券列表", "stocks.query_list"),
     ("market", "stocks", "industries", "行业目录", "stocks.industry_list"),
     ("market", "stocks", "industry_members", "行业成分股", "stocks.industry_members"),

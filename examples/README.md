@@ -35,6 +35,7 @@ python examples/01_quickstart.py
 | 11 | `11_statements_tour.py` | 进阶 | 凭证 | 三大报表科目行结构、合并 vs 母公司（diffp 小数）、审计意见 | GUIDE·单票菜谱 |
 | 12 | `12_mcp_server.py` | AI | **离线自检** | `wmshare-mcp` 安装自检、凭证写入、最小 MCP 配置、20 个工具入口与 friendly API 兜底 | README·MCP server、AI·MCP 路径 |
 | 13 | `13_futures_macro.py` | 进阶 | 凭证 | 期货主力指标码（fut_symbol 换合约/外盘）、宏观时序与中债收益率（原生口径） | GUIDE·§6.1、API·期货/宏观章 |
+| 14 | `14_cbond_double_low.py` | 进阶 | 凭证 | `cbond.board` 全市场面板一次取全；双低=价格+溢价率×100（小数口径）；callHits/resetFloor 行内直读 | GUIDE·单票菜谱·可转债、docs/notebooks/cb_double_low.ipynb |
 
 ## 约定（新增示例请遵守）
 
@@ -42,4 +43,5 @@ python examples/01_quickstart.py
 - docstring 固定四行元信息：**前提 / 运行 / 学到 / 文档**；
 - 骨架 `def main(cli=None)` + `__main__` 捕获 `WmshareError` 打印原文（消息自带修复步骤）；
 - 凭证示例带 `--demo` 旗标（`main(cli=None, demo=False)`，演示分支打印「非真实行情」提示）；
+- 演示快照不含的域（如 cbond）可不带 `--demo`，在 docstring 前提行注明「需凭证」；
 - 打印值带单位注释；新增后同步本表，并在 `tests/test_examples.py` 加对应测试（CI 会拦截漏网的示例）。

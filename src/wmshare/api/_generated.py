@@ -281,6 +281,10 @@ class BonusNS(_Ns):
 class CbondNS(_Ns):
     """可转债（market.cbond）"""
 
+    def board(self, _raw: bool = False, _df: bool = False) -> Any:
+        """转债全市场面板（快照+最新事件+盘中价+callHits+下修地板价）"""
+        return self._client.call("cbond.board", _raw=_raw, _df=_df)
+
     def quote_list(self, _raw: bool = False, _df: bool = False) -> Any:
         """转债合约快照全表"""
         return self._client.call("cbond.quote_list", _raw=_raw, _df=_df)
@@ -762,6 +766,14 @@ class IndicesNS(_Ns):
         if points is not None:
             kw["points"] = points
         return self._client.call("indices.valuation", **kw, _raw=_raw, _df=_df)
+
+    def trend(self, key: str, _raw: bool = False, _df: bool = False) -> Any:
+        """指数估值趋势(周频整体法)"""
+        return self._client.call("indices.trend", key=key, _raw=_raw, _df=_df)
+
+    def universe_keys(self, _raw: bool = False, _df: bool = False) -> Any:
+        """指数域可用键"""
+        return self._client.call("indices.universe_keys", _raw=_raw, _df=_df)
 
 class IntlNS(_Ns):
     """港美股披露（market.intl）"""

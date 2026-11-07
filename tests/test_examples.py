@@ -46,7 +46,7 @@ def _load(name: str):
 # ---- 离线示例：子进程真实执行（不联网、零凭证） ----
 
 @pytest.mark.parametrize("name,needles", [
-    ("02_catalog_tour.py", ["数据域：18", "指标代码：精选 74 / 目录全量 2639"]),
+    ("02_catalog_tour.py", ["数据域：18", "指标代码：精选 74 / 目录全量 2752"]),
     ("03_error_handling.py", ["[auth]", "[limit]", "open.winmale.com",
                               "WMSHARE_CLIENT_ID"]),
     ("09_ai_skill_setup.py", ["skill 位置", "skill 自检", "cat.search"]),
@@ -93,6 +93,13 @@ def test_05_dividend_screener(snapshot, capsys):
     expected = snapshot["data"]["dividend"]["yield_ttm"]["600519"]
     assert f"TTM股息率={expected:.4f}" in out
     assert "筛选表达式" in out
+
+
+def test_14_cbond_double_low_needs_credentials(capsys):
+    """演示快照不含 cbond 域：示例应给出明确的「需凭证」提示而非崩溃。"""
+    _load("14_cbond_double_low.py").main(fake_client())
+    out = capsys.readouterr().out
+    assert "需真实凭证" in out
 
 
 def test_12_futures_macro(capsys):
@@ -160,7 +167,7 @@ def test_examples_index_covers_dir():
     """examples/README.md 课程表必须覆盖目录里每个脚本（防孤儿示例）。"""
     index = (EXAMPLES / "README.md").read_text(encoding="utf-8")
     scripts = sorted(p.name for p in EXAMPLES.glob("*.py"))
-    assert len(scripts) == 13, f"示例应恰为 13 个（编号课程），实际 {len(scripts)}：{scripts}"
+    assert len(scripts) == 14, f"示例应恰为 14 个（编号课程），实际 {len(scripts)}：{scripts}"
     for name in scripts:
         assert f"`{name}`" in index, f"examples/README.md 缺 {name} 的索引行"
 

@@ -29,7 +29,7 @@
   全景/分桶/行业分布/涨跌榜走服务端预计算索引，毫秒级响应；2,639 个指标码（TTM、3/5/10 年
   历史分位、192 个行业内分位、TTM 股息率/派息率 + 11 个质量筛选器）服务端算好直出。
 - **凭证即用**——开放平台签发 client_id/api-key，环境变量、凭证文件、构造参数任选其一配置；遇到 401/403/429 错误消息即完整指引。
-- **目录随包 + AI 原生**——263 个底层函数、127 个核心接口、2,639 个指标码离线可查；
+- **目录随包 + AI 原生**——266 个底层函数、130 个核心接口、2,752 个指标码离线可查；
   附 Agent Skills 格式 skill（`wmshare.skill_dir()`）与本地 MCP server（`wmshare-mcp`）。
 
 ## 快速上手
@@ -98,7 +98,7 @@ for s, n, v, pe, pct in rows[:8]:                            # 取前 8 行打�
 
 ## 能力一览
 
-随包离线目录：**18 个数据域 · 263 个底层函数 · 2639 个指标代码**；友好层 **127 个核心接口**，
+随包离线目录：**18 个数据域 · 266 个底层函数 · 2752 个指标代码**；友好层 **130 个核心接口**，
 按使用视角组织为（11 个指标组、74 个精选常用指标代码，`cat.search("中文")` 可编程检索）：
 
 | 门面 | 核心能力 | 单位口径 |
@@ -246,7 +246,7 @@ for i, part in enumerate(cli.batch_iter("dividend.history", codes), 1):
 
 `name`/`symbols` 都是**位置参数**；`_raw=True`、`_units="native"` 三个入口通用。**`on_batch_error`
 （批级：跳过整批）≠ `on_error`（票级：逐票请求）**。长表用 `to_df()`，批量入口不提供 `_df`。
-**指标码不是批量 `name`**：`name` 必须是目录函数名（263 个，如 `kline.snapshot`）；一票多码用 `cli.indicator.metrics(sym, codes)`，全市场指标码只能逐票调用。
+**指标码不是批量 `name`**：`name` 必须是目录函数名（266 个，如 `kline.snapshot`）；一票多码用 `cli.indicator.metrics(sym, codes)`，全市场指标码只能逐票调用。
 
 **分批策略由你定，SDK 负责切片与执行**：代码池来自 `cli.stocks.list()`（全市场）、
 `cli.stocks.industry_members("银行")`（按行业）或自己的筛选结果，`batch_size=`（默认 500、
@@ -283,9 +283,9 @@ for i, part in enumerate(cli.batch_iter("dividend.history", codes), 1):
 
 ## 更多
 
-- **AI 原生**：随包 [SKILL.md](src/wmshare/skills/wmshare/SKILL.md)、[AI 用法](docs/AI.md)、
-  本地 MCP server；skill 可复制进 `.agents/skills/`、`.zcode/skills/` 或 `.claude/skills/`。
+- **AI 原生**：随包 [SKILL.md](src/wmshare/skills/wmshare/SKILL.md)、[AI 用法](docs/AI.md)、本地 MCP server（skill 可复制进 .agents/.zcode/.claude 的 skills/）
 - 生态工具 [big-winner](https://github.com/open-winmale/big-winner)：基于本 SDK 的开源工具。
 - **文档中心 [docs/](docs/README.md)**：使用指南 GUIDE（单票菜谱/批量/多市场/故障排查）· AI 用法 · llms.txt 索引 · [API 参考](docs/API.md)（按资产类别分章的 127 个核心接口 + 指标组）
-- **示例课程 [examples/](examples/README.md)**：13 个编号示例（入门→进阶→生产→AI），全部支持演示客户端离线试跑，CI 端到端覆盖
+- **可转债实战 notebook**：[docs/notebooks/cb_double_low.ipynb](docs/notebooks/cb_double_low.ipynb)——双低榜 + 强赎/下修观测 + 通道拨测（board 一次取全市场面板，2026-11-07 真实数据）
+- **示例课程 [examples/](examples/README.md)**：14 个编号示例（入门→进阶→生产→AI），全部支持演示客户端离线试跑，CI 端到端覆盖
 - [贡献指南](CONTRIBUTING.md)：提交门禁、内容规范、许可政策

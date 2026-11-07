@@ -1,5 +1,5 @@
 id: market.cbond
-version: 1.1.0
+version: 1.2.0
 cn: 可转债
 kind: raw
 category: market
@@ -17,6 +17,7 @@ notes:
   - 'kline_window 返回 store 列式窗口（open/close/high/low/volume/amount）；min1_live
     为缓存命中制，miss 返回 nil'
 functions:
+  - {name: cbond.board, cn: 转债全市场面板（快照+最新事件+盘中价+callHits+下修地板价）, layer: L0, units: {premiumRatio: percent, couponIr: percent}}
   - {name: cbond.quote_list, cn: 转债合约快照全表, layer: L0}
   - {name: cbond.latest_quotes, cn: 转债最新快照, layer: L0, units: {premiumRatio: percent, couponIr: percent}, ranges: {premiumRatio: [0, 30], couponIr: [0, 0.12]}}
   - {name: cbond.of_stock, cn: 正股关联转债, layer: L0}

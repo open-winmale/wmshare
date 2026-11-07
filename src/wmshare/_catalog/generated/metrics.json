@@ -1,7 +1,7 @@
 {
  "schema_version": 2,
- "upstream_rev": "d52bd179",
- "count": 2639,
+ "upstream_rev": "65dd6fae",
+ "count": 2752,
  "metrics": [
   {
    "code": "$ACC",
@@ -48,6 +48,10 @@
   {
    "code": "$AMOUNT_LAST",
    "cn": "最新成交额"
+  },
+  {
+   "code": "$AMOUNT_LIVE",
+   "cn": "drop stub"
   },
   {
    "code": "$AMOUNT_NR_DAY",
@@ -790,6 +794,10 @@
    "cn": "静态股息率(%)"
   },
   {
+   "code": "$BONUS_RATE_LYR_LIVE",
+   "cn": "drop stub"
+  },
+  {
    "code": "$BONUS_RATE_TTM",
    "cn": "股息率(%)"
   },
@@ -800,6 +808,10 @@
   {
    "code": "$BONUS_RATE_TTM_LAST_REAL",
    "cn": "最新分红股息率TTM(%)"
+  },
+  {
+   "code": "$BONUS_RATE_TTM_LIVE",
+   "cn": "drop stub"
   },
   {
    "code": "$BONUS_TOTAL",
@@ -1238,6 +1250,10 @@
   {
    "code": "$CLOSE_LAST",
    "cn": "最新收盘价(D)"
+  },
+  {
+   "code": "$CLOSE_LIVE",
+   "cn": "drop stub"
   },
   {
    "code": "$CLOSE_NR_DAY",
@@ -3543,6 +3559,10 @@
    "cn": "加权员工数"
   },
   {
+   "code": "$EOD_TECH_TIP",
+   "cn": "EOD技术面复合tip包(MAP)"
+  },
+  {
    "code": "$EPMR",
    "cn": "已赚保费",
    "markets": [
@@ -4689,6 +4709,10 @@
    "cn": "最新最高价(D)"
   },
   {
+   "code": "$HIGH_LIVE",
+   "cn": "drop stub"
+  },
+  {
    "code": "$HIGH_NR_DAY",
    "cn": "最高价(无复权)"
   },
@@ -4905,28 +4929,23 @@
   },
   {
    "code": "$HROE_B2",
-   "cn": "归母ROE(B2,%, 普通股口径,加权/多点近似)",
-   "gated": "dev"
+   "cn": "归母ROE(B2,%, 普通股口径,加权/多点近似)"
   },
   {
    "code": "$HROE_COMMON_B2",
-   "cn": "归母ROE(普通股口径,B2,%)",
-   "gated": "dev"
+   "cn": "归母ROE(普通股口径,B2,%)"
   },
   {
    "code": "$HROE_COMMON_WAVG_B2",
-   "cn": "归母ROE(普通股口径,加权/多点近似,B2,%)",
-   "gated": "dev"
+   "cn": "归母ROE(普通股口径,加权/多点近似,B2,%)"
   },
   {
    "code": "$HROE_PARENT_B2",
-   "cn": "归母ROE(归母口径,B2,%)",
-   "gated": "dev"
+   "cn": "归母ROE(归母口径,B2,%)"
   },
   {
    "code": "$HROE_PARENT_WAVG_B2",
-   "cn": "归母ROE(归母口径,加权/多点近似,B2,%)",
-   "gated": "dev"
+   "cn": "归母ROE(归母口径,加权/多点近似,B2,%)"
   },
   {
    "code": "$IBD",
@@ -7466,6 +7485,10 @@
    "cn": "最新最低价(D)"
   },
   {
+   "code": "$LOW_LIVE",
+   "cn": "drop stub"
+  },
+  {
    "code": "$LOW_NR_DAY",
    "cn": "最低价(无复权)"
   },
@@ -8074,8 +8097,24 @@
    "cn": "最新流通市值(亿)"
   },
   {
+   "code": "$MV_FREE_LIVE",
+   "cn": "drop stub"
+  },
+  {
    "code": "$MV_LAST",
    "cn": "最新市值(亿)"
+  },
+  {
+   "code": "$MV_LIVE",
+   "cn": "drop stub"
+  },
+  {
+   "code": "$M_GM_DEPTH_POLICY",
+   "cn": "global memo depth policy metric"
+  },
+  {
+   "code": "$M_GM_GLOBAL_MEMO",
+   "cn": "global memo metric"
   },
   {
    "code": "$NAME",
@@ -8611,8 +8650,7 @@
   },
   {
    "code": "$NPTS_COMMON_TTM_B2",
-   "cn": "归母普通股股东净利润TTM(B2, 若未来有股息/利息数据则在此扣减)",
-   "gated": "dev"
+   "cn": "归母普通股股东净利润TTM(B2, 若未来有股息/利息数据则在此扣减)"
   },
   {
    "code": "$NPTS_NP",
@@ -8664,8 +8702,7 @@
   },
   {
    "code": "$NPTS_TTM_B2",
-   "cn": "归母净利润TTM(B2)",
-   "gated": "dev"
+   "cn": "归母净利润TTM(B2)"
   },
   {
    "code": "$NPTS_TTM_LAST",
@@ -8999,8 +9036,7 @@
   },
   {
    "code": "$NT_B2",
-   "cn": "归母净利率(B2)",
-   "gated": "dev"
+   "cn": "归母净利率(B2)"
   },
   {
    "code": "$N_DY_D",
@@ -9082,6 +9118,10 @@
   {
    "code": "$OPEN_LAST",
    "cn": "最新开盘价(D)"
+  },
+  {
+   "code": "$OPEN_LIVE",
+   "cn": "drop stub"
   },
   {
    "code": "$OPEN_NR_DAY",
@@ -9518,6 +9558,10 @@
    "cn": "市净率"
   },
   {
+   "code": "$PB_LIVE",
+   "cn": "drop stub"
+  },
+  {
    "code": "$PB_NOGW",
    "cn": "不含商誉市净率(D)"
   },
@@ -9532,6 +9576,10 @@
   {
    "code": "$PB_TTM_LAST",
    "cn": "最新市净率(D)"
+  },
+  {
+   "code": "$PB_TTM_LIVE",
+   "cn": "drop stub"
   },
   {
    "code": "$PCF_TTM",
@@ -9666,6 +9714,10 @@
    "cn": "当日涨跌幅(实时)"
   },
   {
+   "code": "$PERCENT_LIVE",
+   "cn": "drop stub"
+  },
+  {
    "code": "$PE_TTM",
    "cn": "PE"
   },
@@ -9680,6 +9732,10 @@
   {
    "code": "$PE_TTM_LAST",
    "cn": "PE(TTM)"
+  },
+  {
+   "code": "$PE_TTM_LIVE",
+   "cn": "drop stub"
   },
   {
    "code": "$PMI",
@@ -9925,6 +9981,10 @@
    "cn": "最新市赚率(D)"
   },
   {
+   "code": "$PR1_BASE_LIVE",
+   "cn": "drop stub"
+  },
+  {
    "code": "$PR1_CORRECT_3_D",
    "cn": "修正市赚率-3年平均ROE(D)"
   },
@@ -9933,12 +9993,24 @@
    "cn": "修正市赚率-5年平均ROE(D)"
   },
   {
+   "code": "$PR1_CORRECT_AVG3_LIVE",
+   "cn": "drop stub"
+  },
+  {
+   "code": "$PR1_CORRECT_AVG5_LIVE",
+   "cn": "drop stub"
+  },
+  {
    "code": "$PR1_CORRECT_D",
    "cn": "修正市赚率(D)"
   },
   {
    "code": "$PR1_CORRECT_LAST_D",
    "cn": "最新修正市赚率(D)"
+  },
+  {
+   "code": "$PR1_CORRECT_LIVE",
+   "cn": "drop stub"
   },
   {
    "code": "$PR2_BASE_AVG3_D",
@@ -9955,6 +10027,10 @@
   {
    "code": "$PR2_BASE_LAST_D",
    "cn": "最新第二市赚率(D)"
+  },
+  {
+   "code": "$PR2_BASE_LIVE",
+   "cn": "drop stub"
   },
   {
    "code": "$PR2_CORRECT_3_D",
@@ -10075,6 +10151,10 @@
   {
    "code": "$PR_LAST",
    "cn": "最新市赚率"
+  },
+  {
+   "code": "$PR_LIVE",
+   "cn": "drop stub"
   },
   {
    "code": "$PS_CR",
@@ -10818,33 +10898,27 @@
   },
   {
    "code": "$SE_AVG_COMMON_B2",
-   "cn": "/ 2",
-   "gated": "dev"
+   "cn": "/ 2"
   },
   {
    "code": "$SE_AVG_COMMON_WAVG_B2",
-   "cn": "归母普通股权益均值(加权/多点近似,B2)",
-   "gated": "dev"
+   "cn": "归母普通股权益均值(加权/多点近似,B2)"
   },
   {
    "code": "$SE_AVG_PARENT_B2",
-   "cn": "/ 2",
-   "gated": "dev"
+   "cn": "/ 2"
   },
   {
    "code": "$SE_AVG_PARENT_WAVG_B2",
-   "cn": "归母权益均值(加权/多点近似,B2)",
-   "gated": "dev"
+   "cn": "归母权益均值(加权/多点近似,B2)"
   },
   {
    "code": "$SE_COMMON_BEG_B2",
-   "cn": "归母普通股权益(期初,B2)",
-   "gated": "dev"
+   "cn": "归母普通股权益(期初,B2)"
   },
   {
    "code": "$SE_COMMON_END_B2",
-   "cn": "归母普通股权益(期末,B2)",
-   "gated": "dev"
+   "cn": "归母普通股权益(期末,B2)"
   },
   {
    "code": "$SE_LAST",
@@ -11142,8 +11216,7 @@
   },
   {
    "code": "$TA_AVG_B2",
-   "cn": "总资产多点均值(B2)",
-   "gated": "dev"
+   "cn": "总资产多点均值(B2)"
   },
   {
    "code": "$TA_DAYS",
@@ -11605,8 +11678,7 @@
   },
   {
    "code": "$TR_TTM_B2",
-   "cn": "营业总收入TTM(B2)",
-   "gated": "dev"
+   "cn": "营业总收入TTM(B2)"
   },
   {
    "code": "$TR_TTM_LAST",
@@ -11677,18 +11749,15 @@
   },
   {
    "code": "$TTS_COMMON_B2",
-   "cn": "杠杆系数(普通股口径,B2)",
-   "gated": "dev"
+   "cn": "杠杆系数(普通股口径,B2)"
   },
   {
    "code": "$TTS_PARENT_B2",
-   "cn": "杠杆系数(归母口径,B2)",
-   "gated": "dev"
+   "cn": "杠杆系数(归母口径,B2)"
   },
   {
    "code": "$TT_B2",
-   "cn": "总资产周转率(B2)",
-   "gated": "dev"
+   "cn": "总资产周转率(B2)"
   },
   {
    "code": "$TURNOVER_RATE",
@@ -11697,6 +11766,42 @@
   {
    "code": "$TURNOVER_RATE_LAST",
    "cn": "换手率-最新"
+  },
+  {
+   "code": "$T_NW_COST_RATE",
+   "cn": "NOWHATIF test cost rate"
+  },
+  {
+   "code": "$T_NW_PROFIT",
+   "cn": "NOWHATIF test profit"
+  },
+  {
+   "code": "$T_NW_REV",
+   "cn": "NOWHATIF test revenue"
+  },
+  {
+   "code": "$T_NW_TAX_RATE",
+   "cn": "NOWHATIF test tax rate"
+  },
+  {
+   "code": "$T_SEL_METRIC",
+   "cn": "selector metric"
+  },
+  {
+   "code": "$T_WF_MARGIN",
+   "cn": "whatif test margin"
+  },
+  {
+   "code": "$T_WF_PROFIT",
+   "cn": "whatif test profit"
+  },
+  {
+   "code": "$T_WF_REV",
+   "cn": "whatif test revenue"
+  },
+  {
+   "code": "$T_WF_TAX",
+   "cn": "whatif test tax"
   },
   {
    "code": "$UPPER_SHADOW",
@@ -11768,6 +11873,10 @@
   {
    "code": "$VOLUME_LAST",
    "cn": "最新成交量"
+  },
+  {
+   "code": "$VOLUME_LIVE",
+   "cn": "drop stub"
   },
   {
    "code": "$VOLUME_NR_DAY",
@@ -11920,6 +12029,214 @@
    "markets": [
     "cn"
    ]
+  },
+  {
+   "code": "$c_accel",
+   "cn": "营收增长加速"
+  },
+  {
+   "code": "$c_bps_ok",
+   "cn": "每股净资产>下限"
+  },
+  {
+   "code": "$c_cr_ok",
+   "cn": "每股公积金>下限"
+  },
+  {
+   "code": "$c_cyb",
+   "cn": "创业板"
+  },
+  {
+   "code": "$c_dppr_g1_ok",
+   "cn": "近1年营收正增长"
+  },
+  {
+   "code": "$c_dppr_ok",
+   "cn": "扣非增速合理区间"
+  },
+  {
+   "code": "$c_dppr_pos",
+   "cn": "扣非净利润为正"
+  },
+  {
+   "code": "$c_eps_g1_ok",
+   "cn": "近1年EPS正增长"
+  },
+  {
+   "code": "$c_eps_g3_ok",
+   "cn": "近3年EPS增速达标"
+  },
+  {
+   "code": "$c_eps_g5_ok",
+   "cn": "近5年EPS正增长"
+  },
+  {
+   "code": "$c_eps_g_ok",
+   "cn": "EPS增速达标"
+  },
+  {
+   "code": "$c_eps_ok",
+   "cn": "每股收益>下限"
+  },
+  {
+   "code": "$c_free_ok",
+   "cn": "流通盘<上限"
+  },
+  {
+   "code": "$c_g_ok",
+   "cn": "扣非增速在合理区间"
+  },
+  {
+   "code": "$c_gmr_ok",
+   "cn": "毛利率达标"
+  },
+  {
+   "code": "$c_ipo_ok",
+   "cn": "上市满10年（确保数据充分）"
+  },
+  {
+   "code": "$c_ma_ok",
+   "cn": "60日均线有效"
+  },
+  {
+   "code": "$c_mv_min",
+   "cn": "流通市值>下限"
+  },
+  {
+   "code": "$c_mv_ok",
+   "cn": "流通市值>下限"
+  },
+  {
+   "code": "$c_mv_ta_ok",
+   "cn": "总市值/总资产合理"
+  },
+  {
+   "code": "$c_mv_total_ok",
+   "cn": "总市值>下限"
+  },
+  {
+   "code": "$c_ncfo_ok",
+   "cn": "经营现金流为正"
+  },
+  {
+   "code": "$c_not_bse",
+   "cn": "非北交所"
+  },
+  {
+   "code": "$c_not_delist",
+   "cn": "非退市"
+  },
+  {
+   "code": "$c_not_gem",
+   "cn": "非创业板"
+  },
+  {
+   "code": "$c_not_st",
+   "cn": "非ST"
+  },
+  {
+   "code": "$c_not_star",
+   "cn": "非科创板"
+  },
+  {
+   "code": "$c_not_ths",
+   "cn": "非标准分类"
+  },
+  {
+   "code": "$c_np_3y_pos",
+   "cn": "近3年净利润CAGR可计算"
+  },
+  {
+   "code": "$c_np_5y_pos",
+   "cn": "过去5年净利润均为正"
+  },
+  {
+   "code": "$c_np_g_ok",
+   "cn": "净利同比增速合理"
+  },
+  {
+   "code": "$c_np_ok",
+   "cn": "近3年净利润为正"
+  },
+  {
+   "code": "$c_npm_ok",
+   "cn": "净利率达标"
+  },
+  {
+   "code": "$c_pb_ok",
+   "cn": "市净率合理区间"
+  },
+  {
+   "code": "$c_pe_ok",
+   "cn": "PE合理区间"
+  },
+  {
+   "code": "$c_peg_ok",
+   "cn": "PEG在合理区间"
+  },
+  {
+   "code": "$c_price_down",
+   "cn": "40日点对点跌幅超阈值"
+  },
+  {
+   "code": "$c_re_ok",
+   "cn": "每股未分配利润>下限"
+  },
+  {
+   "code": "$c_rev_gt_np",
+   "cn": "营收增速>净利增速"
+  },
+  {
+   "code": "$c_roa_ok",
+   "cn": "ROA合理区间"
+  },
+  {
+   "code": "$c_roe_avg_ok",
+   "cn": "10年平均ROE达标"
+  },
+  {
+   "code": "$c_roe_min_ok",
+   "cn": "10年每年ROE均达标"
+  },
+  {
+   "code": "$c_roe_ok",
+   "cn": "连续3年ROE达标"
+  },
+  {
+   "code": "$c_shares_ok",
+   "cn": "总股本<上限"
+  },
+  {
+   "code": "$c_soe",
+   "cn": "央企或地方国企"
+  },
+  {
+   "code": "$c_ta_dppr_ok",
+   "cn": "总资产/扣非净利润合理"
+  },
+  {
+   "code": "$c_tl_ok",
+   "cn": "资产负债率<上限"
+  },
+  {
+   "code": "$c_tr_g3_ok",
+   "cn": "近3年营收增速达标"
+  },
+  {
+   "code": "$c_tr_g_ok",
+   "cn": "营收增速达标"
+  },
+  {
+   "code": "$c_tr_ok",
+   "cn": "营收增速达标"
+  },
+  {
+   "code": "$c_tr_scale_ok",
+   "cn": "近3年营收规模达标"
+  },
+  {
+   "code": "$col_distinct",
+   "cn": "列值去重统计"
   },
   {
    "code": "$dNT",
@@ -12284,6 +12601,122 @@
   {
    "code": "$xTTS",
    "cn": "权益乘数"
+  },
+  {
+   "code": "$x_cr_g3",
+   "cn": "近3年速动比率几何增速(CONFT%)"
+  },
+  {
+   "code": "$x_dppr_d",
+   "cn": "近3年扣非净利几何增速(%)"
+  },
+  {
+   "code": "$x_dppr_g1",
+   "cn": "近1年扣非净利几何增速(CONFT%)"
+  },
+  {
+   "code": "$x_dppr_g1_d",
+   "cn": "近1年扣非净利几何增速(%)"
+  },
+  {
+   "code": "$x_dppr_g3",
+   "cn": "近3年扣非净利几何增速(CONFT%)"
+  },
+  {
+   "code": "$x_dppr_g3_d",
+   "cn": "近3年扣非净利几何增速(%)"
+  },
+  {
+   "code": "$x_dppr_roa",
+   "cn": "扣非ROA"
+  },
+  {
+   "code": "$x_eps_g1",
+   "cn": "近1年EPS几何增速(CONFT%)"
+  },
+  {
+   "code": "$x_eps_g1_d",
+   "cn": "近1年EPS几何增速(%)"
+  },
+  {
+   "code": "$x_eps_g3",
+   "cn": "近3年EPS几何增速(CONFT%)"
+  },
+  {
+   "code": "$x_eps_g3_d",
+   "cn": "近3年EPS几何增速(%)"
+  },
+  {
+   "code": "$x_eps_g5",
+   "cn": "近5年EPS几何增速(CONFT%)"
+  },
+  {
+   "code": "$x_eps_g5_d",
+   "cn": "近5年EPS几何增速(%)"
+  },
+  {
+   "code": "$x_gmr3",
+   "cn": "近3年毛利率稳定性校验"
+  },
+  {
+   "code": "$x_gmr_g1",
+   "cn": "近1年毛利率几何增速(CONFT%)"
+  },
+  {
+   "code": "$x_ma60_ratio",
+   "cn": "最新价/60日均价（展示用）"
+  },
+  {
+   "code": "$x_mv_ta",
+   "cn": "总市值/总资产"
+  },
+  {
+   "code": "$x_np_g",
+   "cn": "半年报净利同比增速(CONFT%)"
+  },
+  {
+   "code": "$x_np_g_d",
+   "cn": "半年报净利同比增速(%)"
+  },
+  {
+   "code": "$x_npm3",
+   "cn": "近3年净利率稳定性校验"
+  },
+  {
+   "code": "$x_peg",
+   "cn": "扣非PEG"
+  },
+  {
+   "code": "$x_pick_all",
+   "cn": "全条件合取"
+  },
+  {
+   "code": "$x_roa",
+   "cn": "总资产收益率TTM"
+  },
+  {
+   "code": "$x_ta_dppr",
+   "cn": "总资产/扣非净利润"
+  },
+  {
+   "code": "$x_tr_d",
+   "cn": "近3年营收几何增速(%)"
+  },
+  {
+   "code": "$x_tr_g1",
+   "cn": "近1年营收几何增速(CONFT%)"
+  },
+  {
+   "code": "$x_tr_g1_d",
+   "cn": "近1年营收几何增速(%)"
+  },
+  {
+   "code": "$x_tr_g3",
+   "cn": "近3年营收几何增速(CONFT%)"
+  },
+  {
+   "code": "$x_tr_g3_d",
+   "cn": "近3年营收几何增速(%)"
   }
  ]
 }

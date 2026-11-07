@@ -161,6 +161,20 @@ cli.margin.query("600519")
 # 可转债：正股关联（无存续转债返回空表）
 cli.cbond.of_stock("000001")            # 1 只：bondName / bondPrice / convertPrice …
 
+# 可转债：全市场面板（一次调用 = 快照 + 最新条款事件 + 盘中债价 + 强赎/下修观测）
+b = cli.cbond.board()                   # 行 = 快照行 + event/callHits/resetFloor/bondPercent
+# premiumRatio 为小数（0.0702 = 7.02%，与 latest_quotes 同口径，SDK 已换算）
+# callHits = 服务端 30 交易日窗「正股收盘 ≥ 强赎触发价」天数（勿以单日价判定）
+# resetFloor = 下修地板价测算（仅下修提案/实施中的债有值）；stockName 含 ST 即风险警示
+
+# 可转债：条款事件流（下修提案/实施、强赎/不强赎、回售、除权调价、转股期等 9 类）
+evs = cli.cbond.event_list()            # 90 日回看；行含 convert_price_old/new 与公告原文链接
+
+# 可转债：转债日 K（列式 MAP：open/close/high/low/volume/amount；samplingName 日期降序）
+kw = cli.cbond.kline_window("113050", 60)
+
+# 完整实战见 docs/notebooks/cb_double_low.ipynb（双低榜 + 强赎/下修观测 + 通道拨测）
+
 # 指数：成分股（按市值权重取前 N）/ 权重股 / 估值时序
 cli.index.members("index.hs300", "mv", 10)
 
