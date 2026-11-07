@@ -12,6 +12,7 @@ Usage: python3 tools/check_leak.py
 """
 from __future__ import annotations
 
+import json
 import re
 import subprocess
 import sys
@@ -141,6 +142,25 @@ def disallowed_tracked_files() -> list[str]:
     return bad
 
 
+def _scannable_text(path: Path, raw: str) -> str:
+    """ipynb 先剥掉嵌入的 base64 图片载荷再扫：随机 base64 会撞禁词正则
+    （图片字节是图表像素，不是行文里的第三方引用——与 THIRDPARTY_SKIP_PREFIXES
+    的「API 返回值豁免」同一性质）。其余文件按原文扫描。"""
+    if path.suffix != ".ipynb":
+        return raw
+    try:
+        nb = json.loads(raw)
+    except ValueError:
+        return raw
+    for cell in nb.get("cells", []):
+        for out in cell.get("outputs", []):
+            data = out.get("data")
+            if isinstance(data, dict):
+                for key in [k for k in data if k.startswith("image/")]:
+                    del data[key]
+    return json.dumps(nb, ensure_ascii=False)
+
+
 def scan() -> list[str]:
     findings: list[str] = []
     self_rel = Path(__file__).resolve().relative_to(REPO).as_posix()
@@ -148,7 +168,7 @@ def scan() -> list[str]:
         if not path.is_file() or path.relative_to(REPO).as_posix() == self_rel:
             continue  # 规则定义文件本身含被扫描字面量，排除
         try:
-            text = path.read_text(encoding="utf-8", errors="replace")
+            text = _scannable_text(path, path.read_text(encoding="utf-8", errors="replace"))
         except OSError:
             continue
         rel = path.relative_to(REPO).as_posix()
