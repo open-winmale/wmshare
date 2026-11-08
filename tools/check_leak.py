@@ -72,8 +72,9 @@ FORBIDDEN_PATTERNS = [
     re.compile(r"/home/[A-Za-z0-9_]+/winmale"),
 ]
 
-# 标的名 fixture（腾讯控股等）所在测试文件豁免第三方扫描；其余扫描照常
-THIRDPARTY_SKIP = {"tests/test_symbols.py"}
+# 标的名 fixture（腾讯控股等）所在测试文件豁免第三方扫描；其余扫描照常。
+# test_index_daily_notebook.py 同理：禁词断言本身要写第三方产品名字面量。
+THIRDPARTY_SKIP = {"tests/test_symbols.py", "tests/test_index_daily_notebook.py"}
 
 # 标的数据可包含外部公开 URL 或公司名，可能与禁词撞名；这是「API 返回值」，
 # 不是文档里的第三方推荐/对标。豁免只限第三方词扫描；内部标识、机器路径和

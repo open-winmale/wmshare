@@ -22,16 +22,19 @@ def test_notebook_is_valid_and_executed():
 
 
 def test_notebook_uses_official_facade_only():
-    """只用官方 facade（cli.cbond.*），不得出现底层 call 直调。"""
+    """只用官方 facade（cli.cbond.* + cb.valuation），不得出现底层 call 直调。"""
     src = "\n".join("".join(c["source"]) for c in _nb()["cells"]
                     if c["cell_type"] == "code")
     assert "cli.cbond.board()" in src, "双低榜数据源应为 cli.cbond.board()"
     assert "cli.cbond.event_list()" in src
     assert "cli.cbond.kline_window" in src
+    assert "wmshare.cb.valuation" in src and "ytm_after_tax" in src, \
+        "YTM 必须与日更线同源（wmshare.cb.valuation），不得在 notebook 另写近似公式"
     assert "cli.call(" not in src and ".call(\"" not in src, "不得绕过 facade 直调底层 call"
 
 
 def test_notebook_carries_date_stamp_and_no_secrets():
     text = json.dumps(_nb(), ensure_ascii=False)
     assert "2026-11-07" in text and "真实数据" in text, "notebook 缺少实测日期标注"
+    assert "basis" in text, "YTM 档位标注（schedule/constant）应出现在口径与表格中"
     assert "client_secret" not in text.lower(), "notebook 不得出现密钥字段"

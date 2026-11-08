@@ -8,13 +8,15 @@
 
 前提：凭证必填（export WMSHARE_CLIENT_ID=... WMSHARE_CLIENT_SECRET=...）；演示快照不含 cbond 域，故无 --demo
 运行：python examples/14_cbond_double_low.py
-学到：cbond.board 单次全市场面板；双低=价格+溢价率×100（小数口径）；强赎/下修观测行内直读
+学到：cbond.board 单次全市场面板；双低=价格+溢价率×100（小数口径）；YTM 双口径
+      （wmshare.cb.valuation 现金流 IRR，basis 分档，与日更线同源）；强赎/下修观测行内直读
 文档：docs/GUIDE.md（单票菜谱·可转债）、docs/notebooks/cb_double_low.ipynb（完整实战）
 """
 import sys
 
 import wmshare
 from wmshare import WmshareError
+from wmshare.cb.valuation import ytm_after_tax  # 与日更线同源的 YTM 实现
 
 TOP_N = 20  # 双低榜行数
 
@@ -31,6 +33,8 @@ def main(cli=None) -> None:
         print(f"cbond 域不可用（{e}）：本示例需真实凭证（WMSHARE_CLIENT_ID/SECRET）")
         return
     rows = rows if isinstance(rows, list) else rows.get("rows", [])
+    asof = max((str(r.get("asOf"))[:10] for r in rows if isinstance(r, dict) and r.get("asOf")),
+               default="")
 
     traded = []
     for r in rows:
@@ -42,21 +46,23 @@ def main(cli=None) -> None:
             r["_price"] = float(px)
             r["_prem_pct"] = float(prem) * 100            # premiumRatio 小数 → 百分数展示
             r["_dl"] = r["_price"] + r["_prem_pct"]       # 双低 = 价格 + 溢价率×100
+            res = ytm_after_tax(r, asof)                  # 精确口径（分年票息表+赎回价 IRR）
+            r["_ytm"], r["_basis"] = res["ytm"], res["basis"]
             traded.append(r)
     traded.sort(key=lambda r: r["_dl"])
 
-    asof = max((str(r.get("asOf"))[:10] for r in rows if isinstance(r, dict) and r.get("asOf")),
-               default="")
     print(f"board 全表 {len(rows)} 行 · 在市 {len(traded)} 只 · 数据截至 {asof}")
-    print("口径：双低 = 价格(元) + 转股溢价率(小数)×100；正股简称含 ST 即风险警示")
+    print("口径：双低 = 价格(元) + 转股溢价率(小数)×100；"
+          "YTM=逐笔现金流 IRR（basis=schedule 分年票息/constant 恒定近似），正股简称含 ST 即风险警示")
 
     # ---- 双低榜前 20 ----
     print(f"\n--- 双低榜前 {TOP_N}（先看警示列再看排名：低价的来源可能是信用风险而不是便宜）---")
     for r in traded[:TOP_N]:
         st = "ST" if "ST" in str(r.get("stockName") or "") else "—"
+        ytm = f"{r['_ytm'] * 100:.2f}%({r['_basis']})" if r["_ytm"] is not None else "—"
         print(f"  {r.get('bondName') or '':<8} {r.get('bondCode')}  "
               f"价格={r['_price']:.2f}元  溢价率={r['_prem_pct']:.2f}%  "
-              f"双低={r['_dl']:.2f}  正股={r.get('stockName') or '—'}  警示={st}")
+              f"双低={r['_dl']:.2f}  YTM={ytm:<18} 正股={r.get('stockName') or '—'}  警示={st}")
 
     mean_dl = sum(r["_dl"] for r in traded) / len(traded)
     srt = sorted(r["_dl"] for r in traded)
