@@ -40,7 +40,7 @@ CELLS = [
 
 > 档位口径：盈利收益率 = 1/PE；> 2×10Y 国债记绿档、1~2× 记黄档、< 1× 记橙档——
 > 行业通行规则的**估值参考区间，非官方阈值**；全文只做数据整理与研究参考，
-> **不构成任何投资建议**。整体法口径与主流终端（Wind 等）实测差 <1%（2026-11-07）。"""),
+> **不构成任何投资建议**。整体法口径与主流终端实测差 <1%（2026-11-07）。"""),
     code("""import math
 import os
 from collections import Counter
@@ -81,97 +81,231 @@ print("client ready:", "demo" if DEMO else "live")"""),
 
 每键一次 `valuation`（当前值）+ 一次 `trend`（周频序列分位）。`trend` 依赖平台预热缓存
 （cron 每收盘刷新），未命中的键分位列显示「缓存未命中」，其余列不受影响。"""),
-    code("""# universe_keys 需服务端部署 indices.trend/universe_keys 后返回真实清单；
-# 未生效时用探针实证键清单兜底（2026-11-07，11 键全部 valuation 可用）
-FALLBACK_KEYS = ["index.hs300", "index.csi500", "index.sz50", "index.cybz", "index.star50",
-                 "index.shzs", "index.szcz", "index.zx100", "index.szzzs", "index.gz2000",
-                 "index.kc200"]
-try:
-    keys = cli.index.universe_keys() or FALLBACK_KEYS
-except Exception:
-    keys = FALLBACK_KEYS
-rf = None
-try:  # 无风险利率锚：10 年期国债收益率（小数口径）
-    rf = cli.indicator.get("600519", "$BOND_YIELD_GOV_10Y")
-    rf = round(rf * 100, 2) if isinstance(rf, (int, float)) else None
-except Exception as e:
-    print("[rf] 不可用：", e)
-print(f"universe keys={len(keys)}  10Y 国债={rf}%")
+    code("""# ── 榜单参数：口径 × 窗口 ────────────────────────────────────────────────
+WINDOW = "5y"        # 分位窗口：3y / 5y / 10y
+MEASURE = "pe"       # 分位口径：pe（整体法）/ pe_med（中位数）
+ZONE_CUT = (0.30, 0.70)   # 绿 <30% / 黄 30~70% / 红 >70%
 
-
-def zone_of(ey: float | None, rf: float | None) -> str:
-    \"\"\"盈利收益率法三档（估值参考区间，非官方阈值）。\"\"\"
-    if not ey or not rf:
-        return "—"
-    if ey > 2 * rf:
-        return "绿档"
-    if ey >= rf:
-        return "黄档"
-    return "橙档"
-
-
-rows = []
-for k in keys:
-    try:
-        v = cli.index.valuation(k)
-    except Exception as e:
-        rows.append({"指数": k, "PE": None, "备注": f"valuation 不可用：{e}"[:40]})
-        continue
-    cur = v.get("current") or {}
-    pe, pb, dv = cur.get("pe"), cur.get("pb"), cur.get("dv")
-    name_cn = ""
-    try:  # 季序列点带日期，取序列键名展示用中文（若无则用键名）
-        name_cn = k.replace("index.", "").upper()
-    except Exception:
-        pass
-    row = {"指数": name_cn or k, "key": k,
-           "PE": round(pe, 2) if isinstance(pe, (int, float)) else None,
-           "PB": round(pb, 2) if isinstance(pb, (int, float)) else None,
-           "股息率": round(dv * 100, 2) if isinstance(dv, (int, float)) else None,
-           "盈利收益率": round(100 / pe, 2) if isinstance(pe, (int, float)) and pe > 0 else None}
-    try:
-        t = cli.index.trend(k)
-        pts = t.get("points") or []
-        row["PE分位"] = (round(t["pe_pct"] * 100, 1) if t.get("pe_pct") is not None else None)
-        row["PB分位"] = (round(t["pb_pct"] * 100, 1) if t.get("pb_pct") is not None else None)
-        row["趋势n"] = t.get("n") or len(pts)
-        row["趋势asof"] = t.get("as_of") or ""
-    except Exception as e:
-        row["PE分位"] = row["PB分位"] = None
-        row["趋势n"] = 0
-        row["趋势asof"] = f"trend 不可用：{e}"[:40]
-    row["档位"] = zone_of(row["盈利收益率"], rf)
-    rows.append(row)
-
+GROUP_LABEL = {"broad": "宽基", "industry": "行业", "dividend": "红利"}
+FALLBACK = {
+    "broad": ["index.hs300", "index.csi500", "index.sz50", "index.cybz", "index.star50",
+              "index.shzs", "index.szcz", "index.zx100", "index.szzzs", "index.gz2000",
+              "index.kc200"],
+    "dividend": ["index.csidividend", "index.ssedividend", "index.szhl", "index.gzhl",
+                 "index.csicentralsoesdividend", "index.csisoesdividend",
+                 "index.csipoesdividend", "index.csi300dividend", "index.csi500dividend",
+                 "index.sse180dividend", "index.sse380dividend", "index.ssesoesdividend",
+                 "index.ssepoesdividend", "index.ssecentralsoesdividend"],
+}
 CN = {"HS300": "沪深300", "CSI500": "中证500", "SZ50": "上证50", "CYBZ": "创业板指",
       "STAR50": "科创50", "SHZS": "上证指数", "SZCZ": "深证成指", "ZX100": "中小100",
-      "SZZZS": "深证300", "GZ2000": "国证2000", "KC200": "科创200"}
-for r in rows:
-    r["指数"] = CN.get(r.get("key", "").replace("index.", "").upper(), r["指数"])
+      "SZZZS": "深证300", "GZ2000": "国证2000", "KC200": "科创200",
+      "CSIDIVIDEND": "中证红利", "SSEDIVIDEND": "红利指数", "SZHL": "深证红利",
+      "GZHL": "国证红利", "CSICENTRALSOESDIVIDEND": "央企红利",
+      "CSISOESDIVIDEND": "国企红利", "CSIPOESDIVIDEND": "民企红利",
+      "CSI300DIVIDEND": "300红利", "CSI500DIVIDEND": "500红利",
+      "SSE180DIVIDEND": "180红利", "SSE380DIVIDEND": "380红利",
+      "SSESOESDIVIDEND": "上国红利", "SSEPOESDIVIDEND": "上民红利",
+      "SSECENTRALSOESDIVIDEND": "上央红利"}
 
-ordered = sorted(rows, key=lambda r: (r.get("档位") != "绿档", r.get("档位") != "黄档",
-                                      -(r.get("盈利收益率") or 0)))
-rated = [r for r in ordered if r.get("档位") in ("绿档", "黄档", "橙档")]
-green_n = sum(1 for r in rated if r["档位"] == "绿档")
-share = green_n / len(rated) if rated else 0
-stars = (5 if share >= 0.8 else 4 if share >= 0.6 else 3 if share >= 0.4
-         else 2 if share >= 0.2 else 1 if green_n else 0)
+try:  # 行业名录是运行时数据，不硬编码；demo / 旧服务端无此接口则空
+    IND_ROWS = cli.stocks.industry_list(1) or []
+except Exception as _e:
+    print("[industry] 名录不可用：", str(_e)[:60])
+    IND_ROWS = []
+IND_NAME = {r["symbol"]: r["name"] for r in IND_ROWS if isinstance(r, dict)}
 
-hdr = f"指数估值榜 · 市场温度 {'★' * stars}{'☆' * (5 - stars)}　绿档 {green_n}/{len(rated)}"
-print(hdr)
-cols = ["指数", "PE", "PE分位", "PB", "PB分位", "股息率", "盈利收益率", "档位", "趋势asof"]
+
+def group_keys(group):
+    # 取一组键；服务端未部署分组能力时回落到本地清单 / 行业名录
+    if group == "industry":
+        return ["industry." + r["symbol"] for r in IND_ROWS if isinstance(r, dict)]
+    try:
+        got = cli.index.universe_keys(group)
+        if got:
+            return list(got)
+    except Exception as e:
+        print("[%s] universe_keys 不可用：%s" % (group, str(e)[:60]))
+    return FALLBACK.get(group, [])
+
+
+def zone_of_pct(p):
+    # 自身历史分位三档（估值参考区间，非官方阈值）
+    if p is None:
+        return "—"
+    lo, hi = ZONE_CUT
+    return "绿档" if p < lo else ("黄档" if p <= hi else "红档")
+
+
+def label_of(key):
+    # 键 → 展示名
+    if key.startswith("industry."):
+        code = key.split(".", 1)[1]
+        return IND_NAME.get(code, code)
+    short = key.replace("index.", "").upper()
+    return CN.get(short, short)
+
+
+def pct_recompute(points, col, years, asof):
+    # 独立复算：不复用 SDK 分位，按 rank0/(n-1) 重算最新点位置
+    if not asof or len(asof) < 10:
+        return None
+    cut = "%d%s" % (int(asof[:4]) - years, asof[4:10])
+    pts = [p for p in points if isinstance(p.get(col), (int, float)) and p[col] > 0]
+    if not pts or pts[-1]["date"] > cut:   # 序列起点晚于窗口下界 → 窗口不足
+        return None
+    vals = sorted(p[col] for p in pts if p["date"] >= cut)
+    cur = pts[0][col]                      # points 是新→旧，[0] 即最新点
+    if len(vals) < 2:
+        return None
+    rank0 = (sum(1 for v in vals if v < cur) + sum(1 for v in vals if v <= cur) - 1) / 2
+    return rank0 / (len(vals) - 1)
+
+
+def med_points(med):
+    # 月频中位数序列 → 与 base 同结构（date/pe/pe_med），供中位数口径复用同一套分位算法
+    return [{"date": str(m[0])[:10], "pe": m[1], "pe_med": m[1]}
+            for m in (med or []) if isinstance(m, (list, tuple)) and len(m) >= 2]
+
+
+def med_window_n(points, years, asof):
+    # 窗口内有效样本数（与 pct_recompute 同一切窗规则），用于「样本」列如实展示
+    if not asof or len(asof) < 10:
+        return 0
+    cut = "%d%s" % (int(asof[:4]) - years, asof[4:10])
+    return sum(1 for p in points
+               if p["date"] >= cut and isinstance(p.get("pe_med"), (int, float)) and p["pe_med"] > 0)
+
+
+def measure_pct(t, measure):
+    # 取分位：优先服务端 pct[measure].p；服务端未部署该口径时用本地序列自算（并标注来源）
+    # 返回 (分位, 来源, 该口径序列, 该口径窗口样本数)
+    yrs = int(WINDOW[:-1]) if WINDOW[:-1].isdigit() else 5
+    node = ((t.get("pct") or {}).get(measure) or {}) if t.get("pct") else {}
+    p = node.get("p") if isinstance(node.get("p"), (int, float)) else None
+    n = node.get("n%d" % yrs) if isinstance(node.get("n%d" % yrs), (int, float)) else 0
+    if p is not None:
+        return p, "server", (t.get("points") or []), n
+    if measure == "pe":
+        if isinstance(t.get("pe_pct"), (int, float)):
+            return t["pe_pct"], t.get("pct_source") or "server", (t.get("points") or []), t.get("win_n") or 0
+        return None, "", (t.get("points") or []), 0
+    # pe_med：服务端只给 base/med 时，本地按月频中位数序列算（样本数是月频点数，不是周频点数）
+    mp = med_points(t.get("med"))
+    p = pct_recompute(mp, "pe_med", yrs, t.get("as_of") or "")
+    return p, ("client" if p is not None else ""), mp, med_window_n(mp, yrs, t.get("as_of") or "")
+
+
+def collect(keys, group):
+    out = []
+    for k in keys:
+        row = {"组": GROUP_LABEL.get(group, group), "key": k, "名称": label_of(k)}
+        try:
+            cur = (cli.index.valuation(k) or {}).get("current") or {}
+            pe, pb, dv = cur.get("pe"), cur.get("pb"), cur.get("dv")
+            row["PE"] = round(pe, 2) if isinstance(pe, (int, float)) else None
+            row["PB"] = round(pb, 2) if isinstance(pb, (int, float)) else None
+            row["股息率%"] = round(dv * 100, 2) if isinstance(dv, (int, float)) else None
+        except Exception as e:
+            row.update({"PE": None, "PB": None, "股息率%": None,
+                        "备注": "valuation 不可用：%s" % str(e)[:30]})
+        try:
+            t = cli.index.trend(k, WINDOW)
+            p, src, series, n_used = measure_pct(t, MEASURE)
+            row["分位%"] = round(p * 100, 1) if p is not None else None
+            row["档位"] = zone_of_pct(p)
+            row["数据日期"] = t.get("as_of") or ""
+            row["窗口"] = t.get("window") or WINDOW
+            row["样本"] = n_used or t.get("win_n") or t.get("n") or 0
+            row["窗口不足"] = bool(t.get("win_trunc"))
+            row["分位来源"] = src
+            row["_series"] = series
+            row["_asof"] = t.get("as_of") or ""
+        except Exception as e:
+            row.update({"分位%": None, "档位": "—", "数据日期": "", "窗口": WINDOW,
+                        "样本": 0, "窗口不足": True, "分位来源": "",
+                        "_series": [], "_asof": "",
+                        "备注": "trend 不可用：%s" % str(e)[:30]})
+        out.append(row)
+    return out
+
+
+all_rows = []
+for g in ("broad", "industry", "dividend"):
+    ks = group_keys(g)
+    if not ks:
+        print("[%s] 无可用键（服务端分组未部署或名录为空），跳过" % GROUP_LABEL[g])
+        continue
+    rs = collect(ks, g)
+    all_rows.extend(rs)
+    rated_g = [r for r in rs if r["档位"] in ("绿档", "黄档", "红档")]
+    print("%s: %d 键，有效分位 %d，绿 %d" % (
+        GROUP_LABEL[g], len(rs), len(rated_g),
+        sum(1 for r in rated_g if r["档位"] == "绿档")))
+
+# ── 独立复算对账：SDK 分位 vs 按序列重算，必须逐位一致 ──────────────────
+years = int(WINDOW[:-1]) if WINDOW[:-1].isdigit() else 5
+col = "pe_med" if MEASURE == "pe_med" else "pe"
+mismatch, checked, skipped = [], 0, 0
+for r in all_rows:
+    if r["分位%"] is None:
+        continue
+    if MEASURE == "pe_med" and r["分位来源"] != "server":
+        # pe_med 走本地兜底时，「SDK 值」本身就是笔记本按同一中位数序列算的，
+        # 再拿同一套算法对账等于自己比自己 → 跳过并如实计数
+        skipped += 1
+        continue
+    got = pct_recompute(r["_series"], col, years, r["_asof"])
+    if got is None:
+        skipped += 1
+        continue
+    checked += 1
+    if abs(got * 100 - r["分位%"]) > 0.05:
+        mismatch.append((r["名称"], r["分位%"], round(got * 100, 1)))
+print("独立复算：比对 %d 行，不一致 %d 行 %s（跳过 %d 行）"
+      % (checked, len(mismatch), mismatch[:5], skipped))
+
+# ── 市场温度：全池分位中位数（分位越低越便宜 → 星级越高）────────────────
+rated = [r for r in all_rows if r["分位%"] is not None]
+vals = sorted(r["分位%"] for r in rated)
+if vals:
+    n = len(vals)
+    mid = vals[n // 2] if n % 2 else (vals[n // 2 - 1] + vals[n // 2]) / 2
+    stars = 5 if mid < 20 else 4 if mid < 40 else 3 if mid < 60 else 2 if mid < 80 else 1
+    green_n = sum(1 for r in rated if r["档位"] == "绿档")
+    red_n = sum(1 for r in rated if r["档位"] == "红档")
+    print("市场温度 %s%s　全池分位中位数 %.1f%%　绿 %d/%d　红 %d/%d　(%d 个有效标的 · %s · %s)" % (
+        "★" * stars, "☆" * (5 - stars), mid, green_n, len(rated), red_n, len(rated),
+        len(rated), MEASURE, WINDOW))
+else:
+    print("市场温度：无有效分位（预热缓存未命中或窗口不足）")
+
+cols = ["组", "名称", "PE", "PB", "股息率%", "分位%", "档位", "数据日期", "窗口", "样本"]
+order = {"绿档": 0, "黄档": 1, "红档": 2, "—": 3}
+shown = sorted(all_rows, key=lambda r: (order.get(r["档位"], 3),
+                                        r["分位%"] if r["分位%"] is not None else 999))
 try:
     import pandas as pd
     from IPython.display import display
-    df = pd.DataFrame([{c: r.get(c) for c in cols} for r in ordered])
+
     def _hl(s):
-        return [f"color:{' #1a7f37' if v == '绿档' else '#9a6700' if v == '黄档' else '#bc4c00' if v == '橙档' else 'inherit'};font-weight:bold"
-                if c == "档位" else "" for c, v in zip(s.index, s)]
+        color = {"绿档": "#1a7f37", "黄档": "#9a6700", "红档": "#bc4c00"}
+        return ["color:%s;font-weight:bold" % color.get(v, "inherit") if c == "档位" else ""
+                for c, v in zip(s.index, s)]
+
+    df = pd.DataFrame([{c: r.get(c) for c in cols} for r in shown])
     display(df.style.apply(_hl).hide(axis="index"))
+    for g in ("宽基", "行业", "红利"):
+        sub = [r for r in shown if r["组"] == g]
+        if sub:
+            print("—— %s ——" % g)
+            display(pd.DataFrame([{c: r.get(c) for c in cols} for r in sub])
+                    .style.apply(_hl).hide(axis="index"))
 except ImportError:
-    for r in ordered:
-        print("  ".join(f"{r.get(c)}" for c in cols))
-print("档位=盈利收益率法参考区间（非官方阈值）；分位=周频整体法序列；不构成投资建议。")"""),
+    for r in shown:
+        print("  ".join(str(r.get(c)) for c in cols))
+print("档位=该键自身历史分位（<30% 绿 / 30~70% 黄 / >70% 红），估值参考区间非官方阈值；"
+      "分位=周频整体法序列；股息率无历史不出分位；不构成投资建议。")"""),
     md("""## 二、通道拨测（按需能力）
 
 `probe(symbol)` 对任意场内 ETF/指数键出价格通道：前复权日 K → 份额折算跳变清理 →

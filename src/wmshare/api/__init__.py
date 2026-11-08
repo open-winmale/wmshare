@@ -533,49 +533,130 @@ class IndexApi(_Api):
             kw["points"] = points
         return self._c.call("indices.valuation", **kw)
 
-    def universe_keys(self) -> Any:
-        """已注册成分宇宙的指数键（榜单/估值场景的推荐取值域）。
+    def universe_keys(self, group: str = "broad") -> Any:
+        """指数域可用键（榜单/估值场景的推荐取值域，按组返回）。
 
-        与 ``keys()`` 的区别：keys() 返回服务端全部注册键，本方法只返回
-        有成分宇宙与整体法估值的宽基键（index.hs300 / csi500 / sz50 / cybz /
-        star50 / shzs / szcz / zx100 / szzzs / gz2000 / kc200）。
+        与 ``keys()`` 的区别：keys() 返回服务端全部注册键，本方法只返回有名录
+        支撑、可整体法估值或可算分位的键。
+
+        :param group: ``broad``（默认，11 个宽基）/ ``industry``（申万一级）/
+            ``dividend``（红利类 14 键）/ ``all``（三组并集）
         """
-        return self._c.call("indices.universe_keys")
+        try:
+            return self._c.call("indices.universe_keys", group=group)
+        except Exception:
+            # 旧服务端只接受零参调用：降级为默认宽基组，分组能力等平台升级后自动生效
+            if str(group or "broad").lower() in ("broad", ""):
+                return self._c.call("indices.universe_keys")
+            raise
 
-    def trend(self, key: str) -> dict[str, Any]:
+    def trend(self, key: str, window: str = "5y") -> dict[str, Any]:
         """周频整体法估值趋势（平台预热缓存，指数估值分位的推荐基座）。
 
-        返回 ``{ok, key, as_of, density, points, pe_pct, pb_pct, med}``：
-        points 为 ``[{date, pe, pb}, ...]`` 升序；pe_pct/pb_pct 为最新值在
-        序列中的分位（0=最低，1=最高；样本 <60 点时为 None 并保留 points）。
+        返回 ``{ok, key, as_of, density, points, pe_pct, pb_pct, med, window,
+        win_start, win_n, win_trunc, pct, pct_source, dv_has_history}``：
 
-        :param key: 指数键（见 ``universe_keys()``）
+        - ``points`` 为 ``[{date, pe, pb}, ...]``，**降序（新→旧）**，
+          ``points[0]`` 是最新点——服务端 ``cursor.ds`` 的原始顺序
+        - ``pe_pct``/``pb_pct`` 是最新点在 ``window`` 窗口内的历史分位
+          （0=最低，1=最高）；口径 ``rank0/(n-1)``、并列取中点，与前端一致
+        - ``pct`` 给出 3y/5y/10y 三档：``{"pe": {...}, "pb": {...}, "pe_med": {...}}``，
+          每档含 ``p``/``p3``/``p5``/``p10`` 与样本数 ``n3``/``n5``/``n10``
+        - ``win_trunc=True`` 表示缓存序列盖不住所选窗口，此时相关分位为 None
+          （**不拿短窗口冒充长窗口**）
+        - ``dv_has_history=False``：股息率只有当前值，没有历史序列，不出分位
+
+        :param key: 指数/行业/红利键（见 ``universe_keys()``）
+        :param window: 分位窗口 ``3y``/``5y``/``10y``，默认 ``5y``
         """
-        raw = self._c.call("indices.trend", key=key)
+        w = str(window or "5y").lower()
+        if w not in ("3y", "5y", "10y"):
+            w = "5y"
+        try:
+            raw = self._c.call("indices.trend", key=key, window=w)
+        except Exception:
+            # 旧服务端只接受 key 一参：退回单参调用并在客户端自算分位
+            raw = self._c.call("indices.trend", key=key)
         if not isinstance(raw, dict):
             return {"ok": False, "key": key, "as_of": "", "density": "weekly",
-                    "points": [], "pe_pct": None, "pb_pct": None, "med": []}
+                    "points": [], "pe_pct": None, "pb_pct": None, "med": [],
+                    "window": w, "win_start": "", "win_n": 0, "win_trunc": True,
+                    "pct": {}, "pct_source": "client", "dv_has_history": False}
         base = raw.get("base") or []
         pts = [{"date": str(p[0])[:10], "pe": p[1], "pb": p[2]}
                for p in base if isinstance(p, (list, tuple)) and len(p) >= 3]
-        pes = [p["pe"] for p in pts if isinstance(p.get("pe"), (int, float)) and p["pe"] > 0]
-        pbs = [p["pb"] for p in pts if isinstance(p.get("pb"), (int, float)) and p["pb"] > 0]
-        last_pe = next((p["pe"] for p in reversed(pts)
+        server_pct = raw.get("pct") or {}
+        # 服务端 base 是「新→旧」：当前值就是 pts[0]。
+        # 这里曾经写成 reversed(pts)，取到的是**最旧点**，把 2020 年的分位当今天用。
+        last_pe = next((p["pe"] for p in pts
                         if isinstance(p.get("pe"), (int, float)) and p["pe"] > 0), None)
-        last_pb = next((p["pb"] for p in reversed(pts)
+        last_pb = next((p["pb"] for p in pts
                         if isinstance(p.get("pb"), (int, float)) and p["pb"] > 0), None)
 
         def _pct(cur: float | None, vals: list[float]) -> float | None:
+            """本地分位（服务端未部署 pct 时的兜底）：rank0/(n-1)，并列取中点。"""
             if cur is None or len(vals) < 60:
                 return None
-            return sum(1 for v in vals if v <= cur) / len(vals)
+            ordered = sorted(vals)
+            lo = sum(1 for v in ordered if v < cur)
+            eq = sum(1 for v in ordered if v == cur)
+            if eq <= 0 or len(ordered) < 2:
+                return None
+            return (lo + lo + eq - 1) / 2 / (len(ordered) - 1)
 
+        def _cut(asof: str, years: int) -> str:
+            """窗口下界：asof 回退 years 年（与前端 cutoffIso 同口径）。"""
+            head = str(asof)[:4]
+            if len(str(asof)) < 10 or not head.isdigit():
+                return ""
+            return f"{int(head) - years}{str(asof)[4:10]}"
+
+        def _win(col: str, years: int) -> tuple[float | None, int, bool]:
+            """按窗口取样本：返回 (最新点分位, 样本数, 是否因序列过短而截断)。
+
+            序列盖不住窗口时返回 (None, n, True)——**不拿短窗口冒充长窗口**，
+            与 XS 侧 ``indices.pct_window`` 的 trunc→nil 语义一致。
+            """
+            cur = last_pb if col == "pb" else last_pe
+            cut = _cut(str(raw.get("asof") or ""), years)
+            rows = [p for p in pts if p["date"] >= cut] if cut else list(pts)
+            vals = [p[col] for p in rows
+                    if isinstance(p.get(col), (int, float)) and p[col] > 0]
+            earliest = min((p["date"] for p in pts if p["date"]), default="")
+            trunc = bool(cut) and earliest > cut
+            return (None if trunc else _pct(cur, vals)), len(vals), trunc
+
+        def _server(col: str, field: str) -> float | None:
+            node = server_pct.get(col)
+            if not isinstance(node, dict):
+                return None
+            val = node.get(field)
+            return val if isinstance(val, (int, float)) else None
+
+        pe_pct = _server("pe", "p")
+        pb_pct = _server("pb", "p")
+        source = "server"
+        win_n = int(raw.get("win_n") or 0)
+        win_trunc = bool(raw.get("win_trunc", False))
+        if pe_pct is None and pb_pct is None:
+            # 旧服务端没有 pct/窗口：本地按同一口径补算，并如实标记截断
+            years = int(w[:-1]) if w[:-1].isdigit() else 5
+            pe_pct, pe_n, pe_trunc = _win("pe", years)
+            pb_pct, pb_n, pb_trunc = _win("pb", years)
+            win_n, win_trunc, source = max(pe_n, pb_n), (pe_trunc or pb_trunc), "client"
         return {"ok": bool(raw.get("ok")), "key": key,
                 "as_of": str(raw.get("asof") or ""),
                 "density": str(raw.get("density") or "weekly"),
                 "n": len(pts), "points": pts,
-                "pe_pct": _pct(last_pe, pes), "pb_pct": _pct(last_pb, pbs),
-                "med": raw.get("med") or []}
+                "pe_pct": pe_pct, "pb_pct": pb_pct,
+                "med": raw.get("med") or [],
+                "window": str(raw.get("window") or w),
+                "win_start": str(raw.get("win_start") or ""),
+                "win_n": win_n,
+                "win_trunc": win_trunc,
+                "pct": server_pct,
+                "pct_source": source,
+                "dv_has_history": bool(raw.get("dv_has_history", False))}
 
 
 # ---------------------------------------------------------------- 证券基础 market

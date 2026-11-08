@@ -18,6 +18,11 @@ pytest -q                             # 离线全量（覆盖率 ≥85%）
 
 ## 硬规则
 
+- **先查已有指标，再写计算代码（最高优先级）**：任何指标/序列/分位，动手算之前必须先在
+  `../script` 与 wmshare 里找「是否已有算好的」——`cat.search` / `cat.function` 查指标码，
+  再到 `../script` 的 `sys/**` 与 `web_echo/**` 里找现成函数/预热缓存。**自己从头重算等于
+  重复造轮子且口径必然漂移**（历史教训：绕过平台序列自算分位，把 2020 年的分位当今天用）。
+  只有确认「没有」或「有但不可用」时才自己算，且必须在注释里写明理由。
 - **先查目录再写代码**：指标码/函数名/参数一律 `wmshare.load()` 后
   `cat.search / cat.function` 确认，禁止凭记忆编造；
 - **公开文档零竞品名、零导流话术**（CTA 禁词表见 `tests/test_docs.py::test_docs_no_ad_diversion_cta`，
@@ -31,3 +36,16 @@ pytest -q                             # 离线全量（覆盖率 ≥85%）
   域 id 必须真实存在；
 - **凭证纪律**：密钥只走环境变量或 `~/.wmshare/credentials.env`，任何密钥字面量不得入库；
 - 提交信息用 conventional 前缀（`feat:`/`fix:`/`docs:`/`chore:`）。
+
+## 防坑清单（都踩过，别再踩）
+
+1. **HIST_PCT 家族丢 key 绑定**：`$PCT_PE_TTM_3Y/5Y/10Y` 在指数/行业键上**不按 key 区分**，
+   返回的是求值会话 `$SYMBOL` 的分位。给指数/行业算分位必须从序列自算（`index.trend`）。
+2. **股息率没有历史序列**：`$ID_BONUS_RATE_TTM` 只能取当前值，`indices.valuation` 的 series
+   只有 `d/pe/pb`。任何「股息率分位」都是造假。
+3. **序列方向**：服务端 `indices.trend` 的 `base`/`med` 是**新→旧**（cursor.ds 顺序）。
+   取「当前值」用 `points[0]`；`reversed(points)` 拿到的是最旧点（历史 bug 根因）。
+4. **demo 与 live 必须同向**：`_demo.py` 曾按升序生成、用 `pts[-1]`，与 live 相反，
+   导致 1143 个测试全绿也没抓到分位错位。改 demo 后要断言方向。
+5. **预热缓存会冷**：`m_valtrend_series:v1:{key}` 依赖 cron。未命中的键必须优雅降级
+   （显式标「缓存未命中」），不能当 0 或静默给错值。

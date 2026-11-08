@@ -747,9 +747,10 @@ class DemoClient:
             "index.kc200": {"pe": 128.0, "pb": 3.52, "dv": 0.0056},
         }
 
-        def _trend(key: str) -> dict:
+        def _trend(key: str, window: str = "5y") -> dict:
             # 确定性合成周频序列：每键目标分位按 seed 铺开 5%~95%（分位演示各不相同；
-            # 序列形状仍为正弦波，真实数据以 live 为准）
+            # 序列形状仍为正弦波，真实数据以 live 为准）。
+            # 方向必须与 live 一致：**新→旧**，points[0] 是最新点。
             import math
             base = cur.get(key) or {"pe": 20.0, "pb": 2.0}
             seed = sum(ord(c) for c in key) % 11
@@ -757,8 +758,8 @@ class DemoClient:
             amp = 0.12 + 0.012 * seed
             ph = seed * 0.57
 
-            def _series(scale: float, target_pct: float) -> list[float]:
-                waves = [base[scale == "pe" and "pe" or "pb"] *
+            def _series(scale: str, target_pct: float) -> list[float]:
+                waves = [base[scale] *
                          (1.0 - amp * math.sin((i / (n - 1)) * 6.28318 + ph))
                          for i in range(n)]
                 sv = sorted(waves)
@@ -770,19 +771,48 @@ class DemoClient:
             tgt_pb = 0.05 + (((seed + 5) % 11) / 10) * 0.90
             pe_s = _series("pe", tgt_pe)
             pb_s = _series("pb", tgt_pb)
+            # 生成时按时间升序，落库前反转为新→旧（与 cursor.ds 顺序一致）
             pts = [[_demo_date(i, n), round(pe_s[i], 4), round(pb_s[i], 4)]
-                   for i in range(n)]
-            pes = [p[1] for p in pts if p[1] > 0]
-            pbs = [p[2] for p in pts if p[2] > 0]
-            last_pe, last_pb = pts[-1][1], pts[-1][2]
-            pe_pct = (sum(1 for v in pes if v <= last_pe) / len(pes)) if len(pes) >= 60 else None
-            pb_pct = (sum(1 for v in pbs if v <= last_pb) / len(pbs)) if len(pbs) >= 60 else None
+                   for i in range(n)][::-1]
+            w = str(window or "5y").lower()
+            if w not in ("3y", "5y", "10y"):
+                w = "5y"
+
+            def _pct(col: int, cur_v: float | None) -> dict:
+                """单列分位：rank0/(n-1)，并列取中点（与 live/前端同口径）。"""
+                vals = [p[col] for p in pts if p[col] is not None and p[col] > 0]
+                n_v = len(vals)
+                if n_v < 2 or cur_v is None:
+                    return {"p": None, "n": n_v}
+                ordered = sorted(vals)
+                lo = sum(1 for v in ordered if v < cur_v)
+                eq = sum(1 for v in ordered if v == cur_v)
+                if eq <= 0:
+                    return {"p": None, "n": n_v}
+                return {"p": (lo + lo + eq - 1) / 2 / (n_v - 1), "n": n_v}
+
+            def _bundle(col: int, cur_v: float | None) -> dict:
+                b = _pct(col, cur_v)
+                p = b["p"]
+                # demo 序列只有 120 周，三档窗口用同一批样本；不作窗口截断声明
+                return {"p": p, "p3": p, "p5": p, "p10": p,
+                        "n3": b["n"], "n5": b["n"], "n10": b["n"], "trunc10": False}
+
+            last_pe, last_pb = pts[0][1], pts[0][2]
+            pe_b = _bundle(1, last_pe)
+            pb_b = _bundle(2, last_pb)
+            sel = {"3y": pe_b["p3"], "5y": pe_b["p5"], "10y": pe_b["p10"]}[w]
             return {"ok": True, "key": key, "as_of": "2026-10-30", "density": "weekly",
                     "n": n,
                     "points": [{"date": p[0], "pe": p[1], "pb": p[2]} for p in pts],
-                    "pe_pct": pe_pct, "pb_pct": pb_pct, "med": []}
+                    "pe_pct": sel,
+                    "pb_pct": pb_b["p5"], "med": [],
+                    "window": w, "win_start": pts[-1][0], "win_n": n, "win_trunc": False,
+                    "pct": {"pe": pe_b, "pb": pb_b, "pe_med": {}},
+                    "pct_source": "server", "dv_has_history": False}
 
         def _demo_date(i: int, n: int) -> str:
+            """第 i 周（0=最旧）的日期，升序生成；落库时整体反转为新→旧。"""
             from datetime import date, timedelta
             return (date(2024, 6, 7) + timedelta(weeks=i)).isoformat()
 
@@ -816,7 +846,8 @@ class DemoClient:
 
         return SimpleNamespace(
             keys=lambda: list(uni),
-            universe_keys=lambda: list(uni),
+            universe_keys=lambda group="broad": (
+                list(uni) if str(group or "broad").lower() in ("broad", "all") else []),
             members=_members,
             weights=_weights,
             valuation=_valuation,

@@ -2268,7 +2268,7 @@
       "post": {
         "operationId": "index_trend",
         "summary": "周频整体法估值趋势（平台预热缓存，指数估值分位的推荐基座）。",
-        "description": "返回 ``{ok, key, as_of, density, points, pe_pct, pb_pct, med}``：、points 为 ``[{date, pe, pb}, ...]`` 升序；pe_pct/pb_pct 为最新值在、序列中的分位（0=最低，1=最高；样本 <60 点时为 None 并保留 points）。、底层目录函数 `indices.trend`。SDK 调用：`cli.index.trend(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "description": "返回 ``{ok, key, as_of, density, points, pe_pct, pb_pct, med, window,、win_start, win_n, win_trunc, pct, pct_source, dv_has_history}``：、- ``points`` 为 ``[{date, pe, pb}, ...]``，**降序（新→旧）**，、``points[0]`` 是最新点——服务端 ``cursor.ds`` 的原始顺序、- ``pe_pct``/``pb_pct`` 是最新点在 ``window`` 窗口内的历史分位、（0=最低，1=最高）；口径 ``rank0/(n-1)``、并列取中点，与前端一致、- ``pct`` 给出 3y/5y/10y 三档：``{\"pe\": {...}, \"pb\": {...}, \"pe_med\": {...}}``，、每档含 ``p``/``p3``/``p5``/``p10`` 与样本数 ``n3``/``n5``/``n10``、- ``win_trunc=True`` 表示缓存序列盖不住所选窗口，此时相关分位为 None、（**不拿短窗口冒充长窗口**）、- ``dv_has_history=False``：股息率只有当前值，没有历史序列，不出分位、底层目录函数 `indices.trend`。SDK 调用：`cli.index.trend(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "市场行情"
         ],
@@ -2281,7 +2281,11 @@
                 "properties": {
                   "key": {
                     "type": "string",
-                    "description": "指数键（见 ``universe_keys()``）"
+                    "description": "指数/行业/红利键（见 ``universe_keys()``）"
+                  },
+                  "window": {
+                    "type": "string",
+                    "description": "分位窗口 ``3y``/``5y``/``10y``，默认 ``5y``"
                   }
                 },
                 "required": [
@@ -2308,8 +2312,8 @@
     "/index/universe_keys": {
       "post": {
         "operationId": "index_universe_keys",
-        "summary": "已注册成分宇宙的指数键（榜单/估值场景的推荐取值域）。",
-        "description": "与 ``keys()`` 的区别：keys() 返回服务端全部注册键，本方法只返回、有成分宇宙与整体法估值的宽基键（index.hs300 / csi500 / sz50 / cybz /、star50 / shzs / szcz / zx100 / szzzs / gz2000 / kc200）。、底层目录函数 `indices.universe_keys`。SDK 调用：`cli.index.universe_keys(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "summary": "指数域可用键（榜单/估值场景的推荐取值域，按组返回）。",
+        "description": "与 ``keys()`` 的区别：keys() 返回服务端全部注册键，本方法只返回有名录、支撑、可整体法估值或可算分位的键。、``dividend``（红利类 14 键）/ ``all``（三组并集）、底层目录函数 `indices.universe_keys`。SDK 调用：`cli.index.universe_keys(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "市场行情"
         ],
@@ -2319,7 +2323,12 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "properties": {},
+                "properties": {
+                  "group": {
+                    "type": "string",
+                    "description": "``broad``（默认，11 个宽基）/ ``industry``（申万一级）/"
+                  }
+                },
                 "required": []
               }
             }

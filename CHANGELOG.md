@@ -10,6 +10,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **指数趋势分位服务端化 `cli.index.trend(key, window="5y")`（market.index v1.3.0 扩展）**：
+  分位改由服务端按所选窗口（3y/5y/10y）计算——`pct.pe/pb/pe_med` 各含
+  `{p, p3, p5, p10, n*, trunc}` 束，口径 `rank0/(n-1)` 并列取中点；`win_trunc=true`
+  表示缓存序列盖不住所选窗口、相关分位为 `null`（不拿短窗口冒充长窗口）。
+  `points`/`base` 序列明确为**降序（新→旧）**；股息率无历史序列、不出分位
+- **键分组 `cli.index.universe_keys(group="broad")`**：`broad`（11 宽基，默认）/
+  `industry`（申万一级 31，运行时读行业名录）/`dividend`（红利 14）/`all`；
+  服务端预热 cron 与调用方共用同一份键清单（单一事实源）
+
+### Fixed
+- **trend 分位方向事故**：早期实现用 `reversed(pts)` 取当前值，实际取到**最旧点**，
+  把 2020 年的分位当今天展示；`tests/test_index_trend.py` 四条断言锁死
+  points 降序、基准点取最新、分位公式与 as_of 不早于最新点
+
+### Changed
+- `docs/notebooks/index_daily.ipynb` 榜单扩到 **56 键**（宽基 11 + 申万一级行业 31 +
+  红利 14）：档位 = 该键自身历史分位三色灯（<30% 绿 / 30~70% 黄 / >70% 红），
+  附独立复算校验 cell；`AGENTS.md` 新增最高优先级规则「先查已有指标，再写计算代码」
+
 ## [1.12.0] - 2026-11-07
 
 ### Added

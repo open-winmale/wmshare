@@ -16,7 +16,9 @@ requires: {path: sys/index/init.xs, preloaded: true}
 notes:
   - 'v1.1.0 函数前缀 index.* → indices.*：上游内建 index 常量 MAP 占名（selector policy violation），cli.index 门面不变'
   - '成员行 roe_ttm/pe_ttm 等为指标层原值（比率小数、倍数口径），SDK 不再换算'
-  - 'valuation.series 为季采样点（d/pe/pb），前端/调用方可自行算分位'
+  - 'valuation.series 为季采样点（d/pe/pb），前端/调用方可自行算分位；trend.base/med 为周频/月频点，均为降序（新→旧）'
+  - 'trend 自带历史分位：rank0/(n-1) 并列取中点，pct.pe/pb/pe_med 各含 p/p3/p5/p10；win_trunc=true 表示缓存序列盖不住所选窗口，相关分位为 null（不拿短窗口冒充长窗口）'
+  - '股息率只有当前值、没有历史序列（DV 无 series），因此不出股息率分位'
 functions:
   - {name: indices.keys, cn: 指数键列表, layer: L0}
   - {name: indices.members, cn: 指数成分, layer: L0}

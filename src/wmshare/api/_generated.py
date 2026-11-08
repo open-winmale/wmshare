@@ -785,13 +785,19 @@ class IndicesNS(_Ns):
             kw["points"] = points
         return self._client.call("indices.valuation", **kw, _raw=_raw, _df=_df)
 
-    def trend(self, key: str, _raw: bool = False, _df: bool = False) -> Any:
+    def trend(self, key: str, window: str | None = None, _raw: bool = False, _df: bool = False) -> Any:
         """指数估值趋势(周频整体法)"""
-        return self._client.call("indices.trend", key=key, _raw=_raw, _df=_df)
+        kw: dict[str, Any] = {"key": key}
+        if window is not None:
+            kw["window"] = window
+        return self._client.call("indices.trend", **kw, _raw=_raw, _df=_df)
 
-    def universe_keys(self, _raw: bool = False, _df: bool = False) -> Any:
+    def universe_keys(self, group: str | None = None, _raw: bool = False, _df: bool = False) -> Any:
         """指数域可用键"""
-        return self._client.call("indices.universe_keys", _raw=_raw, _df=_df)
+        kw: dict[str, Any] = {}
+        if group is not None:
+            kw["group"] = group
+        return self._client.call("indices.universe_keys", **kw, _raw=_raw, _df=_df)
 
 class IntlNS(_Ns):
     """港美股披露（market.intl）"""

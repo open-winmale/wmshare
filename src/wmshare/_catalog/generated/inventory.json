@@ -1,6 +1,6 @@
 {
  "schema_version": 2,
- "upstream_rev": "675a59a6",
+ "upstream_rev": "638d373e",
  "domains": {
   "bonus": {
    "entry": "sys/bonus/init.xs",
@@ -4090,7 +4090,7 @@
   {
    "name": "indices.trend",
    "cn": "指数估值趋势(周频整体法)",
-   "example": "indices.trend(\"index.hs300\")",
+   "example": "indices.trend(\"index.hs300\", \"5y\")",
    "returns": "MAP · 周频趋势",
    "returns_shape": null,
    "min_args": 1,
@@ -4098,17 +4098,26 @@
     {
      "name": "key",
      "type": "string"
+    },
+    {
+     "name": "window",
+     "type": "string"
     }
    ]
   },
   {
    "name": "indices.universe_keys",
    "cn": "指数域可用键",
-   "example": "indices.universe_keys()",
+   "example": "indices.universe_keys(\"broad\")",
    "returns": "ARR · 指数键",
    "returns_shape": null,
    "min_args": 0,
-   "params": []
+   "params": [
+    {
+     "name": "group",
+     "type": "string"
+    }
+   ]
   },
   {
    "name": "indices.valuation",
