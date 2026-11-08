@@ -29,6 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `docs/notebooks/index_daily.ipynb` 榜单扩到 **56 键**（宽基 11 + 申万一级行业 31 +
   红利 14）：档位 = 该键自身历史分位三色灯（<30% 绿 / 30~70% 黄 / >70% 红），
   附独立复算校验 cell；`AGENTS.md` 新增最高优先级规则「先查已有指标，再写计算代码」
+- `cb` 双低 notebook/example 的税后 YTM 升级为与日更线**同源**的双口径
+  （`wmshare.cb.valuation.ytm_after_tax`：`basis` 分档 schedule/constant 标注，
+  下限口径兜底）——notebook 不再另写近似公式，两处口径不再分叉；通道拨测
+  对 K 线入库滞后改为「按 K 线自身最后日期计算并标注双日期」
 
 ## [1.12.0] - 2026-11-07
 
