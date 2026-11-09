@@ -292,6 +292,7 @@ def test_real_client_user_agent_is_mcp_attributed(monkeypatch: pytest.MonkeyPatc
     rt = MCPRuntime(market="cn", demo=False)
     rt.client()
     assert captured["User-Agent"] == f"wmshare-mcp/{wmshare.__version__}"
+    assert captured["X-WM-Client"] == f"wmshare-mcp/{wmshare.__version__}"
 
 
 def test_protocol_call_tool_returns_tool_envelope() -> None:

@@ -12,6 +12,7 @@ import os
 import re
 import threading
 import time
+import warnings
 from importlib.metadata import PackageNotFoundError, version
 from urllib.parse import urlsplit
 from dataclasses import dataclass, field
@@ -96,6 +97,8 @@ class BatchResult:
 
     requests 记录本次共发出多少次 HTTP 请求——批量解决 429 的关键指标
     （429 按请求次数限流，免费档 500 次/小时、5000 次/日）。
+    ec_cost 是各批 EC 消耗合计（网关按计算量计费，批量省请求次数不省 EC；
+    网关未回传时为 0）。
     """
 
     results: dict[str, Any] = field(default_factory=dict)
@@ -103,6 +106,7 @@ class BatchResult:
     requests: int = 0
     requested: int = 0
     error_details: dict[str, "BatchError"] = field(default_factory=dict)
+    ec_cost: int = 0
 
     def to_df(self) -> Any:
         """转长表 DataFrame：每标的一行（值为 MAP 时字段展平，symbol 列在最前）。
@@ -196,6 +200,7 @@ class Client:
         backoff_jitter: float = 0.1,
         max_retry_after: float = 10.0,
         validate: bool = True,
+        ec_warn_threshold: int | None = 100_000,
     ):
         market = str(market or "cn").strip().lower()
         if market not in ("cn", "hk", "us"):
@@ -247,6 +252,9 @@ class Client:
         session_headers = getattr(self.session, "headers", None)
         if session_headers is not None:
             session_headers.setdefault("User-Agent", f"wmshare/{SDK_VERSION}")
+            # 来源标记：网关按此头落库 call_log（client 字段），审计可区分
+            # SDK/MCP/裸 HTTP。MCP 层会覆写为 wmshare-mcp/<版本>（mcp/core.py）。
+            session_headers.setdefault("X-WM-Client", f"wmshare-py/{SDK_VERSION}")
         self.timeout = timeout
         self.max_limit = max_limit
         self.retries = max(0, int(retries))
@@ -258,8 +266,18 @@ class Client:
         if isinstance(max_retry_after, bool) or not isinstance(max_retry_after, (int, float)) \
                 or not float(max_retry_after) >= 0 or not math.isfinite(float(max_retry_after)):
             raise UsageError("max_retry_after 必须为非负有限秒数", code="config")
+        if ec_warn_threshold is not None and (
+                isinstance(ec_warn_threshold, bool)
+                or not isinstance(ec_warn_threshold, int) or ec_warn_threshold <= 0):
+            raise UsageError(
+                "ec_warn_threshold 必须为正整数（单次 eval EC 提示阈值）或 None（关闭提示）",
+                code="config")
         self.backoff_jitter = float(backoff_jitter)
         self.max_retry_after = float(max_retry_after)
+        # 开放平台按计算量（EC）计费：批量/多标的脚本按标的数逐票计价，
+        # 单次 eval 超过阈值的消耗在响应里直接提示（网关经 meta.metering 回传）。
+        self.ec_warn_threshold = ec_warn_threshold
+        self.last_ec_cost: int | None = None  # 最近一次成功 eval 的 EC 消耗
         self._validate = validate  # False=关闭单位量级/不变量校验（换算仍执行）
         self._sleep = time.sleep  # 测试注入点：不真实等待
         self._uniform = __import__("random").uniform
@@ -483,6 +501,7 @@ class Client:
         }
         if market := (market or self.market):
             body["market"] = market
+        self.last_ec_cost = None  # 每次求值重置：消耗只归因于本次调用
         resp = self._post_authed("/v1/analysis/xs/eval", body)
         if resp.status_code != 200:
             self._raise_http_error(resp, stage="eval")
@@ -506,7 +525,27 @@ class Client:
                     f"{APPID_GUIDANCE}", code=code, status=resp.status_code)
             raise ApiError(f"eval 失败: {code} {message}", code=code,
                            status=resp.status_code)
+        self._consume_metering(doc)
         return doc
+
+    def _consume_metering(self, doc: dict) -> None:
+        """读取网关回传的 EC 消耗（meta.metering["analysis.ec_cost"]），超阈值告警。
+
+        EC 是开放平台的计算量计费单位：多标的脚本按标的数逐票计价，
+        批量省的是请求次数不是 EC——大消耗必须当场可见，否则配额会被静默打穿。
+        """
+        metering = (doc.get("meta") or {}).get("metering") or {}
+        ec = metering.get("analysis.ec_cost")
+        if not isinstance(ec, (int, float)) or isinstance(ec, bool) or ec <= 0:
+            return
+        self.last_ec_cost = int(ec)
+        if self.ec_warn_threshold is not None and self.last_ec_cost >= self.ec_warn_threshold:
+            warnings.warn(
+                f"本次 eval 消耗 {self.last_ec_cost} EC（提示阈值 {self.ec_warn_threshold}）。"
+                "EC 按计算量计费：多标的脚本按标的数逐票计价，批量省请求次数不省 EC；"
+                "全市场快照类数据优先用服务端一次取数接口（如 cli.moneyflow.board()），"
+                "或缩小标的范围。Client(ec_warn_threshold=None) 可关闭本提示。",
+                stacklevel=3)
 
     def eval_result(self, xs: str | list[str], **kw: Any) -> Any:
         doc = self.eval(xs, **kw)
@@ -770,7 +809,8 @@ class Client:
         if _df:
             result = {k: _to_dataframe(v) for k, v in result.items()}
         # raise 模式把 N 个标的压进一次 eval：1 次请求
-        return BatchResult(results=result, requests=1, requested=requested)
+        return BatchResult(results=result, requests=1, requested=requested,
+                           ec_cost=self.last_ec_cost or 0)
 
     # ---- 分批执行器（批量绕开 429 的正式入口） ----
     def _assert_same_market(self, name: str, syms: list[str]) -> None:
@@ -876,8 +916,10 @@ class Client:
             start = (idx - 1) * size
             try:
                 # 批内必须是 raise 模式：整批压进一次请求
-                yield self.call_batch(name, chunk, on_error="raise",
-                                      _raw=_raw, _units=_units, **kwargs)
+                part = self.call_batch(name, chunk, on_error="raise",
+                                       _raw=_raw, _units=_units, **kwargs)
+                part.ec_cost = self.last_ec_cost or part.ec_cost
+                yield part
             except LimitError as e:
                 if getattr(e, "code", "") == "rate_limited" or getattr(e, "status", None) == 429:
                     raise LimitError(
@@ -932,6 +974,7 @@ class Client:
             out.requests += part.requests
             out.requested += part.requested
             out.error_details.update(part.error_details)
+            out.ec_cost += part.ec_cost
         return out
 
     def notice_poller(self, *, group: str, consumer: str, on_events: Any = None,

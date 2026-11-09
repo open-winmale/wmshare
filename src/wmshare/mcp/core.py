@@ -52,6 +52,7 @@ class MCPRuntime:
             headers = getattr(client.session, "headers", None)
             if headers is not None:
                 headers["User-Agent"] = f"wmshare-mcp/{wmshare.__version__}"
+                headers["X-WM-Client"] = f"wmshare-mcp/{wmshare.__version__}"
             self._clients[market] = client
         return self._clients[market]
 

@@ -114,6 +114,22 @@ def test_user_agent_is_sent_on_all_posts():
                for call in s.calls)
 
 
+def test_client_marker_header_is_sent_on_all_posts():
+    c, s, _ = make([("json", 1)])
+    c.call("kline.query_last", sym="600519")
+    assert all(call["headers"]["X-WM-Client"] == f"wmshare-py/{SDK_VERSION}"
+               for call in s.calls)
+
+
+def test_client_marker_respects_injected_header():
+    # setdefault 语义：注入 session 已带标记头时不覆盖（与 UA 一致）。
+    session = requests.Session()
+    session.headers["X-WM-Client"] = "custom-agent/9.9"
+    Client(base_url="https://t", client_id="i", client_secret="s",
+           catalog=load(), session=session)
+    assert session.headers["X-WM-Client"] == "custom-agent/9.9"
+
+
 def test_network_error_retried_then_succeeds():
     c, s, sleeps = make([("exc", requests.ConnectionError("boom")), ("json", 7)])
     assert c.call("kline.query_last", sym="600519") == 7
