@@ -282,11 +282,11 @@ hk.intl.query_sellshort("00700")      # 沽空
 
 us = wmshare.Client.from_env(market="us")
 us.kline.snapshot("AAPL")             # {'close': 348.91, 'percent': 0.0148}（当日新鲜）
-us.kline.bars("AAPL", n=5)            # 美股日 K 已恢复入库（上游日更管线，见注记）
+us.kline.bars("AAPL", n=5)            # 美股日 K 日更常态（上游管线调度转正，见注记）
 us.intl.query_sellshort("AAPL")       # 美股沽空
 ```
 
-注记：美股日 K 已恢复入库（上游日更管线调度验收中，偶发 T-1/T-2 滞后），最新价量以
+注记：美股日 K 已转日更常态（上游管线调度转正 + EOD 盖回翻闸，2026-11-09 验收；偶发 T-1 滞后属正常），最新价量以
 `kline.live/snapshot` 为权威；港美专项覆盖矩阵见 [README](../README.md)「市场覆盖」。
 
 ### 6.1 宏观与期货

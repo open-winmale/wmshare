@@ -13,6 +13,7 @@
 is_etf/query_bars_live 曾因 is_etf 的命名空间缓存写被 OpenAPI 沙箱以 403 POLICY_DENIED
 拒绝。`_call_or_xfail` 保留为非 strict 容忍，防间歇性策略拒绝造成假红。
 """
+import datetime
 import os
 from pathlib import Path
 
@@ -658,8 +659,8 @@ def test_futures_metric_posture(cli):
 def test_us_kline_daily_bars():
     """美股日 K（上游 us_kline_daily 管线已落库）：合同级断言。
 
-    新鲜度门禁（末根 == 最新交易日）待上游调度常态化（daily DAG 启用 +
-    us_dayk_eod 翻转）后收紧；当前调度验收期允许 T-n 滞后，只锁结构与降序。
+    调度已转正（2026-11-09 daily DAG 启用 + us_dayk_eod 翻闸）：
+    新鲜度门禁收紧为末根 ≥ 今天-5 自然日（容忍长周末），另锁结构与降序。
     """
     us = Client.from_env(market="us")
     bars = _call_or_xfail(lambda: us.kline.bars("AAPL", n=5))
@@ -667,6 +668,10 @@ def test_us_kline_daily_bars():
     assert {"date", "close", "volume"} <= set(bars[0].keys())
     dates = [b["date"] for b in bars]
     assert dates == sorted(dates, reverse=True), "bars 应按日期降序（最新在前）"
+    last = datetime.date.fromisoformat(dates[0])
+    assert last >= datetime.date.today() - datetime.timedelta(days=5), (
+        f"美股日K末根 {dates[0]} 落后超过 5 个自然日（调度已转正）"
+    )
 
 
 # ---------------------------------------------------------------- 覆盖面守护

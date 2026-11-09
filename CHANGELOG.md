@@ -33,6 +33,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   （`wmshare.cb.valuation.ytm_after_tax`：`basis` 分档 schedule/constant 标注，
   下限口径兜底）——notebook 不再另写近似公式，两处口径不再分叉；通道拨测
   对 K 线入库滞后改为「按 K 线自身最后日期计算并标注双日期」
+- **美股日 K 调度转正 + EOD 盖回翻闸（2026-11-09）**：上游 us_kline_daily daily DAG
+  解除暂停并补齐暂停窗口缺口（force_days=10 幂等滚动重写），运维开关 `us_dayk_eod`
+  翻 `true`（日K齐套门闩 + skip_read 盖回 tip + 抽检 store bar 与预期一致）；
+  test_live 新鲜度门禁收紧（末根 ≥ 今天-5 自然日），README/GUIDE 注记更新为日更常态
 
 ## [1.12.0] - 2026-11-07
 
