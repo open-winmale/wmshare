@@ -11,6 +11,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **周 K / 月 K：`cli.kline.bars(freq="W"/"M")`（market.kline v1.5.0）**——新增上游周期读
+  接口 `kline.query_bars_period[_adj]`（`period` 取 D/W/M，采样频率常量为字面量分支），
+  SDK 侧 `freq` 接受 D/daily、W/week、M/month 别名，未知值抛 `UsageError`（不静默降级）。
+  周/月为**服务端预派生**（由日线先复权再聚合，日期=周期末交易日），非客户端重采样；
+  一次解锁 CN/HK/US 三市场周期 K（此前上游查询把采样频率硬编码为日频，CN/HK 库内已有的
+  周/月文档也读不到）。指数键只有日频，`freq` 非 D 返回空列表
+- **美股周/月 K 产出链（airflow `market.us.kline_week_month`）**：照港股既有做法从
+  `mkt_kline_us` 日线本地聚合派生（`tasks/us_kline_week_month.py`，复用
+  `aggregate_daily_bars`；incremental 值比对 + rebuild 全写 + 有界孤儿清理 + 跑后自检），
+  weekly 变体周六 11:00（晚于美股日线 05:30 全池作业）。此前美股只有日线产出，
+  `sampling_type=3/2` 为空，周/月查询返回 0 行；后复权仍无产出（外部 hfq 端点实测
+  与不复权逐位相同，不可用），after 维持历史快照
 - **全市场资金流快照 `cli.moneyflow.board()`**（market.moneyflow v1.1.0 扩展）：
   服务端索引一次取数返回全市场最新资金流行（symbol/name/net_mf/net_mv_ratio/
   lg_net/elg_net/md_net/sm_net/industry，按主力净流入降序；仅 A 股非停牌）——

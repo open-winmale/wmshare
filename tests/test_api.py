@@ -86,6 +86,30 @@ def test_kline_bars_dispatch(cli):
                             'return kline.fmt_maps(__r)']
 
 
+def test_kline_bars_period_dispatch(cli):
+    """freq 分发：D 走日 K 原函数；W/M 走周期函数；非法值抛 UsageError。"""
+    cli.kline.bars("AAPL", n=5, freq="W")
+    assert last_xs(cli) == ['__r := kline.query_bars_period("AAPL", 5, "W")',
+                            'return kline.fmt_maps(__r)']
+    cli.kline.bars("AAPL", n=5, freq="monthly", adj="qfq")
+    assert last_xs(cli) == [
+        '__r := kline.query_bars_period_adj("AAPL", 5, "M", "qfq")',
+        'return kline.fmt_maps(__r)']
+    # D/None 保持原路径（回归：不因新参数改变既有生成行）
+    for freq in (None, "D", "daily", ""):
+        cli.kline.bars("600519", n=5, freq=freq)
+        assert last_xs(cli) == ['__r := kline.query_bars("600519", 5)',
+                                'return kline.fmt_maps(__r)']
+    with pytest.raises(WmshareError):
+        cli.kline.bars("600519", n=5, freq="Q")
+    # 区间 + 周频：limit 取 max_limit（夹具默认 10000）
+    cli.session.eval_result = [{"date": "2026-11-06", "close": 342.37}]
+    bars = cli.kline.bars("AAPL", freq="W", begin="2026-01-01", end="2026-11-30")
+    assert last_xs(cli) == ['__r := kline.query_bars_period("AAPL", 500, "W")',
+                            'return kline.fmt_maps(__r)']
+    assert [b["date"] for b in bars] == ["2026-11-06"]
+
+
 def test_last_returns_normalized_latest_row(cli):
     cli.session.eval_result = [{"date": "2026-10-21", "close": 1309.69}]
     assert cli.kline.last("600519") == {"date": "2026-10-21", "close": 1309.69}

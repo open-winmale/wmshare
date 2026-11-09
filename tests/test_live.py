@@ -674,6 +674,47 @@ def test_us_kline_daily_bars():
     )
 
 
+def test_us_kline_week_month_bars():
+    """美股周/月 K（上游日线本地聚合派生）：结构 + 与日 K 的同日收盘一致性。
+
+    周/月 bar 是日线的纯函数：日期=周期末交易日、open=首日开、close=末日收。
+    末根新鲜度按周期给宽（周 ≤ 12 天、月 ≤ 45 天，容忍长周末与月结算）。
+    """
+    us = Client.from_env(market="us")
+    weekly = _call_or_xfail(lambda: us.kline.bars("AAPL", n=5, freq="W"))
+    monthly = _call_or_xfail(lambda: us.kline.bars("AAPL", n=3, freq="M"))
+    assert isinstance(weekly, list) and len(weekly) == 5
+    assert isinstance(monthly, list) and len(monthly) == 3
+    for bars, span in ((weekly, 12), (monthly, 45)):
+        dates = [b["date"] for b in bars]
+        assert dates == sorted(dates, reverse=True), "周期 K 应按日期降序（最新在前）"
+        for b in bars:
+            assert {"date", "open", "high", "low", "close", "volume"} <= set(b)
+            assert b["low"] <= min(b["open"], b["close"]) and b["high"] >= max(
+                b["open"], b["close"]), "OHLC 关系违例"
+        last = datetime.date.fromisoformat(dates[0])
+        assert last >= datetime.date.today() - datetime.timedelta(days=span), (
+            f"美股周期K末根 {dates[0]} 落后超过 {span} 天（派生链未跑或滞后）"
+        )
+    # 同日一致性：周期末日的 close == 当日日 K 的 close（聚合规则 close=末日收）
+    daily = _call_or_xfail(lambda: us.kline.bars("AAPL", n=60))
+    close_by_date = {b["date"]: b["close"] for b in daily}
+    for w in weekly:
+        if w["date"] in close_by_date:
+            assert abs(w["close"] - close_by_date[w["date"]]) < 1e-6, (
+                f"周K {w['date']} 收盘 {w['close']} ≠ 日K {close_by_date[w['date']]}")
+
+
+def test_kline_week_month_cn_hk():
+    """CN/HK 周/月 K 可读（服务端预派生；CN 来自上游预聚合，HK 来自日线派生）。"""
+    cn = Client.from_env(market="cn")
+    wk = _call_or_xfail(lambda: cn.kline.bars("600519", n=3, freq="W"))
+    assert isinstance(wk, list) and wk
+    hk = Client.from_env(market="hk")
+    hk_wk = _call_or_xfail(lambda: hk.kline.bars("00700", n=3, freq="W"))
+    assert isinstance(hk_wk, list) and hk_wk
+
+
 # ---------------------------------------------------------------- 覆盖面守护
 def test_all_core_interfaces_are_exercised_here():
     """本文件必须覆盖 FRIENDLY_INDEX 的每个核心接口（防冒烟面回退）。"""

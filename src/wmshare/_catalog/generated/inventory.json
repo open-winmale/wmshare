@@ -45,6 +45,8 @@
     "kline.is_etf",
     "kline.query_bars",
     "kline.query_bars_live",
+    "kline.query_bars_period",
+    "kline.query_bars_period_adj",
     "kline.query_last",
     "kline.query_last_live",
     "kline.query_last_live_many",
@@ -102,7 +104,7 @@
   "notice",
   "segments"
  ],
- "function_count": 273,
+ "function_count": 275,
  "functions": [
   {
    "name": "bonus.dps_rpt",
@@ -5138,6 +5140,182 @@
     {
      "name": "limit",
      "type": "int"
+    }
+   ]
+  },
+  {
+   "name": "kline.query_bars_period",
+   "cn": "历史 K 线（周/月周期）",
+   "example": "kline.query_bars_period(\"AAPL\", 30, \"W\")",
+   "returns": "ARR · bars",
+   "returns_shape": {
+    "kind": "array",
+    "cn": "K 线序列",
+    "items": {
+     "kind": "object",
+     "cn": "K 线 bar",
+     "fields": [
+      {
+       "name": "sas",
+       "type": "string",
+       "cn": "SAS",
+       "optional": true
+      },
+      {
+       "name": "date",
+       "type": "string",
+       "cn": "日期",
+       "optional": true
+      },
+      {
+       "name": "open",
+       "type": "float64",
+       "cn": "开",
+       "optional": true
+      },
+      {
+       "name": "high",
+       "type": "float64",
+       "cn": "高",
+       "optional": true
+      },
+      {
+       "name": "low",
+       "type": "float64",
+       "cn": "低",
+       "optional": true
+      },
+      {
+       "name": "close",
+       "type": "float64",
+       "cn": "收",
+       "optional": true
+      },
+      {
+       "name": "volume",
+       "type": "float64",
+       "cn": "量",
+       "optional": true
+      },
+      {
+       "name": "amount",
+       "type": "float64",
+       "cn": "额",
+       "optional": true
+      },
+      {
+       "name": "percent",
+       "type": "float64",
+       "cn": "涨跌幅",
+       "optional": true
+      }
+     ],
+     "name": ""
+    }
+   },
+   "min_args": 1,
+   "params": [
+    {
+     "name": "sym",
+     "type": "string"
+    },
+    {
+     "name": "limit",
+     "type": "int"
+    },
+    {
+     "name": "period",
+     "type": "string"
+    }
+   ]
+  },
+  {
+   "name": "kline.query_bars_period_adj",
+   "cn": "历史 K 线（周/月周期·复权）",
+   "example": "kline.query_bars_period_adj(\"AAPL\", 30, \"W\", \"qfq\")",
+   "returns": "ARR · bars",
+   "returns_shape": {
+    "kind": "array",
+    "cn": "K 线序列",
+    "items": {
+     "kind": "object",
+     "cn": "K 线 bar",
+     "fields": [
+      {
+       "name": "sas",
+       "type": "string",
+       "cn": "SAS",
+       "optional": true
+      },
+      {
+       "name": "date",
+       "type": "string",
+       "cn": "日期",
+       "optional": true
+      },
+      {
+       "name": "open",
+       "type": "float64",
+       "cn": "开",
+       "optional": true
+      },
+      {
+       "name": "high",
+       "type": "float64",
+       "cn": "高",
+       "optional": true
+      },
+      {
+       "name": "low",
+       "type": "float64",
+       "cn": "低",
+       "optional": true
+      },
+      {
+       "name": "close",
+       "type": "float64",
+       "cn": "收",
+       "optional": true
+      },
+      {
+       "name": "volume",
+       "type": "float64",
+       "cn": "量",
+       "optional": true
+      },
+      {
+       "name": "amount",
+       "type": "float64",
+       "cn": "额",
+       "optional": true
+      },
+      {
+       "name": "percent",
+       "type": "float64",
+       "cn": "涨跌幅",
+       "optional": true
+      }
+     ],
+     "name": ""
+    }
+   },
+   "min_args": 2,
+   "params": [
+    {
+     "name": "sym",
+     "type": "string"
+    },
+    {
+     "name": "limit",
+     "type": "int"
+    },
+    {
+     "name": "period",
+     "type": "string"
+    },
+    {
+     "name": "adj",
+     "type": "string"
     }
    ]
   },

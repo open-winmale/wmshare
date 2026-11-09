@@ -1,5 +1,5 @@
 id: market.kline
-version: 1.4.0
+version: 1.5.0
 cn: 行情K线
 kind: raw
 category: market
@@ -16,6 +16,9 @@ requires: {path: sys/kline/init.xs, preloaded: true}
 stores: [kline(前复权), kline_normal(不复权), kline_after(后复权)]
 notes:
   - 复权 adj 取值 nr(不复权,默认)/qfq(前复权)/hfq(后复权)
+  - 周期 period 取值 D(日,默认)/W(周)/M(月)——周/月为服务端预派生（日期=周期末交易日）；
+    指数键只有日频，period 非 D 返回空数组。美股后复权日线无国内因子源（hfq 端点实测
+    与不复权逐位相同），after 为历史快照、不随日更更新
   - 指数键（index.hs300 / 399xxx 等）自动分流指数点位；指数无复权，*_adj 忽略 adj
   - 盘中三分工：query_last_live=最新一根快照；query_bars_live=最近 n 根日 K（外部行情源）；
     query_min1_live=当日 1 分钟分时（有损合成采样，非逐笔 Level2）
@@ -40,6 +43,40 @@ functions:
     ranges: {percent: [-1, 30], volume: [0, 1.0e+12]}
     checks: [volume_amount]
     notes: [财报季不因披露进度截断]
+  - name: kline.query_bars_period
+    cn: 历史 K 线（周/月周期）
+    kind: raw
+    layer: L0
+    params:
+      - {name: sym, type: string, required: true, desc: 标的裸码（A股 6 位 / 港股 5 位 / 美股 ticker）}
+      - {name: limit, type: int, required: false, default: 120, desc: 根数（按所选周期计），默认 120}
+      - {name: period, type: string, required: false, default: D, desc: 周期 D=日 / W=周 / M=月（未知值按 D）}
+    returns: {desc: ARR · bars（date/open/high/low/close/volume/amount/percent）, shape_ref: inventory}
+    example: 'kline.query_bars_period("AAPL", 30, "W")'
+    normalize_with: kline.fmt_maps
+    units: {volume: lot}
+    ranges: {percent: [-1, 30], volume: [0, 1.0e+12]}
+    checks: [volume_amount]
+    notes:
+      - 周/月 K 为服务端预派生（由日线聚合，日期=周期末交易日），不是客户端重采样
+      - 指数键只有日频：period 非 D 返回空数组（不静默降级成日K）
+      - 美股周/月自 2026-11 起由上游日更管线派生；更早周期为历史快照
+  - name: kline.query_bars_period_adj
+    cn: 历史 K 线（周/月周期·复权）
+    kind: raw
+    layer: L1
+    params:
+      - {name: sym, type: string, required: true, desc: 标的裸码}
+      - {name: limit, type: int, required: false, default: 120, desc: 根数（按所选周期计）}
+      - {name: period, type: string, required: false, default: D, desc: 周期 D/W/M}
+      - {name: adj, type: string, required: false, desc: '复权口径 nr(不复权,默认)/qfq(前复权)/hfq(后复权)'}
+    returns: {desc: ARR · bars（字段同 query_bars_period）, shape_ref: inventory}
+    example: 'kline.query_bars_period_adj("AAPL", 30, "W", "qfq")'
+    normalize_with: kline.fmt_maps
+    units: {volume: lot}
+    notes:
+      - close 为复权价，volume×close 与 amount 不再可比，故不套 volume_amount 不变量
+      - 复权在日线上先行完成，再按周期聚合（除权周口径比「原生 bar×周末因子」更正确）
   - name: kline.query_last
     cn: 最新一根 K 线
     kind: raw

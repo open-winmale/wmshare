@@ -8,7 +8,7 @@
     ``_raw=True`` 取未规范化原始行（仅部分方法）；
   - 本层是目录合同的薄翻译：高频方法显式包装；目录内其余函数经 ``__getattr__``
     属性直达（如 ``cli.kline.screen_above_ma20``、``cli.dividend.screen_quality``），
-    目录之外的名字显式 AttributeError——267 个底层函数零遮蔽。
+    目录之外的名字显式 AttributeError——269 个底层函数零遮蔽。
   - 选股能力集中在 ``cli.screener``：单票筛选器（bool）与全市场宽度（服务端
     预计算索引直出）显式包装，kline 目录的其余筛选函数经属性直达。
 
@@ -67,6 +67,24 @@ def _range_bounds(begin: str, end: str) -> tuple[date, date]:
             f"区间跨度 {span} 天超过上限 {MAX_RANGE_DAYS} 天（5 年）；"
             "更早数据请缩短区间或分批用 limit 获取", code="range")
     return b, e
+
+
+_KLINE_FREQ_ALIASES = {
+    None: "D", "": "D", "d": "D", "day": "D", "daily": "D",
+    "w": "W", "week": "W", "weekly": "W",
+    "m": "M", "month": "M", "monthly": "M",
+}
+
+
+def _kline_period_tag(freq: str | None) -> str:
+    """freq 别名归一为脚本侧周期标签 D/W/M；未知值抛 UsageError（不静默降级）。"""
+    key = None if freq is None else str(freq).strip().lower()
+    try:
+        return _KLINE_FREQ_ALIASES[key]
+    except KeyError:
+        raise UsageError(
+            f'kline.bars: 不支持的 freq={freq!r}；可用 None/"D"（日）、"W"（周）、"M"（月）',
+            code="freq") from None
 
 
 def _filter_by_date(rows: Any, begin: str, end: str, key: str, limit: int) -> Any:
@@ -237,16 +255,21 @@ class KlineApi(_Api):
 
     def bars(self, symbol: str, n: int | None = None, adj: str | None = None,
              begin: str | None = None, end: str | None = None,
+             freq: str | None = None,
              _raw: bool = False, _df: bool = False) -> Any:
-        """日 K 序列（date/open/high/low/close/volume/amount/percent）。
+        """K 线序列（日/周/月，date/open/high/low/close/volume/amount/percent）。
 
-        覆盖自上市首日起的全部交易日（最早 1991 年）。
+        日 K 覆盖自上市首日起的全部交易日（最早 1991 年）；周/月 K 为服务端预派生
+        （由日线先复权再聚合，date 为周期末交易日）。
 
-        :param n: 根数，默认 120；区间查询时默认取 max_limit（上限 10000）
+        :param n: 根数（按所选周期计），默认 120；区间查询时默认取 max_limit（上限 10000）
         :param adj: None=不复权；"qfq"=前复权；"hfq"=后复权
         :param begin: 起始日期（含，YYYY-MM-DD），须与 end 同时提供；区间上限 5 年
         :param end: 结束日期（含）
+        :param freq: None/"D"=日 K（默认）；"W"=周 K；"M"=月 K；指数只有日频，freq 非 D 返回空列表
         """
+        period = _kline_period_tag(freq)
+        period_args: dict[str, Any] = {} if period == "D" else {"period": period}
         if begin is not None or end is not None:
             if not (begin and end):
                 raise UsageError("begin 与 end 需同时提供", code="range")
@@ -254,19 +277,29 @@ class KlineApi(_Api):
                 raise UsageError("_raw=True 时不支持 begin/end（原始行无扁平日期字段）",
                                  code="range")
             limit = min(int(n) if n is not None else (self._c.max_limit or 10000), 10000)
-            fn = "kline.query_bars" if adj is None else "kline.query_bars_adj"
+            if adj is None:
+                fn = "kline.query_bars_period" if period_args else "kline.query_bars"
+            else:
+                fn = ("kline.query_bars_period_adj" if period_args
+                      else "kline.query_bars_adj")
             kwargs: dict[str, Any] = {"sym": symbol, "limit": limit, "_raw": _raw}
             if adj is not None:
                 kwargs["adj"] = adj
+            kwargs.update(period_args)
             rows = self._c.call(fn, **kwargs)
             out = _per_symbol(rows, lambda r: _filter_by_date(r, begin, end, "date", limit))
             return _finish_df(out, _df)
         limit = 120 if n is None else n
         if adj is None:
-            return self._c.call("kline.query_bars", sym=symbol, limit=limit,
-                                _raw=_raw, _df=_df)
-        return self._c.call("kline.query_bars_adj", sym=symbol, limit=limit, adj=adj,
-                            _raw=_raw, _df=_df)
+            fn = "kline.query_bars_period" if period_args else "kline.query_bars"
+        else:
+            fn = ("kline.query_bars_period_adj" if period_args
+                  else "kline.query_bars_adj")
+        kwargs = {"sym": symbol, "limit": limit, "_raw": _raw, "_df": _df}
+        if adj is not None:
+            kwargs["adj"] = adj
+        kwargs.update(period_args)
+        return self._c.call(fn, **kwargs)
 
     def last(self, symbol: str, _raw: bool = False) -> Any:
         """最新一根日 K（date/open/high/low/close/volume/amount/percent），无数据返回 None。
@@ -297,7 +330,11 @@ class KlineApi(_Api):
         return self._c.call("kline.query_last_live_many", syms=symbols, _raw=_raw)
 
     def min1(self, symbol: str) -> Any:
-        """当日 1 分钟分时（有损合成采样，非逐笔；休市返回上一交易日）。"""
+        """当日 1 分钟分时（有损合成采样，非逐笔；休市返回上一交易日）。
+
+        美股仅在美股盘中时段（北京时间夏 21:30–04:00 / 冬 22:30–05:00）写入、
+        保留 36 小时——北京白天查询为空属预期，取最新价量请用 ``live/snapshot``。
+        """
         return self._c.call("kline.query_min1_live", sym=symbol)
 
     def snapshot(self, symbol: str) -> Any:

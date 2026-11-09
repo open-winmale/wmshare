@@ -113,6 +113,10 @@ cli.kline.bars("600519", n=3)
 # 日期区间 K 线（单次区间上限 5 年；adj="qfq"/"hfq" 复权）
 cli.kline.bars("600519", begin="2026-01-01", end="2026-06-30")
 
+# 周 K / 月 K（服务端预派生：日期=周期末交易日，OHLC 由日线聚合）
+cli.kline.bars("600519", n=20, freq="W")            # 周 K；freq="M" 为月 K
+cli.kline.bars("AAPL", n=12, freq="M", adj="qfq")   # 月 K + 前复权
+
 # 盘中：最新快照 / 实时（休市时 live 返回最近收盘快照）
 cli.kline.snapshot("600519")            # {'close': ..., 'chg_20d': ...}
 cli.kline.min1("600519")                # 当日 1 分钟分时
@@ -291,6 +295,7 @@ hk.intl.query_sellshort("00700")      # 沽空
 us = wmshare.Client.from_env(market="us")
 us.kline.snapshot("AAPL")             # {'close': 348.91, 'percent': 0.0148}（当日新鲜）
 us.kline.bars("AAPL", n=5)            # 美股日 K 日更常态（上游管线调度转正，见注记）
+us.kline.bars("AAPL", n=5, freq="W")  # 美股周 K（日线派生；月用 freq="M"）
 us.intl.query_sellshort("AAPL")       # 美股沽空
 ```
 

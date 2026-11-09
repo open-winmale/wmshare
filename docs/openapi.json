@@ -50,8 +50,8 @@
     "/kline/bars": {
       "post": {
         "operationId": "kline_bars",
-        "summary": "日 K 序列（date/open/high/low/close/volume/amount/percent）。",
-        "description": "覆盖自上市首日起的全部交易日（最早 1991 年）。、底层目录函数 `kline.query_bars[_adj]`。SDK 调用：`cli.kline.bars(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "summary": "K 线序列（日/周/月，date/open/high/low/close/volume/amount/percent）。",
+        "description": "日 K 覆盖自上市首日起的全部交易日（最早 1991 年）；周/月 K 为服务端预派生、（由日线先复权再聚合，date 为周期末交易日）。、底层目录函数 `kline.query_bars[_adj]`。SDK 调用：`cli.kline.bars(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "市场行情"
         ],
@@ -67,7 +67,7 @@
                   },
                   "n": {
                     "type": "integer",
-                    "description": "根数，默认 120；区间查询时默认取 max_limit（上限 10000）"
+                    "description": "根数（按所选周期计），默认 120；区间查询时默认取 max_limit（上限 10000）"
                   },
                   "adj": {
                     "type": "string",
@@ -80,6 +80,10 @@
                   "end": {
                     "type": "string",
                     "description": "结束日期（含）"
+                  },
+                  "freq": {
+                    "type": "string",
+                    "description": "None/\"D\"=日 K（默认）；\"W\"=周 K；\"M\"=月 K；指数只有日频，freq 非 D 返回空列表"
                   }
                 },
                 "required": [
@@ -352,7 +356,7 @@
       "post": {
         "operationId": "kline_min1",
         "summary": "当日 1 分钟分时（有损合成采样，非逐笔；休市返回上一交易日）。",
-        "description": "底层目录函数 `kline.query_min1_live`。SDK 调用：`cli.kline.min1(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "description": "美股仅在美股盘中时段（北京时间夏 21:30–04:00 / 冬 22:30–05:00）写入、、保留 36 小时——北京白天查询为空属预期，取最新价量请用 ``live/snapshot``。、底层目录函数 `kline.query_min1_live`。SDK 调用：`cli.kline.min1(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "市场行情"
         ],

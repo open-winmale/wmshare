@@ -865,6 +865,41 @@ class KlineNS(_Ns):
             kw["limit"] = limit
         return self._client.call("kline.query_bars", **kw, _raw=_raw, _df=_df)
 
+    def query_bars_period(self, sym: str, limit: int = 120, period: str = 'D', _raw: bool = False, _df: bool = False) -> Any:
+        """历史 K 线（周/月周期）
+
+:param sym: 标的裸码（A股 6 位 / 港股 5 位 / 美股 ticker）
+:param limit: 根数（按所选周期计），默认 120
+:param period: 周期 D=日 / W=周 / M=月（未知值按 D）
+
+:returns: ARR · bars（date/open/high/low/close/volume/amount/percent）
+        """
+        kw: dict[str, Any] = {"sym": sym}
+        if limit is not None:
+            kw["limit"] = limit
+        if period is not None:
+            kw["period"] = period
+        return self._client.call("kline.query_bars_period", **kw, _raw=_raw, _df=_df)
+
+    def query_bars_period_adj(self, sym: str, limit: int = 120, period: str = 'D', adj: str | None = None, _raw: bool = False, _df: bool = False) -> Any:
+        """历史 K 线（周/月周期·复权）
+
+:param sym: 标的裸码
+:param limit: 根数（按所选周期计）
+:param period: 周期 D/W/M
+:param adj: 复权口径 nr(不复权,默认)/qfq(前复权)/hfq(后复权)
+
+:returns: ARR · bars（字段同 query_bars_period）
+        """
+        kw: dict[str, Any] = {"sym": sym}
+        if limit is not None:
+            kw["limit"] = limit
+        if period is not None:
+            kw["period"] = period
+        if adj is not None:
+            kw["adj"] = adj
+        return self._client.call("kline.query_bars_period_adj", **kw, _raw=_raw, _df=_df)
+
     def query_last(self, sym: str, _raw: bool = False, _df: bool = False) -> Any:
         """最新一根 K 线
 
