@@ -155,9 +155,9 @@ for s, n, v, pe, pct in rows[:8]:                            # 取前 8 行打�
 市场切换：`Client(market="cn" / "hk" / "us")`，缺省 cn；代码与市场不匹配会被服务端直接拒绝（如 cn 市场查
 `00700` 报 market mismatch）。美股用裸代码（`AAPL`/`BRK_B`），`AAPL.O`/`BRK.B` 由 SDK 按代码表自动归一；`cli.intl` 港美股披露也要用对应市场客户端调用。
 
-如实注记（2026-11-07 实测）：港/美列 ✅ 均经 live 探针逐族验证；**美股代码用裸代码**（`AAPL` / `BRK_B`）——
+如实注记（2026-11-09 实测）：港/美列 ✅ 均经 live 探针逐族验证；**美股代码用裸代码**（`AAPL` / `BRK_B`）——
 带交易所后缀的 `AAPL.O`/`BRK.N` 会被上游当成宏观序列，SDK 已按随包代码表自动归一（裸代码实测正常）；
-美股日 K 已恢复入库（上游日更管线调度验收中，实测最新到 2026-11-04），最新价量用
+美股日 K 已转日更常态（上游管线调度转正 + EOD 盖回翻闸，2026-11-09 验收），盘中最新价量仍用
 `cli.kline.live / snapshot`；深研宽表暂仅 cn；hk 十大流通股东与回购数据管线已有、SDK 接口待路由。
 
 ## 我想做 X → 用哪一行
@@ -805,11 +805,11 @@ hk.intl.query_sellshort("00700")      # 沽空
 
 us = wmshare.Client.from_env(market="us")
 us.kline.snapshot("AAPL")             # {'close': 348.91, 'percent': 0.0148}（当日新鲜）
-us.kline.bars("AAPL", n=5)            # 美股日 K 已恢复入库（上游日更管线，见注记）
+us.kline.bars("AAPL", n=5)            # 美股日 K 日更常态（上游管线调度转正，见注记）
 us.intl.query_sellshort("AAPL")       # 美股沽空
 ```
 
-注记：美股日 K 已恢复入库（上游日更管线调度验收中，偶发 T-1/T-2 滞后），最新价量以
+注记：美股日 K 已转日更常态（上游管线调度转正 + EOD 盖回翻闸，2026-11-09 验收；偶发 T-1 滞后属正常），最新价量以
 `kline.live/snapshot` 为权威；港美专项覆盖矩阵见 [README](../README.md)「市场覆盖」。
 
 ### 6.1 宏观与期货
