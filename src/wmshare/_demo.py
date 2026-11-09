@@ -771,16 +771,21 @@ class DemoClient:
             tgt_pb = 0.05 + (((seed + 5) % 11) / 10) * 0.90
             pe_s = _series("pe", tgt_pe)
             pb_s = _series("pb", tgt_pb)
-            # 生成时按时间升序，落库前反转为新→旧（与 cursor.ds 顺序一致）
-            pts = [[_demo_date(i, n), round(pe_s[i], 4), round(pb_s[i], 4)]
-                   for i in range(n)][::-1]
+            pts: list[list[float | str]] = []
+            for i in range(n):  # 行=[date, pe, pb]，生成升序；落库前反转为新→旧
+                pts.append([_demo_date(i, n), round(pe_s[i], 4), round(pb_s[i], 4)])
+            pts.reverse()  # 落库前反转为新→旧（与 cursor.ds 顺序一致）
             w = str(window or "5y").lower()
             if w not in ("3y", "5y", "10y"):
                 w = "5y"
 
             def _pct(col: int, cur_v: float | None) -> dict:
                 """单列分位：rank0/(n-1)，并列取中点（与 live/前端同口径）。"""
-                vals = [p[col] for p in pts if p[col] is not None and p[col] > 0]
+                vals: list[float] = []
+                for p in pts:
+                    v = p[col]
+                    if isinstance(v, (int, float)) and v > 0:
+                        vals.append(float(v))
                 n_v = len(vals)
                 if n_v < 2 or cur_v is None:
                     return {"p": None, "n": n_v}
@@ -798,7 +803,7 @@ class DemoClient:
                 return {"p": p, "p3": p, "p5": p, "p10": p,
                         "n3": b["n"], "n5": b["n"], "n10": b["n"], "trunc10": False}
 
-            last_pe, last_pb = pts[0][1], pts[0][2]
+            last_pe, last_pb = float(pts[0][1]), float(pts[0][2])  # 行=[date, pe, pb]
             pe_b = _bundle(1, last_pe)
             pb_b = _bundle(2, last_pb)
             sel = {"3y": pe_b["p3"], "5y": pe_b["p5"], "10y": pe_b["p10"]}[w]
