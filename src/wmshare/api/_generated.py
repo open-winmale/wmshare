@@ -1370,6 +1370,13 @@ class MoneyflowNS(_Ns):
         """
         return self._client.call("moneyflow.snapshot_net_mf", sym=sym, _raw=_raw, _df=_df)
 
+    def board(self, _raw: bool = False, _df: bool = False) -> Any:
+        """全市场资金流快照
+
+:returns: ARR · 资金流行（symbol/name/net_mf/net_mv_ratio/lg_net/elg_net/md_net/sm_net/industry，按主力净流入降序）
+        """
+        return self._client.call("moneyflow.board", _raw=_raw, _df=_df)
+
     def fmt_maps(self, rows: list, _raw: bool = False, _df: bool = False) -> Any:
         """资金流行规范化"""
         return self._client.call("moneyflow.fmt_maps", rows=rows, _raw=_raw, _df=_df)

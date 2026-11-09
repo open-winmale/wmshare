@@ -8,7 +8,7 @@
     ``_raw=True`` 取未规范化原始行（仅部分方法）；
   - 本层是目录合同的薄翻译：高频方法显式包装；目录内其余函数经 ``__getattr__``
     属性直达（如 ``cli.kline.screen_above_ma20``、``cli.dividend.screen_quality``），
-    目录之外的名字显式 AttributeError——266 个底层函数零遮蔽。
+    目录之外的名字显式 AttributeError——267 个底层函数零遮蔽。
   - 选股能力集中在 ``cli.screener``：单票筛选器（bool）与全市场宽度（服务端
     预计算索引直出）显式包装，kline 目录的其余筛选函数经属性直达。
 
@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import json
 import re
+import warnings
 from datetime import date, timedelta
 from typing import TYPE_CHECKING, Any
 
@@ -133,6 +134,22 @@ def _finish_df(out: Any, df_flag: bool) -> Any:
         out.results = {s: _to_df(x) for s, x in out.results.items()}
         return out
     return _to_df(out)
+
+
+def _warn_large_moneyflow_list(symbol: Any) -> None:
+    """全市场级资金流大列表的 EC 提示：批量按标的数逐票计价，逐票×全市场
+    一轮就是百万级 EC（2026-11 事故：5,691 家 × 318 EC × 400 余遍 = 6 亿）。
+    只提示不阻断——正确用法是分批 batch_iter 边取边落盘，而非放弃。"""
+    if not isinstance(symbol, (list, tuple)):
+        return
+    n = len(symbol)
+    if n >= 200:
+        warnings.warn(
+            f"moneyflow 大列表（{n} 只）走逐票批量：EC 按标的数逐票计价，"
+            f"一轮约 {n * 318 // 10000} 万 EC 起步——批量省请求次数不省 EC。"
+            "全市场最新资金流请用 cli.moneyflow.board()（服务端一次取数）；"
+            "确需逐票历史请 batch_iter 分批边取边落盘。",
+            stacklevel=3)
 
 
 # 友好命名空间 → 目录（XS）命名空间。目录真实命名空间为
@@ -304,6 +321,7 @@ class MoneyflowApi(_Api):
         :param begin: 起始日期（含，YYYY-MM-DD），须与 end 同时提供；区间上限 5 年
         :param end: 结束日期（含）
         """
+        _warn_large_moneyflow_list(symbol)
         if begin is not None or end is not None:
             if not (begin and end):
                 raise UsageError("begin 与 end 需同时提供", code="range")
@@ -324,12 +342,23 @@ class MoneyflowApi(_Api):
         经规范化序列取最新一行，字段与 ``bars()`` 一致；``_raw=True`` 时返回 store
         原始行（净流入嵌在 props 下）。
         """
+        _warn_large_moneyflow_list(symbol)
         rows = self._c.call("moneyflow.query_bars", sym=symbol, limit=1, _raw=_raw)
         return _per_symbol(rows, lambda r: r[0] if r else None)
 
     def live(self, symbol: str, _raw: bool = False) -> Any:
         """盘中资金流快照（短 TTL）；数据源暂无快照时返回 None。"""
         return self._c.call("moneyflow.query_last_live", sym=symbol, _raw=_raw)
+
+    def board(self, _df: bool = False) -> Any:
+        """全市场资金流快照：一次取数，按主力净流入降序（日频 EOD，仅 A 股非停牌）。
+
+        字段 symbol/name/net_mf/net_mv_ratio/lg_net/elg_net/md_net/sm_net/industry，
+        金额=元、占比=小数。服务端索引直出——替代「全市场逐票批量」的正解：
+        EC 只花一次求值的计算量，不再是 标的数 × 单票成本。非交易日数据不变；
+        盘中实时用 ``live()``。
+        """
+        return self._c.call("moneyflow.board", _df=_df)
 
 
 class MarginApi(_Api):
@@ -1715,6 +1744,7 @@ FRIENDLY_INDEX: list[tuple[str, str, str, str, str]] = [
     ("market", "kline", "is_etf", "是否场内 ETF", "kline.is_etf"),
     ("market", "moneyflow", "bars", "资金流历史", "moneyflow.query_bars"),
     ("market", "moneyflow", "last", "最新资金流", "moneyflow.query_bars"),
+    ("market", "moneyflow", "board", "全市场资金流快照", "moneyflow.board"),
     ("market", "moneyflow", "live", "盘中资金流快照", "moneyflow.query_last_live"),
     ("market", "screener", "screen_limit_up", "今日涨停筛选", "kline.screen_limit_up"),
     ("market", "screener", "screen_limit_down", "今日跌停筛选", "kline.screen_limit_down"),

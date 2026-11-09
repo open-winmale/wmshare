@@ -1,6 +1,6 @@
 {
  "schema_version": 2,
- "upstream_rev": "1aec6925",
+ "upstream_rev": "6c5ada85",
  "domains": {
   "bonus": {
    "entry": "sys/bonus/init.xs",
@@ -102,7 +102,7 @@
   "notice",
   "segments"
  ],
- "function_count": 272,
+ "function_count": 273,
  "functions": [
   {
    "name": "bonus.dps_rpt",
@@ -6404,6 +6404,76 @@
      "type": "int"
     }
    ]
+  },
+  {
+   "name": "moneyflow.board",
+   "cn": "全市场资金流快照",
+   "example": "moneyflow.board()",
+   "returns": "ARR · 资金流行",
+   "returns_shape": {
+    "kind": "array",
+    "cn": "全市场行（按主力净流入降序）",
+    "items": {
+     "kind": "object",
+     "cn": "资金流行",
+     "fields": [
+      {
+       "name": "symbol",
+       "type": "string",
+       "cn": "标的代码"
+      },
+      {
+       "name": "name",
+       "type": "string",
+       "cn": "证券简称"
+      },
+      {
+       "name": "net_mf",
+       "type": "float64",
+       "cn": "主力净流入（元）",
+       "optional": true
+      },
+      {
+       "name": "net_mv_ratio",
+       "type": "float64",
+       "cn": "主力净流入占流通市值比（小数）",
+       "optional": true
+      },
+      {
+       "name": "lg_net",
+       "type": "float64",
+       "cn": "大单净流入（元）",
+       "optional": true
+      },
+      {
+       "name": "elg_net",
+       "type": "float64",
+       "cn": "超大单净流入（元）",
+       "optional": true
+      },
+      {
+       "name": "md_net",
+       "type": "float64",
+       "cn": "中单净流入（元）",
+       "optional": true
+      },
+      {
+       "name": "sm_net",
+       "type": "float64",
+       "cn": "小单净流入（元）",
+       "optional": true
+      },
+      {
+       "name": "industry",
+       "type": "string",
+       "cn": "一级行业",
+       "optional": true
+      }
+     ]
+    }
+   },
+   "min_args": null,
+   "params": []
   },
   {
    "name": "moneyflow.fmt_line",

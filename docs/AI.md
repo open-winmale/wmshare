@@ -91,6 +91,9 @@ cp -r "$(python3 -c 'import wmshare; print(wmshare.skill_dir())')" ~/.agents/ski
    量=股，不要做二次换算；cli.screener 宽度接口的 *_pct 例外，是百分数数值；
 3. 批量铁律：多标的取数用 cli.batch_all / cli.batch_iter（自动分批，A 股 5,691 家
    只发 12 次请求），绝不写 for 循环逐票请求；一个批次只能同一个市场；
+   注意批量省的是请求次数不省 EC（开放 API 按计算量计费，多标的脚本按标的数
+   逐票计价）——全市场最新快照类数据优先用服务端一次取数接口
+   （如 cli.moneyflow.board()），大消耗看 BatchResult.ec_cost / cli.last_ec_cost；
 4. 错误处理：捕获 WmshareError 并把消息原文打印/转述给我——消息自带修复步骤，
    DataError 是数据报警，不许静默吞掉。
 凭证已通过 WMSHARE_CLIENT_ID / WMSHARE_CLIENT_SECRET 环境变量配置，
@@ -119,6 +122,7 @@ cp -r "$(python3 -c 'import wmshare; print(wmshare.skill_dir())')" ~/.agents/ski
 | 凭记忆编造指标码 | `CatalogError` | "先 `cat.search` 确认码存在，再写取数代码" |
 | 把小数又 ×100 | 全部数值错 100 倍 | "返回值已是小数，展示时才格式化成百分比" |
 | `for code in codes:` 逐票请求 | 全市场必撞 429 | "改 `cli.batch_all(name, codes)`，5,691 家=12 次请求" |
+| 把全市场塞进一次批量反复跑 | 请求次数省了，EC 按标的数逐票计价照全额扣——重放几百遍会打穿配额 | "最新快照类用 `cli.moneyflow.board()` 一次取数；确需逐票历史用 batch_iter 边取边落盘，别循环重放" |
 | MCP 长结果塞爆上下文 | 后续推理变慢 | "改 `output=summary/count`，或缩小日期/标的范围" |
 | 一个批次混 A 股与港股 | 数据静默错误 | "一个 Client 只服务一个市场，分三次跑（共 29 批）" |
 | try/except 吞 `DataError` | 错误量级入库 | "DataError 是数据报警，先看消息再决定" |

@@ -1,11 +1,11 @@
 id: market.moneyflow
-version: 1.0.0
+version: 1.1.0
 cn: 资金流向
 kind: raw
 category: market
 priority: P0
 description: 个股日频资金流向（主力 / 超大单 / 大单 / 中单 / 小单净流入）、最新一行、
-  盘中外部源短 TTL 快照。非 Level2 逐笔数据。
+  全市场快照一次取数（board）、盘中外部源短 TTL 快照。非 Level2 逐笔数据。
 data_origin: [外部行情源]
 units:
   net: 元（净流入金额）
@@ -66,6 +66,16 @@ functions:
       - {name: sym, type: string, required: true}
     returns: {desc: float · 主力净流入（元）}
     example: 'moneyflow.snapshot_net_mf("600519")'
+  - name: moneyflow.board
+    cn: 全市场资金流快照
+    kind: raw
+    layer: L0
+    params: []
+    returns: {desc: ARR · 资金流行（symbol/name/net_mf/net_mv_ratio/lg_net/elg_net/md_net/sm_net/industry，按主力净流入降序）, shape_ref: inventory}
+    example: 'moneyflow.board()'
+    notes:
+      - 服务端索引一次取数（免逐票批量）
+      - 日频 EOD 口径，非交易日数据不变；仅 A 股（不含停牌）
   # ---- L1：格式化 ----
   - {name: moneyflow.fmt_maps, cn: 资金流行规范化, kind: raw, layer: L1}
   - {name: moneyflow.fmt_lines, cn: 资金流文本行, kind: raw, layer: L1}

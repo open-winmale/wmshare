@@ -517,3 +517,127 @@ def test_batch_accepts_any_typed_symbol_param(client):
     xs = " ".join(last_eval(client)["json"]["xs_lines"])
     assert 'cbond.kline_window("128044", 5)' in xs
     assert 'cbond.kline_window("113615", 5)' in xs
+
+
+# ---- EC 可见性：metering 解析、阈值告警、BatchResult.ec_cost ----
+
+class MeteringSession(FakeSession):
+    """eval 响应带 meta.metering（复刻网关信封）。"""
+
+    def __init__(self, ec_cost):
+        super().__init__()
+        self.ec_cost = ec_cost
+
+    def post(self, url, json=None, data=None, headers=None, timeout=None):
+        self.calls.append({"url": url, "json": json, "data": data, "headers": headers})
+        outer = self
+
+        class R:
+            status_code = 200
+            text = "{}"
+            def raise_for_status(self):
+                pass
+            def json(self):
+                if url.endswith("/v1/oauth/token"):
+                    return {"data": {"access_token": "tok-1", "expires_in": 3600}}
+                doc = {"success": True, "data": {"result": outer.eval_result}}
+                if outer.ec_cost is not None:
+                    doc["meta"] = {"metering": {"analysis.ec_cost": outer.ec_cost,
+                                                "latency_ms": 12}}
+                return doc
+        return R()
+
+
+def _metering_client(ec_cost, **kw):
+    s = MeteringSession(ec_cost)
+    c = Client(base_url="https://t", client_id="id", client_secret="sec",
+               catalog=load(), session=s, **kw)
+    return c, s
+
+
+def test_last_ec_cost_parsed_from_metering():
+    c, _ = _metering_client(318)
+    c.call("kline.query_last", sym="600519")
+    assert c.last_ec_cost == 318
+
+
+def test_last_ec_cost_none_without_metering():
+    c, _ = _metering_client(None)
+    c.call("kline.query_last", sym="600519")
+    assert c.last_ec_cost is None
+
+
+def test_ec_warning_above_threshold():
+    import warnings as _w
+    c, _ = _metering_client(146_525)
+    with _w.catch_warnings(record=True) as caught:
+        _w.simplefilter("always")
+        c.call("moneyflow.query_bars", sym="600519", limit=1)
+    assert any("EC" in str(w.message) for w in caught)
+
+
+def test_ec_no_warning_below_threshold():
+    import warnings as _w
+    c, _ = _metering_client(318)
+    with _w.catch_warnings(record=True) as caught:
+        _w.simplefilter("always")
+        c.call("kline.query_last", sym="600519")
+    assert not [w for w in caught if "EC" in str(w.message)]
+
+
+def test_ec_warning_disabled_by_none_threshold():
+    import warnings as _w
+    c, _ = _metering_client(146_525, ec_warn_threshold=None)
+    with _w.catch_warnings(record=True) as caught:
+        _w.simplefilter("always")
+        c.call("kline.query_last", sym="600519")
+    assert not [w for w in caught if "EC" in str(w.message)]
+
+
+def test_ec_threshold_invalid_rejected():
+    with pytest.raises(UsageError, match="ec_warn_threshold"):
+        Client(base_url="https://t", client_id="id", client_secret="sec",
+               catalog=load(), ec_warn_threshold=0)
+
+
+def test_batch_result_carries_ec_cost():
+    c, _ = _metering_client(146_525)
+    c.session.eval_result = {"600519": {"net_mf": 1.0}, "000001": {"net_mf": 2.0}}
+    r = c.call_batch("moneyflow.query_bars", ["600519", "000001"], limit=1)
+    assert r.ec_cost == 146_525
+
+
+def test_batch_all_sums_ec_cost_across_batches():
+    c, _ = _metering_client(146_525)
+    codes = ["600519", "000001", "000002"]
+    c.session.eval_result = {s: {"net_mf": 1.0} for s in codes}
+    r = c.batch_all("moneyflow.query_bars", codes, batch_size=1)
+    assert r.requests == 3
+    assert r.ec_cost == 146_525 * 3
+
+
+def test_moneyflow_large_list_warns_ec_semantics():
+    import warnings as _w
+    client = Client(base_url="https://t", client_id="id", client_secret="sec",
+                    catalog=load(), session=FakeSession())
+    codes = ["600519", "000001", "000002"]  # 小列表不提示
+    client.session.eval_result = {s: [] for s in codes}
+    with _w.catch_warnings(record=True) as caught:
+        _w.simplefilter("always")
+        client.moneyflow.last(codes)
+    assert not [w for w in caught if "EC" in str(w.message)]
+    big = [f"{i:06d}" for i in range(300)]
+    client.session.eval_result = {s: [] for s in big}
+    with _w.catch_warnings(record=True) as caught:
+        _w.simplefilter("always")
+        client.moneyflow.last(big)
+    assert any("EC" in str(w.message) for w in caught)
+
+
+def test_moneyflow_board_builds_bare_call():
+    client = Client(base_url="https://t", client_id="id", client_secret="sec",
+                    catalog=load(), session=FakeSession())
+    client.moneyflow.board()
+    ev = last_eval(client)
+    assert ev["json"]["xs_lines"] == ["return moneyflow.board()"]
+    assert ev["json"]["mode"] == "call"

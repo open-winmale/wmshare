@@ -128,3 +128,13 @@ def test_example_quality_thresholds_are_captured(snapshot, cli):
     for symbol in snapshot["data"]["universe"][:5]:
         value = cli.dividend.screen_quality(symbol, min_yield=0.02, payout_max=1.2)
         assert isinstance(value, bool)
+
+
+def test_moneyflow_board_is_sorted_desc_and_covers_universe(snapshot, cli):
+    rows = cli.moneyflow.board()
+    assert len(rows) == len(snapshot["data"]["moneyflow_last"])
+    net = [r["net_mf"] for r in rows]
+    assert net == sorted(net, reverse=True)
+    row = rows[0]
+    assert {"symbol", "name", "net_mf", "net_mv_ratio", "lg_net", "elg_net",
+            "md_net", "sm_net", "industry"} <= set(row)

@@ -11,6 +11,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **全市场资金流快照 `cli.moneyflow.board()`**（market.moneyflow v1.1.0 扩展）：
+  服务端索引一次取数返回全市场最新资金流行（symbol/name/net_mf/net_mv_ratio/
+  lg_net/elg_net/md_net/sm_net/industry，按主力净流入降序；仅 A 股非停牌）——
+  替代「全市场逐票批量」的正解：EC 只花一次求值的计算量，不再是 标的数 × 单票
+  成本。日频 EOD 口径，非交易日数据不变；demo 客户端同步支持（演示宇宙罐头）
+- **SDK 来源标记 `X-WM-Client`**：所有请求携带 `wmshare-py/<版本>`（MCP 层为
+  `wmshare-mcp/<版本>`），开放平台网关落库 call_log `client` 字段——审计可区分
+  SDK/MCP/裸 HTTP（配合网关侧记录；旧网关忽略此头，无兼容性影响）
+- **EC 消耗可见性**：开放 API 按计算量（EC）计费，批量省请求次数**不省 EC**。
+  `Client.last_ec_cost` 读取网关回传的每次消耗；单次超过
+  `Client(ec_warn_threshold=100_000)`（可调/可关）SDK 主动告警；
+  `BatchResult.ec_cost` 汇总各批消耗；`cli.moneyflow.last/bars` 传 ≥200 只的
+  大列表时提示 EC 语义（2026-11 全市场资金流逐票批量事故的防线）
 - **指数趋势分位服务端化 `cli.index.trend(key, window="5y")`（market.index v1.3.0 扩展）**：
   分位改由服务端按所选窗口（3y/5y/10y）计算——`pct.pe/pb/pe_med` 各含
   `{p, p3, p5, p10, n*, trunc}` 束，口径 `rank0/(n-1)` 并列取中点；`win_trunc=true`

@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "wmshare 数据 API",
-    "version": "1.12.0",
+    "version": "1.13.0",
     "description": "覆盖 A 股、港股、美股的财经数据核心接口（Python SDK，`pip install wmshare`；`import wmshare`）。凭证必填：在开放平台（open.winmale.com）获取 client_id/api-key；遇到 401/403/429 错误消息即完整的申请与配置指引。覆盖行情 K 线（不复权/前复权/后复权、盘中、分时、ETF、指数）、三大报表（多期、合并 vs 母公司、树视图、新旧会计准则归一）、分红（历史/DPS/窗口/TTM 率）、公告与业绩披露、资金流与指标层。平台指标经 /indicator/get、/indicator/metrics 按指标代码寻址，全量 2752 个指标代码随包内置目录分发（分组清单见 docs/API.md）。",
     "license": {
       "name": "BSD-3-Clause",
@@ -634,6 +634,82 @@
                     "sm_net": {
                       "type": "number",
                       "description": "小单净流入"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/moneyflow/board": {
+      "post": {
+        "operationId": "moneyflow_board",
+        "summary": "全市场资金流快照：一次取数，按主力净流入降序（日频 EOD，仅 A 股非停牌）。",
+        "description": "字段 symbol/name/net_mf/net_mv_ratio/lg_net/elg_net/md_net/sm_net/industry，、金额=元、占比=小数。服务端索引直出——替代「全市场逐票批量」的正解：、EC 只花一次求值的计算量，不再是 标的数 × 单票成本。非交易日数据不变；、盘中实时用 ``live()``。、底层目录函数 `moneyflow.board`。SDK 调用：`cli.moneyflow.board(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "市场行情"
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "全市场行（按主力净流入降序）",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "symbol": {
+                        "type": "string",
+                        "description": "标的代码"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "证券简称"
+                      },
+                      "net_mf": {
+                        "type": "number",
+                        "description": "主力净流入（元）"
+                      },
+                      "net_mv_ratio": {
+                        "type": "number",
+                        "description": "主力净流入占流通市值比（小数）"
+                      },
+                      "lg_net": {
+                        "type": "number",
+                        "description": "大单净流入（元）"
+                      },
+                      "elg_net": {
+                        "type": "number",
+                        "description": "超大单净流入（元）"
+                      },
+                      "md_net": {
+                        "type": "number",
+                        "description": "中单净流入（元）"
+                      },
+                      "sm_net": {
+                        "type": "number",
+                        "description": "小单净流入（元）"
+                      },
+                      "industry": {
+                        "type": "string",
+                        "description": "一级行业"
+                      }
                     }
                   }
                 }

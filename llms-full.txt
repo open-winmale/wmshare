@@ -29,7 +29,7 @@
 
 ## 特性
 
-- **数据要全**——18 个数据域、130 个核心接口一站取全：K 线/盘中/ETF/指数、分红、报表、资金流、
+- **数据要全**——18 个数据域、131 个核心接口一站取全：K 线/盘中/ETF/指数、分红、报表、资金流、
   公告业绩、股东治理、回购并购、两融、可转债、盈利预测、指数、全市场列表、港美披露、宏观与期货。
 - **数据要准**——财报按最新会计准则归一，跨年跨公司直接比较；全库基础单位
   （比率/涨跌幅=小数、金额=元、量=股），每次返回做量级守护与不变量校验，错误的量级到不了你的代码。
@@ -37,7 +37,7 @@
   全景/分桶/行业分布/涨跌榜走服务端预计算索引，毫秒级响应；2,639 个指标码（TTM、3/5/10 年
   历史分位、192 个行业内分位、TTM 股息率/派息率 + 11 个质量筛选器）服务端算好直出。
 - **凭证即用**——开放平台签发 client_id/api-key，环境变量、凭证文件、构造参数任选其一配置；遇到 401/403/429 错误消息即完整指引。
-- **目录随包 + AI 原生**——266 个底层函数、130 个核心接口、2,752 个指标码离线可查；
+- **目录随包 + AI 原生**——267 个底层函数、131 个核心接口、2,752 个指标码离线可查；
   附 Agent Skills 格式 skill（`wmshare.skill_dir()`）与本地 MCP server（`wmshare-mcp`）。
 
 ## 快速上手
@@ -106,7 +106,7 @@ for s, n, v, pe, pct in rows[:8]:                            # 取前 8 行打�
 
 ## 能力一览
 
-随包离线目录：**18 个数据域 · 266 个底层函数 · 2752 个指标代码**；友好层 **130 个核心接口**，
+随包离线目录：**18 个数据域 · 267 个底层函数 · 2752 个指标代码**；友好层 **131 个核心接口**，
 按使用视角组织为（11 个指标组、74 个精选常用指标代码，`cat.search("中文")` 可编程检索）：
 
 | 门面 | 核心能力 | 单位口径 |
@@ -254,7 +254,7 @@ for i, part in enumerate(cli.batch_iter("dividend.history", codes), 1):
 
 `name`/`symbols` 都是**位置参数**；`_raw=True`、`_units="native"` 三个入口通用。**`on_batch_error`
 （批级：跳过整批）≠ `on_error`（票级：逐票请求）**。长表用 `to_df()`，批量入口不提供 `_df`。
-**指标码不是批量 `name`**：`name` 必须是目录函数名（266 个，如 `kline.snapshot`）；一票多码用 `cli.indicator.metrics(sym, codes)`，全市场指标码只能逐票调用。
+**指标码不是批量 `name`**：`name` 必须是目录函数名（267 个，如 `kline.snapshot`）；一票多码用 `cli.indicator.metrics(sym, codes)`，全市场指标码只能逐票调用。
 
 **分批策略由你定，SDK 负责切片与执行**：代码池来自 `cli.stocks.list()`（全市场）、
 `cli.stocks.industry_members("银行")`（按行业）或自己的筛选结果，`batch_size=`（默认 500、
@@ -269,9 +269,9 @@ for i, part in enumerate(cli.batch_iter("dividend.history", codes), 1):
 **不要用 `call_batch(on_error="skip")` 做容错**——它逐票发请求，12 批会放大成 5,691 次、正好制造 429。
 
 **返回**：`results`（`{代码: 结果}`，保序去重 + 代码归一）/ `errors` / `requests`（实际请求数，
-可对比标的数看省了多少配额）；`to_df()` 每标的一行（MAP 展平、`symbol` 列在前），多次行结果
-（`bars`/`history`）建议读 `results[代码]` 或走 `batch_iter`。实测（2026-10-30）：500 标的单批
-0.7–4 秒（随网络波动），A 股全市场 5,691 家 12 批 9–16 秒一次跑完（0 错误）。
+可对比标的数看省了多少配额）/ `ec_cost`（各批 EC 合计——批量省请求次数**不省 EC**，开放 API
+按计算量计费，全市场最新快照优先服务端直出 `cli.moneyflow.board()`）；`to_df()` 每标的一行
+（MAP 展平、`symbol` 列在前），多次行结果建议读 `results[代码]`。实测：全市场 12 批 9–16 秒（0 错误）。
 
 ## 单位与数据守护
 
@@ -293,7 +293,7 @@ for i, part in enumerate(cli.batch_iter("dividend.history", codes), 1):
 
 - **AI 原生**：随包 [SKILL.md](src/wmshare/skills/wmshare/SKILL.md)、[AI 用法](docs/AI.md)、本地 MCP server（skill 可复制进 .agents/.zcode/.claude 的 skills/）
 - 生态工具 [big-winner](https://github.com/open-winmale/big-winner)：基于本 SDK 的开源工具。
-- **文档中心 [docs/](docs/README.md)**：使用指南 GUIDE（单票菜谱/批量/多市场/故障排查）· AI 用法 · llms.txt 索引 · [API 参考](docs/API.md)（按资产类别分章的 130 个核心接口 + 指标组）
+- **文档中心 [docs/](docs/README.md)**：使用指南 GUIDE（单票菜谱/批量/多市场/故障排查）· AI 用法 · llms.txt 索引 · [API 参考](docs/API.md)（按资产类别分章的 131 个核心接口 + 指标组）
 - **可转债日更管线**：`cli.cbond.daily()` → `article()` → `figures()` 一条命令出图文（三层口径 + 三道闸 + 状态机 + 事件日历，每个数字带 `sources` 与 `as_of`，缺条目抛错而非补猜测值）；实战 notebook 见 [docs/notebooks/cb_double_low.ipynb](docs/notebooks/cb_double_low.ipynb)（2026-11-07 真实数据）
 - **示例课程 [examples/](examples/README.md)**：14 个编号示例（入门→进阶→生产→AI），全部支持演示客户端离线试跑，CI 端到端覆盖
 - [贡献指南](CONTRIBUTING.md)：提交门禁、内容规范、许可政策
@@ -525,7 +525,7 @@ cp -r "$(python3 -c 'import wmshare; print(wmshare.skill_dir())')" ~/.agents/ski
 
 本指南是 **how-to + 解释层**：会做什么 → 怎么做好。其他层各有其位——
 教程看 [README](../README.md) 与 [examples/](../examples/README.md)（可运行课程），
-接口参考看 [API.md](API.md)（按资产类别分章的 130 个核心接口，生成物），
+接口参考看 [API.md](API.md)（按资产类别分章的 131 个核心接口，生成物），
 AI 用法看 [AI.md](AI.md)。
 
 > 代码块里的输出注释都是**真实运行结果**（2026-10-29，cn 市场，免费档凭证），
@@ -563,7 +563,7 @@ export WMSHARE_CLIENT_ID=<AppId> WMSHARE_CLIENT_SECRET=<API Key>
 
 ### 2.1 双层 API：门面 + 目录
 
-- **门面层** `cli.<命名空间>.<方法>()`：21 个命名空间、130 个核心接口，方法名动宾化可猜
+- **门面层** `cli.<命名空间>.<方法>()`：21 个命名空间、131 个核心接口，方法名动宾化可猜
   （`kline.bars`、`dividend.yield_ttm`、`screener.screen_limit_up`）。
 - **目录层** `cli.call("<域>.<函数名>", ...)`：263 个底层函数按目录合同直调，
   参数名以 `cat.function(name)["params"]` 为准。门面未包装的函数经属性直达
@@ -754,6 +754,14 @@ cli.stocks.industry_members("银行")   # 中文名直达（也可传 "S48" 代�
 | `batch_iter(name, symbols)` | 逐批流式：进度/中断/落盘 | ⌈N/500⌉ | 逐批 yield `BatchResult` |
 | `call_batch(name, symbols)` | 单批（≤500） | 1 | `on_error` 是**票级**，勿做容错 |
 
+**批量省的是请求次数，不是 EC。** 开放平台开放 API 按计算量（EC）计费：
+多标的批量在服务端仍按标的数逐票计算，一轮全市场 ≈ 12 批 × 每标的固定成本，
+重放几百遍就是数亿 EC。两个习惯：① `BatchResult.ec_cost` 与
+`cli.last_ec_cost` 会回传每次消耗，单次超过 `Client(ec_warn_threshold=…)`
+（默认 10 万）SDK 直接告警；② 全市场**最新快照**类数据（资金流等）优先用
+服务端一次取数接口（如 `cli.moneyflow.board()`），逐票批量留给确需逐票
+历史的场景，并配合 `batch_iter` 边取边落盘。
+
 ### 5.2 一站式：全市场 = 12 次请求
 
 ```python
@@ -891,9 +899,13 @@ poller.start()               # 或切后台：daemon 线程定时轮询；退出
 ## 10. 配额与性能实测
 
 免费档：500 次/小时、5,000 次/日（更高额度与条款以开放平台为准）。
-按请求次数计费意味着批量是乘法级省配额：全市场 4 个指标 × 12 批 = 48 次，
+按请求次数计费意味着批量是乘法级省**请求次数**：全市场 4 个指标 × 12 批 = 48 次，
 仍占小时额度不到 10%。实测基线（2026-10-29）：全市场 5,691 家快照 12 批约 9 秒、
 0 错误；`res.requests` 字段可直接对比标的数看省了多少。
+
+注意口径：SDK 配额按请求次数算，开放平台 EC 按**计算量**算（第 5.1 节）——
+批量对前者是省、对后者不省。EC 消耗经 `BatchResult.ec_cost` /
+`cli.last_ec_cost` 可见，超大单次消耗 SDK 会主动告警。
 
 ## 11. 用 AI 学会并用好 SDK
 
@@ -1010,6 +1022,9 @@ cp -r "$(python3 -c 'import wmshare; print(wmshare.skill_dir())')" ~/.agents/ski
    量=股，不要做二次换算；cli.screener 宽度接口的 *_pct 例外，是百分数数值；
 3. 批量铁律：多标的取数用 cli.batch_all / cli.batch_iter（自动分批，A 股 5,691 家
    只发 12 次请求），绝不写 for 循环逐票请求；一个批次只能同一个市场；
+   注意批量省的是请求次数不省 EC（开放 API 按计算量计费，多标的脚本按标的数
+   逐票计价）——全市场最新快照类数据优先用服务端一次取数接口
+   （如 cli.moneyflow.board()），大消耗看 BatchResult.ec_cost / cli.last_ec_cost；
 4. 错误处理：捕获 WmshareError 并把消息原文打印/转述给我——消息自带修复步骤，
    DataError 是数据报警，不许静默吞掉。
 凭证已通过 WMSHARE_CLIENT_ID / WMSHARE_CLIENT_SECRET 环境变量配置，
@@ -1038,6 +1053,7 @@ cp -r "$(python3 -c 'import wmshare; print(wmshare.skill_dir())')" ~/.agents/ski
 | 凭记忆编造指标码 | `CatalogError` | "先 `cat.search` 确认码存在，再写取数代码" |
 | 把小数又 ×100 | 全部数值错 100 倍 | "返回值已是小数，展示时才格式化成百分比" |
 | `for code in codes:` 逐票请求 | 全市场必撞 429 | "改 `cli.batch_all(name, codes)`，5,691 家=12 次请求" |
+| 把全市场塞进一次批量反复跑 | 请求次数省了，EC 按标的数逐票计价照全额扣——重放几百遍会打穿配额 | "最新快照类用 `cli.moneyflow.board()` 一次取数；确需逐票历史用 batch_iter 边取边落盘，别循环重放" |
 | MCP 长结果塞爆上下文 | 后续推理变慢 | "改 `output=summary/count`，或缩小日期/标的范围" |
 | 一个批次混 A 股与港股 | 数据静默错误 | "一个 Client 只服务一个市场，分三次跑（共 29 批）" |
 | try/except 吞 `DataError` | 错误量级入库 | "DataError 是数据报警，先看消息再决定" |
@@ -1075,7 +1091,7 @@ python3 -c "import wmshare; print(wmshare.load().metric('\$PE_TTM_LAST'))"
 
 <!-- GENERATED by tools/gen_api_docs.py — do not hand-edit -->
 
-共 **18** 个数据域 · **130** 个核心接口 · **11** 个指标组（指标目录全量 2752 个指标代码）；全量 266 个底层函数见文末折叠附录。核心接口按资产类别分章，每接口一节（输入参数 / 输出字段 / 示例）。
+共 **18** 个数据域 · **131** 个核心接口 · **11** 个指标组（指标目录全量 2752 个指标代码）；全量 267 个底层函数见文末折叠附录。核心接口按资产类别分章，每接口一节（输入参数 / 输出字段 / 示例）。
 
 ## 能力总览
 
@@ -1156,7 +1172,7 @@ cat.function("bonus.snapshot_yield_ttm")["params"]   # 函数合同：参数/返
 
 **三原则**：① 批次只能同一市场（跨市场混批 SDK 直接报错）；② 容错用批级`on_batch_error="skip"`（跳过失败批继续），**不要**用 `call_batch(on_error="skip")`——它是票级逐票请求，会放大请求数正好制造 429；③ 单批撞 `CALC_LIMIT_EXCEEDED`（算力超限）减小 `batch_size`，遇 429 停止并按消息里的 `codes[done:]` 续跑。
 
-**指标码不是批量 `name`**：`name` 必须是目录函数名（266 个，如 `kline.snapshot`），传 `indicator.get` 会报 CatalogError。一票多码用 `cli.indicator.metrics(sym, codes)`；全市场指标码没有批量入口，需逐票调用（指标取数是按 `(标的, 码)` 寻址，不是按标的切片）。
+**指标码不是批量 `name`**：`name` 必须是目录函数名（267 个，如 `kline.snapshot`），传 `indicator.get` 会报 CatalogError。一票多码用 `cli.indicator.metrics(sym, codes)`；全市场指标码没有批量入口，需逐票调用（指标取数是按 `(标的, 码)` 寻址，不是按标的切片）。
 
 ```python
 codes = [r["symbol"] for r in cli.stocks.list()]      # 全市场代码池（A 股 5,691 家）
@@ -1657,6 +1673,32 @@ cli.moneyflow.bars("600519", n=30, begin="2026-01-01", end="2026-03-31")
 
 ```python
 cli.moneyflow.last("600519")
+```
+
+#### `cli.moneyflow.board` — 全市场资金流快照
+
+全市场资金流快照：一次取数，按主力净流入降序（日频 EOD，仅 A 股非停牌）。
+
+**输入参数**：无。
+
+**输出字段**
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `symbol` | string | 标的代码 |
+| `name` | string | 证券简称 |
+| `net_mf` | float? | 主力净流入（元） |
+| `net_mv_ratio` | float? | 主力净流入占流通市值比（小数） |
+| `lg_net` | float? | 大单净流入（元） |
+| `elg_net` | float? | 超大单净流入（元） |
+| `md_net` | float? | 中单净流入（元） |
+| `sm_net` | float? | 小单净流入（元） |
+| `industry` | string? | 一级行业 |
+
+**示例**
+
+```python
+cli.moneyflow.board()
 ```
 
 #### `cli.moneyflow.live` — 盘中资金流快照
@@ -4694,8 +4736,8 @@ cli.info.profile("600519")
 
 #### 资金流向（`market.moneyflow`）
 
-**性质**：原始数据 · **版本**：1.0.0  
-个股日频资金流向（主力 / 超大单 / 大单 / 中单 / 小单净流入）、最新一行、 盘中外部源短 TTL 快照。非 Level2 逐笔数据。
+**性质**：原始数据 · **版本**：1.1.0  
+个股日频资金流向（主力 / 超大单 / 大单 / 中单 / 小单净流入）、最新一行、 全市场快照一次取数（board）、盘中外部源短 TTL 快照。非 Level2 逐笔数据。
 数据来源：外部行情源。
 单位口径：net=元（净流入金额）；date=YYYY-MM-DD。
 - 日频为 EOD 落库；query_last_live 为盘中快照（外部行情源 HTTP，短 TTL）
@@ -4709,6 +4751,7 @@ cli.info.profile("600519")
 | `moneyflow.query_last_live` | 盘中资金流快照 | 原始数据 | L0 | `sym:string` | MAP · 资金流快照 | — | 例：`cli.call("moneyflow.query_last_live", sym='000807')`
 | `moneyflow.snapshot` | 资金流向快照 | 原始数据 | L0 | `sym:string` | MAP · 快照 | — | 例：`cli.call("moneyflow.snapshot", sym='600519')`
 | `moneyflow.snapshot_net_mf` | 最新主力净流入 | 原始数据 | L0 | `sym:string` | float · 主力净流入（元） | — | 例：`cli.call("moneyflow.snapshot_net_mf", sym='600519')`
+| `moneyflow.board` | 全市场资金流快照 | 原始数据 | L0 | — | ARR · 资金流行（symbol/name/net_mf/net_mv_ratio/lg_net/elg_net/md_net/sm_net/industry，按主力净流入降序）；字段 symbol:string（标的代码） / name:string（证券简称） / net_mf:float?（主力净流入（元）） / net_mv_ratio:float?（主力净流入占流通市值比（小数）） / lg_net:float?（大单净流入（元）） / elg_net:float?（超大单净流入（元）） / md_net:float?（中单净流入（元）） / sm_net:float?（小单净流入（元）） / industry:string?（一级行业） | — | 例：`cli.call("moneyflow.board")`
 | `moneyflow.fmt_maps` | 资金流行规范化 | 原始数据 | L1 | `rows:array`（签名） | ARR · 规范化行 | — |
 | `moneyflow.fmt_lines` | 资金流文本行 | 原始数据 | L1 | `rows:array`（签名） | ARR · 文本 | — |
 | `moneyflow.fmt_line` | 单条资金流文本 | 原始数据 | L1 | `row:any`（签名） | string | — |

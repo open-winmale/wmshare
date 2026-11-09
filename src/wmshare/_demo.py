@@ -363,6 +363,7 @@ class DemoClient:
         )
         self.moneyflow = SimpleNamespace(
             last=self._moneyflow_last, bars=self._moneyflow_bars,
+            board=self._moneyflow_board,
         )
         self.statements = SimpleNamespace(
             income=self._statement("income"),
@@ -507,6 +508,25 @@ class DemoClient:
             )
         sym = self._require_symbol(symbol)
         rows = [dict(row) for row in self._data["moneyflow_bars"][sym][:count]]
+        return self._maybe_df(rows, _df)
+
+    def _moneyflow_board(self, _df: bool = False) -> Any:
+        """演示宇宙（10 只）的全市场快照罐头：由 moneyflow_last 派生、按净流入降序。"""
+        rows = []
+        for sym, v in self._data["moneyflow_last"].items():
+            snap = self._data["kline_snapshot"].get(sym, {})
+            rows.append({
+                "symbol": sym,
+                "name": snap.get("name", ""),
+                "net_mf": v.get("net_mf", 0),
+                "net_mv_ratio": 0.0,
+                "lg_net": v.get("lg_net", 0),
+                "elg_net": v.get("elg_net", 0),
+                "md_net": v.get("md_net", 0),
+                "sm_net": v.get("sm_net", 0),
+                "industry": snap.get("industry", ""),
+            })
+        rows.sort(key=lambda r: r["net_mf"], reverse=True)
         return self._maybe_df(rows, _df)
 
     # ---- fundamentals ----
