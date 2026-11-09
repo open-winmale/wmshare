@@ -16,25 +16,37 @@
 
 ``ytm_after_tax``  逐笔现金流 IRR：按分年票息表 + 真实赎回价贴现，二分求根。
                    缺分年表时按当年票息恒定近似。
+``ytm_pretax``     同一骨架去掉利息税——只为与第三方的「到期税前收益」可比。
 ``ytm_floor``      下限口径：赎回价按面值 100、票息按当年票息恒定、单利年化。
                    真值恒 ≥ 此下限（赎回价 ≥ 面值），数学严格但会低估。
+``pure_bond_value`` 债底：同一份现金流按传入收益率曲线贴现。票息与赎回价都不
+                   扣利息税（「纯债价值」的通行定义）；曲线由调用方传入，
+                   本模块不内置利率常量、不取数。
+``annualized_vol`` 转债自身近 20 日年化波动率——「这只债弹不弹」的直接观测。
+``turnover_pct``   换手率 = 成交额 / 转债流通市值（剩余规模×价格/100，不是面值规模）。
 """
 from __future__ import annotations
 
+import math
 import re
 from datetime import date, datetime
 from typing import Any
 
 __all__ = [
     "COUPON_TAX_RATE",
+    "annualized_vol",
     "coupon_schedule",
     "double_low",
+    "interp_curve",
     "nature_class",
     "premium_pct",
+    "pure_bond_value",
     "redeem_value",
     "remaining_years",
+    "turnover_pct",
     "ytm_after_tax",
     "ytm_floor",
+    "ytm_pretax",
 ]
 
 #: 个人投资者利息税税率（利息部分按 20% 计，赎回价部分不计）
@@ -166,6 +178,38 @@ def _irr(price: float, flows: list[tuple[float, float]]) -> float | None:
     return (lo + hi) / 2
 
 
+def _periods(years: float, available: int = 0) -> int:
+    """剩余年限内的付息期数；``available`` >0 时不超过可用票息表长度。"""
+    whole = int(years) if abs(years - round(years)) < 1e-9 else int(years) + 1
+    n = max(1, whole)
+    return min(n, available) if available else n
+
+
+def _flows(row: dict, years: float, redeem: float,
+           tax: float) -> tuple[list[tuple[float, float]], str | None]:
+    """剩余期现金流 ``[(年, 金额)]`` 与口径来源（``schedule`` / ``constant``）。
+
+    YTM 与纯债价值共用这一份现金流模型：两处各写一遍，改一处忘一处就会让
+    「债底」和「到期收益」互相不自洽。
+    """
+    sched = coupon_schedule(row.get("couponExplain"))
+    if len(sched) >= 2:
+        n = _periods(years, len(sched))
+        rates = sched[len(sched) - n:]
+        times = [years - (len(rates) - 1 - i) for i in range(len(rates))]
+        flows = [(float(t), 100.0 * r / 100.0 * (1 - tax)) for t, r in zip(times, rates[:-1])]
+        flows.append((years, redeem + 100.0 * rates[-1] / 100.0 * (1 - tax)))
+        return flows, "schedule"
+    cur = row.get("couponIr")
+    if _num(cur) and _f(cur) > 0:
+        n = _periods(years)
+        coupon_yuan = 100.0 * _f(cur) * (1 - tax)
+        flows = [(float(t), coupon_yuan) for t in range(1, n)]
+        flows.append((years, redeem + coupon_yuan))
+        return flows, "constant"
+    return [], None
+
+
 def ytm_after_tax(row: dict, as_of: str, *, tax: float = COUPON_TAX_RATE) -> dict:
     """税后到期收益率（逐笔现金流 IRR），返回三档口径。
 
@@ -196,38 +240,32 @@ def ytm_after_tax(row: dict, as_of: str, *, tax: float = COUPON_TAX_RATE) -> dic
         return out
 
     rv = redeem if redeem is not None else 100.0
-    # 恒定票息近似：票息用当年票息，赎回价用真实值
-    cur = row.get("couponIr")
-    if _num(cur) and _f(cur) > 0:
-        n = max(1, int(years) if abs(years - round(years)) < 1e-9 else int(years) + 1)
-        # couponIr 是小数口径（0.02 = 2%），乘面值 100 得每年票息（元）
-        coupon_yuan = 100.0 * _f(cur) * (1 - tax)
-        constant: list[tuple[float, float]] = [(float(t), coupon_yuan) for t in range(1, n)]
-        constant.append((years, rv + coupon_yuan))
-        base = _irr(_f(pxv), constant)
-    else:
-        base = None
-
-    if len(sched) >= 2:
-        total_years = len(sched)
-        n = max(1, min(total_years, int(years) if abs(years - round(years)) < 1e-9
-                       else int(years) + 1))
-        start = max(0, total_years - n)
-        rates = sched[start:total_years]
-        times = [years - (len(rates) - 1 - i) for i in range(len(rates))]
-        flows: list[tuple[float, float]] = [(float(t), 100.0 * r / 100.0 * (1 - tax))
-                                           for t, r in zip(times, rates[:-1])]
-        flows.append((years, rv + 100.0 * rates[-1] / 100.0 * (1 - tax)))
+    flows, flow_basis = _flows(row, years, rv, tax)
+    if flow_basis == "schedule":
         sched_irr = _irr(_f(pxv), flows)
         if sched_irr is not None:
             out.update(ytm=sched_irr, basis="schedule")
             return out
+        base = None
+    elif flow_basis == "constant":
+        base = _irr(_f(pxv), flows)
+    else:
+        base = None
 
     if base is not None:
         out.update(ytm=base, basis="constant")
     elif floor is not None:
         out.update(ytm=floor, basis="floor")
     return out
+
+
+def ytm_pretax(row: dict, as_of: str) -> dict:
+    """税前到期收益率（同一 IRR 骨架，只把利息税置 0）。
+
+    税后是我们的对外口径；税前存在的唯一理由是**与集思录「到期税前收益」
+    可比**——读者拿两个数对不上时，得能说清差的是税，不是算错。
+    """
+    return ytm_after_tax(row, as_of, tax=0.0)
 
 
 def ytm_floor(price: float, coupon_ir: float | None, years: float,
@@ -251,3 +289,103 @@ def nature_class(price: float, premium: float, ytm: float | None) -> str:
     if price >= 130 and premium <= 15:
         return "偏股"
     return "平衡"
+
+
+def interp_curve(curve: dict[float, float], years: float) -> float | None:
+    """在 ``{期限(年): 收益率(小数)}`` 上线性插值，两端平推（不外推斜率）。
+
+    平推而不是外推：剩余 0.4 年的债用 1 年期，剩余 8 年的债用最长档。外推会
+    凭斜率造出一个市场上并不存在的利率，债底就变成算出来的幻觉。
+    """
+    if not curve:
+        return None
+    pts = sorted((float(k), float(v)) for k, v in curve.items()
+                 if isinstance(v, (int, float)) and not isinstance(v, bool))
+    if not pts:
+        return None
+    if years <= pts[0][0]:
+        return pts[0][1]
+    if years >= pts[-1][0]:
+        return pts[-1][1]
+    for (t0, r0), (t1, r1) in zip(pts, pts[1:]):
+        if t0 <= years <= t1:
+            if t1 == t0:
+                return r0
+            return r0 + (r1 - r0) * (years - t0) / (t1 - t0)
+    return pts[-1][1]
+
+
+def pure_bond_value(row: dict, as_of: str, curve: dict[float, float], *,
+                    redeem_fallback: float = 100.0) -> dict | None:
+    """纯债价值（债底）：把剩余票息与赎回价按收益率曲线逐笔贴现。
+
+    口径（写死在此，别处别再实现一遍）：
+
+    * 现金流与 ``ytm_after_tax`` 共用 ``_flows``，**票息与赎回价都不扣利息税**
+      ——这是「纯债价值」的通行定义。个人实际到手略低，与税后 YTM 并列看时
+      要知道这一层差。
+    * 贴现率取**外部传入的曲线**（本模块不取数，也不内置任何常量）：无评级
+      输入时只能用统一曲线，评级更低的债真实债底**低于**本值。因此对外必须
+      标「统一曲线贴现、自算口径」，不得宣称与任何第三方同口径。
+    * 剩余年限 ≤0 或现金流建不起来时返回 None，不拿面值 100 兜底（那不是债底）。
+
+    :returns: ``{"value", "basis", "redeem", "years", "curve_rate"}``
+    """
+    years = remaining_years(row.get("expireDate"), as_of)
+    if years is None or years <= 0:
+        return None
+    redeem = redeem_value(row)
+    rv = redeem if redeem is not None else redeem_fallback
+    flows, basis = _flows(row, years, rv, 0.0)
+    if not flows:
+        return None
+    pv = 0.0
+    rate_first = None
+    for t, amt in flows:
+        r = interp_curve(curve, t)
+        if r is None:
+            return None
+        if rate_first is None:
+            rate_first = r
+        pv += amt / (1.0 + r) ** t
+    return {"value": round(pv, 3), "basis": basis, "redeem": round(rv, 2),
+            "years": round(years, 3),
+            "curve_rate": round(rate_first * 100, 3) if rate_first is not None else None}
+
+
+def annualized_vol(closes: list[float], *, window: int = 20,
+                   periods: int = 252) -> float | None:
+    """近 ``window`` 个交易日的年化波动率（%，对数收益标准差 × √252）。
+
+    转债价格的波动率是「这只债弹不弹」的直接观测，比拿正股波动率代跑更贴
+    持有人的体验。样本不足（次新债）返回 None——不插补、不用不足的窗口硬算。
+    """
+    px = [float(c) for c in closes if isinstance(c, (int, float)) and c > 0]
+    if len(px) < window + 1:
+        return None
+    seg = px[-(window + 1):]
+    rets = [math.log(seg[i] / seg[i - 1]) for i in range(1, len(seg))]
+    if len(rets) < max(2, window // 2):
+        return None
+    mu = sum(rets) / len(rets)
+    var = sum((r - mu) ** 2 for r in rets) / (len(rets) - 1)
+    return round(math.sqrt(var * periods) * 100, 2)
+
+
+def turnover_pct(amount: float | None, float_size: float | None,
+                 price: float | None = None) -> float | None:
+    """转债换手率（%）= 当日成交额 / 转债流通市值。
+
+    分母是**市值**（剩余规模 × 价格/100），不是面值规模：集思录与东财都用市值
+    口径，用面值会把高价债的换手率整体放大（价格 500 元的债虚高 5 倍），看起来
+    像「被爆炒」，实际很正常。已用第三方列表的内部算术反推验证（成交额 ÷ 剩余
+    规模 ÷ 价格 = 其换手率列）。
+    """
+    if not _num(amount) or not _num(float_size) or not _num(price):
+        return None
+    if _f(float_size) <= 0 or _f(price) <= 0:
+        return None
+    market_value = _f(float_size) * _f(price) / 100.0
+    if market_value <= 0:
+        return None
+    return round(_f(amount) / market_value * 100, 2)

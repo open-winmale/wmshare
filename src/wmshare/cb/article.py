@@ -56,14 +56,6 @@ class Facts:
         return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else None
 
 
-def _yi(v: Any) -> str:
-    return f"{v:.1f}" if isinstance(v, (int, float)) else "—"
-
-
-def _yrs(v: Any) -> str:
-    return f"{v:.2f}" if isinstance(v, (int, float)) else "—"
-
-
 def build_source(fa: Facts, date: str, asof: str, campaign: str,
                  fig_dir: str = "figs") -> str:
     """生成源稿 Markdown。
@@ -103,10 +95,13 @@ def build_source(fa: Facts, date: str, asof: str, campaign: str,
     gap = int(fa.num("gate_base_n") or 0) - int(fa.num("traded_n") or 0)
     parts.extend([
         f"**数据卡**｜数据截至 {asof}（快照日，非发布日）",
-        f"- 样本：全表 {fa.text('total_n')} 行（含退出档案行）→ 行情基座 {quote_base} 只"
-        f"（价与溢价率均非空，横截面统计口径）→ 闸门基座 {fa.text('gate_base_n')} 只"
-        + (f"（另 {gap} 只在档但当日无报价，一并送进闸门逐只判定，不留盲区）" if gap > 0 else "")
-        + f"→ 过闸 {passed_n} 只",
+        # 读者面不许出现「行情基座 / 闸门基座」这类内部口径词：读者不知道它们
+        # 是什么，而且两个数一大一小（312 vs 320）看起来像有一处算错。
+        f"- 样本：快照 {fa.text('total_n')} 行（含已退出合约的档案行）→ 有报价 {quote_base} 只",
+        f"（价与溢价率均非空，横截面统计口径）",
+    ] + ([f"- 进闸：{fa.text('gate_base_n')} 只（= 有报价的 {quote_base} 只 + {gap} 只"
+          "当日无报价但仍在档，一起送进三道闸逐只判定，不留盲区）"] if gap > 0 else []) + [
+        f"- 过闸：{passed_n} 只（三道闸全过，进排行候选池）",
         f"- 温度：双低均值 {mean_dl}、中位 {median_dl}、溢价率均值 {fa.text('mean_prem')}",
         f"- 结构：破面（<100 元）{fa.text('bin_lt100')} 只，130 元以上 {fa.text('bin_gt130')} 只",
         f"- 排雷：剔除 {excluded} 只，其中已满足强赎 {fa.text('gate_g3_met15')} 只、"
@@ -120,7 +115,7 @@ def build_source(fa: Facts, date: str, asof: str, campaign: str,
     # ---------- 01 今日温度 ----------
     parts.append("## 01 今日温度")
     parts.append("")
-    parts.append(f"行情基座 {quote_base} 只（价与转股溢价率均非空）。双低均值 {mean_dl}、"
+    parts.append(f"有报价 {quote_base} 只（价与转股溢价率均非空）。双低均值 {mean_dl}、"
                  f"中位 {median_dl}——两个数要对照着看：均值看整体水位，"
                  "中位看「典型一只债」的水位；中位明显低于均值，说明少数高双低个券把均值抬高了。")
     parts.append("")
@@ -166,20 +161,25 @@ def build_source(fa: Facts, date: str, asof: str, campaign: str,
                  f"下表 {len(top)} 只是通过 G1 可交易 → G2 信用 → G3 条款三道闸后双低最低的标的，"
                  f"剔除的 {excluded} 只见 03 节。")
     parts.append("")
-    parts.append("| 转债 | 代码 | 价格(元) | 溢价率 | 双低 | 税后YTM | 规模(亿) | 剩余年限 | "
-                 "强赎状态 | 下修状态 | 正股 | 警示 |")
+    # 表格宽度锁死在 12 列：手机竖屏再宽就没人读了。所以新增的是「债底 / 下跌空间 /
+    # 波动率」三个决策变量，让位的是「规模 / 剩余年限 / 下修状态」——那三个数在
+    # 完整版 HTML 面板里逐只可查，放进日更正文只是把表挤窄。
+    # 换手率不进榜：前 20 只实测只在 0.1%–1.2%，毫无区分度（真正高换手的妖债
+    # 双低都很高、根本进不了榜），它被移到 05 节的异动观察里按全表阈值筛。
+    parts.append("| 转债 | 代码 | 价格(元) | 溢价率 | 双低 | 债底 | 下跌空间 | 税后YTM | "
+                 "波动率 | 距强赎 | 正股 | 警示 |")
     parts.append("|---|---|---|---|---|---|---|---|---|---|---|---|")
     for r in top:
         code = r["bondCode"]
         dist = r.get("redeem_dist_pct")
+        # 列名是「距强赎」，所以未触发时只给价差本身，不再重复"距触发"三个字；
+        # 计数中给已攒天数（时间维度的距离），已公告给状态短语——三种都是
+        # "还差多少/到哪一步"，与列名一致。曾经的列名"强赎状态"里装距离，
+        # 读者会把 +39% 当成状态读数。
         if r.get("call_state_key") == "idle" and isinstance(dist, (int, float)):
-            call_cell = f"距触发 {dist:+.0f}%"
+            call_cell = f"{dist:+.0f}%"
         else:
             call_cell = r.get("call_state") or "—"
-        reset_cell = r.get("reset_state") or "—"
-        floor = r.get("reset_floor")
-        if reset_cell in ("无", "") and isinstance(floor, (int, float)):
-            reset_cell = f"地板 {floor:.2f}"
         tl = r.get("stock_tl_rate_pct")
         if r.get("is_st"):
             warn = "ST"
@@ -190,17 +190,33 @@ def build_source(fa: Facts, date: str, asof: str, campaign: str,
         else:
             warn = "—"
         ytm = fa.opt(f"ytm_{code}") or "—"
+        # 恒定票息近似（basis=constant）的值标 ≈：口径比逐笔票息表粗一档，
+        # 不给标记就等于让读者以为两者精度相同
+        if ytm != "—" and r.get("ytm_basis") == "constant":
+            ytm = "≈" + ytm
         parts.append(f"| {r['bondName']} | {code} | {fa.text(f'price_{code}')} | "
-                     f"{fa.text(f'prem_{code}')} | {fa.text(f'dl_{code}')} | {ytm} | "
-                     f"{_yi(r.get('remain_size_yi'))} | {_yrs(r.get('years_to_expire'))} | "
-                     f"{call_cell} | {reset_cell} | {r.get('stockName') or '—'} | {warn} |")
+                     f"{fa.text(f'prem_{code}')} | {fa.text(f'dl_{code}')} | "
+                     f"{fa.opt(f'pv_{code}') or '—'} | {fa.opt(f'fbb_{code}') or '—'} | "
+                     f"{ytm} | {fa.opt(f'vol_{code}') or '—'} | "
+                     f"{call_cell} | {r.get('stockName') or '—'} | {warn} |")
     parts.append("")
     c0 = top0["bondCode"]
     parts.append(f"**读法**：第一名 {top0['bondName']}（{c0}）双低 {fa.text('dl_' + c0)}，"
                  f"价格 {fa.text('price_' + c0)} 元、溢价率 {fa.text('prem_' + c0)}。"
-                 "「强赎状态」列在未触发时给的是**正股还要上涨多少才够到强赎触发价**——"
-                 "这个数越大，离强制赎回越远；越小，越要盯计数公告。"
-                 "「下修状态」列给公告口径的状态，或服务端测算的下修地板价（转股价的下限参考）。")
+                 "「债底」是按中债 AAA 曲线（中短期票据）逐笔贴现剩余票息与到期赎回价得到的纯债价值，"
+                 "「下跌空间」= 1 − 债底/价格，即价格距自算债底还有多少距离——**负值意味着已经跌破"
+                 "自算债底，此时债底不再是支撑，而是信用被市场重新定价的信号**。"
+                 "「波动率」是转债自身近 20 个交易日的年化波动，不是正股波动率："
+                 "持有人拿的是转债，转债自己的价格波动才是持仓体验。"
+                 "带 ≈ 的税后 YTM 用当年票息恒定近似（该债没有可解析的分年票息表），口径比逐笔贴现粗一档。"
+                 "「距强赎」列未触发时给的是**正股还要上涨多少才够到强赎触发价**，计数中给已攒的天数、"
+                 "已公告则直接写状态——三种写法都在回答「还差多少/到哪一步」，"
+                 "这个数越大离强制赎回越远，越小越要盯计数公告。")
+    parts.append("")
+    parts.append("> 债底口径：票息与赎回价均不扣利息税；贴现曲线用中债 AAA（中短期票据），"
+                 "我们没有发行时评级输入，评级更低的债真实债底**低于**这个数。"
+                 "这是自算口径，与任何第三方的「纯债价值」不可逐位比对。"
+                 "规模、剩余年限、下修状态已移入完整版面板，逐只可查。")
     parts.append("")
     parts.append(f"![全市场双低价差图]({fig_dir}/day{date}_cb_scatter.png)")
     parts.append("")
@@ -310,7 +326,7 @@ def build_source(fa: Facts, date: str, asof: str, campaign: str,
                    "随时可以重新启动赎回流程。")
     near_n = fa.opt("obs_call_near_n")
     if near_n and near_n != "0":
-        obs.append(f"**距强赎触发不足 10% 的过闸个券 {near_n} 只**：{fa.text('obs_call_near_names')}。"
+        obs.append(f"**距强赎不足 10% 的过闸个券 {near_n} 只**：{fa.text('obs_call_near_names')}。"
                    "正股再涨这一小段，就会进入「15 个交易日中有 15 日收盘不低于触发价」的计数区；"
                    "计数达标后是否赎回仍由公司决定，但价格上限会被条款压住。"
                    "这一列用快照价与触发价直接相除得到，不依赖服务端计数字段。")
@@ -328,6 +344,14 @@ def build_source(fa: Facts, date: str, asof: str, campaign: str,
     if gray and gray != "0":
         obs.append(f"**灰标区 {gray} 只**：剩余 0.5–1 年，仍入榜但在表里灰底标注。"
                    "它们的双低会因时间价值衰减而天然偏低，看排名时要把这一列权重调低。")
+    hot_n = fa.opt("obs_turnover_n")
+    if hot_n and hot_n != "0":
+        obs.append(f"**换手率 ≥20% 的 {hot_n} 只**：{fa.text('obs_turnover_names')}。"
+                   "换手率的分母是转债流通市值（剩余规模×价格），不是面值规模——"
+                   "这两者相差一个价格因子，高价债按面值算会虚高数倍。"
+                   "榜内前 20 只的换手率普遍不到 1.2%，所以这条事实只能在全表里看："
+                   "交易活跃的往往正是双低极高、进不了榜的那批。"
+                   "高换手只说明有人在做，不构成任何方向判断。")
     for i, s in enumerate(obs, 1):
         parts.append(f"{i}. {s}")
         parts.append("")
@@ -363,10 +387,14 @@ def build_source(fa: Facts, date: str, asof: str, campaign: str,
         "```text",
         "参数：cbond.board() 转债面板（一次请求返回全市场，按日 asOf）",
         "返回：bondCode/bondName/bondPrice/premiumRatio/transferValue/redeemValue/"
-        "redeemTrig/remainSize/outstanding/callHits/resetFloor/event",
+        "redeemTrig/resaleTrig/convertPrice/issueScale/remainSize/outstanding/"
+        "callHits/resetFloor/resetBps/event",
         "单位：价格与双低为元（面值 100 口径），premiumRatio 为百分比数值",
-        "注意：面板不含 rating（评级）与行业字段，也不含下修触发比例与下修计数，"
-        "这两类缺口在口径段如实标注，不用推测值填充",
+        "派生：债底（纯债价值）= 剩余票息 + 到期赎回价按中债 AAA 曲线（中短期票据）逐笔贴现；"
+        "换手率 = 成交额/转债流通市值（剩余规模×价格/100）；波动率 = 转债自身近 20 日对数收益年化标准差。"
+        "三者都由面板 + 一次批量日 K 自算，不依赖第三方指标",
+        "注意：面板不含 rating（评级）、基金持仓与转债流通市值占比，也不含下修触发比例"
+        "与下修计数；这些缺口在口径段如实标注，不用推测值填充",
         "```",
         "",
         "装法一行：`pip install wmshare`。不装环境也行——在微信「搜一搜」或任意平台"
@@ -383,7 +411,7 @@ def build_source(fa: Facts, date: str, asof: str, campaign: str,
         "YTM 是下限还是可达——同一张双低表，口径不同结论可以完全相反。",
         "",
         "**留一个问题**：下一期你更想先看到哪一段的加强——"
-        "强赎倒计时的逐日计数，还是下修提案的触发进度？"
+        "强赎计数的逐日推进，还是下修提案的触发进度？"
         "这两项目前上游字段都不全，读者的优先级会决定我们先补哪个数据缺口。",
         "",
         "---",

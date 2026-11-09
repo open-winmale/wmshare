@@ -19,16 +19,20 @@ from typing import Any, Iterable
 
 from . import rules as R
 from .valuation import (
+    annualized_vol,
     coupon_schedule,
     double_low,
     nature_class,
     premium_pct,
+    pure_bond_value,
     remaining_years,
+    turnover_pct,
     ytm_after_tax,
     ytm_floor,
+    ytm_pretax,
 )
 
-__all__ = ["build_facts", "fmt", "probe", "caliber_layers"]
+__all__ = ["build_facts", "fmt", "probe", "caliber_layers", "PAR_FLOOR"]
 
 EVENT_TYPE_CN = {
     "reset_proposal": "董事会下修提案",
@@ -47,6 +51,40 @@ EVENT_TYPE_CN = {
 }
 
 _RE_REDEEM = re.compile(r"到期赎回[^。；]*?(\d{2,3}(?:\.\d+)?)\s*元")
+
+#: 股票面值（元）。下修条款普遍写「修正后转股价不低于每股净资产及股票面值」，
+#: 故自算地板取 max(每股净资产, 1.00)。
+PAR_FLOOR = 1.00
+
+#: 回售条款生效窗口（年）。绝大多数转债写「最后两个计息年度」，窗口未开时
+#: 回售触发价只是一个沉睡的条款数字，不构成下行保护。
+RESALE_WINDOW_YEARS = 2.0
+
+RESALE_WINDOW_CN = {
+    "not_yet": "窗口未开",
+    "open": "窗口内",
+    "closed": "已结束",
+    "unknown": "—",
+}
+
+#: 换手率「交易活跃」阈值（%，成交额/转债流通市值）。只作异动观察的筛选线，
+#: 不是操作信号——高换手只说明有人在做，不说明该不该买。
+TURNOVER_HOT_PCT = 20.0
+
+
+def reset_floor_of(row: dict, upstream: Any = None) -> tuple[float | None, str]:
+    """下修地板价（元）与来源。
+
+    优先上游 ``resetFloor``（服务端按条款族测算，含含面值下限的差异）；只在
+    ``resetBps``（最近一期审计每股净资产）有值时才自算 ``max(BPS, 面值)``——
+    净资产缺失时不拿面值顶替，那会把「不能下修」写成「能下修 90%」。
+    """
+    if R.num(upstream) and float(upstream) > 0:
+        return float(upstream), "upstream"
+    bps = row.get("resetBps")
+    if R.num(bps) and float(bps) > 0:
+        return max(float(bps), PAR_FLOOR), "bps"
+    return None, ""
 
 
 def fmt(x: Any, nd: int = 2) -> str:
@@ -144,7 +182,10 @@ def build_facts(rows: list[dict], events: Iterable[dict], as_of: str, *,
                 top_n: int = 20,
                 price_bins: tuple[float, float, float] = (100.0, 110.0, 130.0),
                 hist_means: list[float] | None = None,
-                featured_klines: dict[str, dict] | None = None) -> dict:
+                featured_klines: dict[str, dict] | None = None,
+                enrichment: dict[str, dict] | None = None,
+                curves: dict[str, dict[float, float]] | None = None,
+                curve_asof: str = "") -> dict:
     """构建一期事实包：``{facts, derived, gates, states, top, scatter, calendar, ...}``。
 
     :param rows: 面板行（``cbond.board()`` 或 ``latest_quotes()`` 的行）
@@ -152,6 +193,10 @@ def build_facts(rows: list[dict], events: Iterable[dict], as_of: str, *,
     :param as_of: 快照交易日 ``YYYY-MM-DD``（不是运行日）
     :param hist_means: 历史各期双低均值，用于分位与星级；不足 10 期不给星级
     :param featured_klines: ``{code: {"name", "dates", "closes", "last_bar_date", "n_bars"}}``
+    :param enrichment: ``{code: {"amount", "closes"}}``——一次批量日 K 的成交额与收盘
+        序列，用于换手率与波动率。缺失的债留空，不插补。
+    :param curves: ``{"aaa": {期限年: 收益率小数}, "gov": {...}}``——纯债价值的贴现
+        曲线。**只由调用方传入**：本模块不取数、不内置利率常量。
     """
     sid = source_id or f"wmshare:cb-daily:{as_of}"
     bins = [float(x) for x in price_bins]
@@ -165,25 +210,66 @@ def build_facts(rows: list[dict], events: Iterable[dict], as_of: str, *,
     top_rows = [by_code[p["bondCode"]] for p in gate["passed"][:top_n] if p["bondCode"] in by_code]
 
     # ---- 逐债派生：税后 YTM（两口径）必须先算，状态与散点都要用 ----
+    # 税前 YTM 与纯债价值同在此处算：三者共用现金流模型，分开算迟早互相不自洽。
     ytm_by_code: dict[str, dict] = {}
+    pre_by_code: dict[str, dict] = {}
+    pbv_by_code: dict[str, dict] = {}
     ytms: list[float] = []
+    enr = enrichment or {}
     for r in base:
+        bc = str(r.get("bondCode") or "")
         y = ytm_after_tax(r, as_of, tax=tax)
-        ytm_by_code[str(r.get("bondCode") or "")] = y
+        ytm_by_code[bc] = y
+        pre_by_code[bc] = ytm_pretax(r, as_of)
+        band: dict[str, dict] = {}
+        for key in ("aaa", "gov"):
+            cv = (curves or {}).get(key) or {}
+            if not cv:
+                continue
+            pbv = pure_bond_value(r, as_of, cv)
+            if pbv is not None:
+                band[key] = pbv
+        pbv_by_code[bc] = band
         if y.get("ytm_floor") is not None:
             ytms.append(y["ytm_floor"])
 
     # ---- 逐债状态（在市基座全覆盖，供日历与看板）----
     states: list[dict] = []
+    floors_from_bps = 0
     for r in base:
         bc = str(r.get("bondCode") or "")
         y = ytm_by_code[bc]
+        pre = pre_by_code[bc]
+        band = pbv_by_code[bc]
         cs = R.call_state(r, by_bond, as_of)
         rs = R.reset_state(r, by_bond, as_of)
         dte = R.days_to_expire(r, as_of)
         hit = R.gate_row(r, by_bond, as_of)
         px = float(r["bondPrice"]) if R.num(r.get("bondPrice")) else None
         pp = premium_pct(r)
+        # ---- 下修空间：转股价还能往下调几个点 ----
+        floor, floor_src = reset_floor_of(r, rs.get("floor"))
+        if floor_src == "bps":
+            floors_from_bps += 1
+        cp = r.get("convertPrice")
+        room = None
+        if R.num(cp) and floor and float(cp) > 0:
+            room = round(max(0.0, float(cp) / floor - 1) * 100, 1)
+        # ---- 转股进度：已转掉多少（剩余规模 / 发行规模）----
+        rs_size, is_size = r.get("remainSize"), r.get("issueScale")
+        progress = None
+        if R.num(rs_size) and R.num(is_size) and float(is_size) > 0:
+            progress = round(max(0.0, min(1.0, 1 - float(rs_size) / float(is_size))) * 100, 1)
+        e = enr.get(bc) or {}
+        amount = float(e["amount"]) if R.num(e.get("amount")) else None
+        vol = annualized_vol(list(e.get("closes") or [])) if e.get("closes") else None
+        # 回售窗口：条款惯例是「最后两个计息年度」才生效
+        years = (dte / 365.0) if dte is not None else None
+        resale_window = "unknown"
+        if years is not None:
+            resale_window = ("closed" if years <= 0
+                             else "open" if years <= RESALE_WINDOW_YEARS
+                             else "not_yet")
         states.append({
             "bondCode": bc, "bondName": r.get("bondName") or "",
             "price": round(px, 3) if px is not None else None,
@@ -214,6 +300,41 @@ def build_facts(rows: list[dict], events: Iterable[dict], as_of: str, *,
             "ytm": round(y["ytm"] * 100, 2) if y.get("ytm") is not None else None,
             "ytm_floor": round(y["ytm_floor"] * 100, 2) if y.get("ytm_floor") is not None else None,
             "ytm_basis": y.get("basis"),
+            "ytm_pretax": round(pre["ytm"] * 100, 2) if pre.get("ytm") is not None else None,
+            # ---- 债底（纯债价值）：aaa=企业债AAA曲线（主口径，更保守），
+            #      gov=国债曲线（同一现金流的债底上界）----
+            "pv_bond": (band.get("aaa") or {}).get("value"),
+            "pv_bond_gov": (band.get("gov") or {}).get("value"),
+            "pv_bond_basis": (band.get("aaa") or {}).get("basis"),
+            # 现价距自算债底还有多少空间（%）= 1 − 债底/现价；负值=已跌破债底
+            "floor_buffer_pct": (round((1 - band["aaa"]["value"] / px) * 100, 1)
+                                 if px and px > 0 and (band.get("aaa") or {}).get("value")
+                                 else None),
+            # ---- 条款距离与结构 ----
+            "convert_price": round(float(cp), 3) if R.num(cp) else None,
+            "redeem_trig": (round(float(r["redeemTrig"]), 3)
+                            if R.num(r.get("redeemTrig")) else None),
+            "resale_trig": (round(float(r["resaleTrig"]), 3)
+                            if R.num(r.get("resaleTrig")) else None),
+            # 回售条款只在最后两个计息年度生效：窗口未开时保护并不存在，
+            # 给「距离」等于把沉睡条款读成有效保护（实测 65% 的债属此列）
+            "resale_window": resale_window,
+            "put_dist_pct": (round((float(r["resaleTrig"]) / float(r["stockPrice"]) - 1) * 100, 1)
+                             if resale_window == "open"
+                             and R.num(r.get("resaleTrig")) and R.num(r.get("stockPrice"))
+                             and float(r["stockPrice"]) > 0 else None),
+            "reset_floor_used": round(floor, 3) if floor else None,
+            "reset_floor_src": floor_src,
+            "reset_room_pct": room,
+            "issue_scale_yi": (round(float(is_size) / 1e8, 2) if R.num(is_size) else None),
+            "convert_progress_pct": progress,
+            # ---- 流动性/弹性（一次批量日 K 得到）----
+            "amount_wan": round(amount / 1e4, 2) if amount is not None else None,
+            # 分母是转债流通市值（剩余规模×价格/100），与第三方列表同口径
+            "turnover_pct": turnover_pct(amount,
+                                         float(rs_size) if R.num(rs_size) else None,
+                                         px),
+            "vol_20d": vol,
             # 债性分类看"持有到期是否还有正收益"——用可达口径的税后 YTM，
             # 不取下限口径（下限口径故意保守，会把正收益债判成平衡，与表注矛盾）。
             "nature": nature_class(px or 0.0, pp or 0.0, y.get("ytm")),
@@ -282,6 +403,37 @@ def build_facts(rows: list[dict], events: Iterable[dict], as_of: str, *,
             add("ytmf", "cb_ytm_floor", fmt(y["ytm_floor"] * 100) + "%",
                 round(y["ytm_floor"] * 100, 2), "percent", status="DERIVED",
                 note="下限口径（赎回价按面值 100），与估算口径并列可见")
+        pre = pre_by_code.get(code) or {}
+        if pre.get("ytm") is not None:
+            add("ytmpre", "cb_ytm_pretax", fmt(pre["ytm"] * 100) + "%",
+                round(pre["ytm"] * 100, 2), "percent", status="DERIVED",
+                used_in=["双低榜", "口径对照"],
+                note="税前口径（不扣利息税），仅用于与第三方「到期税前收益」对照")
+        # ---- 债底：价格下行到哪还有现金流的支撑 ----
+        if st.get("pv_bond") is not None:
+            add("pv", "cb_pure_bond_value", fmt(st["pv_bond"]),
+                round(st["pv_bond"], 2), "元", status="DERIVED",
+                used_in=["双低榜", "债底"], note=(
+                    "统一中债 AAA 曲线（中短期票据）按剩余年限插值贴现票息与赎回价，票息不扣利息税；"
+                    "无评级输入，评级更低的债真实债底低于本值"))
+            if st.get("pv_bond_gov") is not None:
+                add("pvg", "cb_pure_bond_value_gov", fmt(st["pv_bond_gov"]),
+                    round(st["pv_bond_gov"], 2), "元", status="DERIVED",
+                    used_in=["债底"], note="同一现金流按国债曲线贴现，是债底的上界")
+        if st.get("floor_buffer_pct") is not None:
+            add("fbb", "cb_floor_buffer", fmt(st["floor_buffer_pct"], 1) + "%",
+                st["floor_buffer_pct"], "percent", status="DERIVED",
+                used_in=["债底"], note="现价距自算债底还有多少空间（1 − 债底/现价）；"
+                                       "负值=已跌破自算债底")
+        # ---- 弹性与投机温度 ----
+        if st.get("vol_20d") is not None:
+            add("vol", "cb_vol_20d", fmt(st["vol_20d"], 1) + "%",
+                st["vol_20d"], "percent", status="DERIVED",
+                used_in=["双低榜"], note="转债自身近 20 个交易日对数收益年化标准差")
+        if st.get("turnover_pct") is not None:
+            add("to", "cb_turnover_pct", fmt(st["turnover_pct"], 2) + "%",
+                st["turnover_pct"], "percent", status="DERIVED",
+                used_in=["双低榜"], note="当日成交额 / 转债流通市值（剩余规模×价格/100）")
         add("nat", "cb_nature_class", st.get("nature") or "-", None, "enum", status="DERIVED")
         if st.get("redeem_dist_pct") is not None:
             add("rd", "cb_redeem_distance", fmt(st["redeem_dist_pct"], 1) + "%",
@@ -309,6 +461,33 @@ def build_facts(rows: list[dict], events: Iterable[dict], as_of: str, *,
             add("rf", "cb_reset_floor", fmt(st["reset_floor"]), st["reset_floor"], "元",
                 status="DERIVED", used_in=["下修观测"],
                 note=f"服务端测算（family {r.get('resetFamily') or '-'}）")
+        # ---- 条款距离与结构：读者真正要判断的三个数 ----
+        if st.get("redeem_trig") is not None:
+            add("rt", "cb_redeem_trig_price", fmt(st["redeem_trig"]),
+                round(st["redeem_trig"], 2), "元", status="DERIVED",
+                used_in=["双低榜", "强赎距离"], note="强赎触发价（正股口径）")
+        if st.get("resale_trig") is not None:
+            add("rt2", "cb_resale_trig_price", fmt(st["resale_trig"]),
+                round(st["resale_trig"], 2), "元", status="DERIVED",
+                used_in=["回售保护"], note="回售触发价（正股口径）；正股跌破此价进入回售条款")
+        win = st.get("resale_window") or "unknown"
+        add("rw", "cb_resale_window", RESALE_WINDOW_CN.get(win, win), None, "enum",
+            status="DERIVED", used_in=["回售保护"],
+            note="回售条款只在最后两个计息年度生效；窗口未开时触发价不构成下行保护")
+        if st.get("put_dist_pct") is not None:
+            add("pd", "cb_put_distance", fmt(st["put_dist_pct"], 1) + "%",
+                st["put_dist_pct"], "percent", status="DERIVED",
+                used_in=["回售保护"], note="正股距回售触发价的距离（负值=还需下跌的幅度）")
+        if st.get("reset_room_pct") is not None:
+            add("rr", "cb_reset_room", fmt(st["reset_room_pct"], 1) + "%",
+                st["reset_room_pct"], "percent", status="DERIVED",
+                used_in=["下修观测"], note=(
+                    f"转股价相对下修地板还能下调的幅度；地板来源 "
+                    f"{st.get('reset_floor_src') or '-'}"))
+        if st.get("convert_progress_pct") is not None:
+            add("cp", "cb_convert_progress", fmt(st["convert_progress_pct"], 1) + "%",
+                st["convert_progress_pct"], "percent", status="DERIVED",
+                used_in=["转股进度"], note="已转股比例 = 1 − 剩余规模/发行规模")
 
     # ---- 闸门 / 温度 / 口径层 ----
     # 七个闸门固定出条目（含计数为 0 的）：成稿的"排雷"段落要引用它们，
@@ -354,6 +533,38 @@ def build_facts(rows: list[dict], events: Iterable[dict], as_of: str, *,
          note="闸门基座：premiumRatio 非空（含无有效报价行，使 G1 可见）", bucket=derived)
     _agg("total_n", "cb_total_n", str(len(rows)), len(rows), "行", ["口径说明"],
          as_of=as_of, sid=sid, note="快照总行数（含已退出档案行）", bucket=derived)
+
+    # ---- 存量 / 发行规模汇总：对外的"池子有多大"，分母都写清楚 ----
+    issue_total = sum(float(r["issueScale"]) for r in base
+                      if R.num(r.get("issueScale"))) / 1e8
+    remain_total = sum(float(r["remainSize"]) for r in base
+                       if R.num(r.get("remainSize"))) / 1e8
+    _agg("issue_total_yi", "cb_issue_scale_total", fmt(issue_total) + " 亿",
+         round(issue_total, 2), "亿元", ["导语"], as_of=as_of, sid=sid,
+         note="在市转债发行规模合计（分母=在市基座）", bucket=derived)
+    _agg("remain_total_yi", "cb_remain_size_total", fmt(remain_total) + " 亿",
+         round(remain_total, 2), "亿元", ["导语"], as_of=as_of, sid=sid,
+         note="在市转债剩余规模合计（分母=在市基座）", bucket=derived)
+
+    # ---- 新增字段的有值率：覆盖率不足的列不许整列上线（降级而非留空）----
+    field_cov = {
+        "universe": len(states),
+        "pv_bond": sum(1 for s in states if s.get("pv_bond") is not None),
+        "ytm_pretax": sum(1 for s in states if s.get("ytm_pretax") is not None),
+        "reset_room_pct": sum(1 for s in states if s.get("reset_room_pct") is not None),
+        "reset_floor_from_bps": floors_from_bps,
+        "convert_progress_pct": sum(1 for s in states
+                                    if s.get("convert_progress_pct") is not None),
+        "amount_wan": sum(1 for s in states if s.get("amount_wan") is not None),
+        "turnover_pct": sum(1 for s in states if s.get("turnover_pct") is not None),
+        "vol_20d": sum(1 for s in states if s.get("vol_20d") is not None),
+        "resale_window_open": sum(1 for s in states if s.get("resale_window") == "open"),
+        "resale_window_not_yet": sum(1 for s in states
+                                     if s.get("resale_window") == "not_yet"),
+        "enrichment_rows": len(enr),
+        "curves": sorted(k for k, v in (curves or {}).items() if v),
+        "curve_asof": curve_asof,
+    }
 
     # ---- 历史分位与星级（序列 ≥10 期才启用）----
     hist = list(hist_means or [])
@@ -498,6 +709,21 @@ def build_facts(rows: list[dict], events: Iterable[dict], as_of: str, *,
          as_of=as_of, sid=sid,
          note="通过闸门但剩余 0.5–1 年、已在表中灰标的只数", bucket=derived)
 
+    # ---- 换手率异常：这条事实只能放在「全表」里看 ----
+    # 双低榜前 20 只的换手率实测只有 0.1%–1.2%，没有区分度；真正被短线资金
+    # 交易的是双低值极高、永远进不了榜的妖债。所以换手率不进榜，进异动观察。
+    hot = sorted([s for s in states if (s.get("turnover_pct") or 0) >= TURNOVER_HOT_PCT],
+                 key=lambda s: -(s.get("turnover_pct") or 0))
+    _agg("obs_turnover_n", "cb_turnover_pct", str(len(hot)), len(hot), "只", ["异动观察"],
+         as_of=as_of, sid=sid,
+         note=f"换手率 ≥{TURNOVER_HOT_PCT:.0f}%（成交额/转债流通市值）的在市转债数",
+         bucket=derived)
+    _agg("obs_turnover_names", "cb_turnover_pct",
+         "、".join(f"{s['bondName']}（{s['turnover_pct']:.0f}%）" for s in hot[:6])
+         or "无", len(hot), "只", ["异动观察"], as_of=as_of, sid=sid,
+         note="其中换手率最高的六只；高换手只说明交易活跃，不构成任何方向判断",
+         bucket=derived)
+
     # ---- 强赎看板 ----
     watch = [{"bondCode": s["bondCode"], "bondName": s["bondName"], "hits": s["call_hits"],
               "days_to_15": s["days_to_call_15"], "state": s["call_state"],
@@ -520,10 +746,17 @@ def build_facts(rows: list[dict], events: Iterable[dict], as_of: str, *,
         "states": states,
         "top": [{k: st_by[r["bondCode"]][k] for k in (
             "bondCode", "bondName", "price", "premium_pct", "double_low", "ytm", "ytm_floor",
-            "nature", "call_state", "call_state_key", "call_hits", "reset_state",
+            "ytm_pretax", "nature", "call_state", "call_state_key", "call_hits", "reset_state",
             "reset_state_key", "reset_floor", "days_to_expire", "years_to_expire",
-            "remain_size_yi", "stock_tl_rate_pct", "near_expiry", "is_st",
-            "stockCode", "stockName", "redeem_dist_pct")}
+            "remain_size_yi", "issue_scale_yi", "stock_tl_rate_pct", "near_expiry", "is_st",
+            "stockCode", "stockName", "redeem_dist_pct",
+            # 新增：债底 / 弹性 / 条款距离 / 转股进度
+            "pv_bond", "pv_bond_gov", "pv_bond_basis", "floor_buffer_pct",
+            "vol_20d", "turnover_pct", "amount_wan",
+            "convert_price", "redeem_trig", "resale_trig", "put_dist_pct",
+            "resale_window",
+            "reset_room_pct", "reset_floor_used", "reset_floor_src", "convert_progress_pct",
+            "ytm_basis")}
             for r in top_rows if r["bondCode"] in st_by],
         "scatter": [{"code": s["bondCode"], "name": s["bondName"], "price": s["price"],
                      "prem_pct": s["premium_pct"], "nature": s["nature"],
@@ -545,6 +778,7 @@ def build_facts(rows: list[dict], events: Iterable[dict], as_of: str, *,
             if not kl.get("error") and kl.get("closes")
         },
         "caliber_layers": layers,
+        "field_coverage": field_cov,
         "hist_series_n": len(hist),
         "thresholds": {
             "double_low": "价格 + 转股溢价率×100（社区通行公式，独立计算）",
@@ -555,10 +789,25 @@ def build_facts(rows: list[dict], events: Iterable[dict], as_of: str, *,
             "expiry": f"剩余 <{R.NEAR_EXPIRY_DAYS} 天剔除、<{R.GRAY_EXPIRY_DAYS} 天灰标",
             "ytm": "税后到期收益率：分年票息表 + 到期赎回价求 IRR，利息税 20%；"
                    "票息表或赎回价缺失时退化到下限口径（真值 ≥ 下限）",
+            "ytm_pretax": "税前到期收益率：同一 IRR 骨架不扣利息税，仅用于与第三方"
+                          "「到期税前收益」对照；我们对外主口径是税后",
+            "pure_bond": "纯债价值 = 剩余票息 + 到期赎回价按收益率曲线逐笔贴现，票息与"
+                         "赎回价均不扣利息税；主口径用中债 AAA 曲线（中短期票据）按剩余年限插值，"
+                         "国债曲线同现金流贴现值为债底上界。无评级输入，评级更低的债"
+                         "真实债底低于 AAA 曲线值——自算口径，不与任何第三方口径等同",
+            "floor_buffer": "下跌空间 = 1 − 债底/现价；负值代表现价已跌破自算债底，"
+                            "此时债底不再是支撑，而是信用风险的信号",
+            "vol": "转债自身近 20 个交易日对数收益年化标准差（×√252，百分比）；"
+                   "不足 21 根收盘的次新债留空",
+            "turnover": "换手率 = 当日成交额 / 转债流通市值（剩余规模×价格/100，非面值规模）",
+            "reset_room": "下修空间 = 转股价 / 下修地板 − 1；地板优先上游 resetFloor，"
+                          "缺失时用 max(每股净资产, 面值)，来源逐只标注",
             "disclaimer": "全部内容为数据整理与研究参考，不构成任何投资建议",
         },
     }
 
 
 # 供外部复算/画图直接引用，避免二次实现
-__all__ += ["coupon_schedule", "remaining_years", "ytm_floor", "double_low", "premium_pct"]
+__all__ += ["coupon_schedule", "remaining_years", "ytm_floor", "double_low", "premium_pct",
+            "pure_bond_value", "annualized_vol", "turnover_pct", "ytm_pretax",
+            "reset_floor_of"]

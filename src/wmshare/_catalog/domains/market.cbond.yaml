@@ -20,6 +20,9 @@ notes:
   - 'kline_window 返回 store 列式窗口（open/close/high/low/volume/amount），samplingName 为降序需自行反转'
   - 'min1_live 为缓存命中制，miss 返回 nil'
   - 'event_list 深度是 90 个 YEAR_DAY 文档（约 111 自然日），更老的条款公告不在返回内'
+  - 'board 不含 volume/amount——成交额与换手率须经 kline_window 批量取（call_batch，每批 ≤120 只）'
+  - 'board 不含债券信用评级、基金持仓、正股流通市值；需评级时用 notice 域公告原文抽取，勿以其他指标冒充'
+  - 'kline_window 可批量：标的参数名为 code，call_batch 一次 eval 拼 MAP 即覆盖全表（省请求次数，不省 EC）'
 functions:
   - {name: cbond.board, cn: 转债全市场面板（快照+最新事件+盘中价+callHits+下修地板价）, layer: L0, units: {premiumRatio: percent, couponIr: percent}, ranges: {premiumRatio: [-100, 1000], couponIr: [0, 0.15]}, returns: {desc: ARR · 转债面板行（快照行 + event/resetEvent/outstanding/callHits/resetFloor 等）, shape_ref: inventory}, notes: ['bondPercent 仅盘中 live 命中时返回', 'callHits 仅正股收盘已跨触发价时返回']}
   - {name: cbond.quote_list, cn: 转债合约快照全表, layer: L0, units: {premium_ratio: percent, coupon_ir: percent}, returns: {desc: ARR · 原始快照行（snake_case，未规范化）}}

@@ -11,6 +11,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **可转债债底与弹性指标（`cb` 子包 v4）**——`cb.valuation` 新增四条口径：
+  `pure_bond_value`（纯债价值/债底，剩余票息 + 到期赎回价按收益率曲线逐笔贴现，
+  与 `ytm_after_tax` 共用同一份现金流模型）、`ytm_pretax`（同一 IRR 骨架不扣利息税，
+  只为与第三方「到期税前收益」可比）、`annualized_vol`（转债自身 20 日年化波动率）、
+  `turnover_pct`（换手率 = 成交额 / 转债流通市值，即剩余规模×价格/100；分母用面值
+  会把高价债整体放大 5 倍）。`cb.facts` 的 states 白名单补上此前
+  取到即丢弃的 `convertPrice`/`redeemTrig`/`resaleTrig`/`issueScale`，并派生
+  `reset_room_pct`（下修空间）、`convert_progress_pct`（转股进度）、
+  `floor_buffer_pct`（价格距债底的空间，负值=已跌破债底）与 `field_coverage`。
+  `DailyConfig` 新增 `enrich`/`curves` 开关；默认预算 30→60。
+- **全表批量日 K 与收益率曲线取数**——`cb.daily` 用 `call_batch` 一次 eval 拼 MAP
+  拉全表日 K（每批 ≤120 只 = 1 次 HTTP；逐票 311 次会先撞 429），并用
+  `macro.bond_curve` 取「中债中短期票据收益率曲线(AAA)」与「中债国债收益率曲线」
+  的 1/3/5/7/10 年点，作为债底的主口径与上界。曲线名写错会静默返回 `None`，
+  故在常量处注明逐字匹配要求。
+- **`cb.article` 榜单换列**——12 列宽度不变，进「债底 / 下跌空间 / 换手率」、
+  出「剩余规模 / 剩余年限 / 下修状态」（后者移入完整版面板逐只可查）。
+
+### Changed
+- **`cb.facts` 纯债价值不扣利息税、贴现率不外推**——两条都是口径选择而非实现细节：
+  债底按通行定义用毛票息；曲线在两端平推，避免凭斜率造出市场上不存在的利率。
+  无评级输入故统一用 AAA 曲线，评级更低的债真实债底低于该值，对外必须标「自算口径」。
 - **周 K / 月 K：`cli.kline.bars(freq="W"/"M")`（market.kline v1.5.0）**——新增上游周期读
   接口 `kline.query_bars_period[_adj]`（`period` 取 D/W/M，采样频率常量为字面量分支），
   SDK 侧 `freq` 接受 D/daily、W/week、M/month 别名，未知值抛 `UsageError`（不静默降级）。
