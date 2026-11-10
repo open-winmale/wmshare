@@ -35,6 +35,8 @@ HTML_PATH = REPO / "docs" / "swagger.html"
 
 CATEGORY_CN = {"market": "市场行情", "fundamentals": "财务基本面",
                "disclosure": "信息披露", "reference": "参考数据"}
+# 独立 tag 覆盖：宏观是独立数据域（market.macro），不宜挂在「市场行情」大 tag 下被能力列表误读
+NS_TAG_OVERRIDE = {"macro": "宏观数据"}
 
 SWAGGER_HTML = """<!doctype html>
 <html lang="zh">
@@ -89,7 +91,7 @@ def _core_paths(catalog) -> dict:
             "operationId": f"{ns}_{method}",
             "summary": summary or cn,
             "description": desc,
-            "tags": [CATEGORY_CN[category]],
+            "tags": [NS_TAG_OVERRIDE.get(ns, CATEGORY_CN[category])],
             "requestBody": {
                 "required": any(p.required for p in params),
                 "content": {"application/json": {"schema": {
@@ -162,7 +164,8 @@ def build() -> dict:
                          "url": "https://github.com/open-winmale/wmshare/blob/main/LICENSE"},
         },
         "servers": [{"url": "https://api.winmale.com", "description": "生产网关"}],
-        "tags": [{"name": cn} for cn in CATEGORY_CN.values()] + [{"name": "网关"}],
+        "tags": [{"name": cn} for cn in CATEGORY_CN.values()]
+                 + [{"name": "宏观数据"}, {"name": "网关"}],
         "security": [{"bearerAuth": []}],
         "components": {"securitySchemes": {"bearerAuth": {
             "type": "http", "scheme": "bearer",

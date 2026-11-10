@@ -29,6 +29,9 @@
       "name": "参考数据"
     },
     {
+      "name": "宏观数据"
+    },
+    {
       "name": "网关"
     }
   ],
@@ -7282,7 +7285,7 @@
         "summary": "宏观指标时序：{frequency, periods, latest, series[{sas, annual, sampling, value}]}。",
         "description": "底层目录函数 `macro.query`。SDK 调用：`cli.macro.query(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
-          "参考数据"
+          "宏观数据"
         ],
         "requestBody": {
           "required": true,
@@ -7327,7 +7330,7 @@
         "summary": "宏观指标最新一期原生值（无数据返回 None；人口类序列勿用）。",
         "description": "底层目录函数 `macro.asof`。SDK 调用：`cli.macro.asof(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
-          "参考数据"
+          "宏观数据"
         ],
         "requestBody": {
           "required": true,
@@ -7367,7 +7370,7 @@
         "summary": "宏观指标原生采样期点（降序，如 [\"2026:M09\", \"2026:M08\"]）。",
         "description": "底层目录函数 `macro.spots`。SDK 调用：`cli.macro.spots(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
-          "参考数据"
+          "宏观数据"
         ],
         "requestBody": {
           "required": true,
@@ -7410,7 +7413,7 @@
         "summary": "宏观指标原生采样频率：\"month\"/\"quarter\"/\"year\"/\"day\"。",
         "description": "底层目录函数 `macro.sampling_of`。SDK 调用：`cli.macro.sampling_of(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
-          "参考数据"
+          "宏观数据"
         ],
         "requestBody": {
           "required": true,
@@ -7450,7 +7453,7 @@
         "summary": "中债收益率按曲线名+期限取最新值（小数口径，0.0168 = 1.68%）。",
         "description": "底层目录函数 `macro.bond_curve`。SDK 调用：`cli.macro.bond_curve(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
-          "参考数据"
+          "宏观数据"
         ],
         "requestBody": {
           "required": true,
@@ -7496,7 +7499,7 @@
         "summary": "新势力月交付按品牌取值（field=sales/rank；掉榜返回 None）。",
         "description": "底层目录函数 `macro.nev_monthly`。SDK 调用：`cli.macro.nev_monthly(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
-          "参考数据"
+          "宏观数据"
         ],
         "requestBody": {
           "required": true,
@@ -7540,7 +7543,7 @@
         "summary": "新势力周销量按品牌取值（field=sales/rank；当期无行返回 None）。",
         "description": "底层目录函数 `macro.nev_weekly`。SDK 调用：`cli.macro.nev_weekly(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
-          "参考数据"
+          "宏观数据"
         ],
         "requestBody": {
           "required": true,
@@ -7584,7 +7587,7 @@
         "summary": "奥维家电品类月度取值（field=volume/volume_yoy/value/value_yoy）。",
         "description": "品类名须与披露名单精确匹配，名单不含/掉榜返回 None。、底层目录函数 `macro.avc_monthly`。SDK 调用：`cli.macro.avc_monthly(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
-          "参考数据"
+          "宏观数据"
         ],
         "requestBody": {
           "required": true,
@@ -7628,7 +7631,7 @@
         "summary": "家电产销月度取值（field=volume=内销量/volume_yoy/value=内销额/value_yoy）。",
         "description": "品类名须与披露名单精确匹配，名单不含/掉榜返回 None。、底层目录函数 `macro.chinaiol_monthly`。SDK 调用：`cli.macro.chinaiol_monthly(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
-          "参考数据"
+          "宏观数据"
         ],
         "requestBody": {
           "required": true,
@@ -7672,7 +7675,7 @@
         "summary": "乘联会厂商排行取值（如 field=wholesale；掉榜返回 None）。",
         "description": "底层目录函数 `macro.cpca_top`。SDK 调用：`cli.macro.cpca_top(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
-          "参考数据"
+          "宏观数据"
         ],
         "requestBody": {
           "required": true,
@@ -7716,7 +7719,7 @@
         "summary": "手机品牌周份额取值（field=share/rank，披露原值；掉榜返回 None）。",
         "description": "底层目录函数 `macro.phone_share`。SDK 调用：`cli.macro.phone_share(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
-          "参考数据"
+          "宏观数据"
         ],
         "requestBody": {
           "required": true,
