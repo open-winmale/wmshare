@@ -384,7 +384,7 @@ class MoneyflowApi(_Api):
         return _per_symbol(rows, lambda r: r[0] if r else None)
 
     def live(self, symbol: str, _raw: bool = False) -> Any:
-        """盘中资金流快照（短 TTL）；数据源暂无快照时返回 None。"""
+        """资金流当日读数（外部公开源、短 TTL、非盘中行情、仅 A 股）；无快照时返回 None。"""
         return self._c.call("moneyflow.query_last_live", sym=symbol, _raw=_raw)
 
     def board(self, _df: bool = False) -> Any:

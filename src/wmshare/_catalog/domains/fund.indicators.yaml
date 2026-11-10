@@ -5,8 +5,8 @@ kind: computed
 category: fundamentals
 priority: P0
 description: 平台公式计算的派生指标——数值不存在于任何披露文件中，由平台以行情/报表/股本/
-  分红等原始数据计算得出。11 个指标组精选 75 个常用指标代码按用途分组；全量 2197 个指标
-  代码随包内数据目录分发（generated/metrics.json）。
+  分红等原始数据计算得出。11 个指标组精选 74 个常用指标代码按用途分组；全量指标代码清单
+  随包内数据目录分发（generated/metrics.json，以生成时计数为准）。
 data_origin: [平台计算]
 units:
   ratio: 小数（如 0.332 = 33.2%；指标层比率统一为小数，不是 15.0=15%）

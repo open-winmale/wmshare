@@ -39,6 +39,11 @@ def test_llms_no_drift():
     assert r.returncode == 0, r.stdout + r.stderr
 
 
+def test_indicators_no_drift():
+    r = _run(["tools/gen_indicators.py", "--check"])
+    assert r.returncode == 0, r.stdout + r.stderr
+
+
 def test_extractor_check_no_drift():
     r = _run(["tools/extract_from_scripts.py", "--check"])
     out = r.stdout + r.stderr

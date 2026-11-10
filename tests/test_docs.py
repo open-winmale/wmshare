@@ -162,6 +162,21 @@ def test_readme_counts_match_catalog():
     assert f"{curated} 个精选常用指标代码" in README
 
 
+def test_docs_no_stale_counts():
+    """防回归：过时计数口径不得重现（127 曾滞后两个版本、2,639 滞后一个目录代际）。"""
+    stale = ("2,639", "2639", "2197", "263 个", "116 个核心接口",
+             "127 个 friendly", "12 个编号示例", "130 个核心接口")
+    docs = {
+        "README.md": README,
+        "docs/GUIDE.md": GUIDE_MD,
+        "docs/AI.md": AI_MD,
+        "docs/README.md": (REPO / "docs" / "README.md").read_text(encoding="utf-8"),
+    }
+    for name, text in docs.items():
+        hit = [s for s in stale if s in text]
+        assert not hit, f"{name} 残留过时计数：{hit}"
+
+
 def test_api_module_docstring_counts_match_catalog():
     """门面模块 docstring 的底层函数计数必须与目录一致（曾停留 155 而目录已 164）。"""
     src = (REPO / "src" / "wmshare" / "api" / "__init__.py").read_text(encoding="utf-8")
@@ -439,9 +454,12 @@ def test_readme_example_outputs_documented():
 
 
 def test_readme_units_and_guards_documented():
-    """单位与守护的最小行动块必须在 README 成文（2026-10-25 二次瘦身定版）。"""
+    """单位与守护的最小行动块必须在 README 成文（2026-10-25 二次瘦身定版）。
+
+    2026-11-10 重构：「能力一览」章更名为「基本功能」（基本功能/特色功能分章）。
+    """
     for kw in ("单位与数据守护", "DataError", '_units="native"', "validate=False",
-               "服务端算好直出", "11 个质量筛选器", "能力一览"):
+               "服务端算好直出", "11 个质量筛选器", "基本功能"):
         assert kw in README, f"README 缺少关键内容：{kw}"
     assert "量=手" not in README and "volume in lots" not in README, \
         "成交量已统一为股，README 不得再写手"
@@ -524,6 +542,8 @@ def test_docs_no_ad_diversion_cta():
         ("docs/API.md", API_MD),
         ("docs/GUIDE.md", GUIDE_MD),
         ("docs/AI.md", AI_MD),
+        ("docs/INDICATORS.md",
+         (REPO / "docs" / "INDICATORS.md").read_text(encoding="utf-8")),
         ("docs/README.md", (REPO / "docs" / "README.md").read_text(encoding="utf-8")),
         ("skills/wmshare/SKILL.md",
          (REPO / "src" / "wmshare" / "skills" / "wmshare" / "SKILL.md").read_text(encoding="utf-8")),
@@ -650,6 +670,17 @@ def test_guide_references_are_valid(cli):
 def test_ai_references_are_valid(cli):
     """AI.md 的提示词模板与示例命令同样受引用门禁（AI 照抄即正确）。"""
     _assert_doc_references(AI_MD, "docs/AI.md", cli)
+
+
+def test_indicators_references_are_valid(cli):
+    """INDICATORS.md（生成物）的码/接口/目录方法引用同样受门禁（防目录演进后引用失真）。
+
+    通配标记（`$ID_*` 族标题、`$c_* / $x_*`）不是码：先剥离再校验，
+    其余出现的每个 `$码` 仍须全量真实（场景速查与示例零豁免）。
+    """
+    text = (REPO / "docs" / "INDICATORS.md").read_text(encoding="utf-8")
+    text = re.sub(r"`\$[A-Za-z_][A-Za-z0-9_]*\*`", "", text)
+    _assert_doc_references(text, "docs/INDICATORS.md", cli)
 
 
 def test_openapi_matches_signatures_and_returns():

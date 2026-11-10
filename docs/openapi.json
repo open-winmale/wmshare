@@ -726,7 +726,7 @@
     "/moneyflow/live": {
       "post": {
         "operationId": "moneyflow_live",
-        "summary": "盘中资金流快照（短 TTL）；数据源暂无快照时返回 None。",
+        "summary": "资金流当日读数（外部公开源、短 TTL、非盘中行情、仅 A 股）；无快照时返回 None。",
         "description": "底层目录函数 `moneyflow.query_last_live`。SDK 调用：`cli.moneyflow.live(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "市场行情"

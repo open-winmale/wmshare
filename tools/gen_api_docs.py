@@ -400,7 +400,12 @@ def etf_note() -> list[str]:
 
 
 def metric_groups_lines(doc: dict) -> list[str]:
-    lines: list[str] = []
+    curated = sum(len(g.get("metrics") or []) for g in doc.get("metric_groups") or [])
+    lines: list[str] = [
+        f"> 指标码全量 {CAT.stats()['metric_catalog_total']} 个：按数据类型分章的全量导航见"
+        f" [INDICATORS.md](INDICATORS.md)（生成物）；本节为精选 {curated} 码。",
+        "",
+    ]
     for g in doc.get("metric_groups") or []:
         lines.append(f"#### 指标组 {g['cn']}（{g['id']}）")
         lines.append(f"{esc(g['caliber'])}" + (f"（单位 {esc(g['unit'])}）" if g.get("unit") else ""))

@@ -343,6 +343,21 @@ def test_pypi_registry_metadata_contract() -> None:
     assert "mcp-name: io.github.open-winmale/wmshare" in readme
 
 
+def test_docs_mcp_numbers_match_routes() -> None:
+    """README/AI.md 的 MCP 数字必须锚定代码：127 曾是 1.12.0 旧总数（116+11），
+    漂移两个版本才被发现——兜底面以 route_count() 为唯一事实源。"""
+    repo = Path(__file__).resolve().parents[1]
+    total = route_count()
+    readme = (repo / "README.md").read_text(encoding="utf-8")
+    ai = (repo / "docs/AI.md").read_text(encoding="utf-8")
+    phrase = f"全部 {total} 个 friendly API"
+    assert phrase in readme, "README 的 MCP 兜底面数字与 route_count() 漂移"
+    assert phrase in ai, "docs/AI.md 的 MCP 兜底面数字与 route_count() 漂移"
+    assert f"{len(TOOL_NAMES)} 个 task tools" in readme
+    for stale in ("127 个 friendly", "其余 127 个", "116 个核心接口"):
+        assert stale not in readme and stale not in ai, f"过时口径残留：{stale}"
+
+
 def test_tool_schemas_have_enums_and_descriptions() -> None:
     server = build_server(MCPRuntime(market="cn", demo=True))
     async def schemas() -> dict[str, dict[str, Any]]:

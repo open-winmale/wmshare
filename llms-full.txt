@@ -11,9 +11,11 @@
 [![PyPI](https://img.shields.io/pypi/v/wmshare)](https://pypi.org/project/wmshare/) [![Python](https://img.shields.io/pypi/pyversions/wmshare)](https://pypi.org/project/wmshare/) [![CI](https://github.com/open-winmale/wmshare/actions/workflows/ci.yml/badge.svg)](https://github.com/open-winmale/wmshare/actions/workflows/ci.yml) [![License: BSD-3-Clause](https://img.shields.io/badge/license-BSD--3--Clause-blue)](LICENSE)
 
 > **English TL;DR** — `wmshare` is a BSD-3-Clause Python SDK for China A-share / Hong Kong / US
-> market data: k-line, intraday, money flow, statements, 2,639 metrics, screener and whole-market
-> batch; ships an offline catalog, data guards and AI skill. **Credentials required** on open.winmale.com;
-> try offline first with `wmshare.demo_client()` (frozen snapshot; not live). **Install**: `pip install wmshare`.
+> market data: k-line, intraday, money flow, statements, screener, whole-market batch, and
+> **2,752 server-precomputed metrics** (percentile ranks, multi-window averages, industry-relative
+> ranks — no DIY computation). Ships an offline catalog, data guards and AI skill. **Credentials
+> required** on open.winmale.com; try offline first with `wmshare.demo_client()` (frozen snapshot;
+> not live). **Install**: `pip install wmshare`.
 
 给 Python 量化开发者的中文财经数据 SDK：一行接口拿到清洗好的 A股/港股/美股数据——
 估值分位、TTM 股息率等指标**服务端算好直出**，全市场批量 **12 次请求**绕开限流。
@@ -21,24 +23,11 @@
 
 ## 目录
 
-[特性](#特性) · [快速上手](#快速上手) · [MCP server](#mcp-server) · [能力一览](#能力一览) ·
+[基本功能](#基本功能) · [特色功能](#特色功能) · [快速上手](#快速上手) · [给 AI / Agent](#给-ai--agent) ·
 [市场覆盖](#市场覆盖) · [我想做 X → 用哪一行](#我想做-x--用哪一行) · [批量取数](#批量取数) ·
 [单位与数据守护](#单位与数据守护) · [许可与数据服务](#许可与数据服务) · [更多](#更多)
 
 ![notebook 实战：Jupyter 里 10 行代码筛出高股息 + PE 十年低位的股票（2026-10-30 真实数据）](docs/img/quickstart.png)
-
-## 特性
-
-- **数据要全**——18 个数据域、131 个核心接口一站取全：K 线/盘中/ETF/指数、分红、报表、资金流、
-  公告业绩、股东治理、回购并购、两融、可转债、盈利预测、指数、全市场列表、港美披露、宏观与期货。
-- **数据要准**——财报按最新会计准则归一，跨年跨公司直接比较；全库基础单位
-  （比率/涨跌幅=小数、金额=元、量=股），每次返回做量级守护与不变量校验，错误的量级到不了你的代码。
-- **特色数据**——盘中实时快照与当日 1 分钟分时；`cli.screener` 筛选一行直出，全市场涨跌
-  全景/分桶/行业分布/涨跌榜走服务端预计算索引，毫秒级响应；2,639 个指标码（TTM、3/5/10 年
-  历史分位、192 个行业内分位、TTM 股息率/派息率 + 11 个质量筛选器）服务端算好直出。
-- **凭证即用**——开放平台签发 client_id/api-key，环境变量、凭证文件、构造参数任选其一配置；遇到 401/403/429 错误消息即完整指引。
-- **目录随包 + AI 原生**——269 个底层函数、131 个核心接口、2,752 个指标码离线可查；
-  附 Agent Skills 格式 skill（`wmshare.skill_dir()`）与本地 MCP server（`wmshare-mcp`）。
 
 ## 快速上手
 
@@ -64,17 +53,6 @@ export WMSHARE_CLIENT_ID=<AppId> WMSHARE_CLIENT_SECRET=<API Key>   # 方式一�
 ```
 
 <!-- mcp-name: io.github.open-winmale/wmshare -->
-
-### MCP server
-
-本地 MCP 让 AI 直接调用目录发现与取数工具（20 个 task tools；其余 127 个 friendly API 用 `wmshare_call(target=..., mode="api")` 兜底），凭证仍由本机 SDK 读取：
-
-```bash
-wmshare-mcp setup --client-id <AppId> --client-secret-stdin --market cn # 提示后粘贴 API Key
-wmshare-mcp doctor            # 真实取数前检查配置；--check 零凭证检查安装
-```
-
-AI 客户端最小配置（不写入凭证）：`{"mcpServers":{"wmshare":{"command":"wmshare-mcp","args":[]}}}`。
 
 ### 选股实战：10 行筛出「高股息 + PE 十年低位」
 
@@ -104,7 +82,7 @@ for s, n, v, pe, pct in rows[:8]:                            # 取前 8 行打�
 2026-10-30 真实 API 固定快照：10 只演示宇宙 + 当日全市场 screener，非实时数据；
 换成 `Client.from_env()` 即接真实数据。
 
-## 能力一览
+## 基本功能
 
 随包离线目录：**18 个数据域 · 269 个底层函数 · 2752 个指标代码**；友好层 **131 个核心接口**，
 按使用视角组织为（11 个指标组、74 个精选常用指标代码，`cat.search("中文")` 可编程检索）：
@@ -113,15 +91,15 @@ for s, n, v, pe, pct in rows[:8]:                            # 取前 8 行打�
 |---|---|---|
 | `cli.kline` | 日 K 三种复权（自上市首日起全覆盖，最早 1991 年）、周 K/月 K、最新/盘中快照、1 分钟分时、ETF/指数 | 价格=元、量=股、涨跌幅=小数 |
 | `cli.screener` | 单票筛选器（涨停/均线/动量/回撤/放量）+ 全市场涨跌全景/分桶/行业分布/涨跌榜 | 阈值=小数；涨跌家数统计的 `*_pct`=百分数数值 |
-| `cli.moneyflow` | 主力/超大单/大单/中单/小单净流入（日频+盘中） | 金额=元 |
+| `cli.moneyflow` | 主力/超大单/大单/中单/小单净流入（日频） | 金额=元 |
 | `cli.statements` | 三大报表多期、合并 vs 母公司、目录树、审计意见 | 报表原币元 |
 | `cli.segments` | 经营分部：分产品/业务/区域收入构成 | 元；比率=小数 |
-| `cli.indicator` | 按指标码取数：估值/盈利/成长/现金流/杜邦 | 比率=小数 |
+| `cli.indicator` | 按指标码取数：估值/盈利/成长/现金流/杜邦；全量码表见 [INDICATORS.md](docs/INDICATORS.md) | 比率=小数 |
 | `cli.valuation` | PE/PB/PS/市赚率(PR)的历史统计与分位（窗口上限 3 年） | 分位=小数 |
 | `cli.notice` | 公告检索、回购/减持信号 | — |
 | `cli.filings` | 定期报告清单与最新 | — |
 | `cli.forecast` | 业绩预告/快报、财报披露日历 | 同比=小数 |
-| `cli.dividend` | 分红历史、TTM 股息率/派息率、质量筛选器 | 率=小数、DPS=元/股 |
+| `cli.dividend` | 分红历史、TTM 股息率/派息率、11 个质量筛选器 | 率=小数、DPS=元/股 |
 | `cli.equity` | 股东治理：十大股东/股东户数/质押/解禁/机构持仓/沪港通/国家队/高管增减持/股本/回购/并购重组/关联交易/担保/诉讼 | 比例=小数、金额=元、量=股 |
 | `cli.margin` | 个股融资融券（融资买入/偿还/余额、融券卖出/偿还/余量） | 金额=元、量=股 |
 | `cli.estimates` | 机构盈利预测（逐年 EPS/PE）、预测明细、评级统计、个股研报 | EPS=元/股、PE=倍 |
@@ -133,12 +111,44 @@ for s, n, v, pe, pct in rows[:8]:                            # 取前 8 行打�
 | `cli.macro` | 宏观时序/as-of/采样频率（$CPI/$GDP/$M2…）、中债收益率按期限、行业情报单值 | 上游原值（价格指数=点、流量存量=元、收益率=小数） |
 | `cli.info` | 公司档案（名称/行业/组织类型/上市日期） | — |
 
+## 特色功能
+
+**服务端预计算，先查目录再写代码**——目录里有的码不要自己算（eval 按标的数逐票计费 EC）：
+
+- **预置指标库（2,752 个指标码，11 组精选 74 码带量级守护）**：历史分位（`$PCT_PE_TTM_10Y_LAST`
+  = PE 十年分位）、多窗口均值/最低/趋势（`$BONUS_RATE_3Y_AVG_LAST` = 近3年股息率TTM均值）、
+  行业内分位（`$CUR_IND_ROE_PCT_LAST`，1=行业最高）、行业均值（`$ID_ROE_TTM`）、指数加权股息率
+  （`$IDW_BONUS_RATE_HM`）、期货主力连续（`$FUT_CLOSE`）、宏观时序（`$CPI`）。命名语法
+  `$主题+[窗口 3Y/5Y/10Y]+[统计量 TTM/YOY/AVG/MIN/TREND]+[_LAST]`；**全量码表按数据类型分章**
+  （概览/股票行情/股票指标/行业/指数及ETF/宏观/期货/可转债/港美）见
+  [docs/INDICATORS.md](docs/INDICATORS.md)。
+- **全市场批量**：`cli.batch_all(name, codes)` 把 A 股 5,691 家压成 **12 次请求**绕开限流。
+- **全市场筛选服务端直出**：`cli.screener` 涨跌全景/分桶/行业分布/涨跌榜走服务端预计算索引，毫秒级。
+- **离线目录防编造**：269 个底层函数、131 个核心接口、2,752 个指标码离线可查
+  （`cat.search("中文")`），目录之外的名字显式报错。
+- **零凭证离线试跑**：`wmshare.demo_client()`（同签名、不联网，2026-10-30 固定快照；非实时数据）。
+- **数据守护**：全库单位统一（比率=小数、金额=元、量=股），返回前量级/不变量校验，违例抛 `DataError`。
+
+## 给 AI / Agent
+
+- **先查目录再写代码**（一行验证）：
+  `python3 -c "import wmshare; print(wmshare.load().search('股息'))"`
+- **本地 MCP server**：20 个 task tools；全部 134 个 friendly API——131 登记 + 3 组合——均可用
+  `wmshare_call(target=..., mode="api")` 兜底，macro 域仅此路径。配置：`pip install "wmshare[mcp]"`
+  → `wmshare-mcp setup --client-id <AppId> --client-secret-stdin --market cn`（提示后粘贴 API Key，
+  `wmshare-mcp doctor` 体检）；客户端最小配置
+  `{"mcpServers":{"wmshare":{"command":"wmshare-mcp","args":[]}}}`；接入路径详见 [AI 用法](docs/AI.md)。
+- **skill 随包分发**：`wmshare.skill_dir()` 可复制进 `.agents`/`.zcode`/`.claude` 的 `skills/`。
+- **死码警示**：`$*_LIVE` 等 20 个上游死码混入 `cli.indicator.metrics()` 会整批失败，
+  清单见 [INDICATORS.md · 死码警示](docs/INDICATORS.md#死码警示)。
+- **AI 友好索引**：[llms.txt](llms.txt)（索引）/ [llms-full.txt](llms-full.txt)（全文拼接，大上下文直读）。
+
 ## 市场覆盖
 
 | 数据能力 | A股 cn | 港股 hk | 美股 us |
 |---|---|---|---|
 | 日 K 三种复权 / 周 K·月 K（服务端派生）/ 1 分钟分时 / 盘中快照 | ✅ 全量 | ✅ | 日 K 日更 + 周/月 K 派生；快照/盘中新鲜（注记见下） |
-| 指标库（2,639 码：估值/盈利/成长/分红/分位/振幅/技术面） | ✅ | ✅ | ✅（用裸代码 `AAPL`；`AAPL.O` 由 SDK 归一） |
+| 指标库（2,752 码：估值/盈利/成长/分红/分位/振幅/技术面） | ✅ | ✅ | ✅（用裸代码 `AAPL`；`AAPL.O` 由 SDK 归一） |
 | 分红：历史、TTM 股息率/派息率、质量筛选 | ✅ | ✅ | ✅（窗口口径固定） |
 | 公告与披露信号 | ✅ | ✅ | — |
 | 财报清单与最新披露 | ✅ | ✅ | — |
@@ -187,7 +197,7 @@ for s, n, v, pe, pct in rows[:8]:                            # 取前 8 行打�
 | 取 CPI/GDP 宏观时序 | `cli.macro.query("$CPI", 6)` | 找数据源→对齐期间→自己建时序 |
 | 看期货主力连续行情 | `cli.indicator.get(sym, "$FUT_CLOSE", fut_symbol="cn.RB.SHF")` | 找期货源→清洗对齐 |
 
-**常用示例（输出为预期量级；`cli.kline.bars` / `statements.income` 等其余接口同风格）**：
+**常用示例（输出为预期量级）**：
 
 ```python
 import wmshare
@@ -203,80 +213,43 @@ print(cli.indicator.get("600519", "$PCT_PE_TTM_10Y_LAST"))   # 0.42
 # 行业定位：ROE 在同行业内的分位（1.0 = 行业最高；茅台 ROE 为行业之最）
 print(cli.indicator.get("600519", "$CUR_IND_ROE_PCT_LAST"))  # 1.0
 
-# 技术面一行布尔：是否站上 20 日均线
-print(cli.screener.screen_above_ma20("600519"))              # True
-
 # 全市场涨跌全景：服务端索引直出，免本地扫描（*_pct 百分数、median_pct 小数）
 print(cli.screener.index_breadth_summary())
 # {'total': 5685, 'up': 4567, 'down': 934, 'flat': 184, 'up_pct': 80.3, ...}
 
-# 分红质量：高股息 + 派息可持续（默认精品窗口=派息率 30%–70%，可显式放宽）
-print(cli.dividend.screen_quality("600519", min_yield=0.02, payout_max=1.5))  # True
-
-# 公告信号：近 6 个月是否有回购公告
-print(cli.notice.has_buyback("600519", "6m"))                # True
-
 # 全市场列表 / 行业成分（中文名直达，也可传 "S48"）/ 批量：单标的接口传 list 即批量（≤500/批）
 rows = cli.stocks.list()                 # A 股 ≈5.7k 行：代码/名称/交易所/行业/上市日；港/美换 market
-banks = cli.stocks.industry_members("银行")
 df = cli.call_batch("kline.snapshot", ["600519", "000001"]).to_df()   # 带 symbol 列的长表；to_df 需 pandas
 ```
 
-以上能力全部在离线目录可查（`cat = wmshare.load()` 后）：`cat.search("分位")`、`cat.metrics_in_group("dividend")`。
+以上能力全部在离线目录可查（`cat = wmshare.load()` 后）：`cat.search("分位")`、`cat.metrics_in_group("dividend")`；
+全量指标码导航见 [INDICATORS.md](docs/INDICATORS.md)。
 
 ## 批量取数
 
-服务端按**请求次数**限流（免费档 500 次/小时、5,000 次/日）：逐票取 A 股 5,691 家 = 5,691 次请求必然撞 429，批量只需 **12 次**。
+服务端按**请求次数**限流（免费档 500 次/小时、5,000 次/日）：逐票取 A 股 5,691 家 = 5,691 次请求
+必然撞 429，批量只需 **12 次**。三入口——一站式、逐批、单批：
 
 ```python
 import wmshare
 cli = wmshare.Client.from_env()
-
-# ① 一站式：自动分批（默认 500/批）聚合为一个结果（A 股全市场 = 12 次请求）
 codes = [r["symbol"] for r in cli.stocks.list()]      # 全市场代码池（港/美换 market）
-res = cli.batch_all("kline.snapshot", codes)
-print(len(res.results), res.requests)                 # 5,691 12
-
-# ② 逐批：可进度、可中断、长任务边取边落盘
+res = cli.batch_all("kline.snapshot", codes)           # ① 一站式：自动分批聚合
+print(len(res.results), res.requests)                  # 5,691 12
 for i, part in enumerate(cli.batch_iter("dividend.history", codes), 1):
-    print(f"第 {i} 批 {len(part.results)} 家")          # part.to_df() 可自行落盘
-
-# ③ 单批（≤500）：cli.call_batch("kline.snapshot", ["600519", "000001"]).to_df()
+    print(f"第 {i} 批 {len(part.results)} 家")          # ② 逐批：可进度、可中断、可落盘
+cli.call_batch("kline.snapshot", ["600519", "000001"]) # ③ 单批（≤500），to_df() 出长表
 ```
 
-三个入口的参数与语义对照：
-
-| 接口 | 用途 | 请求数（N 个标的） | 关键参数（默认） |
-|---|---|---|---|
-| `batch_all(name, symbols)` | 一站式：自动分批并聚合 | ⌈N/batch_size⌉ | `batch_size=500`（须 ≤`max_limit`）；`on_batch_error="raise"`／`"skip"` 跳失败批 |
-| `batch_iter(name, symbols)` | 逐批流式：可进度／中断／落盘 | ⌈N/batch_size⌉ | 同上；逐批 yield `BatchResult`（`requests` 恒 1） |
-| `call_batch(name, symbols)` | 单批（≤500） | 1（`on_error="raise"`）／N（`"skip"` 逐票） | `on_error` 是**票级**，勿用于容错 |
-
-`name`/`symbols` 都是**位置参数**；`_raw=True`、`_units="native"` 三个入口通用。**`on_batch_error`
-（批级：跳过整批）≠ `on_error`（票级：逐票请求）**。长表用 `to_df()`，批量入口不提供 `_df`。
-**指标码不是批量 `name`**：`name` 必须是目录函数名（269 个，如 `kline.snapshot`）；一票多码用 `cli.indicator.metrics(sym, codes)`，全市场指标码只能逐票调用。
-
-**分批策略由你定，SDK 负责切片与执行**：代码池来自 `cli.stocks.list()`（全市场）、
-`cli.stocks.industry_members("银行")`（按行业）或自己的筛选结果，`batch_size=`（默认 500、
-上限 `max_limit`）控制每批大小；单批触发 `CALC_LIMIT_EXCEEDED`（算力超限）时减小 `batch_size`。
-限流（429）在任何模式下都会停止并给续跑位置（消息含已完成标的数与 `codes[done:]` 切片），不会闷头连败。
-
-**市场边界**：一个批次只能是**同一市场**——`Client(market="cn")` 只传 A 股代码，混入港股/美股
-代码会直接报错（网关只校验请求参数里的代码，不逐个校验批内；他市场代码会在本市场
-引擎里走错数据管线，返回的 close/涨跌幅不可信）。跨市场请分别调用：A 股 12 批 + 港股 6 批 + 美股 11 批 = 29 次请求。
-
-**容错**：`batch_all(on_batch_error="skip")` 跳过失败的**批**继续（失败批进 `errors`，键如 `batch#3[1000:1500]`）。
-**不要用 `call_batch(on_error="skip")` 做容错**——它逐票发请求，12 批会放大成 5,691 次、正好制造 429。
-
-**返回**：`results`（`{代码: 结果}`，保序去重 + 代码归一）/ `errors` / `requests`（实际请求数，
-可对比标的数看省了多少配额）/ `ec_cost`（各批 EC 合计——批量省请求次数**不省 EC**，开放 API
-按计算量计费，全市场最新快照优先服务端直出 `cli.moneyflow.board()`）；`to_df()` 每标的一行
-（MAP 展平、`symbol` 列在前），多次行结果建议读 `results[代码]`。实测：全市场 12 批 9–16 秒（0 错误）。
+要点：`name` 必须是**目录函数名**（指标码不能批量，一票多码用 `cli.indicator.metrics(sym, codes)`）；
+容错用批级 `batch_all(on_batch_error="skip")`，**勿用 `call_batch(on_error="skip")`**（逐票放大、
+正好制造 429）；一个批次只能同一市场；批量省请求次数**不省 EC**——全市场最新快照优先服务端直出
+`cli.moneyflow.board()`。参数/续跑/分批策略明细见 [GUIDE · 批量取数](docs/GUIDE.md)。
 
 ## 单位与数据守护
 
 全库统一基础单位：**比率 / 涨跌幅 = 小数**（0.01 = 1%，ROE 0.332 = 33.2%）、
-**金额 / 价格 / 市值 = 元**（报表原币）、**成交量 = 股**；各接口单位口径见「能力一览」表。
+**金额 / 价格 / 市值 = 元**（报表原币）、**成交量 = 股**；各接口单位口径见「基本功能」表。
 返回前做量级与关系不变量校验，违例抛 `DataError`——错误的量级到不了你的代码。
 需要脚本原始口径时：`_raw=True`（上游原始行）、`_units="native"`（保留上游原单位，如手/百分数）、`Client(validate=False)`（关校验留换算）。
 
@@ -293,7 +266,7 @@ for i, part in enumerate(cli.batch_iter("dividend.history", codes), 1):
 
 - **AI 原生**：随包 [SKILL.md](src/wmshare/skills/wmshare/SKILL.md)、[AI 用法](docs/AI.md)、本地 MCP server（skill 可复制进 .agents/.zcode/.claude 的 skills/）
 - 生态工具 [big-winner](https://github.com/open-winmale/big-winner)：基于本 SDK 的开源工具。
-- **文档中心 [docs/](docs/README.md)**：使用指南 GUIDE（单票菜谱/批量/多市场/故障排查）· AI 用法 · llms.txt 索引 · [API 参考](docs/API.md)（按资产类别分章的 131 个核心接口 + 指标组）
+- **文档中心 [docs/](docs/README.md)**：使用指南 GUIDE（单票菜谱/批量/多市场/故障排查）· 指标库 [INDICATORS.md](docs/INDICATORS.md)（全量指标码按数据类型分章）· AI 用法 · llms.txt 索引 · [API 参考](docs/API.md)（按资产类别分章的 131 个核心接口 + 指标组）
 - **可转债日更管线**：`cli.cbond.daily()` → `article()` → `figures()` 一条命令出图文（三层口径 + 三道闸 + 状态机 + 事件日历，每个数字带 `sources` 与 `as_of`，缺条目抛错而非补猜测值）；实战 notebook 见 [docs/notebooks/cb_double_low.ipynb](docs/notebooks/cb_double_low.ipynb)（2026-11-07 真实数据）
 - **示例课程 [examples/](examples/README.md)**：14 个编号示例（入门→进阶→生产→AI），全部支持演示客户端离线试跑，CI 端到端覆盖
 - [贡献指南](CONTRIBUTING.md)：提交门禁、内容规范、许可政策
@@ -304,7 +277,7 @@ for i, part in enumerate(cli.batch_iter("dividend.history", codes), 1):
 
 ---
 name: wmshare
-description: 用 wmshare Python SDK 或本地 MCP server 取 A 股数据：K 线（三种复权）、盘中快照、1 分钟分时、资金流、三大报表、2639 个指标码、选股筛选与全市场涨跌全景、分红、公告、公司档案。配置开放平台凭证后即可取数；随包离线目录可编程查询，指标码/函数名先查目录、禁止臆造。用户要 A 股行情/财务/指标/选股/分红/公告数据时用本 skill，即使用户没点名 wmshare。
+description: 用 wmshare Python SDK 或本地 MCP server 取 A 股数据：K 线（三种复权）、盘中快照、1 分钟分时、资金流、三大报表、2752 个指标码、选股筛选与全市场涨跌全景、分红、公告、公司档案。配置开放平台凭证后即可取数；随包离线目录可编程查询，指标码/函数名先查目录、禁止臆造。用户要 A 股行情/财务/指标/选股/分红/公告数据时用本 skill，即使用户没点名 wmshare。
 when_to_use: 用户需要 A 股个股或全市场数据（价格、财务、指标、筛选、分红、公告）来回答问题、做分析或写代码时。
 ---
 
@@ -421,8 +394,9 @@ cat.metrics_in_group("dividend")                         # 指标组内全部精
 | 行业目录 / 行业成分 | `cli.stocks.industries(1)`（申万/恒生；美股目录树暂缺）/ `cli.stocks.industry_members("银行")`（中文名或代码 S48） |
 | 少量标的单批（≤500） | `cli.call_batch("kline.snapshot", ["600519", "000001"])` 或任意单标的接口传 list：`cli.kline.last(["600519", "000001"])`；`to_df()` 出每标的一行长表 |
 
-完整 130 个核心接口 + 3 个可转债组合接口与全部底层函数：仓库用户看 docs/GUIDE.md（上手）与
+完整 131 个核心接口 + 3 个可转债组合接口与全部底层函数：仓库用户看 docs/GUIDE.md（上手）与
 docs/API.md（参考）；pip 用户用 `cat.search(...)` / `cat.function(...)` 查（同一份合同）。
+全量指标码（2752 个）按数据类型分章的导航、命名语法与死码清单见 docs/INDICATORS.md（生成物）。
 
 ## 5. 工作流示例（返回长这样，从这些字段读）
 
@@ -566,10 +540,10 @@ export WMSHARE_CLIENT_ID=<AppId> WMSHARE_CLIENT_SECRET=<API Key>
 
 - **门面层** `cli.<命名空间>.<方法>()`：21 个命名空间、131 个核心接口，方法名动宾化可猜
   （`kline.bars`、`dividend.yield_ttm`、`screener.screen_limit_up`）。
-- **目录层** `cli.call("<域>.<函数名>", ...)`：263 个底层函数按目录合同直调，
+- **目录层** `cli.call("<域>.<函数名>", ...)`：269 个底层函数按目录合同直调，
   参数名以 `cat.function(name)["params"]` 为准。门面未包装的函数经属性直达
   （如 `cli.dividend.index_where_high_yield_5()`）；目录之外的名字显式报错——
-  门面不遮蔽目录函数，263 个都能直达。
+  门面不遮蔽目录函数，269 个都能直达。
 
 两层的名字对不上是常态：目录按上游域组织，门面按使用视角命名（如目录 `bonus` 对应
 门面 `dividend`），17 个域挂 20 个门面。不必背映射——`cat.search("分红")` 一查即得；
@@ -619,6 +593,21 @@ cat.functions_by_domain()             # 按域列全部函数名（cli.call 的�
 美股用**裸代码**（`AAPL`、`BRK_B`）：带交易所后缀的 `AAPL.O`/`BRK.N` 上游会当成宏观序列，
 指标脚本里的 `symbol` 变量不绑定（`_LAST` 族 500、分位静默返 0）。SDK 已按随包代码表
 自动归一（`AAPL.O`→`AAPL`、`BRK.B`/`BRK-B`→`BRK_B`），归一无命中时才原样上送。
+
+### 2.6 数据在哪找（按数据类型速查）
+
+| 要找什么 | 在哪 | `cat.search` 关键词 |
+|---|---|---|
+| ETF 日 K / 判别场内基金 | `cli.kline.bars("510300")`、`cli.kline.is_etf`（ETF 无分钟线，盘中用 `live`/`snapshot`） | ETF |
+| 全市场筛选 / 涨跌宽度 | `cli.screener`（单票筛选器 + 全景/分桶/涨跌榜） | 筛选 |
+| 指数成分 / 权重 / 宽基估值 / 指数层指标码 | `cli.index`（全量码见 INDICATORS.md「指数及 ETF」章） | 指数 |
+| 盈利预测 / 业绩预告 | `cli.estimates`（`year_mark`：A=实际、E=预测）+ `cli.forecast`（预告/快报/日历） | 预测 |
+| 分红 / 股息率 | `cli.dividend`（`disc.bonus` 域 45 个函数）+ dividend 指标组 | 股息 |
+| 行业目录 / 成分股 / 行业均值与行业内分位 | `cli.stocks.industries()`、`cli.stocks.industry_members()`（码族见 INDICATORS.md「行业数据」章） | 行业 |
+| 宏观 / 中债收益率 / 期货主力 | `cli.macro`、`cli.indicator.get(sym, "$FUT_CLOSE", fut_symbol="cn.RB.SHF")` | 宏观 |
+
+全量指标码按数据类型的分章导航（每类码数、命名语法与死码清单）见 [INDICATORS.md](INDICATORS.md)；
+选码纪律：**目录里有的码不要自己算**（eval 按标的数逐票计费 EC）。
 
 ## 3. 单票菜谱
 
@@ -790,7 +779,7 @@ res.to_df()                       # 每标的一行长表（symbol 列在前；�
 - **算力超限**：单批触发 `CALC_LIMIT_EXCEEDED` 时减小 `batch_size`。
 - 三个入口的 `name`/`symbols` 都是位置参数；`_raw=True`/`_units="native"` 通用；
   批量入口不提供 `_df`（长表用 `to_df()`）。
-- **`name` 必须是目录函数名**（263 个，`cat.functions_by_domain()` 可查）；指标码不是
+- **`name` 必须是目录函数名**（269 个，`cat.functions_by_domain()` 可查）；指标码不是
   函数名——一票多码用 `cli.indicator.metrics(sym, codes)`，全市场指标码只能逐票调用
   （传 `"indicator.get"` 会报 `CatalogError`）。
 
@@ -913,6 +902,19 @@ poller.start()               # 或切后台：daemon 线程定时轮询；退出
 批量对前者是省、对后者不省。EC 消耗经 `BatchResult.ec_cost` /
 `cli.last_ec_cost` 可见，超大单次消耗 SDK 会主动告警。
 
+### 10.1 预置码 vs eval 自算：一次 EC 实测（2026-11-10）
+
+「全市场三年平均股息率 + ROE 筛选」两种做法的实测对比：
+
+- **eval 全市场自算**：一次消耗约 45.6 万 EC（eval 按标的数逐票计价；SDK 有阈值告警，
+  `Client(ec_warn_threshold=None)` 可关闭）；
+- **预置码路径**：`cli.batch_all("bonus.snapshot_yield_ttm", ...)` 12 次请求拿全市场 TTM
+  股息率，仅对候选逐票
+  `cli.indicator.metrics(sym, ["$BONUS_RATE_3Y_AVG_LAST", "$ROE_TTM_LAST"])`。
+
+纪律：**先 `cat.search` 查码再写计算**；批量省请求次数不省 EC；全市场快照类优先
+服务端直出接口（如 `cli.moneyflow.board()`）。
+
 ## 11. 用 AI 学会并用好 SDK
 
 完整指南见 [AI.md](AI.md)。三句话版本：
@@ -925,7 +927,7 @@ poller.start()               # 或切后台：daemon 线程定时轮询；退出
 
 - **和直接下交易所数据比，图什么？** 目录先行 + 单位统一 + 数据守护 + 批量限流治理——
   取数正确性的工程问题 SDK 替你管了。
-- **数据能离线吗？** 目录（263 函数/2639 指标码/代码表）随包离线；行情财报数据在云端，
+- **数据能离线吗？** 目录（269 个函数/2752 个指标码/代码表）随包离线；行情财报数据在云端，
   需凭证与额度。
 - **支持哪些 Python？** ≥3.10；pandas 为可选依赖。
 - **怎么贡献/报漏洞？** 见 [CONTRIBUTING](../CONTRIBUTING.md) 与 [SECURITY](../SECURITY.md)；
@@ -945,7 +947,8 @@ wmshare 取数代码**。优先用 MCP；没有 MCP 时用 skill 或文档上下
 - **目录先行**：指标码与函数可编程检索（`cat.search("中文")`），AI 不需要"背"接口，
   查一下再用；编造的码在发请求前就被 `CatalogError` 拦下。
 - **本地 MCP server**：20 个 task tools 覆盖发现、行情、财务、治理、披露、港美与批量；
-  127 个 friendly API 仍可经 `wmshare_call(mode="api")` 兜底。输出统一 units/rows/next_action。
+  全部 134 个 friendly API（131 登记 + 3 组合接口）均可经 `wmshare_call(mode="api")` 兜底
+  （macro 域 11 个接口仅此路径）。输出统一 units/rows/next_action。
 - **skill 随包分发**：单位铁律、意图→接口决策树、坑位清单、错误速查，装进 agent 即生效
   （`wmshare.skill_dir()`）。
 - **错误消息即修复指引**：401/403/429 的消息里就是申请与配置步骤，429 附批量续跑位置。
@@ -1113,7 +1116,7 @@ python3 -c "import wmshare; print(wmshare.load().metric('\$PE_TTM_LAST'))"
 | `market.index`（指数） | 指数键列表、指数成分、指数权重股、指数估值时序、指数估值趋势(周频整体法)… | money=元（市值）；ratio=小数（roe_ttm 等比率，指标层口径）；weight=小数（披露权重，上游 fmt 已换算，SDK 不再处理） |
 | `market.kline`（行情K线） | 历史 K 线、历史 K 线（周/月周期）、最新一根 K 线、是否场内 ETF、盘中日K快照… | price=元；volume=股（cn 由脚本的手 ×100 换算；港美上游即披露股，不再换算）；amount=元（本币）；percent=小数（0.01 = 1%） |
 | `market.margin`（融资融券） | 个股融资融券、最新两融 | money=元（融资买入额/偿还额/余额）；shares=股（融券卖出量/偿还量/余量） |
-| `market.moneyflow`（资金流向） | 资金流向历史、最新资金流向、有效资金流向（过滤空行）、盘中资金流快照、资金流向快照… | net=元（净流入金额）；date=YYYY-MM-DD |
+| `market.moneyflow`（资金流向） | 资金流向历史、最新资金流向、有效资金流向（过滤空行）、资金流当日读数（外部源）、资金流向快照… | net=元（净流入金额）；date=YYYY-MM-DD |
 | `market.stocks`（证券与行业基础） | 全市场证券列表、行业目录、行业成分股 | flag=布尔（is_st）；date=YYYY-MM-DD（listed，档案缺失为空串） |
 | `fund.estimates`（盈利预测与研报） | 机构盈利预测、盈利预测明细、评级统计、个股研报 | eps=元/股；money=元（归母净利润）；pe=倍（预测市盈率） |
 | `fund.indicators`（指标层） | 指标组：估值、盈利与回报（含杜邦）、成长、营收与利润规模、现金流… | ratio=小数（如 0.332 = 33.2%；指标层比率统一为小数，不是 15.0=15%）；money=元（与报表/资金流同口径；精选指标声明了量级守护范围） |
@@ -1710,7 +1713,7 @@ cli.moneyflow.board()
 
 #### `cli.moneyflow.live` — 盘中资金流快照
 
-盘中资金流快照（短 TTL）；数据源暂无快照时返回 None。
+资金流当日读数（外部公开源、短 TTL、非盘中行情、仅 A 股）；无快照时返回 None。
 
 **输入参数**
 
@@ -3008,6 +3011,8 @@ cli.indicator.metrics("600519", codes=["$PE_TTM_LAST", "$ROE_TTM_LAST"])
 ```
 
 ---
+
+> 指标码全量 2752 个：按数据类型分章的全量导航见 [INDICATORS.md](INDICATORS.md)（生成物）；本节为精选 74 码。
 
 #### 指标组 估值（valuation）
 价格与股本 × TTM 利润/净资产/营收/现金流：PE=市值/归母净利TTM，PB=市值/归母净资产，PEG=PE/(增速×100) 等（单位 倍（分位类为小数））
@@ -4621,6 +4626,9 @@ cli.info.profile("600519")
 - kline_window 返回 store 列式窗口（open/close/high/low/volume/amount），samplingName 为降序需自行反转
 - min1_live 为缓存命中制，miss 返回 nil
 - event_list 深度是 90 个 YEAR_DAY 文档（约 111 自然日），更老的条款公告不在返回内
+- board 不含 volume/amount——成交额与换手率须经 kline_window 批量取（call_batch，每批 ≤120 只）
+- board 不含债券信用评级、基金持仓、正股流通市值；需评级时用 notice 域公告原文抽取，勿以其他指标冒充
+- kline_window 可批量：标的参数名为 code，call_batch 一次 eval 拼 MAP 即覆盖全表（省请求次数，不省 EC）
 
 | 函数 | 中文 | 性质 | 层 | 参数 | 返回 | 单位与守护 |
 |---|---|---|---|---|---|---|
@@ -4747,10 +4755,10 @@ cli.info.profile("600519")
 #### 资金流向（`market.moneyflow`）
 
 **性质**：原始数据 · **版本**：1.1.0  
-个股日频资金流向（主力 / 超大单 / 大单 / 中单 / 小单净流入）、最新一行、 全市场快照一次取数（board）、盘中外部源短 TTL 快照。非 Level2 逐笔数据。
+个股日频资金流向（主力 / 超大单 / 大单 / 中单 / 小单净流入）、最新一行、 全市场快照一次取数（board）。非 Level2 逐笔数据。
 数据来源：外部行情源。
 单位口径：net=元（净流入金额）；date=YYYY-MM-DD。
-- 日频为 EOD 落库；query_last_live 为盘中快照（外部行情源 HTTP，短 TTL）
+- 日频为 EOD 落库；query_last_live 为外部公开源当日读数（HTTP，短 TTL；非盘中行情）
 - 非 Level2：为单子分级聚合口径，非逐笔委托
 
 | 函数 | 中文 | 性质 | 层 | 参数 | 返回 | 单位与守护 |
@@ -4758,7 +4766,7 @@ cli.info.profile("600519")
 | `moneyflow.query_bars` | 资金流向历史 | 原始数据 | L0 | `sym:string` — 6 位裸码 · `limit:int=20` — 根数，默认 20 | ARR · 资金流行（date/net_mf/elg_net/lg_net/md_net/sm_net）；字段 sas:string?（SAS） / date:string?（日期） / net_mf:float?（主力净流入） / elg_net:float?（超大单净流入） / lg_net:float?（大单净流入） / md_net:float?（中单净流入） / sm_net:float?（小单净流入） | — | 例：`cli.call("moneyflow.query_bars", sym='600519', limit=20)`
 | `moneyflow.query_last` | 最新资金流向 | 原始数据 | L0 | `sym:string` | MAP · 资金流行；字段 sas:string?（SAS） / date:string?（日期） / net_mf:float?（主力净流入） / elg_net:float?（超大单净流入） / lg_net:float?（大单净流入） / md_net:float?（中单净流入） / sm_net:float?（小单净流入） | — | 例：`cli.call("moneyflow.query_last", sym='600519')`
 | `moneyflow.query_valid` | 有效资金流向（过滤空行） | 原始数据 | L0 | `sym:string` · `limit:int=20` | ARR · 资金流行 | — | 例：`cli.call("moneyflow.query_valid", sym='600519', limit=20)`
-| `moneyflow.query_last_live` | 盘中资金流快照 | 原始数据 | L0 | `sym:string` | MAP · 资金流快照 | — | 例：`cli.call("moneyflow.query_last_live", sym='000807')`
+| `moneyflow.query_last_live` | 资金流当日读数（外部源） | 原始数据 | L0 | `sym:string` | MAP · 资金流快照 | — | 例：`cli.call("moneyflow.query_last_live", sym='000807')`
 | `moneyflow.snapshot` | 资金流向快照 | 原始数据 | L0 | `sym:string` | MAP · 快照 | — | 例：`cli.call("moneyflow.snapshot", sym='600519')`
 | `moneyflow.snapshot_net_mf` | 最新主力净流入 | 原始数据 | L0 | `sym:string` | float · 主力净流入（元） | — | 例：`cli.call("moneyflow.snapshot_net_mf", sym='600519')`
 | `moneyflow.board` | 全市场资金流快照 | 原始数据 | L0 | — | ARR · 资金流行（symbol/name/net_mf/net_mv_ratio/lg_net/elg_net/md_net/sm_net/industry，按主力净流入降序）；字段 symbol:string（标的代码） / name:string（证券简称） / net_mf:float?（主力净流入（元）） / net_mv_ratio:float?（主力净流入占流通市值比（小数）） / lg_net:float?（大单净流入（元）） / elg_net:float?（超大单净流入（元）） / md_net:float?（中单净流入（元）） / sm_net:float?（小单净流入（元）） / industry:string?（一级行业） | — | 例：`cli.call("moneyflow.board")`
@@ -4807,7 +4815,7 @@ cli.info.profile("600519")
 #### 指标层（`fund.indicators`）
 
 **性质**：指标 · **版本**：1.3.0  
-平台公式计算的派生指标——数值不存在于任何披露文件中，由平台以行情/报表/股本/ 分红等原始数据计算得出。11 个指标组精选 75 个常用指标代码按用途分组；全量 2197 个指标 代码随包内数据目录分发（generated/metrics.json）。
+平台公式计算的派生指标——数值不存在于任何披露文件中，由平台以行情/报表/股本/ 分红等原始数据计算得出。11 个指标组精选 74 个常用指标代码按用途分组；全量指标代码清单 随包内数据目录分发（generated/metrics.json，以生成时计数为准）。
 数据来源：平台计算。
 单位口径：ratio=小数（如 0.332 = 33.2%；指标层比率统一为小数，不是 15.0=15%）；money=元（与报表/资金流同口径；精选指标声明了量级守护范围）。
 - 指标代码带 _LAST 后缀 = 最新截面值；不带后缀 = 随最新财报期取值

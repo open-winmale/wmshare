@@ -39,10 +39,11 @@ def _domain_line(domain: dict, facade: list[str]) -> str:
 
 def build_llms_txt() -> str:
     import wmshare
-    from wmshare.api import _FRIENDLY_NS_TO_CATALOG
+    from wmshare.api import FRIENDLY_INDEX, _FRIENDLY_NS_TO_CATALOG
 
     cat = wmshare.load()
     stats = cat.stats()
+    n_examples = len(list((REPO / "examples").glob("[0-9][0-9]_*.py")))
     facade_by_domain: dict[str, list[str]] = {}
     for ns, cat_ns in _FRIENDLY_NS_TO_CATALOG.items():
         for d in cat.domains.values():
@@ -56,18 +57,21 @@ def build_llms_txt() -> str:
         "",
         f"> 覆盖 A 股、港股、美股的 Python 财经数据 SDK：{stats['domains']} 个数据域、"
         f"{stats['functions']} 个底层函数、{stats['metric_catalog_total']} 个指标码、"
-        "116 个核心接口。BSD-3-Clause 开源；取数需开放平台凭证"
+        f"{len(FRIENDLY_INDEX)} 个核心接口。BSD-3-Clause 开源；取数需开放平台凭证"
         "（环境变量 WMSHARE_CLIENT_ID / WMSHARE_CLIENT_SECRET，见 README）。",
         "",
         "## Docs",
         "",
         f"- [README]({RAW}/README.md)：安装、凭证配置、选股实战（10 行全市场筛选）、能力与市场覆盖矩阵",
         f"- [使用指南 GUIDE]({RAW}/docs/GUIDE.md)：单票菜谱、批量取数、多市场、pandas、故障排查",
+        f"- [指标库 INDICATORS]({RAW}/docs/INDICATORS.md)：全量指标码按族导航——命名语法、"
+        "11 组精选口径、死码清单与场景速查（先查码，禁止自算已有指标）",
         f"- [AI 用法]({RAW}/docs/AI.md)：MCP server、skill、文档上下文与报错驱动的 Agent 接入路径",
-        f"- [API 参考]({RAW}/docs/API.md)：116 个核心接口的参数 / 返回 / 单位口径",
+        f"- [API 参考]({RAW}/docs/API.md)：{len(FRIENDLY_INDEX)} 个核心接口的参数 / 返回 / 单位口径",
         f"- [Agent Skill]({RAW}/src/wmshare/skills/wmshare/SKILL.md)：随包分发的 agent 用法合同"
         "（目录先行、单位铁律、决策树、坑位）",
-        f"- [可运行示例]({RAW}/examples/README.md)：12 个编号示例（4 个离线可跑），CI 端到端覆盖",
+        f"- [可运行示例]({RAW}/examples/README.md)：{n_examples} 个编号示例"
+        "（全部支持演示客户端离线试跑），CI 端到端覆盖",
         f"- [CHANGELOG]({RAW}/CHANGELOG.md)：版本历史",
         "",
         "## Key Concepts",
@@ -76,6 +80,10 @@ def build_llms_txt() -> str:
         "金额=元、量=股；唯一例外是 cli.screener 宽度接口的 `*_pct`（百分数数值）",
         "- **目录先行**：`wmshare.load()` 后 `cat.search(\"中文\")` 检索函数与指标码、"
         '`cat.function(name)["params"]` 查合同；禁止编造指标码（未知名在发请求前即报错）',
+        "- **指标码命名**：`$主题+[窗口 3Y/5Y/10Y]+[统计量 TTM/YOY/AVG/MIN/TREND]+[_LAST]`；"
+        "族前缀 `$PCT_*` 历史分位、`$ID_*` 行业均值、`$CUR_IND_*` 行业内分位、"
+        "`$INDEX_*` 指数层、`$FUT_*` 期货主力——先查 `cat.search`，"
+        "禁止自算已有指标（eval 按标的数逐票计费 EC，预置码便宜得多）",
         "- **MCP 优先**：`pip install \"wmshare[mcp]\"` 后先用 `wmshare_search` / "
         "`wmshare_contract`，再用 quote/history/metrics/company/screen/disclosures/batch/call",
         "- **批量绕 429**：服务端按请求次数限流（免费档 500 次/小时、5,000 次/日）；"

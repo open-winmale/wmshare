@@ -1385,7 +1385,7 @@ class MoneyflowNS(_Ns):
         return self._client.call("moneyflow.query_valid", **kw, _raw=_raw, _df=_df)
 
     def query_last_live(self, sym: str, _raw: bool = False, _df: bool = False) -> Any:
-        """盘中资金流快照
+        """资金流当日读数（外部源）
 
 :returns: MAP · 资金流快照
         """

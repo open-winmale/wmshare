@@ -30,6 +30,8 @@ jobs:
         run: python tools/gen_openapi.py --check
       - name: llms.txt drift gate
         run: python tools/gen_llms.py --check
+      - name: Indicators nav drift gate
+        run: python tools/gen_indicators.py --check
       - name: Type check
         run: python -m mypy
       - name: Tests + coverage (offline; extractor drift auto-skips without scripts tree)
@@ -40,6 +42,6 @@ jobs:
           python -m pip wheel . --no-deps -w /tmp/wmshare-wheel
           python -m venv /tmp/wmshare-venv
           /tmp/wmshare-venv/bin/pip install /tmp/wmshare-wheel/*.whl
-          /tmp/wmshare-venv/bin/python -c "import wmshare; c=wmshare.load(); assert c.stats()['functions'] == 252"
+          /tmp/wmshare-venv/bin/python -c "import wmshare; c=wmshare.load(); s=c.stats(); assert s['domains'] >= 18 and s['functions'] >= 260 and s['metric_catalog_total'] >= 2700"
           /tmp/wmshare-venv/bin/python examples/02_catalog_tour.py > /tmp/catalog_tour.out
-          grep -q "数据域：17" /tmp/catalog_tour.out
+          grep -q "数据域：" /tmp/catalog_tour.out

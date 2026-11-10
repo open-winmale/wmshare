@@ -18,7 +18,7 @@
 | `market.index`（指数） | 指数键列表、指数成分、指数权重股、指数估值时序、指数估值趋势(周频整体法)… | money=元（市值）；ratio=小数（roe_ttm 等比率，指标层口径）；weight=小数（披露权重，上游 fmt 已换算，SDK 不再处理） |
 | `market.kline`（行情K线） | 历史 K 线、历史 K 线（周/月周期）、最新一根 K 线、是否场内 ETF、盘中日K快照… | price=元；volume=股（cn 由脚本的手 ×100 换算；港美上游即披露股，不再换算）；amount=元（本币）；percent=小数（0.01 = 1%） |
 | `market.margin`（融资融券） | 个股融资融券、最新两融 | money=元（融资买入额/偿还额/余额）；shares=股（融券卖出量/偿还量/余量） |
-| `market.moneyflow`（资金流向） | 资金流向历史、最新资金流向、有效资金流向（过滤空行）、盘中资金流快照、资金流向快照… | net=元（净流入金额）；date=YYYY-MM-DD |
+| `market.moneyflow`（资金流向） | 资金流向历史、最新资金流向、有效资金流向（过滤空行）、资金流当日读数（外部源）、资金流向快照… | net=元（净流入金额）；date=YYYY-MM-DD |
 | `market.stocks`（证券与行业基础） | 全市场证券列表、行业目录、行业成分股 | flag=布尔（is_st）；date=YYYY-MM-DD（listed，档案缺失为空串） |
 | `fund.estimates`（盈利预测与研报） | 机构盈利预测、盈利预测明细、评级统计、个股研报 | eps=元/股；money=元（归母净利润）；pe=倍（预测市盈率） |
 | `fund.indicators`（指标层） | 指标组：估值、盈利与回报（含杜邦）、成长、营收与利润规模、现金流… | ratio=小数（如 0.332 = 33.2%；指标层比率统一为小数，不是 15.0=15%）；money=元（与报表/资金流同口径；精选指标声明了量级守护范围） |
@@ -615,7 +615,7 @@ cli.moneyflow.board()
 
 #### `cli.moneyflow.live` — 盘中资金流快照
 
-盘中资金流快照（短 TTL）；数据源暂无快照时返回 None。
+资金流当日读数（外部公开源、短 TTL、非盘中行情、仅 A 股）；无快照时返回 None。
 
 **输入参数**
 
@@ -1913,6 +1913,8 @@ cli.indicator.metrics("600519", codes=["$PE_TTM_LAST", "$ROE_TTM_LAST"])
 ```
 
 ---
+
+> 指标码全量 2752 个：按数据类型分章的全量导航见 [INDICATORS.md](INDICATORS.md)（生成物）；本节为精选 74 码。
 
 #### 指标组 估值（valuation）
 价格与股本 × TTM 利润/净资产/营收/现金流：PE=市值/归母净利TTM，PB=市值/归母净资产，PEG=PE/(增速×100) 等（单位 倍（分位类为小数））
@@ -3526,6 +3528,9 @@ cli.info.profile("600519")
 - kline_window 返回 store 列式窗口（open/close/high/low/volume/amount），samplingName 为降序需自行反转
 - min1_live 为缓存命中制，miss 返回 nil
 - event_list 深度是 90 个 YEAR_DAY 文档（约 111 自然日），更老的条款公告不在返回内
+- board 不含 volume/amount——成交额与换手率须经 kline_window 批量取（call_batch，每批 ≤120 只）
+- board 不含债券信用评级、基金持仓、正股流通市值；需评级时用 notice 域公告原文抽取，勿以其他指标冒充
+- kline_window 可批量：标的参数名为 code，call_batch 一次 eval 拼 MAP 即覆盖全表（省请求次数，不省 EC）
 
 | 函数 | 中文 | 性质 | 层 | 参数 | 返回 | 单位与守护 |
 |---|---|---|---|---|---|---|
@@ -3652,10 +3657,10 @@ cli.info.profile("600519")
 #### 资金流向（`market.moneyflow`）
 
 **性质**：原始数据 · **版本**：1.1.0  
-个股日频资金流向（主力 / 超大单 / 大单 / 中单 / 小单净流入）、最新一行、 全市场快照一次取数（board）、盘中外部源短 TTL 快照。非 Level2 逐笔数据。
+个股日频资金流向（主力 / 超大单 / 大单 / 中单 / 小单净流入）、最新一行、 全市场快照一次取数（board）。非 Level2 逐笔数据。
 数据来源：外部行情源。
 单位口径：net=元（净流入金额）；date=YYYY-MM-DD。
-- 日频为 EOD 落库；query_last_live 为盘中快照（外部行情源 HTTP，短 TTL）
+- 日频为 EOD 落库；query_last_live 为外部公开源当日读数（HTTP，短 TTL；非盘中行情）
 - 非 Level2：为单子分级聚合口径，非逐笔委托
 
 | 函数 | 中文 | 性质 | 层 | 参数 | 返回 | 单位与守护 |
@@ -3663,7 +3668,7 @@ cli.info.profile("600519")
 | `moneyflow.query_bars` | 资金流向历史 | 原始数据 | L0 | `sym:string` — 6 位裸码 · `limit:int=20` — 根数，默认 20 | ARR · 资金流行（date/net_mf/elg_net/lg_net/md_net/sm_net）；字段 sas:string?（SAS） / date:string?（日期） / net_mf:float?（主力净流入） / elg_net:float?（超大单净流入） / lg_net:float?（大单净流入） / md_net:float?（中单净流入） / sm_net:float?（小单净流入） | — | 例：`cli.call("moneyflow.query_bars", sym='600519', limit=20)`
 | `moneyflow.query_last` | 最新资金流向 | 原始数据 | L0 | `sym:string` | MAP · 资金流行；字段 sas:string?（SAS） / date:string?（日期） / net_mf:float?（主力净流入） / elg_net:float?（超大单净流入） / lg_net:float?（大单净流入） / md_net:float?（中单净流入） / sm_net:float?（小单净流入） | — | 例：`cli.call("moneyflow.query_last", sym='600519')`
 | `moneyflow.query_valid` | 有效资金流向（过滤空行） | 原始数据 | L0 | `sym:string` · `limit:int=20` | ARR · 资金流行 | — | 例：`cli.call("moneyflow.query_valid", sym='600519', limit=20)`
-| `moneyflow.query_last_live` | 盘中资金流快照 | 原始数据 | L0 | `sym:string` | MAP · 资金流快照 | — | 例：`cli.call("moneyflow.query_last_live", sym='000807')`
+| `moneyflow.query_last_live` | 资金流当日读数（外部源） | 原始数据 | L0 | `sym:string` | MAP · 资金流快照 | — | 例：`cli.call("moneyflow.query_last_live", sym='000807')`
 | `moneyflow.snapshot` | 资金流向快照 | 原始数据 | L0 | `sym:string` | MAP · 快照 | — | 例：`cli.call("moneyflow.snapshot", sym='600519')`
 | `moneyflow.snapshot_net_mf` | 最新主力净流入 | 原始数据 | L0 | `sym:string` | float · 主力净流入（元） | — | 例：`cli.call("moneyflow.snapshot_net_mf", sym='600519')`
 | `moneyflow.board` | 全市场资金流快照 | 原始数据 | L0 | — | ARR · 资金流行（symbol/name/net_mf/net_mv_ratio/lg_net/elg_net/md_net/sm_net/industry，按主力净流入降序）；字段 symbol:string（标的代码） / name:string（证券简称） / net_mf:float?（主力净流入（元）） / net_mv_ratio:float?（主力净流入占流通市值比（小数）） / lg_net:float?（大单净流入（元）） / elg_net:float?（超大单净流入（元）） / md_net:float?（中单净流入（元）） / sm_net:float?（小单净流入（元）） / industry:string?（一级行业） | — | 例：`cli.call("moneyflow.board")`
@@ -3712,7 +3717,7 @@ cli.info.profile("600519")
 #### 指标层（`fund.indicators`）
 
 **性质**：指标 · **版本**：1.3.0  
-平台公式计算的派生指标——数值不存在于任何披露文件中，由平台以行情/报表/股本/ 分红等原始数据计算得出。11 个指标组精选 75 个常用指标代码按用途分组；全量 2197 个指标 代码随包内数据目录分发（generated/metrics.json）。
+平台公式计算的派生指标——数值不存在于任何披露文件中，由平台以行情/报表/股本/ 分红等原始数据计算得出。11 个指标组精选 74 个常用指标代码按用途分组；全量指标代码清单 随包内数据目录分发（generated/metrics.json，以生成时计数为准）。
 数据来源：平台计算。
 单位口径：ratio=小数（如 0.332 = 33.2%；指标层比率统一为小数，不是 15.0=15%）；money=元（与报表/资金流同口径；精选指标声明了量级守护范围）。
 - 指标代码带 _LAST 后缀 = 最新截面值；不带后缀 = 随最新财报期取值

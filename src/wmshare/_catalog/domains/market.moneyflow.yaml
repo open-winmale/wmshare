@@ -5,14 +5,14 @@ kind: raw
 category: market
 priority: P0
 description: 个股日频资金流向（主力 / 超大单 / 大单 / 中单 / 小单净流入）、最新一行、
-  全市场快照一次取数（board）、盘中外部源短 TTL 快照。非 Level2 逐笔数据。
+  全市场快照一次取数（board）。非 Level2 逐笔数据。
 data_origin: [外部行情源]
 units:
   net: 元（净流入金额）
   date: YYYY-MM-DD
 requires: {path: sys/moneyflow/init.xs, preloaded: true}
 notes:
-  - 日频为 EOD 落库；query_last_live 为盘中快照（外部行情源 HTTP，短 TTL）
+  - 日频为 EOD 落库；query_last_live 为外部公开源当日读数（HTTP，短 TTL；非盘中行情）
   - 非 Level2：为单子分级聚合口径，非逐笔委托
 functions:
   - name: moneyflow.query_bars
@@ -43,7 +43,7 @@ functions:
     returns: {desc: ARR · 资金流行}
     example: 'moneyflow.query_valid("600519", 20)'
   - name: moneyflow.query_last_live
-    cn: 盘中资金流快照
+    cn: 资金流当日读数（外部源）
     kind: raw
     layer: L0
     params:

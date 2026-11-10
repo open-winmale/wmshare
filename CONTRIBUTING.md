@@ -10,6 +10,8 @@ python3 tools/validate_catalog.py   # 域目录合同 + 防编造回溯
 python3 tools/gen_api_docs.py       # 重生成 docs/API.md（改了目录必须重跑）
 python3 tools/gen_typed_api.py      # 重生成类型化门面 docs 同源
 python3 tools/gen_openapi.py        # 重生成 docs/openapi.json + swagger.html
+python3 tools/gen_llms.py           # 重生成 llms.txt / llms-full.txt（AI 分发面）
+python3 tools/gen_indicators.py     # 重生成 docs/INDICATORS.md（指标码导航）
 pytest --cov=wmshare --cov-fail-under=85   # 全部测试（不联网）+ 覆盖率门禁
 python3 -m mypy                     # 类型检查
 ```

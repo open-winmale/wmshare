@@ -42,10 +42,10 @@ export WMSHARE_CLIENT_ID=<AppId> WMSHARE_CLIENT_SECRET=<API Key>
 
 - **门面层** `cli.<命名空间>.<方法>()`：21 个命名空间、131 个核心接口，方法名动宾化可猜
   （`kline.bars`、`dividend.yield_ttm`、`screener.screen_limit_up`）。
-- **目录层** `cli.call("<域>.<函数名>", ...)`：263 个底层函数按目录合同直调，
+- **目录层** `cli.call("<域>.<函数名>", ...)`：269 个底层函数按目录合同直调，
   参数名以 `cat.function(name)["params"]` 为准。门面未包装的函数经属性直达
   （如 `cli.dividend.index_where_high_yield_5()`）；目录之外的名字显式报错——
-  门面不遮蔽目录函数，263 个都能直达。
+  门面不遮蔽目录函数，269 个都能直达。
 
 两层的名字对不上是常态：目录按上游域组织，门面按使用视角命名（如目录 `bonus` 对应
 门面 `dividend`），17 个域挂 20 个门面。不必背映射——`cat.search("分红")` 一查即得；
@@ -95,6 +95,21 @@ cat.functions_by_domain()             # 按域列全部函数名（cli.call 的�
 美股用**裸代码**（`AAPL`、`BRK_B`）：带交易所后缀的 `AAPL.O`/`BRK.N` 上游会当成宏观序列，
 指标脚本里的 `symbol` 变量不绑定（`_LAST` 族 500、分位静默返 0）。SDK 已按随包代码表
 自动归一（`AAPL.O`→`AAPL`、`BRK.B`/`BRK-B`→`BRK_B`），归一无命中时才原样上送。
+
+### 2.6 数据在哪找（按数据类型速查）
+
+| 要找什么 | 在哪 | `cat.search` 关键词 |
+|---|---|---|
+| ETF 日 K / 判别场内基金 | `cli.kline.bars("510300")`、`cli.kline.is_etf`（ETF 无分钟线，盘中用 `live`/`snapshot`） | ETF |
+| 全市场筛选 / 涨跌宽度 | `cli.screener`（单票筛选器 + 全景/分桶/涨跌榜） | 筛选 |
+| 指数成分 / 权重 / 宽基估值 / 指数层指标码 | `cli.index`（全量码见 INDICATORS.md「指数及 ETF」章） | 指数 |
+| 盈利预测 / 业绩预告 | `cli.estimates`（`year_mark`：A=实际、E=预测）+ `cli.forecast`（预告/快报/日历） | 预测 |
+| 分红 / 股息率 | `cli.dividend`（`disc.bonus` 域 45 个函数）+ dividend 指标组 | 股息 |
+| 行业目录 / 成分股 / 行业均值与行业内分位 | `cli.stocks.industries()`、`cli.stocks.industry_members()`（码族见 INDICATORS.md「行业数据」章） | 行业 |
+| 宏观 / 中债收益率 / 期货主力 | `cli.macro`、`cli.indicator.get(sym, "$FUT_CLOSE", fut_symbol="cn.RB.SHF")` | 宏观 |
+
+全量指标码按数据类型的分章导航（每类码数、命名语法与死码清单）见 [INDICATORS.md](INDICATORS.md)；
+选码纪律：**目录里有的码不要自己算**（eval 按标的数逐票计费 EC）。
 
 ## 3. 单票菜谱
 
@@ -266,7 +281,7 @@ res.to_df()                       # 每标的一行长表（symbol 列在前；�
 - **算力超限**：单批触发 `CALC_LIMIT_EXCEEDED` 时减小 `batch_size`。
 - 三个入口的 `name`/`symbols` 都是位置参数；`_raw=True`/`_units="native"` 通用；
   批量入口不提供 `_df`（长表用 `to_df()`）。
-- **`name` 必须是目录函数名**（263 个，`cat.functions_by_domain()` 可查）；指标码不是
+- **`name` 必须是目录函数名**（269 个，`cat.functions_by_domain()` 可查）；指标码不是
   函数名——一票多码用 `cli.indicator.metrics(sym, codes)`，全市场指标码只能逐票调用
   （传 `"indicator.get"` 会报 `CatalogError`）。
 
@@ -389,6 +404,19 @@ poller.start()               # 或切后台：daemon 线程定时轮询；退出
 批量对前者是省、对后者不省。EC 消耗经 `BatchResult.ec_cost` /
 `cli.last_ec_cost` 可见，超大单次消耗 SDK 会主动告警。
 
+### 10.1 预置码 vs eval 自算：一次 EC 实测（2026-11-10）
+
+「全市场三年平均股息率 + ROE 筛选」两种做法的实测对比：
+
+- **eval 全市场自算**：一次消耗约 45.6 万 EC（eval 按标的数逐票计价；SDK 有阈值告警，
+  `Client(ec_warn_threshold=None)` 可关闭）；
+- **预置码路径**：`cli.batch_all("bonus.snapshot_yield_ttm", ...)` 12 次请求拿全市场 TTM
+  股息率，仅对候选逐票
+  `cli.indicator.metrics(sym, ["$BONUS_RATE_3Y_AVG_LAST", "$ROE_TTM_LAST"])`。
+
+纪律：**先 `cat.search` 查码再写计算**；批量省请求次数不省 EC；全市场快照类优先
+服务端直出接口（如 `cli.moneyflow.board()`）。
+
 ## 11. 用 AI 学会并用好 SDK
 
 完整指南见 [AI.md](AI.md)。三句话版本：
@@ -401,7 +429,7 @@ poller.start()               # 或切后台：daemon 线程定时轮询；退出
 
 - **和直接下交易所数据比，图什么？** 目录先行 + 单位统一 + 数据守护 + 批量限流治理——
   取数正确性的工程问题 SDK 替你管了。
-- **数据能离线吗？** 目录（263 函数/2639 指标码/代码表）随包离线；行情财报数据在云端，
+- **数据能离线吗？** 目录（269 个函数/2752 个指标码/代码表）随包离线；行情财报数据在云端，
   需凭证与额度。
 - **支持哪些 Python？** ≥3.10；pandas 为可选依赖。
 - **怎么贡献/报漏洞？** 见 [CONTRIBUTING](../CONTRIBUTING.md) 与 [SECURITY](../SECURITY.md)；

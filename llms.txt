@@ -1,21 +1,23 @@
 # wmshare
 
-> 覆盖 A 股、港股、美股的 Python 财经数据 SDK：18 个数据域、269 个底层函数、2752 个指标码、116 个核心接口。BSD-3-Clause 开源；取数需开放平台凭证（环境变量 WMSHARE_CLIENT_ID / WMSHARE_CLIENT_SECRET，见 README）。
+> 覆盖 A 股、港股、美股的 Python 财经数据 SDK：18 个数据域、269 个底层函数、2752 个指标码、131 个核心接口。BSD-3-Clause 开源；取数需开放平台凭证（环境变量 WMSHARE_CLIENT_ID / WMSHARE_CLIENT_SECRET，见 README）。
 
 ## Docs
 
 - [README](https://raw.githubusercontent.com/open-winmale/wmshare/main/README.md)：安装、凭证配置、选股实战（10 行全市场筛选）、能力与市场覆盖矩阵
 - [使用指南 GUIDE](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/GUIDE.md)：单票菜谱、批量取数、多市场、pandas、故障排查
+- [指标库 INDICATORS](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/INDICATORS.md)：全量指标码按族导航——命名语法、11 组精选口径、死码清单与场景速查（先查码，禁止自算已有指标）
 - [AI 用法](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/AI.md)：MCP server、skill、文档上下文与报错驱动的 Agent 接入路径
-- [API 参考](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/API.md)：116 个核心接口的参数 / 返回 / 单位口径
+- [API 参考](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/API.md)：131 个核心接口的参数 / 返回 / 单位口径
 - [Agent Skill](https://raw.githubusercontent.com/open-winmale/wmshare/main/src/wmshare/skills/wmshare/SKILL.md)：随包分发的 agent 用法合同（目录先行、单位铁律、决策树、坑位）
-- [可运行示例](https://raw.githubusercontent.com/open-winmale/wmshare/main/examples/README.md)：12 个编号示例（4 个离线可跑），CI 端到端覆盖
+- [可运行示例](https://raw.githubusercontent.com/open-winmale/wmshare/main/examples/README.md)：14 个编号示例（全部支持演示客户端离线试跑），CI 端到端覆盖
 - [CHANGELOG](https://raw.githubusercontent.com/open-winmale/wmshare/main/CHANGELOG.md)：版本历史
 
 ## Key Concepts
 
 - **单位铁律**：比率/涨跌幅/分位一律小数（0.0396 = 3.96%、0.42 = 42% 分位），金额=元、量=股；唯一例外是 cli.screener 宽度接口的 `*_pct`（百分数数值）
 - **目录先行**：`wmshare.load()` 后 `cat.search("中文")` 检索函数与指标码、`cat.function(name)["params"]` 查合同；禁止编造指标码（未知名在发请求前即报错）
+- **指标码命名**：`$主题+[窗口 3Y/5Y/10Y]+[统计量 TTM/YOY/AVG/MIN/TREND]+[_LAST]`；族前缀 `$PCT_*` 历史分位、`$ID_*` 行业均值、`$CUR_IND_*` 行业内分位、`$INDEX_*` 指数层、`$FUT_*` 期货主力——先查 `cat.search`，禁止自算已有指标（eval 按标的数逐票计费 EC，预置码便宜得多）
 - **MCP 优先**：`pip install "wmshare[mcp]"` 后先用 `wmshare_search` / `wmshare_contract`，再用 quote/history/metrics/company/screen/disclosures/batch/call
 - **批量绕 429**：服务端按请求次数限流（免费档 500 次/小时、5,000 次/日）；`cli.batch_all(name, codes)` 把 A 股 5,691 家压成 12 次请求；容错用批级 `on_batch_error="skip"`，勿用票级逐票放大；一个批次只能同一个市场
 - **多市场**：`Client(market="cn"/"hk"/"us")` 缺省 cn；港美专项（CCASS/沽空/评级）挂在对应市场客户端的 cli.intl 上
@@ -39,7 +41,7 @@
 - `market.kline`（行情K线）（cli.kline / cli.screener）：个股日 K（不复权 / 前复权 / 后复权）、最新一根、盘中最新快照、分钟分时、 单股快照与均线类筛选、全市场涨跌宽度
 - `market.macro`（宏观）（cli.macro）：宏观与行业时序——宏观指标原生点列/as-of/采样频率（$CPI/$GDP/$M2 等指标码 经本域取数）、中债收益率曲线按曲线名+期限取值…
 - `market.margin`（融资融券）（cli.margin）：个股融资融券日频——融资买入/偿还/余额，融券卖出/偿还/余量
-- `market.moneyflow`（资金流向）（cli.moneyflow）：个股日频资金流向（主力 / 超大单 / 大单 / 中单 / 小单净流入）、最新一行、 全市场快照一次取数（board）、盘中外部源短 TTL…
+- `market.moneyflow`（资金流向）（cli.moneyflow）：个股日频资金流向（主力 / 超大单 / 大单 / 中单 / 小单净流入）、最新一行、 全市场快照一次取数（board）
 - `market.stocks`（证券与行业基础）（cli.stocks）：证券基础库——全市场证券列表（代码/名称/交易所/三级行业/上市日期/ST）、 行业目录（申万 sw2021、恒生 hsi）、行业成分股（支持…
 
 ## When NOT to use
