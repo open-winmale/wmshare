@@ -10,6 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.14.3] - 2026-11-10
+
+### Fixed
+- **期货误标「未覆盖」**：llms.txt「When NOT to use」与 SKILL.md 摘要均把期货列在未覆盖清单
+  （实际 `$FUT_*` 27 码 + `fut_symbol` 自 1.12 已覆盖）——AI 照 llms.txt 会得出错误结论；已从
+  未覆盖清单移除并改为正向说明
+- README「基本功能」`cli.indicator` 行补期货主力连续（`$FUT_*` + `fut_symbol`）
+
 ## [1.14.2] - 2026-11-10
 
 ### Changed

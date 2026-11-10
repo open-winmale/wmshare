@@ -17,7 +17,7 @@ disclosures/statement/segments/dividend/estimates/corporate/market/intl/notice �
 
 **它不是**：回测框架（没有撮合/仓位管理）；数据库（数据经云端 API 运行时获取，
 不随包分发）；全品类数据超市（18 个数据域，覆盖 A 股个股常用研究数据、宏观时序与期货主力连续指标码，
-基金净值/期货/期权/债券未覆盖）。
+基金净值/期权/债券未覆盖）。
 
 ## 1. 环境前置
 

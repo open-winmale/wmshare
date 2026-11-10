@@ -94,7 +94,7 @@ for s, n, v, pe, pct in rows[:8]:                            # 取前 8 行打�
 | `cli.moneyflow` | 主力/超大单/大单/中单/小单净流入（日频） | 金额=元 |
 | `cli.statements` | 三大报表多期、合并 vs 母公司、目录树、审计意见 | 报表原币元 |
 | `cli.segments` | 经营分部：分产品/业务/区域收入构成 | 元；比率=小数 |
-| `cli.indicator` | 按指标码取数：估值/盈利/成长/现金流/杜邦；全量码表见 [INDICATORS.md](docs/INDICATORS.md) | 比率=小数 |
+| `cli.indicator` | 按指标码取数：估值/盈利/成长/现金流/杜邦、期货主力连续（`$FUT_*` + `fut_symbol`）；全量码表见 [INDICATORS.md](docs/INDICATORS.md) | 比率=小数 |
 | `cli.valuation` | PE/PB/PS/市赚率(PR)的历史统计与分位（窗口上限 3 年） | 分位=小数 |
 | `cli.notice` | 公告检索、回购/减持信号 | — |
 | `cli.filings` | 定期报告清单与最新 | — |
@@ -291,7 +291,7 @@ disclosures/statement/segments/dividend/estimates/corporate/market/intl/notice �
 
 **它不是**：回测框架（没有撮合/仓位管理）；数据库（数据经云端 API 运行时获取，
 不随包分发）；全品类数据超市（18 个数据域，覆盖 A 股个股常用研究数据、宏观时序与期货主力连续指标码，
-基金净值/期货/期权/债券未覆盖）。
+基金净值/期权/债券未覆盖）。
 
 ## 1. 环境前置
 
