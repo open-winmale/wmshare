@@ -282,6 +282,7 @@ def screen(
     industry: str | None = None,
     limit: int = 20,
     desc: bool = True,
+    where: str | None = None,
     output: str = "sample",
     max_rows: int = 100,
 ) -> dict[str, Any]:
@@ -314,6 +315,14 @@ def screen(
         data = cli.screener.index_breadth_bin_industries(idx=idx)
     elif action == "top_movers":
         data = cli.screener.index_top_movers(limit=int(limit), desc=desc, idx=idx)
+    elif action == "query":
+        if not where:
+            raise ValueError("action=query 需要 where（如 \"$ROE_TTM_LAST > 0.15\"）")
+        data = cli.screener.query(
+            where, order=p.get("order"), desc=bool(p.get("desc", desc)),
+            limit=int(limit), offset=int(p.get("offset") or 0),
+            fields=p.get("fields"), idx=idx,
+        )
     elif action == "industries":
         data = cli.stocks.industries()
     elif action == "industry_members":

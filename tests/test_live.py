@@ -356,6 +356,18 @@ def test_screener_top_movers(cli):
     assert percents == sorted(percents, reverse=True), "涨幅榜应按涨跌幅降序"
 
 
+def test_screener_query_market(cli):
+    """全市场条件选股：一条表达式出 count + 行；count 与 limit 无关（防 topN 当全市场）。"""
+    where = "$ROE_TTM_LAST > 0.30 && !$IS_SUSPEND"
+    res = _call_or_xfail(lambda: cli.screener.query(where, limit=5))
+    assert res["count"] >= len(res["rows"]) and len(res["rows"]) <= 5
+    row = res["rows"][0]
+    assert {"symbol", "name", "$ROE_TTM_LAST"} <= set(row)
+    assert row["$ROE_TTM_LAST"] > 0.30
+    only = _call_or_xfail(lambda: cli.screener.query(where, limit=0))
+    assert only["rows"] == [] and only["count"] == res["count"]
+
+
 # ---------------------------------------------------------------- 参考 reference
 def test_info_profile(cli):
     prof = cli.info.profile(MAIN)

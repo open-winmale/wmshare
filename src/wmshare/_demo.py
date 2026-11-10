@@ -426,6 +426,7 @@ class DemoClient:
             index_breadth_summary=lambda: dict(self._data["screener"]["breadth_summary"]),
             index_breadth_bins=lambda: [dict(row) for row in self._data["screener"]["breadth_bins"]],
             index_top_movers=self._top_movers,
+            query=self._screen_query,
         )
         self.valuation = SimpleNamespace(hist_stats=self._valuation_hist_stats)
         self.index = self._index_ns()
@@ -665,6 +666,17 @@ class DemoClient:
     def _screen(self, symbol: str, key: str) -> bool:
         sym = self._require_symbol(symbol)
         return bool(self._data["screener"]["screens"][sym][key])
+
+    def _screen_query(self, where: str, order: str | None = None, desc: bool = True,
+                      limit: int = 50, offset: int = 0,
+                      fields: list[str] | None = None, idx: str | None = None,
+                      _df: bool = False) -> Any:
+        """演示快照只有 10 只票的截面，没有全市场索引列——不做假筛选。"""
+        raise UsageError(
+            "demo 快照不含全市场索引，screener.query 需真实凭证（Client.from_env()）；"
+            "离线可用 index_breadth_summary / index_top_movers / screen_* 演示接口",
+            code="demo_unsupported",
+        )
 
     def _top_movers(self, limit: int = 20, desc: bool = True,
                     idx: str | None = None, _df: bool = False) -> Any:

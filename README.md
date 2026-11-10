@@ -46,47 +46,45 @@ export WMSHARE_CLIENT_ID=<AppId> WMSHARE_CLIENT_SECRET=<API Key>   # 方式一�
 
 <!-- mcp-name: io.github.open-winmale/wmshare -->
 
-### 选股实战：10 行筛出「高股息 + PE 十年低位」
+### 选股实战：一条表达式筛出「三年股息均值 > 3% 且 ROE > 15%」
 
-逐票请求全市场会撞限流（5,691 家 = 5,691 次请求），所以先用一次批量拿到股息率（12 次请求），只对候选逐票查 PE 与十年分位：
+条件写成一条表达式交给服务端索引引擎扫全市场（不是逐票请求、也不是本地过滤）：
+`count` 是**真实命中数**，`rows` 只是前 N 条——不会把 topN 当成全市场结果：
 
 ```python
 import wmshare
 cli = wmshare.Client.from_env()
-pool = cli.stocks.list()                                     # 全市场 5,691 家
-meta = {r["symbol"]: r for r in pool}
-yld = cli.batch_all("bonus.snapshot_yield_ttm", list(meta))   # 12 次请求，不是 5,691 次
-top = sorted(((s, v) for s, v in yld.results.items() if isinstance(v, (int, float))),
-             key=lambda kv: -kv[1])
-cand = [(s, v) for s, v in top if 0.03 <= v <= 0.10 and not meta[s].get("is_st")][:60]
-rows = []
-for s, v in cand:
-    m = cli.indicator.metrics(s, ["$PE_TTM_LAST", "$PCT_PE_TTM_10Y_LAST"])
-    pe, pct = m["$PE_TTM_LAST"], m["$PCT_PE_TTM_10Y_LAST"]
-    if pe and 0 < pe < 40 and pct is not None and pct <= 0.5:
-        rows.append((s, meta[s]["name"], v, pe, pct))
-rows.sort(key=lambda r: r[4])
-for s, n, v, pe, pct in rows[:8]:                            # 取前 8 行打印
-    print(f"{s}  {n}  股息率 {v:.2%}  PE {pe:.1f}  十年分位 {pct:.1%}")
+res = cli.screener.query(
+    "$BONUS_RATE_3Y_AVG_LAST > 0.03 && $ROE_TTM_LAST > 0.15"
+    " && !$IS_ST && !$IS_SUSPEND",
+    order="$BONUS_RATE_3Y_AVG_LAST", limit=10,
+)
+print(res["count"])            # 全市场命中数（不是 10）；2026-11-10 实测 108
+for r in res["rows"][:5]:
+    print(f'{r["symbol"]}  {r["name"]}  '
+          f'三年股息率均值 {r["$BONUS_RATE_3Y_AVG_LAST"]:.2%}  '
+          f'ROE {r["$ROE_TTM_LAST"]:.2%}')
+# 900948  伊泰B股  三年股息率均值 21.04%  ROE 16.31%
 ```
 
-没配凭证也能先看调用面：`cli = wmshare.demo_client()`（同签名、不联网）。这是
-2026-10-30 真实 API 固定快照：10 只演示宇宙 + 当日全市场 screener，非实时数据；
-换成 `Client.from_env()` 即接真实数据。
+`where` 用 XS 语法（`&&` / `||` / `!`，比率一律小数），`$码` 必须是目录内真码；
+要分页续取用 `offset`，只要命中数用 `limit=0`。没配凭证也能先看调用面：
+`cli = wmshare.demo_client()`（同签名、不联网）——`query` 需真实凭证，离线快照只存
+10 只演示宇宙 + 当日全市场 screener，非实时数据；换成 `Client.from_env()` 即接真实数据。
 
 ## 基本功能
 
-随包离线目录：**18 个数据域 · 269 个底层函数 · 2752 个指标代码**；友好层 **131 个核心接口**，
+随包离线目录：**18 个数据域 · 269 个底层函数 · 2752 个指标代码**；友好层 **132 个核心接口**，
 按使用视角组织为（11 个指标组、74 个精选常用指标代码，`cat.search("中文")` 可编程检索）：
 
 | 门面 | 核心能力 | 单位口径 |
 |---|---|---|
 | `cli.kline` | 日 K 三种复权（自上市首日起全覆盖，最早 1991 年）、周 K/月 K、最新/盘中快照、1 分钟分时（个股；ETF 无分钟源，查询被拦截）、ETF/指数 | 价格=元、量=股、涨跌幅=小数 |
-| `cli.screener` | 单票筛选器（涨停/均线/动量/回撤/放量）+ 全市场涨跌全景/分桶/行业分布/涨跌榜 | 阈值=小数；涨跌家数统计的 `*_pct`=百分数数值 |
+| `cli.screener` | 全市场条件选股（`query`，一条 `$码` 表达式出命中数与前 N 行）+ 单票筛选器（涨停/均线/动量/回撤/放量）+ 全市场涨跌全景/分桶/行业分布/涨跌榜 | 阈值=小数；涨跌家数统计的 `*_pct`=百分数数值 |
 | `cli.moneyflow` | 主力/超大单/大单/中单/小单净流入（日频） | 金额=元 |
 | `cli.statements` | 三大报表多期、合并 vs 母公司、目录树、审计意见 | 报表原币元 |
 | `cli.segments` | 经营分部：分产品/业务/区域收入构成 | 元；比率=小数 |
-| `cli.indicator` | 按指标码取数：估值/盈利/成长/现金流/杜邦、期货主力连续（`$FUT_*` + `fut_symbol`）；全量码表见 [INDICATORS.md](docs/INDICATORS.md) | 比率=小数 |
+| `cli.indicator` | 按指标码取数：估值/盈利/成长/现金流/杜邦、期货主力连续（`$FUT_CLOSE` 等 27 码 + `fut_symbol`）；全量码表见 [INDICATORS.md](docs/INDICATORS.md) | 比率=小数 |
 | `cli.valuation` | PE/PB/PS/市赚率(PR)的历史统计与分位（窗口上限 3 年） | 分位=小数 |
 | `cli.notice` | 公告检索、回购/减持信号 | — |
 | `cli.filings` | 定期报告清单与最新 | — |
@@ -115,8 +113,9 @@ for s, n, v, pe, pct in rows[:8]:                            # 取前 8 行打�
   （概览/股票行情/股票指标/行业/指数及ETF/宏观/期货/可转债/港美）见
   [docs/INDICATORS.md](docs/INDICATORS.md)。
 - **全市场批量**：`cli.batch_all(name, codes)` 把 A 股 5,691 家压成 **12 次请求**绕开限流。
-- **全市场筛选服务端直出**：`cli.screener` 涨跌全景/分桶/行业分布/涨跌榜走服务端预计算索引，毫秒级。
-- **离线目录防编造**：269 个底层函数、131 个核心接口、2,752 个指标码离线可查
+- **全市场筛选服务端直出**：`cli.screener.query("$ROE_TTM_LAST > 0.15")` 一条表达式扫全市场索引
+  （`count`=真实命中数）；涨跌全景/分桶/行业分布/涨跌榜同走服务端预计算索引，毫秒级。
+- **离线目录防编造**：269 个底层函数、132 个核心接口、2,752 个指标码离线可查
   （`cat.search("中文")`），目录之外的名字显式报错。
 - **零凭证离线试跑**：`wmshare.demo_client()`（同签名、不联网，2026-10-30 固定快照；非实时数据）。
 - **数据守护**：全库单位统一（比率=小数、金额=元、量=股），返回前量级/不变量校验，违例抛 `DataError`。
@@ -125,7 +124,7 @@ for s, n, v, pe, pct in rows[:8]:                            # 取前 8 行打�
 
 - **先查目录再写代码**（一行验证）：
   `python3 -c "import wmshare; print(wmshare.load().search('股息'))"`
-- **本地 MCP server**：20 个 task tools；全部 134 个 friendly API——131 登记 + 3 组合——均可用
+- **本地 MCP server**：20 个 task tools；全部 135 个 friendly API——132 登记 + 3 组合——均可用
   `wmshare_call(target=..., mode="api")` 兜底，macro 域仅此路径。配置：`pip install "wmshare[mcp]"`
   → `wmshare-mcp setup --client-id <AppId> --client-secret-stdin --market cn`（提示后粘贴 API Key，
   `wmshare-mcp doctor` 体检）；客户端最小配置
@@ -169,6 +168,7 @@ for s, n, v, pe, pct in rows[:8]:                            # 取前 8 行打�
 | 看估值历史均值/中位/分位 | `cli.valuation.hist_stats(sym, "pe", "3y")` | 拉 3 年估值序列→自己算统计量 |
 | 看公司在行业里的位置 | `$CUR_IND_ROE_PCT_LAST`（行业内 ROE 分位，1=行业最高） | 拉全行业成分→逐票取 ROE→排序 |
 | 筛高股息且派息可持续 | `cli.dividend.screen_quality(sym)` | 自写股息/派息率质量模型 |
+| 全市场按任意指标组合选股 | `cli.screener.query("$BONUS_RATE_3Y_AVG_LAST > 0.03 && $ROE_TTM_LAST > 0.15")` | 先批量拉全市场→本地过滤（还容易漏样本） |
 | 站上 20 日线了吗 | `cli.screener.screen_above_ma20(sym)` | 拉 K 线→算均线→比较 |
 | 全市场今天涨跌如何 | `cli.screener.index_breadth_summary()` | 全市场扫描→聚合统计 |
 | 看最新十大股东 | `cli.equity.query_holder10(sym)` | 翻定期报告→抄股东名单 |
@@ -256,6 +256,6 @@ cli.call_batch("kline.snapshot", ["600519", "000001"]) # ③ 单批（≤500）�
 
 - **AI 原生**：随包 [SKILL.md](src/wmshare/skills/wmshare/SKILL.md)、[AI 用法](docs/AI.md)、本地 MCP server（skill 可复制进 .agents/.zcode/.claude 的 skills/）
 - 生态工具 [big-winner](https://github.com/open-winmale/big-winner)：基于本 SDK 的开源工具。
-- **文档中心 [docs/](docs/README.md)**：使用指南 GUIDE（单票菜谱/批量/多市场/故障排查）· 指标库 [INDICATORS.md](docs/INDICATORS.md)（全量指标码按数据类型分章）· AI 用法 · llms.txt 索引 · [API 参考](docs/API.md)（按资产类别分章的 131 个核心接口 + 指标组）
+- **文档中心 [docs/](docs/README.md)**：使用指南 GUIDE（单票菜谱/批量/多市场/故障排查）· 指标库 [INDICATORS.md](docs/INDICATORS.md)（全量指标码按数据类型分章）· AI 用法 · llms.txt 索引 · [API 参考](docs/API.md)（按资产类别分章的 132 个核心接口 + 指标组）
 - **可转债日更管线**：`cli.cbond.daily()` → `article()` → `figures()` 一条命令出图文（三层口径 + 三道闸 + 状态机 + 事件日历，每个数字带 `sources` 与 `as_of`，缺条目抛错而非补猜测值）；实战 notebook 见 [docs/notebooks/cb_double_low.ipynb](docs/notebooks/cb_double_low.ipynb)（2026-11-07 真实数据）
 - **示例课程 [examples/](examples/README.md)**：14 个编号示例（入门→进阶→生产→AI），全部支持演示客户端离线试跑，CI 端到端覆盖

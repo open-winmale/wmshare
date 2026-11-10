@@ -1,8 +1,8 @@
-"""选股与全景：单票筛选器一行布尔 + 全市场涨跌宽度（服务端索引直出）。
+"""选股与全景：全市场条件选股 + 单票筛选器 + 全市场涨跌宽度（服务端索引直出）。
 
 前提：凭证必填（export WMSHARE_CLIENT_ID=... WMSHARE_CLIENT_SECRET=...）；`--demo` 用随包演示数据零凭证试跑
 运行：python examples/04_screener.py
-学到：涨停/均线/放量单票筛选；全景/分桶/涨跌榜；*_pct 百分数例外口径
+学到：一条表达式全市场选股（count 是真命中数）；涨停/均线/放量单票筛选；全景/分桶/涨跌榜；*_pct 百分数例外口径
 文档：docs/GUIDE.md（单票菜谱）
 """
 import sys
@@ -60,7 +60,23 @@ def main(cli=None, demo: bool = False) -> None:
     except WmshareError as e:
         print(f"  跳过：code={e.code} {e}")
 
-    # ---- 底层函数直达：门面不遮蔽目录函数，252 个都能经属性调用 ----
+    # ---- 全市场条件选股：一条表达式，服务端索引直出（count 才是真命中数）----
+    print("\n--- 全市场条件选股：三年股息均值 > 3% 且 ROE > 15% ---")
+    try:
+        res = cli.screener.query(
+            "$BONUS_RATE_3Y_AVG_LAST > 0.03 && $ROE_TTM_LAST > 0.15"
+            " && !$IS_ST && !$IS_SUSPEND",
+            order="$BONUS_RATE_3Y_AVG_LAST", limit=5,
+        )
+        print(f"  全市场命中 {res['count']} 只（下面只列前 {len(res['rows'])} 只）")
+        for r in res["rows"]:
+            print(f"  {r['symbol']}  {r['name']:<6}"
+                  f"  三年股息率均值 {r['$BONUS_RATE_3Y_AVG_LAST']:.2%}"
+                  f"  ROE {r['$ROE_TTM_LAST']:.2%}")
+    except WmshareError as e:
+        print(f"  跳过：code={e.code} {e}")
+
+    # ---- 底层函数直达：门面不遮蔽目录函数，269 个都能经属性调用 ----
     print("\n--- 底层函数直达：cli.screener.screen_up_today(sym) ---")
     for sym in WATCHLIST[:2]:
         try:

@@ -24,7 +24,7 @@ SAMPLES = {
     "idx": None, "key": "index.hs300", "keys": ["index.hs300"],
     "rows": [], "props": ["close"], "sas": "2024-Q4", "asof": "2026-06-30",
     "category": "回购", "window": "3y", "adj": "qfq", "scope": "合并",
-    "metric": "pe",
+    "metric": "pe", "where": "$ROE_TTM_LAST > 0.15",
     "opts": {"scope": "合并", "n": 2}, "fields": ["percent"],
 }
 _BY_TYPE = {"string": "x", "int": 1, "float": 1.0, "bool": True, "array": [], "object": {}}

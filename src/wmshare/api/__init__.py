@@ -9,8 +9,9 @@
   - 本层是目录合同的薄翻译：高频方法显式包装；目录内其余函数经 ``__getattr__``
     属性直达（如 ``cli.kline.screen_above_ma20``、``cli.dividend.screen_quality``），
     目录之外的名字显式 AttributeError——269 个底层函数零遮蔽。
-  - 选股能力集中在 ``cli.screener``：单票筛选器（bool）与全市场宽度（服务端
-    预计算索引直出）显式包装，kline 目录的其余筛选函数经属性直达。
+  - 选股能力集中在 ``cli.screener``：单票筛选器（bool）、全市场宽度/涨跌榜与
+    全市场条件选股 ``query()``（服务端索引直出）显式包装，kline 目录的其余筛选
+    函数经属性直达。
 
 使用：
     cli = wmshare.Client.from_env()
@@ -32,6 +33,10 @@ from wmshare.units import finish_metric
 
 # 服务端分桶 label 的排序前缀（如 i_涨停 / h_+5%~10%），单字母+下划线，对用户是噪音
 _BIN_PREFIX = re.compile(r"^[a-z]_")
+
+# 选股条件里的指标码（$ 开头）与 Python 式布尔词（XS 只认 && / || / !）
+_METRIC_CODE = re.compile(r"\$[A-Za-z_][A-Za-z0-9_]*")
+_PY_BOOL_RE = re.compile(r"(?<![A-Za-z0-9_])(and|or|not)(?![A-Za-z0-9_])")
 
 
 def _strip_bin_prefixes(rows: Any, key: str) -> Any:
@@ -790,11 +795,13 @@ class StocksApi(_Api):
 
 # ---------------------------------------------------------------- 选股 market
 class ScreenerApi(_Api):
-    """选股与全景：单票筛选器（bool）+ 全市场涨跌宽度（服务端预计算索引直出）。
+    """选股与全景：单票筛选器（bool）+ 全市场条件选股 + 涨跌宽度（服务端索引直出）。
 
     筛选阈值统一**小数**（0.10 = 10%）；事件筛选以「当日有成交」为前置
     （停牌恒 False）。全市场四件套（全景/分桶/行业分布/涨跌榜）由服务端索引
     聚合直出、免本地计算；``idx`` 不传时由服务端解析 A 股最新查询索引。
+    ``query()`` 是条件选股主入口：一条 ``$码`` 表达式出全市场命中数与前 N 行，
+    替代「先批量取数再本地过滤」的逐票路径。
     口径注记：宽度返回中 ``up_pct``/``down_pct``/``flat_pct`` 与分桶
     ``pct_of_total`` 为百分数数值（52.3 = 52.3%），``median_pct`` 与涨跌幅为
     小数（0.01 = 1%）。kline 目录的其余筛选函数经属性直达
@@ -906,6 +913,114 @@ class ScreenerApi(_Api):
         else:
             rows = self._c.call("kline.index_top_movers", idx=idx, limit=limit, desc=desc)
         return _to_df(rows) if _df else rows
+
+    # ---- 全市场条件选股（服务端索引引擎直出，免逐票 eval）----
+    def _metric_code(self, code: Any, *, what: str) -> str:
+        """输出列/排序键必须是单个 ``$码`` 且在目录内（防编造）。"""
+        text = str(code).strip()
+        if not _METRIC_CODE.fullmatch(text):
+            raise UsageError(
+                f"{what} 必须是单个指标码（如 \"$ROE_TTM_LAST\"），收到 {code!r}；"
+                "码先 cat.search(...) 查", code="params")
+        return text
+
+    def _check_codes(self, codes: list[str]) -> None:
+        bad = [c for c in codes if self._c.catalog.metric(c) is None]
+        if bad:
+            raise CatalogError(
+                f"未知指标 {bad}（防编造：code 必须在指标目录内）；"
+                "先 cat.search(...) 查真码", code="metric")
+
+    def query(self, where: str, order: str | None = None, desc: bool = True,
+              limit: int = 50, offset: int = 0, fields: list[str] | None = None,
+              idx: str | None = None, _df: bool = False) -> Any:
+        """全市场条件选股：一条表达式扫最新索引，返回命中总数与前 N 行。
+
+        ``where`` 是 XS 布尔表达式（与/或用 ``&&`` / ``||``、非用 ``!``；比率一律
+        小数，0.03 = 3%），服务端索引引擎一次查完，**不是**逐票 eval、也不需要先
+        拉全市场再本地过滤。返回 ``{"count": 命中总数, "rows": [...]}``——``count``
+        是全市场真实命中数，与 ``limit`` 无关（防把 topN 当全市场）。
+
+        :param where: 条件表达式，$码须在指标目录内，如 "$BONUS_RATE_3Y_AVG_LAST > 0.03 && $ROE_TTM_LAST > 0.15"
+        :param order: 排序指标码（单个 $码）；不传则按索引顺序
+        :param desc: order 降序（默认 True，高分/高值在前）
+        :param limit: 返回行数，默认 50；传 0 = 只取 count；受 Client(max_limit=...) 与单次 10000 行硬上限钳制
+        :param offset: 跳过前 N 条（配合 order 分页）
+        :param fields: 额外返回列（$码 列表）；传了就用它替代默认列集合
+        :param idx: 服务端索引键（高级；默认不传 = 当前市场最新查询索引）
+
+        口径与成本：索引为**日频 EOD**（盘中不刷新）；行键 = ``symbol`` / ``name``
+        + 指标码原文（同 ``indicator.metrics`` 的键）。``$IS_ST``/``$IS_SUSPEND``
+        仅 A 股索引有列，港美请改用其它条件。成本 = 1 次请求，EC 随 where/order
+        引用列的物化成本变化（实测 70~4.8 万，不计标的数），远低于全市场逐票
+        eval（≈45.6 万且按标的数放大）；``_df=True`` 只把 rows 转 DataFrame，
+        count 从默认返回取。
+        """
+        text = str(where or "").strip()
+        if not text:
+            raise UsageError(
+                "where 不能为空；示例：cli.screener.query(\"$ROE_TTM_LAST > 0.15\")",
+                code="params")
+        if _PY_BOOL_RE.search(text):
+            raise UsageError(
+                "where 是 XS 表达式：与/或用 && / ||、非用 !（不是 Python 的 "
+                f"and/or/not）：{where!r}", code="params")
+        try:
+            limit, offset = int(limit), int(offset)
+        except (TypeError, ValueError):
+            raise UsageError(f"limit/offset 必须是整数（收到 {limit!r}/{offset!r}）",
+                             code="params") from None
+        if limit < 0 or offset < 0:
+            raise UsageError(f"limit/offset 不能为负（收到 {limit}/{offset}）", code="params")
+        cap = min(self._c.max_limit or 10000, 10000)
+        if limit > cap:
+            raise LimitError(
+                f"query: limit={limit} 超过单次上限 {cap}"
+                "（分页用 offset 续取；可在 Client(max_limit=...) 调整，设 None 关闭）",
+                code="limit")
+        codes = list(dict.fromkeys(_METRIC_CODE.findall(text)))
+        if not codes:
+            raise UsageError(
+                f"where 里没有 $指标码：{where!r}；示例 "
+                "\"$BONUS_RATE_3Y_AVG_LAST > 0.03 && $ROE_TTM_LAST > 0.15\"（码先 cat.search 查）",
+                code="params")
+        self._check_codes(codes)
+        order_code = self._metric_code(order, what="order") if order else None
+        if order_code is not None:
+            self._check_codes([order_code])
+        extra = [self._metric_code(c, what="fields") for c in (fields or [])]
+        self._check_codes(extra)
+        projected = extra if extra else ([order_code] if order_code else []) + codes
+        labels = list(dict.fromkeys(["$SYMBOL", "$NAME", *projected]))
+        key = "LatestIndexKey()"
+        if idx is not None:
+            if not re.fullmatch(r"[\w.\-]+", str(idx)):
+                raise UsageError(f"idx 只接受索引键（如 index.hs300），收到 {idx!r}",
+                                 code="params")
+            key = f'"{idx}"'
+        cond = json.dumps(text, ensure_ascii=False)
+        lines = [
+            f"idx := {key}",
+            f'_ := INDEX_FIELD_LOAD(idx, {", ".join(labels)})',
+            f'ids := INDEX_QUERY_SPEC(idx, {{"where": {cond}, "result": "row_ids"}})',
+        ]
+        if limit:
+            spec = f'"where": {cond}'
+            if order_code is not None:
+                spec += f', "order": "{order_code}", "order_desc": {str(bool(desc)).lower()}'
+            spec += f', "limit": {limit}, "offset": {offset}'
+            lines.append(f"rows := INDEX_QUERY_SPEC(idx, {{{spec}}})")
+            it = ", ".join(labels)
+            lines.append(f'return {{"count": LEN(ids), "rows": CONOF(rows, ITER({it}))}}')
+        else:
+            lines.append('return {"count": LEN(ids), "rows": []}')
+        res = self._c.eval_result(lines)
+        if not isinstance(res, dict):
+            return res  # 上游异常形态原样透传（同 indicator.metrics）
+        rows = res.get("rows") or []
+        keys = ["symbol", "name", *labels[2:]]
+        out = [dict(zip(keys, r)) if isinstance(r, (list, tuple)) else r for r in rows]
+        return _to_df(out) if _df else {"count": int(res.get("count") or 0), "rows": out}
 
 
 # ---------------------------------------------------------------- 财务 fundamentals
@@ -1796,6 +1911,7 @@ FRIENDLY_INDEX: list[tuple[str, str, str, str, str]] = [
     ("market", "screener", "index_breadth_bin_industries", "分桶行业分布",
      "kline.index_breadth_bin_industries"),
     ("market", "screener", "index_top_movers", "涨跌榜", "kline.index_top_movers"),
+    ("market", "screener", "query", "全市场条件选股", "组合接口（宿主 INDEX_QUERY_SPEC）"),
     ("market", "margin", "query", "个股融资融券历史", "margin.query"),
     ("market", "margin", "latest", "最新两融单行", "margin.latest"),
     ("market", "cbond", "board", "转债全市场面板", "cbond.board"),

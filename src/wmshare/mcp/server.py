@@ -219,9 +219,9 @@ def build_server(runtime: MCPRuntime | None = None) -> FastMCP:
         action: Annotated[
             Literal[
                 "boolean", "breadth_summary", "breadth_bins", "breadth_industries",
-                "top_movers", "industries", "industry_members",
+                "top_movers", "industries", "industry_members", "query",
             ],
-            Field(description="筛选动作；boolean 需要 symbol/test"),
+            Field(description="筛选动作；boolean 需要 symbol/test，query 需要 where"),
         ],
         symbol: Annotated[str | None, Field(description="单票筛选用的标的代码")] = None,
         test: Annotated[
@@ -231,18 +231,19 @@ def build_server(runtime: MCPRuntime | None = None) -> FastMCP:
             ] | None,
             Field(description="action=boolean 时的筛选器"),
         ] = None,
-        params: Annotated[dict[str, Any] | None, Field(description="筛选器额外参数，如 min_chg/min_ratio")] = None,
-        idx: Annotated[str | None, Field(description="宽度/涨跌榜的服务端索引键")] = None,
+        params: Annotated[dict[str, Any] | None, Field(description="筛选器额外参数，如 min_chg/min_ratio；query 可带 order/offset/fields")] = None,
+        idx: Annotated[str | None, Field(description="宽度/涨跌榜/条件选股的服务端索引键")] = None,
         industry: Annotated[str | None, Field(description="industry_members 需要的行业 id")] = None,
         limit: LimitArg = 20,
-        desc: Annotated[bool, Field(description="top_movers 是否降序")] = True,
+        desc: Annotated[bool, Field(description="top_movers / query 的 order 是否降序")] = True,
+        where: Annotated[str | None, Field(description="action=query 的条件表达式（$码 用 && / || / !，比率=小数）")] = None,
         output: OutputArg = "sample",
         max_rows: MaxRowsArg = 100,
     ) -> dict[str, Any]:
-        """取单票筛选、全市场宽度、行业分布、涨跌榜或行业成分。"""
+        """取单票筛选、全市场条件选股、宽度、行业分布、涨跌榜或行业成分。"""
         return tools.screen(rt, action, symbol=symbol, test=test, params=params,
                             idx=idx, industry=industry, limit=limit, desc=desc,
-                            output=output, max_rows=max_rows)
+                            where=where, output=output, max_rows=max_rows)
 
     @mcp.tool()
     @protocol

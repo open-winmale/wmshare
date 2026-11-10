@@ -10,6 +10,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.15.0] - 2026-11-10
+
+### Added
+- **`cli.screener.query(where, order=None, desc=True, limit=50, offset=0, fields=None)`**：
+  全市场条件选股一等接口——把 `$码` 表达式交给服务端索引引擎（`INDEX_QUERY_SPEC`）一次查完，
+  返回 `{"count": 全市场命中数, "rows": 前 N 行}`。`count` 与 `limit` 无关（`limit=0` 只要
+  命中数），支持 `offset` 分页与 `fields` 指定列；`where/order/fields` 的指标码走离线目录
+  白名单（防编造），Python 式 `and/or/not` 直接提示改 `&&/||/!`。实测「3Y 股息均值 > 3%
+  且 ROE > 15%」（剔停牌/ST）：1 次请求 219 EC 命中 108 只。
+  MCP `wmshare_screen` 同步支持 `action="query"`。
+- 演示客户端对 `screener.query` 显式报 `demo_unsupported`（快照无全市场索引列，不做假筛选）。
+
+### Fixed
+- **全市场选股示例的 topN 抽样偏差**：README/Guide 原示例按 TTM 股息率排序取前 60 再判
+  「3Y 均值 + ROE」，真命中 108 只只捞到 8 只（3Y 均值与 TTM 不单调；且 `[:60]` 本身就
+  小于命中数）。改成 `cli.screener.query` 一条表达式，并补实测对比（GUIDE 10.1）。
+- GUIDE 5.3 曾写「全市场指标码只能逐票调用」——正是上述偏差的源头，改为指向
+  `screener.query`；SKILL 坑位清单补「别用 topN 抽样当全市场」。
+
 ## [1.14.3] - 2026-11-10
 
 ### Fixed

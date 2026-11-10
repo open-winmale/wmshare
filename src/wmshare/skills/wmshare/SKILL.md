@@ -96,6 +96,7 @@ cat.metrics_in_group("dividend")                         # 指标组内全部精
 | 最新价 / 盘中快照 | `cli.kline.last("600519")`；盘中实时用 `cli.kline.live("600519")` 或 `cli.kline.batch_live(["600519"])`；`cli.kline.snapshot(...)` 是行情摘要（收盘/涨跌幅），不是盘中 tip |
 | 当日 1 分钟分时 | `cli.kline.min1("600519")`（有损合成采样，非逐笔） |
 | 今日涨停了吗 / 全市场涨停梯队 | `cli.screener.screen_limit_up("600519")` |
+| **全市场按指标条件选股（股息/ROE/PE 任意组合）** | `cli.screener.query("$BONUS_RATE_3Y_AVG_LAST > 0.03 && $ROE_TTM_LAST > 0.15 && !$IS_ST", order="$BONUS_RATE_3Y_AVG_LAST")`——服务端索引一次查完，返回 `{"count": 全市场命中数, "rows": 前 N 行}`；**不要先批量取数再本地过滤**（`count` 才是真命中数，`len(rows)` 不是） |
 | 全市场今天涨跌如何 | `cli.screener.index_breadth_summary()` |
 | 涨幅榜 / 跌幅榜 | `cli.screener.index_top_movers(limit=20)`（`desc=False` 跌幅） |
 | 站上 20 日线了吗 / 放量了吗 | `cli.screener.screen_above_ma20(sym)` / `screen_volume_spike(sym)` |
@@ -117,7 +118,7 @@ cat.metrics_in_group("dividend")                         # 指标组内全部精
 | 行业目录 / 行业成分 | `cli.stocks.industries(1)`（申万/恒生；美股目录树暂缺）/ `cli.stocks.industry_members("银行")`（中文名或代码 S48） |
 | 少量标的单批（≤500） | `cli.call_batch("kline.snapshot", ["600519", "000001"])` 或任意单标的接口传 list：`cli.kline.last(["600519", "000001"])`；`to_df()` 出每标的一行长表 |
 
-完整 131 个核心接口 + 3 个可转债组合接口与全部底层函数：仓库用户看 docs/GUIDE.md（上手）与
+完整 132 个核心接口 + 3 个可转债组合接口与全部底层函数：仓库用户看 docs/GUIDE.md（上手）与
 docs/API.md（参考）；pip 用户用 `cat.search(...)` / `cat.function(...)` 查（同一份合同）。
 全量指标码（2752 个）按数据类型分章的导航、命名语法与死码清单见 docs/INDICATORS.md（生成物）。
 
@@ -167,6 +168,9 @@ print(cli.dividend.window_stats("600519", "3y"))   # {'dps': ..., 'total': ..., 
   （`on_batch_error` 跳过整批，`on_error` 逐票请求）；批量入口也无 `_df`，长表用 `to_df()`；
   ③遇 429 会停止并给 `codes[done:]` 续跑位置，按提示稍后续跑，不要无脑重试；
   ④单批撞 `CALC_LIMIT_EXCEEDED`（算力超限）时减小 `batch_size`。
+- **全市场选股别用 topN 抽样**：按某个指标排序取前 N 再逐票判另一口径，会系统性漏样本
+  （实测「3Y 股息均值 > 3% 且 ROE > 15%」真命中 108 只，按 TTM 股息取前 60 只捞到 8 只）。
+  全市场条件选股用 `cli.screener.query(...)`，`count` 才是全市场命中数。
 - **批量不能跨市场**：一个批次只能是同一市场（`Client(market="cn")` 只传 A 股）——实测
   网关不拒但数据是错的（cn 上下文里查该港股标的的 close/percent 与 hk 客户端不符，涨跌方向都相反）。
   SDK 已主动拦截报 `UsageError`；跨市场请分别建 Client：A 股 12 批 + 港股 6 批 + 美股 11 批。

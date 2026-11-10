@@ -355,6 +355,11 @@ class ReadmeClient:
             index_top_movers=lambda *a, **k: [
                 {"symbol": "600519", "name": "贵州茅台", "percent": 0.0052},
             ],
+            # 全市场条件选股：罐头值取 2026-11-10 真实 probe（命中 108，首行伊泰B股）
+            query=lambda *a, **k: {"count": 108, "rows": [
+                {"symbol": "900948", "name": "伊泰B股",
+                 "$BONUS_RATE_3Y_AVG_LAST": 0.2104, "$ROE_TTM_LAST": 0.1631},
+            ]},
         )
         self.dividend = types.SimpleNamespace(
             yield_ttm=lambda *a, **k: 0.0396,

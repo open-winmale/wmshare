@@ -58,6 +58,10 @@ class FakeClient:
             index_top_movers=lambda limit=20, desc=True, idx=None: [
                 {"symbol": "600519", "percent": 0.02}
             ],
+            query=lambda where, order=None, desc=True, limit=50, offset=0,
+            fields=None, idx=None: {"count": 108, "rows": [
+                {"symbol": "900948", "name": "伊泰B股", "$ROE_TTM_LAST": 0.1631}
+            ]},
         )
         self.indicator = SimpleNamespace(
             metrics=lambda symbol, codes: {code: 0.42 for code in codes},
@@ -191,6 +195,9 @@ def test_screen_and_disclosures(runtime: MCPRuntime) -> None:
     assert flag["data"]["value"] is True
     breadth = tools.screen(runtime, "breadth_summary")
     assert breadth["data"]["total"] == 2
+    picked = tools.screen(runtime, "query", where="$ROE_TTM_LAST > 0.15", limit=10)
+    assert picked["data"]["count"] == 108
+    assert picked["data"]["rows"][0]["symbol"] == "900948"
 
     notices = tools.disclosures(runtime, "notice", symbol="600519", limit=1)
     assert notices["data"][0]["title"] == "公告"

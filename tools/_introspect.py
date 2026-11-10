@@ -34,6 +34,11 @@ METHOD_EXAMPLE_VALUES = {
     ("valuation", "hist_stats"): {"metric": '"pe"', "window": '"3y"'},
     # 回撤筛选的示例取上游默认语义（近 20 日跌超 10%）
     ("screener", "screen_pullback_20d"): {"min_chg": "-0.10"},
+    # 全市场条件选股：示例用真实可跑的「三年股息均值 > 3% 且 ROE > 15%」
+    ("screener", "query"): {
+        "where": '"$BONUS_RATE_3Y_AVG_LAST > 0.03 && $ROE_TTM_LAST > 0.15"',
+        "order": '"$BONUS_RATE_3Y_AVG_LAST"',
+    },
     # 报告期变体（annual=年报年度 / sampling=报告期采样）
     ("equity", "query_exec_change_at"): {"annual": "2024", "sampling": '"Q4"'},
     ("equity", "query_capital_change_at"): {"annual": "2024", "sampling": '"Q4"'},
@@ -75,6 +80,8 @@ FALLBACK_RETURNS = {
     ("info", "profile"): "MAP · 档案（name/industry/style_industry/org_type/listing_date）",
     ("valuation", "hist_stats"):
         "MAP · {avg, current, median, min, max, pct, count, series:[unix秒,值]}（窗口上限 3 年）",
+    ("screener", "query"):
+        "MAP · {count: 全市场命中数（不受 limit 截断）, rows: [{symbol, name, $码: 值}]}",
     ("cbond", "daily"):
         "MAP · {facts, derived, gates, states, top, scatter, calendar, featured_band,"
         " caliber_layers, coverage}（口径分层 + 三道闸 + 状态机 + 事件日历）",

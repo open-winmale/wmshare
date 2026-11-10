@@ -290,6 +290,75 @@ def test_screener_top_movers_limit_clamped(cli):
     assert last_xs(cli) == ['return kline.index_top_movers(LatestIndexKey(), 10, true)']
 
 
+def test_screener_query_builds_index_spec(cli):
+    """全市场条件选股：一条 XS 出 count + 前 N 行（服务端索引，不是逐票 eval）。"""
+    cli.session.eval_result = {"count": 108,
+                               "rows": [["900948", "伊泰B股", 0.2104, 0.1631, False]]}
+    res = cli.screener.query(
+        "$BONUS_RATE_3Y_AVG_LAST > 0.03 && $ROE_TTM_LAST > 0.15 && !$IS_ST",
+        order="$BONUS_RATE_3Y_AVG_LAST", limit=10)
+    xs = last_xs(cli)
+    assert xs[0] == "idx := LatestIndexKey()"
+    assert xs[1].startswith("_ := INDEX_FIELD_LOAD(idx, ") and "$IS_ST" in xs[1]
+    assert ('"where": "$BONUS_RATE_3Y_AVG_LAST > 0.03 && $ROE_TTM_LAST > 0.15 && !$IS_ST"'
+            in xs[2])
+    assert xs[2].endswith('"result": "row_ids"})')
+    assert ('"order": "$BONUS_RATE_3Y_AVG_LAST", "order_desc": true, "limit": 10, '
+            '"offset": 0') in xs[3]
+    assert xs[4].startswith("return") and "LEN(ids)" in xs[4]
+    # count 是全市场命中数（不受 limit 截断）；行键 = symbol/name + 指标码原文
+    assert res["count"] == 108
+    assert res["rows"] == [{"symbol": "900948", "name": "伊泰B股",
+                            "$BONUS_RATE_3Y_AVG_LAST": 0.2104,
+                            "$ROE_TTM_LAST": 0.1631, "$IS_ST": False}]
+
+
+def test_screener_query_fields_and_count_only(cli):
+    """fields 覆盖默认列集合；limit=0 只查 count（不再写第二条索引查询）。"""
+    cli.session.eval_result = {"count": 0, "rows": []}
+    cli.screener.query("$ROE_TTM_LAST > 0.3", fields=["$PE_TTM_LAST"])
+    xs = last_xs(cli)
+    assert xs[1] == "_ := INDEX_FIELD_LOAD(idx, $SYMBOL, $NAME, $PE_TTM_LAST)"
+    assert '"order"' not in xs[3]          # 未传 order 不生成 order 键
+    cli.session.eval_result = {"count": 164, "rows": []}
+    assert cli.screener.query("$ROE_TTM_LAST > 0.3", limit=0) == {"count": 164,
+                                                                  "rows": []}
+    xs = last_xs(cli)
+    assert len([ln for ln in xs if "INDEX_QUERY_SPEC" in ln]) == 1
+    assert xs[-1] == 'return {"count": LEN(ids), "rows": []}'
+
+
+def test_screener_query_validates(cli):
+    """where/order/fields 的指标码走目录白名单；Python 式布尔词直接报 XS 语法。"""
+    from wmshare import CatalogError, UsageError
+    with pytest.raises(CatalogError, match="防编造"):
+        cli.screener.query("$NOT_A_CODE > 1")
+    with pytest.raises(UsageError, match="XS 表达式"):
+        cli.screener.query("$ROE_TTM_LAST > 0.15 and 1")
+    with pytest.raises(UsageError, match=r"没有 \$指标码"):
+        cli.screener.query("ROE_TTM_LAST > 0.15")
+    with pytest.raises(UsageError, match="order 必须是单个指标码"):
+        cli.screener.query("$ROE_TTM_LAST > 0.15", order="roe")
+    with pytest.raises(CatalogError, match="防编造"):
+        cli.screener.query("$ROE_TTM_LAST > 0.15", fields=["$PE_NO_SUCH_LAST"])
+    with pytest.raises(UsageError, match="idx 只接受索引键"):
+        cli.screener.query("$ROE_TTM_LAST > 0.15", idx='index.cnall" }')
+
+
+def test_screener_query_limit_df_and_passthrough(cli):
+    """limit 受 max_limit 钳制；_df 只转 rows；上游异常形态原样透传。"""
+    from wmshare import LimitError
+    with pytest.raises(LimitError, match="超过单次上限"):
+        cli.screener.query("$ROE_TTM_LAST > 0.15", limit=20000)
+    pd = pytest.importorskip("pandas")
+    cli.session.eval_result = {"count": 1, "rows": [["600519", "贵州茅台", 0.33]]}
+    df = cli.screener.query("$ROE_TTM_LAST > 0.3", _df=True)
+    assert isinstance(df, pd.DataFrame)
+    assert list(df.columns) == ["symbol", "name", "$ROE_TTM_LAST"]
+    cli.session.eval_result = [{"ok": True}]
+    assert cli.screener.query("$ROE_TTM_LAST > 0.3") == [{"ok": True}]
+
+
 def test_screener_breadth_supports_df(cli):
     """列表返回的宽度接口支持 _df=True（模块 docstring 的承诺，列表方法逐一对齐）。"""
     pd = pytest.importorskip("pandas")   # CI 离线环境不装可选依赖

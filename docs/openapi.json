@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "wmshare 数据 API",
-    "version": "1.14.3",
+    "version": "1.15.0",
     "description": "覆盖 A 股、港股、美股的财经数据核心接口（Python SDK，`pip install wmshare`；`import wmshare`）。凭证必填：在开放平台（open.winmale.com）获取 client_id/api-key；遇到 401/403/429 错误消息即完整的申请与配置指引。覆盖行情 K 线（不复权/前复权/后复权、盘中、分时、ETF、指数）、三大报表（多期、合并 vs 母公司、树视图、新旧会计准则归一）、分红（历史/DPS/窗口/TTM 率）、公告与业绩披露、资金流与指标层。平台指标经 /indicator/get、/indicator/metrics 按指标代码寻址，全量 2752 个指标代码随包内置目录分发（分组清单见 docs/API.md）。",
     "license": {
       "name": "BSD-3-Clause",
@@ -1328,6 +1328,71 @@
                       }
                     }
                   }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/screener/query": {
+      "post": {
+        "operationId": "screener_query",
+        "summary": "全市场条件选股：一条表达式扫最新索引，返回命中总数与前 N 行。",
+        "description": "``where`` 是 XS 布尔表达式（与/或用 ``&&`` / ``||``、非用 ``!``；比率一律、小数，0.03 = 3%），服务端索引引擎一次查完，**不是**逐票 eval、也不需要先、拉全市场再本地过滤。返回 ``{\"count\": 命中总数, \"rows\": [...]}``——``count``、是全市场真实命中数，与 ``limit`` 无关（防把 topN 当全市场）。、口径与成本：索引为**日频 EOD**（盘中不刷新）；行键 = ``symbol`` / ``name``、+ 指标码原文（同 ``indicator.metrics`` 的键）。``$IS_ST``/``$IS_SUSPEND``、仅 A 股索引有列，港美请改用其它条件。成本 = 1 次请求，EC 随 where/order、引用列的物化成本变化（实测 70~4.8 万，不计标的数），远低于全市场逐票、eval（≈45.6 万且按标的数放大）；``_df=True`` 只把 rows 转 DataFrame，、count 从默认返回取。、组合接口（宿主 INDEX_QUERY_SPEC）。SDK 调用：`cli.screener.query(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "市场行情"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "where": {
+                    "type": "string",
+                    "description": "条件表达式，$码须在指标目录内，如 \"$BONUS_RATE_3Y_AVG_LAST > 0.03 && $ROE_TTM_LAST > 0.15\""
+                  },
+                  "order": {
+                    "type": "string",
+                    "description": "排序指标码（单个 $码）；不传则按索引顺序"
+                  },
+                  "desc": {
+                    "type": "boolean",
+                    "description": "order 降序（默认 True，高分/高值在前）"
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "description": "返回行数，默认 50；传 0 = 只取 count；受 Client(max_limit=...) 与单次 10000 行硬上限钳制"
+                  },
+                  "offset": {
+                    "type": "integer",
+                    "description": "跳过前 N 条（配合 order 分页）"
+                  },
+                  "fields": {
+                    "type": "array",
+                    "description": "额外返回列（$码 列表）；传了就用它替代默认列集合"
+                  },
+                  "idx": {
+                    "type": "string",
+                    "description": "服务端索引键（高级；默认不传 = 当前市场最新查询索引）"
+                  }
+                },
+                "required": [
+                  "where"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "MAP · {count: 全市场命中数（不受 limit 截断）, rows: [{symbol, name, $码: 值}]}",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
                 }
               }
             }

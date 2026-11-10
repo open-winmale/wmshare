@@ -58,6 +58,13 @@ def test_bars_are_date_descending_and_slice_real_rows(snapshot, cli):
         cli.kline.bars("600519", n=121)
 
 
+def test_screener_query_needs_live_client(cli):
+    """全市场条件选股依赖服务端索引列：快照只有 10 只票，显式 unsupported 而非假筛选。"""
+    with pytest.raises(UsageError) as err:
+        cli.screener.query("$ROE_TTM_LAST > 0.15")
+    assert err.value.code == "demo_unsupported"
+
+
 def test_snapshot_matches_latest_bar(snapshot, cli):
     for symbol in snapshot["data"]["universe"]:
         bars = cli.kline.bars(symbol, n=1)

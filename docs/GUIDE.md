@@ -2,7 +2,7 @@
 
 本指南是 **how-to + 解释层**：会做什么 → 怎么做好。其他层各有其位——
 教程看 [README](../README.md) 与 [examples/](../examples/README.md)（可运行课程），
-接口参考看 [API.md](API.md)（按资产类别分章的 131 个核心接口，生成物），
+接口参考看 [API.md](API.md)（按资产类别分章的 132 个核心接口，生成物），
 AI 用法看 [AI.md](AI.md)。
 
 > 代码块里的输出注释都是**真实运行结果**（2026-10-29，cn 市场，免费档凭证），
@@ -20,7 +20,8 @@ python3 -c "import wmshare; print(wmshare.__version__)"   # 验证安装
 
 不配凭证先试：`cli = wmshare.demo_client()`——随包离线演示客户端（2026-10-30
 真实 API 固定快照；10 只演示宇宙 + 当日真实全市场 screener，
-**非实时数据**），调用面覆盖公开示例；examples/ 的凭证示例都支持
+**非实时数据**），调用面覆盖公开示例（例外：`screener.query` 依赖全市场索引列，
+演示快照没有，显式报 `demo_unsupported`）；examples/ 的凭证示例都支持
 `--demo` 旗标零凭证试跑。看真实数据按下节配凭证。
 
 凭证在开放平台（`https://open.winmale.com`）控制台的「我的 → 开放平台 → 我的应用」页获取，
@@ -40,7 +41,7 @@ export WMSHARE_CLIENT_ID=<AppId> WMSHARE_CLIENT_SECRET=<API Key>
 
 ### 2.1 双层 API：门面 + 目录
 
-- **门面层** `cli.<命名空间>.<方法>()`：21 个命名空间、131 个核心接口，方法名动宾化可猜
+- **门面层** `cli.<命名空间>.<方法>()`：21 个命名空间、132 个核心接口，方法名动宾化可猜
   （`kline.bars`、`dividend.yield_ttm`、`screener.screen_limit_up`）。
 - **目录层** `cli.call("<域>.<函数名>", ...)`：269 个底层函数按目录合同直调，
   参数名以 `cat.function(name)["params"]` 为准。门面未包装的函数经属性直达
@@ -101,7 +102,7 @@ cat.functions_by_domain()             # 按域列全部函数名（cli.call 的�
 | 要找什么 | 在哪 | `cat.search` 关键词 |
 |---|---|---|
 | ETF 日 K / 判别场内基金 | `cli.kline.bars("510300")`、`cli.kline.is_etf`（ETF 无分钟线，盘中用 `live`/`snapshot`） | ETF |
-| 全市场筛选 / 涨跌宽度 | `cli.screener`（单票筛选器 + 全景/分桶/涨跌榜） | 筛选 |
+| 全市场筛选 / 涨跌宽度 | `cli.screener`（`query` 条件选股 + 单票筛选器 + 全景/分桶/涨跌榜） | 筛选 |
 | 指数成分 / 权重 / 宽基估值 / 指数层指标码 | `cli.index`（全量码见 INDICATORS.md「指数及 ETF」章） | 指数 |
 | 盈利预测 / 业绩预告 | `cli.estimates`（`year_mark`：A=实际、E=预测）+ `cli.forecast`（预告/快报/日历） | 预测 |
 | 分红 / 股息率 | `cli.dividend`（`disc.bonus` 域 45 个函数）+ dividend 指标组 | 股息 |
@@ -209,6 +210,15 @@ cli.screener.screen_limit_up("600519")      # 今日涨停？
 cli.screener.screen_above_ma20("600519")    # 站上 20 日线？
 cli.screener.screen_volume_spike("600519")  # 放量？
 
+# 全市场条件选股：一条表达式扫服务端索引（不是逐票 eval，也不本地过滤）
+res = cli.screener.query(
+    "$BONUS_RATE_3Y_AVG_LAST > 0.03 && $ROE_TTM_LAST > 0.15 && !$IS_ST",
+    order="$BONUS_RATE_3Y_AVG_LAST", limit=10)
+res["count"]                                 # 全市场命中数（不受 limit 截断）
+res["rows"][0]                               # {'symbol': '900948', 'name': '伊泰B股',
+                                             #  '$BONUS_RATE_3Y_AVG_LAST': 0.2104, ...}
+cli.screener.query("$ROE_TTM_LAST > 0.30", limit=0)   # 只要命中数（不拉行）
+
 # 全市场宽度（服务端索引直出；*_pct 是百分数数值、median_pct 是小数）
 cli.screener.index_breadth_summary()
 # {'total': 5685, 'up': 540, 'down': 5002, 'up_pct': 9.5, 'median_pct': -0.0154, ...}
@@ -282,8 +292,9 @@ res.to_df()                       # 每标的一行长表（symbol 列在前；�
 - 三个入口的 `name`/`symbols` 都是位置参数；`_raw=True`/`_units="native"` 通用；
   批量入口不提供 `_df`（长表用 `to_df()`）。
 - **`name` 必须是目录函数名**（269 个，`cat.functions_by_domain()` 可查）；指标码不是
-  函数名——一票多码用 `cli.indicator.metrics(sym, codes)`，全市场指标码只能逐票调用
-  （传 `"indicator.get"` 会报 `CatalogError`）。
+  函数名——一票多码用 `cli.indicator.metrics(sym, codes)`（传 `"indicator.get"` 会报
+  `CatalogError`）。**全市场按指标条件选股不要逐票批量**：一条表达式交给
+  `cli.screener.query(...)`（服务端索引引擎，见第 3 章与 10.1）。
 
 ### 5.4 市场边界：一个批次只能一个市场
 
@@ -404,18 +415,26 @@ poller.start()               # 或切后台：daemon 线程定时轮询；退出
 批量对前者是省、对后者不省。EC 消耗经 `BatchResult.ec_cost` /
 `cli.last_ec_cost` 可见，超大单次消耗 SDK 会主动告警。
 
-### 10.1 预置码 vs eval 自算：一次 EC 实测（2026-11-10）
+### 10.1 全市场选股：一条索引查询 vs 逐票 eval vs topN 抽样（2026-11-10 实测）
 
-「全市场三年平均股息率 + ROE 筛选」两种做法的实测对比：
+同一道题「三年股息率均值 > 3% 且 ROE > 15%」（剔停牌/ST/B 股）三种做法的实测：
 
-- **eval 全市场自算**：一次消耗约 45.6 万 EC（eval 按标的数逐票计价；SDK 有阈值告警，
-  `Client(ec_warn_threshold=None)` 可关闭）；
-- **预置码路径**：`cli.batch_all("bonus.snapshot_yield_ttm", ...)` 12 次请求拿全市场 TTM
-  股息率，仅对候选逐票
-  `cli.indicator.metrics(sym, ["$BONUS_RATE_3Y_AVG_LAST", "$ROE_TTM_LAST"])`。
+| 做法 | 请求 | EC | 命中数 |
+|---|---|---|---|
+| `cli.screener.query("$BONUS_RATE_3Y_AVG_LAST > 0.03 && $ROE_TTM_LAST > 0.15 && !$IS_ST && !$IS_SUSPEND", order=..., limit=10)` | 1 | **219**（count-only 70） | **108（全量）** |
+| 逐票 `cli.indicator.metrics(sym, [...])` 扫全市场 | 5,691 | ≈45.6 万 | 108 |
+| 先按 TTM 股息率排序取前 60，再逐票判 3Y 均值 + ROE | 12 + 60 | ≈5 千 | **8**（漏 100） |
 
-纪律：**先 `cat.search` 查码再写计算**；批量省请求次数不省 EC；全市场快照类优先
-服务端直出接口（如 `cli.moneyflow.board()`）。
+- 逐票 eval 是 **EC 最贵**的路径：eval 按标的数逐票计价，全市场一轮 ≈45.6 万 EC，
+  且 SDK 会触发阈值告警（`Client(ec_warn_threshold=None)` 可关）。
+- `screener.query` 的 EC 随 where/order **引用列的物化成本**变化（轻列 70~500，
+  重列如 `$NPTS_TTM_YOY_LAST` 实测 4.8 万），但**不随标的数放大**：一次请求扫完
+  5,691 家。还是那句话：先 `cat.search` 查码，能用已物化的轻列就别绕重列。
+- topN 抽样不仅省不了钱，还会**算错**：3Y 均值与 TTM 并不单调（例：立霸股份 TTM
+  6.9%、3Y 均值 11.4%，进不了 top60），而且真命中 108 只、`[:60]` 这个截断本身就不够。
+- 纪律：**先 `cat.search` 查码再写计算**；条件选股走 `cli.screener.query`；批量
+  （`batch_all`）留给确需逐票历史的场景；全市场快照类优先服务端直出
+  （`cli.moneyflow.board()`）。
 
 ## 11. 用 AI 学会并用好 SDK
 

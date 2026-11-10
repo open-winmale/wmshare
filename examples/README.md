@@ -25,7 +25,7 @@ python examples/01_quickstart.py
 | 01 | `01_quickstart.py` | 入门 | 凭证 | 行情/财务/披露/参考四类取数一次过；批量绕开 429 | GUIDE·单票菜谱、批量取数 |
 | 02 | `02_catalog_tour.py` | 入门 | **离线** | 目录先行：`cat.search`、函数合同、指标组（防臆造） | GUIDE·核心概念 |
 | 03 | `03_error_handling.py` | 入门 | **离线** | WmshareError 家族、按类型分支、code/status 程序化处理 | GUIDE·故障排查 |
-| 04 | `04_screener.py` | 进阶 | 凭证 | 涨停/均线/放量单票筛选；全景/分桶/涨跌榜；`*_pct` 百分数例外 | GUIDE·单票菜谱 |
+| 04 | `04_screener.py` | 进阶 | 凭证 | 全市场条件选股（一条表达式，count=真命中数）；涨停/均线/放量单票筛选；全景/分桶/涨跌榜；`*_pct` 百分数例外 | GUIDE·单票菜谱 |
 | 05 | `05_dividend_screener.py` | 进阶 | 凭证 | 分红质量筛选；call_batch 票级批量；底层函数属性直达 | GUIDE·单票菜谱 |
 | 06 | `06_indicator_tour.py` | 进阶 | 凭证 | 指标码体系：`cat.search`→分位/TTM→`hist_stats`，小数读法 | GUIDE·核心概念 |
 | 07 | `07_stocks_industry_batch.py` | 生产 | 凭证 | 全市场列表→行业成分→batch_all/batch_iter/call_batch 三入口分工 | GUIDE·批量取数 |
