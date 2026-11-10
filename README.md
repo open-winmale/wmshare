@@ -32,7 +32,7 @@ pip install "wmshare[mcp]"           # 可选：本地 MCP server
 python3 -c "import wmshare; print(wmshare.__version__)"   # 验证安装
 ```
 
-国内直连不稳时换清华源：`pip install -i https://pypi.tuna.tsinghua.edu.cn/simple wmshare`（镜像滞后时回官方源）；升级 `pip install -U wmshare`（Windows 用 `py -m pip install -U wmshare`）；开发者安装见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+国内直连不稳时换清华源：`pip install -i https://pypi.tuna.tsinghua.edu.cn/simple wmshare`（镜像滞后时回官方源）；升级 `pip install -U wmshare`（Windows 用 `py -m pip install -U wmshare`）。
 
 ### 配置凭证
 
@@ -261,4 +261,3 @@ cli.call_batch("kline.snapshot", ["600519", "000001"]) # ③ 单批（≤500）�
 - **文档中心 [docs/](docs/README.md)**：使用指南 GUIDE（单票菜谱/批量/多市场/故障排查）· 指标库 [INDICATORS.md](docs/INDICATORS.md)（全量指标码按数据类型分章）· AI 用法 · llms.txt 索引 · [API 参考](docs/API.md)（按资产类别分章的 131 个核心接口 + 指标组）
 - **可转债日更管线**：`cli.cbond.daily()` → `article()` → `figures()` 一条命令出图文（三层口径 + 三道闸 + 状态机 + 事件日历，每个数字带 `sources` 与 `as_of`，缺条目抛错而非补猜测值）；实战 notebook 见 [docs/notebooks/cb_double_low.ipynb](docs/notebooks/cb_double_low.ipynb)（2026-11-07 真实数据）
 - **示例课程 [examples/](examples/README.md)**：14 个编号示例（入门→进阶→生产→AI），全部支持演示客户端离线试跑，CI 端到端覆盖
-- [贡献指南](CONTRIBUTING.md)：提交门禁、内容规范、许可政策
