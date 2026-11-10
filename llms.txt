@@ -48,7 +48,7 @@
 
 - 不是回测框架（没有撮合/仓位管理），不是数据库（数据经云端 API 运行时获取）
 - 基金净值 / 期货 / 期权 / 债券（可转债除外）未覆盖
-- 美股历史日 K 为停更快照；最新价量用 `cli.kline.live / snapshot`
+- 美股日 K 已日更（周/月 K 由日线派生）；最新价量用 `cli.kline.live / snapshot`
 - 港股十大流通股东与回购上游有管线、SDK 接口待路由（见 CHANGELOG/ROADMAP）
 
 ## Optional

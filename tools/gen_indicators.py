@@ -386,8 +386,8 @@ def build() -> str:
         "",
         "raw 入口：`cli.index`（指数键列表、成分股、权重股、宽基估值时序）；"
         "场内 ETF 日 K 与个股同构走 `cli.kline.bars(\"510300\", n=30)`，"
-        "`cli.kline.is_etf(...)` 判别场内基金（ETF 无分钟线，盘中用 "
-        "`cli.kline.live` / `snapshot`）。指标码：`$INDEX_*` 指数层行情与估值、"
+        "`cli.kline.is_etf(...)` 判别场内基金（ETF 无分时/分钟源，`min1`/`live` 会被"
+        "拦截，盘中取数用 `cli.kline.snapshot`）。指标码：`$INDEX_*` 指数层行情与估值、"
         "`$IDW_*` 指数加权口径（等权 / 市值加权 / 调和）。",
         "",
     ]

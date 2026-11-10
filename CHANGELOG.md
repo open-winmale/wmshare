@@ -10,6 +10,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.14.1] - 2026-11-10
+
+### Removed
+- README 移除贡献者向内容：安装节「开发者安装见 CONTRIBUTING.md」、「更多」节贡献指南行、
+  「给 AI」节死码警示行（死码清单下沉 docs/INDICATORS.md 与 SKILL.md；README 只留用户内容，
+  PyPI 长描述同步瘦身）
+
+## [1.14.0] - 2026-11-10
+
 ### Added
 - **可转债债底与弹性指标（`cb` 子包 v4）**——`cb.valuation` 新增四条口径：
   `pure_bond_value`（纯债价值/债底，剩余票息 + 到期赎回价按收益率曲线逐笔贴现，
@@ -71,6 +80,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **trend 分位方向事故**：早期实现用 `reversed(pts)` 取当前值，实际取到**最旧点**，
   把 2020 年的分位当今天展示；`tests/test_index_trend.py` 四条断言锁死
   points 降序、基准点取最新、分位公式与 as_of 不早于最新点
+- `cb.valuation` 文档注释竞品词中性化（check_leak 门禁）；`cb.rules.num` 改
+  `TypeGuard[float]`（mypy 九处 `Any | None` 报错清零，调用点零改动）
 
 ### Changed
 - `docs/notebooks/index_daily.ipynb` 榜单扩到 **56 键**（宽基 11 + 申万一级行业 31 +
@@ -80,6 +91,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   （`wmshare.cb.valuation.ytm_after_tax`：`basis` 分档 schedule/constant 标注，
   下限口径兜底）——notebook 不再另写近似公式，两处口径不再分叉；通道拨测
   对 K 线入库滞后改为「按 K 线自身最后日期计算并标注双日期」
+- **文档大改版**：新增 `docs/INDICATORS.md`——全量 2,752 个指标码按数据类型分章导航
+  （概览/股票行情/股票指标/行业/指数及ETF/宏观/期货/可转债/港美视图 + 命名语法 +
+  死码警示 + 场景速查；`tools/gen_indicators.py` 生成，漂移与引用门禁接线）；
+  README 重构「基本功能 / 特色功能 / 给 AI」三分章；计数口径全库收口
+  （2,752 码 / 131 接口 / 134 可兜底 / 269 函数 / 14 示例，llms.txt 动态化 +
+  防回归门禁）；GUIDE 新增「数据在哪找」速查与「预置码 vs eval 自算」EC 实测
+- **moneyflow live 口径修正**：`moneyflow.query_last_live` 定性为「外部公开源当日读数
+  （非盘中行情、非 Level2、仅 A 股）」——目录合同 / docstring / README 同步修正，
+  无行为变化；README `cli.moneyflow` 行移除「盘中」表述
 - **美股日 K 调度转正 + EOD 盖回翻闸（2026-11-09）**：上游 us_kline_daily daily DAG
   解除暂停并补齐暂停窗口缺口（force_days=10 幂等滚动重写），运维开关 `us_dayk_eod`
   翻 `true`（日K齐套门闩 + skip_read 盖回 tip + 抽检 store bar 与预期一致）；

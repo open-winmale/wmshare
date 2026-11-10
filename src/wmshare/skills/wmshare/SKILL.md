@@ -93,8 +93,8 @@ cat.metrics_in_group("dividend")                         # 指标组内全部精
 | 周 K / 月 K | `cli.kline.bars("600519", n=20, freq="W")`（`freq="M"` 月 K；服务端预派生） |
 | 某股日期区间 K 线 | `cli.kline.bars("600519", begin="2026-01-01", end="2026-06-30")` |
 | **全市场 / 上百只取数（避免 429）** | `cli.batch_all("kline.snapshot", [r["symbol"] for r in cli.stocks.list()])`——自动分批，A 股 5,691 家只发 **12 次请求**；**绝不要写 `for code in codes: cli.kline.bars(code)`（5,691 次请求必撞限流）** |
-| 最新价 / 盘中快照 | `cli.kline.last("600519")`；盘中实时用 `cli.kline.snapshot("600519")` 或 `cli.kline.batch_live(["600519"])` 或 `cli.kline.live("600519")` |
-| 当日 1 分钟分时 | `cli.kline.min1("600519")` |
+| 最新价 / 盘中快照 | `cli.kline.last("600519")`；盘中实时用 `cli.kline.live("600519")` 或 `cli.kline.batch_live(["600519"])`；`cli.kline.snapshot(...)` 是行情摘要（收盘/涨跌幅），不是盘中 tip |
+| 当日 1 分钟分时 | `cli.kline.min1("600519")`（有损合成采样，非逐笔） |
 | 今日涨停了吗 / 全市场涨停梯队 | `cli.screener.screen_limit_up("600519")` |
 | 全市场今天涨跌如何 | `cli.screener.index_breadth_summary()` |
 | 涨幅榜 / 跌幅榜 | `cli.screener.index_top_movers(limit=20)`（`desc=False` 跌幅） |

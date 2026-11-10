@@ -393,10 +393,9 @@ class MoneyflowApi(_Api):
         字段 symbol/name/net_mf/net_mv_ratio/lg_net/elg_net/md_net/sm_net/industry，
         金额=元、占比=小数。服务端索引直出——替代「全市场逐票批量」的正解：
         EC 只花一次求值的计算量，不再是 标的数 × 单票成本。非交易日数据不变；
-        盘中实时用 ``live()``。
+        当日读数用 ``live()``（外部公开源，非盘中行情）。
         """
         return self._c.call("moneyflow.board", _df=_df)
-
 
 class MarginApi(_Api):
     """融资融券（个股日频）。
@@ -1782,7 +1781,7 @@ FRIENDLY_INDEX: list[tuple[str, str, str, str, str]] = [
     ("market", "moneyflow", "bars", "资金流历史", "moneyflow.query_bars"),
     ("market", "moneyflow", "last", "最新资金流", "moneyflow.query_bars"),
     ("market", "moneyflow", "board", "全市场资金流快照", "moneyflow.board"),
-    ("market", "moneyflow", "live", "盘中资金流快照", "moneyflow.query_last_live"),
+    ("market", "moneyflow", "live", "资金流当日读数", "moneyflow.query_last_live"),
     ("market", "screener", "screen_limit_up", "今日涨停筛选", "kline.screen_limit_up"),
     ("market", "screener", "screen_limit_down", "今日跌停筛选", "kline.screen_limit_down"),
     ("market", "screener", "screen_above_ma20", "站上 MA20 筛选", "kline.screen_above_ma20"),

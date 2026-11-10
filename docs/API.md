@@ -287,7 +287,7 @@ cli.kline.is_etf("600519")
 
 ### 场内 ETF 说明
 
-ETF 日 K 与个股同构：`cli.kline.bars("510300", n=30)`；`cli.kline.is_etf(...)` 判别场内基金。ETF 无分钟线/分时数据源，盘中用 `cli.kline.live` / `snapshot`。
+ETF 日 K 与个股同构：`cli.kline.bars("510300", n=30)`；`cli.kline.is_etf(...)` 判别场内基金。ETF 无分时/分钟源（`min1`/`live` 会被拦截），盘中取数用 `cli.kline.snapshot`。
 
 ### 选股与全景（`cli.screener`）
 
@@ -613,7 +613,7 @@ cli.moneyflow.last("600519")
 cli.moneyflow.board()
 ```
 
-#### `cli.moneyflow.live` — 盘中资金流快照
+#### `cli.moneyflow.live` — 资金流当日读数
 
 资金流当日读数（外部公开源、短 TTL、非盘中行情、仅 A 股）；无快照时返回 None。
 

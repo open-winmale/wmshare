@@ -394,7 +394,8 @@ def etf_note() -> list[str]:
         "### 场内 ETF 说明",
         "",
         "ETF 日 K 与个股同构：`cli.kline.bars(\"510300\", n=30)`；`cli.kline.is_etf(...)` "
-        "判别场内基金。ETF 无分钟线/分时数据源，盘中用 `cli.kline.live` / `snapshot`。",
+        "判别场内基金。ETF 无分时/分钟源（`min1`/`live` 会被拦截），盘中取数用 "
+        "`cli.kline.snapshot`。",
         "",
     ]
 

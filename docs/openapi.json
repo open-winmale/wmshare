@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "wmshare 数据 API",
-    "version": "1.14.0",
+    "version": "1.14.1",
     "description": "覆盖 A 股、港股、美股的财经数据核心接口（Python SDK，`pip install wmshare`；`import wmshare`）。凭证必填：在开放平台（open.winmale.com）获取 client_id/api-key；遇到 401/403/429 错误消息即完整的申请与配置指引。覆盖行情 K 线（不复权/前复权/后复权、盘中、分时、ETF、指数）、三大报表（多期、合并 vs 母公司、树视图、新旧会计准则归一）、分红（历史/DPS/窗口/TTM 率）、公告与业绩披露、资金流与指标层。平台指标经 /indicator/get、/indicator/metrics 按指标代码寻址，全量 2752 个指标代码随包内置目录分发（分组清单见 docs/API.md）。",
     "license": {
       "name": "BSD-3-Clause",
@@ -651,7 +651,7 @@
       "post": {
         "operationId": "moneyflow_board",
         "summary": "全市场资金流快照：一次取数，按主力净流入降序（日频 EOD，仅 A 股非停牌）。",
-        "description": "字段 symbol/name/net_mf/net_mv_ratio/lg_net/elg_net/md_net/sm_net/industry，、金额=元、占比=小数。服务端索引直出——替代「全市场逐票批量」的正解：、EC 只花一次求值的计算量，不再是 标的数 × 单票成本。非交易日数据不变；、盘中实时用 ``live()``。、底层目录函数 `moneyflow.board`。SDK 调用：`cli.moneyflow.board(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "description": "字段 symbol/name/net_mf/net_mv_ratio/lg_net/elg_net/md_net/sm_net/industry，、金额=元、占比=小数。服务端索引直出——替代「全市场逐票批量」的正解：、EC 只花一次求值的计算量，不再是 标的数 × 单票成本。非交易日数据不变；、当日读数用 ``live()``（外部公开源，非盘中行情）。、底层目录函数 `moneyflow.board`。SDK 调用：`cli.moneyflow.board(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "市场行情"
         ],
