@@ -131,8 +131,6 @@ for s, n, v, pe, pct in rows[:8]:                            # 取前 8 行打�
   `wmshare-mcp doctor` 体检）；客户端最小配置
   `{"mcpServers":{"wmshare":{"command":"wmshare-mcp","args":[]}}}`；接入路径详见 [AI 用法](docs/AI.md)。
 - **skill 随包分发**：`wmshare.skill_dir()` 可复制进 `.agents`/`.zcode`/`.claude` 的 `skills/`。
-- **死码警示**：`$*_LIVE` 等 20 个上游死码混入 `cli.indicator.metrics()` 会整批失败，
-  清单见 [INDICATORS.md · 死码警示](docs/INDICATORS.md#死码警示)。
 - **AI 友好索引**：[llms.txt](llms.txt)（索引）/ [llms-full.txt](llms-full.txt)（全文拼接，大上下文直读）。
 
 ## 市场覆盖
