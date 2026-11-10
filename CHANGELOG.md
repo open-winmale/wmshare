@@ -10,6 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.14.2] - 2026-11-10
+
+### Changed
+- **openapi 宏观独立 tag**：11 条 `/macro/*` 路径从「市场行情」拆出为「宏观数据」独立 tag
+  （对齐目录 18 域与 API.md 分章，消除能力列表「宏观非独立域」误读）
+- README `cli.kline` 行分时加个股限定：「1 分钟分时（个股；ETF 无分钟源，查询被拦截）」
+  ——分时仅个股 kline 与转债 `cbond.min1_live`（缓存命中制），ETF/指数无分时
+
 ## [1.14.1] - 2026-11-10
 
 ### Removed
