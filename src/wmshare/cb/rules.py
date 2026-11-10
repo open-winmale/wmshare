@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import re
 from datetime import date, datetime
-from typing import Any, Iterable
+from typing import Any, Iterable, TypeGuard
 
 __all__ = [
     "CALL_HITS_THRESHOLD",
@@ -79,8 +79,8 @@ GATE_LABEL = {
 }
 
 
-def num(v: Any) -> bool:
-    """可用数值（排除 bool / None / 字符串 / NaN）。"""
+def num(v: Any) -> TypeGuard[float]:
+    """可用数值（排除 bool / None / 字符串 / NaN）；TypeGuard——守卫通过后可安全 float()。"""
     return isinstance(v, (int, float)) and not isinstance(v, bool) and v == v
 
 
