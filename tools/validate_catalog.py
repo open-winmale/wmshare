@@ -7,6 +7,8 @@ Gates:
   3. returns.shape_ref=inventory requires the inventory entry to carry returns_shape
   4. metric_groups[].metrics[].code exists in metrics.json
   5. domain id matches filename stem
+  6. inventory 反向差集：inventory 里多出来的函数必须在 INTERNAL_HELPERS 显式登记，
+     且 function_count 与 functions 列表长度一致（上游新增 helper 不能静默漏检）
 
 Usage: python3 tools/validate_catalog.py
 """
@@ -31,9 +33,45 @@ METRICS = json.loads((catalog_dir() / "generated" / "metrics.json").read_text(en
 INV_FUNCS = {f["name"]: f for f in INVENTORY["functions"]}
 METRIC_CODES = {m["code"] for m in METRICS["metrics"]}
 
+# 上游 inventory 里的内部 helper 不是可调用目录函数，域 YAML 不收录。
+# 显式列出而非「忽略所有差集」：上游新增 helper 必须先在此登记（或补域声明），
+# 否则 validate_catalog 报错，避免真实可调用函数被静默漏掉。
+INTERNAL_HELPERS = {
+    "segments.clamp_limit",
+    "segments.dim_to_ui_tab",
+    "segments.normalize_dim",
+    "segments.normalize_source",
+    "segments.take_limit",
+    "segments.ui_tab_to_dim",
+}
+
+
+def reverse_diff(inventory: dict, curated: set[str],
+                 helpers: set[str] = INTERNAL_HELPERS) -> list[str]:
+    """Gate 6：inventory 反向差集 + function_count 自洽。纯函数，便于单测。"""
+    errors: list[str] = []
+    funcs = inventory["functions"]
+    if inventory.get("function_count") != len(funcs):
+        errors.append(
+            f"inventory.function_count={inventory.get('function_count')} "
+            f"!= len(functions)={len(funcs)}（生成物不自洽）")
+    extra = {f["name"] for f in funcs} - curated
+    unexpected = sorted(extra - helpers)
+    stale = sorted(helpers - extra)
+    if unexpected:
+        errors.append(
+            f"inventory 有 {len(unexpected)} 个未登记的内部函数（上游新增？）："
+            f"{unexpected}；请在 INTERNAL_HELPERS 登记或补域 YAML 声明")
+    if stale:
+        errors.append(
+            f"INTERNAL_HELPERS 有 {len(stale)} 个名字已不在反向差集（已被收录或上游删除）："
+            f"{stale}；请同步更新白名单")
+    return errors
+
 
 def main() -> int:
     errors: list[str] = []
+    curated: set[str] = set()
     files = sorted(DOMAINS.glob("*.yaml"))
     if not files:
         print("no domain files found", file=sys.stderr)
@@ -58,6 +96,7 @@ def main() -> int:
             elif kind == "computed":
                 computed_fns += 1
             name = fn["name"]
+            curated.add(name)
             inv = INV_FUNCS.get(name)
             if inv is None:
                 errors.append(f"{where}: function {name} not in inventory (fabricated or upstream-removed)")
@@ -77,6 +116,10 @@ def main() -> int:
         print(f"ok   {where}: id={doc['id']} kind={doc['kind']} "
               f"functions={len(doc.get('functions') or [])} "
               f"metric_groups={len(doc.get('metric_groups') or [])}")
+
+    errors.extend(reverse_diff(INVENTORY, curated))
+    print(f"\ninventory 反向差集：{len(INV_FUNCS) - len(curated)} 个内部 helper"
+          f"（allowlist {len(INTERNAL_HELPERS)} 个），function_count={INVENTORY.get('function_count')}")
 
     if errors:
         print("\nFAIL:", file=sys.stderr)

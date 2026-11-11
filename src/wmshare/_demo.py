@@ -31,6 +31,20 @@ _SNAPSHOT_SCHEMA_VERSION = 1
 _AS_OF = "2026-10-30"
 _CATALOG_REV = "d9bbd944"
 _SDK_VERSION = "1.11.0"
+
+# 对外溯源常量：显式 SNAPSHOT_ 前缀，避免把「拍快照时的 SDK 版本」误当成当前版本。
+# 保留上面的短名供模块内部快照校验使用（不重拍 _demo_data.json、不改哈希合同）。
+SNAPSHOT_AS_OF = _AS_OF
+SNAPSHOT_CATALOG_REV = _CATALOG_REV
+SNAPSHOT_SDK_VERSION = _SDK_VERSION
+SNAPSHOT_SCHEMA_VERSION = _SNAPSHOT_SCHEMA_VERSION
+DEMO_SNAPSHOT_PROVENANCE = {
+    "as_of": SNAPSHOT_AS_OF,
+    "schema_version": SNAPSHOT_SCHEMA_VERSION,
+    "snapshot_sdk_version": SNAPSHOT_SDK_VERSION,
+    "snapshot_catalog_rev": SNAPSHOT_CATALOG_REV,
+}
+
 _UNIVERSE = (
     "600519", "000858", "601088", "600900", "601318",
     "000001", "600036", "000333", "300750", "688981",
@@ -42,6 +56,16 @@ _MAX_BANK_MEMBERS = 20
 # 期货与宏观罐头（v1.11 后新数据面）：PROD 活体探针实证值（2026-11-07），不在
 # 2026-10-30 快照采集范围内，故不进 _demo_data.json（避免破坏快照哈希合同）
 _FUT_CANS: dict[str, float] = {"$FUT_CLOSE": 5354.0, "$FUT_VOLUME": 302888.0}
+
+
+def _unsupported(name: str, kind: str = "底层函数") -> UsageError:
+    """未回放的函数一律显式报错，绝不返回空结果冒充成功（与真实 Client.call 同向）。"""
+    return UsageError(
+        f"demo 快照不提供{kind} {name!r} 的回放数据；"
+        "用 wmshare.load().functions_by_domain() 查可用目录函数，"
+        "或改用 Client.from_env() 接真实数据（demo 只回放固定快照，不伪造空结果）",
+        code="demo_unsupported",
+    )
 
 _SNAPSHOT: dict[str, Any] | None = None
 
@@ -766,7 +790,7 @@ class DemoClient:
         elif name == "bonus.snapshot_yield_ttm":
             results = {self._require_symbol(s): self._dividend_yield(s) for s in symbols}
         else:
-            raise UsageError(f"demo 快照不支持批量函数 {name!r}", code="demo_unsupported")
+            raise _unsupported(name, "批量函数")
         return BatchResult(results=results, requests=max(1, -(-len(results) // 500)))
 
     def _batch_all(self, name: str, symbols: list[str], /, batch_size: int | None = None,
@@ -798,7 +822,7 @@ class DemoClient:
             return self._kline_snapshot(symbol)
         if name == "bonus.snapshot_yield_ttm":
             return self._dividend_yield(symbol)
-        return []
+        raise _unsupported(name)
 
     def close(self) -> None:
         return None
@@ -810,17 +834,32 @@ class DemoClient:
         self.close()
 
     def __repr__(self) -> str:
+        # 函数内惰性导入：模块加载期 wmshare 尚未完成初始化，不能顶层 import。
+        import wmshare
+        p = DEMO_SNAPSHOT_PROVENANCE
         return (
             f"wmshare.demo_client()  # 真实 API 固定快照（as_of={self._doc['as_of']}, "
-            f"10 只演示宇宙，非实时行情）；接真实数据请 wmshare.Client.from_env()"
+            f"10 只演示宇宙，非实时行情）；接真实数据请 wmshare.Client.from_env()\n"
+            f"  # 快照 SDK {p['snapshot_sdk_version']} / catalog_rev "
+            f"{p['snapshot_catalog_rev']}\n"
+            f"  # 当前 SDK {wmshare.__version__}（快照不随发版更新；"
+            "用 wmshare_status 的 demo_snapshot 对照）"
         )
 
 
     def _index_ns(self) -> SimpleNamespace:
-        """指数域罐头：universe_keys/keys/valuation/trend（冻结快照 2026-10-30 口径）。"""
+        """指数域罐头：universe_keys/keys/valuation/trend（冻结快照 2026-10-30 口径）。
+
+        trend 覆盖与 live 同构的三组键：11 宽基 + 申万一级行业（此处取 6 个代表键，
+        live 为全部 31 个）+ 2 个红利键——行业路径必须可离线验证，否则
+        ``universe_keys("industry")`` 返空会让「行业无估值历史」被误判为平台缺陷。
+        """
         uni = ["index.hs300", "index.csi500", "index.sz50", "index.cybz", "index.star50",
                "index.shzs", "index.szcz", "index.zx100", "index.szzzs", "index.gz2000",
                "index.kc200"]
+        ind = ["industry.S11", "industry.S22", "industry.S23", "industry.S24",
+               "industry.S27", "industry.S28"]
+        div = ["index.csidividend", "index.ssedividend"]
         cur = {
             "index.hs300": {"pe": 13.42, "pb": 1.25, "dv": 0.0231},
             "index.csi500": {"pe": 27.62, "pb": 2.01, "dv": 0.0154},
@@ -833,6 +872,16 @@ class DemoClient:
             "index.szzzs": {"pe": 33.9, "pb": 2.27, "dv": 0.0149},
             "index.gz2000": {"pe": 46.8, "pb": 2.14, "dv": 0.0118},
             "index.kc200": {"pe": 128.0, "pb": 3.52, "dv": 0.0056},
+            # 申万一级行业（整体法 PE/PB，量级与指数同阶）
+            "industry.S11": {"pe": 21.6, "pb": 2.35, "dv": 0.0189},
+            "industry.S22": {"pe": 14.8, "pb": 1.42, "dv": 0.0246},
+            "industry.S23": {"pe": 18.2, "pb": 1.88, "dv": 0.0205},
+            "industry.S24": {"pe": 26.4, "pb": 2.91, "dv": 0.0132},
+            "industry.S27": {"pe": 29.8, "pb": 3.14, "dv": 0.0117},
+            "industry.S28": {"pe": 16.9, "pb": 1.63, "dv": 0.0221},
+            # 红利指数
+            "index.csidividend": {"pe": 8.42, "pb": 0.86, "dv": 0.0481},
+            "index.ssedividend": {"pe": 8.73, "pb": 0.91, "dv": 0.0462},
         }
 
         def _trend(key: str, window: str = "5y") -> dict:
@@ -867,10 +916,15 @@ class DemoClient:
             if w not in ("3y", "5y", "10y"):
                 w = "5y"
 
-            def _pct(col: int, cur_v: float | None) -> dict:
-                """单列分位：rank0/(n-1)，并列取中点（与 live/前端同口径）。"""
+            def _pct(col: int, cur_v: float | None, window_n: int = 0) -> dict:
+                """单列分位：rank0/(n-1)，并列取中点（与 live/前端同口径）。
+
+                ``window_n`` 为窗口内的点数（取最近 window_n 个点；0=全序列）。
+                pts 是新→旧，故 ``pts[:window_n]`` 恰是最近的一段。
+                """
+                rows = list(reversed(pts[:window_n] if window_n else pts))  # 升序
                 vals: list[float] = []
-                for p in pts:
+                for p in rows:
                     v = p[col]
                     if isinstance(v, (int, float)) and v > 0:
                         vals.append(float(v))
@@ -884,23 +938,37 @@ class DemoClient:
                     return {"p": None, "n": n_v}
                 return {"p": (lo + lo + eq - 1) / 2 / (n_v - 1), "n": n_v}
 
+            # 三档按各自窗口取样本（live 亦如此：n3 < n5 < n10）。此前把三档算成
+            # 同一个数，导致「pe_pct 恒取 5y」的 bug 在离线测试里完全不可见。
+            # demo 只有 120 周（≈2.3 年），3y 窗口取后 60%，5y/10y 均覆盖全序列；
+            # 与 live 一致地声明 trunc10=True（不拿短序列冒充 10 年）。
+            _WIN_ROWS = {"3y": int(n * 0.6), "5y": n, "10y": n}
+
             def _bundle(col: int, cur_v: float | None) -> dict:
-                b = _pct(col, cur_v)
-                p = b["p"]
-                # demo 序列只有 120 周，三档窗口用同一批样本；不作窗口截断声明
-                return {"p": p, "p3": p, "p5": p, "p10": p,
-                        "n3": b["n"], "n5": b["n"], "n10": b["n"], "trunc10": False}
+                b3 = _pct(col, cur_v, _WIN_ROWS["3y"])
+                b5 = _pct(col, cur_v, _WIN_ROWS["5y"])
+                b10 = _pct(col, cur_v, _WIN_ROWS["10y"])
+                # live 序列约 9.98 年，服务端 trunc10=True 时把 p10 置 None（不拿
+                # 短窗口冒充长窗口）。demo 只有 2.3 年，必须同构地置 None。
+                return {"p": b5["p"], "p3": b3["p"], "p5": b5["p"], "p10": None,
+                        "n3": b3["n"], "n5": b5["n"], "n10": b10["n"], "trunc10": True}
 
             last_pe, last_pb = float(pts[0][1]), float(pts[0][2])  # 行=[date, pe, pb]
             pe_b = _bundle(1, last_pe)
             pb_b = _bundle(2, last_pb)
-            sel = {"3y": pe_b["p3"], "5y": pe_b["p5"], "10y": pe_b["p10"]}[w]
+            # 与 live 同选择逻辑：按 window 取档；10y 因 trunc10 给 None（不降级）
+            _FIELD = {"3y": "p3", "5y": "p5", "10y": "p10"}
+            _trunc = w == "10y" and bool(pe_b.get("trunc10"))
+            pe_sel = None if _trunc else pe_b.get(_FIELD[w])
+            pb_sel = None if _trunc else pb_b.get(_FIELD[w])
+            eff_win = None if _trunc else w
             return {"ok": True, "key": key, "as_of": "2026-10-30", "density": "weekly",
                     "n": n,
                     "points": [{"date": p[0], "pe": p[1], "pb": p[2]} for p in pts],
-                    "pe_pct": sel,
-                    "pb_pct": pb_b["p5"], "med": [],
-                    "window": w, "win_start": pts[-1][0], "win_n": n, "win_trunc": False,
+                    "pe_pct": pe_sel,
+                    "pb_pct": pb_sel, "pe_pct_window": eff_win,
+                    "pe_missing": False, "pb_missing": False, "med": [],
+                    "window": w, "win_start": pts[-1][0], "win_n": n, "win_trunc": True,
                     "pct": {"pe": pe_b, "pb": pb_b, "pe_med": {}},
                     "pct_source": "server", "dv_has_history": False}
 
@@ -938,9 +1006,11 @@ class DemoClient:
             return rows[: top_n or len(rows)]
 
         return SimpleNamespace(
-            keys=lambda: list(uni),
-            universe_keys=lambda group="broad": (
-                list(uni) if str(group or "broad").lower() in ("broad", "all") else []),
+            keys=lambda: list(uni) + list(ind) + list(div),
+            universe_keys=lambda group="broad": list({
+                "broad": uni, "industry": ind, "dividend": div,
+                "all": list(uni) + list(ind) + list(div),
+            }.get(str(group or "broad").lower(), [])),
             members=_members,
             weights=_weights,
             valuation=_valuation,

@@ -1198,7 +1198,7 @@ cli.index.valuation(key="index.hs300", points=8)
 **示例**
 
 ```python
-cli.index.trend(key="index.hs300", window="3m")
+cli.index.trend(key="index.hs300", window="5y")
 ```
 
 #### `cli.index.universe_keys` — 指数域可用键
@@ -3621,14 +3621,16 @@ cli.info.profile("600519")
 
 #### 指数（`market.index`）
 
-**性质**：指标 · **版本**：1.3.0  
-指数维度数据——指数键列表、成分股（含市值/估值中枢，可按 mv/pe/pb/roe/ps 排序）、权重股（披露权重降序）、宽基估值时序（整体法 PE/PB 季采样 + 当前值/股息率）。 指数行情（K 线/快照）走 cli.kline。
+**性质**：指标 · **版本**：1.4.0  
+指数维度数据——指数键列表、成分股（含市值/估值中枢，可按 mv/pe/pb/roe/ps 排序）、权重股（披露权重降序）、指数与行业估值趋势（周频整体法 PE/PB，约 14 年， 带 3/5/10 年分位）、宽基估值时序（整体法 PE/PB 季采样 + 当前值/股息率）。 指数行情（K 线/快照）走 cli.kline。
 数据来源：平台数据服务。
 单位口径：money=元（市值）；ratio=小数（roe_ttm 等比率，指标层口径）；weight=小数（披露权重，上游 fmt 已换算，SDK 不再处理）。
 - v1.1.0 函数前缀 index.* → indices.*：上游内建 index 常量 MAP 占名（selector policy violation），cli.index 门面不变
 - 成员行 roe_ttm/pe_ttm 等为指标层原值（比率小数、倍数口径），SDK 不再换算
 - valuation.series 为季采样点（d/pe/pb），前端/调用方可自行算分位；trend.base/med 为周频/月频点，均为降序（新→旧）
 - trend 自带历史分位：rank0/(n-1) 并列取中点，pct.pe/pb/pe_med 各含 p/p3/p5/p10；win_trunc=true 表示缓存序列盖不住所选窗口，相关分位为 null（不拿短窗口冒充长窗口）
+- trend 的 pct.<col>.p 恒为 5 年分位（平台 pct_bundle 固定，与入参 window 无关）；SDK 按 window 取 p3/p5/p10 并回显 pe_pct_window，故 trend("3y")["pe_pct"] == pct.pe.p3
+- trend 覆盖宽基 11 + 申万一级 31（industry.SXX）+ 红利 14 键；L2/L3 行业未预热（ok=false），中信行业无该数据。指数/行业 PE 历史只能走 trend（$PCT_PE_TTM_* 按个股 $SYMBOL 绑定，不随 key 切换）
 - 股息率只有当前值、没有历史序列（DV 无 series），因此不出股息率分位
 
 | 函数 | 中文 | 性质 | 层 | 参数 | 返回 | 单位与守护 |

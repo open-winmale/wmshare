@@ -8,9 +8,10 @@
 | 1.15.x  | ✅（上一 minor 线，仅高危修复） |
 | < 1.15  | ❌（不接收安全修复，请升级） |
 
-Last reviewed: 2026-11-11（as_of `1.16.2`）。策略为「仅当前 minor 线 +
-上一 minor 线」，发版时必须同步本表；`tools/check_version.py` 会把表头与
-`wmshare.__version__` 的 `major.minor` 锁死，防止再次腐化。
+Last reviewed: 2026-11-11（as_of `1.16.3`）。策略为「仅当前 minor 线 +
+上一 minor 线」，发版时必须同步本表；`tools/check_version.py --check` 会把
+六处版本声明（pyproject / `__version__` / `server.json`×2 / `openapi.info.version` /
+CHANGELOG 顶部 release 段）与表头、`as_of` 一并互校，防止再次腐化。
 
 **Response target**：确认后 5 个工作日内给出初步判断，高危问题优先；修复
 随最近一次 minor 发布，必要时单独发 patch。

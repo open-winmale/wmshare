@@ -60,6 +60,9 @@ SCENES = [
      '`cli.indicator.get("600519", "$FUT_CLOSE", fut_symbol="cn.RB.SHF")`'),
     ("宏观 CPI 时序", "$CPI",
      '`cli.macro.query(...)`（`asof` / `spots` 取历史点列）'),
+    # 指数/行业的「历史估值序列」不是指标码，走门面方法（码列填 —）
+    ("沪深300 / 申万行业 PE·PB 历史（约 14 年周频）", "—",
+     '`cli.index.trend(key, "5y")`（宽基 11 + 申万一级 31 + 红利 14 键）'),
 ]
 
 
@@ -160,10 +163,10 @@ def build() -> str:
     quote_group = g_by_id.get("market_quote")
     stock_groups = [g for g in groups if g["id"] != "market_quote"]
 
-    # 场景速查防编造断言：引用的码必须真实存在
+    # 场景速查防编造断言：引用的码必须真实存在（"—" 表示该场景走门面方法、非指标码）
     codes = {m["code"] for m in metrics}
     for _, code, _ in SCENES:
-        assert code in codes, f"场景速查引用了目录外的码：{code}"
+        assert code == "—" or code in codes, f"场景速查引用了目录外的码：{code}"
     syntax_examples = [
         "$PCT_PE_TTM_10Y_LAST", "$ID_ROE_TTM", "$CUR_IND_ROE_PCT_LAST",
         "$INDEX_AMOUNT_DAY", "$IDW_BONUS_RATE_HM", "$FUT_CLOSE",
@@ -373,6 +376,13 @@ def build() -> str:
         "`$ID_*` 行业均值/聚合（行业层），`$CUR_IND_*` 个股在当前三级行业内的"
         "相对值与分位（1 = 行业最高）。",
         "",
+        "**行业估值的「历史序列」不走指标码，走 `cli.index.trend`**："
+        "`keys = cli.index.universe_keys(\"industry\")` 拿到 31 个申万一级键"
+        "（`industry.S11` …），再 `cli.index.trend(key, \"5y\")` 取周频整体法 PE/PB"
+        "（约 14 年、新→旧）与 3/5/10 年分位。申万二级/L2 未预热（返回 `ok=False`），"
+        "中信行业无该数据。注意：`$PCT_PE_TTM_*` 一类分位码按个股 `$SYMBOL` 求值，"
+        "**不随指数/行业键切换**，给行业算分位只能用 `index.trend`。",
+        "",
     ]
     for fam_prefix, label in [("$ID_", "`$ID_*` 行业均值 / 行业聚合"),
                               ("$CUR_IND_", "`$CUR_IND_*` 行业内相对值 / 分位")]:
@@ -384,11 +394,17 @@ def build() -> str:
     out += [
         "## 6. 指数及 ETF",
         "",
-        "raw 入口：`cli.index`（指数键列表、成分股、权重股、宽基估值时序）；"
+        "raw 入口：`cli.index`（指数键列表、成分股、权重股、**指数与行业估值趋势**）；"
         "场内 ETF 日 K 与个股同构走 `cli.kline.bars(\"510300\", n=30)`，"
         "`cli.kline.is_etf(...)` 判别场内基金（ETF 无分时/分钟源，`min1`/`live` 会被"
         "拦截，盘中取数用 `cli.kline.snapshot`）。指标码：`$INDEX_*` 指数层行情与估值、"
         "`$IDW_*` 指数加权口径（等权 / 市值加权 / 调和）。",
+        "",
+        "**指数历史 PE/PB 走 `cli.index.trend(key, window)`**：宽基 11 键 + 申万一级"
+        "行业 31 键 + 红利 14 键均有平台预热缓存，周频整体法（`$ID_PE_TTM_TOTAL`），"
+        "约 730 点 ≈ 14 年，返回序列（新→旧）与 3/5/10 年分位；`window` 只影响取哪一档"
+        "分位，不改变序列长度。`cli.index.valuation(key, points)` 另提供季采样 PE/PB"
+        "（≤80 点 ≈ 20 年，可自行算分位）。股息率只有当前值、无历史序列，故无股息率分位。",
         "",
     ]
     for fam_prefix, label in [("$INDEX_", "`$INDEX_*` 指数层"),

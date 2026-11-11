@@ -104,10 +104,10 @@ cat.functions_by_domain()             # 按域列全部函数名（cli.call 的�
 |---|---|---|
 | ETF 日 K / 判别场内基金 | `cli.kline.bars("510300")`、`cli.kline.is_etf`（ETF 无分钟线，盘中用 `live`/`snapshot`） | ETF |
 | 全市场筛选 / 涨跌宽度 | `cli.screener`（`query` 条件选股 + 单票筛选器 + 全景/分桶/涨跌榜） | 筛选 |
-| 指数成分 / 权重 / 宽基估值 / 指数层指标码 | `cli.index`（全量码见 INDICATORS.md「指数及 ETF」章） | 指数 |
+| 指数成分 / 权重 / **指数与行业估值历史** / 指数层指标码 | `cli.index`（`trend` 取周频 PE/PB 序列与 3/5/10 年分位；全量码见 INDICATORS.md「指数及 ETF」章） | 指数 |
 | 盈利预测 / 业绩预告 | `cli.estimates`（`year_mark`：A=实际、E=预测）+ `cli.forecast`（预告/快报/日历） | 预测 |
 | 分红 / 股息率 | `cli.dividend`（`disc.bonus` 域 45 个函数）+ dividend 指标组 | 股息 |
-| 行业目录 / 成分股 / 行业均值与行业内分位 | `cli.stocks.industries()`、`cli.stocks.industry_members()`（码族见 INDICATORS.md「行业数据」章） | 行业 |
+| 行业目录 / 成分股 / 行业均值与行业内分位 / **行业估值历史** | `cli.stocks.industries()`、`cli.stocks.industry_members()`、`cli.index.trend("industry.SXX")`（码族见 INDICATORS.md「行业数据」章） | 行业 |
 | 宏观 / 中债收益率 / 期货主力 | `cli.macro`、`cli.indicator.get(sym, "$FUT_CLOSE", fut_symbol="cn.RB.SHF")` | 宏观 |
 
 全量指标码按数据类型的分章导航（每类码数、命名语法与死码清单）见 [INDICATORS.md](INDICATORS.md)；

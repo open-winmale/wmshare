@@ -42,6 +42,8 @@ METHOD_EXAMPLE_VALUES = {
     # 报告期变体（annual=年报年度 / sampling=报告期采样）
     ("equity", "query_exec_change_at"): {"annual": "2024", "sampling": '"Q4"'},
     ("equity", "query_capital_change_at"): {"annual": "2024", "sampling": '"Q4"'},
+    # 指数估值趋势：window 只接受 3y/5y/10y（通用 "3m" 会产生非法示例）
+    ("index", "trend"): {"window": '"5y"'},
     # 强赎触发价（元，面值 100 口径的正股价示例）
     ("cbond", "call_hits"): {"trig": "130.0"},
     # 研究级组合接口：示例串成一条完整链路（取数 → 事实 → 成稿/出图）

@@ -1,6 +1,7 @@
 """P0-B：MCP 网关策略、schema 可达性、数据溯源信封回归测试。"""
 from __future__ import annotations
 
+import ast
 import asyncio
 import re
 from itertools import chain
@@ -14,7 +15,7 @@ pytest.importorskip("mcp")
 from wmshare.api import COMPOSITE_METHODS, FRIENDLY_INDEX  # noqa: E402
 from wmshare.errors import LimitError  # noqa: E402
 from wmshare.mcp import apis, core, tools  # noqa: E402
-from wmshare.mcp.constants import MARKET_ACTIONS  # noqa: E402
+from wmshare.mcp.constants import MARKET_ACTIONS, TOOL_NAMES  # noqa: E402
 from wmshare.mcp.core import MCPRuntime  # noqa: E402
 from wmshare.mcp.server import MarketAction, build_server  # noqa: E402
 
@@ -187,3 +188,103 @@ def test_status_tool_envelope_carries_provenance():
     assert envelope["ok"] is True
     for key in _NEW_META_KEYS:
         assert key in envelope["meta"]
+
+
+# ---- S8：公开面手写计数锚定运行时 ----
+
+_SURFACE_FILES = (
+    "README.md",
+    "docs/AI.md",
+    "docs/README.md",
+    "docs/GUIDE.md",
+    "docs/API.md",
+    "llms.txt",
+    "llms-full.txt",
+    "src/wmshare/skills/wmshare/SKILL.md",
+    "src/wmshare/mcp/server.py",
+)
+
+
+def _count_facts() -> dict[str, int]:
+    """计数真值只从运行时对象取，不在测试里重复写死。"""
+    import wmshare
+
+    stats = wmshare.load().stats()
+    return {
+        "core": len(FRIENDLY_INDEX),
+        "composite": sum(len(methods) for methods in COMPOSITE_METHODS.values()),
+        "functions": stats["functions"],
+        "metrics": stats["metric_catalog_total"],
+        "tools": len(TOOL_NAMES),
+        "domains": stats["domains"],
+        "friendly": apis.route_count(),
+    }
+
+
+# (口径, 正则, 至少命中处数)：命中下限用来防止扫描面被悄悄改没。
+# 逐行扫描而非全文扫描，避免跨行的历史口径（如 CONTRIBUTING.md 的「44 个 / 核心接口」）误命中。
+_COUNT_PATTERNS = (
+    ("core", r"([\d,]+)\s*个\s*(?:SDK\s*)?核心接口", 3),
+    ("composite", r"([\d,]+)\s*个\s*组合接口", 2),
+    ("functions", r"([\d,]+)\s*个\s*底层函数", 2),
+    ("metrics", r"([\d,]+)\s*个\s*指标(?:码|代码)", 3),
+    ("tools", r"([\d,]+)\s*个\s*task\s*tools", 2),
+    ("domains", r"([\d,]+)\s*个\s*数据域", 2),
+    ("friendly", r"([\d,]+)\s*个\s*(?:SDK\s*)?friendly API", 2),
+)
+
+
+@pytest.mark.parametrize("kind,pattern,min_hits", _COUNT_PATTERNS)
+def test_handwritten_counts_match_runtime(kind, pattern, min_hits):
+    """README / AI 面 / llms / SKILL.md 里的手写计数必须与运行时真值一致。"""
+    expected = _count_facts()[kind]
+    hits = 0
+    for rel in _SURFACE_FILES:
+        path = REPO / rel
+        if not path.is_file():
+            continue
+        for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            for match in re.finditer(pattern, line):
+                value = int(match.group(1).replace(",", ""))
+                hits += 1
+                assert value == expected, (
+                    f"{rel}:{lineno} 写了 {value} 个 {kind}，运行时真值 {expected}；"
+                    "改了目录或接口请同步文档或改生成器")
+    assert hits >= min_hits, (
+        f"{kind} 扫描面失效：只命中 {hits} 处（需 ≥{min_hits}）")
+
+
+def _attr_chain(node):
+    if isinstance(node, ast.Attribute):
+        parent = _attr_chain(node.value)
+        return f"{parent}.{node.attr}" if parent else node.attr
+    if isinstance(node, ast.Name):
+        return node.id
+    return None
+
+
+def test_skill_frontmatter_and_examples_are_real():
+    """SKILL.md 的 frontmatter 约束与 cli.* 示例不能是编造的。"""
+    text = (REPO / "src/wmshare/skills/wmshare/SKILL.md").read_text(encoding="utf-8")
+    assert text.startswith("---\n"), "SKILL.md 缺 frontmatter"
+    front = text.split("---", 2)[1]
+    assert re.search(r"^name:\s*\S+", front, re.M)
+    description = re.search(r"^description:\s*(.+)$", front, re.M)
+    assert description and len(description.group(1)) > 40
+    assert "禁止臆造" in description.group(1), "防幻觉约束不能从 description 消失"
+
+    blocks = [block for lang, block in
+              re.findall(r"```(\w*)\n(.*?)```", text, re.S) if lang == "python"]
+    assert len(blocks) >= 2
+    calls = []
+    for block in blocks:
+        for node in ast.walk(ast.parse(block)):
+            if not isinstance(node, ast.Call):
+                continue
+            chain_name = _attr_chain(node.func)
+            if chain_name and chain_name.startswith("cli."):
+                calls.append(chain_name[4:])
+    assert len(calls) >= 5, f"SKILL.md 的 cli.* 示例过少：{len(calls)}"
+    routes = {route.target for route in apis.api_routes()}
+    unknown = sorted({name for name in calls if name not in routes})
+    assert not unknown, f"SKILL.md 示例引用了不存在的接口：{unknown}"

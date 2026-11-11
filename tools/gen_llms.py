@@ -28,6 +28,27 @@ FULL_PARTS = [
     "docs/API.md",
 ]
 
+# docs/INDICATORS.md 约 205 KB，内联会让 llms-full.txt 从 ~281 KB 涨到 ~486 KB，
+# 超出大上下文 agent 的实用预算。改为头部指标族摘要 + 链接，并把预算写成硬断言。
+FULL_SIZE_BUDGET = 320_000  # bytes（UTF-8），不是字符数
+
+
+def _indicators_brief(cat) -> str:
+    """llms-full 头部：按目录生成指标族导航，不内联 INDICATORS 全文。"""
+    groups = cat.metric_groups()
+    total = sum(g["count"] for g in groups)
+    lines = [
+        "## 指标族摘要（全量指标码见 INDICATORS.md，未内联进本文件）",
+        "",
+        f"目录声明 {len(groups)} 个指标族 / {total} 个精选指标码；"
+        f"全量指标码共 {cat.stats()['metric_catalog_total']} 个。"
+        f"按 [INDICATORS]({RAW}/docs/INDICATORS.md) 查码，禁止自算已有指标。",
+        "",
+    ]
+    lines += [f"- `{g['id']}` {g['cn']}（{g['domain']}）：{g['count']} 个"
+              for g in groups]
+    return "\n".join(lines)
+
 
 def _domain_line(domain: dict, facade: list[str]) -> str:
     desc = (domain.get("description") or "").strip()
@@ -142,6 +163,8 @@ def build_llms_txt() -> str:
         "",
         f"- [openapi.json]({RAW}/docs/openapi.json)：OpenAPI 3.1 机器可读合同",
         f"- [llms-full.txt]({RAW}/llms-full.txt)：本页所列文档的全文拼接（大上下文 agent 直读）",
+        "- 指标库全文约 205 KB **未内联**进 llms-full.txt：头部只给指标族摘要，"
+        f"全量指标码按 [INDICATORS]({RAW}/docs/INDICATORS.md) 取原文",
         f"- [CONTRIBUTING]({RAW}/CONTRIBUTING.md)：贡献门禁与内容规范",
         "",
     ]
@@ -149,12 +172,21 @@ def build_llms_txt() -> str:
 
 
 def build_llms_full_txt() -> str:
+    import wmshare
+
     parts = ["# wmshare — Full Documentation\n\n"
-             "> 由 tools/gen_llms.py 生成（README + skill + 指南 + AI 用法 + API 参考全文）。"]
+             "> 由 tools/gen_llms.py 生成（README + skill + 指南 + AI 用法 + API 参考全文）。"
+             "\n\n" + _indicators_brief(wmshare.load()) + "\n"]
     for rel in FULL_PARTS:
         body = (REPO / rel).read_text(encoding="utf-8")
         parts.append(f"\n\n---\n\n<!-- 来源：{rel} -->\n\n{body.strip()}")
-    return parts[0] + "".join(parts[1:]) + "\n"
+    content = parts[0] + "".join(parts[1:]) + "\n"
+    size = len(content.encode("utf-8"))
+    if size > FULL_SIZE_BUDGET:
+        raise ValueError(
+            f"llms-full.txt 体积 {size} B 超过预算 {FULL_SIZE_BUDGET} B；"
+            "不要内联 docs/INDICATORS.md（约 205 KB），改用指标族摘要 + 链接")
+    return content
 
 
 def main() -> int:

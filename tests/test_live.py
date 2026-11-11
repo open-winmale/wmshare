@@ -587,6 +587,42 @@ def test_workout_index_intl_domain_smoke(cli):
         assert r is None or isinstance(r, list)
     v = _call_or_xfail(lambda: cli.index.valuation("index.hs300", 8))
     assert v is None or isinstance(v, dict)
+
+
+def test_index_trend_long_history_and_industries(cli):
+    """指数/行业历史 PE：周频整体法序列 + 按 window 取档的分位（真实服务端）。
+
+    覆盖此前在 test_live 里完全没有的 ``index.trend`` / ``index.universe_keys``：
+    静态覆盖面守护 ``test_all_core_interfaces_are_exercised_here`` 要求它们出现，
+    但该守护本身受 ``WMSHARE_LIVE`` 门控，CI 从不执行，等于无契约。
+    """
+    # ① 宽基：序列应覆盖 10 年以上（周频约 700+ 点）；分位必须按窗口取档
+    t3 = _call_or_xfail(lambda: cli.index.trend("index.hs300", "3y"))
+    assert isinstance(t3, dict) and t3.get("ok") is True, "hs300 应有预热缓存"
+    assert t3["n"] >= 500, f"宽基估值序列应覆盖 10 年（周频），实际 {t3['n']} 点"
+    dates = [p["date"] for p in t3["points"]]
+    assert dates == sorted(dates, reverse=True), "points 必须新→旧"
+    node = t3["pct"]["pe"]
+    assert t3["pe_pct"] == pytest.approx(node["p3"]), \
+        "3y 分位必须取 p3（服务端 p 恒为 5y，读 p 会静默错值）"
+    t5 = _call_or_xfail(lambda: cli.index.trend("index.hs300", "5y"))
+    assert t5["pe_pct"] == pytest.approx(t5["pct"]["pe"]["p5"])
+    assert t3["pe_pct"] != pytest.approx(t5["pe_pct"]), \
+        "3y 与 5y 分位不应相同（相同说明没按窗口取档）"
+
+    # ② 申万一级行业：31 键都必须能取到历史
+    keys = _call_or_xfail(lambda: cli.index.universe_keys("industry"))
+    assert isinstance(keys, list) and len(keys) >= 20, f"行业键应约 31 个，实际 {keys}"
+    bad = []
+    for k in keys:
+        r = _call_or_xfail(lambda k=k: cli.index.trend(k, "5y"))
+        if not (isinstance(r, dict) and r.get("ok") and r.get("n", 0) > 100):
+            bad.append(k)
+    assert not bad, f"以下行业键取不到估值历史（缓存未预热？）：{bad}"
+
+    # ③ 红利键
+    div = _call_or_xfail(lambda: cli.index.universe_keys("dividend"))
+    assert isinstance(div, list) and div
     # intl 按市场路由：网关校验标的注册市场，须用对应市场客户端
     hk = Client.from_env(market="hk")
     us = Client.from_env(market="us")

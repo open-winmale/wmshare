@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "wmshare 数据 API",
-    "version": "1.16.2",
+    "version": "1.16.3",
     "description": "覆盖 A 股、港股、美股的财经数据核心接口（Python SDK，`pip install wmshare`；`import wmshare`）。凭证必填：在开放平台（open.winmale.com）获取 client_id/api-key；遇到 401/403/429 错误消息即完整的申请与配置指引。覆盖行情 K 线（不复权/前复权/后复权、盘中、分时、ETF、指数）、三大报表（多期、合并 vs 母公司、树视图、新旧会计准则归一）、分红（历史/DPS/窗口/TTM 率）、公告与业绩披露、资金流与指标层。平台指标经 /indicator/get、/indicator/metrics 按指标代码寻址，全量 2752 个指标代码随包内置目录分发（分组清单见 docs/API.md）。",
     "license": {
       "name": "BSD-3-Clause",
@@ -2416,7 +2416,7 @@
       "post": {
         "operationId": "index_trend",
         "summary": "周频整体法估值趋势（平台预热缓存，指数估值分位的推荐基座）。",
-        "description": "返回 ``{ok, key, as_of, density, points, pe_pct, pb_pct, med, window,、win_start, win_n, win_trunc, pct, pct_source, dv_has_history}``：、- ``points`` 为 ``[{date, pe, pb}, ...]``，**降序（新→旧）**，、``points[0]`` 是最新点——服务端 ``cursor.ds`` 的原始顺序、- ``pe_pct``/``pb_pct`` 是最新点在 ``window`` 窗口内的历史分位、（0=最低，1=最高）；口径 ``rank0/(n-1)``、并列取中点，与前端一致、- ``pct`` 给出 3y/5y/10y 三档：``{\"pe\": {...}, \"pb\": {...}, \"pe_med\": {...}}``，、每档含 ``p``/``p3``/``p5``/``p10`` 与样本数 ``n3``/``n5``/``n10``、- ``win_trunc=True`` 表示缓存序列盖不住所选窗口，此时相关分位为 None、（**不拿短窗口冒充长窗口**）、- ``dv_has_history=False``：股息率只有当前值，没有历史序列，不出分位、底层目录函数 `indices.trend`。SDK 调用：`cli.index.trend(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "description": "返回 ``{ok, key, as_of, density, points, pe_pct, pb_pct, med, window,、win_start, win_n, win_trunc, pct, pct_source, dv_has_history}``：、- ``points`` 为 ``[{date, pe, pb}, ...]``，**降序（新→旧）**，、``points[0]`` 是最新点——服务端 ``cursor.ds`` 的原始顺序、- ``pe_pct``/``pb_pct`` 是最新点在 ``window`` 窗口内的历史分位、（0=最低，1=最高）；口径 ``rank0/(n-1)``、并列取中点，与前端一致、- ``pe_pct_window`` 是 ``pe_pct``/``pb_pct`` **实际生效**的窗口：正常等于入参、``window``；该窗口被截断或拿不到分位时为 None、- ``pct`` 给出 3y/5y/10y 三档：``{\"pe\": {...}, \"pb\": {...}, \"pe_med\": {...}}``，、每档含 ``p``/``p3``/``p5``/``p10`` 与样本数 ``n3``/``n5``/``n10``。、注意服务端的 ``p`` 恒为 5 年分位（与入参 window 无关），故本方法按窗口、取 ``p3``/``p5``/``p10``，不读 ``p``、- ``win_trunc=True`` 表示缓存序列盖不住所选窗口，此时相关分位为 None、（**不拿短窗口冒充长窗口**，不降级到更短窗口）、- ``pe_missing``/``pb_missing``：该口径**最新点本身**无值（整体法下行业近期、整体亏损时 ``ΣNPTS_TTM ≤ 0``，价格侧指标为 nil；实测 ``industry.S11`` 最新、PE=None 而 PB 正常）。与「窗口不够」造成的 None 是两回事，看这两个标志区分、.. note::、指数/行业 PE 历史的本入口是 **周频整体法**（平台预热缓存，约 14 年跨度）。、个股的 ``$PCT_PE_TTM_*`` 分位码按求值会话 ``$SYMBOL`` 绑定，**不随指数/行业、键切换**——给指数或行业算分位只能用本方法（或 ``valuation().series`` 自算）。、底层目录函数 `indices.trend`。SDK 调用：`cli.index.trend(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "市场行情"
         ],

@@ -637,26 +637,40 @@ class IndexApi(_Api):
           ``points[0]`` 是最新点——服务端 ``cursor.ds`` 的原始顺序
         - ``pe_pct``/``pb_pct`` 是最新点在 ``window`` 窗口内的历史分位
           （0=最低，1=最高）；口径 ``rank0/(n-1)``、并列取中点，与前端一致
+        - ``pe_pct_window`` 是 ``pe_pct``/``pb_pct`` **实际生效**的窗口：正常等于入参
+          ``window``；该窗口被截断或拿不到分位时为 None
         - ``pct`` 给出 3y/5y/10y 三档：``{"pe": {...}, "pb": {...}, "pe_med": {...}}``，
-          每档含 ``p``/``p3``/``p5``/``p10`` 与样本数 ``n3``/``n5``/``n10``
+          每档含 ``p``/``p3``/``p5``/``p10`` 与样本数 ``n3``/``n5``/``n10``。
+          注意服务端的 ``p`` 恒为 5 年分位（与入参 window 无关），故本方法按窗口
+          取 ``p3``/``p5``/``p10``，不读 ``p``
         - ``win_trunc=True`` 表示缓存序列盖不住所选窗口，此时相关分位为 None
-          （**不拿短窗口冒充长窗口**）
-        - ``dv_has_history=False``：股息率只有当前值，没有历史序列，不出分位
+          （**不拿短窗口冒充长窗口**，不降级到更短窗口）
+        - ``pe_missing``/``pb_missing``：该口径**最新点本身**无值（整体法下行业近期
+          整体亏损时 ``ΣNPTS_TTM ≤ 0``，价格侧指标为 nil；实测 ``industry.S11`` 最新
+          PE=None 而 PB 正常）。与「窗口不够」造成的 None 是两回事，看这两个标志区分
 
         :param key: 指数/行业/红利键（见 ``universe_keys()``）
         :param window: 分位窗口 ``3y``/``5y``/``10y``，默认 ``5y``
+
+        .. note::
+           指数/行业 PE 历史的本入口是 **周频整体法**（平台预热缓存，约 14 年跨度）。
+           个股的 ``$PCT_PE_TTM_*`` 分位码按求值会话 ``$SYMBOL`` 绑定，**不随指数/行业
+           键切换**——给指数或行业算分位只能用本方法（或 ``valuation().series`` 自算）。
         """
         w = str(window or "5y").lower()
         if w not in ("3y", "5y", "10y"):
             w = "5y"
         try:
             raw = self._c.call("indices.trend", key=key, window=w)
-        except Exception:
-            # 旧服务端只接受 key 一参：退回单参调用并在客户端自算分位
+        except UsageError:
+            # 旧服务端只接受 key 一参（新增的 window 不被识别）：退回单参调用并在
+            # 客户端自算分位。只吞 UsageError——鉴权/网络/服务端错误必须原样抛出，
+            # 否则一次失败会变成两次请求，且真实故障被掩盖成「服务端没部署 pct」。
             raw = self._c.call("indices.trend", key=key)
         if not isinstance(raw, dict):
             return {"ok": False, "key": key, "as_of": "", "density": "weekly",
                     "points": [], "pe_pct": None, "pb_pct": None, "med": [],
+                    "pe_pct_window": None, "pe_missing": True, "pb_missing": True,
                     "window": w, "win_start": "", "win_n": 0, "win_trunc": True,
                     "pct": {}, "pct_source": "client", "dv_has_history": False}
         base = raw.get("base") or []
@@ -703,15 +717,41 @@ class IndexApi(_Api):
             trunc = bool(cut) and earliest > cut
             return (None if trunc else _pct(cur, vals)), len(vals), trunc
 
-        def _server(col: str, field: str) -> float | None:
+        # 服务端的 ``pct.<col>.p`` **恒为 5 年分位**（pct_bundle 里 "p": w5["p"]），
+        # 与入参 window 无关。直接读 p 会让 trend(k, "3y") 静默返回 5 年分位
+        # （实测 hs300：p=0.7671 而 p3=0.6119，差 15.5 个百分点）。因此按窗口取档：
+        # 3y→p3、5y→p5、10y→p10。
+        _FIELD = {"3y": "p3", "5y": "p5", "10y": "p10"}
+        _TRUNC = {"10y": "trunc10"}
+
+        def _pick(col: str) -> float | None:
+            """按 window 取该档分位；该档截断或缺失时返回 None。
+
+            契约是「**不拿短窗口冒充长窗口**」（market.index.yaml / API.md）：序列盖不住
+            所选窗口时给 None，绝不降级到更短的窗口。实测 hs300 序列跨 2016-11-16 →
+            2026-11-09（9.98 年），服务端 trunc10=True、p10=None，故 trend(k,"10y")
+            的分位为 None——调用方可通过 ``pe_pct_window``/``pct.<col>.trunc10`` 分辨。
+            """
             node = server_pct.get(col)
             if not isinstance(node, dict):
                 return None
-            val = node.get(field)
+            if node.get(_TRUNC.get(w, "")):
+                return None
+            val = node.get(_FIELD[w])
             return val if isinstance(val, (int, float)) else None
 
-        pe_pct = _server("pe", "p")
-        pb_pct = _server("pb", "p")
+        pe_pct = _pick("pe")
+        pb_pct = _pick("pb")
+        # 实际生效窗口：拿到分位才等于入参 window（截断时为 None）
+        eff_win = w if (pe_pct is not None or pb_pct is not None) else None
+        # 分位为 None 的两种原因必须可区分，否则调用方无法判断「窗口不够」还是
+        # 「该主体当前无 PE」：整体法下行业近期整体亏损时 ΣNPTS_TTM ≤ 0，价格侧指标
+        # 返回 nil（实测 industry.S11 最新 PE=None 但 PB 有值），此时无 PE 分位是正常
+        # 结果，不是数据缺失。注意判断的是**最新点** pts[0]，而 last_pe 取的是「最近的
+        # 正值点」（供本地分位兜底用），二者不能混用。
+        head = pts[0] if pts else {}
+        pe_missing = not (isinstance(head.get("pe"), (int, float)) and head["pe"] > 0)
+        pb_missing = not (isinstance(head.get("pb"), (int, float)) and head["pb"] > 0)
         source = "server"
         win_n = int(raw.get("win_n") or 0)
         win_trunc = bool(raw.get("win_trunc", False))
@@ -721,11 +761,14 @@ class IndexApi(_Api):
             pe_pct, pe_n, pe_trunc = _win("pe", years)
             pb_pct, pb_n, pb_trunc = _win("pb", years)
             win_n, win_trunc, source = max(pe_n, pb_n), (pe_trunc or pb_trunc), "client"
+            eff_win = None if win_trunc else w
         return {"ok": bool(raw.get("ok")), "key": key,
                 "as_of": str(raw.get("asof") or ""),
                 "density": str(raw.get("density") or "weekly"),
                 "n": len(pts), "points": pts,
                 "pe_pct": pe_pct, "pb_pct": pb_pct,
+                "pe_pct_window": eff_win,
+                "pe_missing": pe_missing, "pb_missing": pb_missing,
                 "med": raw.get("med") or [],
                 "window": str(raw.get("window") or w),
                 "win_start": str(raw.get("win_start") or ""),

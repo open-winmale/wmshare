@@ -36,7 +36,7 @@
 - `fund.segments`（经营分部）：主营构成的多维分解——分产品 / 分业务 / 分区域（境内外）/ 主营标签占比， 外加合并快照与披露覆盖度
 - `fund.statements`（财务报表）：三大报表科目原值（资产负债 / 利润 / 现金流）多期透视、合并 vs 母公司比较、 报表目录树与审计意见
 - `market.cbond`（可转债）（cli.cbond）：可转债合约快照、条款事件（下修/回售/赎回等）、正股关联、强赎触发计数、 独立日 K 与盘中 1 分钟
-- `market.index`（指数）：指数维度数据——指数键列表、成分股（含市值/估值中枢，可按 mv/pe/pb/roe/ps 排序）、权重股（披露权重降序）、宽基估值时序（整体…
+- `market.index`（指数）：指数维度数据——指数键列表、成分股（含市值/估值中枢，可按 mv/pe/pb/roe/ps 排序）、权重股（披露权重降序）、指数与行业估值趋势…
 - `market.intl`（港美股披露）（cli.intl）：港美股公司披露维度——港股 CCASS 经纪持仓、主要股东/董事权益、机构评级、 盈利预测（中文键披露原文），港美沽空 interest，美股…
 - `market.kline`（行情K线）（cli.kline / cli.screener）：个股日 K（不复权 / 前复权 / 后复权）、最新一根、盘中最新快照、分钟分时、 单股快照与均线类筛选、全市场涨跌宽度
 - `market.macro`（宏观）（cli.macro）：宏观与行业时序——宏观指标原生点列/as-of/采样频率（$CPI/$GDP/$M2 等指标码 经本域取数）、中债收益率曲线按曲线名+期限取值…
@@ -64,4 +64,5 @@
 
 - [openapi.json](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/openapi.json)：OpenAPI 3.1 机器可读合同
 - [llms-full.txt](https://raw.githubusercontent.com/open-winmale/wmshare/main/llms-full.txt)：本页所列文档的全文拼接（大上下文 agent 直读）
+- 指标库全文约 205 KB **未内联**进 llms-full.txt：头部只给指标族摘要，全量指标码按 [INDICATORS](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/INDICATORS.md) 取原文
 - [CONTRIBUTING](https://raw.githubusercontent.com/open-winmale/wmshare/main/CONTRIBUTING.md)：贡献门禁与内容规范

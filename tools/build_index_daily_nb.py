@@ -178,11 +178,16 @@ def med_window_n(points, years, asof):
 
 
 def measure_pct(t, measure):
-    # 取分位：优先服务端 pct[measure].p；服务端未部署该口径时用本地序列自算（并标注来源）
+    # 取分位：优先服务端 pct[measure] 的**窗口档**（p3/p5/p10）；服务端 pct 的 "p"
+    # 恒为 5y 分位（与所选窗口无关），读 p 会让 3y/10y 榜拿错数。服务端未部署 pct 时
+    # 用本地序列自算（并标注来源）。
     # 返回 (分位, 来源, 该口径序列, 该口径窗口样本数)
     yrs = int(WINDOW[:-1]) if WINDOW[:-1].isdigit() else 5
     node = ((t.get("pct") or {}).get(measure) or {}) if t.get("pct") else {}
-    p = node.get("p") if isinstance(node.get("p"), (int, float)) else None
+    field = {3: "p3", 5: "p5", 10: "p10"}.get(yrs, "p5")
+    truncated = bool(node.get("trunc10")) and yrs == 10
+    p = node.get(field) if not truncated else None
+    p = p if isinstance(p, (int, float)) else None
     n = node.get("n%d" % yrs) if isinstance(node.get("n%d" % yrs), (int, float)) else 0
     if p is not None:
         return p, "server", (t.get("points") or []), n

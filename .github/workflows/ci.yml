@@ -25,6 +25,10 @@ jobs:
         run: python tools/check_leak.py
       - name: Catalog contract + anti-fabrication gate
         run: python tools/validate_catalog.py
+      - name: Version consistency gate (six sources)
+        run: python tools/check_version.py --check
+      - name: Guard coverage floor (no regression)
+        run: python tools/guard_coverage.py --min 0.156
       - name: API docs drift gate
         run: python tools/gen_api_docs.py --check
       - name: Typed facade drift gate
@@ -38,7 +42,11 @@ jobs:
       - name: Type check
         run: python -m mypy
       - name: Tests + coverage (offline; extractor drift auto-skips without scripts tree)
-        run: pytest -q --cov=wmshare --cov-report=term-missing --cov-fail-under=85
+        # S5/M1：补测后实测综合覆盖 87.54%（行 89.63% / 分支 82.28%），
+        # --cov-fail-under 比较的是综合率；此前 83.71% 会击穿 85 门槛。
+        # 纯分支率仍未到 85，若要单独锁分支率需另加 coverage json 判定。
+        # ratchet 由 tests/test_coverage_policy.py 校验 run 命令本身。
+        run: pytest -q --cov=wmshare --cov-branch --cov-report=term-missing --cov-fail-under=85
       - name: Wheel build + clean install smoke (3.11 only)
         if: matrix.python == '3.11'
         run: |

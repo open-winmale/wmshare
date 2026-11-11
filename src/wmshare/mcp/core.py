@@ -84,7 +84,8 @@ def _demo_as_of() -> str | None:
     try:
         from wmshare import _demo
 
-        return getattr(_demo, "_AS_OF", None)
+        prov = getattr(_demo, "DEMO_SNAPSHOT_PROVENANCE", {})
+        return prov.get("as_of")
     except ImportError:  # pragma: no cover - 裁剪安装包场景
         return None
 
@@ -122,6 +123,15 @@ def _meta(
     }
     out.update(_provenance(runtime))
     out.update(extra)
+    # 守护关闭必须在信封里可见：raw=True 跳过规范化与单位换算，units=native
+    # 保留脚本原值。LLM 不能把这类诊断结果当已守护数据做数值结论。
+    # 只在关闭时新增键，正常路径的信封保持字节级兼容。
+    if bool(out.get("raw", False)) or out.get("units") == "native":
+        out["guards_off"] = True
+        out["guard_note"] = (
+            "raw=True / units=native 已关闭 SDK 单位换算与量级、不变量校验；"
+            "结果仅供口径诊断，禁止直接用于数值结论或跨单位比较"
+        )
     return out
 
 

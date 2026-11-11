@@ -298,6 +298,12 @@ class Client:
         self.ec_warn_threshold = ec_warn_threshold
         self.last_ec_cost: int | None = None  # 最近一次成功 eval 的 EC 消耗
         self._validate = validate  # False=关闭单位量级/不变量校验（换算仍执行）
+        if not validate:
+            # 构造期只提示一次：这是全局开关，调用期反复告警会淹没日志。
+            warnings.warn(
+                "Client(validate=False) 已关闭单位量级与不变量校验；结果仅供口径诊断，"
+                "禁止直接用于数值结论。保留守护请去掉该参数；MCP 侧可查 meta.guards_off。",
+                RuntimeWarning, stacklevel=2)
         self._sleep = time.sleep  # 测试注入点：不真实等待
         self._uniform = __import__("random").uniform
         self._token_lock = threading.Lock()

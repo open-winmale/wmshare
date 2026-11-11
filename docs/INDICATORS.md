@@ -3926,6 +3926,8 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 
 raw 入口：`cli.stocks.industries()` 行业目录（申万 sw2021、恒生 hsi）、`cli.stocks.industry_members()` 行业成分股。指标码两族：`$ID_*` 行业均值/聚合（行业层），`$CUR_IND_*` 个股在当前三级行业内的相对值与分位（1 = 行业最高）。
 
+**行业估值的「历史序列」不走指标码，走 `cli.index.trend`**：`keys = cli.index.universe_keys("industry")` 拿到 31 个申万一级键（`industry.S11` …），再 `cli.index.trend(key, "5y")` 取周频整体法 PE/PB（约 14 年、新→旧）与 3/5/10 年分位。申万二级/L2 未预热（返回 `ok=False`），中信行业无该数据。注意：`$PCT_PE_TTM_*` 一类分位码按个股 `$SYMBOL` 求值，**不随指数/行业键切换**，给行业算分位只能用 `index.trend`。
+
 #### `$ID_*` 行业均值 / 行业聚合（317 码）
 
 | 指标代码 | 中文 | 市场 |
@@ -4463,7 +4465,9 @@ raw 入口：`cli.stocks.industries()` 行业目录（申万 sw2021、恒生 hsi
 
 ## 6. 指数及 ETF
 
-raw 入口：`cli.index`（指数键列表、成分股、权重股、宽基估值时序）；场内 ETF 日 K 与个股同构走 `cli.kline.bars("510300", n=30)`，`cli.kline.is_etf(...)` 判别场内基金（ETF 无分时/分钟源，`min1`/`live` 会被拦截，盘中取数用 `cli.kline.snapshot`）。指标码：`$INDEX_*` 指数层行情与估值、`$IDW_*` 指数加权口径（等权 / 市值加权 / 调和）。
+raw 入口：`cli.index`（指数键列表、成分股、权重股、**指数与行业估值趋势**）；场内 ETF 日 K 与个股同构走 `cli.kline.bars("510300", n=30)`，`cli.kline.is_etf(...)` 判别场内基金（ETF 无分时/分钟源，`min1`/`live` 会被拦截，盘中取数用 `cli.kline.snapshot`）。指标码：`$INDEX_*` 指数层行情与估值、`$IDW_*` 指数加权口径（等权 / 市值加权 / 调和）。
+
+**指数历史 PE/PB 走 `cli.index.trend(key, window)`**：宽基 11 键 + 申万一级行业 31 键 + 红利 14 键均有平台预热缓存，周频整体法（`$ID_PE_TTM_TOTAL`），约 730 点 ≈ 14 年，返回序列（新→旧）与 3/5/10 年分位；`window` 只影响取哪一档分位，不改变序列长度。`cli.index.valuation(key, points)` 另提供季采样 PE/PB（≤80 点 ≈ 20 年，可自行算分位）。股息率只有当前值、无历史序列，故无股息率分位。
 
 #### `$INDEX_*` 指数层（71 码）
 
@@ -5006,5 +5010,6 @@ raw 入口：`cli.cbond`（合约快照、条款事件、正股关联、强赎�
 | 沪深300 等权股息率 | `$IDW_BONUS_RATE_HM` | `cli.indicator.get(sym, "$IDW_BONUS_RATE_HM")` |
 | 期货主力连续收盘价 | `$FUT_CLOSE` | `cli.indicator.get("600519", "$FUT_CLOSE", fut_symbol="cn.RB.SHF")` |
 | 宏观 CPI 时序 | `$CPI` | `cli.macro.query(...)`（`asof` / `spots` 取历史点列） |
+| 沪深300 / 申万行业 PE·PB 历史（约 14 年周频） | `—` | `cli.index.trend(key, "5y")`（宽基 11 + 申万一级 31 + 红利 14 键） |
 
 更多取数姿势见 [GUIDE](GUIDE.md) 与 [API 参考](API.md)；接口级合同见 [API.md](API.md)。

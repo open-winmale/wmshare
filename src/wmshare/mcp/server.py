@@ -524,7 +524,8 @@ def _add_resources(mcp: FastMCP, rt: MCPRuntime) -> None:
             "基础单位：比率/涨跌幅/分位=小数（0.0396=3.96%，0.42=42% 分位）；"
             "金额/价格/市值=元；股数/成交量=股。唯一常见例外是 screener 宽度接口"
             "的 *_pct/pct_of_total（80.3 表示 80.3%），median_pct 与涨跌幅仍是小数。"
-            "units=native 仅用于诊断，会绕开默认规范化。"
+            "units=native 仅用于诊断，会绕开默认规范化；raw=True（SDK 侧 _raw）同理，"
+            "两者都会在返回信封里标出 meta.guards_off=true，禁止把诊断结果当已守护数据。"
         )
 
     @mcp.resource("wmshare://limits")

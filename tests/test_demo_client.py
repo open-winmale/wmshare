@@ -153,7 +153,10 @@ def test_batch_entries_and_call(snapshot, cli):
     assert cli.batch_iter("kline.snapshot", ["600519", "000001"]).__next__().requests == 1
     assert len(cli.call("kline.query_bars", sym="600519", limit=5)) == 5
     assert cli.call("kline.snapshot", sym="600519")["close"] > 0
-    assert cli.call("not.covered") == []
+    # S3：未回放函数不再返回 []（会被 Agent 误读成「调用成功、结果为空」）。
+    with pytest.raises(UsageError) as err:
+        cli.call("not.covered")
+    assert err.value.code == "demo_unsupported"
 
 
 def test_example_quality_thresholds_are_captured(snapshot, cli):

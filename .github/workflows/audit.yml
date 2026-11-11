@@ -19,6 +19,8 @@ jobs:
           python-version: "3.11"
       - name: Install
         run: pip install .
+      - name: Guard coverage detail + floor (offline, no credentials)
+        run: python tools/guard_coverage.py --by-domain --json --min 0.156
       - name: Check credentials
         id: creds
         env:

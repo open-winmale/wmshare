@@ -10,6 +10,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.16.3] - 2026-11-11
+
+### Fixed
+- **`cli.index.trend` 分位不随 `window` 取档（静默错值）**：服务端 `pct.<col>.p`
+  恒为 5 年分位（平台 `pct_bundle` 固定 `"p": w5["p"]`），旧实现直接读 `p`，于是
+  `trend(key, "3y")["pe_pct"]` 返回的是 **5 年**分位。live 实测 `index.hs300`：
+  `p=0.7671` 而真值 `p3=0.6119`，差 15.5 个百分点且无任何提示。现按窗口取
+  `p3`/`p5`/`p10`；10y 档被服务端截断（`trunc10=True`，实测序列跨 9.98 年）时给
+  `None`，遵守「不拿短窗口冒充长窗口」的既有契约。新增 `pe_pct_window` 回报
+  `pe_pct`/`pb_pct` **实际生效**的窗口。
+- **`trend` 的兜底 catch 过宽**：旧实现 `except Exception` 把鉴权/网络/服务端错误也
+  变成「旧服务端」重试，真实故障被掩盖成「服务端没部署 pct」，且一次失败发两次请求。
+  收窄为只捕 `UsageError`（新增的 `window` 参数不被识别）。
+- **demo 与 live 不同向**：`_trend` 此前把 3y/5y/10y 三档算成同一个数、`pb_pct` 恒取
+  `p5`，导致上一条 bug 在离线测试中完全不可见。现三档按各自窗口取样本（`n3 < n5`）、
+  `p10` 随 `trunc10` 置 `None`、`pe_pct`/`pb_pct` 同选择逻辑。
+- **MCP `index.trend` 丢弃 `window`**：`mcp/tools.py` 写死 `cli.index.trend(key)`，
+  经 MCP 永远只能拿默认 5y；而 MCP 侧 `window` 默认值是 `3y`，两边不一致且无法察觉。
+  现透传。
+- **`tools/build_index_daily_nb.py` 同类口径**：`measure_pct` 原读 `pct[measure].p`，
+  改为按 `WINDOW` 取 `p3/p5/p10`（应用户可见的榜单与 `index.trend` 口径一致）。
+- **API.md 非法示例**：`cli.index.trend(key="index.hs300", window="3m")` 的 `window`
+  只接受 `3y/5y/10y`（`"3m"` 来自 `tools/_introspect.py` 的通用示例值）。改为 `"5y"`。
+
+### Added
+- **指数/行业历史估值的可发现性**：`README` 能力表、`GUIDE` 场景表、`INDICATORS.md`
+  行业章（§5）与指数章（§6）、`INDICATORS.md` 场景速查、`market.index.yaml` 域声明
+  均改为明写「指数与申万一级行业的估值趋势（周频整体法，约 14 年，带 3/5/10 年分位）」。
+  此前三处只写「宽基估值」，行业路径零字提及，导致该能力被判为不存在。
+- **`$PCT_PE_TTM_*` 的 key 绑定警告下沉到用户文档**（INDICATORS §5、`trend` docstring）：
+  这类分位码按个股 `$SYMBOL` 求值，**不随指数/行业键切换**，给指数或行业算分位只能
+  用 `index.trend`。此前该警告只写在 `AGENTS.md`。
+- **demo 补 `industry`/`dividend` 键组**：`universe_keys("industry")` 此前返回 `[]`，
+  行业路径无法离线验证；现返回 6 个 `industry.SXX` 代表键 + 2 个红利键，`all` 为并集。
+- **新增 `pe_missing` / `pb_missing`**：区分「分位为 None」的两种成因。整体法下行业近期
+  整体亏损时 `ΣNPTS_TTM ≤ 0`，价格侧 PE 为 nil（live 实测 31 个申万一级行业里 5 个
+  如此：S11/S23/S43/S45/S51），无 PE 分位属**正常结果**而非数据缺失；此前调用方无法
+  与「窗口截断」区分。
+
+### Tests
+- `tests/test_index_trend.py` 新增 9 条：其中 5 条用 stub client 直打真实
+  `IndexApi.trend`（demo 走 `SimpleNamespace`，**完全绕过**被测逻辑，已用「回滚到旧
+  实现 → 测试必须失败」的实验验证有效性）。另补行业键契约、三档差异化、pb 侧取档。
+- `tests/test_live.py` 新增 `test_index_trend_long_history_and_industries`：此前
+  `index.trend`/`index.universe_keys` 在整个 live 冒烟里零调用，静态覆盖面守护又被
+  `WMSHARE_LIVE` 门控（CI 从不执行），等于无契约。新用例验证序列长度 ≥500 点、
+  新→旧方向、3y/5y 分位取档正确，并逐个检查 31 个申万一级行业键均能取到历史。
+- `tests/test_mcp_tools_matrix.py` 新增 window 透传用例。
+
 ## [1.16.2] - 2026-11-11
 
 ### Changed
