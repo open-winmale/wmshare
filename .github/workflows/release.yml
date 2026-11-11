@@ -1,0 +1,53 @@
+name: release
+
+# 每个 v* tag 自动建一条 GitHub Release，正文直接抽 CHANGELOG 对应版本段。
+# 起因：13 个 tag 名下只有 1 个 Release（v1.10.0），Watch → Releases 这条追更
+# 通道是断的——关注仓库的人收不到任何新版本通知。
+#
+# 设计约束：
+#   * tag 与 src/wmshare/__init__.py::__version__ 不一致就别发（防止打错 tag）；
+#   * 不引入第三方 action（softprops/action-gh-release 之类），只用 gh CLI，
+#     保持供应链面最小、权限面只有 contents: write；
+#   * 正文抽不到 → 整个 job 失败，绝不发一条没有说明的 Release。
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5
+        with:
+          python-version: "3.12"
+
+      - name: Tag matches __version__
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          declared="$(python -c 'import re,pathlib;print(re.search(r"__version__ = \"([^\"]+)\"", pathlib.Path("src/wmshare/__init__.py").read_text(encoding="utf-8")).group(1))')"
+          if [ "$tag" != "$declared" ]; then
+            echo "::error::tag $GITHUB_REF_NAME 与 __version__ $declared 不一致，拒绝发 Release"
+            exit 1
+          fi
+
+      - name: Extract release notes from CHANGELOG
+        run: |
+          python tools/changelog_section.py "${GITHUB_REF_NAME#v}" > /tmp/release-notes.md
+          wc -l /tmp/release-notes.md
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --title "$GITHUB_REF_NAME" \
+            --notes-file /tmp/release-notes.md \
+            --verify-tag

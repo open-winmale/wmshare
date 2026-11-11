@@ -2,8 +2,6 @@
 
 [![PyPI](https://img.shields.io/pypi/v/wmshare)](https://pypi.org/project/wmshare/) [![Python](https://img.shields.io/pypi/pyversions/wmshare)](https://pypi.org/project/wmshare/) [![CI](https://github.com/open-winmale/wmshare/actions/workflows/ci.yml/badge.svg)](https://github.com/open-winmale/wmshare/actions/workflows/ci.yml) [![License: BSD-3-Clause](https://img.shields.io/badge/license-BSD--3--Clause-blue)](LICENSE)
 
-> **问题反馈 / 交流**：QQ 群 `1127142074`（搜索「wmshare开源交流群」）——使用问题、数据口径、bug 反馈欢迎进群，二维码见文末。
-
 > **English TL;DR** — `wmshare` is a BSD-3-Clause Python SDK for China A-share / Hong Kong / US
 > market data: k-line, intraday, money flow, statements, screener, whole-market batch, and
 > **2,752 server-precomputed metrics** (percentile ranks, multi-window averages, industry-relative
@@ -22,6 +20,21 @@
 [单位与数据守护](#单位与数据守护) · [许可与数据服务](#许可与数据服务) · [更多](#更多)
 
 ![notebook 实战：Jupyter 里 10 行代码筛出高股息 + PE 十年低位的股票（2026-10-30 真实数据）](docs/img/quickstart.png)
+
+## 零凭证先试
+
+装完就能跑，不用注册、不联网（随包内置 2026-10-30 固定快照，非实时数据）：
+
+```python
+import wmshare
+
+cli = wmshare.demo_client()
+print(f"{cli.dividend.yield_ttm('600519'):.2%}")        # 3.73%
+print(cli.screener.index_breadth_summary()["total"])   # 5686
+```
+
+接真实行情只换一行：`cli = wmshare.Client.from_env()`（凭证配置见下节）。
+指标怎么选、每条能替你省掉哪些计算，见[我想做 X → 用哪一行](#我想做-x--用哪一行)。
 
 ## 快速上手
 

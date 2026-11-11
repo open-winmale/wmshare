@@ -54,6 +54,8 @@ mcp = ["mcp>=1.7,<2"]
 [project.urls]
 Homepage = "https://github.com/open-winmale/wmshare"
 Documentation = "https://github.com/open-winmale/wmshare/blob/main/docs/API.md"
+Source = "https://github.com/open-winmale/wmshare"
+Changelog = "https://github.com/open-winmale/wmshare/blob/main/CHANGELOG.md"
 Issues = "https://github.com/open-winmale/wmshare/issues"
 
 [project.scripts]

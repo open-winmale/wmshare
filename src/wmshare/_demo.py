@@ -2,7 +2,7 @@
 
 快照日为 2026-10-30，由维护者用 ``tools/generate_demo_snapshot.py`` 生成。
 数据覆盖 examples 的 demo 路径：10 只 A 股演示宇宙 + 当日真实全市场 screener。
-它不是实时行情，也不承诺覆盖全部 252 个目录函数；接真实数据用
+它不是实时行情，也不承诺覆盖全部 269 个目录函数；接真实数据用
 ``wmshare.Client.from_env()``。
 """
 from __future__ import annotations

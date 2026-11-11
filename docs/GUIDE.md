@@ -42,7 +42,7 @@ export WMSHARE_CLIENT_ID=<AppId> WMSHARE_CLIENT_SECRET=<API Key>
 
 ### 2.1 双层 API：门面 + 目录
 
-- **门面层** `cli.<命名空间>.<方法>()`：21 个命名空间、132 个核心接口，方法名动宾化可猜
+- **门面层** `cli.<命名空间>.<方法>()`：22 个命名空间、132 个核心接口，方法名动宾化可猜
   （`kline.bars`、`dividend.yield_ttm`、`screener.screen_limit_up`）。
 - **目录层** `cli.call("<域>.<函数名>", ...)`：269 个底层函数按目录合同直调，
   参数名以 `cat.function(name)["params"]` 为准。门面未包装的函数经属性直达

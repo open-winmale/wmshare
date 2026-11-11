@@ -458,6 +458,21 @@ def test_readme_example_outputs_documented():
         assert line is not None, f"README 示例缺少 {call} 与预期输出 {value} 的对应注释"
 
 
+def test_readme_zero_credential_snippet_matches_snapshot():
+    """首屏「零凭证先试」块的注释值必须等于真实快照回放值。
+
+    首屏是唯一给未注册用户的钩子：值一旦与 ``_demo_data.json`` 漂移，陌生人照抄就跑出
+    不同数字。这里直接打真快照（不 patch），把注释与快照焊死。
+    """
+    import wmshare
+
+    assert "wmshare.demo_client()" in README, "首屏缺少零凭证试跑入口"
+    demo = wmshare.demo_client()
+    for label, value in (("yield", f"{demo.dividend.yield_ttm('600519'):.2%}"),
+                         ("total", str(demo.screener.index_breadth_summary()["total"]))):
+        assert value in README, f"首屏注释的 {label} 值 {value} 与快照回放不符"
+
+
 def test_readme_units_and_guards_documented():
     """单位与守护的最小行动块必须在 README 成文（2026-10-25 二次瘦身定版）。
 
