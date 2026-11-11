@@ -19,7 +19,7 @@
 - **目录先行**：`wmshare.load()` 后 `cat.search("中文")` 检索函数与指标码、`cat.function(name)["params"]` 查合同；禁止编造指标码（未知名在发请求前即报错）
 - **指标码命名**：`$主题+[窗口 3Y/5Y/10Y]+[统计量 TTM/YOY/AVG/MIN/TREND]+[_LAST]`；族前缀 `$PCT_*` 历史分位、`$ID_*` 行业均值、`$CUR_IND_*` 行业内分位、`$INDEX_*` 指数层、`$FUT_*` 期货主力——先查 `cat.search`，禁止自算已有指标（eval 按标的数逐票计费 EC，预置码便宜得多）
 - **MCP 优先**：`pip install "wmshare[mcp]"` 后先用 `wmshare_search` / `wmshare_contract`，再用 quote/history/metrics/company/screen/disclosures/batch/call
-- **批量绕 429**：服务端按请求次数限流（免费档 500 次/小时、5,000 次/日）；`cli.batch_all(name, codes)` 把 A 股 5,691 家压成 12 次请求；容错用批级 `on_batch_error="skip"`，勿用票级逐票放大；一个批次只能同一个市场
+- **批量绕 429**：服务端按请求次数限流（免费档 500 次/小时、5,000 次/日）；`cli.batch_all(name, codes)` 把 A 股 5,375 家压成 11 次请求；容错用批级 `on_batch_error="skip"`，勿用票级逐票放大；一个批次只能同一个市场
 - **多市场**：`Client(market="cn"/"hk"/"us")` 缺省 cn；港美专项（CCASS/沽空/评级）挂在对应市场客户端的 cli.intl 上
 - **数据守护**：每次返回做量级与不变量校验，违例抛 DataError（数据在报警，勿吞）
 

@@ -72,7 +72,7 @@ cat.function("bonus.snapshot_yield_ttm")["params"]   # 函数合同：参数/返
 
 ## Client 方法（批量取数）
 
-服务端按**请求次数**限流（免费档 500 次/小时、5,000 次/日）：逐票取全市场（A 股 5,691 家）必撞 429，批量把请求次数压到 ⌈N/batch_size⌉。
+服务端按**请求次数**限流（免费档 500 次/小时、5,000 次/日）：逐票取全市场（A 股 5,375 家）必撞 429，批量把请求次数压到 ⌈N/batch_size⌉。
 
 | 方法 | 说明 |
 |---|---|
@@ -86,9 +86,9 @@ cat.function("bonus.snapshot_yield_ttm")["params"]   # 函数合同：参数/返
 **指标码不是批量 `name`**：`name` 必须是目录函数名（269 个，如 `kline.snapshot`），传 `indicator.get` 会报 CatalogError。一票多码用 `cli.indicator.metrics(sym, codes)`；全市场指标码没有批量入口，需逐票调用（指标取数是按 `(标的, 码)` 寻址，不是按标的切片）。
 
 ```python
-codes = [r["symbol"] for r in cli.stocks.list()]      # 全市场代码池（A 股 5,691 家）
-res = cli.batch_all("kline.snapshot", codes)          # 12 次请求，不是 5,691 次
-print(len(res.results), res.requests)                  # 5691 12
+codes = [r["symbol"] for r in cli.stocks.list()]      # 全市场代码池（A 股 5,375 家）
+res = cli.batch_all("kline.snapshot", codes)          # 11 次请求，不是 5375 次
+print(len(res.results), res.requests)                  # 5375 11
 
 df = cli.batch_all("kline.snapshot", ["600519", "000001"]).to_df()   # 需 pandas
 ```
@@ -3621,7 +3621,7 @@ cli.info.profile("600519")
 
 #### 指数（`market.index`）
 
-**性质**：指标 · **版本**：1.4.0  
+**性质**：指标 · **版本**：1.5.0  
 指数维度数据——指数键列表、成分股（含市值/估值中枢，可按 mv/pe/pb/roe/ps 排序）、权重股（披露权重降序）、指数与行业估值趋势（周频整体法 PE/PB，约 14 年， 带 3/5/10 年分位）、宽基估值时序（整体法 PE/PB 季采样 + 当前值/股息率）。 指数行情（K 线/快照）走 cli.kline。
 数据来源：平台数据服务。
 单位口径：money=元（市值）；ratio=小数（roe_ttm 等比率，指标层口径）；weight=小数（披露权重，上游 fmt 已换算，SDK 不再处理）。
@@ -3631,6 +3631,7 @@ cli.info.profile("600519")
 - trend 自带历史分位：rank0/(n-1) 并列取中点，pct.pe/pb/pe_med 各含 p/p3/p5/p10；win_trunc=true 表示缓存序列盖不住所选窗口，相关分位为 null（不拿短窗口冒充长窗口）
 - trend 的 pct.<col>.p 恒为 5 年分位（平台 pct_bundle 固定，与入参 window 无关）；SDK 按 window 取 p3/p5/p10 并回显 pe_pct_window，故 trend("3y")["pe_pct"] == pct.pe.p3
 - trend 覆盖宽基 11 + 申万一级 31（industry.SXX）+ 红利 14 键；L2/L3 行业未预热（ok=false），中信行业无该数据。指数/行业 PE 历史只能走 trend（$PCT_PE_TTM_* 按个股 $SYMBOL 绑定，不随 key 切换）
+- trend 口径：整体法 PE=Σ成分股市值/Σ成分股归母净利润TTM（$ID_PE_TTM_TOTAL），PB=ΣMV/ΣSE_NOGW；分母≤0 时 PE 为 nil（行业整体亏损则无 PE，SDK 标 pe_missing）。周频约 730 点（cursor.ds(3650)≈14.5 年，为覆盖 10y 分位窗口），月频约 174 点出正 PE 中位数。单键全量重算实测约 3.2M fuel/39s，故 cron 预热（交易日 16:20-16:29 增量、周六全量）而非请求时现算
 - 股息率只有当前值、没有历史序列（DV 无 series），因此不出股息率分位
 
 | 函数 | 中文 | 性质 | 层 | 参数 | 返回 | 单位与守护 |

@@ -42,7 +42,8 @@
 
 [基本功能](#基本功能) · [特色功能](#特色功能) · [快速上手](#快速上手) · [给 AI / Agent](#给-ai--agent) ·
 [市场覆盖](#市场覆盖) · [我想做 X → 用哪一行](#我想做-x--用哪一行) · [批量取数](#批量取数) ·
-[单位与数据守护](#单位与数据守护) · [许可与数据服务](#许可与数据服务) · [更多](#更多)
+[指数与行业估值历史](#指数与行业估值历史) · [单位与数据守护](#单位与数据守护) ·
+[许可与数据服务](#许可与数据服务) · [更多](#更多)
 
 ![notebook 实战：Jupyter 里 10 行代码筛出高股息 + PE 十年低位的股票（2026-10-30 真实数据）](docs/img/quickstart.png)
 
@@ -195,10 +196,7 @@ for r in res["rows"][:5]:
 市场切换：`Client(market="cn" / "hk" / "us")`，缺省 cn；代码与市场不匹配会被服务端直接拒绝（如 cn 市场查
 `00700` 报 market mismatch）。美股用裸代码（`AAPL`/`BRK_B`），`AAPL.O`/`BRK.B` 由 SDK 按代码表自动归一；`cli.intl` 港美股披露也要用对应市场客户端调用。
 
-如实注记（2026-11-09 实测）：港/美列 ✅ 均经 live 探针逐族验证；**美股代码用裸代码**（`AAPL` / `BRK_B`）——
-带后缀 `AAPL.O`/`BRK.N` 会被上游当宏观序列，SDK 已按随包代码表归一（裸代码实测正常）；美股日 K 已日更，
-周/月 K 由日线派生（`freq="W"/"M"`，2026-11 起追平），后复权无外部因子源不随日更，分时仅美股盘中（北京夜间）有值。
-深研宽表暂仅 cn；hk 十大流通股东与回购数据管线已有、SDK 接口待路由。
+如实注记（2026-11-09 实测）：港/美列 ✅ 均经 live 探针逐族验证；美股用裸代码（`AAPL`/`BRK_B`，带后缀会被当宏观序列，SDK 按代码表归一）；美股日 K 日更，周/月 K 由日线派生，后复权无外部因子源，分时仅美股盘中（北京夜间）有值。深研宽表暂仅 cn；hk 十大流通股东与回购管线已有、SDK 接口待路由。
 
 ## 我想做 X → 用哪一行
 
@@ -279,6 +277,29 @@ cli.call_batch("kline.snapshot", ["600519", "000001"]) # ③ 单批（≤500）�
 正好制造 429）；一个批次只能同一市场；批量省请求次数**不省 EC**——全市场最新快照优先服务端直出
 `cli.moneyflow.board()`。参数/续跑/分批策略明细见 [GUIDE · 批量取数](docs/GUIDE.md)。
 
+## 指数与行业估值历史
+
+**本 SDK 计算量最重的一类数据**：每个「点」都是该指数/行业**全部成分股**的市值与归母净利润
+TTM 汇总相除（沪深 300 一点 = 300 家汇总；31 个申万一级连起来覆盖全 A 股）。周频 14 年
+= 56 键 × 约 730 期 × 每期数百至数千成分股，单键全量重算实测 **3.2M fuel / 39 秒**，
+故由服务端 cron 预热、接口只读缓存——所以一次调用就能拿到 730 个历史点：
+
+```python
+import wmshare
+cli = wmshare.demo_client()                              # 离线可跑；真实数据换 Client.from_env()
+t = cli.index.trend("index.hs300", "5y")                 # 宽基 11 + 申万一级 31 + 红利 14 键
+t["points"][0], t["n"]                                   # 最新点（序列新→旧）, 730（demo 为 120）
+t["pe_pct"], t["pe_pct_window"], t["pct"]["pe"]["p3"]    # 5y 分位, '5y', 3y 分位（三档一次给全）
+```
+
+口径：**整体法** `Σ市值/Σ归母净利润TTM`（PB 用不含商誉净资产，分母≤0 时 PE 为空）；周频约
+730 点跨 14.5 年；分位 `rank0/(n-1)` 并列取中点，窗口盖不住时返回 `None` 而非降级（10y 实测
+9.98 年 → `pe_pct=None`）；行业整体亏损时 `pe_missing=True`，是「无 PE」不是缺数据。股息率
+只有当前值、无历史序列。**指标码 `$PCT_PE_TTM_10Y_LAST` 这类分位码按个股绑定、不随指数/行业键
+切换**，指数/行业分位只能走 `trend`。完整算法、更新时点与四类返回值陷阱见
+[GUIDE · 指数与行业的历史估值](docs/GUIDE.md)，榜单实战见
+[docs/notebooks/index_daily.ipynb](docs/notebooks/index_daily.ipynb)。
+
 ## 单位与数据守护
 
 全库统一基础单位：**比率 / 涨跌幅 = 小数**（0.01 = 1%，ROE 0.332 = 33.2%）、
@@ -293,14 +314,12 @@ cli.call_batch("kline.snapshot", ["600519", "000001"]) # ③ 单批（≤500）�
 
 - 代码采用 [BSD-3-Clause](LICENSE)：可自由使用、修改、再分发（**含商业用途**），保留版权声明即可。
 - 云端数据服务需 [开放平台](https://open.winmale.com) 账号：免费档 500 次/小时、5,000 次/日，更高额度以平台为准。
-  **多标的一律走批量接口**（`cli.batch_all` / `batch_iter` / `call_batch`）：A 股 5,691 家一次批量 = 12 次请求，
-  逐票循环（`for code in codes: ...`）是最容易撞 429 的写法；容错用批级 `on_batch_error="skip"`（见「批量取数」）。
+  **多标的一律走批量接口**（逐票循环是最容易撞 429 的写法，见「批量取数」）。
 - 数据仅供研究参考，不构成任何投资建议。
 
 ## 更多
 
-- **AI 原生**：随包 [SKILL.md](src/wmshare/skills/wmshare/SKILL.md)、[AI 用法](docs/AI.md)、本地 MCP server（skill 可复制进 .agents/.zcode/.claude 的 skills/）
-- 生态工具 [big-winner](https://github.com/open-winmale/big-winner)：基于本 SDK 的开源工具。
+- **AI 原生**：随包 [SKILL.md](src/wmshare/skills/wmshare/SKILL.md)、[AI 用法](docs/AI.md)、本地 MCP server（skill 可复制进 .agents/.zcode/.claude 的 skills/）；生态工具 [big-winner](https://github.com/open-winmale/big-winner)。
 - **文档中心 [docs/](docs/README.md)**：使用指南 GUIDE（单票菜谱/批量/多市场/故障排查）· 指标库 [INDICATORS.md](docs/INDICATORS.md)（全量指标码按数据类型分章）· AI 用法 · llms.txt 索引 · [API 参考](docs/API.md)（按资产类别分章的 132 个核心接口 + 指标组）
 - **可转债日更管线**：`cli.cbond.daily()` → `article()` → `figures()` 一条命令出图文（三层口径 + 三道闸 + 状态机 + 事件日历，每个数字带 `sources` 与 `as_of`，缺条目抛错而非补猜测值）；实战 notebook 见 [docs/notebooks/cb_double_low.ipynb](docs/notebooks/cb_double_low.ipynb)（2026-11-07 真实数据）
 - **示例课程 [examples/](examples/README.md)**：15 个编号示例（入门→进阶→生产→AI），全部支持演示客户端离线试跑，CI 端到端覆盖
@@ -836,6 +855,91 @@ cli.stocks.industry_members("银行")   # 中文名直达（也可传 "S48" 代�
 新鲜度注记：cn/hk 列表随上游每日刷新；**us universe 为手动刷新**（新上市/退市有滞后，
 个别行 symbol 为空会被 `stocks.list()` 自动剔除）。
 
+### 4.1 指数与行业的历史估值（14 年周频 PE/PB）
+
+这是本 SDK 里**计算量最重**的一类数据：每个键的每一期估值，都要把该指数/行业**全部成分股**
+的市值与归母净利润 TTM 汇总后相除。沪深 300 一个点 = 300 家公司的汇总；31 个申万一级行业
+连起来覆盖全 A 股。周频 14 年就是「56 个键 × 约 730 期 × 每期数百至数千成分股」的量级，
+单键单次全量重算实测约 **3.2M fuel / 39 秒**。所以它**不在请求时现算**，而是服务端 cron
+预热成缓存，`cli.index.trend` 只读缓存——这也是它能在一次调用里返回 730 个历史点的原因。
+
+```python
+import wmshare
+cli = wmshare.Client.from_env()
+
+t = cli.index.trend("index.hs300", "5y")     # 宽基：11 个键（index.hs300/csi500/sz50/…）
+t["n"], t["points"][0], t["points"][-1]      # 730 个周频点；points[0] 是最新点（新→旧）
+t["pe_pct"], t["pb_pct"]                     # 0.7671 / 0.5753（小数，0.7671 = 76.7% 分位）
+t["pe_pct_window"]                           # '5y'：实际生效的分位窗口
+
+for k in cli.index.universe_keys("industry"):    # 申万一级 31 个键
+    r = cli.index.trend(k, "5y")
+    print(k, r["points"][0]["pe"], r["pe_pct"])
+```
+
+**覆盖范围**（三类键共 56 个，均有预热缓存）：
+
+| 组 | 个数 | 键形如 | 取值 |
+|---|---|---|---|
+| 宽基指数 | 11 | `index.hs300` / `index.csi500` / `index.sz50` / `index.cybz` / `index.star50` / `index.shzs` … | `universe_keys("broad")` |
+| 申万一级行业 | 31 | `industry.S11`（农林牧渔）… | `universe_keys("industry")` |
+| 红利指数 | 14 | `index.csidividend` / `index.ssedividend` … | `universe_keys("dividend")` |
+
+外加伪键 `energy`（煤炭 + 石油石化 + 公用事业三行业合并，月频）。**申万二级/三级（L2/L3）
+不预热**——`trend` 对这类键返回 `ok=False`（不会静默给假数据）；中信行业分类无此数据。
+
+#### 口径算法
+
+**① 指标公式（整体法）**
+
+```
+PE(TTM) = Σ 成分股市值 / Σ 成分股归母净利润(TTM)     # $ID_PE_TTM_TOTAL
+PB      = Σ 成分股市值 / Σ 成分股净资产(不含商誉)    # $ID_PB_TTM_TOTAL
+```
+
+即**整体法**（aggregate method）：先汇总全成分股的市值与利润，再相除。这与「逐票算 PE 再
+平均」完全不同——后者会被小市值高 PE 股拖偏。分母 Σ归母净利润 ≤ 0 时（该行业整体亏损）
+PE 返回空值，而不是负数或 0：因此某些行业在特定时期**本来就没有 PE**。
+
+另附月频 `pe_med`（成分股中正 PE 的中位数，剔除 PE≤0 的亏损股），用于对照「中位数视角」。
+
+**② 采样与深度**
+
+- 回溯窗口 `cursor.ds(3650)` ≈ **14.5 年**，取这个长度是为了让 10 年分位窗口有足够样本
+  （若只取 2430 个交易日 ≈ 6.6 年，10 年分位必然截断）。
+- 周采样每 5 个交易日取一点 → 约 **730 点**；月采样每 21 个交易日 → 约 174 点（用于中位数）。
+- 增量更新在头部按日补点（每周最多 5 个日点），周六全量重算后重锚回周网格。
+
+**③ 分位算法**
+
+```python
+rank0 = (小于当前值的样本数 + 小于等于当前值的样本数 - 1) / 2   # 并列取中点
+分位  = rank0 / (n - 1)                                        # 归一到 [0, 1]
+```
+
+- 只统计**正数样本**（PE/PB 为空的期次跳过），`n` 是该窗口内的有效样本数。
+- 测的是 `points[0]`（最新点），窗口下界 = asof 回退 N 个**日历年**。
+- **窗口盖不住时给 `None`，绝不降级**：沪深 300 缓存跨 2016-11-16 → 2026-11-09（9.98 年），
+  所以 `window="10y"` 的 `pe_pct` 是 `None` 且 `pct.pe.trunc10=True`——不拿 9.98 年冒充 10 年。
+- 一次调用返回三档（`pct.pe.p3/p5/p10`），`window` 只决定 `pe_pct` 取哪一档，不改变序列长度。
+
+**④ 更新时点**
+
+cron 每交易日收盘后分批增量（16:20 宽基、16:23/16:26 申万一级前后半、16:29 红利），
+周六 4 个 job 全量重算。`as_of` 是数据截止日；缓存未命中返回 `ok=False`，不会拿旧值冒充。
+
+#### 读返回时要注意的四件事
+
+| 现象 | 含义 |
+|---|---|
+| `points` 是**新→旧** | `points[0]` 是最新点。写成 `points[-1]` 会拿到 2016 年的值 |
+| `pe_pct` 为 `None` 且 `pe_missing=True` | 该主体**当前无 PE**（行业整体亏损），不是数据缺失 |
+| `pe_pct` 为 `None` 且 `win_trunc=True` | 窗口盖不住（如 10y），可降窗口重取 |
+| `dv_has_history=False` | 股息率**只有当前值、无历史序列**，因此没有股息率分位 |
+
+实战榜单（三组键 × 估值 + 通道拨测 + 星级）见
+[docs/notebooks/index_daily.ipynb](notebooks/index_daily.ipynb)。
+
 ## 5. 批量取数（绕开 429 的正解）
 
 可运行版本：`examples/07_stocks_industry_batch.py`。
@@ -1279,7 +1383,7 @@ cat.function("bonus.snapshot_yield_ttm")["params"]   # 函数合同：参数/返
 
 ## Client 方法（批量取数）
 
-服务端按**请求次数**限流（免费档 500 次/小时、5,000 次/日）：逐票取全市场（A 股 5,691 家）必撞 429，批量把请求次数压到 ⌈N/batch_size⌉。
+服务端按**请求次数**限流（免费档 500 次/小时、5,000 次/日）：逐票取全市场（A 股 5,375 家）必撞 429，批量把请求次数压到 ⌈N/batch_size⌉。
 
 | 方法 | 说明 |
 |---|---|
@@ -1293,9 +1397,9 @@ cat.function("bonus.snapshot_yield_ttm")["params"]   # 函数合同：参数/返
 **指标码不是批量 `name`**：`name` 必须是目录函数名（269 个，如 `kline.snapshot`），传 `indicator.get` 会报 CatalogError。一票多码用 `cli.indicator.metrics(sym, codes)`；全市场指标码没有批量入口，需逐票调用（指标取数是按 `(标的, 码)` 寻址，不是按标的切片）。
 
 ```python
-codes = [r["symbol"] for r in cli.stocks.list()]      # 全市场代码池（A 股 5,691 家）
-res = cli.batch_all("kline.snapshot", codes)          # 12 次请求，不是 5,691 次
-print(len(res.results), res.requests)                  # 5691 12
+codes = [r["symbol"] for r in cli.stocks.list()]      # 全市场代码池（A 股 5,375 家）
+res = cli.batch_all("kline.snapshot", codes)          # 11 次请求，不是 5375 次
+print(len(res.results), res.requests)                  # 5375 11
 
 df = cli.batch_all("kline.snapshot", ["600519", "000001"]).to_df()   # 需 pandas
 ```
@@ -4828,7 +4932,7 @@ cli.info.profile("600519")
 
 #### 指数（`market.index`）
 
-**性质**：指标 · **版本**：1.4.0  
+**性质**：指标 · **版本**：1.5.0  
 指数维度数据——指数键列表、成分股（含市值/估值中枢，可按 mv/pe/pb/roe/ps 排序）、权重股（披露权重降序）、指数与行业估值趋势（周频整体法 PE/PB，约 14 年， 带 3/5/10 年分位）、宽基估值时序（整体法 PE/PB 季采样 + 当前值/股息率）。 指数行情（K 线/快照）走 cli.kline。
 数据来源：平台数据服务。
 单位口径：money=元（市值）；ratio=小数（roe_ttm 等比率，指标层口径）；weight=小数（披露权重，上游 fmt 已换算，SDK 不再处理）。
@@ -4838,6 +4942,7 @@ cli.info.profile("600519")
 - trend 自带历史分位：rank0/(n-1) 并列取中点，pct.pe/pb/pe_med 各含 p/p3/p5/p10；win_trunc=true 表示缓存序列盖不住所选窗口，相关分位为 null（不拿短窗口冒充长窗口）
 - trend 的 pct.<col>.p 恒为 5 年分位（平台 pct_bundle 固定，与入参 window 无关）；SDK 按 window 取 p3/p5/p10 并回显 pe_pct_window，故 trend("3y")["pe_pct"] == pct.pe.p3
 - trend 覆盖宽基 11 + 申万一级 31（industry.SXX）+ 红利 14 键；L2/L3 行业未预热（ok=false），中信行业无该数据。指数/行业 PE 历史只能走 trend（$PCT_PE_TTM_* 按个股 $SYMBOL 绑定，不随 key 切换）
+- trend 口径：整体法 PE=Σ成分股市值/Σ成分股归母净利润TTM（$ID_PE_TTM_TOTAL），PB=ΣMV/ΣSE_NOGW；分母≤0 时 PE 为 nil（行业整体亏损则无 PE，SDK 标 pe_missing）。周频约 730 点（cursor.ds(3650)≈14.5 年，为覆盖 10y 分位窗口），月频约 174 点出正 PE 中位数。单键全量重算实测约 3.2M fuel/39s，故 cron 预热（交易日 16:20-16:29 增量、周六全量）而非请求时现算
 - 股息率只有当前值、没有历史序列（DV 无 series），因此不出股息率分位
 
 | 函数 | 中文 | 性质 | 层 | 参数 | 返回 | 单位与守护 |

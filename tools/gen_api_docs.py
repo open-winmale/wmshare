@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import inspect
 import json
+import math
 import re
 import sys
 from pathlib import Path
@@ -476,6 +477,11 @@ def client_batch_section(total_fn: int) -> list[str]:
     import inspect
 
     from wmshare.client import Client
+    import wmshare
+
+    # 全市场代码池随包增长：批量请求数动态派生，杜绝「5,691 家 / 12 次」硬编码漂移。
+    n_cn = wmshare.load().stats()["symbols"]["cn"]
+    batches = math.ceil(n_cn / 500)
 
     def sig(name: str) -> str:
         src = inspect.signature(getattr(Client, name))
@@ -502,7 +508,7 @@ def client_batch_section(total_fn: int) -> list[str]:
         "## Client 方法（批量取数）",
         "",
         "服务端按**请求次数**限流（免费档 500 次/小时、5,000 次/日）：逐票取全市场"
-        "（A 股 5,691 家）必撞 429，批量把请求次数压到 ⌈N/batch_size⌉。",
+        f"（A 股 {n_cn:,} 家）必撞 429，批量把请求次数压到 ⌈N/batch_size⌉。",
         "",
         "| 方法 | 说明 |",
         "|---|---|",
@@ -520,9 +526,9 @@ def client_batch_section(total_fn: int) -> list[str]:
         "全市场指标码没有批量入口，需逐票调用（指标取数是按 `(标的, 码)` 寻址，不是按标的切片）。",
         "",
         "```python",
-        'codes = [r["symbol"] for r in cli.stocks.list()]      # 全市场代码池（A 股 5,691 家）',
-        'res = cli.batch_all("kline.snapshot", codes)          # 12 次请求，不是 5,691 次',
-        "print(len(res.results), res.requests)                  # 5691 12",
+        f'codes = [r["symbol"] for r in cli.stocks.list()]      # 全市场代码池（A 股 {n_cn:,} 家）',
+        f'res = cli.batch_all("kline.snapshot", codes)          # {batches} 次请求，不是 {n_cn} 次',
+        f"print(len(res.results), res.requests)                  # {n_cn} {batches}",
         "",
         'df = cli.batch_all("kline.snapshot", ["600519", "000001"]).to_df()   # 需 pandas',
         "```",

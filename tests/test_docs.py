@@ -517,9 +517,13 @@ def test_readme_is_lean():
     否则学完首页就写 for 循环逐票取数、正好撞 429）。
     2026-10-29 提至 291：批量章节补「市场边界」——跨市场混批会在本市场引擎里取到
     错误数值（实测同一港股标的 close/percent 均不符），必须成文且有 SDK 侧拦截。
+    2026-11-11 提至 306：新增「指数与行业估值历史」节——这是全库计算量最重的数据
+    （56 键 × 730 期 × 每期全部成分股汇总，单键重算 3.2M fuel/39s），此前店面只有
+    表格一行、接口名完全不出现，用户无从发现。新增含可跑示例与口径摘要；已先压缩
+    市场覆盖注记（4→1 行）、许可段批量重复句（3→2 行）、「更多」合并（2→1 行）。
     """
-    assert len(README.splitlines()) <= 291, \
-        f"README 膨胀到 {len(README.splitlines())} 行（上限 291）；长内容下沉 docs/ 或删除"
+    assert len(README.splitlines()) <= 306, \
+        f"README 膨胀到 {len(README.splitlines())} 行（上限 306）；长内容下沉 docs/ 或删除"
 
 
 def test_readme_no_stale_trial_promises():

@@ -17,7 +17,8 @@
 
 [基本功能](#基本功能) · [特色功能](#特色功能) · [快速上手](#快速上手) · [给 AI / Agent](#给-ai--agent) ·
 [市场覆盖](#市场覆盖) · [我想做 X → 用哪一行](#我想做-x--用哪一行) · [批量取数](#批量取数) ·
-[单位与数据守护](#单位与数据守护) · [许可与数据服务](#许可与数据服务) · [更多](#更多)
+[指数与行业估值历史](#指数与行业估值历史) · [单位与数据守护](#单位与数据守护) ·
+[许可与数据服务](#许可与数据服务) · [更多](#更多)
 
 ![notebook 实战：Jupyter 里 10 行代码筛出高股息 + PE 十年低位的股票（2026-10-30 真实数据）](docs/img/quickstart.png)
 
@@ -170,10 +171,7 @@ for r in res["rows"][:5]:
 市场切换：`Client(market="cn" / "hk" / "us")`，缺省 cn；代码与市场不匹配会被服务端直接拒绝（如 cn 市场查
 `00700` 报 market mismatch）。美股用裸代码（`AAPL`/`BRK_B`），`AAPL.O`/`BRK.B` 由 SDK 按代码表自动归一；`cli.intl` 港美股披露也要用对应市场客户端调用。
 
-如实注记（2026-11-09 实测）：港/美列 ✅ 均经 live 探针逐族验证；**美股代码用裸代码**（`AAPL` / `BRK_B`）——
-带后缀 `AAPL.O`/`BRK.N` 会被上游当宏观序列，SDK 已按随包代码表归一（裸代码实测正常）；美股日 K 已日更，
-周/月 K 由日线派生（`freq="W"/"M"`，2026-11 起追平），后复权无外部因子源不随日更，分时仅美股盘中（北京夜间）有值。
-深研宽表暂仅 cn；hk 十大流通股东与回购数据管线已有、SDK 接口待路由。
+如实注记（2026-11-09 实测）：港/美列 ✅ 均经 live 探针逐族验证；美股用裸代码（`AAPL`/`BRK_B`，带后缀会被当宏观序列，SDK 按代码表归一）；美股日 K 日更，周/月 K 由日线派生，后复权无外部因子源，分时仅美股盘中（北京夜间）有值。深研宽表暂仅 cn；hk 十大流通股东与回购管线已有、SDK 接口待路由。
 
 ## 我想做 X → 用哪一行
 
@@ -254,6 +252,29 @@ cli.call_batch("kline.snapshot", ["600519", "000001"]) # ③ 单批（≤500）�
 正好制造 429）；一个批次只能同一市场；批量省请求次数**不省 EC**——全市场最新快照优先服务端直出
 `cli.moneyflow.board()`。参数/续跑/分批策略明细见 [GUIDE · 批量取数](docs/GUIDE.md)。
 
+## 指数与行业估值历史
+
+**本 SDK 计算量最重的一类数据**：每个「点」都是该指数/行业**全部成分股**的市值与归母净利润
+TTM 汇总相除（沪深 300 一点 = 300 家汇总；31 个申万一级连起来覆盖全 A 股）。周频 14 年
+= 56 键 × 约 730 期 × 每期数百至数千成分股，单键全量重算实测 **3.2M fuel / 39 秒**，
+故由服务端 cron 预热、接口只读缓存——所以一次调用就能拿到 730 个历史点：
+
+```python
+import wmshare
+cli = wmshare.demo_client()                              # 离线可跑；真实数据换 Client.from_env()
+t = cli.index.trend("index.hs300", "5y")                 # 宽基 11 + 申万一级 31 + 红利 14 键
+t["points"][0], t["n"]                                   # 最新点（序列新→旧）, 730（demo 为 120）
+t["pe_pct"], t["pe_pct_window"], t["pct"]["pe"]["p3"]    # 5y 分位, '5y', 3y 分位（三档一次给全）
+```
+
+口径：**整体法** `Σ市值/Σ归母净利润TTM`（PB 用不含商誉净资产，分母≤0 时 PE 为空）；周频约
+730 点跨 14.5 年；分位 `rank0/(n-1)` 并列取中点，窗口盖不住时返回 `None` 而非降级（10y 实测
+9.98 年 → `pe_pct=None`）；行业整体亏损时 `pe_missing=True`，是「无 PE」不是缺数据。股息率
+只有当前值、无历史序列。**指标码 `$PCT_PE_TTM_10Y_LAST` 这类分位码按个股绑定、不随指数/行业键
+切换**，指数/行业分位只能走 `trend`。完整算法、更新时点与四类返回值陷阱见
+[GUIDE · 指数与行业的历史估值](docs/GUIDE.md)，榜单实战见
+[docs/notebooks/index_daily.ipynb](docs/notebooks/index_daily.ipynb)。
+
 ## 单位与数据守护
 
 全库统一基础单位：**比率 / 涨跌幅 = 小数**（0.01 = 1%，ROE 0.332 = 33.2%）、
@@ -268,14 +289,12 @@ cli.call_batch("kline.snapshot", ["600519", "000001"]) # ③ 单批（≤500）�
 
 - 代码采用 [BSD-3-Clause](LICENSE)：可自由使用、修改、再分发（**含商业用途**），保留版权声明即可。
 - 云端数据服务需 [开放平台](https://open.winmale.com) 账号：免费档 500 次/小时、5,000 次/日，更高额度以平台为准。
-  **多标的一律走批量接口**（`cli.batch_all` / `batch_iter` / `call_batch`）：A 股 5,691 家一次批量 = 12 次请求，
-  逐票循环（`for code in codes: ...`）是最容易撞 429 的写法；容错用批级 `on_batch_error="skip"`（见「批量取数」）。
+  **多标的一律走批量接口**（逐票循环是最容易撞 429 的写法，见「批量取数」）。
 - 数据仅供研究参考，不构成任何投资建议。
 
 ## 更多
 
-- **AI 原生**：随包 [SKILL.md](src/wmshare/skills/wmshare/SKILL.md)、[AI 用法](docs/AI.md)、本地 MCP server（skill 可复制进 .agents/.zcode/.claude 的 skills/）
-- 生态工具 [big-winner](https://github.com/open-winmale/big-winner)：基于本 SDK 的开源工具。
+- **AI 原生**：随包 [SKILL.md](src/wmshare/skills/wmshare/SKILL.md)、[AI 用法](docs/AI.md)、本地 MCP server（skill 可复制进 .agents/.zcode/.claude 的 skills/）；生态工具 [big-winner](https://github.com/open-winmale/big-winner)。
 - **文档中心 [docs/](docs/README.md)**：使用指南 GUIDE（单票菜谱/批量/多市场/故障排查）· 指标库 [INDICATORS.md](docs/INDICATORS.md)（全量指标码按数据类型分章）· AI 用法 · llms.txt 索引 · [API 参考](docs/API.md)（按资产类别分章的 132 个核心接口 + 指标组）
 - **可转债日更管线**：`cli.cbond.daily()` → `article()` → `figures()` 一条命令出图文（三层口径 + 三道闸 + 状态机 + 事件日历，每个数字带 `sources` 与 `as_of`，缺条目抛错而非补猜测值）；实战 notebook 见 [docs/notebooks/cb_double_low.ipynb](docs/notebooks/cb_double_low.ipynb)（2026-11-07 真实数据）
 - **示例课程 [examples/](examples/README.md)**：15 个编号示例（入门→进阶→生产→AI），全部支持演示客户端离线试跑，CI 端到端覆盖

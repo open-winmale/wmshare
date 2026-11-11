@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import inspect
+import math
 import sys
 from pathlib import Path
 
@@ -66,6 +67,9 @@ def build_llms_txt() -> str:
 
     cat = wmshare.load()
     stats = cat.stats()
+    # 全市场代码池随包增长：批量请求数动态派生，杜绝「5,691 家 / 12 次」之类硬编码漂移。
+    n_cn = stats["symbols"]["cn"]
+    batches = math.ceil(n_cn / 500)
     n_examples = len(list((REPO / "examples").glob("[0-9][0-9]_*.py")))
     composite_total = sum(len(methods) for methods in COMPOSITE_METHODS.values())
     friendly_total = len(FRIENDLY_INDEX) + composite_total
@@ -114,7 +118,7 @@ def build_llms_txt() -> str:
         "- **MCP 优先**：`pip install \"wmshare[mcp]\"` 后先用 `wmshare_search` / "
         "`wmshare_contract`，再用 quote/history/metrics/company/screen/disclosures/batch/call",
         "- **批量绕 429**：服务端按请求次数限流（免费档 500 次/小时、5,000 次/日）；"
-        "`cli.batch_all(name, codes)` 把 A 股 5,691 家压成 12 次请求；"
+        f"`cli.batch_all(name, codes)` 把 A 股 {n_cn:,} 家压成 {batches} 次请求；"
         "容错用批级 `on_batch_error=\"skip\"`，勿用票级逐票放大；一个批次只能同一个市场",
         "- **多市场**：`Client(market=\"cn\"/\"hk\"/\"us\")` 缺省 cn；"
         "港美专项（CCASS/沽空/评级）挂在对应市场客户端的 cli.intl 上",

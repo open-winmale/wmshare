@@ -125,6 +125,7 @@ ALLOWED_PATHS = {
     "llms-full.txt",
     "pyproject.toml",
     "server.json",
+    "requirements-dev.lock",
     ".gitignore",
 }
 
