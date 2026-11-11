@@ -113,14 +113,25 @@ def test_package_version():
 
 def test_version_single_source_of_truth():
     """__version__ 必须与 pyproject.toml 一致——双源漂移曾导致 1.9.0 的 wheel
-    里 import 出来是 1.8.1（bump pyproject 时漏改 __init__，发布前才发现）。"""
+    里 import 出来是 1.8.1（bump pyproject 时漏改 __init__，发布前才发现）。
+
+    2026-11 起 pyproject 改用 ``dynamic = ["version"]``（setuptools 从
+    ``wmshare.__version__`` 读取），此时无字面量版本、天然单源；两种形态都要覆盖。
+    """
     import re
     from pathlib import Path
 
     root = Path(__file__).resolve().parents[1]
     text = (root / "pyproject.toml").read_text(encoding="utf-8")
     m = re.search(r'^version\s*=\s*"([^"]+)"', text, re.M)
-    assert m, "pyproject.toml 缺 version"
+    if m is None:
+        assert re.search(r'^dynamic\s*=\s*\[[^\]]*"version"[^\]]*\]', text, re.M), \
+            "pyproject.toml 既无 version 字面量，也未声明 dynamic version"
+        assert re.search(
+            r'\[tool\.setuptools\.dynamic\][^\[]*?version\s*=\s*\{\s*attr\s*=\s*'
+            r'"wmshare\.__version__"\s*\}', text), \
+            "dynamic version 必须指向 wmshare.__version__（否则版本仍可能漂移）"
+        return
     assert wmshare.__version__ == m.group(1), (
         f"版本双源漂移：__init__={wmshare.__version__} vs pyproject={m.group(1)}")
 

@@ -80,7 +80,7 @@ def test_unknown_flag_is_rejected(tree):
 
 
 @pytest.mark.parametrize("attr,old_tmpl,new,marker", [
-    ("PYPROJECT", 'version = "{V}"', 'version = "9.9.9"',
+    ("PYPROJECT", 'attr = "wmshare.__version__"', 'attr = "other.__version__"',
      "pyproject.toml::project.version"),
     ("INIT", '__version__ = "{V}"', '__version__ = "9.9.9"',
      "server.json::version"),
@@ -91,6 +91,8 @@ def test_text_source_mismatch_is_reported(tree, capsys, attr, old_tmpl, new, mar
     """任一文本声明的版本被改坏时，门禁必须报不一致并点名来源。
 
     ``old`` 由当前版本模板化——硬编码具体版本号会让这条测试在每次发版后失效。
+    PYPROJECT 用例改坏 ``[tool.setuptools.dynamic] version.attr``：pyproject 自
+    2026-11 起为 dynamic version（无字面量版本），改坏 attr 指向即「双源漂移」。
     """
     import re
 
@@ -100,7 +102,11 @@ def test_text_source_mismatch_is_reported(tree, capsys, attr, old_tmpl, new, mar
     _replace(root / SOURCES[attr], old_tmpl.format(V=cur), new)
     assert mod.main(["--check"]) == 1
     err = capsys.readouterr().err
-    assert "版本声明不一致" in err and marker in err and "9.9.9" in err
+    assert "版本声明不一致" in err and marker in err
+    # PYPROJECT 用例改坏的是 dynamic attr（错误信息里带 attr 而非版本号数字），
+    # 其余用例改坏的是版本字面量本身。
+    if attr != "PYPROJECT":
+        assert "9.9.9" in err
 
 
 @pytest.mark.parametrize("which", ["root", "package"])

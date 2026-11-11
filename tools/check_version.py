@@ -2,17 +2,23 @@
 """版本一致性门禁（发版 / CI 必跑）：六处声明必须同指一个版本号。
 
 锁死的六处（任一处腐化即失败，并逐处列出实际值）：
-  1. src/wmshare/__init__.py::__version__          （基准）
-  2. pyproject.toml::project.version
+  1. src/wmshare/__init__.py::__version__          （基准，单一事实源）
+  2. pyproject.toml::project.version               （static）或 dynamic→wmshare.__version__
   3. server.json::version
   4. server.json::packages[0].version
   5. docs/openapi.json::info.version
   6. CHANGELOG.md 顶部 release 段（跳过 [Unreleased]）
 
+pyproject 支持两种声明：
+  - static：project.version = "x.y.z"（旧写法，仍校验值相等）
+  - dynamic：project.dynamic 含 "version" 且 tool.setuptools.dynamic.version.attr
+    == "wmshare.__version__"（M3 起推荐：构建时由 __init__ 注入，零重复硬编码）
+
 另锁 SECURITY.md：当前 minor 线表头 == 基准 major.minor，
 Last reviewed 的 as_of == 基准完整版本号。
 
-全程只读；不依赖 wmshare 运行时与第三方包，便于在门禁环境独立执行。
+全程只读；不依赖 wmshare 运行时与第三方包（tomllib 为 3.11+ 标准库，
+3.10 回退 tomli，后者为 dev 依赖），便于在门禁环境独立执行。
 
 Usage: python3 tools/check_version.py [--check]
 """
@@ -24,6 +30,11 @@ import re
 import sys
 from pathlib import Path
 
+try:  # 3.11+
+    import tomllib
+except ModuleNotFoundError:  # 3.10：dev 依赖 tomli
+    import tomli as tomllib
+
 REPO = Path(__file__).resolve().parents[1]
 INIT = REPO / "src" / "wmshare" / "__init__.py"
 PYPROJECT = REPO / "pyproject.toml"
@@ -33,6 +44,7 @@ CHANGELOG = REPO / "CHANGELOG.md"
 SECURITY = REPO / "SECURITY.md"
 
 MISSING = "（缺失）"
+EXPECTED_DYNAMIC_ATTR = "wmshare.__version__"
 
 
 def _match(pattern: str, text: str) -> str:
@@ -42,8 +54,28 @@ def _match(pattern: str, text: str) -> str:
     return m.group(1)
 
 
-def collect() -> tuple[str, dict[str, str], dict[str, str]]:
-    """Return (baseline, six sources, security checks)."""
+def _pyproject_version(baseline: str) -> tuple[str, bool]:
+    """返回 (报告值, 是否与基准一致)。兼容 static 与 dynamic 两种声明。"""
+    data = tomllib.loads(PYPROJECT.read_text(encoding="utf-8"))
+    proj = data.get("project", {}) or {}
+    if "version" in proj:  # static：直接比对值
+        val = str(proj["version"])
+        return val, val == baseline
+    dyn = proj.get("dynamic", []) or []
+    if "version" in dyn:  # dynamic：校验 attr 指向基准模块
+        tool = data.get("tool", {}) or {}
+        st = tool.get("setuptools", {}) or {}
+        attr = (st.get("dynamic", {}) or {}).get("version", {}) or {}
+        attr = attr.get("attr")
+        if attr != EXPECTED_DYNAMIC_ATTR:
+            return f"dynamic→{attr}", False
+        # attr 指向基准模块，构建时由 __init__ 注入，必然与基准一致。
+        return f"dynamic→{EXPECTED_DYNAMIC_ATTR}", True
+    return MISSING, False
+
+
+def collect() -> tuple[str, dict[str, tuple[str, bool]], dict[str, str]]:
+    """Return (baseline, six sources as (value, ok), security checks)."""
     init = INIT.read_text(encoding="utf-8")
     baseline = _match(r'__version__\s*=\s*"([^"]+)"', init)
     if baseline == MISSING:
@@ -51,19 +83,23 @@ def collect() -> tuple[str, dict[str, str], dict[str, str]]:
 
     server = json.loads(SERVER_JSON.read_text(encoding="utf-8"))
     packages = server.get("packages") or [{}]
+    openapi_ver = str(
+        json.loads(OPENAPI.read_text(encoding="utf-8")).get("info", {}).get("version")
+        or MISSING)
+    changelog_ver = _match(
+        r"^##\s*\[(\d+\.\d+\.\d+[^\]]*)\]", CHANGELOG.read_text(encoding="utf-8"))
+
+    pyproj_val, pyproj_ok = _pyproject_version(baseline)
+
     sources = {
-        "src/wmshare/__init__.py::__version__": baseline,
-        "pyproject.toml::project.version": _match(
-            r'^version\s*=\s*"([^"]+)"',
-            PYPROJECT.read_text(encoding="utf-8")),
-        "server.json::version": str(server.get("version") or MISSING),
-        "server.json::packages[0].version": str(packages[0].get("version") or MISSING),
-        "docs/openapi.json::info.version": str(
-            json.loads(OPENAPI.read_text(encoding="utf-8")).get("info", {}).get("version")
-            or MISSING),
-        "CHANGELOG.md::top release": _match(
-            r"^##\s*\[(\d+\.\d+\.\d+[^\]]*)\]",
-            CHANGELOG.read_text(encoding="utf-8")),
+        "src/wmshare/__init__.py::__version__": (baseline, True),
+        "pyproject.toml::project.version": (pyproj_val, pyproj_ok),
+        "server.json::version": (str(server.get("version") or MISSING),
+                                 str(server.get("version")) == baseline),
+        "server.json::packages[0].version": (str(packages[0].get("version") or MISSING),
+                                             str(packages[0].get("version")) == baseline),
+        "docs/openapi.json::info.version": (openapi_ver, openapi_ver == baseline),
+        "CHANGELOG.md::top release": (changelog_ver, changelog_ver == baseline),
     }
 
     sec_text = SECURITY.read_text(encoding="utf-8")
@@ -94,13 +130,13 @@ def main(argv: list[str] | None = None) -> int:
         ("SECURITY.md::Last reviewed as_of",
          security["SECURITY.md::Last reviewed as_of"], baseline),
     ]
-    mismatches = [(where, got) for where, got in sources.items() if got != baseline]
+    mismatches = [(where, got) for where, (got, ok) in sources.items() if not ok]
     mismatches += [(where, got) for where, got, expected in security_rows if got != expected]
 
     if mismatches:
         bad = {where for where, _ in mismatches}
         print("check_version FAIL：版本声明不一致（逐处实际值如下）", file=sys.stderr)
-        for where, got in sources.items():
+        for where, (got, ok) in sources.items():
             print(f"  {'✗' if where in bad else '·'} {where}: {got}", file=sys.stderr)
         for where, got, expected in security_rows:
             print(f"  {'✗' if where in bad else '·'} {where}: {got}（应为 {expected}）",

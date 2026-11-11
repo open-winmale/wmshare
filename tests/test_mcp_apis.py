@@ -347,7 +347,14 @@ def test_pypi_registry_metadata_contract() -> None:
     repo = Path(__file__).resolve().parents[1]
     project = tomllib.loads((repo / "pyproject.toml").read_text())
     server = json.loads((repo / "server.json").read_text())
-    version = project["project"]["version"]
+    # 2026-11 起 pyproject 用 dynamic version（源 = wmshare.__version__），
+    # 此时以包内 __version__ 为基准；两种形态都要能取到版本。
+    version = project["project"].get("version")
+    if version is None:
+        assert "version" in project["project"].get("dynamic", []), \
+            "pyproject 既无 version 也未声明 dynamic version"
+        import wmshare
+        version = wmshare.__version__
     readme = (repo / "README.md").read_text()
     # 四处版本互校：pyproject / server.json×2 / 包的 __version__。
     # 曾只校验前三处，__init__.py 漂移无人发现。
