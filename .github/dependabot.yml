@@ -1,0 +1,15 @@
+version: 2
+
+# 供应链：CI / 发版 / 审计 workflow 的 actions 已固定到 40 位 commit SHA
+# （见 ci.yml / audit.yml / release.yml）。dependabot 会在上游 tag 移动时
+# 自动提出「更新 SHA」PR，保持 pin 不僵死。
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    # SHA 固定后，dependabot 仅更新 SHA 而非回到浮 tag，避免降级回 @v4 这类移动引用。
+    labels:
+      - "dependencies"
+      - "github-actions"

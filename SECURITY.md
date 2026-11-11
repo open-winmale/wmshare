@@ -1,5 +1,7 @@
 # Security Policy
 
+**License**：BSD-3-Clause（详见 [LICENSE](LICENSE)；代码许可与云端数据服务约束分离，见 CONTRIBUTING.md「许可政策」）。
+
 ## Supported versions
 
 | Version | Supported |
