@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "wmshare"
-version = "1.16.0"
+version = "1.16.1"
 description = "覆盖 A 股、港股、美股的 Python 财经数据 SDK：随包内置机器可读数据目录 + 云端取数客户端（BSD-3-Clause 开源，注册开放平台即得凭证）"
 readme = "README.md"
 requires-python = ">=3.10"

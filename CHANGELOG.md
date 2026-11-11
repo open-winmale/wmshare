@@ -10,6 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.16.1] - 2026-11-11
+
+### Changed
+- README「许可与数据服务」的额度提示补「**多标的一律走批量接口**」：点名 `cli.batch_all` /
+  `batch_iter` / `call_batch`（A 股 5,691 家一次批量 = 12 次请求），并指出逐票循环
+  （`for code in codes: ...`）是最容易撞 429 的写法、容错用批级 `on_batch_error="skip"`。
+  此前该句只报额度、不给做法，读者容易在首次全市场取数就触发限速。
+
+### Fixed
+- README 与 docs/README 的示例计数 14→15（1.16.0 新增 `examples/15_backtest_ma.py` 后未同步）。
+
 ## [1.16.0] - 2026-11-11
 
 ### Added
