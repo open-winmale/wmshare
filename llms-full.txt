@@ -89,6 +89,7 @@ for r in res["rows"][:5]:
 |---|---|---|
 | `cli.kline` | 日 K 三种复权（自上市首日起全覆盖，最早 1991 年）、周 K/月 K、最新/盘中快照、1 分钟分时（个股；ETF 无分钟源，查询被拦截）、ETF/指数 | 价格=元、量=股、涨跌幅=小数 |
 | `cli.screener` | 全市场条件选股（`query`，一条 `$码` 表达式出命中数与前 N 行）+ 单票筛选器（涨停/均线/动量/回撤/放量）+ 全市场涨跌全景/分桶/行业分布/涨跌榜 | 阈值=小数；涨跌家数统计的 `*_pct`=百分数数值 |
+| `cli.backtest` | 单股买卖点回测：均线金叉/死叉 或 PE/PB/PS/PR 估值阈值（估值序列 ≤3 年）→ 成交明细 + 净值/回撤/胜率（次日开盘成交、T+1、100 股整手、佣金/印花固定） | 价格=元、收益=小数 |
 | `cli.moneyflow` | 主力/超大单/大单/中单/小单净流入（日频） | 金额=元 |
 | `cli.statements` | 三大报表多期、合并 vs 母公司、目录树、审计意见 | 报表原币元 |
 | `cli.segments` | 经营分部：分产品/业务/区域收入构成 | 元；比率=小数 |
@@ -132,7 +133,7 @@ for r in res["rows"][:5]:
 
 - **先查目录再写代码**（一行验证）：
   `python3 -c "import wmshare; print(wmshare.load().search('股息'))"`
-- **本地 MCP server**：20 个 task tools；全部 135 个 friendly API——132 登记 + 3 组合——均可用
+- **本地 MCP server**：20 个 task tools；全部 136 个 friendly API——132 登记 + 4 组合——均可用
   `wmshare_call(target=..., mode="api")` 兜底，macro 域仅此路径。配置：`pip install "wmshare[mcp]"`
   → `wmshare-mcp setup --client-id <AppId> --client-secret-stdin --market cn`（提示后粘贴 API Key，
   `wmshare-mcp doctor` 体检）；客户端最小配置
@@ -177,6 +178,8 @@ for r in res["rows"][:5]:
 | 看公司在行业里的位置 | `$CUR_IND_ROE_PCT_LAST`（行业内 ROE 分位，1=行业最高） | 拉全行业成分→逐票取 ROE→排序 |
 | 筛高股息且派息可持续 | `cli.dividend.screen_quality(sym)` | 自写股息/派息率质量模型 |
 | 全市场按任意指标组合选股 | `cli.screener.query("$BONUS_RATE_3Y_AVG_LAST > 0.03 && $ROE_TTM_LAST > 0.15")` | 先批量拉全市场→本地过滤（还容易漏样本） |
+| 回测这只票的均线买卖点 | `cli.backtest.run("600519", fast=5, slow=20)` | 拉 K 线→自己写撮合/费用→算净值回撤 |
+| 回测 PE/PB 估值买卖点 | `cli.backtest.run("600519", rule="pe", buy=20, sell=40)` | 拉估值序列→自己判买卖→算净值（估值序列平台最多 3 年） |
 | 站上 20 日线了吗 | `cli.screener.screen_above_ma20(sym)` | 拉 K 线→算均线→比较 |
 | 全市场今天涨跌如何 | `cli.screener.index_breadth_summary()` | 全市场扫描→聚合统计 |
 | 看最新十大股东 | `cli.equity.query_holder10(sym)` | 翻定期报告→抄股东名单 |
@@ -289,7 +292,8 @@ disclosures/statement/segments/dividend/estimates/corporate/market/intl/notice �
 多标的用 `wmshare_batch(params=...)`。长尾目录函数和 friendly API 分别用
 `wmshare_call(mode="catalog")` / `wmshare_call(mode="api")`。没有 MCP 时继续按下面的 SDK 决策树写代码。
 
-**它不是**：回测框架（没有撮合/仓位管理）；数据库（数据经云端 API 运行时获取，
+**它不是**：撮合级/组合级回测引擎（单股均线买卖点回测用 `cli.backtest.run`：次日开盘成交、
+T+1、整手、佣金/印花固定，不复现盘口排队与分红税）；数据库（数据经云端 API 运行时获取，
 不随包分发）；全品类数据超市（18 个数据域，覆盖 A 股个股常用研究数据、宏观时序与期货主力连续指标码，
 基金净值/期权/债券未覆盖）。
 
@@ -371,6 +375,7 @@ cat.metrics_in_group("dividend")                         # 指标组内全部精
 | 当日 1 分钟分时 | `cli.kline.min1("600519")`（有损合成采样，非逐笔） |
 | 今日涨停了吗 / 全市场涨停梯队 | `cli.screener.screen_limit_up("600519")` |
 | **全市场按指标条件选股（股息/ROE/PE 任意组合）** | `cli.screener.query("$BONUS_RATE_3Y_AVG_LAST > 0.03 && $ROE_TTM_LAST > 0.15 && !$IS_ST", order="$BONUS_RATE_3Y_AVG_LAST")`——服务端索引一次查完，返回 `{"count": 全市场命中数, "rows": 前 N 行}`；**不要先批量取数再本地过滤**（`count` 才是真命中数，`len(rows)` 不是） |
+| 给一只票跑买卖点回测 | `cli.backtest.run("600519", fast=5, slow=20)`（均线金叉/死叉）或 `cli.backtest.run("600519", rule="pe", buy=20, sell=40)`（估值阈值；估值序列 ≤3 年）——返回 `trades`（每笔买/卖，卖出带 pnl/ret/hold_days）+ `summary` + `equity`；取全历史需 `Client(max_limit=None)` |
 | 全市场今天涨跌如何 | `cli.screener.index_breadth_summary()` |
 | 涨幅榜 / 跌幅榜 | `cli.screener.index_top_movers(limit=20)`（`desc=False` 跌幅） |
 | 站上 20 日线了吗 / 放量了吗 | `cli.screener.screen_above_ma20(sym)` / `screen_volume_spike(sym)` |
@@ -392,7 +397,7 @@ cat.metrics_in_group("dividend")                         # 指标组内全部精
 | 行业目录 / 行业成分 | `cli.stocks.industries(1)`（申万/恒生；美股目录树暂缺）/ `cli.stocks.industry_members("银行")`（中文名或代码 S48） |
 | 少量标的单批（≤500） | `cli.call_batch("kline.snapshot", ["600519", "000001"])` 或任意单标的接口传 list：`cli.kline.last(["600519", "000001"])`；`to_df()` 出每标的一行长表 |
 
-完整 132 个核心接口 + 3 个可转债组合接口与全部底层函数：仓库用户看 docs/GUIDE.md（上手）与
+完整 132 个核心接口 + 4 个组合接口（可转债 3 + 回测 1）与全部底层函数：仓库用户看 docs/GUIDE.md（上手）与
 docs/API.md（参考）；pip 用户用 `cat.search(...)` / `cat.function(...)` 查（同一份合同）。
 全量指标码（2752 个）按数据类型分章的导航、命名语法与死码清单见 docs/INDICATORS.md（生成物）。
 
@@ -728,6 +733,47 @@ cli.screener.index_top_movers(limit=10)     # 涨幅榜（desc=False 跌幅榜�
 cli.info.profile("600519")
 ```
 
+### 3.1 单股回测：买卖点 → 成交明细
+
+一条调用出「金叉买 / 死叉卖」的逐笔成交与净值汇总。取全历史需要放开单次上限：
+
+```python
+cli = wmshare.Client.from_env(max_limit=None)      # 默认 500 根不够长区间回测
+res = cli.backtest.run("600519", fast=5, slow=20)  # 收盘价 5/20 日均线交叉
+res["trades"][:2]
+# [{'date': '2026-07-16', 'side': 'buy', 'price': 1252.0, 'shares': 700,
+#   'amount': 876400.0, 'fee': 262.92, 'reason': '金叉'},
+#  {'date': '2026-08-06', 'side': 'sell', 'price': 1310.0, 'shares': 700,
+#   'amount': 917000.0, 'fee': 733.6, 'pnl': 39603.48, 'ret': 0.045175,
+#   'hold_days': 24, 'reason': '死叉'}]
+res["summary"]
+# {'total_return': 0.0689, 'cagr': 0.184, 'max_drawdown': -0.0861, 'sharpe': 1.06,
+#  'n_trades': 4, 'win_rate': 0.5, 'avg_hold_days': 12.75, 'buy_hold_return': 0.1022}
+
+# 换规则：PE/PB 估值买卖点（估值 <= buy 买、>= sell 卖）
+res = cli.backtest.run("600519", rule="pe", buy=20, sell=40,
+                       begin="2023-11-01", end="2026-11-01")
+res["caliber"]["valuation"]   # {'metric': 'pe', 'window': '3y'}
+```
+
+**估值规则的上限**：单股估值序列只有 `cli.valuation.hist_stats` 的 **≤3 年日频**
+（PE/PB/PS/PR，公告日 TTM、无未来函数），所以 `rule="pe"` 之类最多回测 3 年；
+区间更早的部分会自动剔除并给 warning，亏损期等没有估值的日子当日不出信号。
+`rule` 可取值：`ma_cross`（默认）/ `pe` / `pb` / `ps` / `pr`。
+
+固定口径（不另有开关）：信号当根收盘后确定、**次日开盘**成交（T+1）；100 股整手；
+佣金 0.03%（最低 5 元）、卖出印花 0.05%；一字板（`open==high==low==close`）与
+零量（停牌占位）顺延到下一根，次数见 `caliber["skipped"]`；期末持仓按最后一根
+收盘平仓（`reason="期末平仓"`）。
+
+取数成本：不传 `begin/end` 时取全历史 1 万根，约 **40 万 EC**（EC 按请求行数计费）；
+只看近两年就显式传区间，只取该区间需要的根数，EC 降到几万——
+`cli.backtest.run("600519", fast=5, slow=20, begin="2024-01-01", end="2026-11-01")`。
+
+**不建模**（别当撮合级结果用）：历史 ST 与 ST 的 5% 涨跌停、涨跌停排队与部分成交、
+分红税与送转（`adj="qfq"` 只调价格，`"nr"` 不复权会把分红日当亏损）、分钟级、
+组合/加仓/做空、止损止盈（需要就把规则并进买卖点判断或自己拿到 `trades` 后二次加工）。
+
 ## 4. 全市场与行业
 
 可运行版本：`examples/07_stocks_industry_batch.py`。
@@ -967,7 +1013,7 @@ wmshare 取数代码**。优先用 MCP；没有 MCP 时用 skill 或文档上下
 - **目录先行**：指标码与函数可编程检索（`cat.search("中文")`），AI 不需要"背"接口，
   查一下再用；编造的码在发请求前就被 `CatalogError` 拦下。
 - **本地 MCP server**：20 个 task tools 覆盖发现、行情、财务、治理、披露、港美与批量；
-  全部 135 个 friendly API（132 登记 + 3 组合接口）均可经 `wmshare_call(mode="api")` 兜底
+  全部 136 个 friendly API（132 登记 + 4 组合接口）均可经 `wmshare_call(mode="api")` 兜底
   （macro 域 11 个接口仅此路径）。输出统一 units/rows/next_action。
 - **skill 随包分发**：单位铁律、意图→接口决策树、坑位清单、错误速查，装进 agent 即生效
   （`wmshare.skill_dir()`）。
@@ -1668,6 +1714,48 @@ cli.screener.index_top_movers(limit=10, desc=True)
 cli.screener.query(where="$BONUS_RATE_3Y_AVG_LAST > 0.03 && $ROE_TTM_LAST > 0.15", order="$BONUS_RATE_3Y_AVG_LAST", desc=True, limit=10)
 ```
 
+### 单股回测（`cli.backtest`）
+
+#### 组合接口（研究级封装）
+
+以下方法跨多个目录接口与本地计算串成一条链路（取数 → 规则内核 → 结果包），返回结构、成交口径与「不建模」清单见各方法说明。
+
+| 方法 | 签名 | 输出 |
+|---|---|---|
+| `cli.backtest.run` | `run(symbol, rule='ma_cross', fast=5, slow=20, buy=None, sell=None, begin=None, end=None, cash=1000000.0, adj='qfq')` | MAP · {trades: 成交明细, summary: 8 个汇总数字, equity: [{date, nav}], caliber} |
+
+**`cli.backtest.run`** — 跑一次单股买卖点回测，返回成交明细与净值汇总。
+
+两种规则（成交/费用/净值口径完全相同）： `rule="ma_cross"`（默认）用收盘价 SMA：`fast` 上穿 `slow` 买、下穿卖； `rule="pe"/"pb"/"ps"/"pr"` 用估值：当根估值 `<= buy` 买、`>= sell` 卖。 **估值序列只有 ≤3 年日频**（`cli.valuation.hist_stats`，公告日 TTM、PIT）， 所以估值回测区间自动限制在序列覆盖内，亏损期等无估值的日子不出信号。
+
+成交：信号当根收盘后确定、**次日开盘**成交（T+1）；100 股整手；现金不足一手 则放弃该次买入（见 `warnings`）。一字板（open==high==low==close）与零量 （停牌占位）顺延到下一根，次数见 `caliber.skipped`。期末未平仓按最后一根 收盘平仓（`reason="期末平仓"`）。
+
+`trades` 每行一笔成交：买入带 date/side/price/shares/amount/fee/reason； 卖出额外带本次闭环的 pnl/ret/hold_days。`summary` 只有 8 个数字； `equity` 是逐日 `[{date, nav}]`。成本口径：佣金 0.03%（最低 5 元）、 卖出印花 0.05%，见 `caliber`；估值规则的 `caliber.valuation` 记录 `{metric, window: "3y"}`。
+
+取数成本：不给 begin/end 时取全历史（1 万根，约 40 万 EC，EC 按请求行数计费）； 给了区间就只取该区间需要的根数，EC 同步下降——看近两年请显式传 begin/end。
+
+| 参数 | 类型 | 必填 | 默认 | 说明 |
+|---|---|---|---|---|
+| `symbol` | string | 是 | — | 标的代码（6 位裸码；港/美按客户端市场） |
+| `rule` | string | 否 | `'ma_cross'` | ``ma_cross``（默认）/ ``pe`` / ``pb`` / ``ps`` / ``pr`` |
+| `fast` | integer | 否 | `5` | 均线快线周期，默认 5（仅 ma_cross） |
+| `slow` | integer | 否 | `20` | 均线慢线周期，默认 20，须大于 fast（仅 ma_cross） |
+| `buy` | number | 否 | `None` | 估值买点阈值（仅 pe/pb/ps/pr），如 PE <= 20 |
+| `sell` | number | 否 | `None` | 估值卖点阈值，须大于 buy，如 PE >= 40 |
+| `begin` | string | 否 | `None` | 回测起点（含，YYYY-MM-DD）；须与 end 同时提供 |
+| `end` | string | 否 | `None` | 回测终点（含，YYYY-MM-DD） |
+| `cash` | number | 否 | `1000000.0` | 初始资金（元），默认 100 万——高价股一手可能十几万，不足一手买不进 |
+| `adj` | string | 否 | `'qfq'` | 复权方式，默认 "qfq"；长历史建议 "hfq"，不复权会按分红日跳空计亏 |
+
+**示例**
+
+```python
+res = cli.backtest.run("600519", fast=5, slow=20)   # 均线金叉买 / 死叉卖
+res = cli.backtest.run("600519", rule="pe", buy=20, sell=40)  # 估值阈值（≤3 年）
+res["trades"][:2]                                    # 成交明细（买/卖各一行）
+res["summary"]["max_drawdown"]                      # 净值汇总（8 个数字）
+```
+
 ### 资金流向（`cli.moneyflow`）
 
 #### `cli.moneyflow.bars` — 资金流历史
@@ -2126,7 +2214,7 @@ cli.cbond.universe_codes()
 
 #### 组合接口（研究级封装）
 
-以下方法把「取数 → 规则内核 → 事实包 → 成稿/出图」串成一条链路，内部调用上方的目录接口；返回数字都带 `sources` 与 `as_of`，缺条目时抛错而非补猜测值。
+以下方法跨多个目录接口与本地计算串成一条链路（取数 → 规则内核 → 结果包），返回结构、成交口径与「不建模」清单见各方法说明。
 
 | 方法 | 签名 | 输出 |
 |---|---|---|

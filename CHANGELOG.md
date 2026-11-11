@@ -10,6 +10,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.16.0] - 2026-11-11
+
+### Added
+- **`cli.backtest.run(symbol, rule="ma_cross", fast=5, slow=20, buy=None, sell=None, begin=None, end=None, cash=1_000_000, adj="qfq")`**：
+  单股买卖点回测——均线金叉买、死叉卖，一条调用返回 **`trades` 成交明细**（每笔买/卖，
+  卖出带本轮 `pnl`/`ret`/`hold_days`）、`summary`（8 个汇总数字：收益/年化/最大回撤/夏普/
+  笔数/胜率/平均持有/买入持有）、`equity`（逐日净值）与 `caliber`（成交口径）。
+  固定口径：信号当根收盘后确定、**次日开盘**成交（T+1）、100 股整手、佣金 0.03%（最低 5 元）、
+  卖出印花 0.05%；一字板与零量（停牌占位）顺延到下一根并计入 `caliber.skipped`；
+  期末持仓按最后一根收盘平仓。
+- **估值买卖点**：`rule="pe"/"pb"/"ps"/"pr"` + `buy/sell` 阈值（如 `run("600519", rule="pe",
+  buy=20, sell=40)`），估值取 `cli.valuation.hist_stats`（公告日 TTM、PIT），当根估值
+  `<= buy` 买、`>= sell` 卖。**估值序列只有 ≤3 年日频**，回测区间自动与序列覆盖取交集
+  （更早的 bar 剔除并 warning）；亏损期等无估值日不出信号。撮合/费用/净值与均线规则
+  完全共用一条路径。
+- 不建模项在 docstring/`caliber`/文档中逐条列明：历史 ST 与 ST 5% 涨跌停、涨跌停排队与
+  部分成交、分红税与送转（`adj` 只调价格）、分钟级、组合/加仓/做空、止损止盈。
+
+### Notes
+- 取全历史日 K 需 `Client(max_limit=None)`；默认 500 根不够时 SDK 会把 `LimitError`
+  翻译成可执行的修复提示。**EC 按请求行数计费**：不传区间取 1 万根约 40 万 EC，
+  传 `begin/end` 只取区间需要的根数（实测 2025 年至今约 3.9 万 EC）。
+  演示客户端用 120 根快照真跑（`caliber.demo=True`）。
+
 ## [1.15.0] - 2026-11-10
 
 ### Added

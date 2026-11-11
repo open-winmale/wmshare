@@ -550,6 +550,48 @@ cli.screener.index_top_movers(limit=10, desc=True)
 cli.screener.query(where="$BONUS_RATE_3Y_AVG_LAST > 0.03 && $ROE_TTM_LAST > 0.15", order="$BONUS_RATE_3Y_AVG_LAST", desc=True, limit=10)
 ```
 
+### 单股回测（`cli.backtest`）
+
+#### 组合接口（研究级封装）
+
+以下方法跨多个目录接口与本地计算串成一条链路（取数 → 规则内核 → 结果包），返回结构、成交口径与「不建模」清单见各方法说明。
+
+| 方法 | 签名 | 输出 |
+|---|---|---|
+| `cli.backtest.run` | `run(symbol, rule='ma_cross', fast=5, slow=20, buy=None, sell=None, begin=None, end=None, cash=1000000.0, adj='qfq')` | MAP · {trades: 成交明细, summary: 8 个汇总数字, equity: [{date, nav}], caliber} |
+
+**`cli.backtest.run`** — 跑一次单股买卖点回测，返回成交明细与净值汇总。
+
+两种规则（成交/费用/净值口径完全相同）： `rule="ma_cross"`（默认）用收盘价 SMA：`fast` 上穿 `slow` 买、下穿卖； `rule="pe"/"pb"/"ps"/"pr"` 用估值：当根估值 `<= buy` 买、`>= sell` 卖。 **估值序列只有 ≤3 年日频**（`cli.valuation.hist_stats`，公告日 TTM、PIT）， 所以估值回测区间自动限制在序列覆盖内，亏损期等无估值的日子不出信号。
+
+成交：信号当根收盘后确定、**次日开盘**成交（T+1）；100 股整手；现金不足一手 则放弃该次买入（见 `warnings`）。一字板（open==high==low==close）与零量 （停牌占位）顺延到下一根，次数见 `caliber.skipped`。期末未平仓按最后一根 收盘平仓（`reason="期末平仓"`）。
+
+`trades` 每行一笔成交：买入带 date/side/price/shares/amount/fee/reason； 卖出额外带本次闭环的 pnl/ret/hold_days。`summary` 只有 8 个数字； `equity` 是逐日 `[{date, nav}]`。成本口径：佣金 0.03%（最低 5 元）、 卖出印花 0.05%，见 `caliber`；估值规则的 `caliber.valuation` 记录 `{metric, window: "3y"}`。
+
+取数成本：不给 begin/end 时取全历史（1 万根，约 40 万 EC，EC 按请求行数计费）； 给了区间就只取该区间需要的根数，EC 同步下降——看近两年请显式传 begin/end。
+
+| 参数 | 类型 | 必填 | 默认 | 说明 |
+|---|---|---|---|---|
+| `symbol` | string | 是 | — | 标的代码（6 位裸码；港/美按客户端市场） |
+| `rule` | string | 否 | `'ma_cross'` | ``ma_cross``（默认）/ ``pe`` / ``pb`` / ``ps`` / ``pr`` |
+| `fast` | integer | 否 | `5` | 均线快线周期，默认 5（仅 ma_cross） |
+| `slow` | integer | 否 | `20` | 均线慢线周期，默认 20，须大于 fast（仅 ma_cross） |
+| `buy` | number | 否 | `None` | 估值买点阈值（仅 pe/pb/ps/pr），如 PE <= 20 |
+| `sell` | number | 否 | `None` | 估值卖点阈值，须大于 buy，如 PE >= 40 |
+| `begin` | string | 否 | `None` | 回测起点（含，YYYY-MM-DD）；须与 end 同时提供 |
+| `end` | string | 否 | `None` | 回测终点（含，YYYY-MM-DD） |
+| `cash` | number | 否 | `1000000.0` | 初始资金（元），默认 100 万——高价股一手可能十几万，不足一手买不进 |
+| `adj` | string | 否 | `'qfq'` | 复权方式，默认 "qfq"；长历史建议 "hfq"，不复权会按分红日跳空计亏 |
+
+**示例**
+
+```python
+res = cli.backtest.run("600519", fast=5, slow=20)   # 均线金叉买 / 死叉卖
+res = cli.backtest.run("600519", rule="pe", buy=20, sell=40)  # 估值阈值（≤3 年）
+res["trades"][:2]                                    # 成交明细（买/卖各一行）
+res["summary"]["max_drawdown"]                      # 净值汇总（8 个数字）
+```
+
 ### 资金流向（`cli.moneyflow`）
 
 #### `cli.moneyflow.bars` — 资金流历史
@@ -1008,7 +1050,7 @@ cli.cbond.universe_codes()
 
 #### 组合接口（研究级封装）
 
-以下方法把「取数 → 规则内核 → 事实包 → 成稿/出图」串成一条链路，内部调用上方的目录接口；返回数字都带 `sources` 与 `as_of`，缺条目时抛错而非补猜测值。
+以下方法跨多个目录接口与本地计算串成一条链路（取数 → 规则内核 → 结果包），返回结构、成交口径与「不建模」清单见各方法说明。
 
 | 方法 | 签名 | 输出 |
 |---|---|---|

@@ -15,6 +15,13 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Callable
 
+from wmshare.backtest import (
+    VALUATION_RULES,
+    ma_cross_signals,
+    run_backtest,
+    valuation_by_date,
+    valuation_signals,
+)
 from wmshare.client import BatchResult
 from wmshare.errors import UsageError
 from wmshare.notice_stream import NoticeStreamEvent
@@ -413,6 +420,7 @@ class DemoClient:
             index_where_high_yield_5=self._dividend_expression,
         )
         self.info = SimpleNamespace(profile=self._profile)
+        self.backtest = SimpleNamespace(run=self._backtest_run)
         self.stocks = SimpleNamespace(
             list=self._stocks_list,
             industries=self._industries,
@@ -666,6 +674,54 @@ class DemoClient:
     def _screen(self, symbol: str, key: str) -> bool:
         sym = self._require_symbol(symbol)
         return bool(self._data["screener"]["screens"][sym][key])
+
+    def _backtest_run(self, symbol: str, rule: str = "ma_cross", fast: int = 5,
+                      slow: int = 20, buy: float | None = None, sell: float | None = None,
+                      begin: str | None = None, end: str | None = None,
+                      cash: float = 1_000_000.0, adj: str = "qfq") -> Any:
+        """演示快照 120 根不复权日 K，真跑一遍回测（不伪造结果）。"""
+        if adj not in ("qfq", None) or begin is not None or end is not None:
+            raise UsageError(
+                "demo 快照只有近 120 根不复权日 K，不支持自定义区间/复权；"
+                "真实回测请用 Client.from_env()（建议 max_limit=None 取全历史）",
+                code="demo_unsupported",
+            )
+        rule = str(rule or "ma_cross").lower()
+        if rule == "ma":
+            rule = "ma_cross"
+        rows = [dict(r) for r in self._kline_bars(symbol, n=120, adj=None)]
+        rows.sort(key=lambda r: str(r.get("date") or ""))
+        warnings: list[str] = []
+        if rule in VALUATION_RULES:
+            if rule != "pe":
+                raise UsageError("demo 快照只保存 pe/3y 估值序列", code="demo_unsupported")
+            if buy is None or sell is None:
+                raise UsageError(f"rule={rule} 需要 buy/sell 阈值（如 buy=20, sell=40）",
+                                 code="params")
+            buy, sell = float(buy), float(sell)
+            if not (0 < buy < sell):
+                raise UsageError(f"估值阈值需 0 < buy < sell，收到 buy={buy}, sell={sell}",
+                                 code="params")
+            values = valuation_by_date(self._data["valuation"]["series"])
+            first = min(values)
+            rows = [r for r in rows if str(r.get("date") or "")[:10] >= first]
+            if not rows:
+                raise UsageError("演示行情与估值序列没有重叠区间", code="demo_unsupported")
+            signals, missing = valuation_signals(rows, values, buy, sell)
+            if missing:
+                warnings.append(f"{missing} 根没有 PE 估值（亏损期/未覆盖），当日不出信号")
+            label = f"{rule}(buy={buy:g}, sell={sell:g})"
+        else:
+            signals = ma_cross_signals(rows, fast=int(fast), slow=int(slow))
+            label = f"ma_cross(fast={int(fast)}, slow={int(slow)})"
+        out = run_backtest(rows, signals, cash=float(cash), rule=label)
+        out["symbol"] = symbol
+        out["caliber"].update({"demo": True, "adj": None})
+        if rule in VALUATION_RULES:
+            out["caliber"]["valuation"] = {"metric": rule, "window": "3y"}
+        out["warnings"] = warnings + out["warnings"] + [
+            "演示快照：120 根不复权日 K（2026-10-30，非实时），仅用于验证调用形态"]
+        return out
 
     def _screen_query(self, where: str, order: str | None = None, desc: bool = True,
                       limit: int = 50, offset: int = 0,

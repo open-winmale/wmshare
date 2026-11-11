@@ -102,6 +102,16 @@ def test_14_cbond_double_low_needs_credentials(capsys):
     assert "需真实凭证" in out
 
 
+def test_15_backtest_ma(snapshot, capsys):
+    """单股回测示例：演示数据 120 根跑出成交明细 + 汇总，不回退成空结果。"""
+    _load("15_backtest_ma.py").main(fake_client(), demo=True)
+    out = capsys.readouterr().out
+    assert "ma_cross(fast=5, slow=20)" in out
+    assert "成交明细" in out and "金叉" in out
+    assert "最大回撤" in out
+    assert "演示快照" in out                     # 口径提示必须出现
+
+
 def test_12_futures_macro(capsys):
     _load("13_futures_macro.py").main(fake_client())
     out = capsys.readouterr().out
@@ -167,7 +177,7 @@ def test_examples_index_covers_dir():
     """examples/README.md 课程表必须覆盖目录里每个脚本（防孤儿示例）。"""
     index = (EXAMPLES / "README.md").read_text(encoding="utf-8")
     scripts = sorted(p.name for p in EXAMPLES.glob("*.py"))
-    assert len(scripts) == 14, f"示例应恰为 14 个（编号课程），实际 {len(scripts)}：{scripts}"
+    assert len(scripts) == 15, f"示例应恰为 15 个（编号课程），实际 {len(scripts)}：{scripts}"
     for name in scripts:
         assert f"`{name}`" in index, f"examples/README.md 缺 {name} 的索引行"
 
@@ -175,7 +185,7 @@ def test_examples_index_covers_dir():
 @pytest.mark.parametrize("name", [
     "01_quickstart.py", "04_screener.py", "05_dividend_screener.py",
     "06_indicator_tour.py", "07_stocks_industry_batch.py", "08_pandas_analysis.py",
-    "10_notice_monitor.py", "11_statements_tour.py",
+    "10_notice_monitor.py", "11_statements_tour.py", "15_backtest_ma.py",
 ])
 def test_credential_examples_run_with_demo_snapshot(name):
     if name in ("07_stocks_industry_batch.py", "08_pandas_analysis.py"):

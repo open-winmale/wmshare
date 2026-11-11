@@ -10,7 +10,7 @@
 - [AI 用法](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/AI.md)：MCP server、skill、文档上下文与报错驱动的 Agent 接入路径
 - [API 参考](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/API.md)：132 个核心接口的参数 / 返回 / 单位口径
 - [Agent Skill](https://raw.githubusercontent.com/open-winmale/wmshare/main/src/wmshare/skills/wmshare/SKILL.md)：随包分发的 agent 用法合同（目录先行、单位铁律、决策树、坑位）
-- [可运行示例](https://raw.githubusercontent.com/open-winmale/wmshare/main/examples/README.md)：14 个编号示例（全部支持演示客户端离线试跑），CI 端到端覆盖
+- [可运行示例](https://raw.githubusercontent.com/open-winmale/wmshare/main/examples/README.md)：15 个编号示例（全部支持演示客户端离线试跑），CI 端到端覆盖
 - [CHANGELOG](https://raw.githubusercontent.com/open-winmale/wmshare/main/CHANGELOG.md)：版本历史
 
 ## Key Concepts
@@ -46,7 +46,7 @@
 
 ## When NOT to use
 
-- 不是回测框架（没有撮合/仓位管理），不是数据库（数据经云端 API 运行时获取）
+- 不是撮合级/组合级回测引擎（单股均线买卖点回测用 `cli.backtest.run`：次日开盘成交、T+1、整手、固定费用，不复现盘口与分红税），不是数据库（数据经云端 API 运行时获取）
 - 基金净值 / 期权 / 债券（可转债除外）未覆盖；期货经 `$FUT_*` 指标码 + `fut_symbol` 覆盖（主力连续日/周/月）
 - 美股日 K 已日更（周/月 K 由日线派生）；最新价量用 `cli.kline.live / snapshot`
 - 港股十大流通股东与回购上游有管线、SDK 接口待路由（见 CHANGELOG/ROADMAP）

@@ -15,7 +15,8 @@ disclosures/statement/segments/dividend/estimates/corporate/market/intl/notice �
 多标的用 `wmshare_batch(params=...)`。长尾目录函数和 friendly API 分别用
 `wmshare_call(mode="catalog")` / `wmshare_call(mode="api")`。没有 MCP 时继续按下面的 SDK 决策树写代码。
 
-**它不是**：回测框架（没有撮合/仓位管理）；数据库（数据经云端 API 运行时获取，
+**它不是**：撮合级/组合级回测引擎（单股均线买卖点回测用 `cli.backtest.run`：次日开盘成交、
+T+1、整手、佣金/印花固定，不复现盘口排队与分红税）；数据库（数据经云端 API 运行时获取，
 不随包分发）；全品类数据超市（18 个数据域，覆盖 A 股个股常用研究数据、宏观时序与期货主力连续指标码，
 基金净值/期权/债券未覆盖）。
 
@@ -97,6 +98,7 @@ cat.metrics_in_group("dividend")                         # 指标组内全部精
 | 当日 1 分钟分时 | `cli.kline.min1("600519")`（有损合成采样，非逐笔） |
 | 今日涨停了吗 / 全市场涨停梯队 | `cli.screener.screen_limit_up("600519")` |
 | **全市场按指标条件选股（股息/ROE/PE 任意组合）** | `cli.screener.query("$BONUS_RATE_3Y_AVG_LAST > 0.03 && $ROE_TTM_LAST > 0.15 && !$IS_ST", order="$BONUS_RATE_3Y_AVG_LAST")`——服务端索引一次查完，返回 `{"count": 全市场命中数, "rows": 前 N 行}`；**不要先批量取数再本地过滤**（`count` 才是真命中数，`len(rows)` 不是） |
+| 给一只票跑买卖点回测 | `cli.backtest.run("600519", fast=5, slow=20)`（均线金叉/死叉）或 `cli.backtest.run("600519", rule="pe", buy=20, sell=40)`（估值阈值；估值序列 ≤3 年）——返回 `trades`（每笔买/卖，卖出带 pnl/ret/hold_days）+ `summary` + `equity`；取全历史需 `Client(max_limit=None)` |
 | 全市场今天涨跌如何 | `cli.screener.index_breadth_summary()` |
 | 涨幅榜 / 跌幅榜 | `cli.screener.index_top_movers(limit=20)`（`desc=False` 跌幅） |
 | 站上 20 日线了吗 / 放量了吗 | `cli.screener.screen_above_ma20(sym)` / `screen_volume_spike(sym)` |
@@ -118,7 +120,7 @@ cat.metrics_in_group("dividend")                         # 指标组内全部精
 | 行业目录 / 行业成分 | `cli.stocks.industries(1)`（申万/恒生；美股目录树暂缺）/ `cli.stocks.industry_members("银行")`（中文名或代码 S48） |
 | 少量标的单批（≤500） | `cli.call_batch("kline.snapshot", ["600519", "000001"])` 或任意单标的接口传 list：`cli.kline.last(["600519", "000001"])`；`to_df()` 出每标的一行长表 |
 
-完整 132 个核心接口 + 3 个可转债组合接口与全部底层函数：仓库用户看 docs/GUIDE.md（上手）与
+完整 132 个核心接口 + 4 个组合接口（可转债 3 + 回测 1）与全部底层函数：仓库用户看 docs/GUIDE.md（上手）与
 docs/API.md（参考）；pip 用户用 `cat.search(...)` / `cat.function(...)` 查（同一份合同）。
 全量指标码（2752 个）按数据类型分章的导航、命名语法与死码清单见 docs/INDICATORS.md（生成物）。
 

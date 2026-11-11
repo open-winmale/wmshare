@@ -65,6 +65,31 @@ def test_screener_query_needs_live_client(cli):
     assert err.value.code == "demo_unsupported"
 
 
+def test_backtest_runs_on_demo_bars(cli):
+    """回测在演示数据上真跑（120 根不复权日 K），口径标注 demo 而非伪造。"""
+    res = cli.backtest.run("600519", fast=5, slow=20)
+    assert res["period"]["bars"] == 120
+    assert res["caliber"]["demo"] is True and res["caliber"]["adj"] is None
+    assert isinstance(res["trades"], list) and isinstance(res["equity"], list)
+    assert any("演示快照" in w for w in res["warnings"])
+    with pytest.raises(UsageError) as err:
+        cli.backtest.run("600519", adj="hfq")
+    assert err.value.code == "demo_unsupported"
+
+
+def test_backtest_pe_runs_on_demo_snapshot(cli):
+    """演示快照带 pe/3y 估值序列：PE 规则可跑，阈值必然命中时出买点。"""
+    res = cli.backtest.run("600519", rule="pe", buy=1e6, sell=1e7)
+    assert res["caliber"]["valuation"] == {"metric": "pe", "window": "3y"}
+    assert res["rule"] == "pe(buy=1e+06, sell=1e+07)"
+    assert res["trades"][0]["side"] == "buy" and res["trades"][0]["reason"] == "买点"
+    quiet = cli.backtest.run("600519", rule="pe", buy=1.0, sell=2.0)
+    assert quiet["trades"] == []
+    with pytest.raises(UsageError) as err:
+        cli.backtest.run("600519", rule="pb", buy=1.0, sell=2.0)
+    assert err.value.code == "demo_unsupported"
+
+
 def test_snapshot_matches_latest_bar(snapshot, cli):
     for symbol in snapshot["data"]["universe"]:
         bars = cli.kline.bars(symbol, n=1)

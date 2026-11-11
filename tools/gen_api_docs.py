@@ -25,8 +25,8 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _introspect import (  # noqa: E402
-    FALLBACK_RETURNS, RETURNS_OVERRIDES, method_doc, method_example, method_params,
-    return_shape_for, underlying_fn,
+    COMPOSITE_EXAMPLES, FALLBACK_RETURNS, RETURNS_OVERRIDES, method_doc, method_example,
+    method_params, return_shape_for, underlying_fn,
 )
 from wmshare.api import (  # noqa: E402
     COMPOSITE_METHODS, FRIENDLY_INDEX, FRIENDLY_NAMESPACES)
@@ -47,7 +47,7 @@ CATEGORY_ORDER = ["market", "fundamentals", "disclosure", "reference"]
 # 每章内按命名空间分节；无友好层命名空间的章（期货）为指标码专题。
 # 断言：FRIENDLY_INDEX 的每个 ns 恰好归入一章（build() 内校验，防漂移漏收）。
 CHAPTERS: list[tuple[str, list[str]]] = [
-    ("A 股行情与选股", ["kline", "screener", "moneyflow", "margin", "stocks"]),
+    ("A 股行情与选股", ["kline", "screener", "backtest", "moneyflow", "margin", "stocks"]),
     ("可转债", ["cbond"]),
     ("指数", ["index"]),
     ("期货", []),  # $FUT_* 指标码专题（指标码层，无函数级域）
@@ -330,9 +330,8 @@ def composite_section(ns: str) -> list[str]:
         return []
     cls = FRIENDLY_NAMESPACES[ns]
     out = ["#### 组合接口（研究级封装）", "",
-           "以下方法把「取数 → 规则内核 → 事实包 → 成稿/出图」串成一条链路，"
-           "内部调用上方的目录接口；返回数字都带 `sources` 与 `as_of`，"
-           "缺条目时抛错而非补猜测值。", "",
+           "以下方法跨多个目录接口与本地计算串成一条链路（取数 → 规则内核 → 结果包），"
+           "返回结构、成交口径与「不建模」清单见各方法说明。", "",
            "| 方法 | 签名 | 输出 |", "|---|---|---|"]
     for method in methods:
         params = method_params(cls, method)
@@ -355,11 +354,11 @@ def composite_section(ns: str) -> list[str]:
                 out.append(f"| `{p.name}` | {p.json_type} | "
                            f"{'是' if p.required else '否'} | {dflt} | {esc(p.desc) or '—'} |")
             out.append("")
-    out += ["**示例**", "", "```python"]
-    out += ["payload = cli.cbond.daily(top_n=20)                  # 事实包（3 次请求）",
-            "cli.cbond.article(payload, date=\"20261107\")          # 源稿 + 公众号稿",
-            "cli.cbond.figures(payload, \"/tmp/cb\", date=\"20261107\")  # 需 wmshare[figures]"]
-    out += ["```", ""]
+    examples = COMPOSITE_EXAMPLES.get(ns) or []
+    if examples:
+        out += ["**示例**", "", "```python"]
+        out += examples
+        out += ["```", ""]
     return out
 
 
@@ -561,13 +560,15 @@ def build() -> str:
               for cat in CATEGORY_ORDER}
     merged = {fn["name"]: fn for d in docs for fn in (d.get("functions") or [])}
 
-    # 分章完备性：FRIENDLY_INDEX 每个 ns 恰好归入一章，防漂移漏收
+    # 分章完备性：FRIENDLY_INDEX 每个 ns 恰好归入一章，防漂移漏收；
+    # 纯组合命名空间（无核心接口，如 backtest）允许只挂在组合小节。
     chapter_ns = [ns for _, nss in CHAPTERS for ns in nss]
     index_ns = {ns for _, ns, _, _, _ in FRIENDLY_INDEX}
+    composite_ns = {ns for ns, methods in COMPOSITE_METHODS.items() if methods}
     assert len(chapter_ns) == len(set(chapter_ns)), "CHAPTERS 命名空间重复"
     assert index_ns <= set(chapter_ns), f"未归章命名空间：{sorted(index_ns - set(chapter_ns))}"
-    assert set(chapter_ns) - index_ns == set(), \
-        f"章节含无核心接口的命名空间：{sorted(set(chapter_ns) - index_ns)}"
+    assert set(chapter_ns) - index_ns <= composite_ns, \
+        f"章节含无核心接口的命名空间：{sorted(set(chapter_ns) - index_ns - composite_ns)}"
     by_chapter: dict[str, list[tuple]] = {title: [] for title, _ in CHAPTERS}
     ns_chapter = {ns: title for title, nss in CHAPTERS for ns in nss}
     for r in FRIENDLY_INDEX:
@@ -656,7 +657,7 @@ def build() -> str:
             continue
         for ns in nss:
             rows = [r for r in by_chapter[title] if r[1] == ns]
-            if not rows:
+            if not rows and not COMPOSITE_METHODS.get(ns):
                 continue
             out += [f"### {ns_title(ns)}（`cli.{ns}`）", ""]
             for _, ns_, method, cn, underlying in rows:

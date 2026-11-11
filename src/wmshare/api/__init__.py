@@ -27,6 +27,13 @@ import warnings
 from datetime import date, timedelta
 from typing import TYPE_CHECKING, Any
 
+from wmshare.backtest import (
+    VALUATION_RULES,
+    ma_cross_signals,
+    run_backtest,
+    valuation_by_date,
+    valuation_signals,
+)
 from wmshare.errors import (
     CatalogError, DataError, LimitError, ServerError, UsageError, WmshareError)
 from wmshare.units import finish_metric
@@ -1023,6 +1030,158 @@ class ScreenerApi(_Api):
         return _to_df(out) if _df else {"count": int(res.get("count") or 0), "rows": out}
 
 
+# ---------------------------------------------------------------- 回测 backtest
+class BacktestApi(_Api):
+    """单股回测：均线买卖点 → 成交明细 + 净值 + 汇总（本地撮合，口径固定）。
+
+    一条调用串完「取全历史日 K → 金叉买/死叉卖 → 次日开盘成交（T+1）→ 100 股整手 →
+    佣金/印花 → 逐笔成交与净值」。成交规则与费用固定在返回的 ``caliber`` 里，
+    不建模的部分（历史 ST、分红税、涨跌停排队、日内）逐条写在文档中。
+    """
+
+    def run(self, symbol: str, rule: str = "ma_cross", fast: int = 5, slow: int = 20,
+            buy: float | None = None, sell: float | None = None,
+            begin: str | None = None, end: str | None = None,
+            cash: float = 1_000_000.0, adj: str = "qfq") -> dict:
+        """跑一次单股买卖点回测，返回成交明细与净值汇总。
+
+        两种规则（成交/费用/净值口径完全相同）：
+        ``rule="ma_cross"``（默认）用收盘价 SMA：``fast`` 上穿 ``slow`` 买、下穿卖；
+        ``rule="pe"/"pb"/"ps"/"pr"`` 用估值：当根估值 ``<= buy`` 买、``>= sell`` 卖。
+        **估值序列只有 ≤3 年日频**（``cli.valuation.hist_stats``，公告日 TTM、PIT），
+        所以估值回测区间自动限制在序列覆盖内，亏损期等无估值的日子不出信号。
+
+        成交：信号当根收盘后确定、**次日开盘**成交（T+1）；100 股整手；现金不足一手
+        则放弃该次买入（见 ``warnings``）。一字板（open==high==low==close）与零量
+        （停牌占位）顺延到下一根，次数见 ``caliber.skipped``。期末未平仓按最后一根
+        收盘平仓（``reason="期末平仓"``）。
+
+        :param symbol: 标的代码（6 位裸码；港/美按客户端市场）
+        :param rule: ``ma_cross``（默认）/ ``pe`` / ``pb`` / ``ps`` / ``pr``
+        :param fast: 均线快线周期，默认 5（仅 ma_cross）
+        :param slow: 均线慢线周期，默认 20，须大于 fast（仅 ma_cross）
+        :param buy: 估值买点阈值（仅 pe/pb/ps/pr），如 PE <= 20
+        :param sell: 估值卖点阈值，须大于 buy，如 PE >= 40
+        :param begin: 回测起点（含，YYYY-MM-DD）；须与 end 同时提供
+        :param end: 回测终点（含，YYYY-MM-DD）
+        :param cash: 初始资金（元），默认 100 万——高价股一手可能十几万，不足一手买不进
+        :param adj: 复权方式，默认 "qfq"；长历史建议 "hfq"，不复权会按分红日跳空计亏
+
+        ``trades`` 每行一笔成交：买入带 date/side/price/shares/amount/fee/reason；
+        卖出额外带本次闭环的 pnl/ret/hold_days。``summary`` 只有 8 个数字；
+        ``equity`` 是逐日 ``[{date, nav}]``。成本口径：佣金 0.03%（最低 5 元）、
+        卖出印花 0.05%，见 ``caliber``；估值规则的 ``caliber.valuation`` 记录
+        ``{metric, window: "3y"}``。
+
+        取数成本：不给 begin/end 时取全历史（1 万根，约 40 万 EC，EC 按请求行数计费）；
+        给了区间就只取该区间需要的根数，EC 同步下降——看近两年请显式传 begin/end。
+        """
+        rule = str(rule or "ma_cross").lower()
+        if rule == "ma":
+            rule = "ma_cross"
+        if rule not in ("ma_cross", *VALUATION_RULES):
+            raise UsageError(
+                f"rule 只支持 ma_cross / {' / '.join(VALUATION_RULES)}，收到 {rule!r}",
+                code="params")
+        valuation = rule in VALUATION_RULES
+        try:
+            fast, slow = int(fast), int(slow)
+        except (TypeError, ValueError):
+            raise UsageError(f"fast/slow 必须是整数（收到 {fast!r}/{slow!r}）",
+                             code="params") from None
+        if not (1 <= fast < slow):
+            raise UsageError(f"周期不合法：需要 1 ≤ fast < slow，收到 fast={fast}, slow={slow}",
+                             code="params")
+        buy_threshold: float | None = None
+        sell_threshold: float | None = None
+        if valuation:
+            if buy is None or sell is None:
+                raise UsageError(
+                    f"rule={rule} 需要 buy/sell 阈值（如 cli.backtest.run(\"600519\", "
+                    f"rule=\"{rule}\", buy=20, sell=40)）", code="params")
+            try:
+                buy_threshold, sell_threshold = float(buy), float(sell)
+            except (TypeError, ValueError):
+                raise UsageError(f"buy/sell 必须是数字（收到 {buy!r}/{sell!r})",
+                                 code="params") from None
+            if not (0 < buy_threshold < sell_threshold):
+                raise UsageError(
+                    f"估值阈值需 0 < buy < sell，收到 buy={buy_threshold}, "
+                    f"sell={sell_threshold}", code="params")
+        if float(cash) <= 0:
+            raise UsageError(f"cash 必须为正数，收到 {cash!r}", code="params")
+        if begin is not None or end is not None:
+            if not (begin and end):
+                raise UsageError("begin 与 end 需同时提供", code="range")
+            for label, value in (("begin", begin), ("end", end)):
+                try:
+                    date.fromisoformat(str(value)[:10])
+                except ValueError:
+                    raise UsageError(f"{label} 需为 YYYY-MM-DD，收到 {value!r}",
+                                     code="range") from None
+        # 取数根数按区间估算（EC 按请求行数计费：全历史 1 万根约 40 万 EC，只取区间能省下来）
+        limit = 10000
+        if begin:
+            days = (date.fromisoformat(str(end)[:10]) - date.fromisoformat(str(begin)[:10])).days
+            limit = min(10000, max(int(days * 0.8) + slow + 20, slow + 2))
+        try:
+            rows = self._c.kline.bars(symbol, n=limit, adj=adj)
+        except LimitError as e:
+            raise UsageError(
+                f"回测要取的日 K 根数（{limit}）超过当前客户端单次上限 max_limit="
+                f"{self._c.max_limit}；用 wmshare.Client.from_env(max_limit=None) 重建客户端，"
+                "或缩小 begin/end 区间（EC 也随行数走）", code="limit") from e
+        rows = sorted((r for r in (rows or []) if isinstance(r, dict)),
+                      key=lambda r: str(r.get("date") or ""))
+        if begin:
+            rows = [r for r in rows if str(r.get("date") or "")[:10] >= str(begin)[:10]]
+        if end:
+            rows = [r for r in rows if str(r.get("date") or "")[:10] <= str(end)[:10]]
+        if not rows:
+            raise DataError(f"{symbol} 在回测区间内没有日 K：核对代码/区间，"
+                            "或先用 cli.kline.bars 看数据是否存在")
+
+        warnings: list[str] = []
+        if valuation:
+            stats = self._c.valuation.hist_stats(symbol, metric=rule, window="3y")
+            values = valuation_by_date((stats or {}).get("series") or [])
+            if not values:
+                raise DataError(f"{symbol} 没有 {rule.upper()} 历史序列（亏损期无 PE、"
+                                "或该标的未被估值序列覆盖）")
+            first = min(values)
+            earlier = [r for r in rows if str(r.get("date") or "")[:10] < first]
+            if earlier:
+                rows = rows[len(earlier):]
+                warnings.append(f"估值序列只从 {first} 起（上限 3 年），更早的 "
+                                f"{len(earlier)} 根已剔除")
+            if not rows:
+                raise DataError(f"{symbol} 的行情与 {rule.upper()} 估值序列（{first} 起）"
+                                "没有重叠区间")
+            assert buy_threshold is not None and sell_threshold is not None
+            signals, missing = valuation_signals(rows, values, buy_threshold, sell_threshold)
+            if missing:
+                warnings.append(f"{missing} 根没有 {rule.upper()} 估值（亏损期/未覆盖），"
+                                "当日不出信号")
+            label = f"{rule}(buy={buy_threshold:g}, sell={sell_threshold:g})"
+        else:
+            if len(rows) < slow + 2:
+                raise UsageError(
+                    f"回测区间只有 {len(rows)} 根日 K，{fast}/{slow} 均线至少需要 {slow + 2} 根"
+                    "（加大区间或调小周期）", code="range")
+            signals = ma_cross_signals(rows, fast, slow)
+            label = f"ma_cross(fast={fast}, slow={slow})"
+            missing = 0
+
+        out = run_backtest(rows, signals, cash=float(cash), rule=label)
+        out["symbol"] = symbol
+        out["warnings"] = warnings + out["warnings"]
+        if valuation:
+            out["caliber"]["valuation"] = {"metric": rule, "window": "3y"}
+        if adj is None or str(adj).lower() in ("nr", "none", ""):
+            out["warnings"].append("未复权：分红/除权日会被当成亏损，长区间建议 adj=\"qfq\" 或 \"hfq\"")
+        return out
+
+
 # ---------------------------------------------------------------- 财务 fundamentals
 class StatementsApi(_Api):
     """三大报表科目透视（披露原值；金额=报表原币）。
@@ -1858,6 +2017,7 @@ class MacroApi(_Api):
 # 文档在 docs/API.md 的「组合接口」小节单独成文。
 COMPOSITE_METHODS: dict[str, set[str]] = {
     "cbond": {"daily", "article", "figures"},
+    "backtest": {"run"},
 }
 
 FRIENDLY_NAMESPACES: dict[str, type[_Api]] = {
@@ -1882,6 +2042,7 @@ FRIENDLY_NAMESPACES: dict[str, type[_Api]] = {
     "equity": EquityApi,
     "intl": IntlApi,
     "macro": MacroApi,
+    "backtest": BacktestApi,
 }
 
 # 文档索引用注册表：(category, namespace, method, cn, 底层函数)

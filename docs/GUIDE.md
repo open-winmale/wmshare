@@ -229,6 +229,47 @@ cli.screener.index_top_movers(limit=10)     # 涨幅榜（desc=False 跌幅榜�
 cli.info.profile("600519")
 ```
 
+### 3.1 单股回测：买卖点 → 成交明细
+
+一条调用出「金叉买 / 死叉卖」的逐笔成交与净值汇总。取全历史需要放开单次上限：
+
+```python
+cli = wmshare.Client.from_env(max_limit=None)      # 默认 500 根不够长区间回测
+res = cli.backtest.run("600519", fast=5, slow=20)  # 收盘价 5/20 日均线交叉
+res["trades"][:2]
+# [{'date': '2026-07-16', 'side': 'buy', 'price': 1252.0, 'shares': 700,
+#   'amount': 876400.0, 'fee': 262.92, 'reason': '金叉'},
+#  {'date': '2026-08-06', 'side': 'sell', 'price': 1310.0, 'shares': 700,
+#   'amount': 917000.0, 'fee': 733.6, 'pnl': 39603.48, 'ret': 0.045175,
+#   'hold_days': 24, 'reason': '死叉'}]
+res["summary"]
+# {'total_return': 0.0689, 'cagr': 0.184, 'max_drawdown': -0.0861, 'sharpe': 1.06,
+#  'n_trades': 4, 'win_rate': 0.5, 'avg_hold_days': 12.75, 'buy_hold_return': 0.1022}
+
+# 换规则：PE/PB 估值买卖点（估值 <= buy 买、>= sell 卖）
+res = cli.backtest.run("600519", rule="pe", buy=20, sell=40,
+                       begin="2023-11-01", end="2026-11-01")
+res["caliber"]["valuation"]   # {'metric': 'pe', 'window': '3y'}
+```
+
+**估值规则的上限**：单股估值序列只有 `cli.valuation.hist_stats` 的 **≤3 年日频**
+（PE/PB/PS/PR，公告日 TTM、无未来函数），所以 `rule="pe"` 之类最多回测 3 年；
+区间更早的部分会自动剔除并给 warning，亏损期等没有估值的日子当日不出信号。
+`rule` 可取值：`ma_cross`（默认）/ `pe` / `pb` / `ps` / `pr`。
+
+固定口径（不另有开关）：信号当根收盘后确定、**次日开盘**成交（T+1）；100 股整手；
+佣金 0.03%（最低 5 元）、卖出印花 0.05%；一字板（`open==high==low==close`）与
+零量（停牌占位）顺延到下一根，次数见 `caliber["skipped"]`；期末持仓按最后一根
+收盘平仓（`reason="期末平仓"`）。
+
+取数成本：不传 `begin/end` 时取全历史 1 万根，约 **40 万 EC**（EC 按请求行数计费）；
+只看近两年就显式传区间，只取该区间需要的根数，EC 降到几万——
+`cli.backtest.run("600519", fast=5, slow=20, begin="2024-01-01", end="2026-11-01")`。
+
+**不建模**（别当撮合级结果用）：历史 ST 与 ST 的 5% 涨跌停、涨跌停排队与部分成交、
+分红税与送转（`adj="qfq"` 只调价格，`"nr"` 不复权会把分红日当亏损）、分钟级、
+组合/加仓/做空、止损止盈（需要就把规则并进买卖点判断或自己拿到 `trades` 后二次加工）。
+
 ## 4. 全市场与行业
 
 可运行版本：`examples/07_stocks_industry_batch.py`。

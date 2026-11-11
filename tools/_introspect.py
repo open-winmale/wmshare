@@ -64,6 +64,21 @@ METHOD_EXAMPLE_VALUES = {
     ("macro", "phone_share"): {"brand": '"小米"', "field": '"share"'},
 }
 
+# 组合接口的文档示例（按命名空间；缺省不渲染示例块）
+COMPOSITE_EXAMPLES: dict[str, list[str]] = {
+    "cbond": [
+        "payload = cli.cbond.daily(top_n=20)                  # 事实包（3 次请求）",
+        "cli.cbond.article(payload, date=\"20261107\")          # 源稿 + 公众号稿",
+        "cli.cbond.figures(payload, \"/tmp/cb\", date=\"20261107\")  # 需 wmshare[figures]",
+    ],
+    "backtest": [
+        "res = cli.backtest.run(\"600519\", fast=5, slow=20)   # 均线金叉买 / 死叉卖",
+        "res = cli.backtest.run(\"600519\", rule=\"pe\", buy=20, sell=40)  # 估值阈值（≤3 年）",
+        "res[\"trades\"][:2]                                    # 成交明细（买/卖各一行）",
+        "res[\"summary\"][\"max_drawdown\"]                      # 净值汇总（8 个数字）",
+    ],
+}
+
 # 返回说明覆盖（目录 shape 过粗的动态列表返回，按上游实现补字段级说明；
 # pct_of_total 为百分数数值（52.3=52.3%），涨跌幅/median_pct 为小数）
 RETURNS_OVERRIDES = {
@@ -89,6 +104,8 @@ FALLBACK_RETURNS = {
         "MAP · {source, wechat, summary, date, campaign}（源稿与公众号稿）",
     ("cbond", "figures"):
         "MAP · {table, scatter, band_<code>: 图片路径}（需 wmshare[figures]）",
+    ("backtest", "run"):
+        "MAP · {trades: 成交明细, summary: 8 个汇总数字, equity: [{date, nav}], caliber}",
 }
 
 _PARAM_RE = re.compile(r"^:param (\w+):\s*(.*)$")

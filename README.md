@@ -81,6 +81,7 @@ for r in res["rows"][:5]:
 |---|---|---|
 | `cli.kline` | 日 K 三种复权（自上市首日起全覆盖，最早 1991 年）、周 K/月 K、最新/盘中快照、1 分钟分时（个股；ETF 无分钟源，查询被拦截）、ETF/指数 | 价格=元、量=股、涨跌幅=小数 |
 | `cli.screener` | 全市场条件选股（`query`，一条 `$码` 表达式出命中数与前 N 行）+ 单票筛选器（涨停/均线/动量/回撤/放量）+ 全市场涨跌全景/分桶/行业分布/涨跌榜 | 阈值=小数；涨跌家数统计的 `*_pct`=百分数数值 |
+| `cli.backtest` | 单股买卖点回测：均线金叉/死叉 或 PE/PB/PS/PR 估值阈值（估值序列 ≤3 年）→ 成交明细 + 净值/回撤/胜率（次日开盘成交、T+1、100 股整手、佣金/印花固定） | 价格=元、收益=小数 |
 | `cli.moneyflow` | 主力/超大单/大单/中单/小单净流入（日频） | 金额=元 |
 | `cli.statements` | 三大报表多期、合并 vs 母公司、目录树、审计意见 | 报表原币元 |
 | `cli.segments` | 经营分部：分产品/业务/区域收入构成 | 元；比率=小数 |
@@ -124,7 +125,7 @@ for r in res["rows"][:5]:
 
 - **先查目录再写代码**（一行验证）：
   `python3 -c "import wmshare; print(wmshare.load().search('股息'))"`
-- **本地 MCP server**：20 个 task tools；全部 135 个 friendly API——132 登记 + 3 组合——均可用
+- **本地 MCP server**：20 个 task tools；全部 136 个 friendly API——132 登记 + 4 组合——均可用
   `wmshare_call(target=..., mode="api")` 兜底，macro 域仅此路径。配置：`pip install "wmshare[mcp]"`
   → `wmshare-mcp setup --client-id <AppId> --client-secret-stdin --market cn`（提示后粘贴 API Key，
   `wmshare-mcp doctor` 体检）；客户端最小配置
@@ -169,6 +170,8 @@ for r in res["rows"][:5]:
 | 看公司在行业里的位置 | `$CUR_IND_ROE_PCT_LAST`（行业内 ROE 分位，1=行业最高） | 拉全行业成分→逐票取 ROE→排序 |
 | 筛高股息且派息可持续 | `cli.dividend.screen_quality(sym)` | 自写股息/派息率质量模型 |
 | 全市场按任意指标组合选股 | `cli.screener.query("$BONUS_RATE_3Y_AVG_LAST > 0.03 && $ROE_TTM_LAST > 0.15")` | 先批量拉全市场→本地过滤（还容易漏样本） |
+| 回测这只票的均线买卖点 | `cli.backtest.run("600519", fast=5, slow=20)` | 拉 K 线→自己写撮合/费用→算净值回撤 |
+| 回测 PE/PB 估值买卖点 | `cli.backtest.run("600519", rule="pe", buy=20, sell=40)` | 拉估值序列→自己判买卖→算净值（估值序列平台最多 3 年） |
 | 站上 20 日线了吗 | `cli.screener.screen_above_ma20(sym)` | 拉 K 线→算均线→比较 |
 | 全市场今天涨跌如何 | `cli.screener.index_breadth_summary()` | 全市场扫描→聚合统计 |
 | 看最新十大股东 | `cli.equity.query_holder10(sym)` | 翻定期报告→抄股东名单 |
