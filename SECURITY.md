@@ -10,7 +10,7 @@
 | 1.15.x  | ✅（上一 minor 线，仅高危修复） |
 | < 1.15  | ❌（不接收安全修复，请升级） |
 
-Last reviewed: 2026-11-11（as_of `1.16.3`）。策略为「仅当前 minor 线 +
+Last reviewed: 2026-11-11（as_of `1.16.4`）。策略为「仅当前 minor 线 +
 上一 minor 线」，发版时必须同步本表；`tools/check_version.py --check` 会把
 六处版本声明（pyproject / `__version__` / `server.json`×2 / `openapi.info.version` /
 CHANGELOG 顶部 release 段）与表头、`as_of` 一并互校，防止再次腐化。

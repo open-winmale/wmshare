@@ -10,6 +10,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.16.4] - 2026-11-11
+
+### Changed
+- **供应链与发版加固（非功能性，包用户行为相对 1.16.3 零变化）**：
+  - CI Action 固定到真实 commit SHA + Dependabot 周扫；新增 CodeQL 语义分析门禁与 `pip-audit` 依赖漏洞扫描。
+  - `pyproject` 改 `dynamic` 版本、由 `src/wmshare/__init__.py::__version__` 单一事实源注入；新增 `tools/gen_server.py` 由同一基准生成 `server.json`。
+  - 新增 `tools/check_license.py` 许可一致性门禁（BSD-3-Clause 五路互校）。
+  - 文档批量计数改由 `stats()["symbols"]["cn"]` 动态派生，重生成 `docs/API.md` / `llms.txt` / `llms-full.txt`。
+
 ## [1.16.3] - 2026-11-11
 
 ### Fixed
