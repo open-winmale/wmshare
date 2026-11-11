@@ -98,7 +98,7 @@ cat.metrics_in_group("dividend")                         # 指标组内全部精
 | 当日 1 分钟分时 | `cli.kline.min1("600519")`（有损合成采样，非逐笔） |
 | 今日涨停了吗 / 全市场涨停梯队 | `cli.screener.screen_limit_up("600519")` |
 | **全市场按指标条件选股（股息/ROE/PE 任意组合）** | `cli.screener.query("$BONUS_RATE_3Y_AVG_LAST > 0.03 && $ROE_TTM_LAST > 0.15 && !$IS_ST", order="$BONUS_RATE_3Y_AVG_LAST")`——服务端索引一次查完，返回 `{"count": 全市场命中数, "rows": 前 N 行}`；**不要先批量取数再本地过滤**（`count` 才是真命中数，`len(rows)` 不是） |
-| 给一只票跑买卖点回测 | `cli.backtest.run("600519", fast=5, slow=20)`（均线金叉/死叉）或 `cli.backtest.run("600519", rule="pe", buy=20, sell=40)`（估值阈值；估值序列 ≤3 年）——返回 `trades`（每笔买/卖，卖出带 pnl/ret/hold_days）+ `summary` + `equity`；取全历史需 `Client(max_limit=None)` |
+| 给一只票跑买卖点回测 | `cli.backtest.run("600519", fast=5, slow=20)`（均线金叉/死叉）或 `cli.backtest.run("600519", rule="pe", buy=20, sell=40)`（估值阈值；估值序列 ≤3 年）——返回 `trades`（每笔买/卖，卖出带 pnl/ret/hold_days）+ `summary` + `equity`；取全历史需 `Client(max_limit=None)`；**`cli.backtest.run` 会取数、EC 按请求行数**，纯内核 `wmshare.backtest.run_backtest(bars, signals)` 不联网 |
 | 全市场今天涨跌如何 | `cli.screener.index_breadth_summary()` |
 | 涨幅榜 / 跌幅榜 | `cli.screener.index_top_movers(limit=20)`（`desc=False` 跌幅） |
 | 站上 20 日线了吗 / 放量了吗 | `cli.screener.screen_above_ma20(sym)` / `screen_volume_spike(sym)` |

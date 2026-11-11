@@ -6,10 +6,12 @@ import math
 import os
 import statistics
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 import wmshare
+from wmshare._credentials import read_credentials_file
 from wmshare.client import BatchResult, Client
 from wmshare.errors import (
     AuthError,
@@ -36,10 +38,19 @@ class MCPRuntime:
 
     market: str = DEFAULT_MARKET
     demo: bool = False
+    # 单次 MCP 调用的 EC 事后上限。不是 LLM 可传参数，只能由部署方通过
+    # WMSHARE_MCP_MAX_EC 收紧/放宽；超限时抛 LimitError(code="ec_budget")。
+    max_ec_per_call: int = 200_000
     _clients: dict[str, Client | Any] | None = None
 
     def __post_init__(self) -> None:
         self.market = _market(self.market)
+        raw = os.getenv("WMSHARE_MCP_MAX_EC", "").strip()
+        if raw:
+            try:
+                self.max_ec_per_call = max(1, int(raw))
+            except ValueError:
+                pass  # 非法配置沿用默认值，不因环境变量让 MCP 起不来
         self._clients = {}
 
     def client(self, market: str | None = None) -> Client | Any:
@@ -68,6 +79,28 @@ def _links() -> dict[str, str]:
     return {"console": CONSOLE_URL, "docs": DOCS_URL}
 
 
+def _demo_as_of() -> str | None:
+    """演示快照的冻结日期；不 import 包以外依赖，失败时返回 None。"""
+    try:
+        from wmshare import _demo
+
+        return getattr(_demo, "_AS_OF", None)
+    except ImportError:  # pragma: no cover - 裁剪安装包场景
+        return None
+
+
+def _provenance(runtime: MCPRuntime | None) -> dict[str, Any]:
+    """LLM 必须能区分「实时数据」与「罐头快照」，避免把 demo 当行情用。"""
+    demo = runtime.demo if runtime is not None else None
+    return {
+        "demo": demo,
+        "as_of": _demo_as_of() if demo else None,
+        "retrieved_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "data_freshness": ("unknown" if runtime is None
+                           else ("snapshot" if demo else "live")),
+    }
+
+
 def _meta(
     runtime: MCPRuntime,
     *,
@@ -87,6 +120,7 @@ def _meta(
         "truncated": truncated,
         "next_action": next_action,
     }
+    out.update(_provenance(runtime))
     out.update(extra)
     return out
 
@@ -134,7 +168,8 @@ def success(
     }
 
 
-def error(exc: Exception) -> dict[str, Any]:
+def error(exc: Exception, runtime: MCPRuntime | None = None) -> dict[str, Any]:
+    """错误信封同样带溯源标记；runtime 缺省可空，兼容所有旧调用点。"""
     kind = type(exc).__name__
     code = str(getattr(exc, "code", "") or kind.lower())
     message = str(exc)
@@ -166,6 +201,10 @@ def error(exc: Exception) -> dict[str, Any]:
         kind = "UsageError"
         code = "params"
         fix = ["参数不合法：检查枚举值、日期/区间和行数限制"]
+        if getattr(exc, "code", "") == "gateway_policy":
+            code = "gateway_policy"
+            fix = ["MCP 网关不开放该路由；改用本地 Python SDK 直接调用，"
+                   "并在你自己的环境中控制输出路径"]
     elif isinstance(exc, WmshareError):
         fix = ["按 message 修正参数；参数合同用 wmshare_contract 查询"]
         if type(exc).__name__ == "DataError":
@@ -180,6 +219,7 @@ def error(exc: Exception) -> dict[str, Any]:
         "meta": {
             "source": SOURCE,
             "next_action": fix[0] if fix else None,
+            **_provenance(runtime),
         },
         "links": _links(),
     }
@@ -332,19 +372,11 @@ def credential_values() -> dict[str, str]:
         or os.getenv("OPEN_PLATFORM_CLIENT_SECRET") or "",
         "WMSHARE_MARKET": os.getenv("WMSHARE_MARKET") or "",
     }
-    if path.is_file():
-        try:
-            lines = path.read_text(encoding="utf-8").splitlines()
-        except OSError:
-            lines = []
-        for line in lines:
-            clean = line.strip().removeprefix("export ").strip()
-            if not clean or clean.startswith("#") or "=" not in clean:
-                continue
-            key, _, raw = clean.partition("=")
-            key = key.strip()
-            if key in values and not values[key]:
-                values[key] = raw.strip().strip('"').strip("'")
+    # 与 Client.from_env 共用解析 + 权限告警，避免两套实现各自漂移。
+    file_values = read_credentials_file(path)
+    for key in values:
+        if not values[key] and file_values.get(key):
+            values[key] = file_values[key]
     return values
 
 

@@ -25,8 +25,8 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _introspect import (  # noqa: E402
-    COMPOSITE_EXAMPLES, FALLBACK_RETURNS, RETURNS_OVERRIDES, method_doc, method_example,
-    method_params, return_shape_for, underlying_fn,
+    COMPOSITE_EXAMPLES, COMPOSITE_NOTES, FALLBACK_RETURNS, RETURNS_OVERRIDES,
+    method_doc, method_example, method_params, return_shape_for, underlying_fn,
 )
 from wmshare.api import (  # noqa: E402
     COMPOSITE_METHODS, FRIENDLY_INDEX, FRIENDLY_NAMESPACES)
@@ -330,9 +330,13 @@ def composite_section(ns: str) -> list[str]:
         return []
     cls = FRIENDLY_NAMESPACES[ns]
     out = ["#### 组合接口（研究级封装）", "",
-           "以下方法跨多个目录接口与本地计算串成一条链路（取数 → 规则内核 → 结果包），"
-           "返回结构、成交口径与「不建模」清单见各方法说明。", "",
-           "| 方法 | 签名 | 输出 |", "|---|---|---|"]
+           "以下方法同样是 `cli.<命名空间>.<方法>()` 门面，**可直接调用**；区别只在于底层"
+           "不是单一目录函数，而是跨多个接口 + 本地计算串成一条链路。**取数仍走客户端**"
+           "（请求次数与 EC 照常计，EC 按请求行数），本地只负责规则与汇总。", ""]
+    note = COMPOSITE_NOTES.get(ns)
+    if note:
+        out += [note, ""]
+    out += ["| 方法 | 签名 | 输出 |", "|---|---|---|"]
     for method in methods:
         params = method_params(cls, method)
         sig = ", ".join(f"{p.name}={p.default}" if p.default else p.name for p in params)

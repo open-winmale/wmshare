@@ -20,9 +20,10 @@ python3 -c "import wmshare; print(wmshare.__version__)"   # 验证安装
 
 不配凭证先试：`cli = wmshare.demo_client()`——随包离线演示客户端（2026-10-30
 真实 API 固定快照；10 只演示宇宙 + 当日真实全市场 screener，
-**非实时数据**），调用面覆盖公开示例（例外：`screener.query` 依赖全市场索引列，
-演示快照没有，显式报 `demo_unsupported`）；examples/ 的凭证示例都支持
-`--demo` 旗标零凭证试跑。看真实数据按下节配凭证。
+**非实时数据**），调用面覆盖公开示例（例外：`screener.query` 依赖全市场索引列、
+`backtest` 的 pb/ps/pr 估值规则依赖对应序列，演示快照都没有，均显式报
+`demo_unsupported`；`backtest` 的均线与 pe 规则可用 120 根演示日 K 真跑）；
+examples/ 的凭证示例都支持 `--demo` 旗标零凭证试跑。看真实数据按下节配凭证。
 
 凭证在开放平台（`https://open.winmale.com`）控制台的「我的 → 开放平台 → 我的应用」页获取，
 `AppId（Client ID）` 与 `API Key（Client Secret）` **两个值缺一不可**。配置任选其一：
@@ -265,6 +266,11 @@ res["caliber"]["valuation"]   # {'metric': 'pe', 'window': '3y'}
 取数成本：不传 `begin/end` 时取全历史 1 万根，约 **40 万 EC**（EC 按请求行数计费）；
 只看近两年就显式传区间，只取该区间需要的根数，EC 降到几万——
 `cli.backtest.run("600519", fast=5, slow=20, begin="2024-01-01", end="2026-11-01")`。
+
+**两层分工（别把内核当入口）**：`cli.backtest.run` 是**取数入口**——K 线（与 PE/PB 规则的
+估值序列）走服务端，请求次数与 EC 照常计；`wmshare.backtest` 下的
+`run_backtest(bars, signals, cash=...)`、`ma_cross_signals`、`valuation_signals`、
+`valuation_by_date` 是**纯计算内核**，自己准备 `bars`/`signals` 时不联网、不计 EC。
 
 **不建模**（别当撮合级结果用）：历史 ST 与 ST 的 5% 涨跌停、涨跌停排队与部分成交、
 分红税与送转（`adj="qfq"` 只调价格，`"nr"` 不复权会把分红日当亏损）、分钟级、

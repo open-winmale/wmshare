@@ -9,6 +9,9 @@ jobs:
   gates:
     runs-on: ubuntu-latest
     strategy:
+      # 关掉 fail-fast：一个矩阵 job 红了不能取消其余 job，否则会掩盖
+      # 其它 Python 版本的独立结论（历史上 3.10 长期标红时的观察盲区）。
+      fail-fast: false
       matrix:
         python: ["3.10", "3.11", "3.12", "3.13"]
     steps:

@@ -36,18 +36,38 @@ def _check_schema(doc: dict, filename: str) -> None:
             code="schema")
 
 
+ALLOW_CUSTOM_CATALOG_ENV = "WMSHARE_ALLOW_CUSTOM_CATALOG"
+
+
 def catalog_dir() -> Path:
-    """定位随包分发的目录：WMSHARE_CATALOG_DIR 覆盖（开发期指向仓内），默认包内 _catalog/。"""
+    """定位随包分发的目录；自定义目录需显式开启双开关（见 SECURITY.md）。
+
+    域 YAML 里的 ``normalize_with`` / ``xs.require`` 会被拼进服务端 XS 脚本，
+    所以「换一个目录」不是加载配置，而是**替换待执行脚本**。默认拒绝，避免
+    LLM 或环境变量被诱导指向任意目录造成 XS 注入。
+    """
     env = os.environ.get("WMSHARE_CATALOG_DIR")
     if env:
+        if os.environ.get(ALLOW_CUSTOM_CATALOG_ENV, "").strip().lower() \
+                not in {"1", "true", "yes", "on"}:
+            raise CatalogError(
+                f"WMSHARE_CATALOG_DIR 需配合 {ALLOW_CUSTOM_CATALOG_ENV}=1 显式开启；"
+                "自定义目录会改变服务端 XS 脚本内容，默认拒绝以防注入",
+                code="catalog_dir")
         p = Path(env).expanduser().resolve()
-        if (p / "domains").is_dir():
-            return p
-        raise FileNotFoundError(f"WMSHARE_CATALOG_DIR={env} 下没有 domains/")
+        if not (p / "domains").is_dir():
+            raise FileNotFoundError(f"WMSHARE_CATALOG_DIR={env} 下没有 domains/")
+        for name in ("inventory.json", "metrics.json"):
+            if not (p / "generated" / name).is_file():
+                raise FileNotFoundError(
+                    f"WMSHARE_CATALOG_DIR={env} 缺少 generated/{name}；"
+                    "自定义目录必须包含与 domains 匹配的冻结目录")
+        return p
     if (_PACKAGE_CATALOG / "domains").is_dir():
         return _PACKAGE_CATALOG
     raise FileNotFoundError(
-        "包内 _catalog/ 缺失（安装损坏？）；或设置 WMSHARE_CATALOG_DIR 指向有效目录")
+        "包内 _catalog/ 缺失（安装损坏？）；或设置 WMSHARE_CATALOG_DIR 指向有效目录"
+        f"并同时设置 {ALLOW_CUSTOM_CATALOG_ENV}=1")
 
 
 class Catalog:

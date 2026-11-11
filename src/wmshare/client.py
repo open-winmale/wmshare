@@ -14,7 +14,6 @@ import threading
 import time
 import warnings
 from importlib.metadata import PackageNotFoundError, version
-from urllib.parse import urlsplit
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterator, NoReturn
@@ -24,6 +23,8 @@ import requests
 if TYPE_CHECKING:  # 前向引用：运行时惰性导入，避免潜在环
     from wmshare.notice_stream import NoticePoller
 
+from wmshare._credentials import DEFAULT_CREDENTIAL_PATH, read_credentials_file
+from wmshare._endpoints import validate_base_url
 from wmshare.catalog import Catalog, load
 from wmshare.errors import (
     APPID_GUIDANCE, ApiError, AuthError, CatalogError, WmshareError, LimitError,
@@ -33,6 +34,27 @@ from wmshare.units import apply_units
 
 DEFAULT_BASE_URL = "https://api.winmale.com"
 SDK_VERSION = version("wmshare")
+
+# 网关若回显请求体，异常消息会把 client_secret 带进 traceback / MCP 信封。
+# 所有错误出口统一走 _redact，且必须「先脱敏后截断」——否则落在 [:300]
+# 边界之外的 secret 仍会泄漏。
+_REDACT_PAIRS = re.compile(
+    r"(?i)\b(client_secret|client_id|access_token|refresh_token)\b"
+    r"(\s*[=:]\s*)(['\"]?)([^\s,}\]'\"&]+)"
+)
+_REDACT_BEARER = re.compile(r"(?i)\b(bearer\s+)[A-Za-z0-9._~+/\-=]+")
+
+
+def _redact(text: str, *secrets: str) -> str:
+    """把已知凭证值与常见凭证字段从任意上游文本中抹掉。"""
+    out = str(text or "")
+    for secret in secrets:
+        if secret and len(secret) >= 4:
+            out = out.replace(secret, "***")
+    out = _REDACT_BEARER.sub(lambda m: m.group(1) + "***", out)
+    out = _REDACT_PAIRS.sub(
+        lambda m: f"{m.group(1)}{m.group(2)}{m.group(3)}***", out)
+    return out
 
 # 无标的参数函数的求值锚点：网关按注册表校验 symbol 与 market 匹配，
 # 固定 A 股锚点在 hk/us 客户端会 MARKET_MISMATCH（400）。
@@ -201,6 +223,7 @@ class Client:
         max_retry_after: float = 10.0,
         validate: bool = True,
         ec_warn_threshold: int | None = 100_000,
+        allow_custom_host: bool = False,
     ):
         market = str(market or "cn").strip().lower()
         if market not in ("cn", "hk", "us"):
@@ -209,14 +232,10 @@ class Client:
         if base_url is not None and (not isinstance(base_url, str) or not base_url.strip()):
             raise UsageError("base_url 必须是非空 URL", code="config")
         if base_url is not None:
-            parsed = urlsplit(base_url.strip())
-            host = (parsed.hostname or "").lower()
-            local_hosts = {"localhost", "127.0.0.1", "::1"}
-            if parsed.scheme != "https" and not (
-                    parsed.scheme == "http" and host in local_hosts):
-                raise UsageError(
-                    "base_url 必须使用 HTTPS；本地网关可用 http://localhost、"
-                    "http://127.0.0.1 或 http://[::1]", code="config")
+            # 端点策略见 _endpoints.py：默认只放行官方主机与本地回环，
+            # 其余需显式 opt-in —— OAuth token 会向该 host 明文 POST client_secret。
+            validate_base_url(base_url.strip(), allow_custom_host=allow_custom_host)
+        self._allow_custom_host = bool(allow_custom_host)
         if isinstance(timeout, bool) or not isinstance(timeout, (int, float)) \
                 or not float(timeout) > 0 or not math.isfinite(float(timeout)):
             raise UsageError("timeout 必须为正有限秒数", code="config")
@@ -289,13 +308,10 @@ class Client:
     @classmethod
     def from_env(cls, env: dict[str, str] | None = None, **kw: Any) -> "Client":
         e = dict(os.environ if env is None else env)
-        cred_file = Path(e.get("WMSHARE_CREDENTIALS", Path.home() / ".wmshare" / "credentials.env"))
-        if cred_file.is_file():
-            for line in cred_file.read_text(encoding="utf-8").splitlines():
-                line = line.strip().removeprefix("export ").strip()
-                if "=" in line and not line.startswith("#"):
-                    k, _, v = line.partition("=")
-                    e.setdefault(k.strip(), v.strip().strip('"').strip("'"))
+        cred_file = Path(e.get("WMSHARE_CREDENTIALS", DEFAULT_CREDENTIAL_PATH))
+        # 解析与权限检查统一走 _credentials.py（MCP 侧 credential_values 同用）。
+        for k, v in read_credentials_file(cred_file, env=e).items():
+            e.setdefault(k, v)
         base = e.get("WMSHARE_BASE_URL") or e.get("OPEN_PLATFORM_BASE_URL")
         cid = e.get("WMSHARE_CLIENT_ID") or e.get("OPEN_PLATFORM_CLIENT_ID")
         sec = e.get("WMSHARE_CLIENT_SECRET") or e.get("OPEN_PLATFORM_CLIENT_SECRET")
@@ -341,13 +357,25 @@ class Client:
             self._raise_http_error(resp, stage="request")
         self._sleep(self._delay(attempt, resp))
 
+    def _post(self, url: str, **kw: Any) -> requests.Response:
+        """统一 POST 出口：对真实 requests.Session 关闭自动重定向。
+
+        requests 对 307/308 会携带原 POST body 重放到 Location 指向的新 host；
+        OAuth 请求体含 client_secret，构造期 host 白名单拦不住这一步，必须在
+        传输层关掉。测试替身（FakeSession）没有 allow_redirects 参数，按能力
+        探测，避免为了一个安全修复去改全部测试夹具。
+        """
+        if isinstance(self.session, requests.Session):
+            return self.session.post(url, allow_redirects=False, **kw)
+        return self.session.post(url, **kw)
+
     def _request(self, url: str, **kw: Any) -> requests.Response:
         """POST + 429/5xx 指数退避重试；网络异常同样重试并在耗尽后转 WmshareError。"""
         attempts = self.retries + 1
         last: requests.Response | None = None
         for i in range(attempts):
             try:
-                resp = self.session.post(url, **kw)
+                resp = self._post(url, **kw)
             except requests.RequestException as e:
                 if i == attempts - 1:
                     raise TransportError(
@@ -364,25 +392,40 @@ class Client:
         assert last is not None  # 循环必然 return 或 raise
         return last
 
-    @staticmethod
-    def _error_detail(resp: requests.Response) -> tuple[str, str]:
-        """从错误响应中尽力提取服务端 code/message（OAuth 与网关两种格式）。"""
+    def _safe_detail(self, text: str, limit: int = 300) -> str:
+        """上游原文先整体脱敏再截断（顺序不可换）。"""
+        return _redact(
+            text, self.client_id, self.client_secret,
+            getattr(self, "_token", ""),
+        )[:limit]
+
+    def _error_detail(self, resp: requests.Response) -> tuple[str, str]:
+        """从错误响应中尽力提取服务端 code/message（OAuth 与网关两种格式）。
+
+        上游若回显请求体，code/message 里可能含 client_secret；所有分支统一
+        脱敏，避免凭证随异常进入 traceback 与 MCP 的 error 信封。
+        """
+        raw = resp.text or ""
         try:
             doc = resp.json()
         except ValueError:
-            return "", (resp.text or "")[:300]
+            return "", self._safe_detail(raw)
         if not isinstance(doc, dict):
-            return "", (resp.text or "")[:300]
+            return "", self._safe_detail(raw)
         err = doc.get("error")
         if isinstance(err, dict):
             code = str(err.get("code") or "")
             msg = str(err.get("message") or err.get("error_description") or "")
             if code or msg:
-                return code, msg
+                return self._safe_detail(code, 120), self._safe_detail(msg)
         # OAuth 规范风格：{"error": "invalid_client", "error_description": "..."}
         if isinstance(err, str):
-            return err, str(doc.get("error_description") or doc.get("message") or "")
-        return "", (resp.text or "")[:300]
+            return (
+                self._safe_detail(err, 120),
+                self._safe_detail(
+                    str(doc.get("error_description") or doc.get("message") or "")),
+            )
+        return "", self._safe_detail(raw)
 
     def _raise_http_error(self, resp: requests.Response, *, stage: str) -> NoReturn:
         """把 OAuth/eval 的非 200 响应统一映射为 WmshareError，并附 AppID 引导。"""
@@ -444,11 +487,13 @@ class Client:
                 doc = resp.json()
             except ValueError as e:
                 raise ApiError(
-                    f"OAuth 响应不是合法 JSON（HTTP {resp.status_code}）：{resp.text[:200]}",
+                    f"OAuth 响应不是合法 JSON（HTTP {resp.status_code}）："
+                f"{self._safe_detail(resp.text, 200)}",
                     code="oauth_response", status=resp.status_code) from e
             if not isinstance(doc, dict):
                 raise ApiError(
-                    f"OAuth 响应格式异常：{json.dumps(doc, ensure_ascii=False)[:300]}",
+                    f"OAuth 响应格式异常："
+                    f"{self._safe_detail(json.dumps(doc, ensure_ascii=False), 300)}",
                     code="oauth_response", status=resp.status_code)
             data = doc.get("data") or doc
             if not isinstance(data, dict):
@@ -456,7 +501,8 @@ class Client:
             token = data.get("access_token")
             if not token:
                 raise AuthError(
-                    f"OAuth 未返回 access_token：{json.dumps(doc, ensure_ascii=False)[:300]}。"
+                    f"OAuth 未返回 access_token："
+                    f"{self._safe_detail(json.dumps(doc, ensure_ascii=False), 300)}。"
                     f"{APPID_GUIDANCE}",
                     code="oauth", status=resp.status_code)
             self._token = token
@@ -487,6 +533,10 @@ class Client:
 
         symbol 为求值锚点代码；None 时按客户端市场取默认锚点
         （cn=600519 / hk=00700 / us=AAPL，防 MARKET_MISMATCH）。
+
+        .. warning:: 低层逃生口，不做语法解析、不做白名单，``xs`` 会原样进入
+           服务端脚本。**禁止把 LLM 生成或来自不可信输入的字符串传入**；
+           Agent 场景请走 ``call()`` / friendly API / MCP 网关（见 SECURITY.md）。
         """
         lines = xs if isinstance(xs, list) else [ln for ln in xs.splitlines() if ln.strip()]
         mk = str(market or self.market or "cn").lower()
@@ -509,15 +559,19 @@ class Client:
             doc = resp.json()
         except ValueError as e:
             raise ApiError(
-                f"eval 响应不是合法 JSON（HTTP {resp.status_code}）：{resp.text[:200]}",
+                f"eval 响应不是合法 JSON（HTTP {resp.status_code}）："
+                f"{self._safe_detail(resp.text, 200)}",
                 code="response", status=resp.status_code) from e
         if not isinstance(doc, dict):
-            raise ApiError(f"eval 响应格式异常：{json.dumps(doc, ensure_ascii=False)[:300]}",
-                           code="response", status=resp.status_code)
+            raise ApiError(
+                f"eval 响应格式异常："
+                f"{self._safe_detail(json.dumps(doc, ensure_ascii=False), 300)}",
+                code="response", status=resp.status_code)
         if not doc.get("success", True):
             err = doc.get("error") or {}
             code = str(err.get("code") or "eval")
-            message = str(err.get("message") or json.dumps(doc, ensure_ascii=False)[:200])
+            message = str(err.get("message") or self._safe_detail(
+                json.dumps(doc, ensure_ascii=False), 200))
             if "RATE" in code.upper() or "QUOTA" in code.upper():
                 raise LimitError(
                     f"eval 失败：{code} {message}。"

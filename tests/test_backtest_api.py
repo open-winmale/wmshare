@@ -7,7 +7,12 @@ import re
 import pytest
 
 from wmshare import DataError, UsageError
-from wmshare.api import COMPOSITE_METHODS, FRIENDLY_INDEX, FRIENDLY_NAMESPACES
+from wmshare.api import (
+    BacktestApi,
+    COMPOSITE_METHODS,
+    FRIENDLY_INDEX,
+    FRIENDLY_NAMESPACES,
+)
 from wmshare.catalog import load
 from wmshare.client import Client
 
@@ -199,3 +204,20 @@ def test_bad_rule_and_ma_alias():
         cli.backtest.run("600519", rule="roe")
     res = cli.backtest.run("600519", rule="ma", fast=2, slow=3)
     assert res["rule"] == "ma_cross(fast=2, slow=3)"
+
+
+def test_public_surface_is_cli_facade():
+    """公开入口是 cli.backtest 门面（1.16.0 注册），wmshare.backtest 只是纯计算内核。"""
+    import inspect
+
+    import wmshare
+    import wmshare.backtest as kernel
+
+    cli = wmshare.demo_client()
+    assert "backtest" in dir(cli), "cli 命名空间缺 backtest（门面未暴露）"
+    sig = inspect.signature(BacktestApi.run)
+    assert {"rule", "buy", "sell", "fast", "slow", "begin", "end", "cash", "adj"} <= \
+        set(sig.parameters), "BacktestApi.run 签名与文档不一致"
+    for name in ("run_backtest", "ma_cross_signals", "valuation_signals",
+                 "valuation_by_date"):
+        assert callable(getattr(kernel, name)), f"纯内核缺 {name}"

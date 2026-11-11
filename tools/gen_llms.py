@@ -11,6 +11,7 @@ markdown 原文；llms-full.txt 按 教程→skill→指南→AI→参考 顺序
 from __future__ import annotations
 
 import argparse
+import inspect
 import sys
 from pathlib import Path
 
@@ -39,11 +40,14 @@ def _domain_line(domain: dict, facade: list[str]) -> str:
 
 def build_llms_txt() -> str:
     import wmshare
-    from wmshare.api import FRIENDLY_INDEX, _FRIENDLY_NS_TO_CATALOG
+    from wmshare.api import (
+        COMPOSITE_METHODS, FRIENDLY_INDEX, FRIENDLY_NAMESPACES, _FRIENDLY_NS_TO_CATALOG)
 
     cat = wmshare.load()
     stats = cat.stats()
     n_examples = len(list((REPO / "examples").glob("[0-9][0-9]_*.py")))
+    composite_total = sum(len(methods) for methods in COMPOSITE_METHODS.values())
+    friendly_total = len(FRIENDLY_INDEX) + composite_total
     facade_by_domain: dict[str, list[str]] = {}
     for ns, cat_ns in _FRIENDLY_NS_TO_CATALOG.items():
         for d in cat.domains.values():
@@ -57,7 +61,8 @@ def build_llms_txt() -> str:
         "",
         f"> 覆盖 A 股、港股、美股的 Python 财经数据 SDK：{stats['domains']} 个数据域、"
         f"{stats['functions']} 个底层函数、{stats['metric_catalog_total']} 个指标码、"
-        f"{len(FRIENDLY_INDEX)} 个核心接口。BSD-3-Clause 开源；取数需开放平台凭证"
+        f"{len(FRIENDLY_INDEX)} 个核心接口 + {composite_total} 个组合接口"
+        f"（共 {friendly_total} 个 friendly API）。BSD-3-Clause 开源；取数需开放平台凭证"
         "（环境变量 WMSHARE_CLIENT_ID / WMSHARE_CLIENT_SECRET，见 README）。",
         "",
         "## Docs",
@@ -67,7 +72,8 @@ def build_llms_txt() -> str:
         f"- [指标库 INDICATORS]({RAW}/docs/INDICATORS.md)：全量指标码按族导航——命名语法、"
         "11 组精选口径、死码清单与场景速查（先查码，禁止自算已有指标）",
         f"- [AI 用法]({RAW}/docs/AI.md)：MCP server、skill、文档上下文与报错驱动的 Agent 接入路径",
-        f"- [API 参考]({RAW}/docs/API.md)：{len(FRIENDLY_INDEX)} 个核心接口的参数 / 返回 / 单位口径",
+        f"- [API 参考]({RAW}/docs/API.md)：{len(FRIENDLY_INDEX)} 个核心接口 + "
+        f"{composite_total} 个组合接口的参数 / 返回 / 单位口径",
         f"- [Agent Skill]({RAW}/src/wmshare/skills/wmshare/SKILL.md)：随包分发的 agent 用法合同"
         "（目录先行、单位铁律、决策树、坑位）",
         f"- [可运行示例]({RAW}/examples/README.md)：{n_examples} 个编号示例"
@@ -98,6 +104,29 @@ def build_llms_txt() -> str:
     ]
     for d in cat.domains.values():
         out.append(_domain_line(d, facade_by_domain.get(d["id"], [])))
+
+    # 组合接口必须显式列出：它们是 cli.* 门面的一部分（只是底层不是单一目录函数），
+    # 只靠按域索引会漏掉，AI 文档挖掘容易误判成「没有这个 cli 接口」。
+    if composite_total:
+        out += [
+            "",
+            "## Composite Interfaces",
+            "",
+            "以下方法同样是 `cli.<命名空间>.<方法>()` 门面，可直接调用；区别只在于底层不是"
+            "单一目录函数，而是跨多个接口 + 本地计算串成一条链路。**取数仍走客户端**"
+            "（请求次数与 EC 照常计，EC 按请求行数），本地只负责规则与汇总；对应的纯计算"
+            "内核在 `wmshare` 的子包里（如 `wmshare.backtest.run_backtest`、"
+            "`wmshare.cb.valuation`），自备数据时不联网、不计 EC。",
+            "",
+        ]
+        for ns in sorted(COMPOSITE_METHODS):
+            cls = FRIENDLY_NAMESPACES[ns]
+            for method in sorted(COMPOSITE_METHODS[ns]):
+                fn = getattr(cls, method)
+                sig = str(inspect.signature(fn)).replace("(self, ", "(").replace("(self)", "()")
+                summary = (inspect.getdoc(fn) or "").strip().splitlines()
+                out.append(f"- `cli.{ns}.{method}{sig}`："
+                           f"{summary[0] if summary else ''}")
     out += [
         "",
         "## When NOT to use",

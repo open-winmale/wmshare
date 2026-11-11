@@ -17,8 +17,8 @@ from pathlib import Path
 
 import pytest
 
-from wmshare.api import (FRIENDLY_INDEX, FRIENDLY_NAMESPACES, GENERATED_NAMESPACES,
-                         _FRIENDLY_NS_TO_CATALOG)
+from wmshare.api import (COMPOSITE_METHODS, FRIENDLY_INDEX, FRIENDLY_NAMESPACES,
+                         GENERATED_NAMESPACES, _FRIENDLY_NS_TO_CATALOG)
 from wmshare.catalog import load
 
 REPO = Path(__file__).resolve().parents[1]
@@ -732,3 +732,25 @@ def test_openapi_matches_signatures_and_returns():
         container = resp.get("items", resp) if resp.get("type") == "array" else resp
         assert set(container.get("properties") or {}) == {f["name"] for f in fields}, \
             f"{ns}.{method} 响应字段与目录 returns_shape 不一致"
+
+
+def test_llms_lists_composite_interfaces():
+    """llms.txt 必须列出组合接口：AI 文档挖掘只读这份索引，漏列会被误判为「没有该 cli 接口」。
+
+    组合方法不是 FRIENDLY_INDEX 成员（底层不是单一目录函数），按域索引天然覆盖不到，
+    所以在 llms.txt 单独成节；这里锁住「每个组合方法都出现 + 头部计数含组合数」。
+    """
+    llms = (REPO / "llms.txt").read_text(encoding="utf-8")
+    total = len(FRIENDLY_INDEX) + sum(len(v) for v in COMPOSITE_METHODS.values())
+    assert f"{len(FRIENDLY_INDEX)} 个核心接口" in llms
+    assert f"{sum(len(v) for v in COMPOSITE_METHODS.values())} 个组合接口" in llms
+    assert f"{total} 个 friendly API" in llms
+    for ns, methods in COMPOSITE_METHODS.items():
+        for method in methods:
+            assert f"`cli.{ns}.{method}(" in llms, f"llms.txt 漏列组合接口 cli.{ns}.{method}"
+
+
+def test_api_md_composite_section_states_facade_and_ec():
+    """组合小节必须写明「同样是 cli 门面、可取数计 EC」——防被读成纯本地模块。"""
+    assert "可直接调用" in API_MD and "EC 照常计" in API_MD
+    assert "wmshare.backtest" in API_MD          # backtest 纯内核指路

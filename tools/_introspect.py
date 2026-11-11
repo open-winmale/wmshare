@@ -64,6 +64,15 @@ METHOD_EXAMPLE_VALUES = {
     ("macro", "phone_share"): {"brand": '"小米"', "field": '"share"'},
 }
 
+# 组合接口的文档补充：说明纯计算内核所在包（自备数据时不联网、不计 EC）
+COMPOSITE_NOTES: dict[str, str] = {
+    "cbond": "纯计算内核在 `wmshare.cb`（valuation / rules / facts / article），"
+             "自备面板数据时不联网。",
+    "backtest": "纯计算内核在 `wmshare.backtest`（`run_backtest` / `ma_cross_signals` / "
+                "`valuation_signals` / `valuation_by_date`），自备 bars/signals 时"
+                "不联网、不计 EC。",
+}
+
 # 组合接口的文档示例（按命名空间；缺省不渲染示例块）
 COMPOSITE_EXAMPLES: dict[str, list[str]] = {
     "cbond": [

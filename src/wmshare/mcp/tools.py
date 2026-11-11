@@ -490,9 +490,17 @@ def call(
             cli, str(target), args, market=selected_market,
             raw=raw, units=units,
         )
+        # 事后计量：把单次消耗暴露给 LLM，并让超预算调用显式报错。
+        # 上限由部署方通过 WMSHARE_MCP_MAX_EC 设定，不是 tool 参数。
+        ec_cost = getattr(cli, "last_ec_cost", None)
+        if isinstance(ec_cost, int) and ec_cost > runtime.max_ec_per_call:
+            raise LimitError(
+                f"{target} 单次消耗 {ec_cost} EC，超过 MCP 单次上限 "
+                f"{runtime.max_ec_per_call}；请缩小范围或改用本地 SDK",
+                code="ec_budget")
         return success(runtime, data, output=output, max_rows=max_rows,
                        target=str(target), mode=mode, raw=raw, units=units,
-                       market=selected_market)
+                       market=selected_market, ec_cost=ec_cost)
     if mode != "catalog":
         raise ValueError("mode 只支持 catalog/api")
     fn = wmshare.load().function(str(target))

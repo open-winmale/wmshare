@@ -5,6 +5,8 @@ from __future__ import annotations
 import asyncio
 import inspect
 import json
+import re
+from itertools import chain
 from pathlib import Path
 from typing import Any
 
@@ -15,6 +17,8 @@ pytest.importorskip("mcp")
 from wmshare.api import FRIENDLY_NAMESPACES
 from wmshare.client import BatchResult
 from wmshare.mcp.apis import (
+    GatewayPolicyError,
+    MCP_DENIED_ROUTES,
     api_routes,
     batchable_catalog_functions,
     find_route,
@@ -27,6 +31,7 @@ from wmshare.mcp.constants import (
     DIVIDEND_ACTIONS,
     ESTIMATE_ACTIONS,
     INTL_ACTIONS,
+    MARKET_ACTIONS,
     MARKET_DOMAINS,
     NOTICE_ACTIONS,
     SEGMENT_ACTIONS,
@@ -193,6 +198,13 @@ def test_every_friendly_route_is_invokable() -> None:
     rt = MCPRuntime(market="cn", demo=False)
     client = GatewayFakeClient()
     for route in api_routes():
+        # 有文件系统副作用的路由仍在 registry（SDK 层可用），但 MCP 网关
+        # 必须拒绝；此处验证「拒绝」本身，其余路由继续验证可调用性。
+        if (route.domain, route.method) in MCP_DENIED_ROUTES:
+            with pytest.raises(GatewayPolicyError, match="MCP 网关不开放"):
+                invoke_api(client, route.target, {}, market="cn",
+                           raw=False, units="base")
+            continue
         kwargs: dict[str, Any] = {}
         params = route.parameters
         # route.parameters includes optional params; only supply required values.
@@ -325,13 +337,24 @@ def test_eight_domain_tools_condition_errors(tool_name: str, args: dict[str, Any
 
 
 def test_pypi_registry_metadata_contract() -> None:
-    import tomllib
+    # tomllib 是 3.11+ 标准库；项目声明 requires-python>=3.10 且 CI 跑 3.10，
+    # 必须有 tomli 回退（见 pyproject.toml dev extra），否则 3.10 job 必红。
+    try:
+        import tomllib
+    except ModuleNotFoundError:  # pragma: no cover - Python 3.10 only
+        import tomli as tomllib  # type: ignore[no-redef]
 
     repo = Path(__file__).resolve().parents[1]
     project = tomllib.loads((repo / "pyproject.toml").read_text())
     server = json.loads((repo / "server.json").read_text())
     version = project["project"]["version"]
     readme = (repo / "README.md").read_text()
+    # 四处版本互校：pyproject / server.json×2 / 包的 __version__。
+    # 曾只校验前三处，__init__.py 漂移无人发现。
+    package_init = (repo / "src/wmshare/__init__.py").read_text(encoding="utf-8")
+    m = re.search(r'^__version__\s*=\s*["\']([^"\']+)["\']', package_init, re.M)
+    assert m, "src/wmshare/__init__.py 缺少 __version__ 字面量"
+    assert m.group(1) == version, "包 __version__ 与 pyproject 版本漂移"
     assert server["name"] == "io.github.open-winmale/wmshare"
     assert server["version"] == version
     package = server["packages"][0]
@@ -397,8 +420,10 @@ def test_domain_action_enums_are_machine_readable() -> None:
     market_domain = facts["wmshare_market"]["properties"]["domain"]
     market_action = facts["wmshare_market"]["properties"]["action"]
     assert set(market_domain["enum"]) == set(MARKET_DOMAINS)
-    assert "minute" in market_action["enum"]
-    assert "hist_stats" in market_action["enum"]
+    # 等量而非「包含」断言：曾漏 trend / universe_keys 两条已实现路由，
+    # 弱断言让 schema 层静默拒绝，代码成了死路径。
+    assert set(market_action["enum"]) == set(
+        chain.from_iterable(MARKET_ACTIONS.values()))
     for name, schema in facts.items():
         for definition in schema["properties"].values():
             assert definition.get("description"), (name, definition)

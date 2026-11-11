@@ -10,6 +10,8 @@
 
 [![PyPI](https://img.shields.io/pypi/v/wmshare)](https://pypi.org/project/wmshare/) [![Python](https://img.shields.io/pypi/pyversions/wmshare)](https://pypi.org/project/wmshare/) [![CI](https://github.com/open-winmale/wmshare/actions/workflows/ci.yml/badge.svg)](https://github.com/open-winmale/wmshare/actions/workflows/ci.yml) [![License: BSD-3-Clause](https://img.shields.io/badge/license-BSD--3--Clause-blue)](LICENSE)
 
+> **问题反馈 / 交流**：QQ 群 `1127142074`（搜索「wmshare开源交流群」）——使用问题、数据口径、bug 反馈欢迎进群，二维码见文末。
+
 > **English TL;DR** — `wmshare` is a BSD-3-Clause Python SDK for China A-share / Hong Kong / US
 > market data: k-line, intraday, money flow, statements, screener, whole-market batch, and
 > **2,752 server-precomputed metrics** (percentile ranks, multi-window averages, industry-relative
@@ -89,7 +91,7 @@ for r in res["rows"][:5]:
 |---|---|---|
 | `cli.kline` | 日 K 三种复权（自上市首日起全覆盖，最早 1991 年）、周 K/月 K、最新/盘中快照、1 分钟分时（个股；ETF 无分钟源，查询被拦截）、ETF/指数 | 价格=元、量=股、涨跌幅=小数 |
 | `cli.screener` | 全市场条件选股（`query`，一条 `$码` 表达式出命中数与前 N 行）+ 单票筛选器（涨停/均线/动量/回撤/放量）+ 全市场涨跌全景/分桶/行业分布/涨跌榜 | 阈值=小数；涨跌家数统计的 `*_pct`=百分数数值 |
-| `cli.backtest` | 单股买卖点回测：均线金叉/死叉 或 PE/PB/PS/PR 估值阈值（估值序列 ≤3 年）→ 成交明细 + 净值/回撤/胜率（次日开盘成交、T+1、100 股整手、佣金/印花固定） | 价格=元、收益=小数 |
+| `cli.backtest` | 单股买卖点回测（取数 + 本地撮合；纯内核 `wmshare.backtest` 可自备数据）：均线金叉/死叉 或 PE/PB/PS/PR 估值阈值（估值序列 ≤3 年）→ 成交明细 + 净值/回撤/胜率（次日开盘成交、T+1、100 股整手、佣金/印花固定） | 价格=元、收益=小数 |
 | `cli.moneyflow` | 主力/超大单/大单/中单/小单净流入（日频） | 金额=元 |
 | `cli.statements` | 三大报表多期、合并 vs 母公司、目录树、审计意见 | 报表原币元 |
 | `cli.segments` | 经营分部：分产品/业务/区域收入构成 | 元；比率=小数 |
@@ -272,6 +274,9 @@ cli.call_batch("kline.snapshot", ["600519", "000001"]) # ③ 单批（≤500）�
 - **文档中心 [docs/](docs/README.md)**：使用指南 GUIDE（单票菜谱/批量/多市场/故障排查）· 指标库 [INDICATORS.md](docs/INDICATORS.md)（全量指标码按数据类型分章）· AI 用法 · llms.txt 索引 · [API 参考](docs/API.md)（按资产类别分章的 132 个核心接口 + 指标组）
 - **可转债日更管线**：`cli.cbond.daily()` → `article()` → `figures()` 一条命令出图文（三层口径 + 三道闸 + 状态机 + 事件日历，每个数字带 `sources` 与 `as_of`，缺条目抛错而非补猜测值）；实战 notebook 见 [docs/notebooks/cb_double_low.ipynb](docs/notebooks/cb_double_low.ipynb)（2026-11-07 真实数据）
 - **示例课程 [examples/](examples/README.md)**：15 个编号示例（入门→进阶→生产→AI），全部支持演示客户端离线试跑，CI 端到端覆盖
+- **问题反馈 / 交流**：QQ 群 `1127142074`（搜索「wmshare开源交流群」）——使用问题、数据口径、bug 反馈欢迎进群，也欢迎 [GitHub Issues](https://github.com/open-winmale/wmshare/issues)
+
+![wmshare开源交流群 QQ 群二维码（群号 1127142074，扫一扫加入）](docs/img/qq_group_qr.png)
 
 ---
 
@@ -377,7 +382,7 @@ cat.metrics_in_group("dividend")                         # 指标组内全部精
 | 当日 1 分钟分时 | `cli.kline.min1("600519")`（有损合成采样，非逐笔） |
 | 今日涨停了吗 / 全市场涨停梯队 | `cli.screener.screen_limit_up("600519")` |
 | **全市场按指标条件选股（股息/ROE/PE 任意组合）** | `cli.screener.query("$BONUS_RATE_3Y_AVG_LAST > 0.03 && $ROE_TTM_LAST > 0.15 && !$IS_ST", order="$BONUS_RATE_3Y_AVG_LAST")`——服务端索引一次查完，返回 `{"count": 全市场命中数, "rows": 前 N 行}`；**不要先批量取数再本地过滤**（`count` 才是真命中数，`len(rows)` 不是） |
-| 给一只票跑买卖点回测 | `cli.backtest.run("600519", fast=5, slow=20)`（均线金叉/死叉）或 `cli.backtest.run("600519", rule="pe", buy=20, sell=40)`（估值阈值；估值序列 ≤3 年）——返回 `trades`（每笔买/卖，卖出带 pnl/ret/hold_days）+ `summary` + `equity`；取全历史需 `Client(max_limit=None)` |
+| 给一只票跑买卖点回测 | `cli.backtest.run("600519", fast=5, slow=20)`（均线金叉/死叉）或 `cli.backtest.run("600519", rule="pe", buy=20, sell=40)`（估值阈值；估值序列 ≤3 年）——返回 `trades`（每笔买/卖，卖出带 pnl/ret/hold_days）+ `summary` + `equity`；取全历史需 `Client(max_limit=None)`；**`cli.backtest.run` 会取数、EC 按请求行数**，纯内核 `wmshare.backtest.run_backtest(bars, signals)` 不联网 |
 | 全市场今天涨跌如何 | `cli.screener.index_breadth_summary()` |
 | 涨幅榜 / 跌幅榜 | `cli.screener.index_top_movers(limit=20)`（`desc=False` 跌幅） |
 | 站上 20 日线了吗 / 放量了吗 | `cli.screener.screen_above_ma20(sym)` / `screen_volume_spike(sym)` |
@@ -526,9 +531,10 @@ python3 -c "import wmshare; print(wmshare.__version__)"   # 验证安装
 
 不配凭证先试：`cli = wmshare.demo_client()`——随包离线演示客户端（2026-10-30
 真实 API 固定快照；10 只演示宇宙 + 当日真实全市场 screener，
-**非实时数据**），调用面覆盖公开示例（例外：`screener.query` 依赖全市场索引列，
-演示快照没有，显式报 `demo_unsupported`）；examples/ 的凭证示例都支持
-`--demo` 旗标零凭证试跑。看真实数据按下节配凭证。
+**非实时数据**），调用面覆盖公开示例（例外：`screener.query` 依赖全市场索引列、
+`backtest` 的 pb/ps/pr 估值规则依赖对应序列，演示快照都没有，均显式报
+`demo_unsupported`；`backtest` 的均线与 pe 规则可用 120 根演示日 K 真跑）；
+examples/ 的凭证示例都支持 `--demo` 旗标零凭证试跑。看真实数据按下节配凭证。
 
 凭证在开放平台（`https://open.winmale.com`）控制台的「我的 → 开放平台 → 我的应用」页获取，
 `AppId（Client ID）` 与 `API Key（Client Secret）` **两个值缺一不可**。配置任选其一：
@@ -771,6 +777,11 @@ res["caliber"]["valuation"]   # {'metric': 'pe', 'window': '3y'}
 取数成本：不传 `begin/end` 时取全历史 1 万根，约 **40 万 EC**（EC 按请求行数计费）；
 只看近两年就显式传区间，只取该区间需要的根数，EC 降到几万——
 `cli.backtest.run("600519", fast=5, slow=20, begin="2024-01-01", end="2026-11-01")`。
+
+**两层分工（别把内核当入口）**：`cli.backtest.run` 是**取数入口**——K 线（与 PE/PB 规则的
+估值序列）走服务端，请求次数与 EC 照常计；`wmshare.backtest` 下的
+`run_backtest(bars, signals, cash=...)`、`ma_cross_signals`、`valuation_signals`、
+`valuation_by_date` 是**纯计算内核**，自己准备 `bars`/`signals` 时不联网、不计 EC。
 
 **不建模**（别当撮合级结果用）：历史 ST 与 ST 的 5% 涨跌停、涨跌停排队与部分成交、
 分红税与送转（`adj="qfq"` 只调价格，`"nr"` 不复权会把分红日当亏损）、分钟级、
@@ -1720,7 +1731,9 @@ cli.screener.query(where="$BONUS_RATE_3Y_AVG_LAST > 0.03 && $ROE_TTM_LAST > 0.15
 
 #### 组合接口（研究级封装）
 
-以下方法跨多个目录接口与本地计算串成一条链路（取数 → 规则内核 → 结果包），返回结构、成交口径与「不建模」清单见各方法说明。
+以下方法同样是 `cli.<命名空间>.<方法>()` 门面，**可直接调用**；区别只在于底层不是单一目录函数，而是跨多个接口 + 本地计算串成一条链路。**取数仍走客户端**（请求次数与 EC 照常计，EC 按请求行数），本地只负责规则与汇总。
+
+纯计算内核在 `wmshare.backtest`（`run_backtest` / `ma_cross_signals` / `valuation_signals` / `valuation_by_date`），自备 bars/signals 时不联网、不计 EC。
 
 | 方法 | 签名 | 输出 |
 |---|---|---|
@@ -2216,7 +2229,9 @@ cli.cbond.universe_codes()
 
 #### 组合接口（研究级封装）
 
-以下方法跨多个目录接口与本地计算串成一条链路（取数 → 规则内核 → 结果包），返回结构、成交口径与「不建模」清单见各方法说明。
+以下方法同样是 `cli.<命名空间>.<方法>()` 门面，**可直接调用**；区别只在于底层不是单一目录函数，而是跨多个接口 + 本地计算串成一条链路。**取数仍走客户端**（请求次数与 EC 照常计，EC 按请求行数），本地只负责规则与汇总。
+
+纯计算内核在 `wmshare.cb`（valuation / rules / facts / article），自备面板数据时不联网。
 
 | 方法 | 签名 | 输出 |
 |---|---|---|

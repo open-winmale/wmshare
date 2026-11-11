@@ -29,6 +29,12 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 OUT_DIR = REPO / "src" / "wmshare" / "_catalog" / "generated"
 
+# 上游 scripts 树只有维护者本机/CI 外环境可见。用固定退出码 + 哨兵而不是
+# 输出子串启发式，让 tests/test_drift.py 能精确区分「上游不可见 → skip」与
+# 「上游可见但产物真漂移 → FAIL」。
+UPSTREAM_UNAVAILABLE = "UPSTREAM_UNAVAILABLE"
+UPSTREAM_EXIT_CODE = 2
+
 CATALOG_RE = re.compile(r"^\s*#\s*xs:catalog\s+(\{.*\})\s*$")
 SIG_RE = re.compile(r"^\s*([A-Za-z_][A-Za-z0-9_]*)\.([A-Za-z_][A-Za-z0-9_]*)\s*=\s*func\s*\(([^)]*)\)")
 
@@ -115,7 +121,10 @@ def find_scripts_root(cli: str | None) -> Path:
     for cand in (REPO.parent / "script", REPO.parent / "scripts"):
         if (cand / "sys" / "init.xs").is_file():
             return cand.resolve()
-    raise SystemExit("upstream tree not found; set WM_SCRIPTS_ROOT or pass --scripts-root")
+    raise SystemExit(
+        f"{UPSTREAM_UNAVAILABLE}: upstream tree not found; "
+        "set WM_SCRIPTS_ROOT or pass --scripts-root"
+    )
 
 
 def git_rev(root: Path) -> str:
@@ -376,7 +385,13 @@ def main() -> int:
     ap.add_argument("--check", action="store_true", help="verify on-disk files match regeneration")
     args = ap.parse_args()
 
-    sr = find_scripts_root(args.scripts_root)
+    try:
+        sr = find_scripts_root(args.scripts_root)
+    except SystemExit as exc:
+        if UPSTREAM_UNAVAILABLE not in str(exc):
+            raise  # --scripts-root 显式传错等真实配置错误，不该被当成 skip
+        print(f"{UPSTREAM_UNAVAILABLE}: {exc}", file=sys.stderr)
+        return UPSTREAM_EXIT_CODE
     inv, met = build(sr)
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)

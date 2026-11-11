@@ -20,6 +20,22 @@ _SPECIAL_CATALOG: dict[tuple[str, str], str | None] = {
     ("screener", "index_top_movers"): "kline.index_top_movers",
 }
 
+# 有文件系统副作用的 friendly 路由：out_dir / fig_dir 可指向任意路径并
+# mkdir+savefig。SDK 层保留（examples/14 用绝对路径），只在 MCP 网关拒绝，
+# 这样不破坏公开 API 也不给 LLM 一个任意写文件的入口。
+MCP_DENIED_ROUTES = frozenset({
+    ("cbond", "figures"),
+    ("cbond", "article"),
+})
+
+
+class GatewayPolicyError(ValueError):
+    """MCP 网关策略拒绝；带结构化 code 供 core.error 生成专属 fix。"""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+        self.code = "gateway_policy"
+
 
 @dataclass(frozen=True)
 class ApiRoute:
@@ -159,9 +175,23 @@ def route_count() -> int:
     return len(api_routes())
 
 
+# 低层 Client 方法不接受 LLM 输入：eval() 会把字符串原样拼进服务端 XS。
+# 网关本就只内省 FRIENDLY_NAMESPACES（这些方法到不了），此处再显式拒绝一次
+# 作为纵深防御，防止未来扩展 registry 时被无意带上。
+DENIED_CLIENT_METHODS = frozenset({
+    "eval", "eval_result", "call", "call_batch", "batch_iter", "batch_all",
+    "_request", "_post_authed",
+})
+
+
 def find_route(target: str) -> ApiRoute:
     """Find one friendly route or raise a prescriptive ValueError."""
     clean = str(target).strip()
+    if clean in DENIED_CLIENT_METHODS:
+        raise ValueError(
+            "低层 Client 方法不经 MCP 网关暴露（eval/call/_request 等会把输入"
+            "直接送进服务端脚本）；请用 wmshare_call(mode='catalog'/'api') "
+            "或 wmshare_batch")
     parts = clean.split(".")
     if len(parts) != 2 or any(not part for part in parts):
         raise ValueError("target 需为 friendly API 的 domain.method 格式")
@@ -239,6 +269,11 @@ def invoke_api(
 ) -> Any:
     """Invoke one friendly API with MCP-safe argument validation."""
     route = find_route(target)
+    if (route.domain, route.method) in MCP_DENIED_ROUTES:
+        raise GatewayPolicyError(
+            f"{route.target} 会向任意路径写文件，MCP 网关不开放该路由；"
+            "请改用本地 Python SDK 直接调用（wmshare.Client / examples/14），"
+            "由你自己的环境控制输出目录")
     if route.domain == "intl" and market not in {"hk", "us"}:
         raise ValueError(
             "intl API 需要港/美市场客户端：market 只支持 hk/us；"
@@ -271,6 +306,9 @@ def invoke_api(
 
 __all__ = [
     "ApiRoute",
+    "DENIED_CLIENT_METHODS",
+    "GatewayPolicyError",
+    "MCP_DENIED_ROUTES",
     "api_routes",
     "batchable_catalog_functions",
     "find_route",

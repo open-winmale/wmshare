@@ -47,7 +47,11 @@ def test_indicators_no_drift():
 def test_extractor_check_no_drift():
     r = _run(["tools/extract_from_scripts.py", "--check"])
     out = r.stdout + r.stderr
-    if "not found" in out and "upstream" in out:
+    # 按退出码哨兵判定，不再靠 "not found"+"upstream" 子串启发式：
+    # 后者在本机上游可见但产物真漂移时会误判为 FAIL(1) 而非可识别的漂移。
+    # 真漂移仍然是 FAIL —— generated/* 需维护者执行
+    # `python tools/extract_from_scripts.py` 从上游同步（见 CONTRIBUTING.md）。
+    if r.returncode == 2 and "UPSTREAM_UNAVAILABLE" in out:
         import pytest
         pytest.skip("upstream 不可见（维护者本机才有），跳过 extractor 漂移检查")
     assert r.returncode == 0, out

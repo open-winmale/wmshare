@@ -2,6 +2,8 @@
 
 [![PyPI](https://img.shields.io/pypi/v/wmshare)](https://pypi.org/project/wmshare/) [![Python](https://img.shields.io/pypi/pyversions/wmshare)](https://pypi.org/project/wmshare/) [![CI](https://github.com/open-winmale/wmshare/actions/workflows/ci.yml/badge.svg)](https://github.com/open-winmale/wmshare/actions/workflows/ci.yml) [![License: BSD-3-Clause](https://img.shields.io/badge/license-BSD--3--Clause-blue)](LICENSE)
 
+> **问题反馈 / 交流**：QQ 群 `1127142074`（搜索「wmshare开源交流群」）——使用问题、数据口径、bug 反馈欢迎进群，二维码见文末。
+
 > **English TL;DR** — `wmshare` is a BSD-3-Clause Python SDK for China A-share / Hong Kong / US
 > market data: k-line, intraday, money flow, statements, screener, whole-market batch, and
 > **2,752 server-precomputed metrics** (percentile ranks, multi-window averages, industry-relative
@@ -81,7 +83,7 @@ for r in res["rows"][:5]:
 |---|---|---|
 | `cli.kline` | 日 K 三种复权（自上市首日起全覆盖，最早 1991 年）、周 K/月 K、最新/盘中快照、1 分钟分时（个股；ETF 无分钟源，查询被拦截）、ETF/指数 | 价格=元、量=股、涨跌幅=小数 |
 | `cli.screener` | 全市场条件选股（`query`，一条 `$码` 表达式出命中数与前 N 行）+ 单票筛选器（涨停/均线/动量/回撤/放量）+ 全市场涨跌全景/分桶/行业分布/涨跌榜 | 阈值=小数；涨跌家数统计的 `*_pct`=百分数数值 |
-| `cli.backtest` | 单股买卖点回测：均线金叉/死叉 或 PE/PB/PS/PR 估值阈值（估值序列 ≤3 年）→ 成交明细 + 净值/回撤/胜率（次日开盘成交、T+1、100 股整手、佣金/印花固定） | 价格=元、收益=小数 |
+| `cli.backtest` | 单股买卖点回测（取数 + 本地撮合；纯内核 `wmshare.backtest` 可自备数据）：均线金叉/死叉 或 PE/PB/PS/PR 估值阈值（估值序列 ≤3 年）→ 成交明细 + 净值/回撤/胜率（次日开盘成交、T+1、100 股整手、佣金/印花固定） | 价格=元、收益=小数 |
 | `cli.moneyflow` | 主力/超大单/大单/中单/小单净流入（日频） | 金额=元 |
 | `cli.statements` | 三大报表多期、合并 vs 母公司、目录树、审计意见 | 报表原币元 |
 | `cli.segments` | 经营分部：分产品/业务/区域收入构成 | 元；比率=小数 |
@@ -264,3 +266,6 @@ cli.call_batch("kline.snapshot", ["600519", "000001"]) # ③ 单批（≤500）�
 - **文档中心 [docs/](docs/README.md)**：使用指南 GUIDE（单票菜谱/批量/多市场/故障排查）· 指标库 [INDICATORS.md](docs/INDICATORS.md)（全量指标码按数据类型分章）· AI 用法 · llms.txt 索引 · [API 参考](docs/API.md)（按资产类别分章的 132 个核心接口 + 指标组）
 - **可转债日更管线**：`cli.cbond.daily()` → `article()` → `figures()` 一条命令出图文（三层口径 + 三道闸 + 状态机 + 事件日历，每个数字带 `sources` 与 `as_of`，缺条目抛错而非补猜测值）；实战 notebook 见 [docs/notebooks/cb_double_low.ipynb](docs/notebooks/cb_double_low.ipynb)（2026-11-07 真实数据）
 - **示例课程 [examples/](examples/README.md)**：15 个编号示例（入门→进阶→生产→AI），全部支持演示客户端离线试跑，CI 端到端覆盖
+- **问题反馈 / 交流**：QQ 群 `1127142074`（搜索「wmshare开源交流群」）——使用问题、数据口径、bug 反馈欢迎进群，也欢迎 [GitHub Issues](https://github.com/open-winmale/wmshare/issues)
+
+![wmshare开源交流群 QQ 群二维码（群号 1127142074，扫一扫加入）](docs/img/qq_group_qr.png)

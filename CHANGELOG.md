@@ -10,6 +10,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.16.2] - 2026-11-11
+
+### Changed
+- **llms.txt 新增 `## Composite Interfaces` 节**：`cbond.daily/article/figures`、`backtest.run`
+  四个组合接口按真实签名列出；头部改为「132 个核心接口 + 4 个组合接口（共 136 个 friendly API）」。
+  此前 llms.txt 只由 `FRIENDLY_INDEX` 生成，组合接口从未进入 AI 索引——外部 AI 读 llms.txt
+  后误判「回测不是 cli 门面、只是 wmshare.backtest 模块」。小节导语同时写明：组合方法同样是
+  `cli.*` 门面、可直接调用；取数仍走客户端（EC 按请求行数），纯计算内核在 `wmshare` 子包。
+- docs/API.md 组合小节导语同步「可直接调用 / EC 照常计」，并给 backtest 补纯内核指路。
+- README 新增 QQ 开源交流群入口（顶部 blockquote + 文末二维码，群号 1127142074，
+  `docs/img/qq_group_qr.png`），使用问题 / 数据口径 / bug 反馈进群或 GitHub Issues；
+  llms 产物随 README 同步重新生成。
+
+### Security
+- **端点白名单**（新增 `src/wmshare/_endpoints.py`）：SDK 默认只允许把凭证 POST 到
+  `api.winmale.com` / `test-api.winmale.com`（loopback 放行本地开发）；构造期校验
+  base_url host，传输层关闭自动重定向（307/308 会重放整个 POST body）。放宽须显式
+  opt-in：`WMSHARE_HOST_POLICY=legacy` 或 `WMSHARE_ALLOW_CUSTOM_HOST=1`（默认关闭）。
+  该模块是单一事实源：`SECURITY.md` Scope notes 与 `tools/check_leak.py` 的
+  `ALLOWED_MARKERS` 均以其为准（`tests/test_host_allowlist.py` 锁死）。
+- **凭证文件读端加固**（新增 `src/wmshare/_credentials.py`）：读取
+  `~/.wmshare/credentials.env` 时做 POSIX 权限检查，宽松权限（如 0644）告警；
+  Windows / WSL / 特殊挂载卷无 0600 语义故不硬拒绝，`WMSHARE_STRICT_CRED_MODE=1`
+  时抛错。SDK 与 MCP 共用同一份解析。
+- SECURITY.md 刷新：支持版本表改「当前 minor 线 + 上一 minor 线（仅高危）」双线；
+  补 Response target（5 个工作日初步判断）与复现信息要求（`WMSHARE_HOST_POLICY`
+  等环境变量取值）；新增 `tools/check_version.py` 把表头/as_of 与 `__version__` 锁死。
+- CI 矩阵 `fail-fast: false`：单个 Python 版本红不再取消其余 job（消除某版本长期
+  标红被掩盖的观察盲区）。
+
+### Fixed
+- 回测两层分工写清（README 能力表 / GUIDE 3.1 / SKILL 决策树 / `wmshare.backtest` docstring /
+  docs/README API 行）：`cli.backtest.run` 是取数入口（K 线与估值走服务端、EC 按请求行数），
+  `wmshare.backtest.run_backtest` 等 4 个函数才是纯计算内核（自备 bars/signals 不联网、不计 EC）。
+- 新增门禁：llms.txt 必须列出每个组合接口且头部含组合计数；API.md 组合小节必须写明门面与 EC；
+  `cli.backtest` 暴露面（dir / 签名 / 内核可导入）纳入测试。
+
 ## [1.16.1] - 2026-11-11
 
 ### Changed

@@ -1,6 +1,6 @@
 # wmshare
 
-> 覆盖 A 股、港股、美股的 Python 财经数据 SDK：18 个数据域、269 个底层函数、2752 个指标码、132 个核心接口。BSD-3-Clause 开源；取数需开放平台凭证（环境变量 WMSHARE_CLIENT_ID / WMSHARE_CLIENT_SECRET，见 README）。
+> 覆盖 A 股、港股、美股的 Python 财经数据 SDK：18 个数据域、269 个底层函数、2752 个指标码、132 个核心接口 + 4 个组合接口（共 136 个 friendly API）。BSD-3-Clause 开源；取数需开放平台凭证（环境变量 WMSHARE_CLIENT_ID / WMSHARE_CLIENT_SECRET，见 README）。
 
 ## Docs
 
@@ -8,7 +8,7 @@
 - [使用指南 GUIDE](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/GUIDE.md)：单票菜谱、批量取数、多市场、pandas、故障排查
 - [指标库 INDICATORS](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/INDICATORS.md)：全量指标码按族导航——命名语法、11 组精选口径、死码清单与场景速查（先查码，禁止自算已有指标）
 - [AI 用法](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/AI.md)：MCP server、skill、文档上下文与报错驱动的 Agent 接入路径
-- [API 参考](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/API.md)：132 个核心接口的参数 / 返回 / 单位口径
+- [API 参考](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/API.md)：132 个核心接口 + 4 个组合接口的参数 / 返回 / 单位口径
 - [Agent Skill](https://raw.githubusercontent.com/open-winmale/wmshare/main/src/wmshare/skills/wmshare/SKILL.md)：随包分发的 agent 用法合同（目录先行、单位铁律、决策树、坑位）
 - [可运行示例](https://raw.githubusercontent.com/open-winmale/wmshare/main/examples/README.md)：15 个编号示例（全部支持演示客户端离线试跑），CI 端到端覆盖
 - [CHANGELOG](https://raw.githubusercontent.com/open-winmale/wmshare/main/CHANGELOG.md)：版本历史
@@ -43,6 +43,15 @@
 - `market.margin`（融资融券）（cli.margin）：个股融资融券日频——融资买入/偿还/余额，融券卖出/偿还/余量
 - `market.moneyflow`（资金流向）（cli.moneyflow）：个股日频资金流向（主力 / 超大单 / 大单 / 中单 / 小单净流入）、最新一行、 全市场快照一次取数（board）
 - `market.stocks`（证券与行业基础）（cli.stocks）：证券基础库——全市场证券列表（代码/名称/交易所/三级行业/上市日期/ST）、 行业目录（申万 sw2021、恒生 hsi）、行业成分股（支持…
+
+## Composite Interfaces
+
+以下方法同样是 `cli.<命名空间>.<方法>()` 门面，可直接调用；区别只在于底层不是单一目录函数，而是跨多个接口 + 本地计算串成一条链路。**取数仍走客户端**（请求次数与 EC 照常计，EC 按请求行数），本地只负责规则与汇总；对应的纯计算内核在 `wmshare` 的子包里（如 `wmshare.backtest.run_backtest`、`wmshare.cb.valuation`），自备数据时不联网、不计 EC。
+
+- `cli.backtest.run(symbol: 'str', rule: 'str' = 'ma_cross', fast: 'int' = 5, slow: 'int' = 20, buy: 'float | None' = None, sell: 'float | None' = None, begin: 'str | None' = None, end: 'str | None' = None, cash: 'float' = 1000000.0, adj: 'str' = 'qfq') -> 'dict'`：跑一次单股买卖点回测，返回成交明细与净值汇总。
+- `cli.cbond.article(payload: 'dict[str, Any]', date: 'str | None' = None, campaign: 'str | None' = None, fig_dir: 'str' = 'figs') -> 'dict[str, str]'`：把事实包写成图文稿件：源稿 Markdown + 公众号适配稿 + 摘要。
+- `cli.cbond.daily(as_of: 'str | None' = None, top_n: 'int' = 20, budget: 'int' = 30) -> 'dict[str, Any]'`：跑一期可转债日更，返回事实包（三层口径 + 三道闸 + 状态机 + 事件日历）。
+- `cli.cbond.figures(payload: 'dict[str, Any]', out_dir: 'str', date: 'str | None' = None, klines: 'dict[str, Any] | None' = None) -> 'dict[str, str]'`：出当期图：双低榜表格、全市场价差散点、候选个券价格通道。
 
 ## When NOT to use
 

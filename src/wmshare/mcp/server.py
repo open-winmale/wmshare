@@ -63,10 +63,14 @@ NoticeAction = Literal[
 CompanyBlock = Literal[
     "profile", "income", "balance", "cashflow", "indicators", "dividend", "notices"
 ]
+# 必须与 constants.MARKET_ACTIONS 的并集等量（见
+# tests/test_mcp_apis.py::test_domain_action_enums_are_machine_readable）。
+# 这里刻意保持静态 Literal：动态生成会同时踩 3.10 语法、mypy [valid-type]
+# 与 FastMCP import 期 get_type_hints 求值三个坑。
 MarketAction = Literal[
     "minute", "is_etf", "bars", "last", "live", "query", "latest", "universe",
     "latest_quotes", "of_stock", "call_hits", "kline_window", "keys", "members",
-    "weights", "valuation", "hist_stats", "list",
+    "weights", "valuation", "hist_stats", "list", "trend", "universe_keys",
 ]
 
 
@@ -99,7 +103,7 @@ def build_server(runtime: MCPRuntime | None = None) -> FastMCP:
             try:
                 return tool_fn(*args, **kwargs)
             except Exception as exc:  # MCP boundary converts failures to data.
-                return error(exc)
+                return error(exc, rt)
         return wrapped
 
     @mcp.tool()
@@ -117,7 +121,7 @@ def build_server(runtime: MCPRuntime | None = None) -> FastMCP:
         query: Annotated[str, Field(description="中文关键词、英文函数名、指标码、标的名或代码")],
         kind: Annotated[
             Literal["all", "function", "metric", "symbol", "api"],
-            Field(description="检索类型；api 搜索 127 个 SDK friendly API"),
+            Field(description=f"检索类型；api 搜索 {apis.route_count()} 个 SDK friendly API"),
         ] = "all",
         market: MarketArg = None,
         limit: Annotated[int, Field(ge=1, le=50, description="最多返回条数")] = 10,
@@ -479,7 +483,11 @@ def build_server(runtime: MCPRuntime | None = None) -> FastMCP:
         output: OutputArg = "sample",
         max_rows: MaxRowsArg = 100,
     ) -> dict[str, Any]:
-        """受控通用网关：目录函数和全部 friendly API 的长尾兜底；禁止 _df。"""
+        """受控通用网关：目录函数和全部 friendly API 的长尾兜底；禁止 _df。
+
+        cbond.figures / cbond.article 会写任意路径，网关不开放（改本地 SDK）；
+        单次调用 EC 超过部署上限（WMSHARE_MCP_MAX_EC）会报 ec_budget。
+        """
         return tools.call(rt, target, arguments=arguments, market=market,
                           mode=mode, raw=raw, units=units,
                           output=output, max_rows=max_rows)
