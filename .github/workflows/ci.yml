@@ -82,14 +82,19 @@ jobs:
           import json, sys
           leg = sys.argv[1]
           data = json.load(open("/tmp/pip_audit.json"))
+          # 3.10 困境包：修复版均已弃用 3.10，所列版本线是 3.10 的最后支持，
+          # 通告无法以升级消除——3.10 腿按「包+版本」整批豁免；
+          # 3.10 移出支持矩阵（pyproject requires-python）时整表删除。
+          EOL_310_LASTLINE = {
+              "pillow": "12.",     # 修复版 13.0.0 弃 3.10（20+ 条通告）
+              "filelock": "4.1.",  # 修复版 4.2.x 弃 3.10（17 条通告）
+          }
           bad = []
           for dep in data.get("dependencies", []):
               name, ver = dep.get("name", "").lower(), dep.get("version", "")
               for v in dep.get("vulns", []):
-                  # pillow 13.0.0（修复版）起弃用 3.10，12.x 是 3.10 的最后支持线，
-                  # 该批通告无法以升级消除——3.10 腿按包+版本整批豁免；
-                  # 3.10 移出支持矩阵（pyproject requires-python）时同步删除。
-                  if leg == "3.10" and name == "pillow" and ver.startswith("12."):
+                  if (leg == "3.10" and name in EOL_310_LASTLINE
+                          and ver.startswith(EOL_310_LASTLINE[name])):
                       continue
                   bad.append(f"{name}=={ver}  {v.get('id')}  fix={v.get('fix_versions')}")
           if bad:
