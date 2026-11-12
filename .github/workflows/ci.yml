@@ -69,9 +69,27 @@ jobs:
         # 缺锁文件时回退扫描已装 dev 环境。发现已知漏洞即非零退出。
         run: |
           python -m pip install pip-audit
+          # 3.10/3.11 解释器 ensurepip 捆绑的 setuptools 79.0.1 命中已披露
+          # 通告（修复版 84.1.0，仍支持 >=3.10）；3.12+ 已不捆绑，升级对全腿无害。
+          python -m pip install -U "setuptools>=84.1.0"
+          IGNORES=""
+          if [ "${{ matrix.python }}" = "3.10" ]; then
+            # pillow 13.0.0（修复版）起弃用 3.10，12.x 是 3.10 的最后支持线，
+            # 该批通告无法以升级消除——3.10 腿显式豁免；
+            # 3.10 移出支持矩阵（pyproject requires-python）时同步删除。
+            for id in PYSEC-2026-4326 PYSEC-2026-4327 PYSEC-2026-4328 \
+                      PYSEC-2026-4329 PYSEC-2026-4330 PYSEC-2026-4331 \
+                      PYSEC-2026-4332 PYSEC-2026-4333 PYSEC-2026-4334 \
+                      PYSEC-2026-4335 PYSEC-2026-4336 PYSEC-2026-4337 \
+                      PYSEC-2026-4338 PYSEC-2026-4339 PYSEC-2026-4340 \
+                      PYSEC-2026-4341 PYSEC-2026-4342 PYSEC-2026-4343 \
+                      PYSEC-2026-4363 GHSA-78g4-xqwv-q3g8; do
+              IGNORES="$IGNORES --ignore-vuln $id"
+            done
+          fi
           if [ -f requirements-dev.lock ]; then
             python -m pip install -r requirements-dev.lock
-            python -m pip_audit -r requirements-dev.lock --require-hashes
+            python -m pip_audit -r requirements-dev.lock --require-hashes $IGNORES
           else
-            python -m pip_audit
+            python -m pip_audit $IGNORES
           fi
