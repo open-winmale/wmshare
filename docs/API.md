@@ -3628,7 +3628,7 @@ cli.info.profile("600519")
 | `cbond.history` | 转债近 N 日历史（快照+债 K；快照上线前区间自动补齐） | 原始数据 | L0 | `code:any` · `n:any`（签名） | ARR · 日序列 | — | 例：`cli.call("cbond.history", code='127119', n=60)`
 | `cbond.notices` | 正股近 5 年转债相关公告（上限 200） | 原始数据 | L0 | `code:any` · `limit:any`（签名） | ARR · 公告行 | — | 例：`cli.call("cbond.notices", code='127119', limit=80)`
 | `cbond.market` | 转债市场截面（价格/溢价中位数与折价只数） | 原始数据 | L0 | — | MAP · 中位数与折价只数 | `premiumMedian`:百分数→小数；量级界 `premiumMedian`、`discountN` | 例：`cli.call("cbond.market")`
-| `cbond.concepts_of` | 正股概念标签（东财精确题材前 12） | 原始数据 | L0 | `stk:any`（签名） | ARR · 概念名 | — | 例：`cli.call("cbond.concepts_of", stk='000887')`
+| `cbond.concepts_of` | 正股概念标签（精确题材匹配前 12） | 原始数据 | L0 | `stk:any`（签名） | ARR · 概念名 | — | 例：`cli.call("cbond.concepts_of", stk='000887')`
 | `cbond.holders` | 十大持有人最新报告 | 原始数据 | L0 | `code:any`（签名） | MAP · 报告期与持有人名单 | — | 例：`cli.call("cbond.holders", code='127119')`
 | `cbond.holders_list` | 十大持有人报告序列 | 原始数据 | L1 | `code:any`（签名） | ARR · 持有人报告 | — | 例：`cli.call("cbond.holders_list", code='127119')`
 | `cbond.institution` | 机构持仓（基金数与持仓市值下限） | 原始数据 | L0 | `code:any`（签名） | MAP · 基金数与持仓市值 | — | 例：`cli.call("cbond.institution", code='127119')`

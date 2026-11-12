@@ -396,7 +396,7 @@ class CbondNS(_Ns):
         return self._client.call("cbond.market", _raw=_raw, _df=_df)
 
     def concepts_of(self, stk: Any, _raw: bool = False, _df: bool = False) -> Any:
-        """正股概念标签（东财精确题材前 12）"""
+        """正股概念标签（精确题材匹配前 12）"""
         return self._client.call("cbond.concepts_of", stk=stk, _raw=_raw, _df=_df)
 
     def holders(self, code: Any, _raw: bool = False, _df: bool = False) -> Any:

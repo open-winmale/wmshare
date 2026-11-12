@@ -48,7 +48,7 @@ functions:
   - {name: cbond.history, cn: 转债近 N 日历史（快照+债 K；快照上线前区间自动补齐）, layer: L0}
   - {name: cbond.notices, cn: 正股近 5 年转债相关公告（上限 200）, layer: L0}
   - {name: cbond.market, cn: 转债市场截面（价格/溢价中位数与折价只数）, layer: L0, units: {premiumMedian: percent}, ranges: {premiumMedian: [-100, 1000], discountN: [0, 2000]}}
-  - {name: cbond.concepts_of, cn: 正股概念标签（东财精确题材前 12）, layer: L0}
+  - {name: cbond.concepts_of, cn: 正股概念标签（精确题材匹配前 12）, layer: L0}
   - {name: cbond.holders, cn: 十大持有人最新报告, layer: L0}
   - {name: cbond.holders_list, cn: 十大持有人报告序列, layer: L1}
   - {name: cbond.institution, cn: 机构持仓（基金数与持仓市值下限）, layer: L0}
