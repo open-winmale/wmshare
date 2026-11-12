@@ -66,30 +66,36 @@ jobs:
           grep -q "数据域：" /tmp/catalog_tour.out
       - name: Dependency vulnerability scan (pip-audit)
         # 供应链漏洞扫描：优先审计 hash 锁文件（requirements-dev.lock），
-        # 缺锁文件时回退扫描已装 dev 环境。发现已知漏洞即非零退出。
+        # 缺锁文件时回退扫描已装 dev 环境。豁免判定见下方过滤脚本
+        # （JSON 输出 + 包/版本过滤，不用 --ignore-vuln：同一漏洞存在
+        # PYSEC/GHSA/CVE 多源别名，逐 ID 枚举会被别名击穿）。
         run: |
           python -m pip install pip-audit
           # 3.10/3.11 解释器 ensurepip 捆绑的 setuptools 79.0.1 命中已披露
           # 通告（修复版 84.1.0，仍支持 >=3.10）；3.12+ 已不捆绑，升级对全腿无害。
           python -m pip install -U "setuptools>=84.1.0"
-          IGNORES=""
-          if [ "${{ matrix.python }}" = "3.10" ]; then
-            # pillow 13.0.0（修复版）起弃用 3.10，12.x 是 3.10 的最后支持线，
-            # 该批通告无法以升级消除——3.10 腿显式豁免；
-            # 3.10 移出支持矩阵（pyproject requires-python）时同步删除。
-            for id in PYSEC-2026-4326 PYSEC-2026-4327 PYSEC-2026-4328 \
-                      PYSEC-2026-4329 PYSEC-2026-4330 PYSEC-2026-4331 \
-                      PYSEC-2026-4332 PYSEC-2026-4333 PYSEC-2026-4334 \
-                      PYSEC-2026-4335 PYSEC-2026-4336 PYSEC-2026-4337 \
-                      PYSEC-2026-4338 PYSEC-2026-4339 PYSEC-2026-4340 \
-                      PYSEC-2026-4341 PYSEC-2026-4342 PYSEC-2026-4343 \
-                      PYSEC-2026-4363 GHSA-78g4-xqwv-q3g8; do
-              IGNORES="$IGNORES --ignore-vuln $id"
-            done
-          fi
           if [ -f requirements-dev.lock ]; then
             python -m pip install -r requirements-dev.lock
-            python -m pip_audit -r requirements-dev.lock --require-hashes $IGNORES
-          else
-            python -m pip_audit $IGNORES
           fi
+          python -m pip_audit -f json > /tmp/pip_audit.json || true
+          python - "${{ matrix.python }}" <<'EOF'
+          import json, sys
+          leg = sys.argv[1]
+          data = json.load(open("/tmp/pip_audit.json"))
+          bad = []
+          for dep in data.get("dependencies", []):
+              name, ver = dep.get("name", "").lower(), dep.get("version", "")
+              for v in dep.get("vulns", []):
+                  # pillow 13.0.0（修复版）起弃用 3.10，12.x 是 3.10 的最后支持线，
+                  # 该批通告无法以升级消除——3.10 腿按包+版本整批豁免；
+                  # 3.10 移出支持矩阵（pyproject requires-python）时同步删除。
+                  if leg == "3.10" and name == "pillow" and ver.startswith("12."):
+                      continue
+                  bad.append(f"{name}=={ver}  {v.get('id')}  fix={v.get('fix_versions')}")
+          if bad:
+              print(f"FAIL: {leg} 腿发现未豁免的已知漏洞：")
+              for b in bad:
+                  print("  -", b)
+              sys.exit(1)
+          print(f"pip-audit ok（{leg} 腿无未豁免漏洞）")
+          EOF
