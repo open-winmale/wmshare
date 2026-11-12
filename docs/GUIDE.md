@@ -585,6 +585,6 @@ poller.start()               # 或切后台：daemon 线程定时轮询；退出
   取数正确性的工程问题 SDK 替你管了。
 - **数据能离线吗？** 目录（288 个函数/2752 个指标码/代码表）随包离线；行情财报数据在云端，
   需凭证与额度。
-- **支持哪些 Python？** ≥3.10；pandas 为可选依赖。
+- **支持哪些 Python？** ≥3.11（3.10 已 EOL，1.19.0 起不再支持）；pandas 为可选依赖。
 - **怎么贡献/报漏洞？** 见 [CONTRIBUTING](../CONTRIBUTING.md) 与 [SECURITY](../SECURITY.md)；
   agent 贡献者另见 [AGENTS.md](../AGENTS.md)。

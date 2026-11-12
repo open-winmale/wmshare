@@ -17,7 +17,9 @@ jobs:
       # 其它 Python 版本的独立结论（历史上 3.10 长期标红时的观察盲区）。
       fail-fast: false
       matrix:
-        python: ["3.10", "3.11", "3.12", "3.13"]
+        # 3.10 已 EOL（2026-10）且累计两个「修复版弃 3.10」包（pillow 13 /
+        # filelock 4.2.x 起 requires>=3.11），1.19.0 起移出支持矩阵。
+        python: ["3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5
@@ -66,41 +68,16 @@ jobs:
           grep -q "数据域：" /tmp/catalog_tour.out
       - name: Dependency vulnerability scan (pip-audit)
         # 供应链漏洞扫描：优先审计 hash 锁文件（requirements-dev.lock），
-        # 缺锁文件时回退扫描已装 dev 环境。豁免判定见下方过滤脚本
-        # （JSON 输出 + 包/版本过滤，不用 --ignore-vuln：同一漏洞存在
-        # PYSEC/GHSA/CVE 多源别名，逐 ID 枚举会被别名击穿）。
+        # 缺锁文件时回退扫描已装 dev 环境。发现已知漏洞即非零退出。
+        # 不用 --ignore-vuln：同一漏洞存在 PYSEC/GHSA/CVE 多源别名，逐 ID
+        # 枚举会被别名击穿（1.18.x 曾在 3.10 腿踩到，1.19.0 随 3.10 出矩阵一并移除豁免表）。
         run: |
           python -m pip install pip-audit
-          # 3.10/3.11 解释器 ensurepip 捆绑的 setuptools 79.0.1 命中已披露
-          # 通告（修复版 84.1.0，仍支持 >=3.10）；3.12+ 已不捆绑，升级对全腿无害。
+          # 3.11 解释器 ensurepip 捆绑的 setuptools 79.0.1 命中已披露通告
+          # （修复版 84.1.0，仍支持 >=3.11）；3.12+ 已不捆绑，升级对全腿无害。
           python -m pip install -U "setuptools>=84.1.0"
           if [ -f requirements-dev.lock ]; then
-            python -m pip install -r requirements-dev.lock
+            python -m pip_audit -r requirements-dev.lock --require-hashes
+          else
+            python -m pip_audit
           fi
-          python -m pip_audit -f json > /tmp/pip_audit.json || true
-          python - "${{ matrix.python }}" <<'EOF'
-          import json, sys
-          leg = sys.argv[1]
-          data = json.load(open("/tmp/pip_audit.json"))
-          # 3.10 困境包：修复版均已弃用 3.10，所列版本线是 3.10 的最后支持，
-          # 通告无法以升级消除——3.10 腿按「包+版本」整批豁免；
-          # 3.10 移出支持矩阵（pyproject requires-python）时整表删除。
-          EOL_310_LASTLINE = {
-              "pillow": "12.",     # 修复版 13.0.0 弃 3.10（20+ 条通告）
-              "filelock": "4.1.",  # 修复版 4.2.x 弃 3.10（17 条通告）
-          }
-          bad = []
-          for dep in data.get("dependencies", []):
-              name, ver = dep.get("name", "").lower(), dep.get("version", "")
-              for v in dep.get("vulns", []):
-                  if (leg == "3.10" and name in EOL_310_LASTLINE
-                          and ver.startswith(EOL_310_LASTLINE[name])):
-                      continue
-                  bad.append(f"{name}=={ver}  {v.get('id')}  fix={v.get('fix_versions')}")
-          if bad:
-              print(f"FAIL: {leg} 腿发现未豁免的已知漏洞：")
-              for b in bad:
-                  print("  -", b)
-              sys.exit(1)
-          print(f"pip-audit ok（{leg} 腿无未豁免漏洞）")
-          EOF

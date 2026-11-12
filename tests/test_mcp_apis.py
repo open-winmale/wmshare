@@ -337,12 +337,8 @@ def test_eight_domain_tools_condition_errors(tool_name: str, args: dict[str, Any
 
 
 def test_pypi_registry_metadata_contract() -> None:
-    # tomllib 是 3.11+ 标准库；项目声明 requires-python>=3.10 且 CI 跑 3.10，
-    # 必须有 tomli 回退（见 pyproject.toml dev extra），否则 3.10 job 必红。
-    try:
-        import tomllib
-    except ModuleNotFoundError:  # pragma: no cover - Python 3.10 only
-        import tomli as tomllib  # type: ignore[no-redef]
+    # tomllib 是 3.11+ 标准库，与项目 requires-python 一致，无需回退。
+    import tomllib
 
     repo = Path(__file__).resolve().parents[1]
     project = tomllib.loads((repo / "pyproject.toml").read_text())

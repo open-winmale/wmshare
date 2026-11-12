@@ -18,7 +18,7 @@ pyproject 支持两种声明：
 Last reviewed 的 as_of == 基准完整版本号。
 
 全程只读；不依赖 wmshare 运行时与第三方包（tomllib 为 3.11+ 标准库，
-3.10 回退 tomli，后者为 dev 依赖），便于在门禁环境独立执行。
+项目 requires-python 同为 >=3.11），便于在门禁环境独立执行。
 
 Usage: python3 tools/check_version.py [--check]
 """
@@ -30,10 +30,7 @@ import re
 import sys
 from pathlib import Path
 
-try:  # 3.11+
-    import tomllib
-except ModuleNotFoundError:  # 3.10：dev 依赖 tomli
-    import tomli as tomllib
+import tomllib
 
 REPO = Path(__file__).resolve().parents[1]
 INIT = REPO / "src" / "wmshare" / "__init__.py"

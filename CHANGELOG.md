@@ -10,6 +10,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.19.0] - 2026-11-12
+### Changed（行为变更）
+- **最低 Python 版本 3.10 → 3.11**：3.10 已于 2026-10 EOL，且依赖链上已累计两个
+  「修复版弃 3.10」的包（pillow 13.0.0、filelock 4.2.x 起 requires >=3.11），继续支持
+  3.10 只能永久携带漏洞豁免表。`requires-python` 升为 `>=3.11`，classifiers 去掉 3.10，
+  CI 矩阵改为 3.11/3.12/3.13。3.10 用户需升级解释器后才能装 1.19.0+。
+- 移除 dev extra 的 `tomli` 回退依赖（`tomllib` 已是 3.11+ 标准库）：
+  `tools/check_version.py` 与 `tests/test_mcp_apis.py` 直接 `import tomllib`。
+
+### Removed
+- pip-audit 的 3.10 困境包豁免表（pillow 12.x / filelock 4.1.x）随 3.10 出矩阵一并删除，
+  审计恢复为「发现已知漏洞即失败」的零豁免形态。
+
 ## [1.18.0] - 2026-11-12
 ### Added
 - **cbond 域目录补全 19 个函数（market.cbond v1.4.0）**：个券详情 `card`、单债快照

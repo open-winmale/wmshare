@@ -7,7 +7,7 @@ name = "wmshare"
 dynamic = ["version"]
 description = "覆盖 A 股、港股、美股的 Python 财经数据 SDK：随包内置机器可读数据目录 + 云端取数客户端（BSD-3-Clause 开源，注册开放平台即得凭证）"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = "BSD-3-Clause"
 license-files = ["LICENSE"]
 authors = [{ name = "wmshare contributors" }]
@@ -22,7 +22,6 @@ classifiers = [
     "Intended Audience :: Financial and Insurance Industry",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -45,8 +44,6 @@ dev = [
     "mypy>=1.8",
     "mcp>=1.7,<2",
     "matplotlib>=3.6",
-    # tomllib 是 3.11+ 标准库；tests/test_mcp_apis.py 在 3.10 需要回退。
-    "tomli>=2; python_version < '3.11'",
 ]
 dataframe = ["pandas>=1.5"]
 mcp = ["mcp>=1.7,<2"]
