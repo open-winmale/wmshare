@@ -316,6 +316,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   翻 `true`（日K齐套门闩 + skip_read 盖回 tip + 抽检 store bar 与预期一致）；
   test_live 新鲜度门禁收紧（末根 ≥ 今天-5 自然日），README/GUIDE 注记更新为日更常态
 
+## [1.13.0] - 2026-11-09
+
+### Added
+- **全市场资金流快照门面 `cli.moneyflow.board()`**：一次调用返回全市场资金流快照，
+  附 EC 提示与文档口径说明
+- **`X-WM-Client` 来源标记与 EC 消耗可见性**：SDK 请求携带客户端标识，
+  服务端配额类错误可透传来源，便于消耗对账
+- **指数榜单扩到 56 键 + 分位三色灯**：`index.trend(key, window)` 服务端分位束、
+  `index.universe_keys(group)` 键分组；配套 notebook 全量预热重执行
+  （51/56 键有效分位入库，5 个整体亏损行业 PE 如实为空）
+- `cb.article()` 支持 `fig_dir`：演练目录与配图校验路径一致
+- 可转债 notebook/example 的税后 YTM 升级为与日更线同源双口径（`basis` 分档，
+  1.14.0 起独立成模块 `wmshare.cb.valuation.ytm_after_tax`）
+
+### Changed
+- **美股日 K 调度转正注记与新鲜度门禁**：上游 us_kline_daily daily DAG 解除暂停、
+  `us_dayk_eod` 翻闸、test_live 末根 ≥ 今-5 天（详述见 1.14.0 同名条目）
+
+### Fixed
+- demo 快照 `index trend` 罐头类型收窄——`pts` 行显式 `[date, pe, pb]` 标注，mypy 6 错清零
+
 ## [1.12.0] - 2026-11-07
 
 ### Added
