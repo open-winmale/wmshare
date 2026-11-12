@@ -118,6 +118,8 @@ ALLOWED_PATHS = {
     "CONTRIBUTING.md",
     "SECURITY.md",
     "CODE_OF_CONDUCT.md",
+    "MAINTAINERS.md",
+    "GOVERNANCE.md",
     "LICENSE",
     "NOTICE",
     "AGENTS.md",

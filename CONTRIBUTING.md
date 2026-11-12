@@ -37,8 +37,10 @@ CI（`.github/workflows/ci.yml`）在每次 push/PR 上跑同样的门禁。
    表述，防回潮）；CHANGELOG 允许保留历史对比记录（豁免面见 `tools/check_leak.py` 的 `THIRDPARTY_SKIP` / `THIRDPARTY_SKIP_PREFIXES`）；
    其余名称、其余位置一律禁止。
 2. **禁止内部信息**：内网域名、基础设施路径、开发者机器路径、凭证字面量。
-3. **文档白名单**：对外文档只允许 README / LICENSE / CONTRIBUTING / docs/API.md / examples。
-   方案、计划、路线图、内部流程文档一律不入库。
+3. **文档白名单**：对外文档只允许 README / LICENSE / CONTRIBUTING / SECURITY / CHANGELOG /
+   MAINTAINERS / GOVERNANCE / CODE_OF_CONDUCT / docs/API.md / examples
+   （机器可执行版见 `tools/check_leak.py` 的 `ALLOWED_PATHS`）。
+   方案、计划、路线图、内部流程文档一律不入库（Roadmap 类内容放 GitHub Discussions）。
 4. **凭证纪律**：用户凭证只走环境变量或 `~/.wmshare/credentials.env`（gitignore 已覆盖
    `.env`），任何密钥字面量不得出现在代码、测试、文档中。
    `check_leak.py` 的 `FORBIDDEN_SUBSTRINGS` 中列为禁用——任何跟踪文件出现明文即 FAIL。

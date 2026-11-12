@@ -321,5 +321,6 @@ t["pe_pct"], t["pe_pct_window"], t["pct"]["pe"]["p3"]    # 5y 分位, '5y', 3y �
 - **可转债日更管线**：`cli.cbond.daily()` → `article()` → `figures()` 一条命令出图文（三层口径 + 三道闸 + 状态机 + 事件日历，每个数字带 `sources` 与 `as_of`，缺条目抛错而非补猜测值）；实战 notebook 见 [docs/notebooks/cb_double_low.ipynb](docs/notebooks/cb_double_low.ipynb)（2026-11-07 真实数据）
 - **示例课程 [examples/](examples/README.md)**：15 个编号示例（入门→进阶→生产→AI），全部支持演示客户端离线试跑，CI 端到端覆盖
 - **问题反馈 / 交流**：QQ 群 `1127142074`（搜索「wmshare开源交流群」）——使用问题、数据口径、bug 反馈欢迎进群，也欢迎 [GitHub Issues](https://github.com/open-winmale/wmshare/issues)
+- **维护者与治理**：[MAINTAINERS.md](MAINTAINERS.md)（响应承诺与发版流程）· [GOVERNANCE.md](GOVERNANCE.md) · [行为准则](CODE_OF_CONDUCT.md)
 
 ![wmshare开源交流群 QQ 群二维码（群号 1127142074，扫一扫加入）](docs/img/qq_group_qr.png)
