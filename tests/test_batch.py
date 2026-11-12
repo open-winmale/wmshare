@@ -351,3 +351,22 @@ def test_request_count_is_conserved(n, size, expected):
     r = c.batch_all("kline.snapshot", [f"{i:06d}" for i in range(n)], batch_size=size)
     assert s.eval_calls == expected
     assert r.requests == expected
+
+
+def test_quota_exhaustion_stops_with_quota_hint():
+    """配额耗尽（EC_BALANCE_EXHAUSTED）不是限流：必须停并给配额指引，而非「500 次/小时」文案。"""
+    from wmshare.errors import QuotaError
+
+    s = CountingSession(fail_at=3, fail_code="EC_BALANCE_EXHAUSTED")
+    c = make_client(s)
+    codes = [f"{i:06d}" for i in range(3000)]      # 6 批，第 3 批失败
+    with pytest.raises(QuotaError) as ei:
+        c.batch_all("kline.snapshot", codes)
+    msg = str(ei.value)
+    assert "配额耗尽" in msg
+    assert "第 3/6 批" in msg
+    assert "codes[1000:]" in msg
+    assert "默认应用" in msg                        # 指引：换默认应用/等周补/充值
+    assert "500 次/小时" not in msg                 # 限流文案对配额场景是误导
+    assert ei.value.code == "EC_BALANCE_EXHAUSTED"
+    assert s.eval_calls == 3

@@ -13,6 +13,18 @@ APPID_GUIDANCE = (
     "或写入 ~/.wmshare/credentials.env。"
 )
 
+# 配额终态码（与 winmale 网关 error registry 对齐）：持续性，重试无意义。
+QUOTA_CODES = frozenset({
+    "EC_BALANCE_EXHAUSTED", "DAILY_EC_CAP_EXCEEDED",
+    "INSIGHT_CREDIT_EXHAUSTED", "DAILY_INSIGHT_CREDIT_CAP_EXCEEDED",
+})
+
+QUOTA_GUIDANCE = (
+    "配额已耗尽，重试无效：平台默认应用仍有每周额度（每周一补满）；"
+    "自建附加应用为一次性额度、不参与每周补充——"
+    "可到 open.winmale.com「我的应用」换用默认应用凭证，或升级会员/充值。"
+)
+
 
 class WmshareError(RuntimeError):
     """带修复建议的统一错误基类。"""
@@ -47,6 +59,16 @@ class LimitError(WmshareError):
                  retry_after: float | None = None):
         super().__init__(message, code=code, status=status)
         self.retry_after = retry_after
+
+
+class QuotaError(LimitError):
+    """配额耗尽（持续性，重试无意义）：周钱包空 / 当日到顶 / insight 额度尽。
+
+    服务端 ``error.code``（如 ``EC_BALANCE_EXHAUSTED``、``DAILY_EC_CAP_EXCEEDED``）
+    原样透传到 ``code``。与限流不同，这类 429 **不会自动重试**——恢复手段是
+    换用平台默认应用凭证、等每周补满，或升级会员/充值；程序化处理直接
+    ``except QuotaError``。``isinstance`` 兼容 ``LimitError`` 捕获。
+    """
 
 
 class TransportError(WmshareError):

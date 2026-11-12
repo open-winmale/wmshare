@@ -7,7 +7,7 @@ import requests
 
 from wmshare.catalog import load
 from wmshare.client import Client, SDK_VERSION, WmshareError
-from wmshare.errors import AuthError, LimitError
+from wmshare.errors import AuthError, LimitError, QuotaError
 
 
 class Resp:
@@ -273,3 +273,76 @@ def test_call_batch_skip_isolates_auth_failure():
     assert not out.results
     assert set(out.errors) == {"600519", "000001"}
     assert all("open.winmale.com" in msg for msg in out.errors.values())
+
+
+class FixedRespSession:
+    """固定返回同一 eval 响应（带 body），用于验证 429 分支与重试行为。"""
+
+    def __init__(self, resp):
+        self.resp = resp
+        self.calls = []
+        self.eval_calls = 0
+
+    def post(self, url, json=None, data=None, headers=None, timeout=None):
+        self.calls.append({"url": url})
+        if url.endswith("/v1/oauth/token"):
+            self.eval_calls += 1
+            return Resp(json_body={"data": {"access_token": "tok", "expires_in": 3600}})
+        self.eval_calls += 1
+        return self.resp
+
+
+def make_fixed(resp, **kw):
+    s = FixedRespSession(resp)
+    c = Client(base_url="https://t", client_id="i", client_secret="s",
+               catalog=load(), session=s, backoff=0.5,
+               backoff_jitter=kw.pop("backoff_jitter", 0.0), **kw)
+    sleeps: list[float] = []
+    c._sleep = lambda seconds: sleeps.append(seconds)
+    return c, s, sleeps
+
+
+def test_quota_429_is_not_retried_and_raises_quota_error():
+    """配额终态 429：不退避、不重试（1 次请求），抛 QuotaError 且透传服务端 code。"""
+    from wmshare.errors import QuotaError
+
+    resp = Resp(status_code=429, json_body={
+        "error": {"code": "EC_BALANCE_EXHAUSTED", "message": "本周 EC 查阅额度已用完"},
+    })
+    c, s, sleeps = make_fixed(resp)
+    with pytest.raises(QuotaError) as ei:
+        c.call("kline.query_last", sym="600519")
+    assert ei.value.code == "EC_BALANCE_EXHAUSTED"
+    assert ei.value.status == 429
+    assert len(eval_calls(s)) == 1                  # 不重试
+    assert sleeps == []                             # 不退避
+    assert "默认应用" in str(ei.value)               # 指引换默认应用/周补/充值
+
+
+def test_rate_limited_429_with_body_still_retried():
+    """瞬时限流（RATE_LIMITED）仍按既有退避重试，最终耗尽抛 LimitError。"""
+    resp = Resp(status_code=429, json_body={
+        "error": {"code": "RATE_LIMITED", "message": "hourly request limit exceeded"},
+    })
+    c, s, sleeps = make_fixed(resp)
+    with pytest.raises(LimitError) as ei:
+        c.call("kline.query_last", sym="600519")
+    assert not isinstance(ei.value, QuotaError)
+    assert ei.value.code == "rate_limited"
+    assert len(eval_calls(s)) == 3                  # retries=2 → 共 3 次请求
+    assert len(sleeps) == 2
+
+
+def test_eval_200_quota_envelope_raises_quota_error():
+    """HTTP 200 + success=false 的配额信封：旧实现漏判落 ApiError，现应抛 QuotaError。"""
+    from wmshare.errors import QuotaError
+
+    resp = Resp(status_code=200, json_body={
+        "success": False,
+        "error": {"code": "EC_BALANCE_EXHAUSTED", "message": "配额耗尽"},
+    })
+    c, s, sleeps = make_fixed(resp)
+    with pytest.raises(QuotaError) as ei:
+        c.call("kline.query_last", sym="600519")
+    assert ei.value.code == "EC_BALANCE_EXHAUSTED"
+    assert "默认应用" in str(ei.value)

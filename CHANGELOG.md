@@ -10,6 +10,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.17.0] - 2026-11-12
+### Fixed
+- **配额类 429 不再重试**：`EC_BALANCE_EXHAUSTED` / `DAILY_EC_CAP_EXCEEDED` 是持续性
+  配额终态，旧实现按瞬时限流退避重试 2 次，叠加用户脚本循环造成重试风暴（生产实测
+  单用户 110 行 429、放大 13.8×）。现命中即终止本次调用（1 次请求）。
+- **429 异常透传服务端 `error.code`**：旧实现恒定 `code="rate_limited"`，无法区分
+  限流与配额；现配额原串透传（如 `EC_BALANCE_EXHAUSTED`），程序化可辨。
+- **HTTP 200 + success=false 的配额信封漏判**：`EC_BALANCE_EXHAUSTED` 不含
+  RATE/QUOTA 子串会落 `ApiError`，现归入配额路径。
+- 公告订阅配额错误补 `code` 透传。
+
+### Added
+- **`QuotaError(LimitError)`**：配额终态显式异常——`except QuotaError` 做换凭证/
+  等周补/充值处理，`except LimitError` 退避语义；`isinstance` 向后兼容。
+- 错误消息内嵌配额指引：默认应用每周一补满、自建附加应用一次性额度不参与周补、
+  换用默认应用凭证的入口。
+- `GUIDE.md` §9：QuotaError 两行 + POLICY_DENIED 的 compute sandbox 赋值禁用说明 +
+  「同一错误连续多次」症状行。
+
 ## [1.16.4] - 2026-11-11
 
 ### Changed

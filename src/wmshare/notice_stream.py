@@ -29,7 +29,7 @@ import time
 from dataclasses import dataclass, field, replace
 from typing import Any, Callable
 
-from wmshare.errors import ApiError, LimitError, StreamResetError, UsageError, WmshareError
+from wmshare.errors import ApiError, LimitError, QUOTA_CODES, QuotaError, StreamResetError, UsageError, WmshareError
 
 MARKETS = ("cn", "hk")
 DEFAULT_INTERVAL = 300.0
@@ -167,8 +167,10 @@ class NoticePoller:
             err = err if isinstance(err, dict) else {}
             code = str(err.get("code") or "notice_stream")
             msg = str(err.get("message") or "")
+            if code.upper() in QUOTA_CODES:
+                raise QuotaError(f"公告订阅 {op} 配额耗尽：{code} {msg}", code=code)
             if "RATE" in code.upper() or "QUOTA" in code.upper():
-                raise LimitError(f"公告订阅 {op} 被限流：{code} {msg}")
+                raise LimitError(f"公告订阅 {op} 被限流：{code} {msg}", code=code)
             raise ApiError(f"公告订阅 {op} 失败：{code} {msg}", code=code)
         data = doc.get("data")
         return data if isinstance(data, dict) else {}

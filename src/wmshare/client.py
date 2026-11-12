@@ -28,7 +28,7 @@ from wmshare._endpoints import validate_base_url
 from wmshare.catalog import Catalog, load
 from wmshare.errors import (
     APPID_GUIDANCE, ApiError, AuthError, CatalogError, WmshareError, LimitError,
-    ServerError, TransportError, UsageError,
+    QUOTA_CODES, QUOTA_GUIDANCE, QuotaError, ServerError, TransportError, UsageError,
 )
 from wmshare.units import apply_units
 
@@ -334,6 +334,13 @@ class Client:
     # ---- 传输 ----
     RETRY_STATUS = frozenset({429, 500, 502, 503, 504})
 
+    def _quota_code(self, resp: requests.Response) -> str:
+        """429 响应体里的服务端 error.code 若属配额终态则原样返回，否则空串。"""
+        if resp.status_code != 429:
+            return ""
+        code, _ = self._error_detail(resp)
+        return code if code in QUOTA_CODES else ""
+
     def _retry_after(self, resp: requests.Response | None) -> float | None:
         if resp is None or not hasattr(resp, "headers"):
             return None
@@ -392,6 +399,9 @@ class Client:
                 continue
             last = resp
             if resp.status_code in self.RETRY_STATUS and i < attempts - 1:
+                if self._quota_code(resp):
+                    # 配额终态（周钱包空/当日到顶）：重试无意义，立即终止本次调用。
+                    break
                 self._sleep_for_retry(i, resp)
                 continue
             return resp
@@ -442,6 +452,13 @@ class Client:
         if status == 429:
             retry_after = resp.headers.get("Retry-After") if hasattr(resp, "headers") else None
             wait = f"（建议 {retry_after} 秒后重试）" if retry_after else ""
+            if code in QUOTA_CODES:
+                # 配额终态透传服务端原串（如 EC_BALANCE_EXHAUSTED），便于程序化
+                # except QuotaError 处理；重试已被 _request 抑制。
+                raise QuotaError(
+                    f"配额耗尽（{label}）{wait}{suffix}。{QUOTA_GUIDANCE}"
+                    f"{APPID_GUIDANCE}",
+                    code=code, status=status, retry_after=self._retry_after(resp))
             raise LimitError(
                 f"请求被限流（{label}）{wait}{suffix}。请稍后重试，或申请自己的 AppID 提升额度。"
                 f"{APPID_GUIDANCE}",
@@ -578,6 +595,11 @@ class Client:
             code = str(err.get("code") or "eval")
             message = str(err.get("message") or self._safe_detail(
                 json.dumps(doc, ensure_ascii=False), 200))
+            if code.upper() in QUOTA_CODES:
+                # HTTP 200 信封里的配额终态：同样不重试、透传原串。
+                raise QuotaError(
+                    f"eval 失败：{code} {message}。{QUOTA_GUIDANCE}"
+                    f"{APPID_GUIDANCE}", code=code, status=resp.status_code)
             if "RATE" in code.upper() or "QUOTA" in code.upper():
                 raise LimitError(
                     f"eval 失败：{code} {message}。"
@@ -980,6 +1002,15 @@ class Client:
                                        _raw=_raw, _units=_units, **kwargs)
                 part.ec_cost = self.last_ec_cost or part.ec_cost
                 yield part
+            except QuotaError as e:
+                # 配额耗尽（周钱包空/当日到顶）：换默认应用凭证或等周补/充值后，
+                # 从断点续跑；限流的「500 次/小时」文案对配额场景是误导。
+                raise QuotaError(
+                    f"{name}: 第 {idx}/{total} 批配额耗尽（已完成 {start} / {len(syms)} 个标的）。"
+                    f"{QUOTA_GUIDANCE}"
+                    f"恢复后请续跑：batch_all({name!r}, codes[{start}:])。"
+                    f"原始错误：{e}", code=getattr(e, "code", ""), status=429,
+                    retry_after=getattr(e, "retry_after", None)) from e
             except LimitError as e:
                 if getattr(e, "code", "") == "rate_limited" or getattr(e, "status", None) == 429:
                     raise LimitError(
