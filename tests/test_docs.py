@@ -521,9 +521,12 @@ def test_readme_is_lean():
     （56 键 × 730 期 × 每期全部成分股汇总，单键重算 3.2M fuel/39s），此前店面只有
     表格一行、接口名完全不出现，用户无从发现。新增含可跑示例与口径摘要；已先压缩
     市场覆盖注记（4→1 行）、许可段批量重复句（3→2 行）、「更多」合并（2→1 行）。
+    2026-11-12 提至 330：新增「主站、开放平台与 SkillHub」节——同一套数据的三层入口
+    此前在店面完全缺失（投研/SkillHub/主站 0 处），读者无从知道有现成工具站与 AI
+    技能库；主站按投资者类型列应用（指数定投/可转债/财报专业版/抄作业等）。
     """
-    assert len(README.splitlines()) <= 306, \
-        f"README 膨胀到 {len(README.splitlines())} 行（上限 306）；长内容下沉 docs/ 或删除"
+    assert len(README.splitlines()) <= 330, \
+        f"README 膨胀到 {len(README.splitlines())} 行（上限 330）；长内容下沉 docs/ 或删除"
 
 
 def test_readme_no_stale_trial_promises():

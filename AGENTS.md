@@ -33,7 +33,7 @@ pytest -q --cov-branch                # 离线全量（行/分支覆盖率 ≥85
 - **生成物不手改**：docs/API.md、docs/openapi.json、docs/swagger.html、llms.txt、
   llms-full.txt、docs/INDICATORS.md 由 `tools/gen_*.py` 生成——改源头后重新生成，
   漂移门禁会拦截手改；
-- **README ≤306 行**（`test_readme_is_lean`）：长内容下沉 docs/，先删后提限；
+- **README ≤330 行**（`test_readme_is_lean`）：长内容下沉 docs/，先删后提限；
 - **新增示例**：`NN_主题.py` 编号进 examples/ 课程表，docstring 四行元信息
   （前提/运行/学到/文档），`main(cli=None)` 可注入，tests 端到端覆盖，并加进 examples/README.md 索引；
 - **文档引用全部受门禁校验**：README/GUIDE/AI 里的 `cli.*` 调用、`$指标码`、`cat.*` 方法、
