@@ -23,7 +23,7 @@ pip install wmshare
 ## Try it offline
 
 The demo uses a snapshot captured on October 30, 2026. You can run this example
-offline without credentials. Tests check both outputs.
+offline without credentials.
 
 ```python
 import wmshare
