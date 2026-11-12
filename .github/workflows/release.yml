@@ -1,14 +1,19 @@
 name: release
 
-# 每个 v* tag 自动建一条 GitHub Release，正文直接抽 CHANGELOG 对应版本段。
+# 每个 v* tag 自动建一条 GitHub Release，正文直接抽 CHANGELOG 对应版本段，
+# 并在 Release 成功后把 sdist/wheel 发布到 PyPI（需要 repo Secret `PYPI_TOKEN`）。
 # 起因：13 个 tag 名下只有 1 个 Release（v1.10.0），Watch → Releases 这条追更
-# 通道是断的——关注仓库的人收不到任何新版本通知。
+# 通道是断的——关注仓库的人收不到任何新版本通知；PyPI 也曾长期靠手工 twine，
+# 出过 GitHub 已发 3 个版本而 PyPI 停在旧版的错位。
 #
 # 设计约束：
 #   * tag 与 src/wmshare/__init__.py::__version__ 不一致就别发（防止打错 tag）；
-#   * 不引入第三方 action（softprops/action-gh-release 之类），只用 gh CLI，
-#     保持供应链面最小、权限面只有 contents: write；
-#   * 正文抽不到 → 整个 job 失败，绝不发一条没有说明的 Release。
+#   * 不引入第三方 action（softprops/action-gh-release 之类），只用 gh CLI 与
+#     pip 安装的 build/twine，保持供应链面最小；
+#   * 正文抽不到 → 整个 job 失败，绝不发一条没有说明的 Release；
+#     PyPI job 依赖 Release job 成功，版本互校/notes 失败则 PyPI 一并跳过；
+#   * MCP registry 上架仍是人工步骤（JWT 短时效、每次发布前重新登录），
+#     流程见 MAINTAINERS.md。
 
 on:
   push:
@@ -51,3 +56,29 @@ jobs:
             --title "$GITHUB_REF_NAME" \
             --notes-file /tmp/release-notes.md \
             --verify-tag
+
+  publish-pypi:
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5
+        with:
+          python-version: "3.12"
+
+      - name: Build sdist and wheel
+        run: |
+          python -m pip install --upgrade build twine
+          python -m build
+
+      - name: Twine check
+        run: python -m twine check dist/*
+
+      - name: Publish to PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+        run: python -m twine upload --non-interactive dist/*
