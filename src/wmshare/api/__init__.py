@@ -8,7 +8,7 @@
     ``_raw=True`` 取未规范化原始行（仅部分方法）；
   - 本层是目录合同的薄翻译：高频方法显式包装；目录内其余函数经 ``__getattr__``
     属性直达（如 ``cli.kline.screen_above_ma20``、``cli.dividend.screen_quality``），
-    目录之外的名字显式 AttributeError——269 个底层函数零遮蔽。
+    目录之外的名字显式 AttributeError——288 个底层函数零遮蔽。
   - 选股能力集中在 ``cli.screener``：单票筛选器（bool）、全市场宽度/涨跌榜与
     全市场条件选股 ``query()``（服务端索引直出）显式包装，kline 目录的其余筛选
     函数经属性直达。

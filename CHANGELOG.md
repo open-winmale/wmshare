@@ -10,6 +10,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.18.0] - 2026-11-12
+### Added
+- **cbond 域目录补全 19 个函数（market.cbond v1.4.0）**：个券详情 `card`、单债快照
+  `one_quote`、条款档案 `terms`、三项计数 `counts`/`count_hits`/`count_below`、历史
+  `history`、公告 `notices`、市场截面 `market`、正股概念 `concepts_of`、持有人
+  `holders`/`holders_list`、机构 `institution`/`fund_hold_of`、转股结果
+  `latest_share`/`share_list`、募投 `projects`/`project_of`、条款全表 `terms_list`。
+  目录 269→288 函数；`cli.cbond.<name>` 属性直达与 `client.call` 即刻可用。
+- `market.cbond` 守护声明补齐：counts（0-30 计数界）、market（premiumMedian percent /
+  discountN）、latest_share（convertedRatio [0,1]）、one_quote（溢价/票息单位与界），
+  函数级守护覆盖率回到 15.97% 下限之上。
+- `GUIDE.md` §9 错误家族/症状表补 QuotaError（配额耗尽）与 POLICY_DENIED（compute
+  sandbox 赋值禁用）说明。
+
 ## [1.17.0] - 2026-11-12
 ### Fixed
 - **配额类 429 不再重试**：`EC_BALANCE_EXHAUSTED` / `DAILY_EC_CAP_EXCEEDED` 是持续性

@@ -1,5 +1,5 @@
 id: market.cbond
-version: 1.3.0
+version: 1.4.0
 cn: 可转债
 kind: raw
 category: market
@@ -38,3 +38,22 @@ functions:
   - {name: cbond.min1_live, cn: 转债盘中1分钟, layer: L0}
   - {name: cbond.min1_meta, cn: 转债盘中元信息, layer: L0}
   - {name: cbond.universe_codes, cn: 转债代码全集, layer: L0}
+  - {name: cbond.card, cn: 转债个券详情（quote+terms+counts+region 懒加载）, layer: L0}
+  - {name: cbond.one_quote, cn: 单债最新快照（只 fmt 命中行）, layer: L0, units: {premiumRatio: percent, couponIr: percent}, ranges: {premiumRatio: [-100, 1000], couponIr: [0, 0.15]}}
+  - {name: cbond.terms, cn: 转债条款档案（条款原文/评级/担保）, layer: L0}
+  - {name: cbond.terms_list, cn: 转债条款档案全表（terms DAG 未跑返回空）, layer: L1}
+  - {name: cbond.counts, cn: 强赎/下修/回售三项计数与窗口, layer: L0, ranges: {callHits: [0, 30], resetHits: [0, 30], putHits: [0, 30]}}
+  - {name: cbond.count_hits, cn: 正股收盘≥触发价天数（按交易日窗）, layer: L0, notes: ['窗口按交易日非日历日；序列新→旧须配 $KLINE_HAS 掩码']}
+  - {name: cbond.count_below, cn: 正股收盘<触发价天数（下修/回售用）, layer: L0}
+  - {name: cbond.history, cn: 转债近 N 日历史（快照+债 K；快照上线前区间自动补齐）, layer: L0}
+  - {name: cbond.notices, cn: 正股近 5 年转债相关公告（上限 200）, layer: L0}
+  - {name: cbond.market, cn: 转债市场截面（价格/溢价中位数与折价只数）, layer: L0, units: {premiumMedian: percent}, ranges: {premiumMedian: [-100, 1000], discountN: [0, 2000]}}
+  - {name: cbond.concepts_of, cn: 正股概念标签（东财精确题材前 12）, layer: L0}
+  - {name: cbond.holders, cn: 十大持有人最新报告, layer: L0}
+  - {name: cbond.holders_list, cn: 十大持有人报告序列, layer: L1}
+  - {name: cbond.institution, cn: 机构持仓（基金数与持仓市值下限）, layer: L0}
+  - {name: cbond.fund_hold_of, cn: 机构持仓聚合（底层读取）, layer: L1}
+  - {name: cbond.latest_share, cn: 最新转股结果（剩余规模与已转股比例）, layer: L0, ranges: {convertedRatio: [0, 1]}}
+  - {name: cbond.share_list, cn: 转股结果公告序列（约 24 份覆盖 6 年）, layer: L1}
+  - {name: cbond.projects, cn: 转债募集资金投向, layer: L0}
+  - {name: cbond.project_of, cn: 募集资金投向档案（底层读取）, layer: L1}

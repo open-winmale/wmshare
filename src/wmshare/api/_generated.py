@@ -355,6 +355,82 @@ class CbondNS(_Ns):
         """转债代码全集"""
         return self._client.call("cbond.universe_codes", _raw=_raw, _df=_df)
 
+    def card(self, code: Any, _raw: bool = False, _df: bool = False) -> Any:
+        """转债个券详情（quote+terms+counts+region 懒加载）"""
+        return self._client.call("cbond.card", code=code, _raw=_raw, _df=_df)
+
+    def one_quote(self, code: Any, _raw: bool = False, _df: bool = False) -> Any:
+        """单债最新快照（只 fmt 命中行）"""
+        return self._client.call("cbond.one_quote", code=code, _raw=_raw, _df=_df)
+
+    def terms(self, code: Any, _raw: bool = False, _df: bool = False) -> Any:
+        """转债条款档案（条款原文/评级/担保）"""
+        return self._client.call("cbond.terms", code=code, _raw=_raw, _df=_df)
+
+    def terms_list(self, _raw: bool = False, _df: bool = False) -> Any:
+        """转债条款档案全表（terms DAG 未跑返回空）"""
+        return self._client.call("cbond.terms_list", _raw=_raw, _df=_df)
+
+    def counts(self, code: Any, _raw: bool = False, _df: bool = False) -> Any:
+        """强赎/下修/回售三项计数与窗口"""
+        return self._client.call("cbond.counts", code=code, _raw=_raw, _df=_df)
+
+    def count_hits(self, code: Any, trig: Any, window: Any, _raw: bool = False, _df: bool = False) -> Any:
+        """正股收盘≥触发价天数（按交易日窗）"""
+        return self._client.call("cbond.count_hits", code=code, trig=trig, window=window, _raw=_raw, _df=_df)
+
+    def count_below(self, code: Any, trig: Any, window: Any, _raw: bool = False, _df: bool = False) -> Any:
+        """正股收盘<触发价天数（下修/回售用）"""
+        return self._client.call("cbond.count_below", code=code, trig=trig, window=window, _raw=_raw, _df=_df)
+
+    def history(self, code: Any, n: Any, _raw: bool = False, _df: bool = False) -> Any:
+        """转债近 N 日历史（快照+债 K；快照上线前区间自动补齐）"""
+        return self._client.call("cbond.history", code=code, n=n, _raw=_raw, _df=_df)
+
+    def notices(self, code: Any, limit: Any, _raw: bool = False, _df: bool = False) -> Any:
+        """正股近 5 年转债相关公告（上限 200）"""
+        return self._client.call("cbond.notices", code=code, limit=limit, _raw=_raw, _df=_df)
+
+    def market(self, _raw: bool = False, _df: bool = False) -> Any:
+        """转债市场截面（价格/溢价中位数与折价只数）"""
+        return self._client.call("cbond.market", _raw=_raw, _df=_df)
+
+    def concepts_of(self, stk: Any, _raw: bool = False, _df: bool = False) -> Any:
+        """正股概念标签（东财精确题材前 12）"""
+        return self._client.call("cbond.concepts_of", stk=stk, _raw=_raw, _df=_df)
+
+    def holders(self, code: Any, _raw: bool = False, _df: bool = False) -> Any:
+        """十大持有人最新报告"""
+        return self._client.call("cbond.holders", code=code, _raw=_raw, _df=_df)
+
+    def holders_list(self, code: Any, _raw: bool = False, _df: bool = False) -> Any:
+        """十大持有人报告序列"""
+        return self._client.call("cbond.holders_list", code=code, _raw=_raw, _df=_df)
+
+    def institution(self, code: Any, _raw: bool = False, _df: bool = False) -> Any:
+        """机构持仓（基金数与持仓市值下限）"""
+        return self._client.call("cbond.institution", code=code, _raw=_raw, _df=_df)
+
+    def fund_hold_of(self, code: Any, _raw: bool = False, _df: bool = False) -> Any:
+        """机构持仓聚合（底层读取）"""
+        return self._client.call("cbond.fund_hold_of", code=code, _raw=_raw, _df=_df)
+
+    def latest_share(self, code: Any, _raw: bool = False, _df: bool = False) -> Any:
+        """最新转股结果（剩余规模与已转股比例）"""
+        return self._client.call("cbond.latest_share", code=code, _raw=_raw, _df=_df)
+
+    def share_list(self, code: Any, _raw: bool = False, _df: bool = False) -> Any:
+        """转股结果公告序列（约 24 份覆盖 6 年）"""
+        return self._client.call("cbond.share_list", code=code, _raw=_raw, _df=_df)
+
+    def projects(self, code: Any, _raw: bool = False, _df: bool = False) -> Any:
+        """转债募集资金投向"""
+        return self._client.call("cbond.projects", code=code, _raw=_raw, _df=_df)
+
+    def project_of(self, code: Any, _raw: bool = False, _df: bool = False) -> Any:
+        """募集资金投向档案（底层读取）"""
+        return self._client.call("cbond.project_of", code=code, _raw=_raw, _df=_df)
+
 class EquityNS(_Ns):
     """股东与股本（corp.equity）"""
 

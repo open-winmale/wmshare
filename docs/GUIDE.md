@@ -44,10 +44,10 @@ export WMSHARE_CLIENT_ID=<AppId> WMSHARE_CLIENT_SECRET=<API Key>
 
 - **门面层** `cli.<命名空间>.<方法>()`：22 个命名空间、132 个核心接口，方法名动宾化可猜
   （`kline.bars`、`dividend.yield_ttm`、`screener.screen_limit_up`）。
-- **目录层** `cli.call("<域>.<函数名>", ...)`：269 个底层函数按目录合同直调，
+- **目录层** `cli.call("<域>.<函数名>", ...)`：288 个底层函数按目录合同直调，
   参数名以 `cat.function(name)["params"]` 为准。门面未包装的函数经属性直达
   （如 `cli.dividend.index_where_high_yield_5()`）；目录之外的名字显式报错——
-  门面不遮蔽目录函数，269 个都能直达。
+  门面不遮蔽目录函数，288 个都能直达。
 
 两层的名字对不上是常态：目录按上游域组织，门面按使用视角命名（如目录 `bonus` 对应
 门面 `dividend`），17 个域挂 20 个门面。不必背映射——`cat.search("分红")` 一查即得；
@@ -423,7 +423,7 @@ res.to_df()                       # 每标的一行长表（symbol 列在前；�
 - **算力超限**：单批触发 `CALC_LIMIT_EXCEEDED` 时减小 `batch_size`。
 - 三个入口的 `name`/`symbols` 都是位置参数；`_raw=True`/`_units="native"` 通用；
   批量入口不提供 `_df`（长表用 `to_df()`）。
-- **`name` 必须是目录函数名**（269 个，`cat.functions_by_domain()` 可查）；指标码不是
+- **`name` 必须是目录函数名**（288 个，`cat.functions_by_domain()` 可查）；指标码不是
   函数名——一票多码用 `cli.indicator.metrics(sym, codes)`（传 `"indicator.get"` 会报
   `CatalogError`）。**全市场按指标条件选股不要逐票批量**：一条表达式交给
   `cli.screener.query(...)`（服务端索引引擎，见第 3 章与 10.1）。
@@ -515,8 +515,10 @@ poller.start()               # 或切后台：daemon 线程定时轮询；退出
 | 异常 | 含义 | 怎么做 |
 |---|---|---|
 | `AuthError`（401/OAuth） | 凭证无效或过期 | 按消息申请并配置凭证（第 1 章） |
-| `AuthError`（403 POLICY_DENIED） | AppID 无此接口权限范围 | 与额度无关、勿重试；到开放平台查应用权限或换接口 |
-| `LimitError`（429） | 按请求次数限流 | 批量+续跑位置（第 5.3 节）；勿无脑重试 |
+| `AuthError`（403 POLICY_DENIED） | AppID 无此接口权限范围，或脚本用了被 compute sandbox 禁用的语句（如 `_ :=` 赋值） | 与额度无关、勿重试；权限问题到开放平台查应用权限；语句问题改用普通变量名赋值（沙箱禁 `_` 开头赋值） |
+| `QuotaError`（429 EC_BALANCE_EXHAUSTED） | 周钱包空（持续性，SDK 不重试） | 换用默认应用凭证（默认应用每周一补满）；自建附加应用是一次性额度、不参与周补；或升级会员/充值 |
+| `QuotaError`（429 DAILY_EC_CAP_EXCEEDED） | 当日 EC 到顶 | 等 UTC 日切恢复，或升级会员；勿重试当日 |
+| `LimitError`（429 其他，如 RATE_LIMITED） | 按请求次数限流（瞬时限流，SDK 已自动退避重试 2 次） | 批量+续跑位置（第 5.3 节）；勿无脑重试 |
 | `LimitError`（range/limit） | 区间/条数超上限 | 缩小 `begin/end` 或调 `Client(max_limit=...)` |
 | `UsageError` | 参数不合法/跨市场混批 | 按消息修正；参数合同查 `cat.function()["params"]` |
 | `DataError` | 量级守护/不变量违例 | **数据在报警**：核实口径，勿 try/except 吞掉 |
@@ -529,6 +531,7 @@ poller.start()               # 或切后台：daemon 线程定时轮询；退出
 | 症状 | 多半是 | 出路 |
 |---|---|---|
 | 全市场跑一半撞 429 | 逐票循环或 `call_batch(on_error="skip")` 逐票放大 | 改 `batch_all`/`batch_iter`（第 5 章） |
+| 同一错误连续十几次 | 脚本循环无脑重发坏请求（错误 0 计费但纯烧时间） | 先最小化脚本定位；429 配额类看上表 QuotaError 两行 |
 | 数值大了 100 倍 | 把小数当百分数又 ×100，或字段本是百分数数值 | 回读第 2.3 节单位表 |
 | 报「未知指标」 | AI 或记忆编造了不存在的指标码 | `cat.search("中文")` 查真码 |
 | 批量结果里混入怪值 | 跨市场混批 | 分市场建 Client（第 5.4 节） |
@@ -580,7 +583,7 @@ poller.start()               # 或切后台：daemon 线程定时轮询；退出
 
 - **和直接下交易所数据比，图什么？** 目录先行 + 单位统一 + 数据守护 + 批量限流治理——
   取数正确性的工程问题 SDK 替你管了。
-- **数据能离线吗？** 目录（269 个函数/2752 个指标码/代码表）随包离线；行情财报数据在云端，
+- **数据能离线吗？** 目录（288 个函数/2752 个指标码/代码表）随包离线；行情财报数据在云端，
   需凭证与额度。
 - **支持哪些 Python？** ≥3.10；pandas 为可选依赖。
 - **怎么贡献/报漏洞？** 见 [CONTRIBUTING](../CONTRIBUTING.md) 与 [SECURITY](../SECURITY.md)；

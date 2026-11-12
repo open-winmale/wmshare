@@ -1,6 +1,6 @@
 {
  "schema_version": 2,
- "upstream_rev": "a5621491",
+ "upstream_rev": "bb77f95c",
  "domains": {
   "bonus": {
    "entry": "sys/bonus/init.xs",
@@ -104,7 +104,7 @@
   "notice",
   "segments"
  ],
- "function_count": 275,
+ "function_count": 294,
  "functions": [
   {
    "name": "bonus.dps_rpt",
@@ -1049,7 +1049,7 @@
   },
   {
    "name": "cbond.board",
-   "cn": "转债全市场面板（快照行+最新条款事件+盘中价+强赎触发计数+下修地板价）",
+   "cn": "转债全市场面板（快照行+最新条款事件+盘中价+强赎触发计数+下修地板价；缓存读，cron 预热）",
    "example": "cbond.board()",
    "returns": "ARR · board 行（quotes 行 + event/bondPercent/callHits/resetFloor）",
    "returns_shape": {
@@ -1231,7 +1231,7 @@
       {
        "name": "callHits",
        "type": "int",
-       "cn": "近 30 个交易日正股收盘 ≥ 触发价天数（仅股价已跨线时返回）",
+       "cn": "近 30 个交易日正股收盘 ≥ 触发价天数（仅股价已跨线时返回；优先快照 DAG 计数）",
        "optional": true
       },
       {
@@ -1362,6 +1362,92 @@
     },
     {
      "name": "trig",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "cbond.card",
+   "cn": "转债个券详情",
+   "example": "cbond.card(\"127119\")",
+   "returns": "MAP · {quote, terms, counts, region}",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "code",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "cbond.concepts_of",
+   "cn": "正股概念标签",
+   "example": "cbond.concepts_of(\"000887\")",
+   "returns": "ARR · 概念名",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "stk",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "cbond.count_below",
+   "cn": "正股收盘<触发价天数",
+   "example": "cbond.count_below(\"113050\", 12, 30)",
+   "returns": "int",
+   "returns_shape": null,
+   "min_args": 3,
+   "params": [
+    {
+     "name": "code",
+     "type": "any"
+    },
+    {
+     "name": "trig",
+     "type": "any"
+    },
+    {
+     "name": "window",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "cbond.count_hits",
+   "cn": "正股收盘≥触发价天数",
+   "example": "cbond.count_hits(\"113050\", 130, 30)",
+   "returns": "int",
+   "returns_shape": null,
+   "min_args": 3,
+   "params": [
+    {
+     "name": "code",
+     "type": "any"
+    },
+    {
+     "name": "trig",
+     "type": "any"
+    },
+    {
+     "name": "window",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "cbond.counts",
+   "cn": "强赎/下修/回售计数",
+   "example": "cbond.counts(\"127119\")",
+   "returns": "MAP · 计数与窗口",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "code",
      "type": "any"
     }
    ]
@@ -1575,6 +1661,80 @@
    ]
   },
   {
+   "name": "cbond.fund_hold_of",
+   "cn": "机构持仓聚合",
+   "example": "cbond.fund_hold_of(\"127119\")",
+   "returns": "MAP · 基金数与持仓市值",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "code",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "cbond.history",
+   "cn": "转债历史数据",
+   "example": "cbond.history(\"127119\", 60)",
+   "returns": "ARR · 日序列",
+   "returns_shape": null,
+   "min_args": 2,
+   "params": [
+    {
+     "name": "code",
+     "type": "any"
+    },
+    {
+     "name": "n",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "cbond.holders",
+   "cn": "十大持有人",
+   "example": "cbond.holders(\"127119\")",
+   "returns": "MAP · 报告期与持有人名单",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "code",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "cbond.holders_list",
+   "cn": "十大持有人报告",
+   "example": "cbond.holders_list(\"127119\")",
+   "returns": "ARR · 持有人报告",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "code",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "cbond.institution",
+   "cn": "机构持仓",
+   "example": "cbond.institution(\"127119\")",
+   "returns": "MAP · 基金数与持仓市值",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "code",
+     "type": "any"
+    }
+   ]
+  },
+  {
    "name": "cbond.kline_window",
    "cn": "转债日K窗口",
    "example": "cbond.kline_window(\"113050\", 60)",
@@ -1762,6 +1922,29 @@
    "params": []
   },
   {
+   "name": "cbond.latest_share",
+   "cn": "最新转股结果",
+   "example": "cbond.latest_share(\"127119\")",
+   "returns": "MAP · 剩余规模与已转股比例",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "code",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "cbond.market",
+   "cn": "转债市场截面",
+   "example": "cbond.market()",
+   "returns": "MAP · 中位数与折价只数",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": []
+  },
+  {
    "name": "cbond.min1_live",
    "cn": "转债盘中1分钟",
    "example": "cbond.min1_live(\"113050\")",
@@ -1785,6 +1968,24 @@
    "params": [
     {
      "name": "code",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "cbond.notices",
+   "cn": "转债相关公告",
+   "example": "cbond.notices(\"127119\", 80)",
+   "returns": "ARR · 公告行",
+   "returns_shape": null,
+   "min_args": 2,
+   "params": [
+    {
+     "name": "code",
+     "type": "any"
+    },
+    {
+     "name": "limit",
      "type": "any"
     }
    ]
@@ -1964,6 +2165,48 @@
    ]
   },
   {
+   "name": "cbond.one_quote",
+   "cn": "单债最新快照",
+   "example": "cbond.one_quote(\"127119\")",
+   "returns": "MAP · 规范化快照行",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "code",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "cbond.project_of",
+   "cn": "募集资金投向",
+   "example": "cbond.project_of(\"127119\")",
+   "returns": "MAP · 募投项目与用途说明",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "code",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "cbond.projects",
+   "cn": "转债募集资金投向",
+   "example": "cbond.projects(\"127119\")",
+   "returns": "MAP · 募投项目与用途说明",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "code",
+     "type": "any"
+    }
+   ]
+  },
+  {
    "name": "cbond.query",
    "cn": "按标的查条款事件",
    "example": "cbond.query(\"600519\")",
@@ -1982,6 +2225,43 @@
    "cn": "转债合约快照全表",
    "example": "cbond.quote_list()",
    "returns": "ARR · 合约快照行",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": []
+  },
+  {
+   "name": "cbond.share_list",
+   "cn": "转股结果公告序列",
+   "example": "cbond.share_list(\"127119\")",
+   "returns": "ARR · 剩余规模/已转股比例",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "code",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "cbond.terms",
+   "cn": "转债条款档案",
+   "example": "cbond.terms(\"127119\")",
+   "returns": "MAP · 条款原文与评级",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "code",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "cbond.terms_list",
+   "cn": "转债条款档案全表",
+   "example": "cbond.terms_list()",
+   "returns": "ARR · 条款档案行",
    "returns_shape": null,
    "min_args": 0,
    "params": []
