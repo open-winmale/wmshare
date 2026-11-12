@@ -7,6 +7,7 @@ wmshare 的文档按「教程 / 怎么做 / 参考 / 解释」四层组织
 | 我想… | 去哪 | 说明 |
 |---|---|---|
 | 5 分钟装好并跑通第一行 | [README](../README.md) | 店面：特性、安装、选股实战（真实数据）、凭证、离线演示 |
+| English quick start | [QUICKSTART_EN.md](QUICKSTART_EN.md) | Why it exists / offline demo / first live call / batching & unit contract |
 | 系统学一遍（可运行课程） | [examples/](../examples/README.md) | 15 个编号示例：离线优先、CI 全覆盖、输出带单位注释 |
 | 完成某个具体任务 | [GUIDE.md](GUIDE.md) | 单票菜谱、全市场与行业（含指数/行业估值历史算法）、批量绕 429、多市场、pandas、公告订阅 |
 | 查指标码（全量导航） | [INDICATORS.md](INDICATORS.md) | 全量指标码按数据类型分章：概览/股票行情/股票指标/行业/指数及ETF/宏观/期货/可转债/港美，含命名语法、死码警示与场景速查（生成物） |

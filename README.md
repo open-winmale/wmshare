@@ -7,7 +7,7 @@
 > **2,752 server-precomputed metrics** (percentile ranks, multi-window averages, industry-relative
 > ranks — no DIY computation). Ships an offline catalog, data guards and AI skill. **Credentials
 > required** on open.winmale.com; try offline first with `wmshare.demo_client()` (frozen snapshot;
-> not live). **Install**: `pip install wmshare`.
+> not live). **Install**: `pip install wmshare`. **Full English quickstart**: [docs/QUICKSTART_EN.md](docs/QUICKSTART_EN.md).
 
 给 Python 量化开发者的中文财经数据 SDK：一行接口拿到清洗好的 A股/港股/美股数据——
 估值分位、TTM 股息率等指标**服务端算好直出**，全市场批量 **12 次请求**绕开限流。

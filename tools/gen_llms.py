@@ -93,6 +93,7 @@ def build_llms_txt() -> str:
         "## Docs",
         "",
         f"- [README]({RAW}/README.md)：安装、凭证配置、选股实战（10 行全市场筛选）、能力与市场覆盖矩阵",
+        f"- [English Quickstart]({RAW}/docs/QUICKSTART_EN.md)：英文快速上手（offline demo / live 首调 / 批量与单位契约）",
         f"- [使用指南 GUIDE]({RAW}/docs/GUIDE.md)：单票菜谱、批量取数、多市场、pandas、故障排查",
         f"- [指标库 INDICATORS]({RAW}/docs/INDICATORS.md)：全量指标码按族导航——命名语法、"
         "11 组精选口径、死码清单与场景速查（先查码，禁止自算已有指标）",
