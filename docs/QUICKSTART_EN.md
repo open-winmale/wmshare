@@ -1,23 +1,18 @@
 # wmshare — Quick Start (English)
 
-A Python SDK for China A-share / Hong Kong / US market data, BSD-3-Clause licensed.
-Requires Python ≥ 3.11.
+A Python SDK for market data from mainland China (A-shares), Hong Kong, and the
+United States. It requires Python 3.11 or later and uses the BSD-3-Clause license.
 
 ## Why it exists
 
-Most market-data libraries hand you raw OHLCV rows and leave the analytics to you.
-Want the 10-year PE percentile of a stock? You download history, pick a percentile
-algorithm, handle corporate actions and calendar alignment — and everyone's number
-differs slightly.
+Calculating the 10-year percentile rank of a stock's price-to-earnings ratio
+requires historical data, a percentile method, and consistent handling of
+corporate actions and trading dates.
 
-wmshare moves that computation **to the server**: 2,752 precomputed indicator codes
-(percentile ranks, multi-window averages, industry-relative ranks, TTM yields, …),
-each with a documented definition, one call each. A "data guardian" layer validates
-plausibility and unit contracts before values reach your code — implausible values
-raise `DataError` instead of silently polluting your model.
-
-It also ships an MCP server and `llms.txt` / `SKILL.md`, so AI agents (Cursor,
-Claude, …) can query the market without a human writing glue code.
+The server provides **2,752 precomputed indicators**, including percentile ranks,
+averages over different periods, industry-relative ranks, and trailing 12-month
+yields. Each code has a documented definition. The SDK checks units and value
+ranges and raises `DataError` when a value violates those checks.
 
 ## Install
 
@@ -25,10 +20,10 @@ Claude, …) can query the market without a human writing glue code.
 pip install wmshare
 ```
 
-## Try it offline — no sign-up, 3 lines
+## Try it offline
 
-The package ships a frozen snapshot (captured 2026-10-30, not live data). This runs
-fully offline and is pinned by tests:
+The demo uses a snapshot captured on October 30, 2026. You can run this example
+offline without credentials.
 
 ```python
 import wmshare
@@ -38,12 +33,12 @@ print(f"{cli.dividend.yield_ttm('600519'):.2%}")        # 3.73%
 print(cli.screener.index_breadth_summary()["total"])    # 5686
 ```
 
-Codes outside the demo universe raise an explicit error instead of returning
-made-up values.
+The demo raises an error for symbols outside the snapshot.
 
 ## First live call
 
-Get an AppId / API Key from [open.winmale.com](https://open.winmale.com), then:
+Use your AppId and API key from the [data service](https://open.winmale.com) to set
+these environment variables:
 
 ```bash
 export WMSHARE_CLIENT_ID=<AppId> WMSHARE_CLIENT_SECRET=<API Key>
@@ -54,56 +49,54 @@ import wmshare
 
 cli = wmshare.Client.from_env()
 p = cli.indicator.get("600519", "$PCT_PE_TTM_10Y_LAST")
-print(p)   # 10-year PE percentile, e.g. 0.2115 = 21st percentile; moves daily
+print(p)   # 0.2115 is about the 21st percentile of the 10-year P/E history.
 ```
 
-The free tier allows 500 requests/hour and 5,000/day. Requests are billed
-**per request**, not per row — which is why batching matters:
+The free tier allows 500 requests per hour and 5,000 per day. A batch counts as one
+request regardless of how many rows it returns.
 
 ## Whole market in 12 requests
 
-Looping over stocks one by one is the fastest way to hit rate limits. The batch
-helpers split the whole A-share market (5,691 symbols) into page requests —
-about **12 requests** for full coverage. See `examples/07_stocks_industry_batch.py`
-and the README section on batch fetching.
+In the documented example, `batch_all` fetches snapshots for 5,691 A-share symbols
+in about **12 requests**. See the [batch example](../examples/07_stocks_industry_batch.py)
+and the [README](../README.md) for the three batch methods.
 
 ## Find an indicator code
 
-- Browse the offline catalog: `cat.search("股息")` / `cat.metric(code)` after
-  `cat = cli.catalog` — codes are verified before use (`cat.metric` raises on
-  dead codes).
-- Full navigation: [docs/INDICATORS.md](INDICATORS.md) (Chinese) — all 2,752 codes
-  grouped by data type, with naming grammar and a dead-code warning chapter.
+- Set `cat = cli.catalog` to use the offline catalog. Search for a term with
+  `cat.search("股息")` (dividends), or look up a specific code with `cat.metric(code)`.
+- The [indicator catalog](INDICATORS.md) groups all 2,752 codes by data type and
+  explains their naming conventions and how to spot unsupported codes.
 
 ## Unit contract
 
-One rule set across every endpoint: **ratios/returns are decimals** (0.01 = 1%),
-**money/prices/market cap are yuan** (statement original currency), **volume is
-shares**. Upstream quirks (手, percent-as-number) are normalized; `_raw=True` /
-`_units="native"` / `Client(validate=False)` opt out when you need source fidelity.
+Normalized results use **decimals for ratios and returns** (0.01 = 1%) and **shares
+for volume**. Monetary values are in yuan where specified. Financial statements
+use their original reporting currency.
 
-## Daily K-line depth
+Use `_raw=True` for original rows, or `_units="native"` to retain source units with
+normalized field names. `Client(validate=False)` keeps unit conversion and
+disables validation.
 
-Individual stocks and ETFs have daily bars since their first listing day
-(earliest 1991); a single range query is capped at 5 years, 500 bars per call
-by default (`Client(max_limit=...)` to adjust).
+## Daily price history
+
+Daily bars go back to the first listing day for individual stocks and ETFs, with
+the earliest listings dating to 1991. A range query spans up to five years and
+returns up to 500 bars by default. Set `Client(max_limit=...)` to adjust the bar limit.
 
 ## Use it from AI agents
 
-- MCP server: `pip install wmshare` provides the `wmshare-mcp` command
-  (stdio transport; published on the official MCP registry).
-- Skill + `llms.txt` / `llms-full.txt` are generated from the docs for
-  LLM-friendly context. See [docs/AI.md](AI.md).
+- Install `wmshare[mcp]` to run the `wmshare-mcp` server over stdio.
+- See the [AI integration guide](AI.md) for the bundled skill and documentation
+  files for language models.
 
 ## Where to go next
 
-The in-depth documentation is in Chinese:
-[GUIDE.md](GUIDE.md) (task recipes, batching, troubleshooting) ·
-[INDICATORS.md](INDICATORS.md) (indicator catalog) ·
-[API.md](API.md) (132 core endpoints) ·
-[examples/](../examples/README.md) (15 runnable numbered examples, all with an
-offline `--demo` mode) · [AGENTS.md](../AGENTS.md) and
-[SKILL.md](../src/wmshare/skills/wmshare/SKILL.md) for agent integration.
+The detailed [guide](GUIDE.md), [indicator catalog](INDICATORS.md), and
+[API reference](API.md) are in Chinese. The [examples index](../examples/README.md)
+lists the 15 numbered examples and identifies which ones can run offline.
+See [AGENTS.md](../AGENTS.md) and the [bundled skill](../src/wmshare/skills/wmshare/SKILL.md)
+for agent integration.
 
 ## Disclaimer & license
 
