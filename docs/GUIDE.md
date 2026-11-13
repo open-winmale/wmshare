@@ -223,7 +223,7 @@ cli.screener.query("$ROE_TTM_LAST > 0.30", limit=0)   # 只要命中数（不拉
 # 全市场宽度（服务端索引直出；*_pct 是百分数数值、median_pct 是小数）
 cli.screener.index_breadth_summary()
 # {'total': 5685, 'up': 540, 'down': 5002, 'up_pct': 9.5, 'median_pct': -0.0154, ...}
-# total = 当日参与涨跌统计的家数（全市场列表是 5,691，含停牌等不参与统计的）
+# total = 当日参与涨跌统计的家数（全市场列表是 5,375，含停牌等不参与统计的）
 cli.screener.index_top_movers(limit=10)     # 涨幅榜（desc=False 跌幅榜）
 
 # 公司档案
@@ -282,7 +282,7 @@ res["caliber"]["valuation"]   # {'metric': 'pe', 'window': '3y'}
 
 ```python
 rows = cli.stocks.list()          # 全市场证券列表，一次拿全
-len(rows)                         # 5691（A 股；字段 symbol/name/exchange/industry/…）
+len(rows)                         # 5375（A 股；字段 symbol/name/exchange/industry/…）
 rows[0]                           # {'exchange': 'sz', 'industry': 'industry.S480301',
                                   #  'industry_name': '股份制银行', 'is_st': False,
                                   #  'listed': '1991-04-03', 'name': '平安银行',
@@ -400,24 +400,24 @@ cron 每交易日收盘后分批增量（16:20 宽基、16:23/16:26 申万一级
 服务端一次取数接口（如 `cli.moneyflow.board()`），逐票批量留给确需逐票
 历史的场景，并配合 `batch_iter` 边取边落盘。
 
-### 5.2 一站式：全市场 = 12 次请求
+### 5.2 一站式：全市场 = 11 次请求
 
 ```python
 codes = [r["symbol"] for r in cli.stocks.list()]
 res = cli.batch_all("kline.snapshot", codes)
-len(res.results), res.requests    # (5691, 12)——逐票要 5,691 次，批量 12 次
+len(res.results), res.requests    # (5375, 11)——逐票要 5,375 次，批量 11 次
 res.to_df()                       # 每标的一行长表（symbol 列在前；需 pandas）
 ```
 
-实测（2026-10-30，免费档）：500 标的单批 0.7–4 秒（随网络波动），A 股全市场 12 批 9–16 秒
-一次跑完，0 错误；20 只银行股单批 0.06 秒 1 次请求。
+实测（2026-10-30，免费档，当时全市场 5,691 家）：500 标的单批 0.7–4 秒（随网络波动），
+A 股全市场 12 批 9–16 秒一次跑完，0 错误；20 只银行股单批 0.06 秒 1 次请求。
 历史类多行结果（`kline.bars`/`dividend.history`）建议改用 `batch_iter` 边取边落盘。
 
 ### 5.3 容错与续跑
 
 - **批级容错**：`batch_all(..., on_batch_error="skip")` 跳过失败批继续，失败批进 `errors`
   （键形如 `batch#3[1000:1500]`）。**不要用 `call_batch(on_error="skip")` 做容错**——
-  它逐票发请求，12 批会放大成 5,691 次、正好制造 429。
+  它逐票发请求，11 批会放大成 5,375 次、正好制造 429。
 - **429 续跑**：限流在任何模式下都会停止并给出续跑位置——消息含已完成标的数与
   `codes[done:]` 切片，稍后续跑 `batch_all(name, codes[done:])` 即可，不要无脑重试。
 - **算力超限**：单批触发 `CALC_LIMIT_EXCEEDED` 时减小 `batch_size`。
@@ -542,8 +542,8 @@ poller.start()               # 或切后台：daemon 线程定时轮询；退出
 ## 10. 配额与性能实测
 
 免费档：500 次/小时、5,000 次/日（更高额度与条款以开放平台为准）。
-按请求次数计费意味着批量是乘法级省**请求次数**：全市场 4 个指标 × 12 批 = 48 次，
-仍占小时额度不到 10%。实测基线（2026-10-29）：全市场 5,691 家快照 12 批约 9 秒、
+按请求次数计费意味着批量是乘法级省**请求次数**：全市场 4 个指标 × 11 批 = 44 次，
+仍占小时额度不到 10%。实测基线（2026-10-29，当时全市场 5,691 家）：快照 12 批约 9 秒、
 0 错误；`res.requests` 字段可直接对比标的数看省了多少。
 
 注意口径：SDK 配额按请求次数算，开放平台 EC 按**计算量**算（第 5.1 节）——
@@ -564,7 +564,7 @@ poller.start()               # 或切后台：daemon 线程定时轮询；退出
   且 SDK 会触发阈值告警（`Client(ec_warn_threshold=None)` 可关）。
 - `screener.query` 的 EC 随 where/order **引用列的物化成本**变化（轻列 70~500，
   重列如 `$NPTS_TTM_YOY_LAST` 实测 4.8 万），但**不随标的数放大**：一次请求扫完
-  5,691 家。还是那句话：先 `cat.search` 查码，能用已物化的轻列就别绕重列。
+  整个全市场。还是那句话：先 `cat.search` 查码，能用已物化的轻列就别绕重列。
 - topN 抽样不仅省不了钱，还会**算错**：3Y 均值与 TTM 并不单调（例：立霸股份 TTM
   6.9%、3Y 均值 11.4%，进不了 top60），而且真命中 108 只、`[:60]` 这个截断本身就不够。
 - 纪律：**先 `cat.search` 查码再写计算**；条件选股走 `cli.screener.query`；批量

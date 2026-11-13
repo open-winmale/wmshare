@@ -129,7 +129,7 @@ for r in res["rows"][:5]:
   `$主题+[窗口 3Y/5Y/10Y]+[统计量 TTM/YOY/AVG/MIN/TREND]+[_LAST]`；**全量码表按数据类型分章**
   （概览/股票行情/股票指标/行业/指数及ETF/宏观/期货/可转债/港美）见
   [docs/INDICATORS.md](docs/INDICATORS.md)。
-- **全市场批量**：`cli.batch_all(name, codes)` 把 A 股 5,691 家压成 **12 次请求**绕开限流。
+- **全市场批量**：`cli.batch_all(name, codes)` 把 A 股 5,375 家压成 **11 次请求**绕开限流。
 - **全市场筛选服务端直出**：`cli.screener.query("$ROE_TTM_LAST > 0.15")` 一条表达式扫全市场索引
   （`count`=真实命中数）；涨跌全景/分桶/行业分布/涨跌榜同走服务端预计算索引，毫秒级。
 - **离线目录防编造**：288 个底层函数、132 个核心接口、2,752 个指标码离线可查
@@ -255,15 +255,15 @@ df = cli.call_batch("kline.snapshot", ["600519", "000001"]).to_df()   # 带 symb
 
 ## 批量取数
 
-服务端按**请求次数**限流（免费档 500 次/小时、5,000 次/日）：逐票取 A 股 5,691 家 = 5,691 次请求
-必然撞 429，批量只需 **12 次**。三入口——一站式、逐批、单批：
+服务端按**请求次数**限流（免费档 500 次/小时、5,000 次/日）：逐票取 A 股 5,375 家 = 5,375 次请求
+必然撞 429，批量只需 **11 次**。三入口——一站式、逐批、单批：
 
 ```python
 import wmshare
 cli = wmshare.Client.from_env()
 codes = [r["symbol"] for r in cli.stocks.list()]      # 全市场代码池（港/美换 market）
 res = cli.batch_all("kline.snapshot", codes)           # ① 一站式：自动分批聚合
-print(len(res.results), res.requests)                  # 5,691 12
+print(len(res.results), res.requests)                  # 5,375 11
 for i, part in enumerate(cli.batch_iter("dividend.history", codes), 1):
     print(f"第 {i} 批 {len(part.results)} 家")          # ② 逐批：可进度、可中断、可落盘
 cli.call_batch("kline.snapshot", ["600519", "000001"]) # ③ 单批（≤500），to_df() 出长表

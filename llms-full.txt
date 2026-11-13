@@ -154,7 +154,7 @@ for r in res["rows"][:5]:
   `$主题+[窗口 3Y/5Y/10Y]+[统计量 TTM/YOY/AVG/MIN/TREND]+[_LAST]`；**全量码表按数据类型分章**
   （概览/股票行情/股票指标/行业/指数及ETF/宏观/期货/可转债/港美）见
   [docs/INDICATORS.md](docs/INDICATORS.md)。
-- **全市场批量**：`cli.batch_all(name, codes)` 把 A 股 5,691 家压成 **12 次请求**绕开限流。
+- **全市场批量**：`cli.batch_all(name, codes)` 把 A 股 5,375 家压成 **11 次请求**绕开限流。
 - **全市场筛选服务端直出**：`cli.screener.query("$ROE_TTM_LAST > 0.15")` 一条表达式扫全市场索引
   （`count`=真实命中数）；涨跌全景/分桶/行业分布/涨跌榜同走服务端预计算索引，毫秒级。
 - **离线目录防编造**：288 个底层函数、132 个核心接口、2,752 个指标码离线可查
@@ -280,15 +280,15 @@ df = cli.call_batch("kline.snapshot", ["600519", "000001"]).to_df()   # 带 symb
 
 ## 批量取数
 
-服务端按**请求次数**限流（免费档 500 次/小时、5,000 次/日）：逐票取 A 股 5,691 家 = 5,691 次请求
-必然撞 429，批量只需 **12 次**。三入口——一站式、逐批、单批：
+服务端按**请求次数**限流（免费档 500 次/小时、5,000 次/日）：逐票取 A 股 5,375 家 = 5,375 次请求
+必然撞 429，批量只需 **11 次**。三入口——一站式、逐批、单批：
 
 ```python
 import wmshare
 cli = wmshare.Client.from_env()
 codes = [r["symbol"] for r in cli.stocks.list()]      # 全市场代码池（港/美换 market）
 res = cli.batch_all("kline.snapshot", codes)           # ① 一站式：自动分批聚合
-print(len(res.results), res.requests)                  # 5,691 12
+print(len(res.results), res.requests)                  # 5,375 11
 for i, part in enumerate(cli.batch_iter("dividend.history", codes), 1):
     print(f"第 {i} 批 {len(part.results)} 家")          # ② 逐批：可进度、可中断、可落盘
 cli.call_batch("kline.snapshot", ["600519", "000001"]) # ③ 单批（≤500），to_df() 出长表
@@ -806,7 +806,7 @@ cli.screener.query("$ROE_TTM_LAST > 0.30", limit=0)   # 只要命中数（不拉
 # 全市场宽度（服务端索引直出；*_pct 是百分数数值、median_pct 是小数）
 cli.screener.index_breadth_summary()
 # {'total': 5685, 'up': 540, 'down': 5002, 'up_pct': 9.5, 'median_pct': -0.0154, ...}
-# total = 当日参与涨跌统计的家数（全市场列表是 5,691，含停牌等不参与统计的）
+# total = 当日参与涨跌统计的家数（全市场列表是 5,375，含停牌等不参与统计的）
 cli.screener.index_top_movers(limit=10)     # 涨幅榜（desc=False 跌幅榜）
 
 # 公司档案
@@ -865,7 +865,7 @@ res["caliber"]["valuation"]   # {'metric': 'pe', 'window': '3y'}
 
 ```python
 rows = cli.stocks.list()          # 全市场证券列表，一次拿全
-len(rows)                         # 5691（A 股；字段 symbol/name/exchange/industry/…）
+len(rows)                         # 5375（A 股；字段 symbol/name/exchange/industry/…）
 rows[0]                           # {'exchange': 'sz', 'industry': 'industry.S480301',
                                   #  'industry_name': '股份制银行', 'is_st': False,
                                   #  'listed': '1991-04-03', 'name': '平安银行',
@@ -983,24 +983,24 @@ cron 每交易日收盘后分批增量（16:20 宽基、16:23/16:26 申万一级
 服务端一次取数接口（如 `cli.moneyflow.board()`），逐票批量留给确需逐票
 历史的场景，并配合 `batch_iter` 边取边落盘。
 
-### 5.2 一站式：全市场 = 12 次请求
+### 5.2 一站式：全市场 = 11 次请求
 
 ```python
 codes = [r["symbol"] for r in cli.stocks.list()]
 res = cli.batch_all("kline.snapshot", codes)
-len(res.results), res.requests    # (5691, 12)——逐票要 5,691 次，批量 12 次
+len(res.results), res.requests    # (5375, 11)——逐票要 5,375 次，批量 11 次
 res.to_df()                       # 每标的一行长表（symbol 列在前；需 pandas）
 ```
 
-实测（2026-10-30，免费档）：500 标的单批 0.7–4 秒（随网络波动），A 股全市场 12 批 9–16 秒
-一次跑完，0 错误；20 只银行股单批 0.06 秒 1 次请求。
+实测（2026-10-30，免费档，当时全市场 5,691 家）：500 标的单批 0.7–4 秒（随网络波动），
+A 股全市场 12 批 9–16 秒一次跑完，0 错误；20 只银行股单批 0.06 秒 1 次请求。
 历史类多行结果（`kline.bars`/`dividend.history`）建议改用 `batch_iter` 边取边落盘。
 
 ### 5.3 容错与续跑
 
 - **批级容错**：`batch_all(..., on_batch_error="skip")` 跳过失败批继续，失败批进 `errors`
   （键形如 `batch#3[1000:1500]`）。**不要用 `call_batch(on_error="skip")` 做容错**——
-  它逐票发请求，12 批会放大成 5,691 次、正好制造 429。
+  它逐票发请求，11 批会放大成 5,375 次、正好制造 429。
 - **429 续跑**：限流在任何模式下都会停止并给出续跑位置——消息含已完成标的数与
   `codes[done:]` 切片，稍后续跑 `batch_all(name, codes[done:])` 即可，不要无脑重试。
 - **算力超限**：单批触发 `CALC_LIMIT_EXCEEDED` 时减小 `batch_size`。
@@ -1125,8 +1125,8 @@ poller.start()               # 或切后台：daemon 线程定时轮询；退出
 ## 10. 配额与性能实测
 
 免费档：500 次/小时、5,000 次/日（更高额度与条款以开放平台为准）。
-按请求次数计费意味着批量是乘法级省**请求次数**：全市场 4 个指标 × 12 批 = 48 次，
-仍占小时额度不到 10%。实测基线（2026-10-29）：全市场 5,691 家快照 12 批约 9 秒、
+按请求次数计费意味着批量是乘法级省**请求次数**：全市场 4 个指标 × 11 批 = 44 次，
+仍占小时额度不到 10%。实测基线（2026-10-29，当时全市场 5,691 家）：快照 12 批约 9 秒、
 0 错误；`res.requests` 字段可直接对比标的数看省了多少。
 
 注意口径：SDK 配额按请求次数算，开放平台 EC 按**计算量**算（第 5.1 节）——
@@ -1147,7 +1147,7 @@ poller.start()               # 或切后台：daemon 线程定时轮询；退出
   且 SDK 会触发阈值告警（`Client(ec_warn_threshold=None)` 可关）。
 - `screener.query` 的 EC 随 where/order **引用列的物化成本**变化（轻列 70~500，
   重列如 `$NPTS_TTM_YOY_LAST` 实测 4.8 万），但**不随标的数放大**：一次请求扫完
-  5,691 家。还是那句话：先 `cat.search` 查码，能用已物化的轻列就别绕重列。
+  整个全市场。还是那句话：先 `cat.search` 查码，能用已物化的轻列就别绕重列。
 - topN 抽样不仅省不了钱，还会**算错**：3Y 均值与 TTM 并不单调（例：立霸股份 TTM
   6.9%、3Y 均值 11.4%，进不了 top60），而且真命中 108 只、`[:60]` 这个截断本身就不够。
 - 纪律：**先 `cat.search` 查码再写计算**；条件选股走 `cli.screener.query`；批量
@@ -1268,8 +1268,8 @@ cp -r "$(python3 -c 'import wmshare; print(wmshare.skill_dir())')" ~/.agents/ski
    cat.function），禁止凭记忆编造；
 2. 单位铁律：比率/涨跌幅/分位一律小数（0.0396 = 3.96%、0.42 = 42% 分位），金额=元、
    量=股，不要做二次换算；cli.screener 宽度接口的 *_pct 例外，是百分数数值；
-3. 批量铁律：多标的取数用 cli.batch_all / cli.batch_iter（自动分批，A 股 5,691 家
-   只发 12 次请求），绝不写 for 循环逐票请求；一个批次只能同一个市场；
+3. 批量铁律：多标的取数用 cli.batch_all / cli.batch_iter（自动分批，A 股 5,375 家
+   只发 11 次请求），绝不写 for 循环逐票请求；一个批次只能同一个市场；
    注意批量省的是请求次数不省 EC（开放 API 按计算量计费，多标的脚本按标的数
    逐票计价）——全市场最新快照类数据优先用服务端一次取数接口
    （如 cli.moneyflow.board()），大消耗看 BatchResult.ec_cost / cli.last_ec_cost；
@@ -1300,7 +1300,7 @@ cp -r "$(python3 -c 'import wmshare; print(wmshare.skill_dir())')" ~/.agents/ski
 |---|---|---|
 | 凭记忆编造指标码 | `CatalogError` | "先 `cat.search` 确认码存在，再写取数代码" |
 | 把小数又 ×100 | 全部数值错 100 倍 | "返回值已是小数，展示时才格式化成百分比" |
-| `for code in codes:` 逐票请求 | 全市场必撞 429 | "改 `cli.batch_all(name, codes)`，5,691 家=12 次请求" |
+| `for code in codes:` 逐票请求 | 全市场必撞 429 | "改 `cli.batch_all(name, codes)`，5,375 家=11 次请求" |
 | 把全市场塞进一次批量反复跑 | 请求次数省了，EC 按标的数逐票计价照全额扣——重放几百遍会打穿配额 | "最新快照类用 `cli.moneyflow.board()` 一次取数；确需逐票历史用 batch_iter 边取边落盘，别循环重放" |
 | MCP 长结果塞爆上下文 | 后续推理变慢 | "改 `output=summary/count`，或缩小日期/标的范围" |
 | 一个批次混 A 股与港股 | 数据静默错误 | "一个 Client 只服务一个市场，分三次跑（共 29 批）" |

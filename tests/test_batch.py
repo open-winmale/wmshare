@@ -59,7 +59,7 @@ def make_client(session=None, **kw):
 
 
 def test_whole_market_needs_12_requests():
-    """A 股全市场 5691 家 + 500/批 → 恰好 12 次请求（而非 5691 次）。"""
+    """合成 5691 个代码 + 500/批 → 恰好 12 次请求（而非 5691 次）；非真实池规模。"""
     s = CountingSession()
     c = make_client(s)
     codes = [f"{i:06d}" for i in range(5691)]

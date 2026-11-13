@@ -60,11 +60,11 @@ print(p)   # 10-year PE percentile, e.g. 0.2115 = 21st percentile; moves daily
 The free tier allows 500 requests/hour and 5,000/day. Requests are billed
 **per request**, not per row — which is why batching matters:
 
-## Whole market in 12 requests
+## Whole market in 11 requests
 
 Looping over stocks one by one is the fastest way to hit rate limits. The batch
-helpers split the whole A-share market (5,691 symbols) into page requests —
-about **12 requests** for full coverage. See `examples/07_stocks_industry_batch.py`
+helpers split the whole A-share market (5,375 symbols) into page requests —
+about **11 requests** for full coverage. See `examples/07_stocks_industry_batch.py`
 and the README section on batch fetching.
 
 ## Find an indicator code
