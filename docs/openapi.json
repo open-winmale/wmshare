@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "wmshare 数据 API",
-    "version": "1.20.1",
+    "version": "1.20.2",
     "description": "覆盖 A 股、港股、美股的财经数据核心接口（Python SDK，`pip install wmshare`；`import wmshare`）。凭证必填：在开放平台（open.winmale.com）获取 client_id/api-key；遇到 401/403/429 错误消息即完整的申请与配置指引。覆盖行情 K 线（不复权/前复权/后复权、盘中、分时、ETF、指数）、三大报表（多期、合并 vs 母公司、树视图、新旧会计准则归一）、分红（历史/DPS/窗口/TTM 率）、公告与业绩披露、资金流与指标层。平台指标经 /indicator/get、/indicator/metrics 按指标代码寻址，全量 2752 个指标代码随包内置目录分发（分组清单见 docs/API.md）。",
     "license": {
       "name": "BSD-3-Clause",
@@ -398,8 +398,8 @@
     "/kline/snapshot": {
       "post": {
         "operationId": "kline_snapshot",
-        "summary": "行情摘要（symbol/close/percent/chg_20d）。",
-        "description": "底层目录函数 `kline.snapshot`。SDK 调用：`cli.kline.snapshot(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "summary": "单股行情快照（23 字段：价量、涨跌、均线、市值、标识）。",
+        "description": "价量与涨跌：close、percent、volume、amount、chg_5d、chg_10d、chg_20d、chg_90d、roi_1y。、均线与市值：ma20、ma60、ma120、ma60_up、vol_ratio_5、mv、mv_free。、标识与日期：symbol、name、industry、is_st、is_suspend、kline_date、kline_sas。、percent 与 chg_* 为小数，volume=股，amount 与市值=元；布尔字段为 ma60_up、is_st、is_suspend。、目录 returns_shape 由本仓精修条目给出完整字段表，不依赖上游注释。、底层目录函数 `kline.snapshot`。SDK 调用：`cli.kline.snapshot(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "市场行情"
         ],
@@ -434,17 +434,93 @@
                       "type": "string",
                       "description": "代码"
                     },
+                    "name": {
+                      "type": "string",
+                      "description": "名称"
+                    },
+                    "industry": {
+                      "type": "string",
+                      "description": "所属行业"
+                    },
+                    "kline_date": {
+                      "type": "string",
+                      "description": "K 线日期"
+                    },
+                    "kline_sas": {
+                      "type": "string",
+                      "description": "K 线采样戳"
+                    },
                     "close": {
                       "type": "number",
-                      "description": "最新价"
+                      "description": "最新价（元）"
                     },
                     "percent": {
                       "type": "number",
-                      "description": "涨跌幅"
+                      "description": "涨跌幅（小数）"
+                    },
+                    "volume": {
+                      "type": "number",
+                      "description": "成交量（股）"
+                    },
+                    "amount": {
+                      "type": "number",
+                      "description": "成交额（元）"
+                    },
+                    "chg_5d": {
+                      "type": "number",
+                      "description": "5 日涨跌（小数）"
+                    },
+                    "chg_10d": {
+                      "type": "number",
+                      "description": "10 日涨跌（小数）"
                     },
                     "chg_20d": {
                       "type": "number",
-                      "description": "20 日涨跌"
+                      "description": "20 日涨跌（小数）"
+                    },
+                    "chg_90d": {
+                      "type": "number",
+                      "description": "90 日涨跌（小数）"
+                    },
+                    "roi_1y": {
+                      "type": "number",
+                      "description": "近 1 年收益（小数）"
+                    },
+                    "ma20": {
+                      "type": "number",
+                      "description": "20 日均线（元）"
+                    },
+                    "ma60": {
+                      "type": "number",
+                      "description": "60 日均线（元）"
+                    },
+                    "ma120": {
+                      "type": "number",
+                      "description": "120 日均线（元）"
+                    },
+                    "vol_ratio_5": {
+                      "type": "number",
+                      "description": "5 日量比（倍）"
+                    },
+                    "mv": {
+                      "type": "number",
+                      "description": "总市值（元）"
+                    },
+                    "mv_free": {
+                      "type": "number",
+                      "description": "流通市值（元）"
+                    },
+                    "ma60_up": {
+                      "type": "boolean",
+                      "description": "MA60 上行"
+                    },
+                    "is_st": {
+                      "type": "boolean",
+                      "description": "是否 ST"
+                    },
+                    "is_suspend": {
+                      "type": "boolean",
+                      "description": "是否停牌"
                     }
                   }
                 }
@@ -5527,8 +5603,8 @@
     "/info/profile": {
       "post": {
         "operationId": "info_profile",
-        "summary": "公司档案摘要（名称/行业/组织类型/上市日期）。",
-        "description": "档案指标（$NAME 等）。SDK 调用：`cli.info.profile(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "summary": "公司档案摘要（name/industry/style_industry/org_type/listing_date）。",
+        "description": "美股无 ``$STYLE_INDUSTRY`` 变量，该字段返回 ``None``；港股亦可能为空。、返回键集合在各市场保持一致，便于调用方按同一结构解包。、档案指标（$NAME 等）。SDK 调用：`cli.info.profile(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "参考数据"
         ],

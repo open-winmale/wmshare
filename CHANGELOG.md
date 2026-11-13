@@ -10,6 +10,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.20.2] - 2026-11-14
+
+### Changed（行为变更）
+- **`InfoApi.profile` 按市场选码**：美股不再请求该市场未定义的
+  `$STYLE_INDUSTRY`；返回键集合恒为 5 个（name、industry、style_industry、
+  org_type、listing_date），美股 `style_industry` 显式为 `None`；cn 与港股保持
+  原五码单次 eval，取数脚本一字未变。此前美股调用整包抛 HTTP 400 undefined
+  variable。
+- **`kline.snapshot` 目录返回形状由 4 字段补全为 23 字段**：`docs/API.md` 字段表、
+  `docs/openapi.json` schema、类型化门面 docstring 与 llms 文档同步展开
+  （价量/涨跌/均线/市值/标识），并标注基础单位。域 YAML 的 `returns.shape`
+  优先于 inventory，故不修改任何 `generated/*.json`；上游注释仍只列 4 字段，
+  待跨仓补齐后可移除本覆盖。
+
+### Fixed
+- 美股 `cli.info.profile("AAPL")` 不再因一个不可用指标码打挂整包请求；
+  港股 `$STYLE_INDUSTRY` 返回 `None` 属正常缺值，仍保持五码。
+- `cli.kline.snapshot` 的 SDK docstring 不再只写 4 个字段；`percent`/`chg_*`
+  小数、`volume` 股、金额元、`ma60_up`/`is_st`/`is_suspend` 布尔均写入文档。
+- `profile` 对非 MAP 返回按无数据处理，保持 `-> dict` 契约，不再把非字典值
+  透传给调用方。
+
+### Tests
+- 新增 `tests/test_profile_snapshot_contract.py`：三市场 XS 字符串与键集合稳定、
+  单次 eval、排除表最小性、23 字段声明与 live 返回一致、单位声明不悬空；
+  离线 11 passed / 4 skipped，联网 15 passed / 0 skipped。
+
 ## [1.20.1] - 2026-11-14
 
 ### Changed（行为变更）

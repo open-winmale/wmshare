@@ -384,7 +384,14 @@ class KlineApi(_Api):
         return self._c.call("kline.query_min1_live", sym=symbol)
 
     def snapshot(self, symbol: str) -> Any:
-        """行情摘要（symbol/close/percent/chg_20d）。"""
+        """单股行情快照（23 字段：价量、涨跌、均线、市值、标识）。
+
+        价量与涨跌：close、percent、volume、amount、chg_5d、chg_10d、chg_20d、chg_90d、roi_1y。
+        均线与市值：ma20、ma60、ma120、ma60_up、vol_ratio_5、mv、mv_free。
+        标识与日期：symbol、name、industry、is_st、is_suspend、kline_date、kline_sas。
+        percent 与 chg_* 为小数，volume=股，amount 与市值=元；布尔字段为 ma60_up、is_st、is_suspend。
+        目录 returns_shape 由本仓精修条目给出完整字段表，不依赖上游注释。
+        """
         return self._c.call("kline.snapshot", sym=symbol)
 
     def is_etf(self, symbol: str) -> bool:
@@ -1851,12 +1858,30 @@ class InfoApi(_Api):
     _PROFILE_CODES = ["$NAME", "$INDUSTRY_CUR", "$STYLE_INDUSTRY",
                       "$ORG_ORGTYPE", "$ORG_LISTINGDATE"]
     _PROFILE_KEYS = ["name", "industry", "style_industry", "org_type", "listing_date"]
+    # 单个 undefined variable 会让整包 eval 直接 HTTP 400，故按市场排除不可用码，
+    # 而不是逐码降级（后者把 1 次请求变成 5 次）。实测 2026-11-14：
+    # cn 五码齐备；hk 五码齐备且 $STYLE_INDUSTRY 返回 None；us 仅 $STYLE_INDUSTRY
+    # 为 undefined variable，其余四码可用。指标目录里这五码均无 markets 声明。
+    _PROFILE_SKIP_BY_MARKET = {"us": {"$STYLE_INDUSTRY"}}
 
     def profile(self, symbol: str) -> dict:
-        """公司档案摘要（名称/行业/组织类型/上市日期）。"""
-        body = ", ".join(f'"{k}": {c}' for k, c in
-                         zip(self._PROFILE_KEYS, self._PROFILE_CODES))
-        return self._c.eval_result(f"return {{{body}}}", symbol=symbol) or {}
+        """公司档案摘要（name/industry/style_industry/org_type/listing_date）。
+
+        美股无 ``$STYLE_INDUSTRY`` 变量，该字段返回 ``None``；港股亦可能为空。
+        返回键集合在各市场保持一致，便于调用方按同一结构解包。
+        """
+        market = getattr(self._c, "market", "cn")
+        skip = self._PROFILE_SKIP_BY_MARKET.get(market, set())
+        pairs = [(k, c) for k, c in zip(self._PROFILE_KEYS, self._PROFILE_CODES)
+                 if c not in skip]
+        body = ", ".join(f'"{k}": {c}' for k, c in pairs)
+        out = self._c.eval_result(f"return {{{body}}}", symbol=symbol) or {}
+        # 上游正常返回 MAP；非 MAP 时按无数据处理，仍保持 dict 返回契约
+        values = out if isinstance(out, dict) else {}
+        selected = {k for k, _ in pairs}
+        # 被市场排除的字段显式置 None：不依赖「eval 里恰好没写」这一隐式保证
+        return {k: (values.get(k) if k in selected else None)
+                for k in self._PROFILE_KEYS}
 
 
 class EquityApi(_Api):

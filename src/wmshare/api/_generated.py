@@ -1037,7 +1037,7 @@ class KlineNS(_Ns):
     def snapshot(self, sym: str, _raw: bool = False, _df: bool = False) -> Any:
         """单股行情快照
 
-:returns: MAP · {symbol, close, percent, chg_20d}
+:returns: MAP · 23 字段行情快照（价量/涨跌/均线/市值/标识）
         """
         return self._client.call("kline.snapshot", sym=sym, _raw=_raw, _df=_df)
 

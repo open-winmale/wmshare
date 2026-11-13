@@ -155,10 +155,40 @@ functions:
     layer: L0
     params:
       - {name: sym, type: string, required: true}
-    returns: {desc: 'MAP · {symbol, close, percent, chg_20d}', shape_ref: inventory}
+    returns:
+      desc: 'MAP · 23 字段行情快照（价量/涨跌/均线/市值/标识）'
+      shape:
+        kind: object
+        cn: 行情快照
+        fields:
+          - {name: symbol, type: string, cn: 代码}
+          - {name: name, type: string, cn: 名称}
+          - {name: industry, type: string, cn: 所属行业}
+          - {name: kline_date, type: string, cn: K 线日期}
+          - {name: kline_sas, type: string, cn: K 线采样戳}
+          - {name: close, type: float64, cn: 最新价（元）}
+          - {name: percent, type: float64, cn: 涨跌幅（小数）}
+          - {name: volume, type: float64, cn: 成交量（股）}
+          - {name: amount, type: float64, cn: 成交额（元）}
+          - {name: chg_5d, type: float64, cn: 5 日涨跌（小数）}
+          - {name: chg_10d, type: float64, cn: 10 日涨跌（小数）}
+          - {name: chg_20d, type: float64, cn: 20 日涨跌（小数）}
+          - {name: chg_90d, type: float64, cn: 90 日涨跌（小数）}
+          - {name: roi_1y, type: float64, cn: 近 1 年收益（小数）}
+          - {name: ma20, type: float64, cn: 20 日均线（元）}
+          - {name: ma60, type: float64, cn: 60 日均线（元）}
+          - {name: ma120, type: float64, cn: 120 日均线（元）}
+          - {name: vol_ratio_5, type: float64, cn: 5 日量比（倍）}
+          - {name: mv, type: float64, cn: 总市值（元）}
+          - {name: mv_free, type: float64, cn: 流通市值（元）}
+          - {name: ma60_up, type: bool, cn: MA60 上行}
+          - {name: is_st, type: bool, cn: 是否 ST}
+          - {name: is_suspend, type: bool, cn: 是否停牌}
     example: 'kline.snapshot("600519")'
     units: {volume: lot}
-    notes: [快照内 percent 已是小数、volume 上游为手；缺此声明会让同一 MAP 混用两套单位]
+    notes:
+      - 快照内 percent 已是小数、volume 上游为手；缺此声明会让同一 MAP 混用两套单位
+      - 本仓精修 returns.shape 列全 23 字段；上游 xs:catalog 注释仍只列 4 字段，待跨仓补齐后可移除本覆盖
   - name: kline.screen_above_ma20
     cn: 收盘价在 MA20 之上
     kind: computed
