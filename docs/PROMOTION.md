@@ -33,7 +33,8 @@
 | VS Code @mcp gallery | 市场内 @mcp | 经官方 Registry 自动同步 | — | ☐ 确认已同步 |
 | Cline Marketplace | 其扩展内 MCP 市场 | PR 或提交 | server.json | ☐ 待提交 |
 | LobeHub | lopehub.com/mcp | 提交 server | repo | ☐ 待提交 |
-| awesome-mcp-servers | GitHub 仓库 PR | 加一行到 README 列表 | name + link + desc | ☐ 待提 PR |
+| awesome-mcp-servers | GitHub 仓库 PR | 加一行到 README 列表 | name + link + desc | ✅ PR 已发 punkpeye#19365（2026-11-13，待合并） |
+| awesome-quant（GitHub 量化导航库） | wilsonfreitas/awesome-quant PR | Market Data & Data Sources 段首加一行 | `- [wmshare](url) - \`Python\` \`MCP\` - desc.` | ✅ PR 已发 wilsonfreitas#1014（2026-11-13，待合并） |
 
 > 统一提交话术（描述字段直接复用 server.json 新描述）：
 > "Python SDK wmshare local MCP server: offline catalog discovery, 2,752 server-precomputed A-share/HK/US metrics, and market-data tools for AI agents."
