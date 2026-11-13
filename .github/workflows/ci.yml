@@ -31,6 +31,12 @@ jobs:
         run: python tools/check_leak.py
       - name: Catalog contract + anti-fabrication gate
         run: python tools/validate_catalog.py
+      - name: Metric taxonomy drift gate (optional adapter sidecar)
+        run: python tools/extract_metric_taxonomy.py --check
+      - name: Metric taxonomy contract (1:1 with metrics.json)
+        run: python tools/validate_metric_taxonomy.py
+      - name: Unit ledger contract (native units vs classification)
+        run: python tools/validate_units.py
       - name: Version consistency gate (six sources)
         run: python tools/check_version.py --check
       - name: License consistency gate (BSD-3-Clause)

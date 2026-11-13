@@ -1,0 +1,185 @@
+# 指标适配层分类元数据（人工维护源）
+#
+# 该文件只被 tools/extract_metric_taxonomy.py 读取，用来生成
+# src/wmshare/_catalog/generated/metric_taxonomy.json。
+# 不改变 metrics.json、Catalog 或任何现有取数接口。
+schema_version: 1
+taxonomy_version: "2026-11-13"
+
+scopes:
+  stock: 股票
+  industry: 行业
+  index: 指数
+  macro: 宏观
+  futures: 期货
+  cbond: 可转债
+  screener: 选股条件
+
+topics:
+  quote: 行情与交易
+  valuation: 估值
+  profitability: 盈利与回报
+  growth: 成长
+  scale: 规模
+  statements: 财务报表科目
+  cashflow: 现金流
+  solvency: 资产负债与偿债
+  efficiency: 运营效率
+  dividend: 分红
+  ownership: 股东与治理
+  profile: 公司档案
+  disclosure: 披露
+  terms: 转债条款
+  macro: 宏观
+  estimates: 预期与评级
+  screener: 选股条件
+  other: 其他
+
+periods:
+  snapshot: 截面/快照
+  daily: 日频
+  weekly: 周频
+  monthly: 月频
+  quarterly: 季频
+  annual: 年频
+  ttm: 滚动十二个月
+  latest_report: 最新报告期
+  multi_year: 多年窗口
+  unknown: 未知
+
+windows:
+  none: 无窗口
+  ytd: 年初至今
+  "1y": 1 年
+  "3y": 3 年
+  "5y": 5 年
+  "10y": 10 年
+  "3q": 3 个季度
+  unknown: 未知
+
+calibers:
+  consolidated: 合并口径
+  parent: 归母/母公司
+  deducted: 扣非
+  total: 总量
+  free_float: 流通
+  overall: 整体法/行业整体
+  median: 中位数
+  weighted: 加权
+  equal_weight: 等权
+  adjusted: 复权
+  unadjusted: 不复权
+  before_tax: 税前
+  after_tax: 税后
+  unknown: 未知
+
+unit_kinds:
+  ratio: 比率（小数）
+  money: 金额（元）
+  price: 价格（元）
+  shares: 股数/成交量（股）
+  per_share: 每股金额
+  multiple: 倍数
+  days: 天数
+  percentile: 分位（0..1）
+  index_point: 指数点
+  count: 计数
+  text: 文本
+  bool: 布尔
+  unknown: 未知
+
+# 精选组 → (scope, topic)。组 id 与 fund.indicators.yaml 一致。
+group_topics:
+  valuation: [stock, valuation]
+  profitability: [stock, profitability]
+  growth: [stock, growth]
+  scale: [stock, scale]
+  cashflow: [stock, cashflow]
+  solvency: [stock, solvency]
+  efficiency: [stock, efficiency]
+  dividend: [stock, dividend]
+  market_quote: [stock, quote]
+  profile: [stock, profile]
+  revenue_mix: [stock, scale]
+
+macro_themes:
+  - CPI
+  - GDP
+  - M1
+  - M2
+  - PPI
+  - PMI
+  - ELEC
+  - POPULATION
+  - HOUSE
+  - CPCA
+  - CR
+  - RETAIL
+  - ASSET_INVEST
+  - FIXED_ASSET
+  - BOND_YIELD
+  - SHIBOR
+  - LPR
+  - FX
+  - EXPORT
+  - IMPORT
+  - TRADE
+  - INDUSTRIAL
+  - SALES
+  - REVENUE
+
+# 按顺序首匹配；pattern 作用在去掉 $ID_ / $IDW_ / $INDEX_ / $CUR_IND_ 前缀后的码上。
+topic_rules:
+  - {pattern: '\$(BONUS|DPS|DPSS|BE_RATE|DIVIDEND|BONUS_RATE|VST_|VST$|N_DY|DY_)', topic: dividend}
+  # 每股口径（$PS_CR/$PS_TR/$PS_RE/$PS_NCFO/$PS_SE）不是市销率，先于 valuation 匹配。
+  - {pattern: '\$PS_(CR|TR|RE|NCFO|SE)', topic: scale}
+  - {pattern: '\$(PE|PB|PCF|PS|PEG|EV_EBIT|EV_EBITDA|PR|PCT_PE|PCT_PB|PCT_PS)(?:_|$)', topic: valuation}
+  - {pattern: '\$(ROE|ROA|ROIC|GM|NP_RATE|OP_RATE|rNT|rTT|rTTS|CORE_NP_RATE|NPM|EBIT_MARGIN|MARGIN|EXPENSE_RATE|COST_RATE|HROE|ROTA|PT)(?:_|$)', topic: profitability}
+  - {pattern: '\$(NCFO|NCFI|NCFF|FCF|NROE|CF_|CASHFLOW|SSIR|OFI_NET|NPR)', topic: cashflow}
+  - {pattern: '\$(TL_RATE|IBD_RATE|GW_RATE|LD|QUICK|WACC|CASH_RATIO|CASH_TO_DEBT|DEBT|CURRENT_RATIO|INTEREST_COVER|DER|IBD|ICR|QR|SD|MFNS_TCL|NIBD|TTS)(?:_|$)', topic: solvency}
+  - {pattern: '(_DAYS|_TURNOVER|TA_TURNOVER|CCC_DAYS|SEXE_RATE|MEXE_RATE|RD_RATE|COST_TOTAL_RATE|ADP_DAYS|AR_DAYS|AP_DAYS|IO_DAYS|FE_RATE|^(?:\$)(CT|CTM|CTR|CTS|CTOTAL)$)', topic: efficiency}
+  # 成交量族先于 growth 匹配：$VOLUME_AR_DAY 的 "AR" 是「后复权」，不是年化(annualized return)。
+  - {pattern: '^\$VOLUME_', topic: quote}
+  - {pattern: '(_YOY|_AR_|FORECAST|YJYG|YJKB)', topic: growth}
+  - {pattern: '\$(TR|NP|NPTS|DPPR|EPS|CEPS|EBITDA|OC|OIE|BPS|CASH|EV|CORE_NP|EXPENSE|REVENUE|PROFIT|EBIT|HEAVY_ASSET|INCOME_BANK|INCOME_STRU_MAX|TP)(?:_|$)', topic: scale}
+  - {pattern: '\$(CLOSE|OPEN|HIGH|LOW|VOLUME|AMOUNT|PERCENT|CHG|MA_|AVG_|BIAS|AMPLITUDE|MACD|RSI|KDJ|BOLL|MF_|ROI|BETA|ALPHA|MV|SHARES|CAPITAL|VOL_|HOLD_|PRICE|CCI|WR|OBV|DMI|PSY|VR|ROC|MTM|EXPMA|SAR|TRIX|DPO|AROON|BBI|ENV|ASI|EMV|FI|VWAP|EOD_TECH_TIP|EQUITY_.*SHARE)', topic: quote}
+  - {pattern: '\$(HOLDER|PLEDGE|EQUITYPLEDGE|EXCHANGEHOLD|HGT|INSTITUTION|NATIONAL_TEAM|RELEASE|REORG|CONCERT|GUARANTEE|LITIGATION|VIOLATION|EXEC|BUYBACK|RELATED_TRADE|SHAREHOLDER|FREE_HOLDER|CONTROL|BROKER_HOLD|FUND_HOLD)', topic: ownership}
+  - {pattern: '\$(ANALYST|RATING|TARGET_PRICE|ESTIMATE)', topic: estimates}
+  - {pattern: '\$(CAIBAO|NOTICE|FILING|REPORT_NAME|REPORT_TYPE|ACCOUNT_FIRM)', topic: disclosure}
+  - {pattern: '\$(NAME|CODE|EM2016|CSRC_INDUSTRY|IND|ORG|IPO|LIST|CCY|ASB|IS_|EMP_NUM|BENCH|SAS|REPORT_PERIOD|RDATE|FY|YEARDAY|DATE|BLGAINIAN|CONCEPT|CYCLICAL_TAG|HAS_B_SHARE|EQUITY_CHANGE_REASON|ISSUE|STYLE_|QUARTER|SYMS_TOP|SECTOR_)', topic: profile}
+  - {pattern: '\$(AEEX|BIZE|BIZT|CLBDR|APOR|ACC|IGDL|LV|PPE|TFAN|SALARY|COST_TOTAL|PPE_|QR_|LV_|NDG|NTGD|NES|ORTR|MLTD|STD|TTAX|OP_ASSET|TANGIBLE_ASSET|h[A-Z][A-Z0-9_]*)', topic: statements}
+  - {pattern: '\$(dROE|DROE|NT|TT|TAXR)(?:_|$)', topic: profitability}
+
+# 规则未命中的来源文件兜底由 tools/extract_metric_taxonomy.py 维护，
+# 不把上游来源路径放进随包分发的 taxonomy.yaml / sidecar。
+
+# 少量已知码的显式覆盖（优先于所有启发式）。
+code_overrides:
+  "$CPI": {period: monthly, unit_kind: index_point}
+  "$PPI": {period: monthly, unit_kind: index_point}
+  "$GDP": {period: quarterly, unit_kind: money}
+  "$PMI": {period: monthly, unit_kind: index_point}
+  "$MV_LAST": {caliber: [total], unit_kind: money}
+  "$MV_FREE_LAST": {caliber: [free_float], unit_kind: money}
+  "$BONUS_RATE_TTM_LAST": {period: ttm, unit_kind: ratio}
+  "$DPS_TTM_LAST": {period: ttm, unit_kind: per_share}
+  "$PE_TTM_LAST": {period: ttm, unit_kind: multiple}
+  # 上游 lixingren_base.xs:44 是 $MV_LAST / AT(isaslast, $SE_NOGW) / $CR_CM_LAST，
+  # $SE_NOGW = $SE - $GW，而 $SE 是「归属于母公司股东权益」→ 归母口径，不是合并。
+  "$PB_NOGW_LAST": {period: latest_report, caliber: [parent], unit_kind: multiple}
+  "$PCT_PE_TTM_10Y_LAST": {period: ttm, window: "10y", unit_kind: percentile}
+  "$PCT_PB_TTM_10Y_LAST": {period: ttm, window: "10y", unit_kind: percentile}
+  "$ROE_AVG3": {period: annual, window: "3y", caliber: [parent], unit_kind: ratio}
+  "$ROE_TTM_LAST": {period: ttm, unit_kind: ratio}
+  "$ID_ROE_TTM": {period: ttm, caliber: [overall], unit_kind: ratio}
+  "$ID_PE_TTM": {period: ttm, caliber: [overall], unit_kind: multiple}
+  "$IDW_BONUS_RATE_HM": {period: ttm, caliber: [equal_weight], unit_kind: ratio}
+  "$IDW_BONUS_RATE_MV": {period: ttm, caliber: [weighted], unit_kind: ratio}
+  "$IDW_BONUS_RATE_TTM": {period: ttm, caliber: [weighted], unit_kind: ratio}
+  "$BOND_ISSUE_COUPON_IR": {period: snapshot, unit_kind: ratio}
+  "$LD": {caliber: []}
+
+quality:
+  # 不能组合（扁平）与未知口径的比例上限。先测量再收紧。
+  other_max: 0.05
+  caliber_unknown_max: 0.30

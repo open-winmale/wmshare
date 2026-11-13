@@ -13,6 +13,8 @@ from pathlib import Path
 
 import pytest
 
+import wmshare
+
 from fake_client import fake_client
 from wmshare._demo import load_demo_snapshot
 
@@ -46,7 +48,8 @@ def _load(name: str):
 # ---- 离线示例：子进程真实执行（不联网、零凭证） ----
 
 @pytest.mark.parametrize("name,needles", [
-    ("02_catalog_tour.py", ["数据域：18", "指标代码：精选 74 / 目录全量 2752"]),
+    # 计数从目录派生（精选码数会随 curated 组增减），只锁结构不锁数字。
+    ("02_catalog_tour.py", ["数据域：18", "指标代码：精选 ", "/ 目录全量 2752"]),
     ("03_error_handling.py", ["[auth]", "[limit]", "open.winmale.com",
                               "WMSHARE_CLIENT_ID"]),
     ("09_ai_skill_setup.py", ["skill 位置", "skill 自检", "cat.search"]),
@@ -57,6 +60,12 @@ def test_offline_example_runs(name, needles):
     assert result.returncode == 0, result.stderr
     for needle in needles:
         assert needle in result.stdout, f"{name} 缺输出 {needle!r}"
+    if name == "02_catalog_tour.py":
+        # 精选码数必须与目录实际值一致（防示例打印写死数字）
+        curated = sum(len(g.get("metrics") or [])
+                      for d in wmshare.load().domains.values()
+                      for g in d.get("metric_groups") or [])
+        assert f"精选 {curated} /" in result.stdout
 
 
 # ---- 凭证示例：注入共享 FakeClient，端到端跑 main() ----
@@ -173,11 +182,22 @@ def test_11_statements_tour(capsys):
     assert "2024 年审计意见：标准无保留意见" in out
 
 
+def test_16_metric_adapter(snapshot, capsys):
+    """适配层示例：分类发现 + 长表 + 多标的小列表，不改变旧接口。"""
+    _load("16_metric_adapter.py").main(fake_client(), demo=True)
+    out = capsys.readouterr().out
+    assert "指标 scope：" in out
+    assert "valuation：可组合组" in out
+    assert "适配长表（4 行）" in out
+    assert "多标的小列表：2 标的" in out
+    assert "screener.query(fields=codes" in out
+
+
 def test_examples_index_covers_dir():
     """examples/README.md 课程表必须覆盖目录里每个脚本（防孤儿示例）。"""
     index = (EXAMPLES / "README.md").read_text(encoding="utf-8")
     scripts = sorted(p.name for p in EXAMPLES.glob("*.py"))
-    assert len(scripts) == 15, f"示例应恰为 15 个（编号课程），实际 {len(scripts)}：{scripts}"
+    assert len(scripts) == 16, f"示例应恰为 16 个（编号课程），实际 {len(scripts)}：{scripts}"
     for name in scripts:
         assert f"`{name}`" in index, f"examples/README.md 缺 {name} 的索引行"
 
@@ -186,6 +206,7 @@ def test_examples_index_covers_dir():
     "01_quickstart.py", "04_screener.py", "05_dividend_screener.py",
     "06_indicator_tour.py", "07_stocks_industry_batch.py", "08_pandas_analysis.py",
     "10_notice_monitor.py", "11_statements_tour.py", "15_backtest_ma.py",
+    "16_metric_adapter.py",
 ])
 def test_credential_examples_run_with_demo_snapshot(name):
     if name in ("07_stocks_industry_batch.py", "08_pandas_analysis.py"):

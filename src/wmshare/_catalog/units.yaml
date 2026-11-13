@@ -1,0 +1,65 @@
+# 指标码「原始单位」台账（人工维护源）
+#
+# 平台 API 默认返回**原始单位**，SDK 不做隐式换算（换算只在目录显式声明
+# unit: percent/yi_yuan/lot 时发生）。但上游 cn 名带 (亿)/(万)/(%) 等后缀，
+# 与真实数值并不总一致——本台账逐码登记「实测口径」，供文档与适配层展示。
+#
+# live 实测：2026-11-13（600519 / 113050）。新增或修正条目必须带 note 说明依据。
+schema_version: 1
+as_of: "2026-11-13"
+
+# 与「基础单位」不一致、需要显式提示的码。
+# base_unit 是 SDK 公开契约里的口径，native_unit 是实际返回值口径。
+overrides:
+  # ---- 成交量：指标层是「手」，kline 层已换算为「股」 ----
+  # 依据：$VOLUME_DAY * 100 / $EQUITY_FREE_SHARES == $TURNOVER_RATE（10 位全等），
+  # 上游 iwencai_technical.xs 的换手率公式自带 ×100（手→股）。
+  "$VOLUME":       {base_unit: shares, native_unit: lot, note: "指标层为手；cli.kline.bars 已换算为股"}
+  "$VOLUME_DAY":   {base_unit: shares, native_unit: lot, note: "指标层为手；cli.kline.bars 已换算为股"}
+  "$VOLUME_LAST":  {base_unit: shares, native_unit: lot, note: "指标层为手；cli.kline.bars 已换算为股"}
+  "$VOLUME_NR_DAY": {base_unit: shares, native_unit: lot, note: "指标层为手；cli.kline.bars 已换算为股"}
+  "$VOLUME_AR_DAY": {base_unit: shares, native_unit: lot, note: "指标层为手；cli.kline.bars 已换算为股"}
+
+  # ---- 宏观房地产：原值就是亿元 ----
+  "$RE_INVEST":     {base_unit: money, native_unit: yi_yuan, note: "宏观房地产投资，原值亿元"}
+  "$RE_INVEST_YTD": {base_unit: money, native_unit: yi_yuan, note: "宏观房地产投资年初累计，原值亿元"}
+  "$RE_VALUE":      {base_unit: money, native_unit: yi_yuan, note: "商品房销售额，原值亿元"}
+  "$RE_VALUE_YTD":  {base_unit: money, native_unit: yi_yuan, note: "商品房销售额年初累计，原值亿元"}
+
+  # ---- 百分数未规范化 ----
+  "$ROC_TTM":                {base_unit: ratio, native_unit: percent, note: "实测 1.76 = 176%"}
+  "$ROC_TTM_LAST":           {base_unit: ratio, native_unit: percent, note: "实测 1.76 = 176%"}
+  "$BONUS_FUNDS_TOTAL_RATE": {base_unit: ratio, native_unit: percent, note: "实测 182.16 = 182%"}
+
+# cn 带 (亿)/(万亿)/(万元)/(千元) 但数值已是基础单位：命名遗留，不改值。
+naming_legacy:
+  pattern: '\\((?:亿|万亿|万元|千元|万|千)[^)]*\\)'
+  rule: "后缀为历史命名；值已是基础单位（元/股），读取以返回值为准"
+  # 已验证样本（live 2026-11-13）：$MV_LAST / $SE_TTM / $SE_NOGW / $RETAIL /
+  # $STOCK_SH_MARKET 等 92 个 stock 码，值全部 >= 1e6（元），无一为亿元。
+  verified_count_min: 90
+
+# 校验：这些不变量一旦破坏，说明上游改了单位或本台账过期。
+invariants:
+  - id: volume_lot
+    desc: "指标层成交量是手：$VOLUME_DAY*100/流通股本 == $TURNOVER_RATE"
+    codes: ["$VOLUME_DAY"]
+  - id: mv_is_yuan
+    desc: "$MV_LAST == $CLOSE_LAST * $EQUITY_TOTAL_SHARES_LAST（元）"
+    codes: ["$MV_LAST", "$CLOSE_LAST", "$EQUITY_TOTAL_SHARES_LAST"]
+
+# 门面接口（非指标码）的单位口径，供文档与测试锚定。
+# 这些走函数域 units 声明或纯转置，不在 metrics.json 里。
+facades:
+  "cbond.bars":
+    # live 实测 2026-11-13（123291）：close=132, volume=220864, amount=29107595
+    # amount/close = 220512 ≈ volume → 成交量是「张」（1 张 = 100 元面值），不是股。
+    fields:
+      open: price
+      high: price
+      low: price
+      close: price
+      volume: zhang       # 转债面值口径
+      amount: money
+    invariant: "amount ≈ close * volume"
+    note: "列式窗口按位转行，不改数值；不复权"

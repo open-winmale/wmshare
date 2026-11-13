@@ -7,6 +7,9 @@
 ```bash
 python3 tools/check_leak.py         # 内容规范扫描（见下）
 python3 tools/validate_catalog.py   # 域目录合同 + 防编造回溯
+python3 tools/extract_metric_taxonomy.py --check  # 指标适配层 sidecar 漂移
+python3 tools/validate_metric_taxonomy.py         # sidecar 与 metrics.json 1:1
+python3 tools/validate_units.py                   # 单位台账（手/亿元/百分数）
 python3 tools/check_version.py --check  # 六处版本声明互校（含 SECURITY.md 表头）
 python3 tools/guard_coverage.py --min 0.156  # 守护声明覆盖率下限（防回退）
 python3 tools/gen_api_docs.py       # 重生成 docs/API.md（改了目录必须重跑）
@@ -18,8 +21,8 @@ pytest --cov=wmshare --cov-branch --cov-fail-under=85   # 全部测试（不联�
 python3 -m mypy                     # 类型检查
 ```
 
-真实取数冒烟（需要凭证）：`WMSHARE_LIVE=1 pytest tests/test_live.py`——覆盖全部 44 个
-核心接口与多个标的，做数值合理性断言（日期有序、价格为正、率类口径等）。
+真实取数冒烟（需要凭证）：`WMSHARE_LIVE=1 pytest tests/test_live.py`——覆盖全部
+`FRIENDLY_INDEX` 核心接口与多个标的，做数值合理性断言（日期有序、价格为正、率类口径等）。
 需要已配置的凭证（WMSHARE_* 环境变量或 ~/.wmshare/credentials.env）。
 
 文档一致性由 `tests/test_docs.py` 强制：API.md 的参数/示例/指标组/附录与目录逐项比对，

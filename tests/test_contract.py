@@ -1,4 +1,4 @@
-"""全接口合同测试：44 个核心接口 + 155 个底层函数都必须能按目录构造出合法调用。
+"""全接口合同测试：全部核心接口 + 底层函数都必须能按目录构造出合法调用。
 
 这是覆盖面最广的一层——不校验业务数值（那由 live 测试负责），而是保证：
 参数名/必填性/类型/默认值/规范化/命名空间 require 在全部接口上自洽。
@@ -78,7 +78,7 @@ def last_xs(cli) -> list[str]:
 
 @pytest.mark.parametrize("core_id", CORE_IDS)
 def test_core_interface_dispatches(cli, core_id):
-    """44 个核心接口：按签名必填参数调用，必须生成合法取数脚本。"""
+    """核心接口：按签名必填参数调用，必须生成合法取数脚本。"""
     ns, method = core_id.split(".", 1)
     cls = FRIENDLY_NAMESPACES[ns]
     sig = inspect.signature(getattr(cls, method))
@@ -97,7 +97,7 @@ def test_core_interface_dispatches(cli, core_id):
 
 @pytest.mark.parametrize("full_name", ALL_FNS)
 def test_low_level_function_accepts_all_catalog_params(cli, full_name):
-    """155 个底层函数：把目录声明的每个参数都显式传入，必须全部被接受。"""
+    """底层函数：把目录声明的每个参数都显式传入，必须全部被接受。"""
     fn = CAT.function(full_name)
     params = fn.get("params") or CAT.inventory_params(full_name)
     kwargs = {p["name"]: sample(p["name"], p.get("type", "any")) for p in params}
@@ -136,7 +136,7 @@ def test_generated_facade_signatures_match_catalog():
 
 
 def test_every_core_interface_has_openapi_operation():
-    """44 个核心接口在 OpenAPI spec 中都必须有对应操作（文档-代码一致性）。"""
+    """每个核心接口在 OpenAPI spec 中都必须有对应操作（文档-代码一致性）。"""
     import json
     from pathlib import Path
     spec = json.loads((Path(__file__).resolve().parents[1] / "docs" / "openapi.json")

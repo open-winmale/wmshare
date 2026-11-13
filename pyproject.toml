@@ -69,6 +69,8 @@ wmshare = [
     "_demo_data.json",
     "_catalog/schema/*.json",
     "_catalog/domains/*.yaml",
+    "_catalog/taxonomy.yaml",
+    "_catalog/units.yaml",
     "_catalog/generated/*.json",
     "_catalog/symbols/*.json",
     "skills/wmshare/*.md",

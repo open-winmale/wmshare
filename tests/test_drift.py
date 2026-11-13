@@ -55,3 +55,13 @@ def test_extractor_check_no_drift():
         import pytest
         pytest.skip("upstream 不可见（维护者本机才有），跳过 extractor 漂移检查")
     assert r.returncode == 0, out
+
+
+def test_metric_taxonomy_sidecar_no_drift():
+    r = _run(["tools/extract_metric_taxonomy.py", "--check"])
+    assert r.returncode == 0, r.stdout + r.stderr
+
+
+def test_metric_taxonomy_contract():
+    r = _run(["tools/validate_metric_taxonomy.py"])
+    assert r.returncode == 0, r.stdout + r.stderr
