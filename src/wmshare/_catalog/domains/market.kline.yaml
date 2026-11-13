@@ -85,7 +85,10 @@ functions:
       - {name: sym, type: string, required: true, desc: 6 位裸码}
     returns: {desc: MAP · bar 或 nil, shape_ref: inventory}
     example: 'kline.query_last("600519")'
-    units: {volume: lot}
+    # store.latest 返回未经 fmt_maps 的原始行：percent 是百分数、volume 是手，
+    # 且无 date/sas。此处显式声明 percent 换算，避免 ranges.percent=[-1,30]
+    # 把 -7.6558 这类正常涨跌幅误判为量级错误（默认调用抛 DataError）。
+    units: {volume: lot, percent: percent}
     ranges: {percent: [-1, 30], volume: [0, 1.0e+12]}
     checks: [volume_amount]
   - name: kline.is_etf

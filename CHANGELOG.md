@@ -10,6 +10,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.20.0] - 2026-11-13
+
+### Added
+- **转债日线 `cli.cbond.bars`**：列式窗口按位转行（date/open/high/low/close/volume/amount），
+  不复权；量=张、价/额=元，live 实测 `amount/close ≈ volume`。
+- **指标截面 `cli.indicator.basic` / `cli.indicator.financials`**：最新 TTM 估值
+  （pe_ttm/pb/turnover_rate/total_mv）与财务截面（roe_ttm/roe_avg/eps_ttm）；
+  字段绑定按 live 实测修正，禁用聚合别名，curated 74→78。
+- **指标分类 sidecar + 可选适配层**：`generated/metric_taxonomy.json` 给 2,752 个指标码补
+  scope/topic/period/window/caliber/unit_kind/status 七字段；`IndicatorAdapter` 仅在
+  unit/period/window/caliber/market 同口径时组合，不注册进友好层与 MCP 工具面。
+  配套 `validate_metric_taxonomy.py` 与原始单位台账门禁。
+- `tests/test_kline_last_300058.py`：300058 日 K 取数完整回归（离线 mock + 可选联网冒烟）。
+
+### Changed（行为变更）
+- **`cli.kline.last()` 改走 `kline.query_last`（`store.latest`）**：收盘后可取到当日已入库
+  日 K，不再被回测锚点窗口截断。需要「锚点内最新一根」仍用 `bars(n=1)[0]`，
+  两者日期可能相差一个交易日；返回字段口径不变（9 字段、涨跌幅为小数、成交量为股）。
+
+### Fixed
+- **`kline.query_last` 默认调用不再抛 `DataError`**：目录补 `units.percent` 声明，
+  store 原始行的百分数不再撞 `ranges.percent` 量级守护。
+- `last()` 单行按上游 `format.xs` 同款映射收口（`date` 由 `samplingTs` 固定 +08 派生、
+  `sas` 由 annual+sampling 拼接），数值不重算，单位换算仍由守护统一完成。
+- 台账注释去除数据商字面量，发布面禁词门禁恢复全绿。
+
+### Chore
+- 目录站认领（维护者声明 / Dockerfile / Add Server 审核）、渠道矩阵状态回写；
+  `server.json` 描述压到 registry 100 字符上限内。
+- 发版元数据：六处版本声明与 SECURITY.md 当前 minor 线同步到 1.20.0。
+
 ## [1.19.1] - 2026-11-13
 ### Added
 - 缺凭证 `AuthError` 文案附零凭证离线演示入口：报错即引导

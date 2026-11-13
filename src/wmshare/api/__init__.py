@@ -154,6 +154,36 @@ def _per_symbol(v: Any, fn: Any) -> Any:
     return fn(v)
 
 
+def _kline_last_row(row: Any) -> Any:
+    """把 ``kline.query_last`` 的 store 单行收口成与 ``bars()`` 一致的 9 字段。
+
+    上游 ``kline.fmt_maps`` 只接受数组（对单个 MAP 会报 CONOF NotSupportedType），
+    故单行路径在 SDK 侧按 ``sys/kline/format.xs`` 的同一字段映射收口。
+    单位换算已由 ``apply_units`` 依目录声明完成（percent 百分数→小数、
+    volume 手→股），此处只做字段挑选与 date/sas 派生，不重算任何数值。
+    """
+    if not isinstance(row, dict) or not row:
+        return None
+    ts = row.get("samplingTs")
+    bar_date = ""
+    if isinstance(ts, (int, float)) and not isinstance(ts, bool) and ts > 0:
+        # 采样时间戳按北京时间零点落库，固定 +08 避免宿主时区漂移；
+        # 与上游 time.date(samplingTs) 同义。
+        bar_date = (date(1970, 1, 1)
+                    + timedelta(seconds=float(ts) + 8 * 3600)).isoformat()
+    return {
+        "sas": f"{row.get('annual', '')}:{row.get('sampling', '')}",
+        "date": bar_date,
+        "open": float(row.get("open") or 0),
+        "high": float(row.get("high") or 0),
+        "low": float(row.get("low") or 0),
+        "close": float(row.get("close") or 0),
+        "volume": float(row.get("volume") or 0),
+        "amount": float(row.get("amount") or 0),
+        "percent": float(row.get("percent") or 0),
+    }
+
+
 def _finish_df(out: Any, df_flag: bool) -> Any:
     """_df 收口：批量结果逐标的转 DataFrame（与 call_batch(_df=True) 同语义）。"""
     if not df_flag:
@@ -316,11 +346,15 @@ class KlineApi(_Api):
     def last(self, symbol: str, _raw: bool = False) -> Any:
         """最新一根日 K（date/open/high/low/close/volume/amount/percent），无数据返回 None。
 
-        经规范化序列取最新一行，字段与 ``bars()`` 一致；``_raw=True`` 时跳过规范化，
-        返回上游原始行（字段名不同，含 CreatedAt/sampling 等）。
+        取 store 最新一行（``kline.query_last`` / ``store.latest``），含当日已入库的日 K；
+        不受回测锚点截断——需要「锚点内最新一根」请用 ``bars(n=1)[0]``。
+        字段与 ``bars()`` 一致；``_raw=True`` 时跳过规范化，返回上游原始行
+        （字段名不同，含 CreatedAt/sampling 等）。
         """
-        rows = self._c.call("kline.query_bars", sym=symbol, limit=1, _raw=_raw)
-        return _per_symbol(rows, lambda r: r[0] if r else None)
+        value = self._c.call("kline.query_last", sym=symbol, _raw=_raw)
+        if _raw:
+            return _per_symbol(value, lambda r: r)
+        return _per_symbol(value, _kline_last_row)
 
     def live(self, symbol: str, _raw: bool = False) -> Any:
         """盘中最新快照（盘中 tip；休市返回最近收盘快照）。"""
@@ -2174,7 +2208,7 @@ FRIENDLY_NAMESPACES: dict[str, type[_Api]] = {
 # 文档索引用注册表：(category, namespace, method, cn, 底层函数)
 FRIENDLY_INDEX: list[tuple[str, str, str, str, str]] = [
     ("market", "kline", "bars", "日 K 序列", "kline.query_bars[_adj]"),
-    ("market", "kline", "last", "最新一根日 K", "kline.query_bars"),
+    ("market", "kline", "last", "最新一根日 K", "kline.query_last"),
     ("market", "kline", "live", "盘中最新快照", "kline.query_last_live"),
     ("market", "kline", "batch_live", "多标的盘中快照", "kline.query_last_live_many"),
     ("market", "kline", "min1", "当日 1 分钟分时", "kline.query_min1_live"),

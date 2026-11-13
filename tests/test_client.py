@@ -350,12 +350,17 @@ def test_batch_live_caps_symbols(client):
 
 
 def test_call_routes_list_symbol_to_batch(client):
-    client.session.eval_result = {"600519": [{"close": 1.0}], "000001": [{"close": 2.0}]}
+    row = {"annual": 2026, "sampling": "D317", "samplingTs": 1794499200,
+           "open": 1.0, "high": 1.0, "low": 1.0, "close": 1.0,
+           "volume": 10, "amount": 1000.0, "percent": 1.0}
+    client.session.eval_result = {"600519": dict(row), "000001": dict(row)}
     out = client.kline.last(["600519", "000001"])
     line = last_eval(client)["json"]["xs_lines"][-1]
-    assert line.startswith(
-        'return {"600519": kline.fmt_maps(kline.query_bars("600519", 1))')
-    assert out.results == {"600519": {"close": 1.0}, "000001": {"close": 2.0}}
+    assert line == ('return {"600519": kline.query_last("600519"), '
+                    '"000001": kline.query_last("000001")}')
+    assert set(out.results) == {"600519", "000001"}
+    assert all(r["close"] == 1.0 and r["percent"] == pytest.approx(0.01)
+               for r in out.results.values())
     assert out.errors == {}
 
 
@@ -643,3 +648,60 @@ def test_moneyflow_board_builds_bare_call():
     ev = last_eval(client)
     assert ev["json"]["xs_lines"] == ["return moneyflow.board()"]
     assert ev["json"]["mode"] == "call"
+
+
+# ---- kline.last 回归：store.latest 取当日 + 单行单位/字段收口 ----
+# 2026-11-13 收盘后 300058 的 store 原始行（D317）：percent 为百分数、volume 为手。
+_KLINE_LAST_RAW = {
+    "annual": 2026, "sampling": "D317", "samplingTs": 1794499200,
+    "open": 14.29, "high": 14.58, "low": 13.63, "close": 13.63,
+    "volume": 5239008, "amount": 7328118768.01, "percent": -7.6558,
+    "CreatedAt": "2026-11-13T08:03:38.54Z",
+}
+
+
+def test_query_last_percent_declared_no_range_error(client):
+    """store.latest 的原始行 percent 是百分数；缺单位声明会被 ranges.percent 误杀。"""
+    client.session.eval_result = dict(_KLINE_LAST_RAW)
+    out = client.call("kline.query_last", sym="300058")
+    assert out["percent"] == pytest.approx(-0.076558)
+    assert out["volume"] == 523900800.0
+
+
+def test_kline_last_uses_query_last_not_anchor_window(client):
+    """last() 取 store.latest（含当日），不得退回 query_bars 的回测锚点窗口。"""
+    client.session.eval_result = dict(_KLINE_LAST_RAW)
+    bar = client.kline.last("300058")
+    assert last_eval(client)["json"]["xs_lines"] == [
+        'return kline.query_last("300058")']
+    assert bar["date"] == "2026-11-13"
+    assert bar["sas"] == "2026:D317"
+
+
+def test_kline_last_fields_and_numeric_anchor(client):
+    """单行收口成 bars() 同款 9 字段，单位为基础单位，数值自洽。"""
+    client.session.eval_result = dict(_KLINE_LAST_RAW)
+    bar = client.kline.last("300058")
+    assert set(bar) == {"sas", "date", "open", "high", "low", "close",
+                        "volume", "amount", "percent"}
+    assert bar["close"] == 13.63
+    assert bar["percent"] == pytest.approx(-0.076558)
+    assert bar["volume"] == 523900800.0
+    # 数值锚点：均价落在当日振幅内，且 volume×close≈amount（volume_amount 守护）
+    assert bar["low"] <= bar["amount"] / bar["volume"] <= bar["high"]
+    assert 0.4 <= bar["volume"] * bar["close"] / bar["amount"] <= 2.5
+
+
+def test_kline_last_raw_and_batch(client):
+    client.session.eval_result = dict(_KLINE_LAST_RAW)
+    raw = client.kline.last("300058", _raw=True)
+    assert raw["percent"] == -7.6558 and raw["sampling"] == "D317"
+    assert "date" not in raw
+
+    client.session.eval_result = {"300058": dict(_KLINE_LAST_RAW),
+                                 "600519": dict(_KLINE_LAST_RAW)}
+    batch = client.kline.last(["300058", "600519"])
+    assert set(batch.results) == {"300058", "600519"} and not batch.errors
+    for row in batch.results.values():
+        assert row["date"] == "2026-11-13"
+        assert row["percent"] == pytest.approx(-0.076558)

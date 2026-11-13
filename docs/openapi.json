@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "wmshare 数据 API",
-    "version": "1.19.1",
+    "version": "1.20.0",
     "description": "覆盖 A 股、港股、美股的财经数据核心接口（Python SDK，`pip install wmshare`；`import wmshare`）。凭证必填：在开放平台（open.winmale.com）获取 client_id/api-key；遇到 401/403/429 错误消息即完整的申请与配置指引。覆盖行情 K 线（不复权/前复权/后复权、盘中、分时、ETF、指数）、三大报表（多期、合并 vs 母公司、树视图、新旧会计准则归一）、分红（历史/DPS/窗口/TTM 率）、公告与业绩披露、资金流与指标层。平台指标经 /indicator/get、/indicator/metrics 按指标代码寻址，全量 2752 个指标代码随包内置目录分发（分组清单见 docs/API.md）。",
     "license": {
       "name": "BSD-3-Clause",
@@ -156,7 +156,7 @@
       "post": {
         "operationId": "kline_last",
         "summary": "最新一根日 K（date/open/high/low/close/volume/amount/percent），无数据返回 None。",
-        "description": "经规范化序列取最新一行，字段与 ``bars()`` 一致；``_raw=True`` 时跳过规范化，、返回上游原始行（字段名不同，含 CreatedAt/sampling 等）。、底层目录函数 `kline.query_bars`。SDK 调用：`cli.kline.last(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "description": "取 store 最新一行（``kline.query_last`` / ``store.latest``），含当日已入库的日 K；、不受回测锚点截断——需要「锚点内最新一根」请用 ``bars(n=1)[0]``。、字段与 ``bars()`` 一致；``_raw=True`` 时跳过规范化，返回上游原始行、（字段名不同，含 CreatedAt/sampling 等）。、底层目录函数 `kline.query_last`。SDK 调用：`cli.kline.last(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "市场行情"
         ],
@@ -184,7 +184,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "description": "K 线 bar 或 None（无数据）",
+                  "description": "K 线 bar",
                   "type": "object",
                   "properties": {
                     "sas": {

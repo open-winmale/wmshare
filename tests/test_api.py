@@ -111,9 +111,17 @@ def test_kline_bars_period_dispatch(cli):
 
 
 def test_last_returns_normalized_latest_row(cli):
-    cli.session.eval_result = [{"date": "2026-10-21", "close": 1309.69}]
-    assert cli.kline.last("600519") == {"date": "2026-10-21", "close": 1309.69}
-    assert last_xs(cli)[-1] == 'return kline.fmt_maps(__r)'
+    # last() 取 store.latest 的单行原始记录（非数组），由 SDK 收口成 bars() 同款 9 字段
+    raw = {"annual": 2026, "sampling": "D294", "samplingTs": 1792512000,
+           "open": 1300.0, "high": 1320.0, "low": 1290.0, "close": 1309.69,
+           "volume": 30000, "amount": 3929070000.0, "percent": 1.234}
+    cli.session.eval_result = dict(raw)
+    bar = cli.kline.last("600519")
+    assert bar["date"] == "2026-10-21" and bar["close"] == 1309.69
+    assert bar["sas"] == "2026:D294"
+    assert bar["percent"] == pytest.approx(0.01234)
+    assert bar["volume"] == 3000000.0
+    assert last_xs(cli) == ['return kline.query_last("600519")']
     cli.session.eval_result = [{"date": "2026-10-21", "net_mf": -161756700}]
     assert cli.moneyflow.last("600519") == {"date": "2026-10-21", "net_mf": -161756700}
     cli.session.eval_result = []
