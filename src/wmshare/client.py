@@ -262,6 +262,10 @@ class Client:
                 + (f"\n检测到旧版 finpipe 配置（{legacy}）：本项目已更名 wmshare，"
                    "凭证配置同步改为 WMSHARE_* 环境变量 / ~/.wmshare/credentials.env，"
                    "旧配置不再被读取，请迁移。\n" if legacy else "\n")
+                # 报错即引导（同 README「零凭证先试」口径）：申请凭证前先有
+                # 离线路径跑通调用姿势，别让首次接触停在冷冰冰的报错上。
+                + "零凭证可先试离线演示：wmshare.demo_client()"
+                  "（随包固定快照、不联网、非实时数据）。\n"
                 + f"{APPID_GUIDANCE}",
                 code="config")
         self.market = market

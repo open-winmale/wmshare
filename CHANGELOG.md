@@ -10,6 +10,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.19.1] - 2026-11-13
+### Added
+- 缺凭证 `AuthError` 文案附零凭证离线演示入口：报错即引导
+  `wmshare.demo_client()`（随包固定快照、不联网、非实时数据），
+  与 README「零凭证先试」同口径——用户在申请到凭证前就能跑通调用姿势。
+- PyPI 检索面增补：keywords 加 `a-share` / `convertible-bond` / `mcp` /
+  `model-context-protocol`，classifiers 加
+  `Topic :: Scientific/Engineering :: Information Analysis`。
+
 ## [1.19.0] - 2026-11-12
 ### Changed（行为变更）
 - **最低 Python 版本 3.10 → 3.11**：3.10 已于 2026-10 EOL，且依赖链上已累计两个

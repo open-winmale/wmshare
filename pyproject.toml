@@ -15,6 +15,7 @@ keywords = [
     "A股", "stock", "finance", "financial-data", "quant",
     "dividend", "kline", "financial-statements", "screener",
     "sdk", "china-stock", "pandas", "market-data",
+    "a-share", "convertible-bond", "mcp", "model-context-protocol",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -26,6 +27,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Office/Business :: Financial :: Investment",
+    "Topic :: Scientific/Engineering :: Information Analysis",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Typing :: Typed",
 ]

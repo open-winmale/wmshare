@@ -150,6 +150,8 @@ def test_client_without_credentials_rejected():
         Client(base_url="https://t", catalog=load(), session=FakeSession())
     assert ei.value.code == "config"
     assert "open.winmale.com" in str(ei.value)
+    # 报错即引导：零凭证离线演示入口必须随错误给出（同 README 首屏口径）
+    assert "wmshare.demo_client()" in str(ei.value)
 
 
 def test_missing_credentials_mention_legacy_finpipe(monkeypatch, tmp_path):
