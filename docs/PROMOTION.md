@@ -27,7 +27,7 @@
 | 站点 | 入口 | 提交方式 | 关键字段 | 状态 |
 |---|---|---|---|---|
 | 官方 MCP Registry | registry.modelcontextprotocol.io | 随发版自动（已通） | server.json | ✅ 已收录 1.19.0 |
-| Glama | glama.ai/mcp/servers → Add | 认领 / 提交 `io.github.open-winmale/wmshare` | name, description, repo | ☐ 待认领 |
+| Glama | glama.ai/mcp/servers → Add | 认领 / 提交 `io.github.open-winmale/wmshare` | name, description, repo | ✅ Add Server 已提交审核（2026-11-13，wmshare + repo URL；批准邮件后走 Dockerfile 检查与认领） |
 | Smithery | smithery.ai → publish | 连 GitHub 或贴 server.json | command `wmshare-mcp`, transport stdio | ☐ 待提交 |
 | mcp.so | mcp.so → add server | 提交仓库 URL | repo, readme | ☐ 待提交 |
 | VS Code @mcp gallery | 市场内 @mcp | 经官方 Registry 自动同步 | — | ☐ 确认已同步 |
