@@ -164,8 +164,8 @@ code_overrides:
   "$BONUS_RATE_TTM_LAST": {period: ttm, unit_kind: ratio}
   "$DPS_TTM_LAST": {period: ttm, unit_kind: per_share}
   "$PE_TTM_LAST": {period: ttm, unit_kind: multiple}
-  # 上游 lixingren_base.xs:44 是 $MV_LAST / AT(isaslast, $SE_NOGW) / $CR_CM_LAST，
-  # $SE_NOGW = $SE - $GW，而 $SE 是「归属于母公司股东权益」→ 归母口径，不是合并。
+  # 上游定义（base_catalog.json 已核对）：$MV_LAST / AT(isaslast, $SE_NOGW) /
+  # $CR_CM_LAST，$SE_NOGW = $SE - $GW，$SE 是「归属于母公司股东权益」→ 归母口径。
   "$PB_NOGW_LAST": {period: latest_report, caliber: [parent], unit_kind: multiple}
   "$PCT_PE_TTM_10Y_LAST": {period: ttm, window: "10y", unit_kind: percentile}
   "$PCT_PB_TTM_10Y_LAST": {period: ttm, window: "10y", unit_kind: percentile}

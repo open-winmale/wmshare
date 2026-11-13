@@ -13,7 +13,7 @@ as_of: "2026-11-13"
 overrides:
   # ---- 成交量：指标层是「手」，kline 层已换算为「股」 ----
   # 依据：$VOLUME_DAY * 100 / $EQUITY_FREE_SHARES == $TURNOVER_RATE（10 位全等），
-  # 上游 iwencai_technical.xs 的换手率公式自带 ×100（手→股）。
+  # 上游换手率公式自带 ×100（手→股）。
   "$VOLUME":       {base_unit: shares, native_unit: lot, note: "指标层为手；cli.kline.bars 已换算为股"}
   "$VOLUME_DAY":   {base_unit: shares, native_unit: lot, note: "指标层为手；cli.kline.bars 已换算为股"}
   "$VOLUME_LAST":  {base_unit: shares, native_unit: lot, note: "指标层为手；cli.kline.bars 已换算为股"}
