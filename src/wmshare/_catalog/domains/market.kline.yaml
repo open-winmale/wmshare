@@ -118,6 +118,9 @@ functions:
       - {name: syms, type: array, required: true, desc: 裸码列表}
     returns: {desc: MAP · symbol → bar}
     example: 'kline.query_last_live_many(["600519","000807"])'
+    units: {volume: lot}
+    notes: [批量与单票 query_last_live 同源同单位；apply_units 会下探到每只票的 bar，
+      缺此声明会使 batch_live() 的 volume 比 live() 小 100 倍且不报错]
   - name: kline.query_bars_live
     cn: 盘中拉最近 n 根日K（外部行情源 HTTP，≠分时）
     kind: raw
@@ -135,6 +138,8 @@ functions:
       - {name: sym, type: string, required: true}
     returns: {desc: 'MAP · 分时包 {trading_day, bars:[t,hm,close,volume,amount,...], bar_n}；休市读上一交易日'}
     example: 'kline.query_min1_live("600519")'
+    units: {volume: lot}
+    notes: [bars 列表内每分钟成交量上游为手；apply_units 会逐根下探换算成股]
   - name: kline.query_min1_live_meta
     cn: 分时头（无 bars）
     kind: raw
@@ -152,6 +157,8 @@ functions:
       - {name: sym, type: string, required: true}
     returns: {desc: 'MAP · {symbol, close, percent, chg_20d}', shape_ref: inventory}
     example: 'kline.snapshot("600519")'
+    units: {volume: lot}
+    notes: [快照内 percent 已是小数、volume 上游为手；缺此声明会让同一 MAP 混用两套单位]
   - name: kline.screen_above_ma20
     cn: 收盘价在 MA20 之上
     kind: computed
@@ -222,7 +229,7 @@ functions:
       close 为复权价，volume×close 与 amount 不再可比，故不套 volume_amount 不变量]
   - {name: kline.query_bars_props, cn: 历史 K 线（指定字段）, kind: raw, layer: L1}
   - {name: kline.query_bars_props_adj, cn: 历史 K 线（字段+复权）, kind: raw, layer: L1}
-  - {name: kline.query_last_adj, cn: 最新一根 K 线（复权）, kind: raw, layer: L1}
+  - {name: kline.query_last_adj, cn: 最新一根 K 线（复权）, kind: raw, layer: L1, units: {volume: lot, percent: percent}, ranges: {percent: [-1, 30], volume: [0, 1.0e+12]}, notes: [单行 MAP 无 normalize_with；上游 volume 为手、percent 为百分数，按 query_last 同款单位声明换算；量级界同 query_last；复权价不套 volume_amount 不变量]}
   - {name: kline.query_valid, cn: 有效 K 线序列（过滤停牌空bar）, kind: raw, layer: L1}
   - {name: kline.query_valid_adj, cn: 有效 K 线（复权）, kind: raw, layer: L1}
   - {name: kline.query_at_anchor, cn: 锚点日前 K 线, kind: raw, layer: L1}

@@ -812,7 +812,7 @@ class Client:
         result = self.eval_result(xs, symbol=symbol)
         if not _raw and _units == "base":
             result = apply_units(result, fn, fname=name, validate=self._validate,
-                                 market=self.market)
+                                 market=self.market, symbol=symbol)
         return _to_dataframe(result) if _df else result
 
     def call_batch(self, name: str, symbols: list[str], /, on_error: str = "raise",
@@ -891,7 +891,7 @@ class Client:
         if not _raw and _units == "base":
             for s, v in result.items():
                 result[s] = apply_units(v, fn, fname=name, validate=self._validate,
-                                        market=self.market)
+                                        market=self.market, symbol=s)
         if _df:
             result = {k: _to_dataframe(v) for k, v in result.items()}
         # raise 模式把 N 个标的压进一次 eval：1 次请求

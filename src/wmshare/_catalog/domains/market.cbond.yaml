@@ -25,7 +25,7 @@ notes:
   - 'kline_window 可批量：标的参数名为 code，call_batch 一次 eval 拼 MAP 即覆盖全表（省请求次数，不省 EC）'
 functions:
   - {name: cbond.board, cn: 转债全市场面板（快照+最新事件+盘中价+callHits+下修地板价）, layer: L0, units: {premiumRatio: percent, couponIr: percent}, ranges: {premiumRatio: [-100, 1000], couponIr: [0, 0.15]}, returns: {desc: ARR · 转债面板行（快照行 + event/resetEvent/outstanding/callHits/resetFloor 等）, shape_ref: inventory}, notes: ['bondPercent 仅盘中 live 命中时返回', 'callHits 仅正股收盘已跨触发价时返回']}
-  - {name: cbond.quote_list, cn: 转债合约快照全表, layer: L0, units: {premium_ratio: percent, coupon_ir: percent}, returns: {desc: ARR · 原始快照行（snake_case，未规范化）}}
+  - {name: cbond.quote_list, cn: 转债合约快照全表, layer: L0, units: {premium_ratio: percent, coupon_ir: percent}, ranges: {premium_ratio: [-100, 1000], coupon_ir: [0, 0.15]}, returns: {desc: ARR · 原始快照行（snake_case，未规范化）}, notes: ['量级界与同域 board / latest_quotes / of_stock 对齐（同一快照源）']}
   - {name: cbond.latest_quotes, cn: 转债最新快照, layer: L0, units: {premiumRatio: percent, couponIr: percent}, ranges: {premiumRatio: [-100, 1000], couponIr: [0, 0.15]}, returns: {desc: ARR · 规范化快照行（每债取 asOf 最新一行）, shape_ref: inventory}}
   - {name: cbond.of_stock, cn: 正股关联转债, layer: L0, units: {premiumRatio: percent, couponIr: percent}, ranges: {premiumRatio: [-100, 1000], couponIr: [0, 0.15]}, returns: {desc: ARR · 该公司全部转债快照行（含已到期历史债，按 outstanding 过滤）, shape_ref: inventory}}
   - {name: cbond.fmt_quote, cn: 快照行规范化, layer: L1, returns: {desc: MAP · 规范化快照行, shape_ref: inventory}}

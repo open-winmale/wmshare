@@ -10,6 +10,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.20.1] - 2026-11-14
+
+### Changed（行为变更）
+- **指数标的的单位守护按标的形状收窄**：`399300.INDEX` / `index.*` / 6 位 `399xxx`
+  等指数键调用 K 线接口时，不再按个股口径把 `volume` 当「手」×100，也不再套
+  `volume×close≈amount` 不变量；`percent` / `ranges` / `diffp_ratio` 等其余守护照常生效。
+  此前这类调用默认抛 `DataError`，用 `validate=False` 绕过则得到放大 100 倍的静默错值。
+- 批量返回 `{symbol: bar}` 的容器按每个 symbol 逐子树判定，混合批里指数与个股
+  各走自己的口径，不再由顶层标的决定整批换算方式。
+- `equity.query_holdernum.total_num_ratio` 与业绩预告 / 快报幅度字段的 `ranges`
+  下界放宽：户数环比负值、`np_amp_lower=-443.09%` 一类「由盈转亏」数据不再被
+  量级守护误杀。
+
+### Fixed
+- **同日同标的五个 K 线入口 `volume` 口径统一**：`query_last` / `query_last_live_many` /
+  `snapshot` / `query_min1_live` / `query_last_adj` 补齐 `units: {volume: lot}` 声明；
+  `percent` 统一为小数，当日分时 bar 的手→股换算恢复正确。
+- `forecast.yjyg_rows` 默认调用不再抛 `DataError`；域 YAML notes 中方括号被
+  flow sequence 误解析的问题同步修正。
+- `kline.query_last_adj.percent` 与 `cbond.quote_list` 两个字段补 `ranges` 量级守护
+  （照抄同域实测界，不凭空猜界），单位元规则测试恢复全绿。
+
+### Tests
+- 新增 `tests/test_index_unit_contract.py`：指数键识别边界、单位守护「只做减法」
+  四项断言、10 个成交量函数参数化、`validate=False` 静默错值回归、混合批容器、
+  高层入口与可选联网冒烟；离线 51 passed / 12 skipped，联网 63 passed / 0 skipped。
+- 新增 `tests/test_unit_contract.py`：契约声明、range 下界、带契约函数默认调用零
+  `DataError`、同日同标的五入口 `volume` 一致。
+- 静态门禁 13 项 + mypy 全绿；`--cov-branch` 88.27%（`units.py` 96%）。
+
+### Chore
+- 发版元数据：六处版本声明与 SECURITY.md `as_of` 同步到 1.20.1；
+  `[Unreleased]` 保持为空。
+
 ## [1.20.0] - 2026-11-13
 
 ### Added

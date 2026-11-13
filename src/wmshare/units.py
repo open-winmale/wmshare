@@ -48,6 +48,42 @@ def _scaled(x: Any, factor: float) -> Any:
     return x * factor if n is not None else x
 
 
+def is_index_symbol(symbol: str | None) -> bool:
+    """是否指数键（与上游 ``index_quote_bridge.xs::kline.is_index_sym`` 对齐）。
+
+    识别（大小写不敏感）：``index.*`` 前缀、``*.INDEX`` 后缀，以及 6 位
+    ``399xxx`` 深证指数裸码（可带 .SH/.SZ/.BJ 交易所后缀）。刻意不把
+    ``000001`` 一类歧义裸码当指数，避免误伤个股与 ETF。
+
+    指数点位行的 volume 是成分股聚合量、amount 是聚合成交额，既不以「手」
+    披露，也不满足个股 ``volume×close≈amount`` 关系；调用方据此收窄守护。
+    """
+    if not symbol:
+        return False
+    s = str(symbol).strip()
+    if not s:
+        return False
+    u = s.upper()
+    if u.startswith("INDEX."):
+        return True
+    if u.endswith(".INDEX"):
+        # 只认「6 位数字 .INDEX」：任意 foo.INDEX 若被当成指数会跳过守护，
+        # 比漏判更危险（上游桥接的合法形态是 index.* 与 399xxx / 000300.INDEX）。
+        head = u[: -len(".INDEX")]
+        return len(head) == 6 and head.isdigit()
+    bare = u
+    for prefix in ("CN.", "SH.", "SZ.", "BJ."):
+        if bare.startswith(prefix):
+            bare = bare[len(prefix):]
+            break
+    for suffix in (".SH", ".SZ", ".BJ"):
+        if bare.endswith(suffix):
+            bare = bare[: -len(suffix)]
+            break
+    # 收紧为纯数字：误判成指数会跳过守护，比漏判更危险
+    return len(bare) == 6 and bare.startswith("399") and bare.isdigit()
+
+
 def convert_field(token: str, v: Any) -> Any:
     """按声明把一个字段值换成基础单位；dict（期间→值）逐项、list 逐项；
     None/非数值原样返回。"""
@@ -160,7 +196,7 @@ def finish_metric(value: Any, meta: dict | None, *, code: str,
 
 
 def apply_units(result: Any, meta: dict, *, fname: str, validate: bool = True,
-                market: str = "cn") -> Any:
+                market: str = "cn", symbol: str | None = None) -> Any:
     """对一次目录调用的结果做单位换算（就地修改并返回）+ 量级/不变量校验。
 
     结果形态支持：行数组、单行 MAP、以及一层容器 MAP（如 forecast.snapshot 的
@@ -169,20 +205,27 @@ def apply_units(result: Any, meta: dict, *, fname: str, validate: bool = True,
     ``lot``（手→股）是 cn 专属换算：上游仅 A 股/ETF 以手披露成交量，港股/美股
     上游即股，再乘 100 会膨胀两个数量级（volume_amount 不变量会拦下）。因此
     market != "cn" 时跳过 lot 换算、其余声明（percent/yi_yuan）照常生效。
+
+    ``symbol`` 为本次调用的标的（已归一）。指数点位行由上游 index_quote 桥接
+    生成，volume 是成分股聚合量、amount 是聚合成交额，既不以「手」披露，
+    也不满足个股 volume×close≈amount。故指数键下**只**剔除 lot 换算与
+    volume_amount 不变量，percent/ranges/diffp_ratio 等其余守护一律保留；
+    目录声明本身不改写（声明仍描述个股语义），避免污染 catalog 缓存。
     """
     validate_meta(meta, fname)
     units = meta.get("units") or {}
     ranges = meta.get("ranges") or {}
-    checks = [CHECKS[c] for c in meta.get("checks") or []]
+    checks = [(c, CHECKS[c]) for c in meta.get("checks") or []]
     declared = set(units) | set(ranges)
     if not declared and not checks:
         return result
 
-    def apply_fields(row: dict, path: str) -> None:
+    def apply_fields(row: dict, path: str, index_like: bool) -> None:
         for f, tok in units.items():
             if f not in row:
                 continue
-            if tok == "lot" and market != "cn":
+            if tok == "lot" and (market != "cn" or index_like):
+                # 指数 volume 不是「手」，不能按个股口径 ×100
                 continue
             row[f] = convert_field(tok, row[f])
         if validate:
@@ -190,18 +233,28 @@ def apply_units(result: Any, meta: dict, *, fname: str, validate: bool = True,
             for f, bounds in ranges.items():
                 if f in row:
                     _check_bounds(row[f], bounds, fname=fname, where=f"{where}{f}")
-            for c in checks:
+            for cid, c in checks:
+                if index_like and cid == "volume_amount":
+                    # 指数 close 是点数、amount 是聚合成交额，不变量不适用
+                    continue
                 c(row, fname, path)
 
-    def walk(node: Any, path: str) -> None:
+    def walk(node: Any, path: str, index_like: bool) -> None:
         if isinstance(node, list):
             for item in node:
-                walk(item, path)
+                walk(item, path, index_like)
         elif isinstance(node, dict):
-            apply_fields(node, path)
+            apply_fields(node, path, index_like)
             for k, v in node.items():
                 if k not in declared and isinstance(v, (dict, list)):
-                    walk(v, f"{path}.{k}" if path else k)
+                    # 批量返回 {symbol: bar} 容器：按 key 逐子树判定，混合批里
+                    # 指数与个股各走自己的口径。顶层 symbol 为指数时整体按指数
+                    # 处理（单标的路径）；批量路径的 symbol 是中性锚点，故由 key
+                    # 决定。不把 index_like 在这里重置，避免 {"bars": [...]} 这类
+                    # 普通数据字段被误当成个股容器而重新 ×100。
+                    child_index = index_like or (isinstance(k, str)
+                                                 and is_index_symbol(k))
+                    walk(v, f"{path}.{k}" if path else k, child_index)
 
-    walk(result, "")
+    walk(result, "", is_index_symbol(symbol))
     return result
