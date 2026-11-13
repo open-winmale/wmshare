@@ -93,6 +93,11 @@ COMPOSITE_EXAMPLES: dict[str, list[str]] = {
 # 返回说明覆盖（目录 shape 过粗的动态列表返回，按上游实现补字段级说明；
 # pct_of_total 为百分数数值（52.3=52.3%），涨跌幅/median_pct 为小数）
 RETURNS_OVERRIDES = {
+    # cbond.bars 底层是 kline_window（列式 MAP），包装后返回行数组：
+    # 必须覆盖 shape，否则文档会照抄 MAP 列结构。
+    ("cbond", "bars"): (
+        "ARR · 行 {date, open, high, low, close, volume, amount}"
+        "（列式窗口按位转行；量=张，价/额=元；不复权）"),
     ("screener", "index_breadth_bins"):
         "ARR · 行 label:str（档位） count:int pct_of_total:float（百分数，52.3=52.3%）",
     ("screener", "index_breadth_bin_industries"):
@@ -103,6 +108,12 @@ RETURNS_OVERRIDES = {
 FALLBACK_RETURNS = {
     ("indicator", "get"): "数值 · 单指标当前值",
     ("indicator", "metrics"): "MAP · {code: 值}",
+    ("indicator", "basic"):
+        "MAP · {pe_ttm, pb, turnover_rate, total_mv}（最新 TTM 估值；市值=元）",
+    ("indicator", "financials"):
+        "MAP · {roe_ttm, roe_avg, eps_ttm}（roe_avg=近3年平均；eps_ttm=归母）",
+    ("cbond", "bars"):
+        "ARR · 行 date/open/high/low/close/volume/amount（列式转行；量=张，价/额=元）",
     ("info", "profile"): "MAP · 档案（name/industry/style_industry/org_type/listing_date）",
     ("valuation", "hist_stats"):
         "MAP · {avg, current, median, min, max, pct, count, series:[unix秒,值]}（窗口上限 3 年）",
@@ -185,13 +196,25 @@ def method_doc(cls: type, method: str) -> tuple[str, str]:
     return parse_docstring(inspect.getdoc(getattr(cls, method)))[:2]
 
 
+# symbol 参数的示例值：默认是 A 股代码；转债/指数/港美股命名空间用各自真实代码。
+SYMBOL_EXAMPLES = {
+    "cbond": '"113050"',
+    "index": '"index.hs300"',
+    "intl": '"00700"',
+}
+
+
 def method_example(ns: str, method: str, params: list[Param]) -> str:
-    """机械生成调用示例：symbol 位置传 "600519"，其余取示例值表，无示例值的必填参数以 … 占位。"""
+    """机械生成调用示例：symbol 位置用该命名空间的真实代码，其余取示例值表。
+
+    无示例值的必填参数以 … 占位。symbol 不能一律写 "600519"——转债/指数接口
+    用股票代码会是跑不通的示例。
+    """
     overrides = METHOD_EXAMPLE_VALUES.get((ns, method), {})
     values = {**EXAMPLE_VALUES, **overrides}
     parts: list[str] = []
     if any(p.name == "symbol" for p in params):
-        parts.append('"600519"')
+        parts.append(SYMBOL_EXAMPLES.get(ns, '"600519"'))
     for p in params:
         if p.name == "symbol":
             continue

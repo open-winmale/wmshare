@@ -90,8 +90,8 @@ for r in res["rows"][:5]:
 
 ## 基本功能
 
-随包离线目录：**18 个数据域 · 288 个底层函数 · 2752 个指标代码**；友好层 **132 个核心接口**，
-按使用视角组织为（11 个指标组、74 个精选常用指标代码，`cat.search("中文")` 可编程检索）：
+随包离线目录：**18 个数据域 · 288 个底层函数 · 2752 个指标代码**；友好层 **135 个核心接口**，
+按使用视角组织为（11 个指标组、78 个精选常用指标代码，`cat.search("中文")` 可编程检索）：
 
 | 门面 | 核心能力 | 单位口径 |
 |---|---|---|
@@ -122,7 +122,7 @@ for r in res["rows"][:5]:
 
 **服务端预计算，先查目录再写代码**——目录里有的码不要自己算（eval 按标的数逐票计费 EC）：
 
-- **预置指标库（2,752 个指标码，11 组精选 74 码带量级守护）**：历史分位（`$PCT_PE_TTM_10Y_LAST`
+- **预置指标库（2,752 个指标码，11 组精选 78 码带量级守护）**：历史分位（`$PCT_PE_TTM_10Y_LAST`
   = PE 十年分位）、多窗口均值/最低/趋势（`$BONUS_RATE_3Y_AVG_LAST` = 近3年股息率TTM均值）、
   行业内分位（`$CUR_IND_ROE_PCT_LAST`，1=行业最高）、行业均值（`$ID_ROE_TTM`）、指数加权股息率
   （`$IDW_BONUS_RATE_HM`）、期货主力连续（`$FUT_CLOSE`）、宏观时序（`$CPI`）。命名语法
@@ -132,7 +132,7 @@ for r in res["rows"][:5]:
 - **全市场批量**：`cli.batch_all(name, codes)` 把 A 股 5,375 家压成 **11 次请求**绕开限流。
 - **全市场筛选服务端直出**：`cli.screener.query("$ROE_TTM_LAST > 0.15")` 一条表达式扫全市场索引
   （`count`=真实命中数）；涨跌全景/分桶/行业分布/涨跌榜同走服务端预计算索引，毫秒级。
-- **离线目录防编造**：288 个底层函数、132 个核心接口、2,752 个指标码离线可查
+- **离线目录防编造**：288 个底层函数、135 个核心接口、2,752 个指标码离线可查
   （`cat.search("中文")`），目录之外的名字显式报错。
 - **零凭证离线试跑**：`wmshare.demo_client()`（同签名、不联网，2026-10-30 固定快照；非实时数据）。
 - **数据守护**：全库单位统一（比率=小数、金额=元、量=股），返回前量级/不变量校验，违例抛 `DataError`。
@@ -141,7 +141,7 @@ for r in res["rows"][:5]:
 
 - **先查目录再写代码**（一行验证）：
   `python3 -c "import wmshare; print(wmshare.load().search('股息'))"`
-- **本地 MCP server**：20 个 task tools；全部 136 个 friendly API——132 登记 + 4 组合——均可用
+- **本地 MCP server**：20 个 task tools；全部 139 个 friendly API——135 登记 + 4 组合——均可用
   `wmshare_call(target=..., mode="api")` 兜底，macro 域仅此路径。配置：`pip install "wmshare[mcp]"`
   → `wmshare-mcp setup --client-id <AppId> --client-secret-stdin --market cn`（提示后粘贴 API Key，
   `wmshare-mcp doctor` 体检）；客户端最小配置
@@ -251,7 +251,8 @@ df = cli.call_batch("kline.snapshot", ["600519", "000001"]).to_df()   # 带 symb
 ```
 
 以上能力全部在离线目录可查（`cat = wmshare.load()` 后）：`cat.search("分位")`、`cat.metrics_in_group("dividend")`；
-全量指标码导航见 [INDICATORS.md](docs/INDICATORS.md)。
+全量指标码导航见 [INDICATORS.md](docs/INDICATORS.md)；按分类找码、判断哪些码可同批取，见
+[METRIC_ADAPTER.md](docs/METRIC_ADAPTER.md)（可选适配层，不改现有接口）。
 
 ## 批量取数
 
@@ -317,9 +318,9 @@ t["pe_pct"], t["pe_pct_window"], t["pct"]["pe"]["p3"]    # 5y 分位, '5y', 3y �
 ## 更多
 
 - **AI 原生**：随包 [SKILL.md](src/wmshare/skills/wmshare/SKILL.md)、[AI 用法](docs/AI.md)、本地 MCP server（skill 可复制进 .agents/.zcode/.claude 的 skills/）；生态工具 [big-winner](https://github.com/open-winmale/big-winner)。
-- **文档中心 [docs/](docs/README.md)**：使用指南 GUIDE（单票菜谱/批量/多市场/故障排查）· 指标库 [INDICATORS.md](docs/INDICATORS.md)（全量指标码按数据类型分章）· AI 用法 · llms.txt 索引 · [API 参考](docs/API.md)（按资产类别分章的 132 个核心接口 + 指标组）
+- **文档中心 [docs/](docs/README.md)**：使用指南 GUIDE（单票菜谱/批量/多市场/故障排查）· 指标库 [INDICATORS.md](docs/INDICATORS.md)（全量指标码按数据类型分章）· AI 用法 · llms.txt 索引 · [API 参考](docs/API.md)（按资产类别分章的 135 个核心接口 + 指标组）
 - **可转债日更管线**：`cli.cbond.daily()` → `article()` → `figures()` 一条命令出图文（三层口径 + 三道闸 + 状态机 + 事件日历，每个数字带 `sources` 与 `as_of`，缺条目抛错而非补猜测值）；实战 notebook 见 [docs/notebooks/cb_double_low.ipynb](docs/notebooks/cb_double_low.ipynb)（2026-11-07 真实数据）
-- **示例课程 [examples/](examples/README.md)**：15 个编号示例（入门→进阶→生产→AI），全部支持演示客户端离线试跑，CI 端到端覆盖
+- **示例课程 [examples/](examples/README.md)**：16 个编号示例（入门→进阶→生产→AI），全部支持演示客户端离线试跑，CI 端到端覆盖
 - **问题反馈 / 交流**：QQ 群 `1127142074`（搜索「wmshare开源交流群」）——使用问题、数据口径、bug 反馈欢迎进群，也欢迎 [GitHub Issues](https://github.com/open-winmale/wmshare/issues)
 - **维护者与治理**：[MAINTAINERS.md](MAINTAINERS.md)（响应承诺与发版流程）· [GOVERNANCE.md](GOVERNANCE.md) · [行为准则](CODE_OF_CONDUCT.md)
 

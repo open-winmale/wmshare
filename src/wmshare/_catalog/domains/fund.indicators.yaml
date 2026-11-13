@@ -1,11 +1,11 @@
 id: fund.indicators
-version: 1.3.0
+version: 1.4.0
 cn: 指标层
 kind: computed
 category: fundamentals
 priority: P0
 description: 平台公式计算的派生指标——数值不存在于任何披露文件中，由平台以行情/报表/股本/
-  分红等原始数据计算得出。11 个指标组精选 74 个常用指标代码按用途分组；全量指标代码清单
+  分红等原始数据计算得出。11 个指标组精选 78 个常用指标代码按用途分组；全量指标代码清单
   随包内数据目录分发（generated/metrics.json，以生成时计数为准）。
 data_origin: [平台计算]
 units:
@@ -26,8 +26,9 @@ metric_groups:
     depends_on: [market.kline, fund.statements, corp.equity]
     unit: 倍（分位类为小数）
     metrics:
-      - {code: '$PE_TTM_LAST', cn: PE(TTM)}
+      - {code: '$PE_TTM_LAST', cn: PE(TTM), range: [-10000, 10000]}
       - {code: '$PE_TTM_DPPR_LAST', cn: 扣非市盈率TTM}
+      - {code: '$PB_TTM_LAST', cn: 最新市净率(TTM), range: [0, 1000]}
       - {code: '$PB_NOGW_LAST', cn: 最新不含商誉市净率}
       - {code: '$PS_TTM_LAST', cn: 滚动市销率TTM}
       - {code: '$PCF_TTM_LAST', cn: 滚动市现率TTM}
@@ -139,6 +140,11 @@ metric_groups:
       - {code: '$MV_FREE_LAST', cn: 最新流通市值, range: [0, 1.0e+14]}
       - {code: '$AMOUNT_LAST', cn: 最新成交额, range: [0, 1.0e+12]}
       - {code: '$ROI_3', cn: 3年的年化投资收益率, range: [-1, 100]}
+      - {code: '$TURNOVER_RATE_LAST', cn: 最新换手率(流通股本口径), range: [0, 1]}
+      # 成交量族：上游为「手」，与 kline 层「股」不同（$VOLUME_DAY*100/free == 换手率）。
+      # 这里只声明量级守护、不声明 unit（保持脚本原始单位 = 手），换算交给调用方。
+      - {code: '$VOLUME_LAST', cn: 最新成交量(手), range: [0, 1.0e+12]}
+      - {code: '$VOLUME_DAY', cn: 当日成交量(手), range: [0, 1.0e+12]}
   - id: profile
     cn: 公司信息（档案直读）
     caliber: '性质注：本组为 ref.info 档案字段的指标化引用，非计算值（raw 透传）'

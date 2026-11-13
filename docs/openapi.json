@@ -2205,6 +2205,51 @@
         }
       }
     },
+    "/cbond/bars": {
+      "post": {
+        "operationId": "cbond_bars",
+        "summary": "转债日线表（行式）：列式窗口转成每根一行。",
+        "description": "字段为 ``date/open/high/low/close/volume/amount``。只做列转行，不改数值、、不做重排：行序与上游窗口一致，``date`` 取上游采样名前 10 位；某列缺失时、该位置补 ``None``。不复权；价格与金额单位为元（本币），成交量单位为**张**、（转债面值口径，1 张 = 100 元面值；live 实测 ``amount / close ≈ volume``）。、窗口无数据或返回非 MAP 形态时，空列表 / 原值透传。、底层目录函数 `cbond.kline_window`。SDK 调用：`cli.cbond.bars(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "市场行情"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "symbol": {
+                    "type": "string",
+                    "description": "转债代码（6 位裸码）"
+                  },
+                  "n": {
+                    "type": "integer",
+                    "description": "窗口根数，默认 120"
+                  }
+                },
+                "required": [
+                  "symbol"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ARR · 行 date/open/high/low/close/volume/amount（列式转行；量=张，价/额=元）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/cbond/universe_codes": {
       "post": {
         "operationId": "cbond_universe_codes",
@@ -3022,6 +3067,88 @@
         "responses": {
           "200": {
             "description": "MAP · {code: 值}",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/indicator/basic": {
+      "post": {
+        "operationId": "indicator_basic",
+        "summary": "每日估值当前截面：``pe_ttm`` / ``pb`` / ``turnover_rate`` / ``total_mv``。",
+        "description": "**只有当前值，不提供按交易日的历史序列**；也不接受日期参数——上游没有、按日回溯的估值序列，传入日期只会得到同一截面。、口径：``pe_ttm`` 与 ``pb`` 都是最新 TTM 口径（``$PE_TTM_LAST`` /、``$PB_TTM_LAST``）；``turnover_rate`` 按流通股本计，小数（0.0026 = 0.26%）；、``total_mv`` 为个股总市值、单位元（``$MV_LAST``，不是行业聚合值）。、字段名固定，缺失值以 ``None`` 表示。、指标代码批量直查。SDK 调用：`cli.indicator.basic(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "财务基本面"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "symbol": {
+                    "type": "string",
+                    "description": "标的裸码"
+                  }
+                },
+                "required": [
+                  "symbol"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "MAP · {pe_ttm, pb, turnover_rate, total_mv}（最新 TTM 估值；市值=元）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/indicator/financials": {
+      "post": {
+        "operationId": "indicator_financials",
+        "summary": "财务指标当前截面：``roe_ttm`` / ``roe_avg`` / ``eps_ttm``。",
+        "description": "**只有当前值，不是按报告期的百列宽表**。口径：``roe_ttm`` 是最新滚动、十二个月口径；``roe_avg`` 是**近 3 年**平均（``$ROE_AVG3``，不是上市以来、的历史均值）；``eps_ttm`` 是**归母**每股收益 TTM（不是扣非）。、比率类为小数，每股收益为元。、指标代码批量直查。SDK 调用：`cli.indicator.financials(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "财务基本面"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "symbol": {
+                    "type": "string",
+                    "description": "标的裸码"
+                  }
+                },
+                "required": [
+                  "symbol"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "MAP · {roe_ttm, roe_avg, eps_ttm}（roe_avg=近3年平均；eps_ttm=归母）",
             "content": {
               "application/json": {
                 "schema": {

@@ -4,9 +4,9 @@
 
 ## 指标族摘要（全量指标码见 INDICATORS.md，未内联进本文件）
 
-目录声明 11 个指标族 / 74 个精选指标码；全量指标码共 2752 个。按 [INDICATORS](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/INDICATORS.md) 查码，禁止自算已有指标。
+目录声明 11 个指标族 / 78 个精选指标码；全量指标码共 2752 个。按 [INDICATORS](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/INDICATORS.md) 查码，禁止自算已有指标。
 
-- `valuation` 估值（fund.indicators）：13 个
+- `valuation` 估值（fund.indicators）：14 个
 - `profitability` 盈利与回报（含杜邦）（fund.indicators）：9 个
 - `growth` 成长（fund.indicators）：6 个
 - `scale` 营收与利润规模（fund.indicators）：6 个
@@ -14,7 +14,7 @@
 - `solvency` 资产负债与偿债（fund.indicators）：6 个
 - `efficiency` 运营效率（fund.indicators）：9 个
 - `dividend` 分红（fund.indicators）：4 个
-- `market_quote` 行情与风险（K线衍生）（fund.indicators）：6 个
+- `market_quote` 行情与风险（K线衍生）（fund.indicators）：9 个
 - `profile` 公司信息（档案直读）（fund.indicators）：5 个
 - `revenue_mix` 收入构成占比（fund.indicators）：4 个
 
@@ -115,8 +115,8 @@ for r in res["rows"][:5]:
 
 ## 基本功能
 
-随包离线目录：**18 个数据域 · 288 个底层函数 · 2752 个指标代码**；友好层 **132 个核心接口**，
-按使用视角组织为（11 个指标组、74 个精选常用指标代码，`cat.search("中文")` 可编程检索）：
+随包离线目录：**18 个数据域 · 288 个底层函数 · 2752 个指标代码**；友好层 **135 个核心接口**，
+按使用视角组织为（11 个指标组、78 个精选常用指标代码，`cat.search("中文")` 可编程检索）：
 
 | 门面 | 核心能力 | 单位口径 |
 |---|---|---|
@@ -147,7 +147,7 @@ for r in res["rows"][:5]:
 
 **服务端预计算，先查目录再写代码**——目录里有的码不要自己算（eval 按标的数逐票计费 EC）：
 
-- **预置指标库（2,752 个指标码，11 组精选 74 码带量级守护）**：历史分位（`$PCT_PE_TTM_10Y_LAST`
+- **预置指标库（2,752 个指标码，11 组精选 78 码带量级守护）**：历史分位（`$PCT_PE_TTM_10Y_LAST`
   = PE 十年分位）、多窗口均值/最低/趋势（`$BONUS_RATE_3Y_AVG_LAST` = 近3年股息率TTM均值）、
   行业内分位（`$CUR_IND_ROE_PCT_LAST`，1=行业最高）、行业均值（`$ID_ROE_TTM`）、指数加权股息率
   （`$IDW_BONUS_RATE_HM`）、期货主力连续（`$FUT_CLOSE`）、宏观时序（`$CPI`）。命名语法
@@ -157,7 +157,7 @@ for r in res["rows"][:5]:
 - **全市场批量**：`cli.batch_all(name, codes)` 把 A 股 5,375 家压成 **11 次请求**绕开限流。
 - **全市场筛选服务端直出**：`cli.screener.query("$ROE_TTM_LAST > 0.15")` 一条表达式扫全市场索引
   （`count`=真实命中数）；涨跌全景/分桶/行业分布/涨跌榜同走服务端预计算索引，毫秒级。
-- **离线目录防编造**：288 个底层函数、132 个核心接口、2,752 个指标码离线可查
+- **离线目录防编造**：288 个底层函数、135 个核心接口、2,752 个指标码离线可查
   （`cat.search("中文")`），目录之外的名字显式报错。
 - **零凭证离线试跑**：`wmshare.demo_client()`（同签名、不联网，2026-10-30 固定快照；非实时数据）。
 - **数据守护**：全库单位统一（比率=小数、金额=元、量=股），返回前量级/不变量校验，违例抛 `DataError`。
@@ -166,7 +166,7 @@ for r in res["rows"][:5]:
 
 - **先查目录再写代码**（一行验证）：
   `python3 -c "import wmshare; print(wmshare.load().search('股息'))"`
-- **本地 MCP server**：20 个 task tools；全部 136 个 friendly API——132 登记 + 4 组合——均可用
+- **本地 MCP server**：20 个 task tools；全部 139 个 friendly API——135 登记 + 4 组合——均可用
   `wmshare_call(target=..., mode="api")` 兜底，macro 域仅此路径。配置：`pip install "wmshare[mcp]"`
   → `wmshare-mcp setup --client-id <AppId> --client-secret-stdin --market cn`（提示后粘贴 API Key，
   `wmshare-mcp doctor` 体检）；客户端最小配置
@@ -276,7 +276,8 @@ df = cli.call_batch("kline.snapshot", ["600519", "000001"]).to_df()   # 带 symb
 ```
 
 以上能力全部在离线目录可查（`cat = wmshare.load()` 后）：`cat.search("分位")`、`cat.metrics_in_group("dividend")`；
-全量指标码导航见 [INDICATORS.md](docs/INDICATORS.md)。
+全量指标码导航见 [INDICATORS.md](docs/INDICATORS.md)；按分类找码、判断哪些码可同批取，见
+[METRIC_ADAPTER.md](docs/METRIC_ADAPTER.md)（可选适配层，不改现有接口）。
 
 ## 批量取数
 
@@ -342,9 +343,9 @@ t["pe_pct"], t["pe_pct_window"], t["pct"]["pe"]["p3"]    # 5y 分位, '5y', 3y �
 ## 更多
 
 - **AI 原生**：随包 [SKILL.md](src/wmshare/skills/wmshare/SKILL.md)、[AI 用法](docs/AI.md)、本地 MCP server（skill 可复制进 .agents/.zcode/.claude 的 skills/）；生态工具 [big-winner](https://github.com/open-winmale/big-winner)。
-- **文档中心 [docs/](docs/README.md)**：使用指南 GUIDE（单票菜谱/批量/多市场/故障排查）· 指标库 [INDICATORS.md](docs/INDICATORS.md)（全量指标码按数据类型分章）· AI 用法 · llms.txt 索引 · [API 参考](docs/API.md)（按资产类别分章的 132 个核心接口 + 指标组）
+- **文档中心 [docs/](docs/README.md)**：使用指南 GUIDE（单票菜谱/批量/多市场/故障排查）· 指标库 [INDICATORS.md](docs/INDICATORS.md)（全量指标码按数据类型分章）· AI 用法 · llms.txt 索引 · [API 参考](docs/API.md)（按资产类别分章的 135 个核心接口 + 指标组）
 - **可转债日更管线**：`cli.cbond.daily()` → `article()` → `figures()` 一条命令出图文（三层口径 + 三道闸 + 状态机 + 事件日历，每个数字带 `sources` 与 `as_of`，缺条目抛错而非补猜测值）；实战 notebook 见 [docs/notebooks/cb_double_low.ipynb](docs/notebooks/cb_double_low.ipynb)（2026-11-07 真实数据）
-- **示例课程 [examples/](examples/README.md)**：15 个编号示例（入门→进阶→生产→AI），全部支持演示客户端离线试跑，CI 端到端覆盖
+- **示例课程 [examples/](examples/README.md)**：16 个编号示例（入门→进阶→生产→AI），全部支持演示客户端离线试跑，CI 端到端覆盖
 - **问题反馈 / 交流**：QQ 群 `1127142074`（搜索「wmshare开源交流群」）——使用问题、数据口径、bug 反馈欢迎进群，也欢迎 [GitHub Issues](https://github.com/open-winmale/wmshare/issues)
 - **维护者与治理**：[MAINTAINERS.md](MAINTAINERS.md)（响应承诺与发版流程）· [GOVERNANCE.md](GOVERNANCE.md) · [行为准则](CODE_OF_CONDUCT.md)
 
@@ -476,7 +477,7 @@ cat.metrics_in_group("dividend")                         # 指标组内全部精
 | 行业目录 / 行业成分 | `cli.stocks.industries(1)`（申万/恒生；美股目录树暂缺）/ `cli.stocks.industry_members("银行")`（中文名或代码 S48） |
 | 少量标的单批（≤500） | `cli.call_batch("kline.snapshot", ["600519", "000001"])` 或任意单标的接口传 list：`cli.kline.last(["600519", "000001"])`；`to_df()` 出每标的一行长表 |
 
-完整 132 个核心接口 + 4 个组合接口（可转债 3 + 回测 1）与全部底层函数：仓库用户看 docs/GUIDE.md（上手）与
+完整 135 个核心接口 + 4 个组合接口（可转债 3 + 回测 1）与全部底层函数：仓库用户看 docs/GUIDE.md（上手）与
 docs/API.md（参考）；pip 用户用 `cat.search(...)` / `cat.function(...)` 查（同一份合同）。
 全量指标码（2752 个）按数据类型分章的导航、命名语法与死码清单见 docs/INDICATORS.md（生成物）。
 
@@ -585,7 +586,7 @@ cp -r "$(python3 -c 'import wmshare; print(wmshare.skill_dir())')" ~/.agents/ski
 
 本指南是 **how-to + 解释层**：会做什么 → 怎么做好。其他层各有其位——
 教程看 [README](../README.md) 与 [examples/](../examples/README.md)（可运行课程），
-接口参考看 [API.md](API.md)（按资产类别分章的 132 个核心接口，生成物），
+接口参考看 [API.md](API.md)（按资产类别分章的 135 个核心接口，生成物），
 AI 用法看 [AI.md](AI.md)。
 
 > 代码块里的输出注释都是**真实运行结果**（2026-10-29，cn 市场，免费档凭证），
@@ -625,7 +626,7 @@ export WMSHARE_CLIENT_ID=<AppId> WMSHARE_CLIENT_SECRET=<API Key>
 
 ### 2.1 双层 API：门面 + 目录
 
-- **门面层** `cli.<命名空间>.<方法>()`：22 个命名空间、132 个核心接口，方法名动宾化可猜
+- **门面层** `cli.<命名空间>.<方法>()`：22 个命名空间、135 个核心接口，方法名动宾化可猜
   （`kline.bars`、`dividend.yield_ttm`、`screener.screen_limit_up`）。
 - **目录层** `cli.call("<域>.<函数名>", ...)`：288 个底层函数按目录合同直调，
   参数名以 `cat.function(name)["params"]` 为准。门面未包装的函数经属性直达
@@ -1186,7 +1187,7 @@ wmshare 取数代码**。优先用 MCP；没有 MCP 时用 skill 或文档上下
 - **目录先行**：指标码与函数可编程检索（`cat.search("中文")`），AI 不需要"背"接口，
   查一下再用；编造的码在发请求前就被 `CatalogError` 拦下。
 - **本地 MCP server**：20 个 task tools 覆盖发现、行情、财务、治理、披露、港美与批量；
-  全部 136 个 friendly API（132 登记 + 4 组合接口）均可经 `wmshare_call(mode="api")` 兜底
+  全部 139 个 friendly API（135 登记 + 4 组合接口）均可经 `wmshare_call(mode="api")` 兜底
   （macro 域 11 个接口仅此路径）。输出统一 units/rows/next_action。
 - **skill 随包分发**：单位铁律、意图→接口决策树、坑位清单、错误速查，装进 agent 即生效
   （`wmshare.skill_dir()`）。
@@ -1339,7 +1340,7 @@ python3 -c "import wmshare; print(wmshare.load().metric('\$PE_TTM_LAST'))"
 
 <!-- GENERATED by tools/gen_api_docs.py — do not hand-edit -->
 
-共 **18** 个数据域 · **132** 个核心接口 · **11** 个指标组（指标目录全量 2752 个指标代码）；全量 288 个底层函数见文末折叠附录。核心接口按资产类别分章，每接口一节（输入参数 / 输出字段 / 示例）。
+共 **18** 个数据域 · **135** 个核心接口 · **11** 个指标组（指标目录全量 2752 个指标代码）；全量 288 个底层函数见文末折叠附录。核心接口按资产类别分章，每接口一节（输入参数 / 输出字段 / 示例）。
 
 ## 能力总览
 
@@ -2314,7 +2315,7 @@ cli.cbond.latest_quotes()
 **示例**
 
 ```python
-cli.cbond.of_stock("600519")
+cli.cbond.of_stock("113050")
 ```
 
 #### `cli.cbond.query` — 按标的查条款事件
@@ -2332,7 +2333,7 @@ cli.cbond.of_stock("600519")
 **示例**
 
 ```python
-cli.cbond.query("600519")
+cli.cbond.query("113050")
 ```
 
 #### `cli.cbond.call_hits` — 强赎触发计数
@@ -2351,7 +2352,7 @@ cli.cbond.query("600519")
 **示例**
 
 ```python
-cli.cbond.call_hits("600519", trig=130.0)
+cli.cbond.call_hits("113050", trig=130.0)
 ```
 
 #### `cli.cbond.kline_window` — 转债日K窗口
@@ -2370,7 +2371,26 @@ cli.cbond.call_hits("600519", trig=130.0)
 **示例**
 
 ```python
-cli.cbond.kline_window("600519", n=30)
+cli.cbond.kline_window("113050", n=30)
+```
+
+#### `cli.cbond.bars` — 转债日线表（行式）
+
+转债日线表（行式）：列式窗口转成每根一行。
+
+**输入参数**
+
+| 参数 | 类型 | 必填 | 默认 | 说明 |
+|---|---|---|---|---|
+| `symbol` | string | 是 | — | 转债代码（6 位裸码） |
+| `n` | integer | 否 | `120` | 窗口根数，默认 120 |
+
+**输出**：ARR · 行 {date, open, high, low, close, volume, amount}（列式窗口按位转行；量=张，价/额=元；不复权）
+
+**示例**
+
+```python
+cli.cbond.bars("113050", n=30)
 ```
 
 #### `cli.cbond.universe_codes` — 转债代码全集
@@ -3319,17 +3339,54 @@ cli.indicator.get("600519", code="$PE_TTM_LAST")
 cli.indicator.metrics("600519", codes=["$PE_TTM_LAST", "$ROE_TTM_LAST"])
 ```
 
+#### `cli.indicator.basic` — 每日估值当前截面
+
+每日估值当前截面：``pe_ttm`` / ``pb`` / ``turnover_rate`` / ``total_mv``。
+
+**输入参数**
+
+| 参数 | 类型 | 必填 | 默认 | 说明 |
+|---|---|---|---|---|
+| `symbol` | string | 是 | — | 标的裸码 |
+
+**输出**：MAP · {pe_ttm, pb, turnover_rate, total_mv}（最新 TTM 估值；市值=元）
+
+**示例**
+
+```python
+cli.indicator.basic("600519")
+```
+
+#### `cli.indicator.financials` — 财务指标当前截面
+
+财务指标当前截面：``roe_ttm`` / ``roe_avg`` / ``eps_ttm``。
+
+**输入参数**
+
+| 参数 | 类型 | 必填 | 默认 | 说明 |
+|---|---|---|---|---|
+| `symbol` | string | 是 | — | 标的裸码 |
+
+**输出**：MAP · {roe_ttm, roe_avg, eps_ttm}（roe_avg=近3年平均；eps_ttm=归母）
+
+**示例**
+
+```python
+cli.indicator.financials("600519")
+```
+
 ---
 
-> 指标码全量 2752 个：按数据类型分章的全量导航见 [INDICATORS.md](INDICATORS.md)（生成物）；本节为精选 74 码。
+> 指标码全量 2752 个：按数据类型分章的全量导航见 [INDICATORS.md](INDICATORS.md)（生成物）；本节为精选 78 码。
 
 #### 指标组 估值（valuation）
 价格与股本 × TTM 利润/净资产/营收/现金流：PE=市值/归母净利TTM，PB=市值/归母净资产，PEG=PE/(增速×100) 等（单位 倍（分位类为小数））
 
 | 指标代码 | 中文名 | 量级守护 |
 |---|---|---|
-| `$PE_TTM_LAST` | PE(TTM) |  |
+| `$PE_TTM_LAST` | PE(TTM) | 范围 -10000…10000 |
 | `$PE_TTM_DPPR_LAST` | 扣非市盈率TTM |  |
+| `$PB_TTM_LAST` | 最新市净率(TTM) | 范围 0…1000 |
 | `$PB_NOGW_LAST` | 最新不含商誉市净率 |  |
 | `$PS_TTM_LAST` | 滚动市销率TTM |  |
 | `$PCF_TTM_LAST` | 滚动市现率TTM |  |
@@ -3441,6 +3498,9 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位 元（
 | `$MV_FREE_LAST` | 最新流通市值 | 范围 0…100000000000000.0 |
 | `$AMOUNT_LAST` | 最新成交额 | 范围 0…1000000000000.0 |
 | `$ROI_3` | 3年的年化投资收益率 | 范围 -1…100 |
+| `$TURNOVER_RATE_LAST` | 最新换手率(流通股本口径) | 范围 0…1 |
+| `$VOLUME_LAST` | 最新成交量(手) | 范围 0…1000000000000.0 |
+| `$VOLUME_DAY` | 当日成交量(手) | 范围 0…1000000000000.0 |
 
 #### 指标组 公司信息（档案直读）（profile）
 性质注：本组为 ref.info 档案字段的指标化引用，非计算值（raw 透传）
@@ -4757,7 +4817,7 @@ cli.workout.query("600519")
 **示例**
 
 ```python
-cli.intl.query_ccass("600519", limit=10)
+cli.intl.query_ccass("00700", limit=10)
 ```
 
 #### `cli.intl.query_shareholders` — 港股主要股东
@@ -4784,7 +4844,7 @@ cli.intl.query_ccass("600519", limit=10)
 **示例**
 
 ```python
-cli.intl.query_shareholders("600519", limit=10)
+cli.intl.query_shareholders("00700", limit=10)
 ```
 
 #### `cli.intl.query_org_rating` — 港股机构评级
@@ -4811,7 +4871,7 @@ cli.intl.query_shareholders("600519", limit=10)
 **示例**
 
 ```python
-cli.intl.query_org_rating("600519", limit=10)
+cli.intl.query_org_rating("00700", limit=10)
 ```
 
 #### `cli.intl.query_profit_forecast` — 港股盈利预测
@@ -4838,7 +4898,7 @@ cli.intl.query_org_rating("600519", limit=10)
 **示例**
 
 ```python
-cli.intl.query_profit_forecast("600519", limit=10)
+cli.intl.query_profit_forecast("00700", limit=10)
 ```
 
 #### `cli.intl.query_sellshort` — 港美沽空
@@ -4865,7 +4925,7 @@ cli.intl.query_profit_forecast("600519", limit=10)
 **示例**
 
 ```python
-cli.intl.query_sellshort("600519", limit=10)
+cli.intl.query_sellshort("00700", limit=10)
 ```
 
 #### `cli.intl.issue_info` — 美股发行信息
@@ -4883,7 +4943,7 @@ cli.intl.query_sellshort("600519", limit=10)
 **示例**
 
 ```python
-cli.intl.issue_info("600519")
+cli.intl.issue_info("00700")
 ```
 
 ### 多市场切换
@@ -5145,8 +5205,8 @@ cli.info.profile("600519")
 
 #### 指标层（`fund.indicators`）
 
-**性质**：指标 · **版本**：1.3.0  
-平台公式计算的派生指标——数值不存在于任何披露文件中，由平台以行情/报表/股本/ 分红等原始数据计算得出。11 个指标组精选 74 个常用指标代码按用途分组；全量指标代码清单 随包内数据目录分发（generated/metrics.json，以生成时计数为准）。
+**性质**：指标 · **版本**：1.4.0  
+平台公式计算的派生指标——数值不存在于任何披露文件中，由平台以行情/报表/股本/ 分红等原始数据计算得出。11 个指标组精选 78 个常用指标代码按用途分组；全量指标代码清单 随包内数据目录分发（generated/metrics.json，以生成时计数为准）。
 数据来源：平台计算。
 单位口径：ratio=小数（如 0.332 = 33.2%；指标层比率统一为小数，不是 15.0=15%）；money=元（与报表/资金流同口径；精选指标声明了量级守护范围）。
 - 指标代码带 _LAST 后缀 = 最新截面值；不带后缀 = 随最新财报期取值

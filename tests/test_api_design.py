@@ -224,7 +224,10 @@ def test_catalog_search_and_groups():
     assert metrics and all("code" in m for m in metrics)
     assert cat.search("   ") == []
     val = cat.metrics_in_group("valuation")
-    assert val and cat.metric(val[0]["code"]) == val[0]
+    # 组条目是 YAML 原始声明（code/cn/range），cat.metric 是「base + meta」合并视图；
+    # 断言两者在 code/cn 上一致，而不是整字典相等（meta 还带 group/unit）。
+    assert val and cat.metric(val[0]["code"])["code"] == val[0]["code"]
+    assert cat.metric(val[0]["code"])["cn"] == val[0]["cn"]
     groups = cat.metric_groups()
     assert {g["id"] for g in groups} >= {"valuation", "dividend", "revenue_mix"}
     assert all(g["count"] > 0 for g in groups)
@@ -235,7 +238,15 @@ def test_catalog_search_and_groups():
 def test_metric_lookup_is_indexed():
     cat = load()
     assert cat._metric_by_code["$PE_TTM_LAST"]["cn"] == "PE(TTM)"
-    assert cat.metric("$PE_TTM_LAST") is cat._metric_by_code["$PE_TTM_LAST"]
+    # 精选码的 metric() 返回 base 合并 meta 的新字典（不是同一个对象）；
+    # 这里锁「同一码只索引一次、字段值来自 base」。
+    merged = cat.metric("$PE_TTM_LAST")
+    assert merged["code"] == cat._metric_by_code["$PE_TTM_LAST"]["code"]
+    assert merged["cn"] == cat._metric_by_code["$PE_TTM_LAST"]["cn"]
+    # 未进精选组的码仍返回 base 本体（零拷贝）
+    bare = "$ACCOUNT_FIRM"
+    assert cat.metric_meta(bare) is None
+    assert cat.metric(bare) is cat._metric_by_code[bare]
 
 
 # ---------------------------------------------------------------- 生命周期与 DataFrame

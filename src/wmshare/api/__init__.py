@@ -481,6 +481,33 @@ class CbondApi(_Api):
         """
         return self._c.call("cbond.kline_window", code=symbol, n=n)
 
+    def bars(self, symbol: str, n: int = 120) -> Any:
+        """转债日线表（行式）：列式窗口转成每根一行。
+
+        字段为 ``date/open/high/low/close/volume/amount``。只做列转行，不改数值、
+        不做重排：行序与上游窗口一致，``date`` 取上游采样名前 10 位；某列缺失时
+        该位置补 ``None``。不复权；价格与金额单位为元（本币），成交量单位为**张**
+        （转债面值口径，1 张 = 100 元面值；live 实测 ``amount / close ≈ volume``）。
+        窗口无数据或返回非 MAP 形态时，空列表 / 原值透传。
+
+        :param symbol: 转债代码（6 位裸码）
+        :param n: 窗口根数，默认 120
+        """
+        raw = self._c.call("cbond.kline_window", code=symbol, n=n)
+        if not isinstance(raw, dict):
+            return raw if raw is not None else []
+        names = raw.get("samplingName") or []
+        columns = ("open", "high", "low", "close", "volume", "amount")
+        series = {c: raw.get(c) or [] for c in columns}
+        rows: list[dict[str, Any]] = []
+        for i, name in enumerate(names):
+            row: dict[str, Any] = {"date": str(name)[:10]}
+            for col_name in columns:
+                col = series[col_name]
+                row[col_name] = col[i] if i < len(col) else None
+            rows.append(row)
+        return rows
+
     def universe_codes(self, _raw: bool = False, _df: bool = False) -> Any:
         """转债代码全集（与快照口径一致）。"""
         return self._c.call("cbond.universe_codes", _raw=_raw, _df=_df)
@@ -1419,6 +1446,29 @@ class EstimatesApi(_Api):
         return self._c.call("estimates.query_reports", sym=symbol, limit=limit, _df=_df)
 
 
+# 截面字段 → 指标码：一一对应且全部经指标目录校验，防止凭空造码。
+# 这些码只有当前值，没有按交易日的历史序列；不据此合成历史宽表。
+#
+# 选码口径（2026-11-13 live 实测，600519）：
+# - pb 用 $PB_TTM_LAST 而非 $PB：$PB 是 $PB_TTM 的纯别名（点值 5.80），
+#   $PB_TTM_LAST 才是最新截面（6.62），与 pe_ttm 同为「最新」口径。
+# - total_mv 用 $MV_LAST 而非 $ID_MV_LAST：后者是 SUMS($MV_LAST) 的行业/指数
+#   聚合族（单标的求值返回 nil），不是个股总市值。
+# - roe_avg 用 $ROE_AVG3：$ROE_AVG 是「全部 Q4 历史平均」，无固定窗口、无守护。
+# - eps_ttm 用 $EPS_NPTS_TTM_LAST（归母）：$EPS_DPPR_TTM_LAST 是扣非，字段名会误导。
+BASIC_FIELDS: dict[str, str] = {
+    "pe_ttm": "$PE_TTM_LAST",
+    "pb": "$PB_TTM_LAST",
+    "turnover_rate": "$TURNOVER_RATE_LAST",
+    "total_mv": "$MV_LAST",
+}
+FINANCIAL_FIELDS: dict[str, str] = {
+    "roe_ttm": "$ROE_TTM_LAST",
+    "roe_avg": "$ROE_AVG3",
+    "eps_ttm": "$EPS_NPTS_TTM_LAST",
+}
+
+
 class IndicatorApi(_Api):
     """平台指标（按指标代码寻址）。
 
@@ -1468,6 +1518,39 @@ class IndicatorApi(_Api):
         return {c: finish_metric(v, self._c.catalog.metric_meta(c), code=c,
                                  validate=self._c._validate)
                 for c, v in values.items()}
+
+    def basic(self, symbol: str) -> Any:
+        """每日估值当前截面：``pe_ttm`` / ``pb`` / ``turnover_rate`` / ``total_mv``。
+
+        **只有当前值，不提供按交易日的历史序列**；也不接受日期参数——上游没有
+        按日回溯的估值序列，传入日期只会得到同一截面。
+
+        口径：``pe_ttm`` 与 ``pb`` 都是最新 TTM 口径（``$PE_TTM_LAST`` /
+        ``$PB_TTM_LAST``）；``turnover_rate`` 按流通股本计，小数（0.0026 = 0.26%）；
+        ``total_mv`` 为个股总市值、单位元（``$MV_LAST``，不是行业聚合值）。
+        字段名固定，缺失值以 ``None`` 表示。
+
+        :param symbol: 标的裸码
+        """
+        values = self.metrics(symbol, list(BASIC_FIELDS.values()))
+        if not isinstance(values, dict):
+            return values
+        return {field: values.get(code) for field, code in BASIC_FIELDS.items()}
+
+    def financials(self, symbol: str) -> Any:
+        """财务指标当前截面：``roe_ttm`` / ``roe_avg`` / ``eps_ttm``。
+
+        **只有当前值，不是按报告期的百列宽表**。口径：``roe_ttm`` 是最新滚动
+        十二个月口径；``roe_avg`` 是**近 3 年**平均（``$ROE_AVG3``，不是上市以来
+        的历史均值）；``eps_ttm`` 是**归母**每股收益 TTM（不是扣非）。
+        比率类为小数，每股收益为元。
+
+        :param symbol: 标的裸码
+        """
+        values = self.metrics(symbol, list(FINANCIAL_FIELDS.values()))
+        if not isinstance(values, dict):
+            return values
+        return {field: values.get(code) for field, code in FINANCIAL_FIELDS.items()}
 
     def _eval_metric(self, xs: str, *, symbol: str, label: str,
                      fut_symbol: str | None = None) -> Any:
@@ -2124,6 +2207,7 @@ FRIENDLY_INDEX: list[tuple[str, str, str, str, str]] = [
     ("market", "cbond", "query", "按标的查条款事件", "cbond.query"),
     ("market", "cbond", "call_hits", "强赎触发计数", "cbond.call_hits"),
     ("market", "cbond", "kline_window", "转债日K窗口", "cbond.kline_window"),
+    ("market", "cbond", "bars", "转债日线表（行式）", "cbond.kline_window"),
     ("market", "cbond", "universe_codes", "转债代码全集", "cbond.universe_codes"),
     ("market", "index", "keys", "指数键列表", "indices.keys"),
     ("market", "index", "members", "指数成分", "indices.members"),
@@ -2143,6 +2227,8 @@ FRIENDLY_INDEX: list[tuple[str, str, str, str, str]] = [
     ("fundamentals", "statements", "audit", "审计意见", "rptdom.statement_audit"),
     ("fundamentals", "indicator", "get", "取单个指标", "指标代码直查"),
     ("fundamentals", "indicator", "metrics", "批量取指标", "指标代码批量直查"),
+    ("fundamentals", "indicator", "basic", "每日估值当前截面", "指标代码批量直查"),
+    ("fundamentals", "indicator", "financials", "财务指标当前截面", "指标代码批量直查"),
     ("fundamentals", "segments", "products", "分产品收入构成", "segments.query_products"),
     ("fundamentals", "segments", "business", "分业务收入构成", "segments.query_business"),
     ("fundamentals", "segments", "region", "境内外分部", "segments.query_region"),
