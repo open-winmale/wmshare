@@ -1798,6 +1798,13 @@ class RptdomNS(_Ns):
         """
         return self._client.call("rptdom.statement_audit", sym=sym, _raw=_raw, _df=_df)
 
+    def statement_periods(self, sym: str, domain: str, _raw: bool = False, _df: bool = False) -> Any:
+        """报表可用期间（SAS 串全集，新→旧）
+
+:returns: ARR · SAS 串（"2026:Q1" / "2024"）
+        """
+        return self._client.call("rptdom.statement_periods", sym=sym, domain=domain, _raw=_raw, _df=_df)
+
     def mkt_latest(self, sym: str, domain: str, _raw: bool = False, _df: bool = False) -> Any:
         """跨市场三大表最新一期（原币原列）
 

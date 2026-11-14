@@ -36,9 +36,9 @@ def _load(path: Path, name: str):
 def test_guard_coverage_cannot_regress():
     mod = _load(GUARD_TOOL, "guard_coverage_baseline")
     result = mod.collect(mod.DEFAULT_DOMAINS)
-    assert result["functions"] == 290
+    assert result["functions"] == 291
     assert result["guarded"] >= 50
-    assert result["ratio"] >= 0.172413
+    assert result["ratio"] >= 0.171821
     zero = {name for name, stat in result["per_domain"].items()
             if stat["functions"] > 0 and stat["guarded"] == 0}
     assert zero <= ZERO_GUARD_BASELINE, f"新增零守护域：{sorted(zero - ZERO_GUARD_BASELINE)}"

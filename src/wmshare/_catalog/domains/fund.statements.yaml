@@ -1,5 +1,5 @@
 id: fund.statements
-version: 1.4.0
+version: 1.5.0
 cn: 财务报表
 kind: raw
 category: fundamentals
@@ -82,6 +82,16 @@ functions:
       - {name: sym, type: string, required: true}
     returns: {desc: 'MAP · {年份: 审计意见}'}
     example: 'rptdom.statement_audit("600519")'
+  - name: rptdom.statement_periods
+    cn: 报表可用期间（SAS 串全集，新→旧）
+    kind: raw
+    layer: L0
+    params:
+      - {name: sym, type: string, required: true}
+      - {name: domain, type: string, required: true}
+    returns: {desc: 'ARR · SAS 串（"2026:Q1" / "2024"）'}
+    example: 'rptdom.statement_periods("600519", "fin.income_statement")'
+    notes: ['sampling 感知版期间列举（statement_years 只认 Q4 档）；A2 季报配套']
   - name: rptdom.mkt_latest
     cn: 跨市场三大表最新一期（原币原列）
     kind: raw

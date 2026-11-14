@@ -10,6 +10,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.20.5] - 2026-11-14
+
+### Fixed
+- **随包目录与上游抽取结果的真漂移**：用官方 `tools/extract_from_scripts.py`
+  从上游同步 `generated/inventory.json` 与 `generated/metrics.json`
+  （生成物禁止手改）。`upstream_rev` `d77f0354` → `09949b0a`；
+  `cbond.card.returns` 描述补齐 `projects / share / holders / institution`。
+  连带重跑 `extract_metric_taxonomy.py` 与 6 个生成器，同步
+  `metric_taxonomy.json`、`docs/API.md`、`llms-full.txt`。
+- 本机长期存在的 `test_extractor_check_no_drift` FAIL 消除，全量测试首次
+  **0 failed**（1864 passed / 94 skipped）。
+
+### Added
+- **`tests/test_extract_exposure.py`**：extract 同步的暴露面防回归门禁。
+  用抽取器自身的 `in_scope()` / `RPTDOM_KEEP` 做聚合计数校验
+  （不把未审批 name 写进测试台账），并钉住三份生成物 `upstream_rev`
+  必须一致、随包目录与确定性渲染一致。
+
+### Notes
+- 同步前后核对：294 个函数集合零增删、2752 个指标零变化、
+  发布白名单过滤结果未变；本次为元数据同步，运行时行为不变。
+
 ## [1.20.4] - 2026-11-14
 
 ### Fixed

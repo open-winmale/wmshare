@@ -1,6 +1,6 @@
 {
  "schema_version": 2,
- "upstream_rev": "09949b0a",
+ "upstream_rev": "a778aae7",
  "domains": {
   "bonus": {
    "entry": "sys/bonus/init.xs",
@@ -104,7 +104,7 @@
   "notice",
   "segments"
  ],
- "function_count": 296,
+ "function_count": 297,
  "functions": [
   {
    "name": "bonus.dps_rpt",
@@ -8272,7 +8272,7 @@
   },
   {
    "name": "rptdom.statement",
-   "cn": "三报表科目×期次透视（合并/母公司）",
+   "cn": "三报表科目×期次透视（合并/母公司；opts.sampling=Q1..Q4，缺省 Q4 年报档）",
    "example": "rptdom.statement(\"600519\", \"fin.income_statement\", {\"scope\": \"合并\", \"n\": 5})",
    "returns": "ARR",
    "returns_shape": null,
@@ -8325,6 +8325,24 @@
     {
      "name": "opts",
      "type": "object"
+    }
+   ]
+  },
+  {
+   "name": "rptdom.statement_periods",
+   "cn": "报表可用期间（SAS 串全集，新→旧）",
+   "example": "rptdom.statement_periods(\"600519\", \"fin.income_statement\")",
+   "returns": "ARR",
+   "returns_shape": null,
+   "min_args": 2,
+   "params": [
+    {
+     "name": "sym",
+     "type": "string"
+    },
+    {
+     "name": "domain",
+     "type": "string"
     }
    ]
   },
