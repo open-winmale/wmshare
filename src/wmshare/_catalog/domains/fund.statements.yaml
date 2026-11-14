@@ -1,5 +1,5 @@
 id: fund.statements
-version: 1.3.0
+version: 1.4.0
 cn: 财务报表
 kind: raw
 category: fundamentals
@@ -18,8 +18,13 @@ notes:
   - domain 取值 fin.balance_sheet / fin.income_statement / fin.cashflow_statement
   - opts.scope = 合并(默认) | 母公司；opts.n 期数（默认 5，年报降序）；opts.years 年份数组（如 [2024,2023]）
   - 新旧会计准则口径适配在平台内部层完成，本域输出已归一
-  - '可用性：三大报表当前仅 A 股（cn）上线；HK/US 合同已预留原币口径（港币/美元），
-    数据尚未上线，对港美标的调用返回空'
+  - '可用性（v1.4.0 起）：rptdom.statement 系仍仅 A 股；港美/跨市场走
+    rptdom.mkt_latest / rptdom.mkt_get（fin.income|fin.balance|fin.cashflow 宽表，
+    季度粒度、披露原币——CN=元、HK=港币、US=美元）'
+  - 'mkt 系期间契约：v2 宽表 doc 无 listbs 期间索引，仅 latest + 显式 (annual,
+    sampling) 取数；doc 内自带 annual 字段可作回溯锚；缺期 nil（不 as-of 填补）'
+  - 'mkt 系列名为 HK/US 自有科目原文（camelCase，如 basicEps/continuedNetProfit），
+    不做 CN 口径翻译——列映射由消费侧（如 OpenBB provider）负责并标注'
 functions:
   - name: rptdom.statement
     cn: 三报表科目×期次透视
@@ -77,3 +82,25 @@ functions:
       - {name: sym, type: string, required: true}
     returns: {desc: 'MAP · {年份: 审计意见}'}
     example: 'rptdom.statement_audit("600519")'
+  - name: rptdom.mkt_latest
+    cn: 跨市场三大表最新一期（原币原列）
+    kind: raw
+    layer: L0
+    params:
+      - {name: sym, type: string, required: true, desc: '6 位裸码（A 股）/ 5 位（港股）/ 字母码（美股）'}
+      - {name: domain, type: string, required: true, enum: [fin.balance_sheet, fin.income_statement, fin.cashflow_statement]}
+    returns: {desc: 'MAP · 宽表 doc（列名=HK/US 自有科目原文，原币；自带 annual 字段）'}
+    example: 'rptdom.mkt_latest("AAPL", "fin.income_statement")'
+    notes: ['期间锚：doc.annual 为 provider 逐期回溯的锚；v2 宽表无 listbs 期间索引']
+  - name: rptdom.mkt_get
+    cn: 跨市场三大表指定期（原币原列，缺期 nil）
+    kind: raw
+    layer: L0
+    params:
+      - {name: sym, type: string, required: true, desc: '6 位裸码（A 股）/ 5 位（港股）/ 字母码（美股）'}
+      - {name: domain, type: string, required: true, enum: [fin.balance_sheet, fin.income_statement, fin.cashflow_statement]}
+      - {name: annual, type: int, required: true}
+      - {name: sampling, type: string, required: true, desc: 'Q1..Q4'}
+    returns: {desc: 'MAP · 宽表 doc（原币原列）；缺期 nil，不 as-of 填补'}
+    example: 'rptdom.mkt_get("AAPL", "fin.income_statement", 2025, "Q4")'
+    notes: ['季度粒度（Q1..Q4）；年报取 Q4；缺期 nil 与 statement.xs 3+1 语义一致']

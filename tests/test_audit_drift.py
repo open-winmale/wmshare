@@ -54,7 +54,7 @@ def test_drift_default_is_green_and_machine_readable(capsys):
     assert result["strict"] is False
     info = result["info"]
     assert info["guard_declared"] == 50
-    assert info["functions"] == 288
+    assert info["functions"] == 290
     assert info["markets"]["total"] == 2752
     assert info["markets"]["declared"] == 569
     assert info["markets"]["undeclared"] == 2183

@@ -1,6 +1,6 @@
 {
  "schema_version": 2,
- "upstream_rev": "d77f0354",
+ "upstream_rev": "09949b0a",
  "domains": {
   "bonus": {
    "entry": "sys/bonus/init.xs",
@@ -104,7 +104,7 @@
   "notice",
   "segments"
  ],
- "function_count": 294,
+ "function_count": 296,
  "functions": [
   {
    "name": "bonus.dps_rpt",
@@ -1370,7 +1370,7 @@
    "name": "cbond.card",
    "cn": "转债个券详情",
    "example": "cbond.card(\"127119\")",
-   "returns": "MAP · {quote, terms, counts, region}",
+   "returns": "MAP · {quote, terms, counts, region, projects, share, holders, institution}",
    "returns_shape": null,
    "min_args": 1,
    "params": [
@@ -8222,6 +8222,50 @@
     },
     {
      "name": "window",
+     "type": "string"
+    }
+   ]
+  },
+  {
+   "name": "rptdom.mkt_get",
+   "cn": "跨市场三大表指定期（原币原列，缺期 nil）",
+   "example": "rptdom.mkt_get(\"AAPL\", \"fin.income_statement\", 2025, \"Q4\")",
+   "returns": "MAP",
+   "returns_shape": null,
+   "min_args": 4,
+   "params": [
+    {
+     "name": "sym",
+     "type": "string"
+    },
+    {
+     "name": "domain",
+     "type": "string"
+    },
+    {
+     "name": "annual",
+     "type": "int"
+    },
+    {
+     "name": "sampling",
+     "type": "string"
+    }
+   ]
+  },
+  {
+   "name": "rptdom.mkt_latest",
+   "cn": "跨市场三大表最新一期（原币原列）",
+   "example": "rptdom.mkt_latest(\"AAPL\", \"fin.income_statement\")",
+   "returns": "MAP",
+   "returns_shape": null,
+   "min_args": 2,
+   "params": [
+    {
+     "name": "sym",
+     "type": "string"
+    },
+    {
+     "name": "domain",
      "type": "string"
     }
    ]

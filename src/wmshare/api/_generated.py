@@ -1798,6 +1798,25 @@ class RptdomNS(_Ns):
         """
         return self._client.call("rptdom.statement_audit", sym=sym, _raw=_raw, _df=_df)
 
+    def mkt_latest(self, sym: str, domain: str, _raw: bool = False, _df: bool = False) -> Any:
+        """跨市场三大表最新一期（原币原列）
+
+:param sym: 6 位裸码（A 股）/ 5 位（港股）/ 字母码（美股）
+
+:returns: MAP · 宽表 doc（列名=HK/US 自有科目原文，原币；自带 annual 字段）
+        """
+        return self._client.call("rptdom.mkt_latest", sym=sym, domain=domain, _raw=_raw, _df=_df)
+
+    def mkt_get(self, sym: str, domain: str, annual: int, sampling: str, _raw: bool = False, _df: bool = False) -> Any:
+        """跨市场三大表指定期（原币原列，缺期 nil）
+
+:param sym: 6 位裸码（A 股）/ 5 位（港股）/ 字母码（美股）
+:param sampling: Q1..Q4
+
+:returns: MAP · 宽表 doc（原币原列）；缺期 nil，不 as-of 填补
+        """
+        return self._client.call("rptdom.mkt_get", sym=sym, domain=domain, annual=annual, sampling=sampling, _raw=_raw, _df=_df)
+
 class SegmentsNS(_Ns):
     """经营分部（fund.segments）"""
 

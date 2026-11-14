@@ -57,7 +57,7 @@ INCLUDED_NS = frozenset({
     "macro",
 })
 # rptdom 只保留三表透视族（年报 PDF 提取类 rows/notes/note_index 不发布）
-RPTDOM_KEEP = frozenset({"statement", "statement_years", "statement_compare", "statement_tree", "statement_audit"})
+RPTDOM_KEEP = frozenset({"statement", "statement_years", "statement_compare", "statement_tree", "statement_audit", "mkt_latest", "mkt_get"})
 
 # 第三方数据商/竞品名 → 中性词的净化映射：词表本身即第三方痕迹，不入库，
 # 存放在 .internal/extract_sanitize.json（本地存在时启用；CI 无上游树本就跳过本工具）
