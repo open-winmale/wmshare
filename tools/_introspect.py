@@ -258,6 +258,18 @@ def return_shape_for(catalog: object, ns: str, method: str, underlying: str) -> 
     return shape
 
 
+# 上游 inventory 的字段中文名滞后于 SDK 换算：SDK 已把「手」×100 成「股」、
+# 「亿」×1e8 成「元」，但字段 cn 仍写原生口径。文档与 openapi 统一在此归一，
+# 避免 docs/API.md 顶部「volume=股、金额=元」与输出字段表 / schema 自相矛盾。
+FIELD_CN_UNIT_FIX = {"量(手)": "量(股)", "市值亿": "市值(元)"}
+
+
+def field_cn(f: dict) -> str:
+    """字段中文名（按 SDK 换算后口径归一）。"""
+    cn = f.get("cn", "") or ""
+    return FIELD_CN_UNIT_FIX.get(cn, cn)
+
+
 def shape_to_schema(shape: dict | None) -> dict:
     """目录 returns_shape → JSON schema（OpenAPI 3.1 兼容）。"""
     if not shape:
@@ -284,7 +296,8 @@ def _fields_object(fields: list[dict]) -> dict:
     for f in fields:
         t = SHAPE_TYPE.get(f.get("type", "any"))
         prop: dict = {"type": t} if t else {}
-        if f.get("cn"):
-            prop["description"] = f["cn"]
+        cn = field_cn(f)
+        if cn:
+            prop["description"] = cn
         props[f["name"]] = prop
     return {"type": "object", "properties": props}

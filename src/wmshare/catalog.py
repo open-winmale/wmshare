@@ -161,6 +161,22 @@ class Catalog:
             raise CatalogError(
                 f"未知函数 {name!r}；目录共 {len(self._functions)} 条", code="function") from None
 
+    def guard_manifest(self) -> dict[str, dict]:
+        """全部带单位/量级/不变量声明的函数（SDK 侧机器可读出口）。
+
+        inventory.json 是上游脚本抽取的 SoT，其 functions 只带示例/签名/返回形状，
+        不含域 YAML 的 ``units`` / ``ranges`` / ``checks``；这些声明此前只在
+        :meth:`function` 的合并视图里逐条可见。本方法一次给出全量**非空**声明，
+        供 openapi / llms 生成器、MCP 与单位审计工具共用，避免各自重复遍历 domains。
+        返回按键排序的普通 dict，可直接 JSON 序列化。
+        """
+        out: dict[str, dict] = {}
+        for name, fn in self._functions.items():
+            guards = {k: fn[k] for k in ("units", "ranges", "checks") if fn.get(k)}
+            if guards:
+                out[name] = guards
+        return dict(sorted(out.items()))
+
     def metric(self, code: str) -> dict | None:
         """按代码取指标（O(1) 索引，不逐项扫描）。精选组条目带 unit/range 声明。"""
         base = self._metric_by_code.get(code)

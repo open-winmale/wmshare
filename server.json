@@ -6,12 +6,12 @@
     "url": "https://github.com/open-winmale/wmshare",
     "source": "github"
   },
-  "version": "1.20.2",
+  "version": "1.20.3",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "wmshare",
-      "version": "1.20.2",
+      "version": "1.20.3",
       "transport": {
         "type": "stdio"
       },

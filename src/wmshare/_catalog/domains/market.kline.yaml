@@ -23,6 +23,14 @@ notes:
   - 盘中三分工：query_last_live=最新一根快照；query_bars_live=最近 n 根日 K（外部行情源）；
     query_min1_live=当日 1 分钟分时（有损合成采样，非逐笔 Level2）
   - ETF（沪 51/52/56/58、深 159，共 1600+ 只）日线有数据；分时/live 查询无分钟源会被拦截
+  - query_bars_live 读预热变量而非实时请求：冷缓存返回空数组（尚未预热），
+    语义不是「该标的无数据」；按防坑清单不得把空数组当 0 或静默降级，
+    需显式标注缓存状态，或改用 query_bars 取已入库日 K
+  - 指数键（index.hs300 / 399xxx）在 query_last_live / query_last_live_many /
+    query_min1_live 三个个股盘中入口下无数据；上游另有 query_index_last_live /
+    query_index_last_live_many / query_index_min1_live / query_index_min1_live_meta。
+    SDK 不自动改写路由，调用方须显式选指数入口；返回空 MAP 或 nil 属入口不匹配，
+    不得解读为「指数无行情」
   - 返回根数：财报季 query_bars 不因披露进度截断；日频回测口径仍按已披露数据截断
   - 脚本原生 volume 为手（仅 cn/ETF）；港美上游即股——SDK 的手×100 换算只在
     market="cn" 生效，港美原值直出；换算后守护 volume×close≈amount 不变量
@@ -130,6 +138,9 @@ functions:
       - {name: limit, type: int, required: false, desc: 最近 n 个交易日}
     returns: {desc: ARR · bars}
     example: 'kline.query_bars_live("000807", 5)'
+    notes:
+      - 读预热变量：冷缓存返回空数组（尚未预热），不是「该标的无数据」
+      - 不得把空数组当作 0 或静默降级；需显式标注或改用 query_bars 取已入库日 K
   - name: kline.query_min1_live
     cn: 当日 1 分钟分时（有损滚桶）
     kind: raw

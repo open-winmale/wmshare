@@ -23,6 +23,7 @@ notes:
   - 'trend 覆盖宽基 11 + 申万一级 31（industry.SXX）+ 红利 14 键；L2/L3 行业未预热（ok=false），中信行业无该数据。指数/行业 PE 历史只能走 trend（$PCT_PE_TTM_* 按个股 $SYMBOL 绑定，不随 key 切换）'
   - 'trend 口径：整体法 PE=Σ成分股市值/Σ成分股归母净利润TTM（$ID_PE_TTM_TOTAL），PB=ΣMV/ΣSE_NOGW；分母≤0 时 PE 为 nil（行业整体亏损则无 PE，SDK 标 pe_missing）。周频约 730 点（cursor.ds(3650)≈14.5 年，为覆盖 10y 分位窗口），月频约 174 点出正 PE 中位数。单键全量重算实测约 3.2M fuel/39s，故 cron 预热（交易日 16:20-16:29 增量、周六全量）而非请求时现算'
   - '股息率只有当前值、没有历史序列（DV 无 series），因此不出股息率分位'
+  - 'indices.weights 传入未注册的指数键时上游返回 HTTP 500（不是空结果）；SDK 以 ServerError 透出，不自动重试、不降级为空数组。先用 indices.keys / indices.universe_keys 校验键'
 functions:
   - {name: indices.keys, cn: 指数键列表, layer: L0}
   - {name: indices.members, cn: 指数成分, layer: L0}

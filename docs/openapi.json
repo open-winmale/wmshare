@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "wmshare 数据 API",
-    "version": "1.20.2",
+    "version": "1.20.3",
     "description": "覆盖 A 股、港股、美股的财经数据核心接口（Python SDK，`pip install wmshare`；`import wmshare`）。凭证必填：在开放平台（open.winmale.com）获取 client_id/api-key；遇到 401/403/429 错误消息即完整的申请与配置指引。覆盖行情 K 线（不复权/前复权/后复权、盘中、分时、ETF、指数）、三大报表（多期、合并 vs 母公司、树视图、新旧会计准则归一）、分红（历史/DPS/窗口/TTM 率）、公告与业绩披露、资金流与指标层。平台指标经 /indicator/get、/indicator/metrics 按指标代码寻址，全量 2752 个指标代码随包内置目录分发（分组清单见 docs/API.md）。",
     "license": {
       "name": "BSD-3-Clause",
@@ -149,6 +149,24 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "volume": "lot"
+          },
+          "ranges": {
+            "percent": [
+              -1,
+              30
+            ],
+            "volume": [
+              0,
+              1000000000000.0
+            ]
+          },
+          "checks": [
+            "volume_amount"
+          ]
         }
       }
     },
@@ -228,6 +246,25 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "volume": "lot",
+            "percent": "percent"
+          },
+          "ranges": {
+            "percent": [
+              -1,
+              30
+            ],
+            "volume": [
+              0,
+              1000000000000.0
+            ]
+          },
+          "checks": [
+            "volume_amount"
+          ]
         }
       }
     },
@@ -288,7 +325,7 @@
                     },
                     "volume": {
                       "type": "number",
-                      "description": "量(手)"
+                      "description": "量(股)"
                     },
                     "amount": {
                       "type": "number",
@@ -300,7 +337,7 @@
                     },
                     "mv": {
                       "type": "number",
-                      "description": "市值亿"
+                      "description": "市值(元)"
                     },
                     "source": {
                       "type": "string",
@@ -310,6 +347,11 @@
                 }
               }
             }
+          }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "volume": "lot"
           }
         }
       }
@@ -352,6 +394,11 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "volume": "lot"
+          }
         }
       }
     },
@@ -391,6 +438,11 @@
                 }
               }
             }
+          }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "volume": "lot"
           }
         }
       }
@@ -526,6 +578,11 @@
                 }
               }
             }
+          }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "volume": "lot"
           }
         }
       }
@@ -1852,6 +1909,22 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "premiumRatio": "percent",
+            "couponIr": "percent"
+          },
+          "ranges": {
+            "premiumRatio": [
+              -100,
+              1000
+            ],
+            "couponIr": [
+              0,
+              0.15
+            ]
+          }
         }
       }
     },
@@ -1994,6 +2067,22 @@
                 }
               }
             }
+          }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "premiumRatio": "percent",
+            "couponIr": "percent"
+          },
+          "ranges": {
+            "premiumRatio": [
+              -100,
+              1000
+            ],
+            "couponIr": [
+              0,
+              0.15
+            ]
           }
         }
       }
@@ -2144,6 +2233,22 @@
                 }
               }
             }
+          }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "premiumRatio": "percent",
+            "couponIr": "percent"
+          },
+          "ranges": {
+            "premiumRatio": [
+              -100,
+              1000
+            ],
+            "couponIr": [
+              0,
+              0.15
+            ]
           }
         }
       }
@@ -2484,6 +2589,14 @@
                 }
               }
             }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "weight": [
+              0,
+              1
+            ]
           }
         }
       }
@@ -2923,6 +3036,14 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "diffp": "percent"
+          },
+          "checks": [
+            "diffp_ratio"
+          ]
         }
       }
     },
@@ -3309,6 +3430,26 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "tr": [
+              -10000000000000.0,
+              10000000000000.0
+            ],
+            "cost": [
+              0,
+              10000000000000.0
+            ],
+            "margin": [
+              -5,
+              1
+            ],
+            "ratio": [
+              0,
+              1
+            ]
+          }
         }
       }
     },
@@ -3385,6 +3526,26 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "tr": [
+              -10000000000000.0,
+              10000000000000.0
+            ],
+            "cost": [
+              0,
+              10000000000000.0
+            ],
+            "margin": [
+              -5,
+              1
+            ],
+            "ratio": [
+              0,
+              1
+            ]
+          }
         }
       }
     },
@@ -3448,6 +3609,26 @@
                 }
               }
             }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "tr": [
+              -10000000000000.0,
+              10000000000000.0
+            ],
+            "pct": [
+              0,
+              1
+            ],
+            "margin": [
+              -5,
+              1
+            ],
+            "yoy": [
+              -1,
+              100
+            ]
           }
         }
       }
@@ -3521,6 +3702,14 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "ratio": [
+              0,
+              1
+            ]
+          }
         }
       }
     },
@@ -3582,6 +3771,34 @@
                 }
               }
             }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "tr": [
+              -10000000000000.0,
+              10000000000000.0
+            ],
+            "cost": [
+              0,
+              10000000000000.0
+            ],
+            "margin": [
+              -5,
+              1
+            ],
+            "ratio": [
+              0,
+              1
+            ],
+            "pct": [
+              0,
+              1
+            ],
+            "yoy": [
+              -1,
+              100
+            ]
           }
         }
       }
@@ -3813,6 +4030,42 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "eps1": [
+              0,
+              10000.0
+            ],
+            "eps2": [
+              0,
+              10000.0
+            ],
+            "eps3": [
+              0,
+              10000.0
+            ],
+            "eps4": [
+              0,
+              10000.0
+            ],
+            "pe1": [
+              0,
+              10000.0
+            ],
+            "pe2": [
+              0,
+              10000.0
+            ],
+            "pe3": [
+              0,
+              10000.0
+            ],
+            "pe4": [
+              0,
+              10000.0
+            ]
+          }
         }
       }
     },
@@ -3881,6 +4134,42 @@
                 }
               }
             }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "eps1": [
+              0,
+              10000.0
+            ],
+            "eps2": [
+              0,
+              10000.0
+            ],
+            "eps3": [
+              0,
+              10000.0
+            ],
+            "eps4": [
+              0,
+              10000.0
+            ],
+            "pe1": [
+              0,
+              10000.0
+            ],
+            "pe2": [
+              0,
+              10000.0
+            ],
+            "pe3": [
+              0,
+              10000.0
+            ],
+            "pe4": [
+              0,
+              10000.0
+            ]
           }
         }
       }
@@ -4777,6 +5066,32 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "np_amp_lower": "percent",
+            "np_amp_upper": "percent",
+            "rev_amp_lower": "percent",
+            "rev_amp_upper": "percent"
+          },
+          "ranges": {
+            "np_amp_lower": [
+              -100,
+              1000
+            ],
+            "np_amp_upper": [
+              -100,
+              1000
+            ],
+            "rev_amp_lower": [
+              -100,
+              1000
+            ],
+            "rev_amp_upper": [
+              -100,
+              1000
+            ]
+          }
         }
       }
     },
@@ -4816,6 +5131,32 @@
                 }
               }
             }
+          }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "np_amp_lower": "percent",
+            "np_amp_upper": "percent",
+            "rev_amp_lower": "percent",
+            "rev_amp_upper": "percent"
+          },
+          "ranges": {
+            "np_amp_lower": [
+              -100,
+              1000
+            ],
+            "np_amp_upper": [
+              -100,
+              1000
+            ],
+            "rev_amp_lower": [
+              -100,
+              1000
+            ],
+            "rev_amp_upper": [
+              -100,
+              1000
+            ]
           }
         }
       }
@@ -4885,6 +5226,27 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "np_yoy": "percent",
+            "rev_yoy": "percent",
+            "roe": "percent"
+          },
+          "ranges": {
+            "np_yoy": [
+              -100,
+              1000
+            ],
+            "rev_yoy": [
+              -100,
+              1000
+            ],
+            "roe": [
+              -2,
+              5
+            ]
+          }
         }
       }
     },
@@ -4924,6 +5286,27 @@
                 }
               }
             }
+          }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "np_yoy": "percent",
+            "rev_yoy": "percent",
+            "roe": "percent"
+          },
+          "ranges": {
+            "np_yoy": [
+              -100,
+              1000
+            ],
+            "rev_yoy": [
+              -100,
+              1000
+            ],
+            "roe": [
+              -2,
+              5
+            ]
           }
         }
       }
@@ -5694,6 +6077,14 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "hold_num_ratio": [
+              0,
+              1
+            ]
+          }
         }
       }
     },
@@ -5748,6 +6139,34 @@
                 }
               }
             }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "hold_ratio_total": [
+              0,
+              1
+            ],
+            "freehold_ratio_total": [
+              0,
+              1
+            ],
+            "total_num_ratio": [
+              -1,
+              1
+            ],
+            "avg_freeshares_ratio": [
+              -1,
+              1
+            ],
+            "avg_hold_amt": [
+              0,
+              1000000000.0
+            ],
+            "avg_free_shares": [
+              0,
+              10000000000.0
+            ]
           }
         }
       }
@@ -5822,6 +6241,27 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "accum_pledge_tsr": "percent",
+            "pf_hold_ratio": "percent",
+            "pf_tsr": "percent"
+          },
+          "ranges": {
+            "accum_pledge_tsr": [
+              0,
+              1
+            ],
+            "pf_hold_ratio": [
+              0,
+              1
+            ],
+            "pf_tsr": [
+              0,
+              1
+            ]
+          }
         }
       }
     },
@@ -5887,6 +6327,14 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "pledge_ratio": [
+              0,
+              1
+            ]
+          }
         }
       }
     },
@@ -5943,6 +6391,26 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "pledge_ratio_total": [
+              0,
+              1
+            ],
+            "csi300_chg": [
+              -1,
+              1
+            ],
+            "pledge_market_value": [
+              0,
+              100000000000000.0
+            ],
+            "total_pledged_shares": [
+              0,
+              10000000000000.0
+            ]
+          }
         }
       }
     },
@@ -5998,6 +6466,14 @@
                 }
               }
             }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "avg_pledge_ratio": [
+              0,
+              1
+            ]
           }
         }
       }
@@ -6120,6 +6596,22 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "total_shares_ratio": "percent",
+            "free_shares_ratio": "percent"
+          },
+          "ranges": {
+            "total_shares_ratio": [
+              0,
+              1
+            ],
+            "free_shares_ratio": [
+              0,
+              1
+            ]
+          }
         }
       }
     },
@@ -6185,6 +6677,25 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "all_shares_ratio": "percent"
+          },
+          "ranges": {
+            "all_shares_ratio": [
+              0,
+              1
+            ],
+            "total_shares_ratio": [
+              0,
+              1
+            ],
+            "change_ratio": [
+              -1,
+              1
+            ]
+          }
         }
       }
     },
@@ -6246,6 +6757,25 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "add_shares_pct": "percent"
+          },
+          "ranges": {
+            "add_shares_pct": [
+              -1,
+              50
+            ],
+            "free_shares_ratio": [
+              0,
+              20
+            ],
+            "total_shares_ratio": [
+              0,
+              20
+            ]
+          }
         }
       }
     },
@@ -6306,6 +6836,22 @@
                 }
               }
             }
+          }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "shares_ratio": "percent",
+            "shares_ratio_change": "percent"
+          },
+          "ranges": {
+            "shares_ratio": [
+              0,
+              1
+            ],
+            "shares_ratio_change": [
+              -1,
+              1
+            ]
           }
         }
       }
@@ -6371,6 +6917,22 @@
                 }
               }
             }
+          }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "total_shares_ratio": "percent",
+            "unlimited_ratio": "percent"
+          },
+          "ranges": {
+            "total_shares_ratio": [
+              0,
+              1
+            ],
+            "unlimited_ratio": [
+              0,
+              1
+            ]
           }
         }
       }
@@ -6553,6 +7115,17 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "transfer_ratio": "percent"
+          },
+          "ranges": {
+            "transfer_ratio": [
+              0,
+              1
+            ]
+          }
         }
       }
     },
@@ -6670,6 +7243,17 @@
                 }
               }
             }
+          }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "hold_ratio": "percent"
+          },
+          "ranges": {
+            "hold_ratio": [
+              0,
+              1
+            ]
           }
         }
       }
@@ -6858,6 +7442,14 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "punish_amt": [
+              0,
+              100000000000.0
+            ]
+          }
         }
       }
     },
@@ -6918,6 +7510,18 @@
                 }
               }
             }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "salary": [
+              0,
+              100000000.0
+            ],
+            "hold_num": [
+              0,
+              10000000000.0
+            ]
           }
         }
       }
@@ -7098,6 +7702,18 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "total_shares": [
+              0,
+              10000000000000.0
+            ],
+            "free_shares": [
+              0,
+              10000000000000.0
+            ]
+          }
         }
       }
     },
@@ -7228,6 +7844,17 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "pct_of_issued": "percent"
+          },
+          "ranges": {
+            "pct_of_issued": [
+              0,
+              1
+            ]
+          }
         }
       }
     },
@@ -7296,6 +7923,14 @@
                 }
               }
             }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "total_shares_ratio": [
+              0,
+              1
+            ]
           }
         }
       }

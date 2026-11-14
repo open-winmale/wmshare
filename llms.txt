@@ -61,6 +61,61 @@
 - 美股日 K 已日更（周/月 K 由日线派生）；最新价量用 `cli.kline.live / snapshot`
 - 港股十大流通股东与回购上游有管线、SDK 接口待路由（见 CHANGELOG/ROADMAP）
 
+## 单位与守护声明（机器可读）
+
+> 共 50 个函数带 units / ranges / checks 声明；每行 `` `函数名`: JSON ``，键为 units（换算）/ ranges（量级界）/ checks（不变量）。SDK 在返回前按声明换算并校验，违例抛 DataError；原生口径用 `_units="native"`。
+
+- `cbond.board`: {"ranges": {"couponIr": [0, 0.15], "premiumRatio": [-100, 1000]}, "units": {"couponIr": "percent", "premiumRatio": "percent"}}
+- `cbond.counts`: {"ranges": {"callHits": [0, 30], "putHits": [0, 30], "resetHits": [0, 30]}}
+- `cbond.latest_quotes`: {"ranges": {"couponIr": [0, 0.15], "premiumRatio": [-100, 1000]}, "units": {"couponIr": "percent", "premiumRatio": "percent"}}
+- `cbond.latest_share`: {"ranges": {"convertedRatio": [0, 1]}}
+- `cbond.market`: {"ranges": {"discountN": [0, 2000], "premiumMedian": [-100, 1000]}, "units": {"premiumMedian": "percent"}}
+- `cbond.of_stock`: {"ranges": {"couponIr": [0, 0.15], "premiumRatio": [-100, 1000]}, "units": {"couponIr": "percent", "premiumRatio": "percent"}}
+- `cbond.one_quote`: {"ranges": {"couponIr": [0, 0.15], "premiumRatio": [-100, 1000]}, "units": {"couponIr": "percent", "premiumRatio": "percent"}}
+- `cbond.quote_list`: {"ranges": {"coupon_ir": [0, 0.15], "premium_ratio": [-100, 1000]}, "units": {"coupon_ir": "percent", "premium_ratio": "percent"}}
+- `equity.query_capital_change`: {"ranges": {"free_shares": [0, 10000000000000.0], "total_shares": [0, 10000000000000.0]}}
+- `equity.query_concert`: {"ranges": {"hold_ratio": [0, 1]}, "units": {"hold_ratio": "percent"}}
+- `equity.query_executives`: {"ranges": {"hold_num": [0, 10000000000.0], "salary": [0, 100000000.0]}}
+- `equity.query_hgt`: {"ranges": {"add_shares_pct": [-1, 50], "free_shares_ratio": [0, 20], "total_shares_ratio": [0, 20]}, "units": {"add_shares_pct": "percent"}}
+- `equity.query_holder10`: {"ranges": {"hold_num_ratio": [0, 1]}}
+- `equity.query_holdernum`: {"ranges": {"avg_free_shares": [0, 10000000000.0], "avg_freeshares_ratio": [-1, 1], "avg_hold_amt": [0, 1000000000.0], "freehold_ratio_total": [0, 1], "hold_ratio_total": [0, 1], "total_num_ratio": [-1, 1]}}
+- `equity.query_institution_detail`: {"ranges": {"free_shares_ratio": [0, 1], "total_shares_ratio": [0, 1]}, "units": {"free_shares_ratio": "percent", "total_shares_ratio": "percent"}}
+- `equity.query_institution_summary`: {"ranges": {"all_shares_ratio": [0, 1], "change_ratio": [-1, 1], "total_shares_ratio": [0, 1]}, "units": {"all_shares_ratio": "percent"}}
+- `equity.query_national_team`: {"ranges": {"shares_ratio": [0, 1], "shares_ratio_change": [-1, 1]}, "units": {"shares_ratio": "percent", "shares_ratio_change": "percent"}}
+- `equity.query_pledge_detail`: {"ranges": {"accum_pledge_tsr": [0, 1], "pf_hold_ratio": [0, 1], "pf_tsr": [0, 1]}, "units": {"accum_pledge_tsr": "percent", "pf_hold_ratio": "percent", "pf_tsr": "percent"}}
+- `equity.query_pledge_industry`: {"ranges": {"avg_pledge_ratio": [0, 1]}}
+- `equity.query_pledge_market`: {"ranges": {"csi300_chg": [-1, 1], "pledge_market_value": [0, 100000000000000.0], "pledge_ratio_total": [0, 1], "total_pledged_shares": [0, 10000000000000.0]}}
+- `equity.query_pledge_summary`: {"ranges": {"pledge_ratio": [0, 1]}}
+- `equity.query_release`: {"ranges": {"total_shares_ratio": [0, 1], "unlimited_ratio": [0, 1]}, "units": {"total_shares_ratio": "percent", "unlimited_ratio": "percent"}}
+- `equity.query_reorg`: {"ranges": {"transfer_ratio": [0, 1]}, "units": {"transfer_ratio": "percent"}}
+- `equity.query_violation`: {"ranges": {"punish_amt": [0, 100000000000.0]}}
+- `estimates.query_forecast`: {"ranges": {"eps1": [0, 10000.0], "eps2": [0, 10000.0], "eps3": [0, 10000.0], "eps4": [0, 10000.0], "pe1": [0, 10000.0], "pe2": [0, 10000.0], "pe3": [0, 10000.0], "pe4": [0, 10000.0]}}
+- `estimates.query_forecast_detail`: {"ranges": {"eps1": [0, 10000.0], "eps2": [0, 10000.0], "eps3": [0, 10000.0], "eps4": [0, 10000.0], "pe1": [0, 10000.0], "pe2": [0, 10000.0], "pe3": [0, 10000.0], "pe4": [0, 10000.0]}}
+- `forecast.snapshot`: {"ranges": {"np_amp_lower": [-100, 1000], "np_amp_upper": [-100, 1000], "np_yoy": [-100, 1000], "rev_amp_lower": [-100, 1000], "rev_amp_upper": [-100, 1000], "rev_yoy": [-100, 1000], "roe": [-2, 5]}, "units": {"np_amp_lower": "percent", "np_amp_upper": "percent", "np_yoy": "percent", "rev_amp_lower": "percent", "rev_amp_upper": "percent", "rev_yoy": "percent", "roe": "percent"}}
+- `forecast.yjkb_latest`: {"ranges": {"np_yoy": [-100, 1000], "rev_yoy": [-100, 1000], "roe": [-2, 5]}, "units": {"np_yoy": "percent", "rev_yoy": "percent", "roe": "percent"}}
+- `forecast.yjkb_rows`: {"ranges": {"np_yoy": [-100, 1000], "rev_yoy": [-100, 1000], "roe": [-2, 5]}, "units": {"np_yoy": "percent", "rev_yoy": "percent", "roe": "percent"}}
+- `forecast.yjyg_latest`: {"ranges": {"np_amp_lower": [-100, 1000], "np_amp_upper": [-100, 1000], "rev_amp_lower": [-100, 1000], "rev_amp_upper": [-100, 1000]}, "units": {"np_amp_lower": "percent", "np_amp_upper": "percent", "rev_amp_lower": "percent", "rev_amp_upper": "percent"}}
+- `forecast.yjyg_rows`: {"ranges": {"np_amp_lower": [-100, 1000], "np_amp_upper": [-100, 1000], "rev_amp_lower": [-100, 1000], "rev_amp_upper": [-100, 1000]}, "units": {"np_amp_lower": "percent", "np_amp_upper": "percent", "rev_amp_lower": "percent", "rev_amp_upper": "percent"}}
+- `indices.weights`: {"ranges": {"weight": [0, 1]}}
+- `intl.query_ccass`: {"ranges": {"pct_of_issued": [0, 1]}, "units": {"pct_of_issued": "percent"}}
+- `intl.query_shareholders`: {"ranges": {"total_shares_ratio": [0, 1]}}
+- `kline.query_bars`: {"checks": ["volume_amount"], "ranges": {"percent": [-1, 30], "volume": [0, 1000000000000.0]}, "units": {"volume": "lot"}}
+- `kline.query_bars_adj`: {"units": {"volume": "lot"}}
+- `kline.query_bars_period`: {"checks": ["volume_amount"], "ranges": {"percent": [-1, 30], "volume": [0, 1000000000000.0]}, "units": {"volume": "lot"}}
+- `kline.query_bars_period_adj`: {"units": {"volume": "lot"}}
+- `kline.query_last`: {"checks": ["volume_amount"], "ranges": {"percent": [-1, 30], "volume": [0, 1000000000000.0]}, "units": {"percent": "percent", "volume": "lot"}}
+- `kline.query_last_adj`: {"ranges": {"percent": [-1, 30], "volume": [0, 1000000000000.0]}, "units": {"percent": "percent", "volume": "lot"}}
+- `kline.query_last_live`: {"units": {"volume": "lot"}}
+- `kline.query_last_live_many`: {"units": {"volume": "lot"}}
+- `kline.query_min1_live`: {"units": {"volume": "lot"}}
+- `kline.snapshot`: {"units": {"volume": "lot"}}
+- `rptdom.statement_compare`: {"checks": ["diffp_ratio"], "units": {"diffp": "percent"}}
+- `segments.query_business`: {"ranges": {"cost": [0, 10000000000000.0], "margin": [-5, 1], "ratio": [0, 1], "tr": [-10000000000000.0, 10000000000000.0]}}
+- `segments.query_income`: {"ranges": {"ratio": [0, 1]}}
+- `segments.query_products`: {"ranges": {"cost": [0, 10000000000000.0], "margin": [-5, 1], "ratio": [0, 1], "tr": [-10000000000000.0, 10000000000000.0]}}
+- `segments.query_region`: {"ranges": {"margin": [-5, 1], "pct": [0, 1], "tr": [-10000000000000.0, 10000000000000.0], "yoy": [-1, 100]}}
+- `segments.snapshot`: {"ranges": {"cost": [0, 10000000000000.0], "margin": [-5, 1], "pct": [0, 1], "ratio": [0, 1], "tr": [-10000000000000.0, 10000000000000.0], "yoy": [-1, 100]}}
+
 ## Optional
 
 - [openapi.json](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/openapi.json)：OpenAPI 3.1 机器可读合同

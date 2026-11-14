@@ -14,6 +14,9 @@ requires: {path: sys/moneyflow/init.xs, preloaded: true}
 notes:
   - 日频为 EOD 落库；query_last_live 为外部公开源当日读数（HTTP，短 TTL；非盘中行情）
   - 非 Level2：为单子分级聚合口径，非逐笔委托
+  - query_last 上游返回单条 MAP 而非数组，XS normalizer 只吃数组；命中
+    NotSupportedType:record 属上游返回形态问题，SDK 以 ServerError 透出且
+    不重试、不静默转空，需要数组口径请用 query_bars(limit=1) / query_valid(limit=1)
 functions:
   - name: moneyflow.query_bars
     cn: 资金流向历史
@@ -33,6 +36,11 @@ functions:
       - {name: sym, type: string, required: true}
     returns: {desc: 资金流行 MAP 或 nil, shape_ref: inventory}
     example: 'moneyflow.query_last("600519")'
+    notes:
+      - 上游返回单条 MAP 而非数组；XS normalizer 只吃数组，命中
+        NotSupportedType:record 属上游返回形态问题，不是参数或凭证错误
+      - SDK 以 ServerError 透出，不重试、不静默转空；需要数组口径请用
+        moneyflow.query_bars(limit=1) 或 moneyflow.query_valid(limit=1)
   - name: moneyflow.query_valid
     cn: 有效资金流向（过滤空行）
     kind: raw

@@ -18,6 +18,62 @@
 - `profile` 公司信息（档案直读）（fund.indicators）：5 个
 - `revenue_mix` 收入构成占比（fund.indicators）：4 个
 
+## 单位与守护声明（机器可读）
+
+> 共 50 个函数带 units / ranges / checks 声明；每行 `` `函数名`: JSON ``，键为 units（换算）/ ranges（量级界）/ checks（不变量）。SDK 在返回前按声明换算并校验，违例抛 DataError；原生口径用 `_units="native"`。
+
+- `cbond.board`: {"ranges": {"couponIr": [0, 0.15], "premiumRatio": [-100, 1000]}, "units": {"couponIr": "percent", "premiumRatio": "percent"}}
+- `cbond.counts`: {"ranges": {"callHits": [0, 30], "putHits": [0, 30], "resetHits": [0, 30]}}
+- `cbond.latest_quotes`: {"ranges": {"couponIr": [0, 0.15], "premiumRatio": [-100, 1000]}, "units": {"couponIr": "percent", "premiumRatio": "percent"}}
+- `cbond.latest_share`: {"ranges": {"convertedRatio": [0, 1]}}
+- `cbond.market`: {"ranges": {"discountN": [0, 2000], "premiumMedian": [-100, 1000]}, "units": {"premiumMedian": "percent"}}
+- `cbond.of_stock`: {"ranges": {"couponIr": [0, 0.15], "premiumRatio": [-100, 1000]}, "units": {"couponIr": "percent", "premiumRatio": "percent"}}
+- `cbond.one_quote`: {"ranges": {"couponIr": [0, 0.15], "premiumRatio": [-100, 1000]}, "units": {"couponIr": "percent", "premiumRatio": "percent"}}
+- `cbond.quote_list`: {"ranges": {"coupon_ir": [0, 0.15], "premium_ratio": [-100, 1000]}, "units": {"coupon_ir": "percent", "premium_ratio": "percent"}}
+- `equity.query_capital_change`: {"ranges": {"free_shares": [0, 10000000000000.0], "total_shares": [0, 10000000000000.0]}}
+- `equity.query_concert`: {"ranges": {"hold_ratio": [0, 1]}, "units": {"hold_ratio": "percent"}}
+- `equity.query_executives`: {"ranges": {"hold_num": [0, 10000000000.0], "salary": [0, 100000000.0]}}
+- `equity.query_hgt`: {"ranges": {"add_shares_pct": [-1, 50], "free_shares_ratio": [0, 20], "total_shares_ratio": [0, 20]}, "units": {"add_shares_pct": "percent"}}
+- `equity.query_holder10`: {"ranges": {"hold_num_ratio": [0, 1]}}
+- `equity.query_holdernum`: {"ranges": {"avg_free_shares": [0, 10000000000.0], "avg_freeshares_ratio": [-1, 1], "avg_hold_amt": [0, 1000000000.0], "freehold_ratio_total": [0, 1], "hold_ratio_total": [0, 1], "total_num_ratio": [-1, 1]}}
+- `equity.query_institution_detail`: {"ranges": {"free_shares_ratio": [0, 1], "total_shares_ratio": [0, 1]}, "units": {"free_shares_ratio": "percent", "total_shares_ratio": "percent"}}
+- `equity.query_institution_summary`: {"ranges": {"all_shares_ratio": [0, 1], "change_ratio": [-1, 1], "total_shares_ratio": [0, 1]}, "units": {"all_shares_ratio": "percent"}}
+- `equity.query_national_team`: {"ranges": {"shares_ratio": [0, 1], "shares_ratio_change": [-1, 1]}, "units": {"shares_ratio": "percent", "shares_ratio_change": "percent"}}
+- `equity.query_pledge_detail`: {"ranges": {"accum_pledge_tsr": [0, 1], "pf_hold_ratio": [0, 1], "pf_tsr": [0, 1]}, "units": {"accum_pledge_tsr": "percent", "pf_hold_ratio": "percent", "pf_tsr": "percent"}}
+- `equity.query_pledge_industry`: {"ranges": {"avg_pledge_ratio": [0, 1]}}
+- `equity.query_pledge_market`: {"ranges": {"csi300_chg": [-1, 1], "pledge_market_value": [0, 100000000000000.0], "pledge_ratio_total": [0, 1], "total_pledged_shares": [0, 10000000000000.0]}}
+- `equity.query_pledge_summary`: {"ranges": {"pledge_ratio": [0, 1]}}
+- `equity.query_release`: {"ranges": {"total_shares_ratio": [0, 1], "unlimited_ratio": [0, 1]}, "units": {"total_shares_ratio": "percent", "unlimited_ratio": "percent"}}
+- `equity.query_reorg`: {"ranges": {"transfer_ratio": [0, 1]}, "units": {"transfer_ratio": "percent"}}
+- `equity.query_violation`: {"ranges": {"punish_amt": [0, 100000000000.0]}}
+- `estimates.query_forecast`: {"ranges": {"eps1": [0, 10000.0], "eps2": [0, 10000.0], "eps3": [0, 10000.0], "eps4": [0, 10000.0], "pe1": [0, 10000.0], "pe2": [0, 10000.0], "pe3": [0, 10000.0], "pe4": [0, 10000.0]}}
+- `estimates.query_forecast_detail`: {"ranges": {"eps1": [0, 10000.0], "eps2": [0, 10000.0], "eps3": [0, 10000.0], "eps4": [0, 10000.0], "pe1": [0, 10000.0], "pe2": [0, 10000.0], "pe3": [0, 10000.0], "pe4": [0, 10000.0]}}
+- `forecast.snapshot`: {"ranges": {"np_amp_lower": [-100, 1000], "np_amp_upper": [-100, 1000], "np_yoy": [-100, 1000], "rev_amp_lower": [-100, 1000], "rev_amp_upper": [-100, 1000], "rev_yoy": [-100, 1000], "roe": [-2, 5]}, "units": {"np_amp_lower": "percent", "np_amp_upper": "percent", "np_yoy": "percent", "rev_amp_lower": "percent", "rev_amp_upper": "percent", "rev_yoy": "percent", "roe": "percent"}}
+- `forecast.yjkb_latest`: {"ranges": {"np_yoy": [-100, 1000], "rev_yoy": [-100, 1000], "roe": [-2, 5]}, "units": {"np_yoy": "percent", "rev_yoy": "percent", "roe": "percent"}}
+- `forecast.yjkb_rows`: {"ranges": {"np_yoy": [-100, 1000], "rev_yoy": [-100, 1000], "roe": [-2, 5]}, "units": {"np_yoy": "percent", "rev_yoy": "percent", "roe": "percent"}}
+- `forecast.yjyg_latest`: {"ranges": {"np_amp_lower": [-100, 1000], "np_amp_upper": [-100, 1000], "rev_amp_lower": [-100, 1000], "rev_amp_upper": [-100, 1000]}, "units": {"np_amp_lower": "percent", "np_amp_upper": "percent", "rev_amp_lower": "percent", "rev_amp_upper": "percent"}}
+- `forecast.yjyg_rows`: {"ranges": {"np_amp_lower": [-100, 1000], "np_amp_upper": [-100, 1000], "rev_amp_lower": [-100, 1000], "rev_amp_upper": [-100, 1000]}, "units": {"np_amp_lower": "percent", "np_amp_upper": "percent", "rev_amp_lower": "percent", "rev_amp_upper": "percent"}}
+- `indices.weights`: {"ranges": {"weight": [0, 1]}}
+- `intl.query_ccass`: {"ranges": {"pct_of_issued": [0, 1]}, "units": {"pct_of_issued": "percent"}}
+- `intl.query_shareholders`: {"ranges": {"total_shares_ratio": [0, 1]}}
+- `kline.query_bars`: {"checks": ["volume_amount"], "ranges": {"percent": [-1, 30], "volume": [0, 1000000000000.0]}, "units": {"volume": "lot"}}
+- `kline.query_bars_adj`: {"units": {"volume": "lot"}}
+- `kline.query_bars_period`: {"checks": ["volume_amount"], "ranges": {"percent": [-1, 30], "volume": [0, 1000000000000.0]}, "units": {"volume": "lot"}}
+- `kline.query_bars_period_adj`: {"units": {"volume": "lot"}}
+- `kline.query_last`: {"checks": ["volume_amount"], "ranges": {"percent": [-1, 30], "volume": [0, 1000000000000.0]}, "units": {"percent": "percent", "volume": "lot"}}
+- `kline.query_last_adj`: {"ranges": {"percent": [-1, 30], "volume": [0, 1000000000000.0]}, "units": {"percent": "percent", "volume": "lot"}}
+- `kline.query_last_live`: {"units": {"volume": "lot"}}
+- `kline.query_last_live_many`: {"units": {"volume": "lot"}}
+- `kline.query_min1_live`: {"units": {"volume": "lot"}}
+- `kline.snapshot`: {"units": {"volume": "lot"}}
+- `rptdom.statement_compare`: {"checks": ["diffp_ratio"], "units": {"diffp": "percent"}}
+- `segments.query_business`: {"ranges": {"cost": [0, 10000000000000.0], "margin": [-5, 1], "ratio": [0, 1], "tr": [-10000000000000.0, 10000000000000.0]}}
+- `segments.query_income`: {"ranges": {"ratio": [0, 1]}}
+- `segments.query_products`: {"ranges": {"cost": [0, 10000000000000.0], "margin": [-5, 1], "ratio": [0, 1], "tr": [-10000000000000.0, 10000000000000.0]}}
+- `segments.query_region`: {"ranges": {"margin": [-5, 1], "pct": [0, 1], "tr": [-10000000000000.0, 10000000000000.0], "yoy": [-1, 100]}}
+- `segments.snapshot`: {"ranges": {"cost": [0, 10000000000000.0], "margin": [-5, 1], "pct": [0, 1], "ratio": [0, 1], "tr": [-10000000000000.0, 10000000000000.0], "yoy": [-1, 100]}}
+
+
 
 ---
 
@@ -1349,6 +1405,8 @@ python3 -c "import wmshare; print(wmshare.load().metric('\$PE_TTM_LAST'))"
 - **认证与限流**：401/403 抛 `AuthError`，429 抛 `LimitError(code="rate_limited")`；错误消息即完整指引——附有申请自己的 AppID 的步骤与配置方法。
 - **目录随包、离线可查**：全部函数与指标代码随 wheel 分发；命名空间带类型签名（`py.typed`），IDE 直接补全。
 - **单位统一 + 数据守护**：返回值统一基础单位（比率/涨跌幅=小数、金额/市值=元、A 股成交量=股）；每次返回前按目录声明做量级守护与关系不变量校验，违例抛 `DataError` 而非交给你错误量级的数据。取原始口径：`_raw=True`（上游原始行）、`_units="native"`（保留上游原单位）、`Client(validate=False)`（关校验留换算）。
+- **字段表口径**：输出字段说明中的量/市值一律按 SDK 换算后口径（量=股、市值=元）；上游原生口径只在 `_units="native"` / `_raw=True` 下可见。逐函数声明见函数合同的「单位与守护声明」列，机器可读版见 [openapi.json](openapi.json) 的 `x-wmshare-guards`。
+- **指标码中文名**：指标清单里的「期货持仓量(手)」等是上游原生口径的**命名**，不代表 SDK 返回值单位；返回值一律以上述基础单位与逐函数声明为准。
 
 | 数据域 | 核心能力 | 单位口径 |
 |---|---|---|
@@ -1532,10 +1590,10 @@ cli.kline.last("600519")
 | `high` | float? | 高 |
 | `low` | float? | 低 |
 | `close` | float? | 收/现价 |
-| `volume` | float? | 量(手) |
+| `volume` | float? | 量(股) |
 | `amount` | float? | 额(元) |
 | `percent` | float? | 涨跌幅(小数) |
-| `mv` | float? | 市值亿 |
+| `mv` | float? | 市值(元) |
 | `source` | string? | multi_source\|multi_source_rt\|source_a\|source_b\|source_c\|source_d |
 
 **示例**
@@ -5068,6 +5126,7 @@ cli.info.profile("600519")
 - trend 覆盖宽基 11 + 申万一级 31（industry.SXX）+ 红利 14 键；L2/L3 行业未预热（ok=false），中信行业无该数据。指数/行业 PE 历史只能走 trend（$PCT_PE_TTM_* 按个股 $SYMBOL 绑定，不随 key 切换）
 - trend 口径：整体法 PE=Σ成分股市值/Σ成分股归母净利润TTM（$ID_PE_TTM_TOTAL），PB=ΣMV/ΣSE_NOGW；分母≤0 时 PE 为 nil（行业整体亏损则无 PE，SDK 标 pe_missing）。周频约 730 点（cursor.ds(3650)≈14.5 年，为覆盖 10y 分位窗口），月频约 174 点出正 PE 中位数。单键全量重算实测约 3.2M fuel/39s，故 cron 预热（交易日 16:20-16:29 增量、周六全量）而非请求时现算
 - 股息率只有当前值、没有历史序列（DV 无 series），因此不出股息率分位
+- indices.weights 传入未注册的指数键时上游返回 HTTP 500（不是空结果）；SDK 以 ServerError 透出，不自动重试、不降级为空数组。先用 indices.keys / indices.universe_keys 校验键
 
 | 函数 | 中文 | 性质 | 层 | 参数 | 返回 | 单位与守护 |
 |---|---|---|---|---|---|---|
@@ -5089,6 +5148,8 @@ cli.info.profile("600519")
 - 指数键（index.hs300 / 399xxx 等）自动分流指数点位；指数无复权，*_adj 忽略 adj
 - 盘中三分工：query_last_live=最新一根快照；query_bars_live=最近 n 根日 K（外部行情源）； query_min1_live=当日 1 分钟分时（有损合成采样，非逐笔 Level2）
 - ETF（沪 51/52/56/58、深 159，共 1600+ 只）日线有数据；分时/live 查询无分钟源会被拦截
+- query_bars_live 读预热变量而非实时请求：冷缓存返回空数组（尚未预热）， 语义不是「该标的无数据」；按防坑清单不得把空数组当 0 或静默降级， 需显式标注缓存状态，或改用 query_bars 取已入库日 K
+- 指数键（index.hs300 / 399xxx）在 query_last_live / query_last_live_many / query_min1_live 三个个股盘中入口下无数据；上游另有 query_index_last_live / query_index_last_live_many / query_index_min1_live / query_index_min1_live_meta。 SDK 不自动改写路由，调用方须显式选指数入口；返回空 MAP 或 nil 属入口不匹配， 不得解读为「指数无行情」
 - 返回根数：财报季 query_bars 不因披露进度截断；日频回测口径仍按已披露数据截断
 - 脚本原生 volume 为手（仅 cn/ETF）；港美上游即股——SDK 的手×100 换算只在 market="cn" 生效，港美原值直出；换算后守护 volume×close≈amount 不变量 （query_bars_adj 为复权价，不套该不变量）；_units="native"/_raw=True 可取原值
 
@@ -5099,7 +5160,7 @@ cli.info.profile("600519")
 | `kline.query_bars_period_adj` | 历史 K 线（周/月周期·复权） | 原始数据 | L1 | `sym:string` — 标的裸码 · `limit:int=120` — 根数（按所选周期计） · `period:string="D"` — 周期 D/W/M · `adj:string?` — 复权口径 nr(不复权,默认)/qfq(前复权)/hfq(后复权) | ARR · bars（字段同 query_bars_period）；字段 sas:string?（SAS） / date:string?（日期） / open:float?（开） / high:float?（高） / low:float?（低） / close:float?（收） / volume:float?（量） / amount:float?（额） / percent:float?（涨跌幅） | `volume`:手→股 | 例：`cli.call("kline.query_bars_period_adj", sym='AAPL', limit=30, period='W', adj='qfq')`
 | `kline.query_last` | 最新一根 K 线 | 原始数据 | L0 | `sym:string` — 6 位裸码 | MAP · K 线 bar；字段 sas:string?（SAS） / date:string?（日期） / open:float?（开） / high:float?（高） / low:float?（低） / close:float?（收） / volume:float?（量） / amount:float?（额） / percent:float?（涨跌幅） | `volume`:手→股；`percent`:百分数→小数；量级界 `percent`、`volume`；不变量 `volume_amount` | 例：`cli.call("kline.query_last", sym='600519')`
 | `kline.is_etf` | 是否场内 ETF | 原始数据 | L0 | `sym:string` | bool · true=场内 ETF | — | 例：`cli.call("kline.is_etf", sym='510300')`
-| `kline.query_last_live` | 盘中日K快照 | 原始数据 | L0 | `sym:string` | MAP · 盘中日K；字段 date:string?（日期） / open:float?（开） / high:float?（高） / low:float?（低） / close:float?（收/现价） / volume:float?（量(手)） / amount:float?（额(元)） / percent:float?（涨跌幅(小数)） / mv:float?（市值亿） / source:string?（multi_source\|multi_source_rt\|source_a\|source_b\|source_c\|source_d） | `volume`:手→股 | 例：`cli.call("kline.query_last_live", sym='000807')`
+| `kline.query_last_live` | 盘中日K快照 | 原始数据 | L0 | `sym:string` | MAP · 盘中日K；字段 date:string?（日期） / open:float?（开） / high:float?（高） / low:float?（低） / close:float?（收/现价） / volume:float?（量(股)） / amount:float?（额(元)） / percent:float?（涨跌幅(小数)） / mv:float?（市值(元)） / source:string?（multi_source\|multi_source_rt\|source_a\|source_b\|source_c\|source_d） | `volume`:手→股 | 例：`cli.call("kline.query_last_live", sym='000807')`
 | `kline.query_last_live_many` | 盘中日K批量快照 | 原始数据 | L0 | `syms:array` — 裸码列表 | MAP · symbol → bar | `volume`:手→股 | 例：`cli.call("kline.query_last_live_many", syms=['600519', '000807'])`
 | `kline.query_bars_live` | 盘中拉最近 n 根日K（外部行情源 HTTP，≠分时） | 原始数据 | L0 | `sym:string` · `limit:int?` — 最近 n 个交易日 | ARR · bars | — | 例：`cli.call("kline.query_bars_live", sym='000807', limit=5)`
 | `kline.query_min1_live` | 当日 1 分钟分时（有损滚桶） | 原始数据 | L0 | `sym:string` | MAP · 分时包 {trading_day, bars:[t,hm,close,volume,amount,...], bar_n}；休市读上一交易日 | `volume`:手→股 | 例：`cli.call("kline.query_min1_live", sym='600519')`
@@ -5170,6 +5231,7 @@ cli.info.profile("600519")
 单位口径：net=元（净流入金额）；date=YYYY-MM-DD。
 - 日频为 EOD 落库；query_last_live 为外部公开源当日读数（HTTP，短 TTL；非盘中行情）
 - 非 Level2：为单子分级聚合口径，非逐笔委托
+- query_last 上游返回单条 MAP 而非数组，XS normalizer 只吃数组；命中 NotSupportedType:record 属上游返回形态问题，SDK 以 ServerError 透出且 不重试、不静默转空，需要数组口径请用 query_bars(limit=1) / query_valid(limit=1)
 
 | 函数 | 中文 | 性质 | 层 | 参数 | 返回 | 单位与守护 |
 |---|---|---|---|---|---|---|

@@ -10,6 +10,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.20.3] - 2026-11-14
+
+### Added
+- **`Catalog.guard_manifest()`**：一次给出全部 50 个带 `units` / `ranges` / `checks`
+  声明的函数（按键排序、可 JSON 序列化），作为 SDK 侧机器可读出口；
+  `inventory.json` 是上游抽取的 SoT，其 functions 不带域级声明，故不改生成物。
+- **`docs/openapi.json` 的 `x-wmshare-guards`**：136 个 path 中 40 个带声明的
+  operation 显式带出单位换算 / 量级界 / 不变量，Agent 可在调用前解析；
+  `llms.txt` / `llms-full.txt` 新增「单位与守护声明（机器可读）」段（50 条 JSON）。
+- **`tools/audit_units.py drift`**：离线静态漂移模式，比对 returns_shape 字段集 /
+  指标 markets 可用性 / checks 适用性；不联网、不需要凭证，`--json` 机器可读，
+  `--strict` 把 shape 声明滞后 WARN 升级为失败。实测 ERROR 0 / WARN 29，
+  markets 569/2752（20.68%）、matrix 已覆盖 22 节。
+
+### Changed
+- **文档单位口径归一**：`docs/API.md` 输出字段表与 `openapi.json` schema 描述中的
+  「量(手)」「市值亿」统一为 SDK 换算后口径「量(股)」「市值(元)」，与顶部基础单位表一致；
+  指标码中文名属上游原生口径命名，另在文档显式说明不代表 SDK 返回值单位。
+- **返回形态与指数键路由显式标注**：`market.kline` / `market.moneyflow` /
+  `market.index` 三个域的 notes 写明单 MAP 触发 `NotSupportedType:record` 属上游形态、
+  错误指数键上游返回 500、`query_bars_live` 冷缓存空数组不是「无数据」且不得当 0、
+  指数键须显式选 `query_index_*_live` 四个入口（SDK 不自动改写路由）。
+
+### Tests
+- 新增 21 个契约用例：`test_unit_visibility.py`(6) / `test_audit_drift.py`(6) /
+  `test_guard_baseline.py`(3) / `test_shape_notes.py`(6)，覆盖单位声明机器可见性、
+  drift 正负例与离线分流、覆盖率与发现项防回归基线、显式标注进目录与对外文档。
+- 全量 1953 用例：1858 passed / 94 skipped / 1 failed（既存 extractor 真漂移，
+  CI 无上游时 skip）；`--cov-branch` 88.31%。
+
 ## [1.20.2] - 2026-11-14
 
 ### Changed（行为变更）
