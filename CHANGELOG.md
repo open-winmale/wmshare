@@ -10,6 +10,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.20.4] - 2026-11-14
+
+### Fixed
+- **CI 三版本矩阵全红的测试环境假设**：`test_audit_drift.py` 曾断言
+  `matrix_sections >= 1`，而 `.internal/UNIT_AUDIT.md` 是本机联网 matrix 产物、
+  不进 git 跟踪面，CI 里不存在时该值为 0。改为「非负 + 报告存在时才 >= 1」，
+  并新增 `test_drift_is_green_when_audit_report_missing`，用 monkeypatch 永久复现
+  CI 无报告的场景。纯测试修复，运行时与生成物行为不变。
+
+### Notes
+- 1.20.3 的 Release / PyPI 产物本身正常（release 与 CodeQL 工作流 success、
+  whl + sdist 齐全），仅 ci 工作流因上述断言失败；PyPI 不允许同名版本重传，
+  故以 patch 版本重跑发布链路。
+
 ## [1.20.3] - 2026-11-14
 
 ### Added

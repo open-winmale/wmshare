@@ -59,7 +59,12 @@ def test_drift_default_is_green_and_machine_readable(capsys):
     assert info["markets"]["declared"] == 569
     assert info["markets"]["undeclared"] == 2183
     assert info["markets"]["by_market"] == {"cn": 498, "hk": 25, "us": 46}
-    assert info["matrix_sections"] >= 1
+    # .internal/UNIT_AUDIT.md 是本机联网 matrix 产物，不进 git 跟踪面；
+    # CI 里不存在时 sections 为 0，只能要求非负，不能假设报告一定在。
+    assert isinstance(info["matrix_sections"], int)
+    assert info["matrix_sections"] >= 0
+    if (REPO / ".internal" / "UNIT_AUDIT.md").is_file():
+        assert info["matrix_sections"] >= 1
 
 
 def test_drift_does_not_require_credentials(monkeypatch):
@@ -71,6 +76,19 @@ def test_drift_does_not_require_credentials(monkeypatch):
 
     monkeypatch.setattr(mod.wmshare.Client, "from_env", staticmethod(boom))
     assert mod.main(["drift"]) == 0
+
+
+def test_drift_is_green_when_audit_report_missing(monkeypatch, capsys, tmp_path):
+    """CI 不携带 .internal/UNIT_AUDIT.md（本机联网 matrix 产物），drift 仍须全绿。
+
+    回归锚点：曾有一版断言 matrix_sections >= 1，导致三个 Python 版本的 CI 全红。
+    """
+    mod = _load()
+    monkeypatch.setattr(mod, "REPORT_PATH", tmp_path / "missing.md")
+    assert mod.main(["drift", "--json"]) == 0
+    result = json.loads(capsys.readouterr().out)
+    assert result["info"]["matrix_sections"] == 0
+    assert result["errors"] == [] and result["pass"] is True
 
 
 def test_strict_upgrades_shape_warnings_to_failure(capsys):
