@@ -68,6 +68,10 @@ def render_swagger(spec: dict) -> str:
 
 def _core_paths(catalog) -> dict:
     paths: dict = {}
+    # 单位/守护声明的机器可读出口：inventory.json 是上游抽取的 SoT，其 functions
+    # 不带域级 units/ranges/checks；由 catalog 合并后在此显式带出，Agent 得以在
+    # 发起调用前从 openapi 读到换算口径与量级守护，而不必逐条查 cat.function()。
+    manifest = catalog.guard_manifest()
     for category, ns, method, cn, underlying in FRIENDLY_INDEX:
         cls = FRIENDLY_NAMESPACES[ns]
         params = method_params(cls, method)
@@ -87,7 +91,7 @@ def _core_paths(catalog) -> dict:
             call_note = underlying
         desc = "、".join(x for x in [body, call_note] if x)
         desc += f"。SDK 调用：`cli.{ns}.{method}(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。"
-        paths[f"/{ns}/{method}"] = {"post": {
+        op = {
             "operationId": f"{ns}_{method}",
             "summary": summary or cn,
             "description": desc,
@@ -104,7 +108,11 @@ def _core_paths(catalog) -> dict:
                 "description": FALLBACK_RETURNS.get((ns, method), "调用成功"),
                 "content": {"application/json": {"schema": resp or {"type": "object"}}},
             }},
-        }}
+        }
+        guards = manifest.get(fn_key) if fn_key else None
+        if guards:
+            op["x-wmshare-guards"] = guards
+        paths[f"/{ns}/{method}"] = {"post": op}
     return paths
 
 

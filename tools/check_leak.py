@@ -103,6 +103,7 @@ def tracked_files() -> list[Path]:
 # 允许进入公开仓库的路径白名单（CONTRIBUTING.md「入库白名单」的机器可执行版）。
 # 白名单之外任何被 git 跟踪的文件一律视为泄漏——内部规划/流程/路线图文档
 # 曾经因只扫关键词而漏网，这里从路径层面兜底。
+# glama.json：Glama 目录站维护者声明（公开机器元数据，同 server.json 先例）。
 ALLOWED_PATH_PREFIXES = (
     "src/",
     "tests/",
@@ -127,6 +128,7 @@ ALLOWED_PATHS = {
     "llms-full.txt",
     "pyproject.toml",
     "server.json",
+    "glama.json",
     "requirements-dev.lock",
     ".gitignore",
 }

@@ -262,6 +262,10 @@ class Client:
                 + (f"\n检测到旧版 finpipe 配置（{legacy}）：本项目已更名 wmshare，"
                    "凭证配置同步改为 WMSHARE_* 环境变量 / ~/.wmshare/credentials.env，"
                    "旧配置不再被读取，请迁移。\n" if legacy else "\n")
+                # 报错即引导（同 README「零凭证先试」口径）：申请凭证前先有
+                # 离线路径跑通调用姿势，别让首次接触停在冷冰冰的报错上。
+                + "零凭证可先试离线演示：wmshare.demo_client()"
+                  "（随包固定快照、不联网、非实时数据）。\n"
                 + f"{APPID_GUIDANCE}",
                 code="config")
         self.market = market
@@ -808,7 +812,7 @@ class Client:
         result = self.eval_result(xs, symbol=symbol)
         if not _raw and _units == "base":
             result = apply_units(result, fn, fname=name, validate=self._validate,
-                                 market=self.market)
+                                 market=self.market, symbol=symbol)
         return _to_dataframe(result) if _df else result
 
     def call_batch(self, name: str, symbols: list[str], /, on_error: str = "raise",
@@ -887,7 +891,7 @@ class Client:
         if not _raw and _units == "base":
             for s, v in result.items():
                 result[s] = apply_units(v, fn, fname=name, validate=self._validate,
-                                        market=self.market)
+                                        market=self.market, symbol=s)
         if _df:
             result = {k: _to_dataframe(v) for k, v in result.items()}
         # raise 模式把 N 个标的压进一次 eval：1 次请求

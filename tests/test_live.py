@@ -139,6 +139,15 @@ def test_moneyflow_last_and_live(cli):
     assert live is None or (isinstance(live, dict) and _is_num(live["net_mf"]))
 
 
+def test_moneyflow_board(cli):
+    """全市场资金流快照：服务端一次直出，行按净流入降序。"""
+    rows = _call_or_xfail(cli.moneyflow.board())
+    assert isinstance(rows, list) and len(rows) > 100
+    assert {"symbol", "name", "net_mf"} <= set(rows[0])
+    nets = [r["net_mf"] for r in rows if _is_num(r.get("net_mf"))]
+    assert nets == sorted(nets, reverse=True), "board 应按净流入降序"
+
+
 # ---------------------------------------------------------------- 财务 fundamentals
 @pytest.mark.parametrize("method", ["balance", "income", "cashflow"])
 def test_statements_three_tables(cli, method):
@@ -188,6 +197,39 @@ def test_indicator_get_and_metrics(cli):
     assert _is_num(batch["$PE_TTM_LAST"]) and batch["$PE_TTM_LAST"] > 0
     # 指标层比率是小数（0.332 = 33.2%），不是 0.332 个百分点
     assert _is_num(batch["$ROE_TTM_LAST"]) and 0 < batch["$ROE_TTM_LAST"] < 2
+
+
+def test_indicator_basic(cli):
+    """估值截面：字段齐全、PE/PB 为正、换手率小数、市值元量级。"""
+    v = _call_or_xfail(cli.indicator.basic, MAIN)
+    assert set(v) == {"pe_ttm", "pb", "turnover_rate", "total_mv"}
+    assert _is_num(v["pe_ttm"]) and v["pe_ttm"] > 0
+    assert _is_num(v["pb"]) and v["pb"] > 0
+    tr = v["turnover_rate"]
+    assert tr is None or (0 <= tr <= 1), f"换手率应为小数，实际 {tr}"
+    mv = v["total_mv"]
+    assert mv is None or mv > 1e8, f"市值应为元量级（个股），实际 {mv}"
+
+
+def test_indicator_financials(cli):
+    """财务截面：ROE 小数量级、近3年平均 ROE 与 TTM 同量级、EPS 元。"""
+    v = _call_or_xfail(cli.indicator.financials, MAIN)
+    assert set(v) == {"roe_ttm", "roe_avg", "eps_ttm"}
+    for key in ("roe_ttm", "roe_avg"):
+        x = v[key]
+        assert x is None or -20 < x < 20, f"{key} 应为小数量级，实际 {x}"
+    eps = v["eps_ttm"]
+    assert eps is None or abs(eps) > 0, f"EPS 应为元量级，实际 {eps}"
+
+
+def test_volume_codes_are_lot_denominated(cli):
+    """指标层成交量是「手」（与 kline 的「股」差 100 倍）——单位台账的机器锚点。"""
+    m = _call_or_xfail(cli.indicator.metrics, MAIN,
+                       ["$VOLUME_DAY", "$EQUITY_FREE_SHARES", "$TURNOVER_RATE"])
+    vol, free, turnover = m["$VOLUME_DAY"], m["$EQUITY_FREE_SHARES"], m["$TURNOVER_RATE"]
+    if _is_num(vol) and _is_num(free) and _is_num(turnover):
+        assert vol * 100 / free == pytest.approx(turnover, rel=1e-6), \
+            "成交量为手时，×100/流通股本 应等于换手率；否则上游已改为股"
 
 
 # ---------------------------------------------------------------- 披露 disclosure
@@ -566,13 +608,29 @@ def test_estimates_domain_smoke(cli):
 def test_cbond_domain_smoke(cli):
     for r in (
         _call_or_xfail(lambda: cli.cbond.latest_quotes()),
+        _call_or_xfail(lambda: cli.cbond.board()),
         _call_or_xfail(lambda: cli.cbond.of_stock("600519")),
         _call_or_xfail(lambda: cli.cbond.query("600519")),
         _call_or_xfail(lambda: cli.cbond.call_hits("113050", 130)),
         _call_or_xfail(lambda: cli.cbond.kline_window("113050", 30)),
+        _call_or_xfail(lambda: cli.cbond.bars("113050", n=5)),
         _call_or_xfail(lambda: cli.cbond.universe_codes()),
     ):
         assert r is None or isinstance(r, (list, dict, int))
+
+
+def test_cbond_bars_row_shape(cli):
+    """转债日线表：列转行后字段齐全、日期降序、OHLC 关系成立、无缺失结构。"""
+    rows = _call_or_xfail(cli.cbond.bars, "113050", n=5)
+    if not rows:
+        pytest.xfail("样本转债该窗口无数据")
+    assert all({"date", "open", "high", "low", "close"} <= set(r) for r in rows)
+    dates = [r["date"] for r in rows]
+    assert dates == sorted(dates, reverse=True), "转债日线应按日期降序"
+    for r in rows:
+        if all(_is_num(r.get(k)) for k in ("open", "high", "low", "close")):
+            assert r["low"] <= min(r["open"], r["close"])
+            assert r["high"] >= max(r["open"], r["close"])
 
 
 def test_workout_index_intl_domain_smoke(cli):

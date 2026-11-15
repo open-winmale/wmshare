@@ -27,7 +27,8 @@ sys.path.insert(0, str(REPO / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _introspect import (  # noqa: E402
     COMPOSITE_EXAMPLES, COMPOSITE_NOTES, FALLBACK_RETURNS, RETURNS_OVERRIDES,
-    method_doc, method_example, method_params, return_shape_for, underlying_fn,
+    field_cn, method_doc, method_example, method_params, return_shape_for,
+    underlying_fn,
 )
 from wmshare.api import (  # noqa: E402
     COMPOSITE_METHODS, FRIENDLY_INDEX, FRIENDLY_NAMESPACES)
@@ -90,8 +91,6 @@ def gh_slug(title: str) -> str:
 
 TYPE_SHORT = {"float64": "float", "int64": "int"}
 UNIT_CN = {"percent": "百分数→小数", "yi_yuan": "亿元→元", "lot": "手→股"}
-
-
 def fmt_guards(fn: dict) -> str:
     """单位换算与守护声明的紧凑渲染（无声明时为 —）。"""
     parts = [f"`{f}`:{UNIT_CN[u]}" for f, u in (fn.get("units") or {}).items()]
@@ -138,7 +137,7 @@ def fmt_returns(fn: dict, inv: dict, shape: dict | None = None) -> str:
             detail = " / ".join(
                 f"{f['name']}:{TYPE_SHORT.get(f.get('type', 'any'), f.get('type', 'any'))}"
                 + ("?" if f.get("optional") else "")
-                + (f"（{f['cn']}）" if f.get("cn") else "")
+                + (f"（{field_cn(f)}）" if field_cn(f) else "")
                 for f in fields)
             desc += "；字段 " + detail
     return esc(desc)
@@ -287,7 +286,7 @@ def interface_block(ns: str, method: str, cn: str, underlying: str,
             t = TYPE_SHORT.get(f.get("type", "any"), f.get("type", "any"))
             if f.get("optional"):
                 t += "?"
-            out.append(f"| `{f['name']}` | {t} | {esc(f.get('cn', '')) or '—'} |")
+            out.append(f"| `{f['name']}` | {t} | {esc(field_cn(f)) or '—'} |")
         out.append("")
     else:
         out += [f"**输出**：{ret}", ""]
@@ -608,6 +607,12 @@ def build() -> str:
         "A 股成交量=股）；每次返回前按目录声明做量级守护与关系不变量校验，违例抛 "
         "`DataError` 而非交给你错误量级的数据。取原始口径：`_raw=True`（上游原始行）、"
         "`_units=\"native\"`（保留上游原单位）、`Client(validate=False)`（关校验留换算）。",
+        "- **字段表口径**：输出字段说明中的量/市值一律按 SDK 换算后口径（量=股、市值=元）；"
+        "上游原生口径只在 `_units=\"native\"` / `_raw=True` 下可见。"
+        "逐函数声明见函数合同的「单位与守护声明」列，机器可读版见 "
+        "[openapi.json](openapi.json) 的 `x-wmshare-guards`。",
+        "- **指标码中文名**：指标清单里的「期货持仓量(手)」等是上游原生口径的**命名**，"
+        "不代表 SDK 返回值单位；返回值一律以上述基础单位与逐函数声明为准。",
         "",
     ]
     out += overview_table(docs)

@@ -6,6 +6,14 @@
     python tools/audit_units.py matrix --only equity  # 只跑某域
     python tools/audit_units.py matrix --refresh      # 忽略缓存重取
 
+离线（不联网、不需要凭证，可在 CI 里跑）：
+    python tools/audit_units.py drift                 # 目录声明 vs 上游的静态漂移
+    python tools/audit_units.py drift --json         # 机器可读报告
+
+drift 比对三类：returns_shape 字段集（悬空声明）、markets 可用性（指标码市场声明
+覆盖率）、checks 适用性（不变量是否注册 / percent 是否配量级守护）。
+ERROR 影响退出码；markets 覆盖率与 shape 覆盖上游属 INFO（P2 跨仓待办），不拦门禁。
+
 SDK 默认调用路径（call() / indicator.get）已内置换算 + 量级守护 + 行内不变量。
 cross 在其之上补**跨接口**一致性核验（数据是否对所有公司同口径，而非单一样本）。
 matrix 以 `_units="native"` 逐接口取脚本原值，对每个数值字段给出判定：
@@ -26,6 +34,7 @@ import statistics
 import sys
 import time
 from pathlib import Path
+from typing import Any
 
 import wmshare
 from wmshare import DataError
@@ -361,22 +370,157 @@ def run_matrix(cli: wmshare.Client, rep: Report, only: str | None, refresh: bool
     return 1 if wrong else 0
 
 
+# ---- drift：离线静态漂移（目录声明 vs 上游 inventory / 指标 markets / checks 注册） ----
+
+def _shape_fields(shape: dict | None) -> set[str]:
+    """returns_shape 的字段名集合（兼容 array.items.fields / object.fields）。"""
+    if not isinstance(shape, dict):
+        return set()
+    items = shape.get("items") if isinstance(shape.get("items"), dict) else shape
+    fields = (items or {}).get("fields") or []
+    return {f["name"] for f in fields if isinstance(f, dict) and f.get("name")}
+
+
+def collect_drift(cat, inventory_doc: dict, metrics_doc: dict,
+                  strict: bool = False) -> dict[str, Any]:
+    """纯函数：只读目录与生成器产物，产出 drift 报告（便于正负例单测）。
+
+    ERROR（默认拦）：未注册的 checks、percent 缺 ranges（尊重 notes「量级豁免」
+    先例）——两者都是声明内部的自洽性，与上游 shape 无关。
+    WARN（默认只报告）：units / ranges 字段不在 returns_shape。带 normalize_with
+    的函数，catalog 取的是 fmt 函数的 shape（字段滞后），而守护声明按 normalize
+    后实测字段书写；守护按运行时字段名匹配仍生效，属上游 shape 声明滞后。
+    既存 test_unit_meta 规则 1 在 fields 为空时会跳过，本工具把这些滞后项显式化，
+    需逐函数用域 YAML ``returns.shape`` 覆盖核实。``strict=True`` 可升级为失败。
+    INFO：SDK 侧 shape 覆盖上游清单、指标码 markets 覆盖率、matrix 已覆盖节数。
+    """
+    from wmshare.units import CHECKS
+
+    errors: list[str] = []
+    warnings: list[str] = []
+    manifest = cat.guard_manifest()
+    inv_by_name = {f["name"]: f for f in inventory_doc.get("functions", [])}
+    shape_overrides: list[str] = []
+
+    for name, guards in manifest.items():
+        fn = cat.function(name)
+        fields = _shape_fields(fn.get("returns_shape"))
+        unit_fields = set(guards.get("units") or {})
+        range_fields = set(guards.get("ranges") or {})
+        for kind, declared in (("units", unit_fields), ("ranges", range_fields)):
+            if declared and fields:
+                dangling = sorted(declared - fields)
+                if dangling:
+                    warnings.append(
+                        f"shape: {name} {kind} 字段 {dangling} 不在 returns_shape"
+                        "（疑似上游 shape 声明滞后，需逐函数核实 returns.shape 覆盖）")
+        for cid in guards.get("checks") or []:
+            if cid not in CHECKS:
+                errors.append(
+                    f"checks: {name} 不变量 {cid!r} 未注册（可用 {sorted(CHECKS)}）")
+        notes = " ".join(fn.get("notes") or []) + " " + " ".join(
+            (cat.domains.get(fn.get("domain"), {}) or {}).get("notes") or [])
+        for f, tok in (guards.get("units") or {}).items():
+            if tok == "percent" and f not in (guards.get("ranges") or {}) \
+                    and "量级豁免" not in notes:
+                errors.append(f"checks: {name}.{f} percent 声明缺 ranges 量级守护")
+
+        inv_fields = _shape_fields(inv_by_name.get(name, {}).get("returns_shape"))
+        if fields and inv_fields and fields != inv_fields:
+            shape_overrides.append(name)
+
+    metrics = metrics_doc.get("metrics") or []
+    by_market: dict[str, int] = {}
+    declared_markets = 0
+    for m in metrics:
+        ms = m.get("markets") or []
+        if ms:
+            declared_markets += 1
+            for mk in ms:
+                by_market[mk] = by_market.get(mk, 0) + 1
+
+    audit_sections = 0
+    if REPORT_PATH.is_file():
+        audit_sections = sum(
+            1 for line in REPORT_PATH.read_text(encoding="utf-8").splitlines()
+            if line.startswith("## "))
+
+    total_functions = cat.stats()["functions"]
+    return {
+        "errors": errors,
+        "warnings": warnings,
+        "strict": strict,
+        "info": {
+            "guard_declared": len(manifest),
+            "functions": total_functions,
+            "guard_ratio": round(len(manifest) / total_functions, 6)
+            if total_functions else 0.0,
+            "shape_overrides": sorted(shape_overrides),
+            "markets": {
+                "total": len(metrics),
+                "declared": declared_markets,
+                "undeclared": len(metrics) - declared_markets,
+                "ratio": round(declared_markets / len(metrics), 6) if metrics else 0.0,
+                "by_market": dict(sorted(by_market.items())),
+            },
+            "matrix_sections": audit_sections,
+        },
+        "pass": not (errors or (warnings if strict else [])),
+    }
+
+
+def run_drift(json_output: bool = False, strict: bool = False) -> int:
+    """离线 drift 入口：读随包目录，不联网、不需要凭证。"""
+    cat = wmshare.load()
+    gen = REPO / "src" / "wmshare" / "_catalog" / "generated"
+    inventory_doc = json.loads((gen / "inventory.json").read_text(encoding="utf-8"))
+    metrics_doc = json.loads((gen / "metrics.json").read_text(encoding="utf-8"))
+    result = collect_drift(cat, inventory_doc, metrics_doc, strict=strict)
+    if json_output:
+        print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+        return 0 if result["pass"] else 1
+    info = result["info"]
+    print(f"# drift 审计 | 声明 {info['guard_declared']}/{info['functions']} 函数 "
+          f"({info['guard_ratio'] * 100:.2f}%)")
+    print(f"# shape 覆盖上游 {len(info['shape_overrides'])} 处（INFO，跨仓待办）")
+    m = info["markets"]
+    print(f"# markets 声明 {m['declared']}/{m['total']} ({m['ratio'] * 100:.2f}%)，"
+          f"缺 {m['undeclared']}（INFO，P2）· 分市场 {m['by_market']}")
+    print(f"# matrix 已覆盖 {info['matrix_sections']} 节（INFO，扩矩阵需联网额度，单独排期）")
+    print(f"# ERROR {len(result['errors'])} · WARN {len(result['warnings'])} "
+          f"(strict={strict})")
+    for e in result["errors"]:
+        print("ERROR:", e)
+    for w in result["warnings"]:
+        print("WARN:", w)
+    return 0 if result["pass"] else 1
+
+
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description="单位口径审计（cross 跨接口一致性 / matrix 全量逐字段）")
+    ap = argparse.ArgumentParser(
+        description="单位口径审计（cross 跨接口一致性 / matrix 全量逐字段 / drift 离线静态漂移）")
     ap.add_argument("--universe", default=",".join(DEFAULT_UNIVERSE),
                     help="cross：逗号分隔的样本宇宙")
     ap.add_argument("--etf", default=DEFAULT_ETF, help="cross：ETF 代码")
     ap.add_argument("--compare-syms", default=2, type=int,
                     help="cross：对前 N 家跑 statement_compare（配额友好；0 关闭）")
-    ap.add_argument("matrix", nargs="?", help="matrix：全量接口逐字段单位审计")
+    ap.add_argument("mode", nargs="?", choices=("cross", "matrix", "drift"),
+                    default="cross", help="cross（默认，联网）/ matrix（联网）/ drift（离线）")
     ap.add_argument("--only", default=None, help="matrix：只跑名字含该子串的接口")
     ap.add_argument("--refresh", action="store_true", help="matrix：忽略缓存重取")
+    ap.add_argument("--json", action="store_true", help="drift：机器可读 JSON 输出")
+    ap.add_argument("--strict", action="store_true",
+                    help="drift：把 WARN（shape 声明滞后）升级为失败")
     args = ap.parse_args(argv)
+
+    # drift 必须在构造 Client 之前分流：它是离线静态检查，不该要求凭证、不该联网。
+    if args.mode == "drift":
+        return run_drift(json_output=args.json, strict=args.strict)
 
     cli = wmshare.Client.from_env()
     rep = Report()
 
-    if args.matrix == "matrix":
+    if args.mode == "matrix":
         rc = run_matrix(cli, rep, args.only, args.refresh)
         return rc if rep.ok() else 1
 

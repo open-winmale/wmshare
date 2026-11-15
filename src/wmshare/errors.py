@@ -38,8 +38,9 @@ class WmshareError(RuntimeError):
 class AuthError(WmshareError):
     """凭证缺失/无效/被拒（OAuth 400/401/403 或 eval 401/403）。
 
-    凭证缺失、无效、被撤销都会落到这里；消息包含申请与配置自己
-    AppID 的步骤，程序可用 ``code`` / ``status`` 分类。
+    凭证缺失、无效、被撤销都会落到这里；缺凭证路径的消息附零凭证
+    离线演示入口（``wmshare.demo_client()``），所有路径都含申请与
+    配置自己 AppID 的步骤，程序可用 ``code`` / ``status`` 分类。
     """
 
 

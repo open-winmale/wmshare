@@ -55,10 +55,10 @@ print(p)   # 0.2115 is about the 21st percentile of the 10-year P/E history.
 The free tier allows 500 requests per hour and 5,000 per day. A batch counts as one
 request regardless of how many rows it returns.
 
-## Whole market in 12 requests
+## Whole market in 11 requests
 
-In the documented example, `batch_all` fetches snapshots for 5,691 A-share symbols
-in about **12 requests**. See the [batch example](../examples/07_stocks_industry_batch.py)
+In the documented example, `batch_all` fetches snapshots for 5,375 A-share symbols
+in about **11 requests**. See the [batch example](../examples/07_stocks_industry_batch.py)
 and the [README](../README.md) for the three batch methods.
 
 ## Find an indicator code
@@ -94,7 +94,7 @@ returns up to 500 bars by default. Set `Client(max_limit=...)` to adjust the bar
 
 The detailed [guide](GUIDE.md), [indicator catalog](INDICATORS.md), and
 [API reference](API.md) are in Chinese. The [examples index](../examples/README.md)
-lists the 15 numbered examples and identifies which ones can run offline.
+lists the numbered examples and identifies which ones can run offline.
 See [AGENTS.md](../AGENTS.md) and the [bundled skill](../src/wmshare/skills/wmshare/SKILL.md)
 for agent integration.
 

@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "wmshare 数据 API",
-    "version": "1.19.0",
+    "version": "1.20.4",
     "description": "覆盖 A 股、港股、美股的财经数据核心接口（Python SDK，`pip install wmshare`；`import wmshare`）。凭证必填：在开放平台（open.winmale.com）获取 client_id/api-key；遇到 401/403/429 错误消息即完整的申请与配置指引。覆盖行情 K 线（不复权/前复权/后复权、盘中、分时、ETF、指数）、三大报表（多期、合并 vs 母公司、树视图、新旧会计准则归一）、分红（历史/DPS/窗口/TTM 率）、公告与业绩披露、资金流与指标层。平台指标经 /indicator/get、/indicator/metrics 按指标代码寻址，全量 2752 个指标代码随包内置目录分发（分组清单见 docs/API.md）。",
     "license": {
       "name": "BSD-3-Clause",
@@ -149,6 +149,24 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "volume": "lot"
+          },
+          "ranges": {
+            "percent": [
+              -1,
+              30
+            ],
+            "volume": [
+              0,
+              1000000000000.0
+            ]
+          },
+          "checks": [
+            "volume_amount"
+          ]
         }
       }
     },
@@ -156,7 +174,7 @@
       "post": {
         "operationId": "kline_last",
         "summary": "最新一根日 K（date/open/high/low/close/volume/amount/percent），无数据返回 None。",
-        "description": "经规范化序列取最新一行，字段与 ``bars()`` 一致；``_raw=True`` 时跳过规范化，、返回上游原始行（字段名不同，含 CreatedAt/sampling 等）。、底层目录函数 `kline.query_bars`。SDK 调用：`cli.kline.last(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "description": "取 store 最新一行（``kline.query_last`` / ``store.latest``），含当日已入库的日 K；、不受回测锚点截断——需要「锚点内最新一根」请用 ``bars(n=1)[0]``。、字段与 ``bars()`` 一致；``_raw=True`` 时跳过规范化，返回上游原始行、（字段名不同，含 CreatedAt/sampling 等）。、底层目录函数 `kline.query_last`。SDK 调用：`cli.kline.last(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "市场行情"
         ],
@@ -184,7 +202,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "description": "K 线 bar 或 None（无数据）",
+                  "description": "K 线 bar",
                   "type": "object",
                   "properties": {
                     "sas": {
@@ -228,6 +246,25 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "volume": "lot",
+            "percent": "percent"
+          },
+          "ranges": {
+            "percent": [
+              -1,
+              30
+            ],
+            "volume": [
+              0,
+              1000000000000.0
+            ]
+          },
+          "checks": [
+            "volume_amount"
+          ]
         }
       }
     },
@@ -288,7 +325,7 @@
                     },
                     "volume": {
                       "type": "number",
-                      "description": "量(手)"
+                      "description": "量(股)"
                     },
                     "amount": {
                       "type": "number",
@@ -300,7 +337,7 @@
                     },
                     "mv": {
                       "type": "number",
-                      "description": "市值亿"
+                      "description": "市值(元)"
                     },
                     "source": {
                       "type": "string",
@@ -310,6 +347,11 @@
                 }
               }
             }
+          }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "volume": "lot"
           }
         }
       }
@@ -352,6 +394,11 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "volume": "lot"
+          }
         }
       }
     },
@@ -392,14 +439,19 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "volume": "lot"
+          }
         }
       }
     },
     "/kline/snapshot": {
       "post": {
         "operationId": "kline_snapshot",
-        "summary": "行情摘要（symbol/close/percent/chg_20d）。",
-        "description": "底层目录函数 `kline.snapshot`。SDK 调用：`cli.kline.snapshot(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "summary": "单股行情快照（23 字段：价量、涨跌、均线、市值、标识）。",
+        "description": "价量与涨跌：close、percent、volume、amount、chg_5d、chg_10d、chg_20d、chg_90d、roi_1y。、均线与市值：ma20、ma60、ma120、ma60_up、vol_ratio_5、mv、mv_free。、标识与日期：symbol、name、industry、is_st、is_suspend、kline_date、kline_sas。、percent 与 chg_* 为小数，volume=股，amount 与市值=元；布尔字段为 ma60_up、is_st、is_suspend。、目录 returns_shape 由本仓精修条目给出完整字段表，不依赖上游注释。、底层目录函数 `kline.snapshot`。SDK 调用：`cli.kline.snapshot(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "市场行情"
         ],
@@ -434,22 +486,103 @@
                       "type": "string",
                       "description": "代码"
                     },
+                    "name": {
+                      "type": "string",
+                      "description": "名称"
+                    },
+                    "industry": {
+                      "type": "string",
+                      "description": "所属行业"
+                    },
+                    "kline_date": {
+                      "type": "string",
+                      "description": "K 线日期"
+                    },
+                    "kline_sas": {
+                      "type": "string",
+                      "description": "K 线采样戳"
+                    },
                     "close": {
                       "type": "number",
-                      "description": "最新价"
+                      "description": "最新价（元）"
                     },
                     "percent": {
                       "type": "number",
-                      "description": "涨跌幅"
+                      "description": "涨跌幅（小数）"
+                    },
+                    "volume": {
+                      "type": "number",
+                      "description": "成交量（股）"
+                    },
+                    "amount": {
+                      "type": "number",
+                      "description": "成交额（元）"
+                    },
+                    "chg_5d": {
+                      "type": "number",
+                      "description": "5 日涨跌（小数）"
+                    },
+                    "chg_10d": {
+                      "type": "number",
+                      "description": "10 日涨跌（小数）"
                     },
                     "chg_20d": {
                       "type": "number",
-                      "description": "20 日涨跌"
+                      "description": "20 日涨跌（小数）"
+                    },
+                    "chg_90d": {
+                      "type": "number",
+                      "description": "90 日涨跌（小数）"
+                    },
+                    "roi_1y": {
+                      "type": "number",
+                      "description": "近 1 年收益（小数）"
+                    },
+                    "ma20": {
+                      "type": "number",
+                      "description": "20 日均线（元）"
+                    },
+                    "ma60": {
+                      "type": "number",
+                      "description": "60 日均线（元）"
+                    },
+                    "ma120": {
+                      "type": "number",
+                      "description": "120 日均线（元）"
+                    },
+                    "vol_ratio_5": {
+                      "type": "number",
+                      "description": "5 日量比（倍）"
+                    },
+                    "mv": {
+                      "type": "number",
+                      "description": "总市值（元）"
+                    },
+                    "mv_free": {
+                      "type": "number",
+                      "description": "流通市值（元）"
+                    },
+                    "ma60_up": {
+                      "type": "boolean",
+                      "description": "MA60 上行"
+                    },
+                    "is_st": {
+                      "type": "boolean",
+                      "description": "是否 ST"
+                    },
+                    "is_suspend": {
+                      "type": "boolean",
+                      "description": "是否停牌"
                     }
                   }
                 }
               }
             }
+          }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "volume": "lot"
           }
         }
       }
@@ -1776,6 +1909,22 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "premiumRatio": "percent",
+            "couponIr": "percent"
+          },
+          "ranges": {
+            "premiumRatio": [
+              -100,
+              1000
+            ],
+            "couponIr": [
+              0,
+              0.15
+            ]
+          }
         }
       }
     },
@@ -1918,6 +2067,22 @@
                 }
               }
             }
+          }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "premiumRatio": "percent",
+            "couponIr": "percent"
+          },
+          "ranges": {
+            "premiumRatio": [
+              -100,
+              1000
+            ],
+            "couponIr": [
+              0,
+              0.15
+            ]
           }
         }
       }
@@ -2069,6 +2234,22 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "premiumRatio": "percent",
+            "couponIr": "percent"
+          },
+          "ranges": {
+            "premiumRatio": [
+              -100,
+              1000
+            ],
+            "couponIr": [
+              0,
+              0.15
+            ]
+          }
         }
       }
     },
@@ -2194,6 +2375,51 @@
         "responses": {
           "200": {
             "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cbond/bars": {
+      "post": {
+        "operationId": "cbond_bars",
+        "summary": "转债日线表（行式）：列式窗口转成每根一行。",
+        "description": "字段为 ``date/open/high/low/close/volume/amount``。只做列转行，不改数值、、不做重排：行序与上游窗口一致，``date`` 取上游采样名前 10 位；某列缺失时、该位置补 ``None``。不复权；价格与金额单位为元（本币），成交量单位为**张**、（转债面值口径，1 张 = 100 元面值；live 实测 ``amount / close ≈ volume``）。、窗口无数据或返回非 MAP 形态时，空列表 / 原值透传。、底层目录函数 `cbond.kline_window`。SDK 调用：`cli.cbond.bars(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "市场行情"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "symbol": {
+                    "type": "string",
+                    "description": "转债代码（6 位裸码）"
+                  },
+                  "n": {
+                    "type": "integer",
+                    "description": "窗口根数，默认 120"
+                  }
+                },
+                "required": [
+                  "symbol"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ARR · 行 date/open/high/low/close/volume/amount（列式转行；量=张，价/额=元）",
             "content": {
               "application/json": {
                 "schema": {
@@ -2363,6 +2589,14 @@
                 }
               }
             }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "weight": [
+              0,
+              1
+            ]
           }
         }
       }
@@ -2802,6 +3036,14 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "diffp": "percent"
+          },
+          "checks": [
+            "diffp_ratio"
+          ]
         }
       }
     },
@@ -3033,6 +3275,88 @@
         }
       }
     },
+    "/indicator/basic": {
+      "post": {
+        "operationId": "indicator_basic",
+        "summary": "每日估值当前截面：``pe_ttm`` / ``pb`` / ``turnover_rate`` / ``total_mv``。",
+        "description": "**只有当前值，不提供按交易日的历史序列**；也不接受日期参数——上游没有、按日回溯的估值序列，传入日期只会得到同一截面。、口径：``pe_ttm`` 与 ``pb`` 都是最新 TTM 口径（``$PE_TTM_LAST`` /、``$PB_TTM_LAST``）；``turnover_rate`` 按流通股本计，小数（0.0026 = 0.26%）；、``total_mv`` 为个股总市值、单位元（``$MV_LAST``，不是行业聚合值）。、字段名固定，缺失值以 ``None`` 表示。、指标代码批量直查。SDK 调用：`cli.indicator.basic(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "财务基本面"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "symbol": {
+                    "type": "string",
+                    "description": "标的裸码"
+                  }
+                },
+                "required": [
+                  "symbol"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "MAP · {pe_ttm, pb, turnover_rate, total_mv}（最新 TTM 估值；市值=元）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/indicator/financials": {
+      "post": {
+        "operationId": "indicator_financials",
+        "summary": "财务指标当前截面：``roe_ttm`` / ``roe_avg`` / ``eps_ttm``。",
+        "description": "**只有当前值，不是按报告期的百列宽表**。口径：``roe_ttm`` 是最新滚动、十二个月口径；``roe_avg`` 是**近 3 年**平均（``$ROE_AVG3``，不是上市以来、的历史均值）；``eps_ttm`` 是**归母**每股收益 TTM（不是扣非）。、比率类为小数，每股收益为元。、指标代码批量直查。SDK 调用：`cli.indicator.financials(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "财务基本面"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "symbol": {
+                    "type": "string",
+                    "description": "标的裸码"
+                  }
+                },
+                "required": [
+                  "symbol"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "MAP · {roe_ttm, roe_avg, eps_ttm}（roe_avg=近3年平均；eps_ttm=归母）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/segments/products": {
       "post": {
         "operationId": "segments_products",
@@ -3105,6 +3429,26 @@
                 }
               }
             }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "tr": [
+              -10000000000000.0,
+              10000000000000.0
+            ],
+            "cost": [
+              0,
+              10000000000000.0
+            ],
+            "margin": [
+              -5,
+              1
+            ],
+            "ratio": [
+              0,
+              1
+            ]
           }
         }
       }
@@ -3182,6 +3526,26 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "tr": [
+              -10000000000000.0,
+              10000000000000.0
+            ],
+            "cost": [
+              0,
+              10000000000000.0
+            ],
+            "margin": [
+              -5,
+              1
+            ],
+            "ratio": [
+              0,
+              1
+            ]
+          }
         }
       }
     },
@@ -3245,6 +3609,26 @@
                 }
               }
             }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "tr": [
+              -10000000000000.0,
+              10000000000000.0
+            ],
+            "pct": [
+              0,
+              1
+            ],
+            "margin": [
+              -5,
+              1
+            ],
+            "yoy": [
+              -1,
+              100
+            ]
           }
         }
       }
@@ -3318,6 +3702,14 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "ratio": [
+              0,
+              1
+            ]
+          }
         }
       }
     },
@@ -3379,6 +3771,34 @@
                 }
               }
             }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "tr": [
+              -10000000000000.0,
+              10000000000000.0
+            ],
+            "cost": [
+              0,
+              10000000000000.0
+            ],
+            "margin": [
+              -5,
+              1
+            ],
+            "ratio": [
+              0,
+              1
+            ],
+            "pct": [
+              0,
+              1
+            ],
+            "yoy": [
+              -1,
+              100
+            ]
           }
         }
       }
@@ -3610,6 +4030,42 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "eps1": [
+              0,
+              10000.0
+            ],
+            "eps2": [
+              0,
+              10000.0
+            ],
+            "eps3": [
+              0,
+              10000.0
+            ],
+            "eps4": [
+              0,
+              10000.0
+            ],
+            "pe1": [
+              0,
+              10000.0
+            ],
+            "pe2": [
+              0,
+              10000.0
+            ],
+            "pe3": [
+              0,
+              10000.0
+            ],
+            "pe4": [
+              0,
+              10000.0
+            ]
+          }
         }
       }
     },
@@ -3678,6 +4134,42 @@
                 }
               }
             }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "eps1": [
+              0,
+              10000.0
+            ],
+            "eps2": [
+              0,
+              10000.0
+            ],
+            "eps3": [
+              0,
+              10000.0
+            ],
+            "eps4": [
+              0,
+              10000.0
+            ],
+            "pe1": [
+              0,
+              10000.0
+            ],
+            "pe2": [
+              0,
+              10000.0
+            ],
+            "pe3": [
+              0,
+              10000.0
+            ],
+            "pe4": [
+              0,
+              10000.0
+            ]
           }
         }
       }
@@ -4574,6 +5066,32 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "np_amp_lower": "percent",
+            "np_amp_upper": "percent",
+            "rev_amp_lower": "percent",
+            "rev_amp_upper": "percent"
+          },
+          "ranges": {
+            "np_amp_lower": [
+              -100,
+              1000
+            ],
+            "np_amp_upper": [
+              -100,
+              1000
+            ],
+            "rev_amp_lower": [
+              -100,
+              1000
+            ],
+            "rev_amp_upper": [
+              -100,
+              1000
+            ]
+          }
         }
       }
     },
@@ -4613,6 +5131,32 @@
                 }
               }
             }
+          }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "np_amp_lower": "percent",
+            "np_amp_upper": "percent",
+            "rev_amp_lower": "percent",
+            "rev_amp_upper": "percent"
+          },
+          "ranges": {
+            "np_amp_lower": [
+              -100,
+              1000
+            ],
+            "np_amp_upper": [
+              -100,
+              1000
+            ],
+            "rev_amp_lower": [
+              -100,
+              1000
+            ],
+            "rev_amp_upper": [
+              -100,
+              1000
+            ]
           }
         }
       }
@@ -4682,6 +5226,27 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "np_yoy": "percent",
+            "rev_yoy": "percent",
+            "roe": "percent"
+          },
+          "ranges": {
+            "np_yoy": [
+              -100,
+              1000
+            ],
+            "rev_yoy": [
+              -100,
+              1000
+            ],
+            "roe": [
+              -2,
+              5
+            ]
+          }
         }
       }
     },
@@ -4721,6 +5286,27 @@
                 }
               }
             }
+          }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "np_yoy": "percent",
+            "rev_yoy": "percent",
+            "roe": "percent"
+          },
+          "ranges": {
+            "np_yoy": [
+              -100,
+              1000
+            ],
+            "rev_yoy": [
+              -100,
+              1000
+            ],
+            "roe": [
+              -2,
+              5
+            ]
           }
         }
       }
@@ -5400,8 +5986,8 @@
     "/info/profile": {
       "post": {
         "operationId": "info_profile",
-        "summary": "公司档案摘要（名称/行业/组织类型/上市日期）。",
-        "description": "档案指标（$NAME 等）。SDK 调用：`cli.info.profile(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "summary": "公司档案摘要（name/industry/style_industry/org_type/listing_date）。",
+        "description": "美股无 ``$STYLE_INDUSTRY`` 变量，该字段返回 ``None``；港股亦可能为空。、返回键集合在各市场保持一致，便于调用方按同一结构解包。、档案指标（$NAME 等）。SDK 调用：`cli.info.profile(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "参考数据"
         ],
@@ -5491,6 +6077,14 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "hold_num_ratio": [
+              0,
+              1
+            ]
+          }
         }
       }
     },
@@ -5545,6 +6139,34 @@
                 }
               }
             }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "hold_ratio_total": [
+              0,
+              1
+            ],
+            "freehold_ratio_total": [
+              0,
+              1
+            ],
+            "total_num_ratio": [
+              -1,
+              1
+            ],
+            "avg_freeshares_ratio": [
+              -1,
+              1
+            ],
+            "avg_hold_amt": [
+              0,
+              1000000000.0
+            ],
+            "avg_free_shares": [
+              0,
+              10000000000.0
+            ]
           }
         }
       }
@@ -5619,6 +6241,27 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "accum_pledge_tsr": "percent",
+            "pf_hold_ratio": "percent",
+            "pf_tsr": "percent"
+          },
+          "ranges": {
+            "accum_pledge_tsr": [
+              0,
+              1
+            ],
+            "pf_hold_ratio": [
+              0,
+              1
+            ],
+            "pf_tsr": [
+              0,
+              1
+            ]
+          }
         }
       }
     },
@@ -5684,6 +6327,14 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "pledge_ratio": [
+              0,
+              1
+            ]
+          }
         }
       }
     },
@@ -5740,6 +6391,26 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "pledge_ratio_total": [
+              0,
+              1
+            ],
+            "csi300_chg": [
+              -1,
+              1
+            ],
+            "pledge_market_value": [
+              0,
+              100000000000000.0
+            ],
+            "total_pledged_shares": [
+              0,
+              10000000000000.0
+            ]
+          }
         }
       }
     },
@@ -5795,6 +6466,14 @@
                 }
               }
             }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "avg_pledge_ratio": [
+              0,
+              1
+            ]
           }
         }
       }
@@ -5917,6 +6596,22 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "total_shares_ratio": "percent",
+            "free_shares_ratio": "percent"
+          },
+          "ranges": {
+            "total_shares_ratio": [
+              0,
+              1
+            ],
+            "free_shares_ratio": [
+              0,
+              1
+            ]
+          }
         }
       }
     },
@@ -5982,6 +6677,25 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "all_shares_ratio": "percent"
+          },
+          "ranges": {
+            "all_shares_ratio": [
+              0,
+              1
+            ],
+            "total_shares_ratio": [
+              0,
+              1
+            ],
+            "change_ratio": [
+              -1,
+              1
+            ]
+          }
         }
       }
     },
@@ -6043,6 +6757,25 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "add_shares_pct": "percent"
+          },
+          "ranges": {
+            "add_shares_pct": [
+              -1,
+              50
+            ],
+            "free_shares_ratio": [
+              0,
+              20
+            ],
+            "total_shares_ratio": [
+              0,
+              20
+            ]
+          }
         }
       }
     },
@@ -6103,6 +6836,22 @@
                 }
               }
             }
+          }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "shares_ratio": "percent",
+            "shares_ratio_change": "percent"
+          },
+          "ranges": {
+            "shares_ratio": [
+              0,
+              1
+            ],
+            "shares_ratio_change": [
+              -1,
+              1
+            ]
           }
         }
       }
@@ -6168,6 +6917,22 @@
                 }
               }
             }
+          }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "total_shares_ratio": "percent",
+            "unlimited_ratio": "percent"
+          },
+          "ranges": {
+            "total_shares_ratio": [
+              0,
+              1
+            ],
+            "unlimited_ratio": [
+              0,
+              1
+            ]
           }
         }
       }
@@ -6350,6 +7115,17 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "transfer_ratio": "percent"
+          },
+          "ranges": {
+            "transfer_ratio": [
+              0,
+              1
+            ]
+          }
         }
       }
     },
@@ -6467,6 +7243,17 @@
                 }
               }
             }
+          }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "hold_ratio": "percent"
+          },
+          "ranges": {
+            "hold_ratio": [
+              0,
+              1
+            ]
           }
         }
       }
@@ -6655,6 +7442,14 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "punish_amt": [
+              0,
+              100000000000.0
+            ]
+          }
         }
       }
     },
@@ -6715,6 +7510,18 @@
                 }
               }
             }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "salary": [
+              0,
+              100000000.0
+            ],
+            "hold_num": [
+              0,
+              10000000000.0
+            ]
           }
         }
       }
@@ -6895,6 +7702,18 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "total_shares": [
+              0,
+              10000000000000.0
+            ],
+            "free_shares": [
+              0,
+              10000000000000.0
+            ]
+          }
         }
       }
     },
@@ -7025,6 +7844,17 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "units": {
+            "pct_of_issued": "percent"
+          },
+          "ranges": {
+            "pct_of_issued": [
+              0,
+              1
+            ]
+          }
         }
       }
     },
@@ -7093,6 +7923,14 @@
                 }
               }
             }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "total_shares_ratio": [
+              0,
+              1
+            ]
           }
         }
       }

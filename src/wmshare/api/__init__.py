@@ -154,6 +154,36 @@ def _per_symbol(v: Any, fn: Any) -> Any:
     return fn(v)
 
 
+def _kline_last_row(row: Any) -> Any:
+    """把 ``kline.query_last`` 的 store 单行收口成与 ``bars()`` 一致的 9 字段。
+
+    上游 ``kline.fmt_maps`` 只接受数组（对单个 MAP 会报 CONOF NotSupportedType），
+    故单行路径在 SDK 侧按 ``sys/kline/format.xs`` 的同一字段映射收口。
+    单位换算已由 ``apply_units`` 依目录声明完成（percent 百分数→小数、
+    volume 手→股），此处只做字段挑选与 date/sas 派生，不重算任何数值。
+    """
+    if not isinstance(row, dict) or not row:
+        return None
+    ts = row.get("samplingTs")
+    bar_date = ""
+    if isinstance(ts, (int, float)) and not isinstance(ts, bool) and ts > 0:
+        # 采样时间戳按北京时间零点落库，固定 +08 避免宿主时区漂移；
+        # 与上游 time.date(samplingTs) 同义。
+        bar_date = (date(1970, 1, 1)
+                    + timedelta(seconds=float(ts) + 8 * 3600)).isoformat()
+    return {
+        "sas": f"{row.get('annual', '')}:{row.get('sampling', '')}",
+        "date": bar_date,
+        "open": float(row.get("open") or 0),
+        "high": float(row.get("high") or 0),
+        "low": float(row.get("low") or 0),
+        "close": float(row.get("close") or 0),
+        "volume": float(row.get("volume") or 0),
+        "amount": float(row.get("amount") or 0),
+        "percent": float(row.get("percent") or 0),
+    }
+
+
 def _finish_df(out: Any, df_flag: bool) -> Any:
     """_df 收口：批量结果逐标的转 DataFrame（与 call_batch(_df=True) 同语义）。"""
     if not df_flag:
@@ -316,11 +346,15 @@ class KlineApi(_Api):
     def last(self, symbol: str, _raw: bool = False) -> Any:
         """最新一根日 K（date/open/high/low/close/volume/amount/percent），无数据返回 None。
 
-        经规范化序列取最新一行，字段与 ``bars()`` 一致；``_raw=True`` 时跳过规范化，
-        返回上游原始行（字段名不同，含 CreatedAt/sampling 等）。
+        取 store 最新一行（``kline.query_last`` / ``store.latest``），含当日已入库的日 K；
+        不受回测锚点截断——需要「锚点内最新一根」请用 ``bars(n=1)[0]``。
+        字段与 ``bars()`` 一致；``_raw=True`` 时跳过规范化，返回上游原始行
+        （字段名不同，含 CreatedAt/sampling 等）。
         """
-        rows = self._c.call("kline.query_bars", sym=symbol, limit=1, _raw=_raw)
-        return _per_symbol(rows, lambda r: r[0] if r else None)
+        value = self._c.call("kline.query_last", sym=symbol, _raw=_raw)
+        if _raw:
+            return _per_symbol(value, lambda r: r)
+        return _per_symbol(value, _kline_last_row)
 
     def live(self, symbol: str, _raw: bool = False) -> Any:
         """盘中最新快照（盘中 tip；休市返回最近收盘快照）。"""
@@ -350,7 +384,14 @@ class KlineApi(_Api):
         return self._c.call("kline.query_min1_live", sym=symbol)
 
     def snapshot(self, symbol: str) -> Any:
-        """行情摘要（symbol/close/percent/chg_20d）。"""
+        """单股行情快照（23 字段：价量、涨跌、均线、市值、标识）。
+
+        价量与涨跌：close、percent、volume、amount、chg_5d、chg_10d、chg_20d、chg_90d、roi_1y。
+        均线与市值：ma20、ma60、ma120、ma60_up、vol_ratio_5、mv、mv_free。
+        标识与日期：symbol、name、industry、is_st、is_suspend、kline_date、kline_sas。
+        percent 与 chg_* 为小数，volume=股，amount 与市值=元；布尔字段为 ma60_up、is_st、is_suspend。
+        目录 returns_shape 由本仓精修条目给出完整字段表，不依赖上游注释。
+        """
         return self._c.call("kline.snapshot", sym=symbol)
 
     def is_etf(self, symbol: str) -> bool:
@@ -480,6 +521,33 @@ class CbondApi(_Api):
         :param n: 窗口根数
         """
         return self._c.call("cbond.kline_window", code=symbol, n=n)
+
+    def bars(self, symbol: str, n: int = 120) -> Any:
+        """转债日线表（行式）：列式窗口转成每根一行。
+
+        字段为 ``date/open/high/low/close/volume/amount``。只做列转行，不改数值、
+        不做重排：行序与上游窗口一致，``date`` 取上游采样名前 10 位；某列缺失时
+        该位置补 ``None``。不复权；价格与金额单位为元（本币），成交量单位为**张**
+        （转债面值口径，1 张 = 100 元面值；live 实测 ``amount / close ≈ volume``）。
+        窗口无数据或返回非 MAP 形态时，空列表 / 原值透传。
+
+        :param symbol: 转债代码（6 位裸码）
+        :param n: 窗口根数，默认 120
+        """
+        raw = self._c.call("cbond.kline_window", code=symbol, n=n)
+        if not isinstance(raw, dict):
+            return raw if raw is not None else []
+        names = raw.get("samplingName") or []
+        columns = ("open", "high", "low", "close", "volume", "amount")
+        series = {c: raw.get(c) or [] for c in columns}
+        rows: list[dict[str, Any]] = []
+        for i, name in enumerate(names):
+            row: dict[str, Any] = {"date": str(name)[:10]}
+            for col_name in columns:
+                col = series[col_name]
+                row[col_name] = col[i] if i < len(col) else None
+            rows.append(row)
+        return rows
 
     def universe_codes(self, _raw: bool = False, _df: bool = False) -> Any:
         """转债代码全集（与快照口径一致）。"""
@@ -1419,6 +1487,29 @@ class EstimatesApi(_Api):
         return self._c.call("estimates.query_reports", sym=symbol, limit=limit, _df=_df)
 
 
+# 截面字段 → 指标码：一一对应且全部经指标目录校验，防止凭空造码。
+# 这些码只有当前值，没有按交易日的历史序列；不据此合成历史宽表。
+#
+# 选码口径（2026-11-13 live 实测，600519）：
+# - pb 用 $PB_TTM_LAST 而非 $PB：$PB 是 $PB_TTM 的纯别名（点值 5.80），
+#   $PB_TTM_LAST 才是最新截面（6.62），与 pe_ttm 同为「最新」口径。
+# - total_mv 用 $MV_LAST 而非 $ID_MV_LAST：后者是 SUMS($MV_LAST) 的行业/指数
+#   聚合族（单标的求值返回 nil），不是个股总市值。
+# - roe_avg 用 $ROE_AVG3：$ROE_AVG 是「全部 Q4 历史平均」，无固定窗口、无守护。
+# - eps_ttm 用 $EPS_NPTS_TTM_LAST（归母）：$EPS_DPPR_TTM_LAST 是扣非，字段名会误导。
+BASIC_FIELDS: dict[str, str] = {
+    "pe_ttm": "$PE_TTM_LAST",
+    "pb": "$PB_TTM_LAST",
+    "turnover_rate": "$TURNOVER_RATE_LAST",
+    "total_mv": "$MV_LAST",
+}
+FINANCIAL_FIELDS: dict[str, str] = {
+    "roe_ttm": "$ROE_TTM_LAST",
+    "roe_avg": "$ROE_AVG3",
+    "eps_ttm": "$EPS_NPTS_TTM_LAST",
+}
+
+
 class IndicatorApi(_Api):
     """平台指标（按指标代码寻址）。
 
@@ -1468,6 +1559,39 @@ class IndicatorApi(_Api):
         return {c: finish_metric(v, self._c.catalog.metric_meta(c), code=c,
                                  validate=self._c._validate)
                 for c, v in values.items()}
+
+    def basic(self, symbol: str) -> Any:
+        """每日估值当前截面：``pe_ttm`` / ``pb`` / ``turnover_rate`` / ``total_mv``。
+
+        **只有当前值，不提供按交易日的历史序列**；也不接受日期参数——上游没有
+        按日回溯的估值序列，传入日期只会得到同一截面。
+
+        口径：``pe_ttm`` 与 ``pb`` 都是最新 TTM 口径（``$PE_TTM_LAST`` /
+        ``$PB_TTM_LAST``）；``turnover_rate`` 按流通股本计，小数（0.0026 = 0.26%）；
+        ``total_mv`` 为个股总市值、单位元（``$MV_LAST``，不是行业聚合值）。
+        字段名固定，缺失值以 ``None`` 表示。
+
+        :param symbol: 标的裸码
+        """
+        values = self.metrics(symbol, list(BASIC_FIELDS.values()))
+        if not isinstance(values, dict):
+            return values
+        return {field: values.get(code) for field, code in BASIC_FIELDS.items()}
+
+    def financials(self, symbol: str) -> Any:
+        """财务指标当前截面：``roe_ttm`` / ``roe_avg`` / ``eps_ttm``。
+
+        **只有当前值，不是按报告期的百列宽表**。口径：``roe_ttm`` 是最新滚动
+        十二个月口径；``roe_avg`` 是**近 3 年**平均（``$ROE_AVG3``，不是上市以来
+        的历史均值）；``eps_ttm`` 是**归母**每股收益 TTM（不是扣非）。
+        比率类为小数，每股收益为元。
+
+        :param symbol: 标的裸码
+        """
+        values = self.metrics(symbol, list(FINANCIAL_FIELDS.values()))
+        if not isinstance(values, dict):
+            return values
+        return {field: values.get(code) for field, code in FINANCIAL_FIELDS.items()}
 
     def _eval_metric(self, xs: str, *, symbol: str, label: str,
                      fut_symbol: str | None = None) -> Any:
@@ -1734,12 +1858,30 @@ class InfoApi(_Api):
     _PROFILE_CODES = ["$NAME", "$INDUSTRY_CUR", "$STYLE_INDUSTRY",
                       "$ORG_ORGTYPE", "$ORG_LISTINGDATE"]
     _PROFILE_KEYS = ["name", "industry", "style_industry", "org_type", "listing_date"]
+    # 单个 undefined variable 会让整包 eval 直接 HTTP 400，故按市场排除不可用码，
+    # 而不是逐码降级（后者把 1 次请求变成 5 次）。实测 2026-11-14：
+    # cn 五码齐备；hk 五码齐备且 $STYLE_INDUSTRY 返回 None；us 仅 $STYLE_INDUSTRY
+    # 为 undefined variable，其余四码可用。指标目录里这五码均无 markets 声明。
+    _PROFILE_SKIP_BY_MARKET = {"us": {"$STYLE_INDUSTRY"}}
 
     def profile(self, symbol: str) -> dict:
-        """公司档案摘要（名称/行业/组织类型/上市日期）。"""
-        body = ", ".join(f'"{k}": {c}' for k, c in
-                         zip(self._PROFILE_KEYS, self._PROFILE_CODES))
-        return self._c.eval_result(f"return {{{body}}}", symbol=symbol) or {}
+        """公司档案摘要（name/industry/style_industry/org_type/listing_date）。
+
+        美股无 ``$STYLE_INDUSTRY`` 变量，该字段返回 ``None``；港股亦可能为空。
+        返回键集合在各市场保持一致，便于调用方按同一结构解包。
+        """
+        market = getattr(self._c, "market", "cn")
+        skip = self._PROFILE_SKIP_BY_MARKET.get(market, set())
+        pairs = [(k, c) for k, c in zip(self._PROFILE_KEYS, self._PROFILE_CODES)
+                 if c not in skip]
+        body = ", ".join(f'"{k}": {c}' for k, c in pairs)
+        out = self._c.eval_result(f"return {{{body}}}", symbol=symbol) or {}
+        # 上游正常返回 MAP；非 MAP 时按无数据处理，仍保持 dict 返回契约
+        values = out if isinstance(out, dict) else {}
+        selected = {k for k, _ in pairs}
+        # 被市场排除的字段显式置 None：不依赖「eval 里恰好没写」这一隐式保证
+        return {k: (values.get(k) if k in selected else None)
+                for k in self._PROFILE_KEYS}
 
 
 class EquityApi(_Api):
@@ -2091,7 +2233,7 @@ FRIENDLY_NAMESPACES: dict[str, type[_Api]] = {
 # 文档索引用注册表：(category, namespace, method, cn, 底层函数)
 FRIENDLY_INDEX: list[tuple[str, str, str, str, str]] = [
     ("market", "kline", "bars", "日 K 序列", "kline.query_bars[_adj]"),
-    ("market", "kline", "last", "最新一根日 K", "kline.query_bars"),
+    ("market", "kline", "last", "最新一根日 K", "kline.query_last"),
     ("market", "kline", "live", "盘中最新快照", "kline.query_last_live"),
     ("market", "kline", "batch_live", "多标的盘中快照", "kline.query_last_live_many"),
     ("market", "kline", "min1", "当日 1 分钟分时", "kline.query_min1_live"),
@@ -2124,6 +2266,7 @@ FRIENDLY_INDEX: list[tuple[str, str, str, str, str]] = [
     ("market", "cbond", "query", "按标的查条款事件", "cbond.query"),
     ("market", "cbond", "call_hits", "强赎触发计数", "cbond.call_hits"),
     ("market", "cbond", "kline_window", "转债日K窗口", "cbond.kline_window"),
+    ("market", "cbond", "bars", "转债日线表（行式）", "cbond.kline_window"),
     ("market", "cbond", "universe_codes", "转债代码全集", "cbond.universe_codes"),
     ("market", "index", "keys", "指数键列表", "indices.keys"),
     ("market", "index", "members", "指数成分", "indices.members"),
@@ -2143,6 +2286,8 @@ FRIENDLY_INDEX: list[tuple[str, str, str, str, str]] = [
     ("fundamentals", "statements", "audit", "审计意见", "rptdom.statement_audit"),
     ("fundamentals", "indicator", "get", "取单个指标", "指标代码直查"),
     ("fundamentals", "indicator", "metrics", "批量取指标", "指标代码批量直查"),
+    ("fundamentals", "indicator", "basic", "每日估值当前截面", "指标代码批量直查"),
+    ("fundamentals", "indicator", "financials", "财务指标当前截面", "指标代码批量直查"),
     ("fundamentals", "segments", "products", "分产品收入构成", "segments.query_products"),
     ("fundamentals", "segments", "business", "分业务收入构成", "segments.query_business"),
     ("fundamentals", "segments", "region", "境内外分部", "segments.query_region"),

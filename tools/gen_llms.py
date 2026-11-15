@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import inspect
+import json
 import math
 import sys
 from pathlib import Path
@@ -48,6 +49,27 @@ def _indicators_brief(cat) -> str:
     ]
     lines += [f"- `{g['id']}` {g['cn']}（{g['domain']}）：{g['count']} 个"
               for g in groups]
+    return "\n".join(lines)
+
+
+def _guard_manifest_lines(cat) -> str:
+    """单位/守护声明的机器可读段（SDK 侧出口，不依赖上游 inventory）。
+
+    llms.txt / llms-full.txt 是 agent 直读的上下文；此前单位口径只有自然语言描述，
+    逐函数声明藏在 cat.function() 里。这里按 JSON 逐条列出，agent 可在取数前解析。
+    """
+    manifest = cat.guard_manifest()
+    lines = [
+        "## 单位与守护声明（机器可读）",
+        "",
+        f"> 共 {len(manifest)} 个函数带 units / ranges / checks 声明；"
+        "每行 `` `函数名`: JSON ``，键为 units（换算）/ ranges（量级界）/ checks（不变量）。"
+        "SDK 在返回前按声明换算并校验，违例抛 DataError；原生口径用 `_units=\"native\"`。",
+        "",
+    ]
+    lines += [f"- `{name}`: {json.dumps(guards, ensure_ascii=False, sort_keys=True)}"
+              for name, guards in manifest.items()]
+    lines.append("")
     return "\n".join(lines)
 
 
@@ -164,6 +186,7 @@ def build_llms_txt() -> str:
         "- 美股日 K 已日更（周/月 K 由日线派生）；最新价量用 `cli.kline.live / snapshot`",
         "- 港股十大流通股东与回购上游有管线、SDK 接口待路由（见 CHANGELOG/ROADMAP）",
         "",
+        _guard_manifest_lines(cat),
         "## Optional",
         "",
         f"- [openapi.json]({RAW}/docs/openapi.json)：OpenAPI 3.1 机器可读合同",
@@ -179,9 +202,11 @@ def build_llms_txt() -> str:
 def build_llms_full_txt() -> str:
     import wmshare
 
+    cat = wmshare.load()
     parts = ["# wmshare — Full Documentation\n\n"
              "> 由 tools/gen_llms.py 生成（README + skill + 指南 + AI 用法 + API 参考全文）。"
-             "\n\n" + _indicators_brief(wmshare.load()) + "\n"]
+             "\n\n" + _indicators_brief(cat) + "\n\n"
+             + _guard_manifest_lines(cat) + "\n"]
     for rel in FULL_PARTS:
         body = (REPO / rel).read_text(encoding="utf-8")
         parts.append(f"\n\n---\n\n<!-- 来源：{rel} -->\n\n{body.strip()}")

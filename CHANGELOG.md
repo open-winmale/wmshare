@@ -10,6 +10,151 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.20.4] - 2026-11-14
+
+### Fixed
+- **CI 三版本矩阵全红的测试环境假设**：`test_audit_drift.py` 曾断言
+  `matrix_sections >= 1`，而 `.internal/UNIT_AUDIT.md` 是本机联网 matrix 产物、
+  不进 git 跟踪面，CI 里不存在时该值为 0。改为「非负 + 报告存在时才 >= 1」，
+  并新增 `test_drift_is_green_when_audit_report_missing`，用 monkeypatch 永久复现
+  CI 无报告的场景。纯测试修复，运行时与生成物行为不变。
+
+### Notes
+- 1.20.3 的 Release / PyPI 产物本身正常（release 与 CodeQL 工作流 success、
+  whl + sdist 齐全），仅 ci 工作流因上述断言失败；PyPI 不允许同名版本重传，
+  故以 patch 版本重跑发布链路。
+
+## [1.20.3] - 2026-11-14
+
+### Added
+- **`Catalog.guard_manifest()`**：一次给出全部 50 个带 `units` / `ranges` / `checks`
+  声明的函数（按键排序、可 JSON 序列化），作为 SDK 侧机器可读出口；
+  `inventory.json` 是上游抽取的 SoT，其 functions 不带域级声明，故不改生成物。
+- **`docs/openapi.json` 的 `x-wmshare-guards`**：136 个 path 中 40 个带声明的
+  operation 显式带出单位换算 / 量级界 / 不变量，Agent 可在调用前解析；
+  `llms.txt` / `llms-full.txt` 新增「单位与守护声明（机器可读）」段（50 条 JSON）。
+- **`tools/audit_units.py drift`**：离线静态漂移模式，比对 returns_shape 字段集 /
+  指标 markets 可用性 / checks 适用性；不联网、不需要凭证，`--json` 机器可读，
+  `--strict` 把 shape 声明滞后 WARN 升级为失败。实测 ERROR 0 / WARN 29，
+  markets 569/2752（20.68%）、matrix 已覆盖 22 节。
+
+### Changed
+- **文档单位口径归一**：`docs/API.md` 输出字段表与 `openapi.json` schema 描述中的
+  「量(手)」「市值亿」统一为 SDK 换算后口径「量(股)」「市值(元)」，与顶部基础单位表一致；
+  指标码中文名属上游原生口径命名，另在文档显式说明不代表 SDK 返回值单位。
+- **返回形态与指数键路由显式标注**：`market.kline` / `market.moneyflow` /
+  `market.index` 三个域的 notes 写明单 MAP 触发 `NotSupportedType:record` 属上游形态、
+  错误指数键上游返回 500、`query_bars_live` 冷缓存空数组不是「无数据」且不得当 0、
+  指数键须显式选 `query_index_*_live` 四个入口（SDK 不自动改写路由）。
+
+### Tests
+- 新增 21 个契约用例：`test_unit_visibility.py`(6) / `test_audit_drift.py`(6) /
+  `test_guard_baseline.py`(3) / `test_shape_notes.py`(6)，覆盖单位声明机器可见性、
+  drift 正负例与离线分流、覆盖率与发现项防回归基线、显式标注进目录与对外文档。
+- 全量 1953 用例：1858 passed / 94 skipped / 1 failed（既存 extractor 真漂移，
+  CI 无上游时 skip）；`--cov-branch` 88.31%。
+
+## [1.20.2] - 2026-11-14
+
+### Changed（行为变更）
+- **`InfoApi.profile` 按市场选码**：美股不再请求该市场未定义的
+  `$STYLE_INDUSTRY`；返回键集合恒为 5 个（name、industry、style_industry、
+  org_type、listing_date），美股 `style_industry` 显式为 `None`；cn 与港股保持
+  原五码单次 eval，取数脚本一字未变。此前美股调用整包抛 HTTP 400 undefined
+  variable。
+- **`kline.snapshot` 目录返回形状由 4 字段补全为 23 字段**：`docs/API.md` 字段表、
+  `docs/openapi.json` schema、类型化门面 docstring 与 llms 文档同步展开
+  （价量/涨跌/均线/市值/标识），并标注基础单位。域 YAML 的 `returns.shape`
+  优先于 inventory，故不修改任何 `generated/*.json`；上游注释仍只列 4 字段，
+  待跨仓补齐后可移除本覆盖。
+
+### Fixed
+- 美股 `cli.info.profile("AAPL")` 不再因一个不可用指标码打挂整包请求；
+  港股 `$STYLE_INDUSTRY` 返回 `None` 属正常缺值，仍保持五码。
+- `cli.kline.snapshot` 的 SDK docstring 不再只写 4 个字段；`percent`/`chg_*`
+  小数、`volume` 股、金额元、`ma60_up`/`is_st`/`is_suspend` 布尔均写入文档。
+- `profile` 对非 MAP 返回按无数据处理，保持 `-> dict` 契约，不再把非字典值
+  透传给调用方。
+
+### Tests
+- 新增 `tests/test_profile_snapshot_contract.py`：三市场 XS 字符串与键集合稳定、
+  单次 eval、排除表最小性、23 字段声明与 live 返回一致、单位声明不悬空；
+  离线 11 passed / 4 skipped，联网 15 passed / 0 skipped。
+
+## [1.20.1] - 2026-11-14
+
+### Changed（行为变更）
+- **指数标的的单位守护按标的形状收窄**：`399300.INDEX` / `index.*` / 6 位 `399xxx`
+  等指数键调用 K 线接口时，不再按个股口径把 `volume` 当「手」×100，也不再套
+  `volume×close≈amount` 不变量；`percent` / `ranges` / `diffp_ratio` 等其余守护照常生效。
+  此前这类调用默认抛 `DataError`，用 `validate=False` 绕过则得到放大 100 倍的静默错值。
+- 批量返回 `{symbol: bar}` 的容器按每个 symbol 逐子树判定，混合批里指数与个股
+  各走自己的口径，不再由顶层标的决定整批换算方式。
+- `equity.query_holdernum.total_num_ratio` 与业绩预告 / 快报幅度字段的 `ranges`
+  下界放宽：户数环比负值、`np_amp_lower=-443.09%` 一类「由盈转亏」数据不再被
+  量级守护误杀。
+
+### Fixed
+- **同日同标的五个 K 线入口 `volume` 口径统一**：`query_last` / `query_last_live_many` /
+  `snapshot` / `query_min1_live` / `query_last_adj` 补齐 `units: {volume: lot}` 声明；
+  `percent` 统一为小数，当日分时 bar 的手→股换算恢复正确。
+- `forecast.yjyg_rows` 默认调用不再抛 `DataError`；域 YAML notes 中方括号被
+  flow sequence 误解析的问题同步修正。
+- `kline.query_last_adj.percent` 与 `cbond.quote_list` 两个字段补 `ranges` 量级守护
+  （照抄同域实测界，不凭空猜界），单位元规则测试恢复全绿。
+
+### Tests
+- 新增 `tests/test_index_unit_contract.py`：指数键识别边界、单位守护「只做减法」
+  四项断言、10 个成交量函数参数化、`validate=False` 静默错值回归、混合批容器、
+  高层入口与可选联网冒烟；离线 51 passed / 12 skipped，联网 63 passed / 0 skipped。
+- 新增 `tests/test_unit_contract.py`：契约声明、range 下界、带契约函数默认调用零
+  `DataError`、同日同标的五入口 `volume` 一致。
+- 静态门禁 13 项 + mypy 全绿；`--cov-branch` 88.27%（`units.py` 96%）。
+
+### Chore
+- 发版元数据：六处版本声明与 SECURITY.md `as_of` 同步到 1.20.1；
+  `[Unreleased]` 保持为空。
+
+## [1.20.0] - 2026-11-13
+
+### Added
+- **转债日线 `cli.cbond.bars`**：列式窗口按位转行（date/open/high/low/close/volume/amount），
+  不复权；量=张、价/额=元，live 实测 `amount/close ≈ volume`。
+- **指标截面 `cli.indicator.basic` / `cli.indicator.financials`**：最新 TTM 估值
+  （pe_ttm/pb/turnover_rate/total_mv）与财务截面（roe_ttm/roe_avg/eps_ttm）；
+  字段绑定按 live 实测修正，禁用聚合别名，curated 74→78。
+- **指标分类 sidecar + 可选适配层**：`generated/metric_taxonomy.json` 给 2,752 个指标码补
+  scope/topic/period/window/caliber/unit_kind/status 七字段；`IndicatorAdapter` 仅在
+  unit/period/window/caliber/market 同口径时组合，不注册进友好层与 MCP 工具面。
+  配套 `validate_metric_taxonomy.py` 与原始单位台账门禁。
+- `tests/test_kline_last_300058.py`：300058 日 K 取数完整回归（离线 mock + 可选联网冒烟）。
+
+### Changed（行为变更）
+- **`cli.kline.last()` 改走 `kline.query_last`（`store.latest`）**：收盘后可取到当日已入库
+  日 K，不再被回测锚点窗口截断。需要「锚点内最新一根」仍用 `bars(n=1)[0]`，
+  两者日期可能相差一个交易日；返回字段口径不变（9 字段、涨跌幅为小数、成交量为股）。
+
+### Fixed
+- **`kline.query_last` 默认调用不再抛 `DataError`**：目录补 `units.percent` 声明，
+  store 原始行的百分数不再撞 `ranges.percent` 量级守护。
+- `last()` 单行按上游 `format.xs` 同款映射收口（`date` 由 `samplingTs` 固定 +08 派生、
+  `sas` 由 annual+sampling 拼接），数值不重算，单位换算仍由守护统一完成。
+- 台账注释去除数据商字面量，发布面禁词门禁恢复全绿。
+
+### Chore
+- 目录站认领（维护者声明 / Dockerfile / Add Server 审核）、渠道矩阵状态回写；
+  `server.json` 描述压到 registry 100 字符上限内。
+- 发版元数据：六处版本声明与 SECURITY.md 当前 minor 线同步到 1.20.0。
+
+## [1.19.1] - 2026-11-13
+### Added
+- 缺凭证 `AuthError` 文案附零凭证离线演示入口：报错即引导
+  `wmshare.demo_client()`（随包固定快照、不联网、非实时数据），
+  与 README「零凭证先试」同口径——用户在申请到凭证前就能跑通调用姿势。
+- PyPI 检索面增补：keywords 加 `a-share` / `convertible-bond` / `mcp` /
+  `model-context-protocol`，classifiers 加
+  `Topic :: Scientific/Engineering :: Information Analysis`。
+
 ## [1.19.0] - 2026-11-12
 ### Changed（行为变更）
 - **最低 Python 版本 3.10 → 3.11**：3.10 已于 2026-10 EOL，且依赖链上已累计两个

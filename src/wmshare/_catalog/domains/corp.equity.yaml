@@ -32,7 +32,7 @@ notes:
 functions:
   # ---- 股东 ----
   - {name: equity.query_holder10, cn: 最新一期十大股东, layer: L0, normalize_with: equity.fmt_holder10, ranges: {hold_num_ratio: [0, 1]}}
-  - {name: equity.query_holdernum, cn: 最新股东户数, layer: L0, normalize_with: equity.fmt_holdernum, ranges: {hold_ratio_total: [0, 1], freehold_ratio_total: [0, 1], total_num_ratio: [0, 1], avg_freeshares_ratio: [-1, 1], avg_hold_amt: [0, 1.0e+09], avg_free_shares: [0, 1.0e+10]}}
+  - {name: equity.query_holdernum, cn: 最新股东户数, layer: L0, normalize_with: equity.fmt_holdernum, ranges: {hold_ratio_total: [0, 1], freehold_ratio_total: [0, 1], total_num_ratio: [-1, 1], avg_freeshares_ratio: [-1, 1], avg_hold_amt: [0, 1.0e+09], avg_free_shares: [0, 1.0e+10]}, notes: [total_num_ratio 为股东户数环比变化率，可为负（户数减少），下界取 -1；原下界 0 会让默认调用抛 DataError]}
   # ---- 质押 ----
   - {name: equity.query_pledge_detail, cn: 主要股东质押明细, layer: L0, normalize_with: equity.fmt_pledge_detail, units: {accum_pledge_tsr: percent, pf_hold_ratio: percent, pf_tsr: percent}, ranges: {accum_pledge_tsr: [0, 1], pf_hold_ratio: [0, 1], pf_tsr: [0, 1]}}
   - {name: equity.query_pledge_summary, cn: 公司质押比例, layer: L0, normalize_with: equity.fmt_pledge_summary, ranges: {pledge_ratio: [0, 1]}}

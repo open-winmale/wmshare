@@ -35,7 +35,7 @@ def main(cli=None, demo: bool = False) -> None:
     # 注意目录名是 bonus.*（门面叫 dividend）——命名不必背，cat.search("股息") 一查即得
     print("\n--- call_batch：一次请求取全部自选股 TTM 股息率 ---")
     # on_error="skip" 是票级隔离：少量标的合适；全市场批量容错必须用
-    # batch_all(on_batch_error="skip")（批级）——票级 skip 会把 12 批放大成 5,691 次请求
+    # batch_all(on_batch_error="skip")（批级）——票级 skip 会把 11 批放大成 5,375 次请求
     batch = cli.call_batch("bonus.snapshot_yield_ttm", WATCHLIST, on_error="skip")
     for sym, val in sorted(batch.results.items(), key=lambda kv: -(kv[1] or 0)):
         print(f"  {sym}  {val:.2%}" if val is not None else f"  {sym}  —")
