@@ -1538,7 +1538,7 @@ cli.macro.phone_share(brand="小米", field="share")
 ### 三大报表 + 主要指标透视（`cli.statements`）
 
 - 数据源与平台专业版同构：fin_income / fin_balance / fin_cashflow / fin_indicator 宽表（季度粒度、披露原币），一次 `store.query` 窗口批量 取回全部期次后按「披露科目原文 × 期次」透视成行式。列名为各市场披露 科目原文，不做 CN 口径翻译——列映射由消费侧负责。本方法族为组合门面 （底层是读取脚本而非单一目录函数），不经过目录合同的单位换算与量级 守护层。
-- `period` 两档：`"annual"`（年报档，缺省，vals 键=纯年份）/ `"quarter"`（季报全档 Q1..Q4 混合，键=`2026:Q1`）。`years` 期数 1..12（与专业版前端窗口对齐）。`audit` 读审计意见（聚源混源 Q4 年轴， 仅 cn）。
+- `period` 两档：`"annual"`（年报档，缺省，vals 键=纯年份）/ `"quarter"`（季报全档 Q1..Q4 混合，键=`2026:Q1`）。`years` 期数 1..12（与专业版前端窗口对齐）。`audit` 读审计意见（按报告期对齐的年轴口径， 仅 cn）。
 - `kind` 取值：`balance`（资产负债）/`income`（利润）/`cashflow` （现金流）/`indicators`（主要指标）。
 
 #### `cli.statements.audit` — 审计意见

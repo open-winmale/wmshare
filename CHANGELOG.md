@@ -10,6 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.21.2] - 2026-11-16
+
+### Fixed
+- **清除随 1.21.0/1.21.1 发布到公开文档的数据商名称**：`statements` 门面类 docstring
+  中的第三方数据商来源点名已改为中性口径表述；`docs/API.md` 与 `llms-full.txt`
+  由生成器同步。此前该词经语句传播进入生成物，触发内容规范门禁失败。
+
 ## [1.21.1] - 2026-11-16
 
 ### Fixed

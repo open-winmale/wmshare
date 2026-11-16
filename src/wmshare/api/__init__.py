@@ -1306,7 +1306,7 @@ class StatementsApi(_Api):
 
     ``period`` 两档：``"annual"``（年报档，缺省，vals 键=纯年份）/
     ``"quarter"``（季报全档 Q1..Q4 混合，键=``2026:Q1``）。``years`` 期数
-    1..12（与专业版前端窗口对齐）。``audit`` 读审计意见（聚源混源 Q4 年轴，
+    1..12（与专业版前端窗口对齐）。``audit`` 读审计意见（按报告期对齐的年轴口径，
     仅 cn）。
 
     ``kind`` 取值：``balance``（资产负债）/``income``（利润）/``cashflow``
