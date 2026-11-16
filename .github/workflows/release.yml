@@ -81,4 +81,4 @@ jobs:
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
-        run: python -m twine upload --non-interactive dist/*
+        run: python -m twine upload --non-interactive --skip-existing dist/*
