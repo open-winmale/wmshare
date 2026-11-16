@@ -356,7 +356,10 @@ class CbondNS(_Ns):
         return self._client.call("cbond.universe_codes", _raw=_raw, _df=_df)
 
     def card(self, code: Any, _raw: bool = False, _df: bool = False) -> Any:
-        """转债个券详情（quote+terms+counts+region 懒加载）"""
+        """转债个券详情（一次全量返回九键；退市/停牌债 quote 为空、counts 为 nil，其余按债键照常返回）
+
+:returns: MAP · {quote, terms, counts, region, concepts, projects, share, holders, institution}
+        """
         return self._client.call("cbond.card", code=code, _raw=_raw, _df=_df)
 
     def one_quote(self, code: Any, _raw: bool = False, _df: bool = False) -> Any:

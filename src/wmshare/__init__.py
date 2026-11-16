@@ -24,7 +24,7 @@ from wmshare.errors import (
 )
 from wmshare.notice_stream import NoticePoller, NoticeStreamEvent
 
-__version__ = "1.20.6"
+__version__ = "1.20.7"
 
 __all__ = [
     "Catalog", "load", "Client", "BatchResult", "normalize_symbol", "__version__",

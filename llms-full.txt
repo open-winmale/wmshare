@@ -5396,7 +5396,7 @@ cli.info.profile("600519")
 
 #### 可转债（`market.cbond`）
 
-**性质**：原始数据 · **版本**：1.4.0  
+**性质**：原始数据 · **版本**：1.4.1  
 可转债合约快照、条款事件（下修/回售/赎回等）、正股关联、强赎触发计数、 独立日 K 与盘中 1 分钟。日 K 无复权（转债无除权口径）。
 数据来源：发行条款披露、平台数据服务。
 单位口径：price=元（转债价/转股价，面值 100 口径）；ratio=小数（SDK 基础单位；上游 percent 已按 percent 声明换算）。
@@ -5428,7 +5428,7 @@ cli.info.profile("600519")
 | `cbond.min1_live` | 转债盘中1分钟 | 原始数据 | L0 | `code:any`（签名） | MAP · 分钟条 | — | 例：`cli.call("cbond.min1_live", code='113050')`
 | `cbond.min1_meta` | 转债盘中元信息 | 原始数据 | L0 | `code:any`（签名） | MAP · 元信息 | — | 例：`cli.call("cbond.min1_meta", code='113050')`
 | `cbond.universe_codes` | 转债代码全集 | 原始数据 | L0 | — | ARR · 代码 | — | 例：`cli.call("cbond.universe_codes")`
-| `cbond.card` | 转债个券详情（quote+terms+counts+region 懒加载） | 原始数据 | L0 | `code:any`（签名） | MAP · {quote, terms, counts, region, projects, share, holders, institution} | — | 例：`cli.call("cbond.card", code='127119')`
+| `cbond.card` | 转债个券详情（一次全量返回九键；退市/停牌债 quote 为空、counts 为 nil，其余按债键照常返回） | 原始数据 | L0 | `code:any`（签名） | MAP · {quote, terms, counts, region, concepts, projects, share, holders, institution} | — | 例：`cli.call("cbond.card", code='127119')`
 | `cbond.one_quote` | 单债最新快照（只 fmt 命中行） | 原始数据 | L0 | `code:any`（签名） | MAP · 规范化快照行 | `premiumRatio`:百分数→小数；`couponIr`:百分数→小数；量级界 `premiumRatio`、`couponIr` | 例：`cli.call("cbond.one_quote", code='127119')`
 | `cbond.terms` | 转债条款档案（条款原文/评级/担保） | 原始数据 | L0 | `code:any`（签名） | MAP · 条款原文与评级 | — | 例：`cli.call("cbond.terms", code='127119')`
 | `cbond.terms_list` | 转债条款档案全表（terms DAG 未跑返回空） | 原始数据 | L1 | — | ARR · 条款档案行 | — | 例：`cli.call("cbond.terms_list")`

@@ -10,6 +10,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.20.7] - 2026-11-16
+
+### Fixed
+- **`cbond.card` 合同与实现对齐**：上游 `xs:catalog` 注释声明八键、实现与实测
+  均为九键（漏 `concepts`）——上游 `../script` 注释已补（upstream_rev
+  `3829a93e`），SDK 随包目录同步重抽取。
+- **`cbond.card` 文档去掉误导性"懒加载"表述**：函数一次同步全量返回九键
+  （"懒加载"只描述前端列表/详情页分工，不应出现在接口合同里）。
+  新 cn 同时写明退市/停牌债分支行为（quote 空对象、counts 为 nil，
+  其余按债键照常返回）。
+- **`cbond.card` 补 `returns.shape`**：顶层九键 + terms 15 键 / counts 9 键
+  嵌套结构化（live 实测 127119 取证；quote 76 键声明为 object 并指向
+  `cbond.one_quote` 结构）。
+
+### Notes
+- live 对账：`cbond.card("127119")` 声明 9 键 ↔ 运行时 9 键，零幻影零漏列。
+- 验收：drift `--strict` exit 0、check_version 六源一致、5 个生成器
+  `--check` rc=0、taxonomy sidecar 同步、mypy 零问题、check_leak 绿、
+  全量 **1967 passed / 94 skipped / 0 failed**。
+- 域版本：`market.cbond` 1.4.0 → 1.4.1。API 行为无变化（合同/文档修正）。
+
 ## [1.20.6] - 2026-11-16
 
 ### Fixed
