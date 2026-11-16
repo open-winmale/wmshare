@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "wmshare 数据 API",
-    "version": "1.20.7",
+    "version": "1.21.0",
     "description": "覆盖 A 股、港股、美股的财经数据核心接口（Python SDK，`pip install wmshare`；`import wmshare`）。凭证必填：在开放平台（open.winmale.com）获取 client_id/api-key；遇到 401/403/429 错误消息即完整的申请与配置指引。覆盖行情 K 线（不复权/前复权/后复权、盘中、分时、ETF、指数）、三大报表（多期、合并 vs 母公司、树视图、新旧会计准则归一）、分红（历史/DPS/窗口/TTM 率）、公告与业绩披露、资金流与指标层。平台指标经 /indicator/get、/indicator/metrics 按指标代码寻址，全量 2752 个指标代码随包内置目录分发（分组清单见 docs/API.md）。",
     "license": {
       "name": "BSD-3-Clause",
@@ -809,7 +809,6 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "description": "全市场行（按主力净流入降序）",
                   "type": "array",
                   "items": {
                     "type": "object",
@@ -820,41 +819,69 @@
                       },
                       "name": {
                         "type": "string",
-                        "description": "证券简称"
+                        "description": "标的简称"
+                      },
+                      "industry": {
+                        "type": "string",
+                        "description": "行业码"
                       },
                       "net_mf": {
                         "type": "number",
                         "description": "主力净流入（元）"
                       },
-                      "net_mv_ratio": {
+                      "elg_net": {
                         "type": "number",
-                        "description": "主力净流入占流通市值比（小数）"
+                        "description": "超大单净额（元）"
                       },
                       "lg_net": {
                         "type": "number",
-                        "description": "大单净流入（元）"
-                      },
-                      "elg_net": {
-                        "type": "number",
-                        "description": "超大单净流入（元）"
+                        "description": "大单净额（元）"
                       },
                       "md_net": {
                         "type": "number",
-                        "description": "中单净流入（元）"
+                        "description": "中单净额（元）"
                       },
                       "sm_net": {
                         "type": "number",
-                        "description": "小单净流入（元）"
+                        "description": "小单净额（元）"
                       },
-                      "industry": {
-                        "type": "string",
-                        "description": "一级行业"
+                      "net_mv_ratio": {
+                        "type": "number",
+                        "description": "主力净流入/市值（小数）"
                       }
                     }
                   }
                 }
               }
             }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "net_mv_ratio": [
+              -0.5,
+              0.5
+            ],
+            "net_mf": [
+              -100000000000.0,
+              100000000000.0
+            ],
+            "elg_net": [
+              -100000000000.0,
+              100000000000.0
+            ],
+            "lg_net": [
+              -100000000000.0,
+              100000000000.0
+            ],
+            "md_net": [
+              -100000000000.0,
+              100000000000.0
+            ],
+            "sm_net": [
+              -100000000000.0,
+              100000000000.0
+            ]
           }
         }
       }
@@ -2638,7 +2665,16 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "description": "指数估值（当前值 + 季频历史序列；上游未供数的键 pb/dv 为 0、pe 为 null）",
+                  "type": "object",
+                  "properties": {
+                    "current": {
+                      "description": "最新估值"
+                    },
+                    "series": {
+                      "description": "季频历史序列（新→旧）"
+                    }
+                  }
                 }
               }
             }
@@ -2851,7 +2887,7 @@
     "/statements/balance": {
       "post": {
         "operationId": "statements_balance",
-        "summary": "资产负债表（fin.balance_sheet）。",
+        "summary": "资产负债表（fin_balance 宽表；cn/hk/us）。",
         "description": "。SDK 调用：`cli.statements.balance(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "财务基本面"
@@ -2864,15 +2900,16 @@
                 "type": "object",
                 "properties": {
                   "symbol": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "6 位 A 股代码 / 港股 5 位代码 / 美股 ticker（自动归一）"
                   },
                   "years": {
                     "type": "integer",
-                    "description": "期数（年报降序，默认 5）"
+                    "description": "期数（降序，默认 5；季报档=总期数）"
                   },
-                  "scope": {
+                  "period": {
                     "type": "string",
-                    "description": "\"合并\"（默认）或 \"母公司\""
+                    "description": "\"annual\"（年报档，缺省）或 \"quarter\"（季报全档 Q1..Q4）"
                   }
                 },
                 "required": [
@@ -2899,7 +2936,7 @@
     "/statements/income": {
       "post": {
         "operationId": "statements_income",
-        "summary": "利润表（fin.income_statement，含费用四率原料行）。",
+        "summary": "利润表（fin_income 宽表；cn/hk/us）。",
         "description": "。SDK 调用：`cli.statements.income(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "财务基本面"
@@ -2912,15 +2949,16 @@
                 "type": "object",
                 "properties": {
                   "symbol": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "6 位 A 股代码 / 港股 5 位代码 / 美股 ticker（自动归一）"
                   },
                   "years": {
                     "type": "integer",
-                    "description": "期数（年报降序，默认 5）"
+                    "description": "期数（降序，默认 5；季报档=总期数）"
                   },
-                  "scope": {
+                  "period": {
                     "type": "string",
-                    "description": "\"合并\"（默认）或 \"母公司\""
+                    "description": "\"annual\"（年报档，缺省）或 \"quarter\"（季报全档 Q1..Q4）"
                   }
                 },
                 "required": [
@@ -2947,7 +2985,7 @@
     "/statements/cashflow": {
       "post": {
         "operationId": "statements_cashflow",
-        "summary": "现金流量表（fin.cashflow_statement）。",
+        "summary": "现金流量表（fin_cashflow 宽表；cn/hk/us）。",
         "description": "。SDK 调用：`cli.statements.cashflow(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "财务基本面"
@@ -2960,164 +2998,16 @@
                 "type": "object",
                 "properties": {
                   "symbol": {
-                    "type": "string"
-                  },
-                  "years": {
-                    "type": "integer",
-                    "description": "期数（年报降序，默认 5）"
-                  },
-                  "scope": {
                     "type": "string",
-                    "description": "\"合并\"（默认）或 \"母公司\""
-                  }
-                },
-                "required": [
-                  "symbol"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "调用成功",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/statements/compare": {
-      "post": {
-        "operationId": "statements_compare",
-        "summary": "合并 vs 母公司比较：科目行 + 合并值/母公司值/差额/差额占比。",
-        "description": "差额占比为**小数**（diffp = 差额 / 合并值，0.078 = 7.8%；SDK 自动由脚本、的百分数口径换算，``_units=\"native\"`` 可取原值）；母公司未披露的科目差额为空。。SDK 调用：`cli.statements.compare(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
-        "tags": [
-          "财务基本面"
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "symbol": {
-                    "type": "string"
-                  },
-                  "kind": {
-                    "type": "string"
+                    "description": "6 位 A 股代码 / 港股 5 位代码 / 美股 ticker（自动归一）"
                   },
                   "years": {
                     "type": "integer",
-                    "description": "期数（年报降序，默认 5）"
-                  }
-                },
-                "required": [
-                  "symbol"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "调用成功",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          }
-        },
-        "x-wmshare-guards": {
-          "units": {
-            "diffp": "percent"
-          },
-          "checks": [
-            "diffp_ratio"
-          ]
-        }
-      }
-    },
-    "/statements/tree": {
-      "post": {
-        "operationId": "statements_tree",
-        "summary": "报表目录树视图：按树序输出科目行，含派生比率行（流动比率/资产负债率/毛利率等）。",
-        "description": "注意：派生行的数值口径按行内标记区分——``pct`` 行的 vals 为百分数（原生，、未换算）、``fmt=\"x\"`` 行为倍数、其余科目行为报表原币元；与 compare() 的统一、小数口径不同，树视图适合展示/核对而非跨接口运算。。SDK 调用：`cli.statements.tree(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
-        "tags": [
-          "财务基本面"
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "symbol": {
-                    "type": "string"
+                    "description": "期数（降序，默认 5；季报档=总期数）"
                   },
-                  "kind": {
-                    "type": "string"
-                  },
-                  "years": {
-                    "type": "integer",
-                    "description": "期数（年报降序，默认 5）"
-                  },
-                  "scope": {
+                  "period": {
                     "type": "string",
-                    "description": "\"合并\"（默认）或 \"母公司\""
-                  }
-                },
-                "required": [
-                  "symbol"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "调用成功",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/statements/years": {
-      "post": {
-        "operationId": "statements_years",
-        "summary": "该报表可用的年报年份（降序）。",
-        "description": "。SDK 调用：`cli.statements.years(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
-        "tags": [
-          "财务基本面"
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "symbol": {
-                    "type": "string"
-                  },
-                  "kind": {
-                    "type": "string"
+                    "description": "\"annual\"（年报档，缺省）或 \"quarter\"（季报全档 Q1..Q4）"
                   }
                 },
                 "required": [
@@ -3144,7 +3034,7 @@
     "/statements/audit": {
       "post": {
         "operationId": "statements_audit",
-        "summary": "审计意见（按年报，返回 {年份: 意见}）。",
+        "summary": "审计意见（按年报，返回 {年份: 意见}；cn）。",
         "description": "。SDK 调用：`cli.statements.audit(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "财务基本面"
@@ -4946,7 +4836,8 @@
                 "type": "object",
                 "properties": {
                   "symbol": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "6 位 A 股代码 / 港股 5 位代码（按代码自动路由市场）"
                   },
                   "window": {
                     "type": "string"
@@ -5024,7 +4915,7 @@
     "/notice/recent": {
       "post": {
         "operationId": "notice_recent",
-        "summary": "全市场近期公告（按披露时间倒序）。",
+        "summary": "全市场近期公告（按披露时间倒序；cn/hk）。",
         "description": "底层目录函数 `notice.query_recent`。SDK 调用：`cli.notice.recent(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "信息披露"
@@ -5046,6 +4937,10 @@
                   },
                   "limit": {
                     "type": "integer"
+                  },
+                  "market": {
+                    "type": "string",
+                    "description": "公告市场，缺省自动（=cn）；港股显式传 \"hk\""
                   }
                 },
                 "required": []
@@ -5112,7 +5007,7 @@
     "/notice/by_category": {
       "post": {
         "operationId": "notice_by_category",
-        "summary": "按类别查公告（如 \"回购\"）。",
+        "summary": "按类别查公告（如 \"回购\"；cn/hk）。",
         "description": "底层目录函数 `notice.query_by_category`。SDK 调用：`cli.notice.by_category(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "信息披露"
@@ -5132,6 +5027,10 @@
                   },
                   "limit": {
                     "type": "integer"
+                  },
+                  "market": {
+                    "type": "string",
+                    "description": "公告市场，缺省自动（=cn）；港股显式传 \"hk\""
                   }
                 },
                 "required": [
@@ -5200,7 +5099,7 @@
     "/notice/find": {
       "post": {
         "operationId": "notice_find",
-        "summary": "按日期区间查单票公告（begin/end 均含当日，格式 YYYY-MM-DD）。",
+        "summary": "按日期区间查单票公告（begin/end 均含当日，格式 YYYY-MM-DD；cn/hk）。",
         "description": "底层目录函数 `notice.query_find`。SDK 调用：`cli.notice.find(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "信息披露"
@@ -5229,6 +5128,10 @@
                   },
                   "limit": {
                     "type": "integer"
+                  },
+                  "market": {
+                    "type": "string",
+                    "description": "公告市场，缺省自动（按标的代码路由）；全市场语义可显式传 \"cn\"/\"hk\""
                   }
                 },
                 "required": [
@@ -5299,7 +5202,7 @@
     "/notice/on_date": {
       "post": {
         "operationId": "notice_on_date",
-        "summary": "指定日期的全市场公告（date 格式 YYYY-MM-DD）。",
+        "summary": "指定日期的全市场公告（date 格式 YYYY-MM-DD；cn/hk）。",
         "description": "底层目录函数 `notice.query_on_date`。SDK 调用：`cli.notice.on_date(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "信息披露"
@@ -5319,6 +5222,10 @@
                   },
                   "limit": {
                     "type": "integer"
+                  },
+                  "market": {
+                    "type": "string",
+                    "description": "公告市场，缺省自动（=cn）；港股显式传 \"hk\""
                   }
                 },
                 "required": [
@@ -6274,6 +6181,26 @@
               }
             }
           }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "dps": [
+              0,
+              500
+            ],
+            "payout_ratio": [
+              0,
+              20
+            ],
+            "total": [
+              0,
+              2000000000000.0
+            ],
+            "net_profit": [
+              0,
+              1000000000000.0
+            ]
+          }
         }
       }
     },
@@ -6360,6 +6287,26 @@
                 }
               }
             }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "dps": [
+              0,
+              500
+            ],
+            "payout_ratio": [
+              0,
+              20
+            ],
+            "total": [
+              0,
+              2000000000000.0
+            ],
+            "net_profit": [
+              0,
+              1000000000000.0
+            ]
           }
         }
       }

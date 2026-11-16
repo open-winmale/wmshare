@@ -7,8 +7,8 @@ def test_load_and_stats():
     cat = load()
     s = cat.stats()
     assert s["domains"] == 18, s
-    assert s["functions"] == 288, s
-    assert s["raw"] == 206 and s["computed"] == 82, s
+    assert s["functions"] == 285, s
+    assert s["raw"] == 204 and s["computed"] == 81, s
     assert s["metric_catalog_total"] == 2752, s
     assert s["upstream_rev"], "inventory 应锚定 upstream rev"
 

@@ -60,11 +60,11 @@ def test_friendly_statements_facade_is_intact():
     docs = (REPO / "docs" / "API.md").read_text(encoding="utf-8")
     spec = (REPO / "docs" / "openapi.json").read_text(encoding="utf-8")
     methods = [m for _, ns, m, _, _ in FRIENDLY_INDEX if ns == "statements"]
-    assert len(methods) >= 7, f"statements 门面方法数异常：{methods}"
+    assert methods == ["balance", "income", "cashflow", "audit"], f"statements 门面方法数异常：{methods}"
     assert _FRIENDLY_NS_TO_CATALOG.get("statements") == "rptdom"
-    for method in ("balance", "income", "cashflow", "compare", "tree", "years", "audit"):
+    for method in ("balance", "income", "cashflow", "audit"):
         assert f"cli.statements.{method}" in docs, f"docs/API.md 缺少 {method}"
-    assert "statements_compare" in spec, "openapi 缺少 statements 友好 operation"
+    assert "statements_balance" in spec, "openapi 缺少 statements 友好 operation"
 
 
 def test_catalog_contract_still_backs_every_facade_method():
@@ -89,7 +89,7 @@ def test_internal_ns_set_covers_inventory_prefixes():
     internal = {n for n in names if ext.is_internal_catalog_name(n)}
     assert internal, "内部命名空间函数应仍保留在目录中（门面委托依赖）"
     assert all(n.partition(".")[0] in ext.INTERNAL_CATALOG_NS for n in internal)
-    assert len(internal) == 5, f"内部命名空间函数数量变化：{len(internal)}"
+    assert len(internal) == 2, f"内部命名空间函数数量变化：{len(internal)}"
 
 
 def test_doc_hidden_rule_covers_internal_namespace():

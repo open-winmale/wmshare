@@ -105,7 +105,7 @@ class BonusNS(_Ns):
         return self._client.call("bonus.query_valid", **kw, _raw=_raw, _df=_df)
 
     def snapshot(self, sym: str, _raw: bool = False, _df: bool = False) -> Any:
-        """股息快照
+        """股息快照（比率均为小数：yield_ttm=0.036 即 3.6%）
 
 :returns: MAP · 股息/率快照
         """
@@ -387,7 +387,10 @@ class CbondNS(_Ns):
         return self._client.call("cbond.count_below", code=code, trig=trig, window=window, _raw=_raw, _df=_df)
 
     def history(self, code: Any, n: Any, _raw: bool = False, _df: bool = False) -> Any:
-        """转债近 N 日历史（快照+债 K；快照上线前区间自动补齐）"""
+        """转债近 N 日历史（快照+债 K；快照上线前区间自动补齐）
+
+:returns: ARR · 转债历史行
+        """
         return self._client.call("cbond.history", code=code, n=n, _raw=_raw, _df=_df)
 
     def notices(self, code: Any, limit: Any, _raw: bool = False, _df: bool = False) -> Any:
@@ -887,12 +890,14 @@ class IndicesNS(_Ns):
             kw["top_n"] = top_n
         return self._client.call("indices.weights", **kw, _raw=_raw, _df=_df)
 
-    def valuation(self, key: str, points: int | None = None, _raw: bool = False, _df: bool = False) -> Any:
-        """指数估值时序"""
-        kw: dict[str, Any] = {"key": key}
-        if points is not None:
-            kw["points"] = points
-        return self._client.call("indices.valuation", **kw, _raw=_raw, _df=_df)
+    def valuation(self, key: str, _raw: bool = False, _df: bool = False) -> Any:
+        """指数估值时序（key 为指数键，如 index.hs300；可用键由 indices.universe_keys 枚举）
+
+:param key: 指数键（index.hs300 等，用 indices.universe_keys 枚举）
+
+:returns: MAP · 估值序列
+        """
+        return self._client.call("indices.valuation", key=key, _raw=_raw, _df=_df)
 
     def trend(self, key: str, window: str | None = None, _raw: bool = False, _df: bool = False) -> Any:
         """指数估值趋势(周频整体法)"""
@@ -1504,7 +1509,7 @@ class MoneyflowNS(_Ns):
         return self._client.call("moneyflow.query_last_live", sym=sym, _raw=_raw, _df=_df)
 
     def snapshot(self, sym: str, _raw: bool = False, _df: bool = False) -> Any:
-        """资金流向快照
+        """资金流向快照（金额均为元；net_mv_ratio 为小数）
 
 :returns: MAP · 快照
         """
@@ -1518,7 +1523,7 @@ class MoneyflowNS(_Ns):
         return self._client.call("moneyflow.snapshot_net_mf", sym=sym, _raw=_raw, _df=_df)
 
     def board(self, _raw: bool = False, _df: bool = False) -> Any:
-        """全市场资金流快照
+        """全市场资金流快照（金额均为元；net_mv_ratio 为小数）
 
 :returns: ARR · 资金流行（symbol/name/net_mf/net_mv_ratio/lg_net/elg_net/md_net/sm_net/industry，按主力净流入降序）
         """
@@ -1783,52 +1788,21 @@ class NoticeNS(_Ns):
 class RptdomNS(_Ns):
     """财务报表（fund.statements）"""
 
-    def statement(self, sym: str, domain: str, opts: dict | None = None, _raw: bool = False, _df: bool = False) -> Any:
-        """三报表科目×期次透视
+    def mkt_statement(self, sym: str, domain: str, opts: dict | None = None, _raw: bool = False, _df: bool = False) -> Any:
+        """三大报表科目×期次透视（cn/hk/us 全市场宽表）
 
-:param sym: 6 位裸码
-:param opts: {scope: 合并|母公司(默认合并), n: 期数(默认5), years: 年份数组}
+:param sym: 6 位裸码 / 港股 5 位 / 美股 ticker（自动路由市场）
+:param opts: {n: 期数(默认5,1..10), sampling: Q4(缺省年报档)|Q1..Q3 单季|Q 季报全档}
 
-:returns: ARR · 科目行（科目代码/中文名×期次列）
+:returns: ARR · 科目行（k=披露科目原文 × 期次列，披露原币；缺期 nil 不填补）
         """
         kw: dict[str, Any] = {"sym": sym, "domain": domain}
         if opts is not None:
             kw["opts"] = opts
-        return self._client.call("rptdom.statement", **kw, _raw=_raw, _df=_df)
-
-    def statement_years(self, sym: str, domain: str, _raw: bool = False, _df: bool = False) -> Any:
-        """报表可用年报（Q4 档，降序）
-
-:returns: ARR · 年份
-        """
-        return self._client.call("rptdom.statement_years", sym=sym, domain=domain, _raw=_raw, _df=_df)
-
-    def statement_compare(self, sym: str, domain: str, opts: dict | None = None, _raw: bool = False, _df: bool = False) -> Any:
-        """合并 vs 母公司报表比较
-
-:param opts: 同 statement（差额/差额占比%为派生计算）
-
-:returns: ARR · 科目行 + 合并/母公司/差额/差额占比
-        """
-        kw: dict[str, Any] = {"sym": sym, "domain": domain}
-        if opts is not None:
-            kw["opts"] = opts
-        return self._client.call("rptdom.statement_compare", **kw, _raw=_raw, _df=_df)
-
-    def statement_tree(self, sym: str, domain: str, opts: dict | None = None, _raw: bool = False, _df: bool = False) -> Any:
-        """三表目录树视图（树序 + 比率/占比行）
-
-:param opts: 同 statement
-
-:returns: ARR · 树序科目行；含派生比率行（LD/IBD_RATE/GM 等 pct 行）
-        """
-        kw: dict[str, Any] = {"sym": sym, "domain": domain}
-        if opts is not None:
-            kw["opts"] = opts
-        return self._client.call("rptdom.statement_tree", **kw, _raw=_raw, _df=_df)
+        return self._client.call("rptdom.mkt_statement", **kw, _raw=_raw, _df=_df)
 
     def statement_audit(self, sym: str, _raw: bool = False, _df: bool = False) -> Any:
-        """审计意见（Q4 年轴）
+        """审计意见（聚源混源，Q4 年轴；仅 cn）
 
 :returns: MAP · {年份: 审计意见}
         """

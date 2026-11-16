@@ -251,33 +251,8 @@ def capture() -> tuple[dict[str, Any], int]:
         cashflow = _require_rows(
             cli.statements.cashflow(primary, years=3), "statements.cashflow", min_len=3,
         )
-        statement_years = cli.statements.years(primary, "income")
-        if not isinstance(statement_years, list) or not statement_years:
-            raise ValueError("statements.years 返回空")
-        if statement_years != sorted(statement_years, reverse=True):
-            raise ValueError(f"statements.years 不是降序：{statement_years}")
-        compare = _require_rows(
-            cli.statements.compare(primary, "income", years=2),
-            "statements.compare", min_len=1,
-        )
-        for i, row in enumerate(compare):
-            diff, pct, combined = row.get("diff"), row.get("diffp"), row.get("c")
-            if not (isinstance(diff, dict) and isinstance(pct, dict) and isinstance(combined, dict)):
-                continue
-            for key, diff_value in diff.items():
-                if key not in pct or key not in combined:
-                    continue
-                p, d, c = pct[key], diff_value, combined[key]
-                if not all(isinstance(x, (int, float)) and not isinstance(x, bool)
-                           for x in (p, d, c)):
-                    continue
-                if c == 0:
-                    continue
-                expected = d / c
-                if abs(p - expected) > max(1e-9, abs(expected) * 1e-6):
-                    raise ValueError(
-                        f"statements.compare[{i}][{key}] diffp={p} 与 diff/c={expected} 不一致"
-                    )
+
+
         audit = cli.statements.audit(primary)
         if not isinstance(audit, dict) or not audit:
             raise ValueError("statements.audit 返回空")
@@ -386,8 +361,6 @@ def capture() -> tuple[dict[str, Any], int]:
                 "income": income,
                 "balance": balance,
                 "cashflow": cashflow,
-                "years": statement_years,
-                "compare": compare,
                 "audit": audit,
             },
             "indicators": indicators,

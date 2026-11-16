@@ -163,30 +163,6 @@ def test_statements_audit(cli):
     assert all(str(k).isdigit() for k in doc)
 
 
-def test_statements_compare_tree_years(cli):
-    cmp_rows = cli.statements.compare(MAIN, "balance", years=2)
-    assert isinstance(cmp_rows, list) and cmp_rows
-    assert {"c", "p", "diff", "diffp", "k"} <= set(cmp_rows[0])
-    diff_rows = [r for r in cmp_rows if r.get("diff")]
-    assert diff_rows, "资产负债表应有部分科目可比出差额"
-    # 差额占比为小数：diffp = diff / 合并值（SDK 已由脚本百分数自动 ÷100）
-    r = diff_rows[0]
-    year = sorted(r["diff"])[0]
-    assert abs(r["diffp"][year] - r["diff"][year] / r["c"][year]) < 1e-6
-
-    tree = cli.statements.tree(MAIN, "balance", years=2)
-    assert isinstance(tree, list) and tree
-    assert {"k", "cn", "vals"} <= set(tree[0])
-    # 树视图派生行保留原生口径：pct 行为百分数（如 DART 16.4 = 16.4%）
-    dart = next((x for x in tree if x.get("k") == "DART" and x.get("vals")), None)
-    if dart:
-        v = next(iter(dart["vals"].values()))
-        assert v > 1, f"资产负债率 pct 行应为百分数口径，实际 {v}"
-
-    years = cli.statements.years(MAIN, "income")
-    assert isinstance(years, list) and years
-    assert all(isinstance(y, (int, str)) for y in years)
-
 
 def test_indicator_get_and_metrics(cli):
     pe = cli.indicator.get(MAIN, "$PE_TTM_LAST")

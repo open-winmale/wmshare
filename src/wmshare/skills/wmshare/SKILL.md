@@ -104,7 +104,6 @@ cat.metrics_in_group("dividend")                         # 指标组内全部精
 | 站上 20 日线了吗 / 放量了吗 | `cli.screener.screen_above_ma20(sym)` / `screen_volume_spike(sym)` |
 | 资金流 | `cli.moneyflow.last(sym)` / `cli.moneyflow.bars(sym, n=20)` |
 | 利润表 / 资产负债表 / 现金流 | `cli.statements.income(sym, years=5)` / `balance` / `cashflow` |
-| 合并 vs 母公司 | `cli.statements.compare(sym)` |
 | 估值指标当前值 | `cli.indicator.get(sym, "$PE_TTM_LAST")`（码先查目录） |
 | 估值历史分位 | `cli.valuation.hist_stats(sym, metric="pe", window="3y")` |
 | TTM 股息率 / 分红历史 | `cli.dividend.yield_ttm(sym)` / `cli.dividend.history(sym)` |
@@ -120,7 +119,7 @@ cat.metrics_in_group("dividend")                         # 指标组内全部精
 | 行业目录 / 行业成分 | `cli.stocks.industries(1)`（申万/恒生；美股目录树暂缺）/ `cli.stocks.industry_members("银行")`（中文名或代码 S48） |
 | 少量标的单批（≤500） | `cli.call_batch("kline.snapshot", ["600519", "000001"])` 或任意单标的接口传 list：`cli.kline.last(["600519", "000001"])`；`to_df()` 出每标的一行长表 |
 
-完整 135 个核心接口 + 4 个组合接口（可转债 3 + 回测 1）与全部底层函数：仓库用户看 docs/GUIDE.md（上手）与
+完整 132 个核心接口 + 4 个组合接口（可转债 3 + 回测 1）与全部底层函数：仓库用户看 docs/GUIDE.md（上手）与
 docs/API.md（参考）；pip 用户用 `cat.search(...)` / `cat.function(...)` 查（同一份合同）。
 全量指标码（2752 个）按数据类型分章的导航、命名语法与死码清单见 docs/INDICATORS.md（生成物）。
 

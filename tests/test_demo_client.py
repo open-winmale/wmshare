@@ -108,17 +108,6 @@ def test_statements_shapes_match_real(snapshot, cli):
         assert rows and all({"k", "cn", "vals"} <= set(row) for row in rows)
         for row in rows:
             assert set(row["vals"]).issubset(set(snapshot["data"]["statements"][kind][0]["vals"]))
-    years = cli.statements.years("600519", "income")
-    assert years == sorted(years, reverse=True)
-    rows = cli.statements.compare("600519", "income", years=2)
-    assert {"c", "p", "diff", "diffp", "k"} <= set(rows[0])
-    diff_rows = [row for row in rows if row.get("diff")]
-    assert diff_rows
-    for row in diff_rows:
-        for year, diff_value in row["diff"].items():
-            if row["c"].get(year):
-                expected = diff_value / row["c"][year]
-                assert abs(row["diffp"][year] - expected) <= max(1e-9, abs(expected) * 1e-6)
 
 
 def test_notice_poller_ack_semantics(snapshot, cli):

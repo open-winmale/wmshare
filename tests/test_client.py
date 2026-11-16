@@ -102,10 +102,10 @@ def test_missing_middle_param_fills_nil(client):
 
 
 def test_auto_require_for_unpreloaded_ns(client):
-    client.call("rptdom.statement_years", sym="600519", domain="fin.income_statement")
+    client.call("rptdom.mkt_statement", sym="600519", domain="fin.income_statement")
     lines = last_eval(client)["json"]["xs_lines"]
     assert lines[0] == 'xs.require("sys/rptdom/init.xs")'
-    assert lines[-1] == ('return rptdom.statement_years("600519", "fin.income_statement")')
+    assert lines[-1] == ('return rptdom.mkt_statement("600519", "fin.income_statement")')
     # 预载域不补 require
     client.call("kline.query_last", sym="600519")
     lines = last_eval(client)["json"]["xs_lines"]
@@ -122,7 +122,7 @@ def test_param_validation(client):
     with pytest.raises(WmshareError, match="需要 int"):
         client.call("kline.query_bars", sym="600519", limit="30")
     with pytest.raises(WmshareError, match="不在允许值"):
-        client.call("rptdom.statement", sym="600519", domain="not.a.statement")
+        client.call("rptdom.mkt_statement", sym="600519", domain="not.a.statement")
 
 
 def test_batch_name_must_be_catalog_function(client):
@@ -242,20 +242,20 @@ def test_from_env_empty_raises_with_guidance(tmp_path):
 
 
 def test_object_param_serialized(client):
-    client.call("rptdom.statement", sym="600519", domain="fin.income_statement",
-                opts={"scope": "合并", "n": 5})
+    client.call("rptdom.mkt_statement", sym="600519", domain="fin.income_statement",
+                opts={"n": 5})
     xs = last_eval(client)["json"]["xs_lines"][-1]
-    assert xs == ('return rptdom.statement("600519", "fin.income_statement", '
-                  '{"scope": "合并", "n": 5})')
+    assert xs == ('return rptdom.mkt_statement("600519", "fin.income_statement", '
+                  '{"n": 5})')
 
 
 def test_namespace_facade(client):
     # 通用门面（非友好命名空间）：rptdom 仍走底层函数直调
-    out = client.rptdom.statement_years(sym="600519", domain="fin.income_statement")
+    out = client.rptdom.mkt_statement(sym="600519", domain="fin.income_statement")
     assert out == {"ok": True}
     xs = last_eval(client)["json"]["xs_lines"]
     assert xs[0] == 'xs.require("sys/rptdom/init.xs")'
-    assert xs[-1] == 'return rptdom.statement_years("600519", "fin.income_statement")'
+    assert xs[-1] == 'return rptdom.mkt_statement("600519", "fin.income_statement")'
     with pytest.raises(AttributeError, match="不在目录中"):
         client.no_such_ns.query(sym="1")
     # L1 精简条目：回退 inventory 签名参数，可直接调用

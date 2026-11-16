@@ -26,7 +26,7 @@ LimitArg = Annotated[int, Field(ge=1, le=100, description="返回条数上限")]
 DateArg = Annotated[str | None, Field(description="日期，格式 YYYY-MM-DD")]
 
 StatementAction = Literal[
-    "income", "balance", "cashflow", "audit", "compare", "tree", "years"
+    "income", "balance", "cashflow", "audit"
 ]
 SegmentAction = Literal[
     "business", "products", "region", "income", "coverage", "periods", "snapshot"
@@ -278,22 +278,13 @@ def build_server(runtime: MCPRuntime | None = None) -> FastMCP:
         action: Annotated[StatementAction, Field(description="报表动作")],
         symbol: Annotated[str | None, Field(description="标的代码；所有 action 都需要")] = None,
         market: MarketArg = None,
-        kind: Annotated[
-            Literal["income", "balance", "cashflow"] | None,
-            Field(description="compare/tree/years 使用的报表类型"),
-        ] = "income",
         years: Annotated[int, Field(ge=1, le=10, description="报表期数")] = 5,
-        scope: Annotated[
-            Literal["合并", "母公司"],
-            Field(description="报表口径：合并或母公司"),
-        ] = "合并",
         output: OutputArg = "sample",
         max_rows: MaxRowsArg = MAX_ROWS,
     ) -> dict[str, Any]:
-        """取三大报表、审计意见、合并/母公司对比、报表树或可用年份。"""
+        """取三大报表（cn/hk/us 宽表）或审计意见。"""
         return tools.statement(rt, action, symbol=symbol, market=market,
-                               kind=kind or "income", years=years, scope=scope,
-                               output=output, max_rows=max_rows)
+                               years=years, output=output, max_rows=max_rows)
 
     @mcp.tool()
     @protocol

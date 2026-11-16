@@ -176,9 +176,9 @@ def test_10_notice_monitor(snapshot, capsys):
 def test_11_statements_tour(capsys):
     _load("11_statements_tour.py").main(fake_client())
     out = capsys.readouterr().out
-    assert "利润表可用年报：[2025, 2024" in out   # 年份降序
+    assert "利润表：" in out and "审计意见" in out   # 三表 + 审计意见
     assert "资产负债表：" in out and "行科目；如「" in out
-    assert "差额占比 " in out                     # diffp 小数 → 百分比展示
+    assert "季报档" in out                       # period=quarter 季报全档
     assert "2024 年审计意见：标准无保留意见" in out
 
 
@@ -193,11 +193,23 @@ def test_16_metric_adapter(snapshot, capsys):
     assert "screener.query(fields=codes" in out
 
 
+def test_17_prr_dividend_screen(capsys):
+    """红利排雷：演示客户端无全市场索引 → 罐头行走通本地三步，方向与 live 一致。"""
+    _load("17_prr_dividend_screen.py").main(fake_client(), demo=True)
+    out = capsys.readouterr().out
+    assert "全市场命中 7 只" in out
+    assert "-2 只 → 5" in out and "-1 只 → 4" in out and "-1 只 → 3" in out
+    # 方向锁死（AGENTS.md 防坑 4）：PRR 最低、覆盖最高的罐头票必须排第一且 CHI=1.00
+    top = [line for line in out.splitlines() if "600519" in line]
+    assert top and "1.00" in top[0]
+    assert "取数失败跳过 0 只" in out          # 失败显式计数，不静默
+
+
 def test_examples_index_covers_dir():
     """examples/README.md 课程表必须覆盖目录里每个脚本（防孤儿示例）。"""
     index = (EXAMPLES / "README.md").read_text(encoding="utf-8")
     scripts = sorted(p.name for p in EXAMPLES.glob("*.py"))
-    assert len(scripts) == 16, f"示例应恰为 16 个（编号课程），实际 {len(scripts)}：{scripts}"
+    assert len(scripts) == 17, f"示例应恰为 17 个（编号课程），实际 {len(scripts)}：{scripts}"
     for name in scripts:
         assert f"`{name}`" in index, f"examples/README.md 缺 {name} 的索引行"
 
@@ -206,7 +218,7 @@ def test_examples_index_covers_dir():
     "01_quickstart.py", "04_screener.py", "05_dividend_screener.py",
     "06_indicator_tour.py", "07_stocks_industry_batch.py", "08_pandas_analysis.py",
     "10_notice_monitor.py", "11_statements_tour.py", "15_backtest_ma.py",
-    "16_metric_adapter.py",
+    "16_metric_adapter.py", "17_prr_dividend_screen.py",
 ])
 def test_credential_examples_run_with_demo_snapshot(name):
     if name in ("07_stocks_industry_batch.py", "08_pandas_analysis.py"):

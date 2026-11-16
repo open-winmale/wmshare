@@ -132,13 +132,12 @@ def test_statements_translation(cli):
     cli.statements.income("600519", years=3)
     xs = last_xs(cli)
     assert xs[0] == 'xs.require("sys/rptdom/init.xs")'
-    assert xs[-1] == ('return rptdom.statement("600519", "fin.income_statement", '
-                      '{"scope": "合并", "n": 3})')
-    # period 二档：annual（缺省）不上送 sampling（与 1.20.5 行为字节一致）；
-    # quarter → sampling="Q" 季报全档；未知值 UsageError
+    assert xs[-1] == ('return rptdom.mkt_statement("600519", "fin.income_statement", '
+                      '{"n": 3})')
+    # period 二档：annual（缺省）不上送 sampling；quarter → sampling="Q" 季报全档
     cli.statements.balance("00700", period="quarter")
-    assert last_xs(cli)[-1] == ('return rptdom.statement("00700", "fin.balance_sheet", '
-                                '{"scope": "合并", "n": 5, "sampling": "Q"})')
+    assert last_xs(cli)[-1] == ('return rptdom.mkt_statement("00700", "fin.balance_sheet", '
+                                '{"n": 5, "sampling": "Q"})')
     from wmshare import UsageError
     with pytest.raises(UsageError, match="period"):
         cli.statements.income("600519", period="Q2")

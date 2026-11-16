@@ -218,27 +218,10 @@ def _validate_snapshot(document: Any) -> dict[str, Any]:
             raise ValueError("screen_quality_by_args 格式不合法")
 
     statements = _require_mapping(data.get("statements"), "statements")
-    years = statements.get("years")
-    if not isinstance(years, list) or years != sorted(years, reverse=True):
-        raise ValueError("statements.years 必须非空且降序")
     for kind in ("income", "balance", "cashflow"):
         rows = _require_rows(statements.get(kind), f"statements.{kind}")
         if not any(row.get("vals") for row in rows):
             raise ValueError(f"statements.{kind} 缺少非空 vals")
-    for i, row in enumerate(_require_rows(statements.get("compare"), "statements.compare")):
-        diff, pct, combined = row.get("diff"), row.get("diffp"), row.get("c")
-        if not isinstance(diff, dict) or not isinstance(pct, dict) \
-                or not isinstance(combined, dict):
-            continue
-        for key, diff_value in diff.items():
-            if key not in pct or key not in combined:
-                continue
-            p, d, c = pct[key], diff_value, combined[key]
-            if not all(_is_finite_number(x) for x in (p, d, c)) or float(c) == 0:
-                continue
-            expected = float(d) / float(c)
-            if abs(float(p) - expected) > max(1e-9, abs(expected) * 1e-6):
-                raise ValueError(f"statements.compare[{i}][{key}] 的 diffp 不一致")
 
     indicators = _require_mapping(data.get("indicators"), "indicators")
     for code, value in indicators.items():
@@ -400,8 +383,6 @@ class DemoClient:
             income=self._statement("income"),
             balance=self._statement("balance"),
             cashflow=self._statement("cashflow"),
-            years=self._statement_years,
-            compare=self._statement_compare,
             audit=self._statement_audit,
         )
         self.indicator = SimpleNamespace(
@@ -564,10 +545,10 @@ class DemoClient:
 
     # ---- fundamentals ----
     def _statement(self, kind: str):
-        def method(symbol: str, years: int = 5, scope: str = "合并",
-                   _df: bool = False) -> Any:
-            if scope != "合并":
-                raise UsageError("demo 快照只保存合并报表", code="demo_unsupported")
+        def method(symbol: str, years: int = 5, period: str = "annual",
+                   _df: bool = False, **_kw) -> Any:
+            if period not in ("annual", "quarter"):
+                raise UsageError(f"未知 period={period!r}", code="params")
             if int(years) <= 0:
                 raise UsageError("years 必须为正整数", code="params")
             sym = self._require_symbol(symbol)
@@ -577,21 +558,7 @@ class DemoClient:
             return self._maybe_df(rows, _df)
         return method
 
-    def _statement_years(self, symbol: str, kind: str = "income", _df: bool = False) -> list[str]:
-        self._require_symbol(symbol)
-        if kind not in ("income", "balance", "cashflow"):
-            raise UsageError(f"未知报表 kind={kind!r}", code="params")
-        return list(self._data["statements"]["years"])
 
-    def _statement_compare(self, symbol: str, kind: str = "income", years: int = 2,
-                           _df: bool = False) -> Any:
-        if kind != "income":
-            raise UsageError("demo compare 快照只保存 income", code="demo_unsupported")
-        if int(years) <= 0 or int(years) > 2:
-            raise UsageError("demo compare 快照最多 2 期", code="demo_limit")
-        self._require_symbol(symbol)
-        rows = _slice_statement_rows(self._data["statements"]["compare"], int(years))
-        return self._maybe_df(rows, _df)
 
     def _statement_audit(self, symbol: str) -> dict[str, str]:
         self._require_symbol(symbol)

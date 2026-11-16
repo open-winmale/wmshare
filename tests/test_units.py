@@ -107,17 +107,6 @@ def test_range_guard_raises_data_error():
     assert ei.value.code == "range"
 
 
-def test_diffp_converted_to_decimal_and_invariant():
-    c, _ = make([dict(COMPARE_ROW)])
-    out = c.statements.compare("600519", kind="income", years=1)
-    assert out[0]["diffp"]["2025"] == pytest.approx(-0.07765824564397575)
-    # 同源数据必然满足 diffp ≈ diff/c（不变量在换算后执行）
-
-    wrong = dict(COMPARE_ROW, diffp={"2025": -1.5})
-    c2, _ = make([wrong])
-    with pytest.raises(DataError, match="diffp_ratio"):
-        c2.statements.compare("600519", kind="income", years=1)
-
 
 def test_yjyg_amp_percent_converted():
     c, _ = make([dict(YJYG_ROW)])
@@ -316,8 +305,8 @@ def test_catalog_passthrough_and_metric_meta():
     cat = load()
     kb = cat.function("kline.query_bars")
     assert kb["units"] == {"volume": "lot"} and kb["checks"] == ["volume_amount"]
-    sc = cat.function("rptdom.statement_compare")
-    assert sc["units"] == {"diffp": "percent"} and sc["checks"] == ["diffp_ratio"]
+    ms = cat.function("rptdom.mkt_statement")
+    assert ms["params"][0]["name"] == "sym"  # 目录合同可查（列映射在消费侧）
     assert cat.metric_meta("$ROE_TTM_LAST")["range"] == [-20, 20]
     m = cat.metric("$ROE_TTM_LAST")
     assert m["code"] == "$ROE_TTM_LAST" and m["range"] == [-20, 20]
@@ -401,3 +390,58 @@ def test_normalized_query_shapes_cover_guards():
                   if isinstance(f, dict)}
         missing = guarded - fields
         assert not missing, f"{name}: 守护字段 {sorted(missing)} 不在 returns_shape"
+
+
+# ---- 零守护域合同化 · 第一批（ranges 量级守护生效锚） ----
+
+# 基线行 = live 实测 600519 / 000001 的合规值（ranges 内）
+BONUS_SNAPSHOT = {
+    "symbol": "600519", "name": "贵州茅台", "industry": "industry.S34",
+    "quote_date": "2026-11-16", "is_suspend": False,
+    "yield_ttm": 0.0362, "yield_lyr": 0.0362, "yield_3y_avg": 0.0437,
+    "yield_3y_min": 0.0384, "yield_3y_trend": "valley",
+    "pct_yield_3y": 0.554, "payout_ttm": 0.79, "dps_ttm": 51.98,
+    "pe_ttm": 21.86, "mv": 1.796e12, "bonus_ttm": 6.503e10,
+    "bonus_total": 4.011e11, "bonus_3y_trend": "valley",
+    "bonus_npts_rate": 0.591,
+}
+MF_BOARD_ROW = {
+    "symbol": "000001", "name": "平安银行", "industry": "industry.S48",
+    "net_mf": 8.125e8, "elg_net": 3.941e7, "lg_net": 1.742e8,
+    "md_net": 2.362e7, "sm_net": -2.372e8, "net_mv_ratio": 0.00347,
+}
+
+
+def test_zero_guard_domain_ranges_take_effect():
+    """A 档第一批：bonus 聚合快照的 ranges 量级守护。
+
+    这些接口此前零守护（guard_coverage 0%），本批登记 ranges 后，
+    ×100 类量级错必须在 SDK 层拦截（percent 先换算后守护——
+    本接口比率已是小数，负例直接取超界值）。
+    """
+    c, _ = make([dict(BONUS_SNAPSHOT, yield_ttm=3.62)])  # 百分数口径混入 → 超界
+    with pytest.raises(DataError, match="yield_ttm"):
+        c.bonus.snapshot("600519")
+
+    c2, _ = make([{**BONUS_SNAPSHOT, "payout_ttm": 98.76}])
+    with pytest.raises(DataError, match="payout_ttm"):
+        c2.bonus.snapshot("600519")
+
+
+def test_moneyflow_board_row_wise_guard():
+    """board 全市场逐行守护：任一行超界即拦。"""
+    rows = [dict(MF_BOARD_ROW), dict(MF_BOARD_ROW, net_mv_ratio=1.5)]
+    c, _ = make(rows)
+    with pytest.raises(DataError, match="net_mv_ratio"):
+        c.moneyflow.board()
+
+
+def test_moneyflow_snapshot_guard_ok():
+    """合规基线正常通过（守护不误伤实测值）。"""
+    c, _ = make([{**MF_BOARD_ROW, "quote_date": "2026-11-16",
+                  "mf_date": "2026-11-13", "source": "store",
+                  "net_5d": 9.96e7, "net_10d": 5.687e9,
+                  "net_20d": 1.121e10, "trend_5d": "rising_volatile",
+                  "trend_20d": "falling_volatile"}])
+    out = c.moneyflow.snapshot("600519")
+    assert out[0]["net_mv_ratio"] == 0.00347

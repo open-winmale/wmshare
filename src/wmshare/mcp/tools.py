@@ -555,25 +555,18 @@ def statement(
     market: str | None = None,
     kind: str = "income",
     years: int = 5,
-    scope: str = "合并",
     output: str = "sample",
     max_rows: int = MAX_ROWS,
 ) -> dict[str, Any]:
-    """Fetch curated statement views: three statements, audit, compare, tree, years."""
+    """Fetch curated statement views: three statements + audit (fin_* wide tables)."""
     if action not in STATEMENT_ACTIONS:
         raise ValueError(f"action 只支持 {'/'.join(STATEMENT_ACTIONS)}")
     selected_market = _market(market or runtime.market)
     cli = runtime.client(market)
     if action in {"income", "balance", "cashflow"}:
-        data = getattr(cli.statements, action)(str(symbol), years=int(years), scope=scope)
-    elif action == "audit":
-        data = cli.statements.audit(_symbol(action, symbol))
-    elif action in {"compare", "tree"}:
-        data = getattr(cli.statements, action)(
-            _symbol(action, symbol), kind=kind, years=int(years), scope=scope
-        )
+        data = getattr(cli.statements, action)(str(symbol), years=int(years))
     else:
-        data = cli.statements.years(_symbol(action, symbol), kind=kind)
+        data = cli.statements.audit(_symbol(action, symbol))
     return success(runtime, data, output=output, max_rows=max_rows,
                    action=action, kind=kind, symbol=symbol,
                    market=selected_market)

@@ -2,7 +2,7 @@
 
 **编号即学习路径**：每个脚本独立可跑；输出里的数值都带单位注释——读输出就能学会
 「率/分位=小数（0.0396 = 3.96%）、金额=元、量=股」的基础口径。
-4 个离线示例在 CI 里以子进程真实执行，10 个凭证示例注入演示客户端（`main(cli=None)`）
+4 个离线示例在 CI 里以子进程真实执行，11 个凭证示例注入演示客户端（`main(cli=None)`）
 端到端跑过——可放心照抄。
 
 ## 运行
@@ -38,6 +38,7 @@ python examples/01_quickstart.py
 | 14 | `14_cbond_double_low.py` | 生产 | 凭证 | 前半手工算双低（board 原始字段，看清在市口径）；后半 `cbond.daily()` 一条链路出事实包 + `article()` 成稿 + `figures()` 出图；缺条目即抛错不补猜测值 | GUIDE·单票菜谱·可转债、docs/notebooks/cb_double_low.ipynb |
 | 15 | `15_backtest_ma.py` | 进阶 | 凭证 | 单股均线买卖点回测：逐笔成交明细（买/卖、费用、盈亏、持有天数）+ 净值/回撤汇总；固定口径次日开盘、T+1、整手 | GUIDE·单票菜谱·单股回测 |
 | 16 | `16_metric_adapter.py` | 进阶 | 凭证 / **`--demo`** | 指标适配层：scope/topic 找码、combinable_groups 看组合边界、table 长表、many 小列表多标的 | docs/METRIC_ADAPTER.md |
+| 17 | `17_prr_dividend_screen.py` | 生产 | 凭证 / **`--demo`** | 三维红利排雷：硬卡点全压一条 where（count=真命中数）→ 本地剔金融、现金流覆盖、PRR 分位与 CHI 排名 | GUIDE·单票菜谱 |
 
 ## 约定（新增示例请遵守）
 

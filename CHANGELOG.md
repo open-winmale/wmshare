@@ -10,6 +10,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.21.0] - 2026-11-16
+
+### Changed（BREAKING）
+- **报表数据源切全市场宽表**：`cli.statements.balance/income/cashflow` 改读
+  fin_income/fin_balance/fin_cashflow（cn/hk/us 统一，季度粒度、披露原币、
+  科目原文列）；底层委托改为新增目录函数 `mkt_statement`（随包目录内部名，
+  对外清单不回显）；`period="quarter"` 取季报全档（Q1..Q4 混合，
+  期次键 "2026:Q1"）。
+- **下线内部提取库派生面**：`compare`（合并 vs 母公司）/`tree`（目录树）/
+  `years`（期间列举）三方法与 `scope` 参数移除——其数据只能来自内部提取库
+  （alt.bssaa 的 LIST 投影），按数据边界不再对外提供；`audit` 保留
+  （读 fin.balance，非提取库内容）。
+- 对外目录收缩：报表族仅保留 `mkt_statement` + `statement_audit`
+  （294→291 函数，friendly 135→132）；`statement` 家族原样保留给平台内部
+  页面/附注链路（摘 xs:catalog，函数逻辑零改动）。
+- 手写计数同步（README/GUIDE/AI/INDICATORS/SKILL：288→285、135→132、
+  139→136）；MCP statement 工具 action 枚举收窄并去 scope。
+
+### Fixed
+- MCP server.py 的 wmshare_statement 定义与工具实现同步（去 scope/kind）。
+
 ## [1.20.7] - 2026-11-16
 
 ### Fixed

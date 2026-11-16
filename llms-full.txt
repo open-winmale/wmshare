@@ -20,10 +20,13 @@
 
 ## 单位与守护声明（机器可读）
 
-> 共 49 个函数带 units / ranges / checks 声明；每行 `` `函数名`: JSON ``，键为 units（换算）/ ranges（量级界）/ checks（不变量）。SDK 在返回前按声明换算并校验，违例抛 DataError；原生口径用 `_units="native"`。内部命名空间的函数声明见 openapi.json 的 `x-wmshare-guards`（按友好接口）。
+> 共 54 个函数带 units / ranges / checks 声明；每行 `` `函数名`: JSON ``，键为 units（换算）/ ranges（量级界）/ checks（不变量）。SDK 在返回前按声明换算并校验，违例抛 DataError；原生口径用 `_units="native"`。内部命名空间的函数声明见 openapi.json 的 `x-wmshare-guards`（按友好接口）。
 
+- `bonus.query_list`: {"ranges": {"dps": [0, 500], "net_profit": [0, 1000000000000.0], "payout_ratio": [0, 20], "total": [0, 2000000000000.0]}}
+- `bonus.snapshot`: {"ranges": {"bonus_npts_rate": [0, 1], "bonus_total": [0, 2000000000000.0], "bonus_ttm": [0, 1000000000000.0], "dps_ttm": [0, 200], "mv": [0, 5000000000000.0], "payout_ttm": [0, 5], "pct_yield_3y": [0, 1], "pe_ttm": [-500, 5000], "yield_3y_avg": [0, 0.5], "yield_3y_min": [0, 0.5], "yield_lyr": [0, 0.5], "yield_ttm": [0, 0.5]}}
 - `cbond.board`: {"ranges": {"couponIr": [0, 0.15], "premiumRatio": [-100, 1000]}, "units": {"couponIr": "percent", "premiumRatio": "percent"}}
 - `cbond.counts`: {"ranges": {"callHits": [0, 30], "putHits": [0, 30], "resetHits": [0, 30]}}
+- `cbond.history`: {"ranges": {"close": [0, 2000], "convertPrice": [0, 2000], "convertedRatio": [0, 1], "remainSize": [0, 100000000000.0], "remainingYears": [0, 100], "stockPrice": [0, 5000], "transferValue": [0, 2000]}}
 - `cbond.latest_quotes`: {"ranges": {"couponIr": [0, 0.15], "premiumRatio": [-100, 1000]}, "units": {"couponIr": "percent", "premiumRatio": "percent"}}
 - `cbond.latest_share`: {"ranges": {"convertedRatio": [0, 1]}}
 - `cbond.market`: {"ranges": {"discountN": [0, 2000], "premiumMedian": [-100, 1000]}, "units": {"premiumMedian": "percent"}}
@@ -66,6 +69,8 @@
 - `kline.query_last_live_many`: {"units": {"volume": "lot"}}
 - `kline.query_min1_live`: {"units": {"volume": "lot"}}
 - `kline.snapshot`: {"units": {"volume": "lot"}}
+- `moneyflow.board`: {"ranges": {"elg_net": [-100000000000.0, 100000000000.0], "lg_net": [-100000000000.0, 100000000000.0], "md_net": [-100000000000.0, 100000000000.0], "net_mf": [-100000000000.0, 100000000000.0], "net_mv_ratio": [-0.5, 0.5], "sm_net": [-100000000000.0, 100000000000.0]}}
+- `moneyflow.snapshot`: {"ranges": {"elg_net": [-100000000000.0, 100000000000.0], "lg_net": [-100000000000.0, 100000000000.0], "md_net": [-100000000000.0, 100000000000.0], "net_10d": [-300000000000.0, 300000000000.0], "net_20d": [-500000000000.0, 500000000000.0], "net_5d": [-200000000000.0, 200000000000.0], "net_mf": [-100000000000.0, 100000000000.0], "net_mv_ratio": [-0.5, 0.5], "sm_net": [-100000000000.0, 100000000000.0]}}
 - `segments.query_business`: {"ranges": {"cost": [0, 10000000000000.0], "margin": [-5, 1], "ratio": [0, 1], "tr": [-10000000000000.0, 10000000000000.0]}}
 - `segments.query_income`: {"ranges": {"ratio": [0, 1]}}
 - `segments.query_products`: {"ranges": {"cost": [0, 10000000000000.0], "margin": [-5, 1], "ratio": [0, 1], "tr": [-10000000000000.0, 10000000000000.0]}}
@@ -170,7 +175,7 @@ for r in res["rows"][:5]:
 
 ## 基本功能
 
-随包离线目录：**18 个数据域 · 288 个底层函数 · 2752 个指标代码**；友好层 **135 个核心接口**，
+随包离线目录：**18 个数据域 · 285 个底层函数 · 2752 个指标代码**；友好层 **132 个核心接口**，
 按使用视角组织为（11 个指标组、78 个精选常用指标代码，`cat.search("中文")` 可编程检索）：
 
 | 门面 | 核心能力 | 单位口径 |
@@ -179,7 +184,7 @@ for r in res["rows"][:5]:
 | `cli.screener` | 全市场条件选股（`query`，一条 `$码` 表达式出命中数与前 N 行）+ 单票筛选器（涨停/均线/动量/回撤/放量）+ 全市场涨跌全景/分桶/行业分布/涨跌榜 | 阈值=小数；涨跌家数统计的 `*_pct`=百分数数值 |
 | `cli.backtest` | 单股买卖点回测（取数 + 本地撮合；纯内核 `wmshare.backtest` 可自备数据）：均线金叉/死叉 或 PE/PB/PS/PR 估值阈值（估值序列 ≤3 年）→ 成交明细 + 净值/回撤/胜率（次日开盘成交、T+1、100 股整手、佣金/印花固定） | 价格=元、收益=小数 |
 | `cli.moneyflow` | 主力/超大单/大单/中单/小单净流入（日频） | 金额=元 |
-| `cli.statements` | 三大报表多期、合并 vs 母公司、目录树、审计意见 | 报表原币元 |
+| `cli.statements` | 三大报表多期（cn/hk/us 宽表，`period=annual\|quarter`）、审计意见 | 报表原币元 |
 | `cli.segments` | 经营分部：分产品/业务/区域收入构成 | 元；比率=小数 |
 | `cli.indicator` | 按指标码取数：估值/盈利/成长/现金流/杜邦、期货主力连续（`$FUT_CLOSE` 等 27 码 + `fut_symbol`）；全量码表见 [INDICATORS.md](docs/INDICATORS.md) | 比率=小数 |
 | `cli.valuation` | PE/PB/PS/市赚率(PR)的历史统计与分位（窗口上限 3 年） | 分位=小数 |
@@ -212,7 +217,7 @@ for r in res["rows"][:5]:
 - **全市场批量**：`cli.batch_all(name, codes)` 把 A 股 5,375 家压成 **11 次请求**绕开限流。
 - **全市场筛选服务端直出**：`cli.screener.query("$ROE_TTM_LAST > 0.15")` 一条表达式扫全市场索引
   （`count`=真实命中数）；涨跌全景/分桶/行业分布/涨跌榜同走服务端预计算索引，毫秒级。
-- **离线目录防编造**：288 个底层函数、135 个核心接口、2,752 个指标码离线可查
+- **离线目录防编造**：285 个底层函数、132 个核心接口、2,752 个指标码离线可查
   （`cat.search("中文")`），目录之外的名字显式报错。
 - **零凭证离线试跑**：`wmshare.demo_client()`（同签名、不联网，2026-10-30 固定快照；非实时数据）。
 - **数据守护**：全库单位统一（比率=小数、金额=元、量=股），返回前量级/不变量校验，违例抛 `DataError`。
@@ -221,7 +226,7 @@ for r in res["rows"][:5]:
 
 - **先查目录再写代码**（一行验证）：
   `python3 -c "import wmshare; print(wmshare.load().search('股息'))"`
-- **本地 MCP server**：20 个 task tools；全部 139 个 friendly API——135 登记 + 4 组合——均可用
+- **本地 MCP server**：20 个 task tools；全部 136 个 friendly API——132 登记 + 4 组合——均可用
   `wmshare_call(target=..., mode="api")` 兜底，macro 域仅此路径。配置：`pip install "wmshare[mcp]"`
   → `wmshare-mcp setup --client-id <AppId> --client-secret-stdin --market cn`（提示后粘贴 API Key，
   `wmshare-mcp doctor` 体检）；客户端最小配置
@@ -299,7 +304,6 @@ for r in res["rows"][:5]:
 | 港股筹码在谁手里 | `cli.intl.query_ccass(sym)` | 上披露易→逐日查 CCASS |
 | 今日涨幅榜前十 | `cli.screener.index_top_movers(limit=10)` | 全市场扫描→排序→取头部 |
 | 近半年有无回购/减持 | `cli.notice.has_buyback(sym, "6m")` | 拉公告列表→分类匹配→截窗 |
-| 合并与母公司差多少 | `cli.statements.compare(sym)` | 双表对齐→逐科目相除 |
 | 拿全市场代码池 | `cli.stocks.list()` | 逐页拼列表→核对代码格式 |
 | 银行股都有谁 | `cli.stocks.industry_members("银行")` | 查行业分类→逐票打标签 |
 | 取 CPI/GDP 宏观时序 | `cli.macro.query("$CPI", 6)` | 找数据源→对齐期间→自己建时序 |
@@ -398,7 +402,7 @@ t["pe_pct"], t["pe_pct_window"], t["pct"]["pe"]["p3"]    # 5y 分位, '5y', 3y �
 ## 更多
 
 - **AI 原生**：随包 [SKILL.md](src/wmshare/skills/wmshare/SKILL.md)、[AI 用法](docs/AI.md)、本地 MCP server（skill 可复制进 .agents/.zcode/.claude 的 skills/）；生态工具 [big-winner](https://github.com/open-winmale/big-winner)。
-- **文档中心 [docs/](docs/README.md)**：使用指南 GUIDE（单票菜谱/批量/多市场/故障排查）· 指标库 [INDICATORS.md](docs/INDICATORS.md)（全量指标码按数据类型分章）· AI 用法 · llms.txt 索引 · [API 参考](docs/API.md)（按资产类别分章的 135 个核心接口 + 指标组）
+- **文档中心 [docs/](docs/README.md)**：使用指南 GUIDE（单票菜谱/批量/多市场/故障排查）· 指标库 [INDICATORS.md](docs/INDICATORS.md)（全量指标码按数据类型分章）· AI 用法 · llms.txt 索引 · [API 参考](docs/API.md)（按资产类别分章的 132 个核心接口 + 指标组）
 - **可转债日更管线**：`cli.cbond.daily()` → `article()` → `figures()` 一条命令出图文（三层口径 + 三道闸 + 状态机 + 事件日历，每个数字带 `sources` 与 `as_of`，缺条目抛错而非补猜测值）；实战 notebook 见 [docs/notebooks/cb_double_low.ipynb](docs/notebooks/cb_double_low.ipynb)（2026-11-07 真实数据）
 - **示例课程 [examples/](examples/README.md)**：16 个编号示例（入门→进阶→生产→AI），全部支持演示客户端离线试跑，CI 端到端覆盖
 - **问题反馈 / 交流**：QQ 群 `1127142074`（搜索「wmshare开源交流群」）——使用问题、数据口径、bug 反馈欢迎进群，也欢迎 [GitHub Issues](https://github.com/open-winmale/wmshare/issues)
@@ -516,7 +520,6 @@ cat.metrics_in_group("dividend")                         # 指标组内全部精
 | 站上 20 日线了吗 / 放量了吗 | `cli.screener.screen_above_ma20(sym)` / `screen_volume_spike(sym)` |
 | 资金流 | `cli.moneyflow.last(sym)` / `cli.moneyflow.bars(sym, n=20)` |
 | 利润表 / 资产负债表 / 现金流 | `cli.statements.income(sym, years=5)` / `balance` / `cashflow` |
-| 合并 vs 母公司 | `cli.statements.compare(sym)` |
 | 估值指标当前值 | `cli.indicator.get(sym, "$PE_TTM_LAST")`（码先查目录） |
 | 估值历史分位 | `cli.valuation.hist_stats(sym, metric="pe", window="3y")` |
 | TTM 股息率 / 分红历史 | `cli.dividend.yield_ttm(sym)` / `cli.dividend.history(sym)` |
@@ -532,7 +535,7 @@ cat.metrics_in_group("dividend")                         # 指标组内全部精
 | 行业目录 / 行业成分 | `cli.stocks.industries(1)`（申万/恒生；美股目录树暂缺）/ `cli.stocks.industry_members("银行")`（中文名或代码 S48） |
 | 少量标的单批（≤500） | `cli.call_batch("kline.snapshot", ["600519", "000001"])` 或任意单标的接口传 list：`cli.kline.last(["600519", "000001"])`；`to_df()` 出每标的一行长表 |
 
-完整 135 个核心接口 + 4 个组合接口（可转债 3 + 回测 1）与全部底层函数：仓库用户看 docs/GUIDE.md（上手）与
+完整 132 个核心接口 + 4 个组合接口（可转债 3 + 回测 1）与全部底层函数：仓库用户看 docs/GUIDE.md（上手）与
 docs/API.md（参考）；pip 用户用 `cat.search(...)` / `cat.function(...)` 查（同一份合同）。
 全量指标码（2752 个）按数据类型分章的导航、命名语法与死码清单见 docs/INDICATORS.md（生成物）。
 
@@ -641,7 +644,7 @@ cp -r "$(python3 -c 'import wmshare; print(wmshare.skill_dir())')" ~/.agents/ski
 
 本指南是 **how-to + 解释层**：会做什么 → 怎么做好。其他层各有其位——
 教程看 [README](../README.md) 与 [examples/](../examples/README.md)（可运行课程），
-接口参考看 [API.md](API.md)（按资产类别分章的 135 个核心接口，生成物），
+接口参考看 [API.md](API.md)（按资产类别分章的 132 个核心接口，生成物），
 AI 用法看 [AI.md](AI.md)。
 
 > 代码块里的输出注释都是**真实运行结果**（2026-10-29，cn 市场，免费档凭证），
@@ -681,9 +684,9 @@ export WMSHARE_CLIENT_ID=<AppId> WMSHARE_CLIENT_SECRET=<API Key>
 
 ### 2.1 双层 API：门面 + 目录
 
-- **门面层** `cli.<命名空间>.<方法>()`：22 个命名空间、135 个核心接口，方法名动宾化可猜
+- **门面层** `cli.<命名空间>.<方法>()`：22 个命名空间、132 个核心接口，方法名动宾化可猜
   （`kline.bars`、`dividend.yield_ttm`、`screener.screen_limit_up`）。
-- **目录层** `cli.call("<域>.<函数名>", ...)`：288 个底层函数按目录合同直调，
+- **目录层** `cli.call("<域>.<函数名>", ...)`：285 个底层函数按目录合同直调，
   参数名以 `cat.function(name)["params"]` 为准。门面未包装的函数经属性直达
   （如 `cli.dividend.index_where_high_yield_5()`）；目录之外的名字显式报错——
   门面不遮蔽目录函数，288 个都能直达。
@@ -783,7 +786,6 @@ cli.moneyflow.last("600519")            # net_mf = 821186700（8.2 亿元）
 # 三大报表（多期科目行：cn 中文名 / k 科目键 / vals 各期值）
 cli.statements.income("600519", years=1)    # 25 行科目
 cli.statements.balance("600519", years=3)
-cli.statements.compare("600519")            # 合并 vs 母公司
 # 完整可运行版：examples/11_statements_tour.py（含审计意见、diffp 小数读法）
 
 # 指标码取数（码先查目录；分位 0=最低 1=最高）
@@ -1242,7 +1244,7 @@ wmshare 取数代码**。优先用 MCP；没有 MCP 时用 skill 或文档上下
 - **目录先行**：指标码与函数可编程检索（`cat.search("中文")`），AI 不需要"背"接口，
   查一下再用；编造的码在发请求前就被 `CatalogError` 拦下。
 - **本地 MCP server**：20 个 task tools 覆盖发现、行情、财务、治理、披露、港美与批量；
-  全部 139 个 friendly API（135 登记 + 4 组合接口）均可经 `wmshare_call(mode="api")` 兜底
+  全部 136 个 friendly API（132 登记 + 4 组合接口）均可经 `wmshare_call(mode="api")` 兜底
   （macro 域 11 个接口仅此路径）。输出统一 units/rows/next_action。
 - **skill 随包分发**：单位铁律、意图→接口决策树、坑位清单、错误速查，装进 agent 即生效
   （`wmshare.skill_dir()`）。
@@ -1395,7 +1397,7 @@ python3 -c "import wmshare; print(wmshare.load().metric('\$PE_TTM_LAST'))"
 
 <!-- GENERATED by tools/gen_api_docs.py — do not hand-edit -->
 
-共 **18** 个数据域 · **135** 个核心接口 · **11** 个指标组（指标目录全量 2752 个指标代码）；全量 288 个底层函数见文末折叠附录。核心接口按资产类别分章，每接口一节（输入参数 / 输出字段 / 示例）。
+共 **18** 个数据域 · **132** 个核心接口 · **11** 个指标组（指标目录全量 2752 个指标代码）；全量 285 个底层函数见文末折叠附录。核心接口按资产类别分章，每接口一节（输入参数 / 输出字段 / 示例）。
 
 ## 能力总览
 
@@ -1410,15 +1412,15 @@ python3 -c "import wmshare; print(wmshare.load().metric('\$PE_TTM_LAST'))"
 | 数据域 | 核心能力 | 单位口径 |
 |---|---|---|
 | `market.cbond`（可转债） | 转债全市场面板（快照+最新事件+盘中价+callHits+下修地板价）、转债合约快照全表、转债最新快照、正股关联转债、转债条款事件列表… | price=元（转债价/转股价，面值 100 口径）；ratio=小数（SDK 基础单位；上游 percent 已按 percent 声明换算） |
-| `market.index`（指数） | 指数键列表、指数成分、指数权重股、指数估值时序、指数估值趋势(周频整体法)… | money=元（市值）；ratio=小数（roe_ttm 等比率，指标层口径）；weight=小数（披露权重，上游 fmt 已换算，SDK 不再处理） |
+| `market.index`（指数） | 指数键列表、指数成分、指数权重股、指数估值时序（key 为指数键，如 index.hs300；可用键由 indices.universe_keys 枚举）、指数估值趋势(周频整体法)… | money=元（市值）；ratio=小数（roe_ttm 等比率，指标层口径）；weight=小数（披露权重，上游 fmt 已换算，SDK 不再处理） |
 | `market.kline`（行情K线） | 历史 K 线、历史 K 线（周/月周期）、最新一根 K 线、是否场内 ETF、盘中日K快照… | price=元；volume=股（cn 由脚本的手 ×100 换算；港美上游即披露股，不再换算）；amount=元（本币）；percent=小数（0.01 = 1%） |
 | `market.margin`（融资融券） | 个股融资融券、最新两融 | money=元（融资买入额/偿还额/余额）；shares=股（融券卖出量/偿还量/余量） |
-| `market.moneyflow`（资金流向） | 资金流向历史、最新资金流向、有效资金流向（过滤空行）、资金流当日读数（外部源）、资金流向快照… | net=元（净流入金额）；date=YYYY-MM-DD |
+| `market.moneyflow`（资金流向） | 资金流向历史、最新资金流向、有效资金流向（过滤空行）、资金流当日读数（外部源）、资金流向快照（金额均为元；net_mv_ratio 为小数）… | net=元（净流入金额）；date=YYYY-MM-DD |
 | `market.stocks`（证券与行业基础） | 全市场证券列表、行业目录、行业成分股 | flag=布尔（is_st）；date=YYYY-MM-DD（listed，档案缺失为空串） |
 | `fund.estimates`（盈利预测与研报） | 机构盈利预测、盈利预测明细、评级统计、个股研报 | eps=元/股；money=元（归母净利润）；pe=倍（预测市盈率） |
 | `fund.indicators`（指标层） | 指标组：估值、盈利与回报（含杜邦）、成长、营收与利润规模、现金流… | ratio=小数（如 0.332 = 33.2%；指标层比率统一为小数，不是 15.0=15%）；money=元（与报表/资金流同口径；精选指标声明了量级守护范围） |
 | `fund.segments`（经营分部） | 产品/商品分部、业务线分部、主营标签占比、地区/境内外分部、经营分部截面快照… | money=元（分部收入 tr / 成本 cost 原币口径，实测元；tr_text 为披露展示串如「2334.83亿」）；ratio=小数（占比 ratio/pct、毛利率 margin、同比 yoy；0.332 = 33.2%） |
-| `fund.statements`（财务报表） | 三报表科目×期次透视、报表可用年报（Q4 档，降序）、合并 vs 母公司报表比较、三表目录树视图（树序 + 比率/占比行）、审计意见（Q4 年轴） | amount=报表原币（CN=元，HK=港币，US=美元）；ratio=小数（compare 的差额占比已由 SDK 从百分数换算；树视图 pct 行为原生百分数未换算）；period=报告期（年-采样，如 2024-Q4 / 2024 年报） |
+| `fund.statements`（财务报表） | 三大报表科目×期次透视（cn/hk/us 全市场宽表）、审计意见（聚源混源，Q4 年轴；仅 cn） | amount=报表原币（CN=元，HK=港币，US=美元）；ratio=小数；period=报告期（年-采样，如 2024-Q4 / 2026-Q1） |
 | `disc.bonus`（分红） | 分红历史明细、最近一次分红、指定报告期分红、财报期每股分红、财报期每股分红（截至日）… | dps=元/股；total=元（窗口合计金额）；window=如 "3y" / "5y" 窗口字符串；rate=小数（0.03 = 3%） |
 | `disc.events`（业绩披露事件） | 业绩预告历史、最新业绩预告、业绩快报历史、最新业绩快报、财报预约披露历史… | money=元（预告/快报区间与单期金额）；yoy=小数（0.1467 = 14.67%；SDK 自动由脚本的百分数口径换算）；date=YYYY-MM-DD |
 | `disc.filings`（定期报告清单） | 定期报告列表、最新一条定期报告 | date=YYYY-MM-DD |
@@ -1478,7 +1480,7 @@ cat.function("bonus.snapshot_yield_ttm")["params"]   # 函数合同：参数/返
 
 **三原则**：① 批次只能同一市场（跨市场混批 SDK 直接报错）；② 容错用批级`on_batch_error="skip"`（跳过失败批继续），**不要**用 `call_batch(on_error="skip")`——它是票级逐票请求，会放大请求数正好制造 429；③ 单批撞 `CALC_LIMIT_EXCEEDED`（算力超限）减小 `batch_size`，遇 429 停止并按消息里的 `codes[done:]` 续跑。
 
-**指标码不是批量 `name`**：`name` 必须是目录函数名（288 个，如 `kline.snapshot`），传 `indicator.get` 会报 CatalogError。一票多码用 `cli.indicator.metrics(sym, codes)`；全市场指标码没有批量入口，需逐票调用（指标取数是按 `(标的, 码)` 寻址，不是按标的切片）。
+**指标码不是批量 `name`**：`name` 必须是目录函数名（285 个，如 `kline.snapshot`），传 `indicator.get` 会报 CatalogError。一票多码用 `cli.indicator.metrics(sym, codes)`；全市场指标码没有批量入口，需逐票调用（指标取数是按 `(标的, 码)` 寻址，不是按标的切片）。
 
 ```python
 codes = [r["symbol"] for r in cli.stocks.list()]      # 全市场代码池（A 股 5,375 家）
@@ -1513,7 +1515,7 @@ K 线序列（日/周/月，date/open/high/low/close/volume/amount/percent）。
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位裸码（自动剥 cn./sh. 前缀与 .SH/.SZ/.BJ 后缀） |
 | `n` | integer | 否 | `None` | 根数（按所选周期计），默认 120；区间查询时默认取 max_limit（上限 10000） |
 | `adj` | string | 否 | `None` | None=不复权；"qfq"=前复权；"hfq"=后复权 |
 | `begin` | string | 否 | `None` | 起始日期（含，YYYY-MM-DD），须与 end 同时提供；区间上限 5 年 |
@@ -1548,7 +1550,7 @@ cli.kline.bars("600519", n=30, adj="qfq", begin="2026-01-01", end="2026-03-31")
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位裸码 |
 
 **输出字段**
 
@@ -1705,6 +1707,8 @@ ETF 日 K 与个股同构：`cli.kline.bars("510300", n=30)`；`cli.kline.is_etf
 
 ### 选股与全景（`cli.screener`）
 
+- 筛选阈值统一**小数**（0.10 = 10%）；事件筛选以「当日有成交」为前置 （停牌恒 False）。全市场四件套（全景/分桶/行业分布/涨跌榜）由服务端索引 聚合直出、免本地计算；`idx` 不传时由服务端解析 A 股最新查询索引。 `query()` 是条件选股主入口：一条 `$码` 表达式出全市场命中数与前 N 行， 替代「先批量取数再本地过滤」的逐票路径。 口径注记：宽度返回中 `up_pct`/`down_pct`/`flat_pct` 与分桶 `pct_of_total` 为百分数数值（52.3 = 52.3%），`median_pct` 与涨跌幅为 小数（0.01 = 1%）。kline 目录的其余筛选函数经属性直达 （如 `cli.screener.screen_up_today("600519")`），`cat.search("screen")` 可查全部；股息质量筛选器见 `cli.dividend.screen_*`。
+
 #### `cli.screener.screen_limit_up` — 今日涨停筛选
 
 今日涨停（涨幅 > 0.10；停牌返回 False）。
@@ -1713,7 +1717,7 @@ ETF 日 K 与个股同构：`cli.kline.bars("510300", n=30)`；`cli.kline.is_etf
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 
 **输出**：bool
 
@@ -1731,7 +1735,7 @@ cli.screener.screen_limit_up("600519")
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 
 **输出**：bool
 
@@ -1749,7 +1753,7 @@ cli.screener.screen_limit_down("600519")
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 
 **输出**：bool
 
@@ -1767,7 +1771,7 @@ MA60 上行（中期趋势向上）。
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 
 **输出**：bool
 
@@ -1785,7 +1789,7 @@ cli.screener.screen_ma60_up("600519")
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 
 **输出**：bool
 
@@ -1803,7 +1807,7 @@ cli.screener.screen_breakout_ma20("600519")
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `min_chg` | number | 否 | `0.1` | 20 日累计涨幅下限（小数，0.10 = 10%） |
 
 **输出**：bool
@@ -1822,7 +1826,7 @@ cli.screener.screen_momentum_20d("600519", min_chg=0.10)
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `min_chg` | number | 否 | `-0.1` | 20 日累计涨幅的**上限**（小数）：默认 -0.10（近 20 日 |
 
 **输出**：bool
@@ -1841,7 +1845,7 @@ cli.screener.screen_pullback_20d("600519", min_chg=-0.10)
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `min_ratio` | number | 否 | `1.5` | 量比下限，默认 1.5（5 日均量的 1.5 倍） |
 
 **输出**：bool
@@ -1966,6 +1970,8 @@ cli.screener.query(where="$BONUS_RATE_3Y_AVG_LAST > 0.03 && $ROE_TTM_LAST > 0.15
 
 ### 单股回测（`cli.backtest`）
 
+- 一条调用串完「取全历史日 K → 金叉买/死叉卖 → 次日开盘成交（T+1）→ 100 股整手 → 佣金/印花 → 逐笔成交与净值」。成交规则与费用固定在返回的 `caliber` 里， 不建模的部分（历史 ST、分红税、涨跌停排队、日内）逐条写在文档中。
+
 #### 组合接口（研究级封装）
 
 以下方法同样是 `cli.<命名空间>.<方法>()` 门面，**可直接调用**；区别只在于底层不是单一目录函数，而是跨多个接口 + 本地计算串成一条链路。**取数仍走客户端**（请求次数与 EC 照常计，EC 按请求行数），本地只负责规则与汇总。
@@ -2018,7 +2024,7 @@ res["summary"]["max_drawdown"]                      # 净值汇总（8 个数字
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位裸码 |
 | `n` | integer | 否 | `None` | 条数，默认 20；区间查询时默认取 max_limit（上限 10000） |
 | `begin` | string | 否 | `None` | 起始日期（含，YYYY-MM-DD），须与 end 同时提供；区间上限 5 年 |
 | `end` | string | 否 | `None` | 结束日期（含） |
@@ -2049,7 +2055,7 @@ cli.moneyflow.bars("600519", n=30, begin="2026-01-01", end="2026-03-31")
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位裸码 |
 
 **输出字段**
 
@@ -2080,14 +2086,14 @@ cli.moneyflow.last("600519")
 | 字段 | 类型 | 说明 |
 |---|---|---|
 | `symbol` | string | 标的代码 |
-| `name` | string | 证券简称 |
-| `net_mf` | float? | 主力净流入（元） |
-| `net_mv_ratio` | float? | 主力净流入占流通市值比（小数） |
-| `lg_net` | float? | 大单净流入（元） |
-| `elg_net` | float? | 超大单净流入（元） |
-| `md_net` | float? | 中单净流入（元） |
-| `sm_net` | float? | 小单净流入（元） |
-| `industry` | string? | 一级行业 |
+| `name` | string | 标的简称 |
+| `industry` | string | 行业码 |
+| `net_mf` | float | 主力净流入（元） |
+| `elg_net` | float | 超大单净额（元） |
+| `lg_net` | float | 大单净额（元） |
+| `md_net` | float | 中单净额（元） |
+| `sm_net` | float | 小单净额（元） |
+| `net_mv_ratio` | float | 主力净流入/市值（小数） |
 
 **示例**
 
@@ -2103,7 +2109,7 @@ cli.moneyflow.board()
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 
 **输出字段**
 
@@ -2125,6 +2131,8 @@ cli.moneyflow.live("600519")
 
 ### 融资融券（`cli.margin`）
 
+- 融资买入/偿还/余额与融券卖出/偿还/余量；金额=元、量=股（与全库基础单位 一致）。`latest` 为最新一日单行；仅个股口径，市场级两融汇总上游无数据集。
+
 #### `cli.margin.query` — 个股融资融券历史
 
 个股两融历史（trade_date/fin_buy_amt/fin_repay_amt/fin_balance/…）。
@@ -2133,7 +2141,7 @@ cli.moneyflow.live("600519")
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `limit` | integer | 否 | `20` | 条数，默认 20 |
 
 **输出字段**
@@ -2162,7 +2170,7 @@ cli.margin.query("600519", limit=10)
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 
 **输出字段**
 
@@ -2183,6 +2191,8 @@ cli.margin.latest("600519")
 ```
 
 ### 全市场证券列表与行业映射（`cli.stocks`）
+
+- 证券行字段：symbol/name/exchange/industry(三级行业键)/industry_name/is_st/listed。 美股：列表与个股行业码可用；行业目录树上游未灌数，`industries()` 恒空。
 
 #### `cli.stocks.list` — 全市场证券列表
 
@@ -2238,6 +2248,8 @@ cli.stocks.industry_members(industry="银行", top_n=10)
 ## 可转债
 
 ### 可转债——合约快照/条款事件/正股关联/强赎触发/独立日 K（`cli.cbond`）
+
+- 价格为面值 100 口径（元）；转债无除权口径，日 K 不复权。`board` 是 全市场面板（快照 + 最新事件 + 盘中价 + callHits + resetFloor）；`call_hits` 统计正股无复权收盘 ≥ 强赎触发价的近窗交易日数，勿以单日价判定已满足； `kline_window` 返回 store 列式窗口（open/close/high/low/volume/amount）。 目录内其余函数（quote_list/event_list/min1_live 等）经属性直达。
 
 #### `cli.cbond.board` — 转债全市场面板
 
@@ -2543,6 +2555,8 @@ cli.cbond.figures(payload, "/tmp/cb", date="20261107")  # 需 wmshare[figures]
 
 ### 指数维度——指数键/成分股/权重股/宽基估值时序（`cli.index`）
 
+- `key` 为服务端指数键（先用 `keys()` 列出，形如 index.hs300，勿臆造）； 成分行含市值与估值中枢（roe_ttm/pe_ttm 为指标层原值，SDK 不再换算）； 权重为披露权重（已换算小数）；估值时序为整体法 PE/PB 季采样 + 当前值/股息率。 指数行情（K 线/快照）走 `cli.kline`。
+
 #### `cli.index.keys` — 指数键列表
 
 可用指数键列表（``members``/``weights``/``valuation`` 的 key 取值域）。
@@ -2607,7 +2621,12 @@ cli.index.weights(key="index.hs300", top_n=10)
 | `key` | string | 是 | — | 指数键（见 ``keys()``） |
 | `points` | integer | 否 | `None` | 季采样点数；series 可自行算分位 |
 
-**输出**：MAP · 估值时序
+**输出字段**
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `current` | object | 最新估值 |
+| `series` | array | 季频历史序列（新→旧） |
 
 **示例**
 
@@ -2699,6 +2718,8 @@ cli.indicator.get("600519", "$FUT_CLOSE", fut_symbol="global.CL")  # 外盘 WTI 
 ## 宏观
 
 ### 宏观与行业时序（`cli.macro`）
+
+- 覆盖宏观指标时序/as-of/采样频率、中债收益率、行业情报单值。宏观数值为 上游原生口径（非全库小数比率口径）：$CPI 等价格指数=点（上年同期=100）、 $GDP/$M2 等流量存量=元；bond_curve 收益率为小数（0.0168 = 1.68%）。 指标码层等价物：`cli.indicator.get(sym, "$CPI")` 与 `asof` 同源 （指标码层走单位换算管线）。时序最新在前。
 
 #### `cli.macro.query` — 宏观指标时序
 
@@ -2911,129 +2932,76 @@ cli.macro.phone_share(brand="小米", field="share")
 
 ### 三大报表科目透视（`cli.statements`）
 
+- 边界与集成约定：
+- 数据源为全市场宽表 fin_income/fin_balance/fin_cashflow：k=各市场披露科目原文（HKFRS/USGAAP/聚源 cn 口径），披露原币（港币/美元/人民币），不做 CN 口径翻译，无派生行与溯源列——列映射由消费侧负责。
+- `period` 两档：`"annual"`（年报档，缺省）/`"quarter"`（季报全档Q1..Q4 混合，期次键 "2026:Q1"）。
+- 合并/母公司比较、目录树、期间列举基于内部提取库，不再对外提供。
+- 本命名空间是报表域唯一对外入口；底层目录名内部保留、可能调整——下游集成（如 OpenBB provider）应以本门面签名编程，勿依赖底层函数名。
+- 各方法返回科目行列表（科目 × 期次列）。 `kind` 取值：`balance`（资产负债）/`income`（利润）/`cashflow`（现金流）。
+
 #### `cli.statements.balance` — 资产负债表
 
-资产负债表（fin.balance_sheet）。
+资产负债表（fin_balance 宽表；cn/hk/us）。
 
 **输入参数**
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
-| `years` | integer | 否 | `5` | 期数（年报降序，默认 5） |
-| `scope` | string | 否 | `'合并'` | "合并"（默认）或 "母公司" |
+| `symbol` | string | 是 | — | 6 位 A 股代码 / 港股 5 位代码 / 美股 ticker（自动归一） |
+| `years` | integer | 否 | `5` | 期数（降序，默认 5；季报档=总期数） |
+| `period` | string | 否 | `'annual'` | "annual"（年报档，缺省）或 "quarter"（季报全档 Q1..Q4） |
 
-**输出**：ARR · 科目行（科目代码/中文名×期次列）
+**输出**：ARR · 科目行（k=披露科目原文 × 期次列，披露原币；缺期 nil 不填补）
 
 **示例**
 
 ```python
-cli.statements.balance("600519", years=3, scope="合并")
+cli.statements.balance("600519", years=3)
 ```
 
 #### `cli.statements.income` — 利润表
 
-利润表（fin.income_statement，含费用四率原料行）。
+利润表（fin_income 宽表；cn/hk/us）。
 
 **输入参数**
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
-| `years` | integer | 否 | `5` | 期数（年报降序，默认 5） |
-| `scope` | string | 否 | `'合并'` | "合并"（默认）或 "母公司" |
+| `symbol` | string | 是 | — | 6 位 A 股代码 / 港股 5 位代码 / 美股 ticker（自动归一） |
+| `years` | integer | 否 | `5` | 期数（降序，默认 5；季报档=总期数） |
+| `period` | string | 否 | `'annual'` | "annual"（年报档，缺省）或 "quarter"（季报全档 Q1..Q4） |
 
-**输出**：ARR · 科目行（科目代码/中文名×期次列）
+**输出**：ARR · 科目行（k=披露科目原文 × 期次列，披露原币；缺期 nil 不填补）
 
 **示例**
 
 ```python
-cli.statements.income("600519", years=3, scope="合并")
+cli.statements.income("600519", years=3)
 ```
 
 #### `cli.statements.cashflow` — 现金流量表
 
-现金流量表（fin.cashflow_statement）。
+现金流量表（fin_cashflow 宽表；cn/hk/us）。
 
 **输入参数**
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
-| `years` | integer | 否 | `5` | 期数（年报降序，默认 5） |
-| `scope` | string | 否 | `'合并'` | "合并"（默认）或 "母公司" |
+| `symbol` | string | 是 | — | 6 位 A 股代码 / 港股 5 位代码 / 美股 ticker（自动归一） |
+| `years` | integer | 否 | `5` | 期数（降序，默认 5；季报档=总期数） |
+| `period` | string | 否 | `'annual'` | "annual"（年报档，缺省）或 "quarter"（季报全档 Q1..Q4） |
 
-**输出**：ARR · 科目行（科目代码/中文名×期次列）
-
-**示例**
-
-```python
-cli.statements.cashflow("600519", years=3, scope="合并")
-```
-
-#### `cli.statements.compare` — 合并 vs 母公司比较
-
-合并 vs 母公司比较：科目行 + 合并值/母公司值/差额/差额占比。
-
-**输入参数**
-
-| 参数 | 类型 | 必填 | 默认 | 说明 |
-|---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
-| `kind` | string | 否 | `'income'` | — |
-| `years` | integer | 否 | `2` | 期数（年报降序，默认 5） |
-
-**输出**：ARR · 科目行 + 合并/母公司/差额/差额占比
+**输出**：ARR · 科目行（k=披露科目原文 × 期次列，披露原币；缺期 nil 不填补）
 
 **示例**
 
 ```python
-cli.statements.compare("600519", kind="income", years=3)
-```
-
-#### `cli.statements.tree` — 报表目录树视图
-
-报表目录树视图：按树序输出科目行，含派生比率行（流动比率/资产负债率/毛利率等）。
-
-**输入参数**
-
-| 参数 | 类型 | 必填 | 默认 | 说明 |
-|---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
-| `kind` | string | 否 | `'balance'` | — |
-| `years` | integer | 否 | `5` | 期数（年报降序，默认 5） |
-| `scope` | string | 否 | `'合并'` | "合并"（默认）或 "母公司" |
-
-**输出**：ARR · 树序科目行；含派生比率行（LD/IBD_RATE/GM 等 pct 行）
-
-**示例**
-
-```python
-cli.statements.tree("600519", kind="balance", years=3, scope="合并")
-```
-
-#### `cli.statements.years` — 报表可用年份
-
-该报表可用的年报年份（降序）。
-
-**输入参数**
-
-| 参数 | 类型 | 必填 | 默认 | 说明 |
-|---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
-| `kind` | string | 否 | `'income'` | — |
-
-**输出**：ARR · 年份
-
-**示例**
-
-```python
-cli.statements.years("600519", kind="income")
+cli.statements.cashflow("600519", years=3)
 ```
 
 #### `cli.statements.audit` — 审计意见
 
-审计意见（按年报，返回 {年份: 意见}）。
+审计意见（按年报，返回 {年份: 意见}；cn）。
 
 **输入参数**
 
@@ -3051,6 +3019,8 @@ cli.statements.audit("600519")
 
 ### 经营分部（`cli.segments`）
 
+- 行结构统一 `{name, tr, tr_text, cost, margin, ratio}`：收入/成本为**元**， 毛利率与占比为**小数**（margin = (tr-cost)/tr，0.332 = 33.2%）；ratio 仅主营 标签维填充、其余维为 0 占位。数据来自定期报告分部披露的平台清洗归一（clean 口径，默认）；各维披露覆盖度先用 coverage() 探明。
+
 #### `cli.segments.products` — 分产品收入构成
 
 分产品/商品收入构成（行按收入降序）。
@@ -3059,7 +3029,7 @@ cli.statements.audit("600519")
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位裸码 |
 | `source` | string | 否 | `'clean'` | "clean"（默认，清洗归一）或 "raw"（披露明细） |
 | `limit` | integer | 否 | `20` | 条数上限 |
 
@@ -3088,7 +3058,7 @@ cli.segments.products("600519", limit=10)
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `source` | string | 否 | `'clean'` | "clean"（默认，清洗归一）或 "raw"（披露明细） |
 | `limit` | integer | 否 | `20` | 条数上限 |
 
@@ -3117,7 +3087,7 @@ cli.segments.business("600519", limit=10)
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `source` | string | 否 | `'clean'` | "clean"（默认，清洗归一）或 "raw"（披露明细） |
 | `limit` | integer | 否 | `20` | 条数上限 |
 
@@ -3144,7 +3114,7 @@ cli.segments.region("600519", limit=10)
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `limit` | integer | 否 | `20` | 条数上限 |
 
 **输出字段**
@@ -3172,7 +3142,7 @@ cli.segments.income("600519", limit=10)
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `source` | string | 否 | `'clean'` | "clean"（默认，清洗归一）或 "raw"（披露明细） |
 
 **输出字段**
@@ -3206,7 +3176,7 @@ cli.segments.snapshot("600519")
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 
 **输出字段**
 
@@ -3231,7 +3201,7 @@ cli.segments.coverage("600519")
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 
 **输出字段**
 
@@ -3249,6 +3219,8 @@ cli.segments.periods("600519")
 ```
 
 ### 估值历史统计（`cli.valuation`）
+
+- 返回窗口内每日估值序列与统计量：`{avg, current, median, min, max, pct, count, series}`——pct 为当前值的历史分位（小数，0.42 = 42% 分位）； series 为 `[[unix 秒, 值], ...]` 升序；引擎不返回 stddev，需要通道带宽时 由调用方按总体口径（÷N）自算。 口径注记：亏损期 PE 无数据、净资产为负期间不参与统计（与平台免责一致）。
 
 #### `cli.valuation.hist_stats` — 估值历史统计
 
@@ -3272,6 +3244,8 @@ cli.valuation.hist_stats("600519", metric="pe", window="3y")
 
 ### 盈利预测与研报（`cli.estimates`）
 
+- 机构盈利预测逐年 EPS/PE（year_mark A=实际 E=预测，YEAR1..YEAR4 为预测年份 序列）、预测明细（机构/研究员/归母净利/评级）、评级统计（综合评级与买卖 家数按窗口）、个股研报列表（标题/机构/作者/行业/链接；研报正文不在接口 范围）。EPS=元/股、金额=元、PE=倍。
+
 #### `cli.estimates.query_forecast` — 机构盈利预测
 
 机构盈利预测（逐年 EPS/PE，A=实际 E=预测）。
@@ -3280,7 +3254,7 @@ cli.valuation.hist_stats("600519", metric="pe", window="3y")
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `limit` | integer | 否 | `8` | 条数，默认 8 |
 
 **输出字段**
@@ -3344,7 +3318,7 @@ cli.estimates.query_forecast("600519", limit=10)
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `limit` | integer | 否 | `8` | 条数，默认 8 |
 
 **输出字段**
@@ -3408,7 +3382,7 @@ cli.estimates.query_forecast_detail("600519", limit=10)
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `limit` | integer | 否 | `8` | 条数，默认 8 |
 
 **输出字段**
@@ -3472,7 +3446,7 @@ cli.estimates.query_rating("600519", limit=10)
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `limit` | integer | 否 | `8` | 条数，默认 8 |
 
 **输出字段**
@@ -3529,6 +3503,10 @@ cli.estimates.query_reports("600519", limit=10)
 ```
 
 ### 平台指标（`cli.indicator`）
+
+- 单位统一为基础单位：比率类为小数（ROE 0.332 = 33.2%）、金额/市值为元、 分位为小数（0.42 = 42% 分位）；精选组声明过 range 的指标在返回前做量级守护 （违例抛 DataError）。非精选代码按脚本原值返回（目录未声明单位的代码不做换算）。
+- 美股标的按随包代码表归一，`AAPL.O`/`BRK.B` 与裸码 `AAPL`/`BRK_B` 等价 （见 `normalize_symbol`）；上游仍报 `symbol` 未绑定时翻译成带代码写法指引的 DataError，而不是把引擎返回的 0 静默放行。
+- 期货指标码（`$FUT_*`）用 `fut_symbol` 指定合约键：国内带市场前缀 （`cn.SR.ZCE` 郑商所、`cn.RB.SHF` 上期所；后缀不是 .CZCE），外盘用 `global.CL` 等 V2 键；`symbol` 传任意 A 股代码（绑定期期间上下文）， 缺省合约 `cn.SR.ZCE`。eval 引擎须为 cn 客户端。
 
 #### `cli.indicator.get` — 取单个指标
 
@@ -3758,6 +3736,8 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位 元（
 
 ### 公告检索与信号（`cli.notice`）
 
+- 市场：数据含 cn + 港股。`list`/`find`/`has_buyback` 按标的代码自动 路由（港股 5 位码直传）；全市场类方法（recent/by_category/on_date）缺省 cn，用 `market="hk"` 取港股公告——底层 market 参数在缺省时不上送， 行为与 SDK 1.20.5 及之前完全一致。
+
 #### `cli.notice.list` — 单票公告列表
 
 单票公告列表（date/title/type/url/pdf_url）。
@@ -3766,7 +3746,7 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位 元（
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股代码 / 港股 5 位代码（按代码自动路由市场） |
 | `window` | string | 否 | `'3m'` | 时间窗 |
 | `keyword` | string | 否 | `''` | 标题/类型正则（可空） |
 | `limit` | integer | 否 | `20` | 条数上限 |
@@ -3793,7 +3773,7 @@ cli.notice.list("600519", window="3m", keyword="回购", limit=10)
 
 #### `cli.notice.recent` — 全市场近期公告
 
-全市场近期公告（按披露时间倒序）。
+全市场近期公告（按披露时间倒序；cn/hk）。
 
 **输入参数**
 
@@ -3802,6 +3782,7 @@ cli.notice.list("600519", window="3m", keyword="回购", limit=10)
 | `window` | string | 否 | `'7d'` | 时间窗口，如 "7d"/"1m" 或天数 |
 | `keyword` | string | 否 | `''` | 标题/类型正则（可空） |
 | `limit` | integer | 否 | `50` | 条数上限 |
+| `market` | string | 否 | `''` | 公告市场，缺省自动（=cn）；港股显式传 "hk" |
 
 **输出字段**
 
@@ -3825,7 +3806,7 @@ cli.notice.recent(window="3m", keyword="回购", limit=10)
 
 #### `cli.notice.by_category` — 按类别查公告
 
-按类别查公告（如 "回购"）。
+按类别查公告（如 "回购"；cn/hk）。
 
 **输入参数**
 
@@ -3834,6 +3815,7 @@ cli.notice.recent(window="3m", keyword="回购", limit=10)
 | `category` | string | 是 | — | — |
 | `window` | string | 否 | `'1m'` | 窗口（"7d"/"1m"/…/"5y" 或天数） |
 | `limit` | integer | 否 | `20` | 条数上限 |
+| `market` | string | 否 | `''` | 公告市场，缺省自动（=cn）；港股显式传 "hk" |
 
 **输出字段**
 
@@ -3857,7 +3839,7 @@ cli.notice.by_category(category="回购", window="3m", limit=10)
 
 #### `cli.notice.find` — 按日期区间查公告
 
-按日期区间查单票公告（begin/end 均含当日，格式 YYYY-MM-DD）。
+按日期区间查单票公告（begin/end 均含当日，格式 YYYY-MM-DD；cn/hk）。
 
 **输入参数**
 
@@ -3868,6 +3850,7 @@ cli.notice.by_category(category="回购", window="3m", limit=10)
 | `end` | string | 是 | — | 结束日期（含） |
 | `keyword` | string | 否 | `''` | 标题/类型正则（可空） |
 | `limit` | integer | 否 | `50` | 条数上限 |
+| `market` | string | 否 | `''` | 公告市场，缺省自动（按标的代码路由）；全市场语义可显式传 "cn"/"hk" |
 
 **输出字段**
 
@@ -3891,7 +3874,7 @@ cli.notice.find("600519", begin="2026-01-01", end="2026-03-31", keyword="回购"
 
 #### `cli.notice.on_date` — 指定日期全市场公告
 
-指定日期的全市场公告（date 格式 YYYY-MM-DD）。
+指定日期的全市场公告（date 格式 YYYY-MM-DD；cn/hk）。
 
 **输入参数**
 
@@ -3900,6 +3883,7 @@ cli.notice.find("600519", begin="2026-01-01", end="2026-03-31", keyword="回购"
 | `date` | string | 是 | — | — |
 | `keyword` | string | 否 | `''` | 标题/类型正则（可空） |
 | `limit` | integer | 否 | `50` | 条数上限 |
+| `market` | string | 否 | `''` | 公告市场，缺省自动（=cn）；港股显式传 "hk" |
 
 **输出字段**
 
@@ -3969,7 +3953,7 @@ cli.notice.has_reduction("600519", window="3m")
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位裸码 |
 | `kind` | string | 否 | `'all'` | — |
 | `limit` | integer | 否 | `10` | 条数上限 |
 
@@ -3997,7 +3981,7 @@ cli.filings.list("600519", kind="annual", limit=10)
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `kind` | string | 否 | `'all'` | — |
 
 **输出字段**
@@ -4026,7 +4010,7 @@ cli.filings.latest("600519", kind="annual")
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位裸码 |
 | `limit` | integer | 否 | `8` | 条数 |
 
 **输出字段**
@@ -4066,7 +4050,7 @@ cli.forecast.yjyg("600519", limit=10)
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 
 **输出**：预告行 MAP 或 nil
 
@@ -4084,7 +4068,7 @@ cli.forecast.yjyg_latest("600519")
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `limit` | integer | 否 | `8` | 条数上限 |
 
 **输出字段**
@@ -4118,7 +4102,7 @@ cli.forecast.yjkb("600519", limit=10)
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 
 **输出**：快报行 MAP 或 nil
 
@@ -4136,7 +4120,7 @@ cli.forecast.yjkb_latest("600519")
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `limit` | integer | 否 | `8` | 条数上限 |
 
 **输出字段**
@@ -4162,7 +4146,7 @@ cli.forecast.disclosure_history("600519", limit=10)
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 
 **输出**：预约披露行 MAP 或 nil
 
@@ -4174,6 +4158,8 @@ cli.forecast.next_disclosure("600519")
 
 ### 分红（`cli.dividend`）
 
+- 除下方动宾化方法外，目录内全部 `bonus.*` 函数（含质量筛选器 `screen_quality` / `screen_high_yield` / `screen_undervalued_yield`…） 经属性直达，如 `cli.dividend.screen_quality("600519")`。
+
 #### `cli.dividend.history` — 分红历史
 
 分红历史明细（announce/ex_date/pay/dps/total/content/sas/payout_ratio）。
@@ -4182,7 +4168,7 @@ cli.forecast.next_disclosure("600519")
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位裸码 |
 | `limit` | integer | 否 | `None` | 条数，默认 20；区间查询时默认取 max_limit（上限 10000） |
 | `begin` | string | 否 | `None` | 起始日期（含，YYYY-MM-DD，按除权日），须与 end 同时提供；上限 5 年 |
 | `end` | string | 否 | `None` | 结束日期（含） |
@@ -4217,7 +4203,7 @@ cli.dividend.history("600519", limit=10, begin="2026-01-01", end="2026-03-31")
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位裸码 |
 
 **输出字段**
 
@@ -4249,7 +4235,7 @@ cli.dividend.last("600519")
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 
 **输出**：float · 财报期每股分红（元/股）
 
@@ -4267,7 +4253,7 @@ cli.dividend.dps("600519")
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `window` | string | 否 | `'3y'` | 窗口字符串，如 "3y"/"5y" |
 
 **输出**：—
@@ -4286,7 +4272,7 @@ TTM 股息率（小数，0.0396 = 3.96%；= TTM 分红总额 / 最新市值）�
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 
 **输出**：float · 小数（0.0396 = 3.96%）
 
@@ -4304,7 +4290,7 @@ TTM 派息率（小数，0.799 = 79.9%；= TTM 分红 / 归母净利 TTM）。
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 
 **输出**：float · 小数（0.799 = 79.9%）
 
@@ -4322,7 +4308,7 @@ cli.dividend.payout_ttm("600519")
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `min_yield` | number | 否 | `None` | 最低股息率（小数，如 0.03 = 3%） |
 | `payout_min` | number | 否 | `None` | 派息率下限（小数） |
 | `payout_max` | number | 否 | `None` | 派息率上限（小数） |
@@ -4343,7 +4329,7 @@ cli.dividend.screen_quality("600519")
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `min_yield` | number | 否 | `None` | — |
 
 **输出**：bool
@@ -4362,7 +4348,7 @@ cli.dividend.screen_high_yield("600519")
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `min_yield` | number | 否 | `None` | — |
 | `min_pct` | number | 否 | `None` | — |
 
@@ -4376,6 +4362,8 @@ cli.dividend.screen_undervalued_yield("600519")
 
 ### 股东治理与股本——十大股东/质押/解禁/机构/高管/回购/重组/担保/诉讼（`cli.equity`）
 
+- 披露原值直采；比例字段（*_ratio/*_tsr/hold_ratio 等）由百分数口径换算为 **小数**（0.0522 = 5.22%，换算字段清单见目录 units 声明）；持股数=股、 金额=元。市场级质押三件套（pledge_market/industry/org）不传标的； `*_at` 变体按报告期取数（annual 如 2024、sampling 如 "Q4"）。 目录内全部 `equity.*` 函数（含 fmt_* 规范化工具）经属性直达。
+
 #### `cli.equity.query_holder10` — 最新一期十大股东
 
 最新一期十大股东（holder_name/hold_num/hold_num_ratio）。
@@ -4384,7 +4372,7 @@ cli.dividend.screen_undervalued_yield("600519")
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 
 **输出字段**
 
@@ -4408,7 +4396,7 @@ cli.equity.query_holder10("600519")
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 
 **输出字段**
 
@@ -4438,7 +4426,7 @@ cli.equity.query_holdernum("600519")
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `limit` | integer | 否 | `20` | 条数，默认 20 |
 
 **输出字段**
@@ -4474,7 +4462,7 @@ cli.equity.query_pledge_detail("600519", limit=10)
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `limit` | integer | 否 | `20` | 条数，默认 20 |
 
 **输出字段**
@@ -4576,7 +4564,7 @@ cli.equity.query_pledge_org(limit=10)
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `limit` | integer | 否 | `20` | 条数，默认 20 |
 
 **输出字段**
@@ -4605,7 +4593,7 @@ cli.equity.query_institution_detail("600519", limit=10)
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `limit` | integer | 否 | `20` | 条数，默认 20 |
 
 **输出字段**
@@ -4635,7 +4623,7 @@ cli.equity.query_institution_summary("600519", limit=10)
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `limit` | integer | 否 | `20` | 条数，默认 20 |
 
 **输出字段**
@@ -4664,7 +4652,7 @@ cli.equity.query_hgt("600519", limit=10)
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `limit` | integer | 否 | `20` | 条数，默认 20 |
 
 **输出字段**
@@ -4694,7 +4682,7 @@ cli.equity.query_national_team("600519", limit=10)
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `limit` | integer | 否 | `20` | 条数，默认 20 |
 
 **输出字段**
@@ -4722,7 +4710,7 @@ cli.equity.query_release("600519", limit=10)
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `limit` | integer | 否 | `20` | 条数，默认 20 |
 
 **输出字段**
@@ -4748,7 +4736,7 @@ cli.equity.query_buyback_plan("600519", limit=10)
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 
 **输出字段**
 
@@ -4772,7 +4760,7 @@ cli.equity.query_buyback_detail("600519")
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `limit` | integer | 否 | `20` | 条数，默认 20 |
 
 **输出字段**
@@ -4806,7 +4794,7 @@ cli.equity.query_reorg("600519", limit=10)
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `limit` | integer | 否 | `20` | 条数，默认 20 |
 
 **输出字段**
@@ -4831,7 +4819,7 @@ cli.equity.query_related_trade("600519", limit=10)
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `limit` | integer | 否 | `20` | 条数，默认 20 |
 
 **输出字段**
@@ -4855,7 +4843,7 @@ cli.equity.query_concert("600519", limit=10)
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `limit` | integer | 否 | `20` | 条数，默认 20 |
 
 **输出字段**
@@ -4880,7 +4868,7 @@ cli.equity.query_guarantee("600519", limit=10)
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `limit` | integer | 否 | `20` | 条数，默认 20 |
 
 **输出字段**
@@ -4906,7 +4894,7 @@ cli.equity.query_litigation("600519", limit=10)
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `limit` | integer | 否 | `20` | 条数，默认 20 |
 
 **输出字段**
@@ -4931,7 +4919,7 @@ cli.equity.query_violation("600519", limit=10)
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 
 **输出字段**
 
@@ -4956,7 +4944,7 @@ cli.equity.query_executives("600519")
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 
 **输出字段**
 
@@ -4981,7 +4969,7 @@ cli.equity.query_exec_change("600519")
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `annual` | integer | 是 | — | 年报年度（如 2024） |
 | `sampling` | string | 是 | — | 报告期采样（如 "Q4"） |
 
@@ -5008,7 +4996,7 @@ cli.equity.query_exec_change_at("600519", annual=2024, sampling="Q4")
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 
 **输出字段**
 
@@ -5031,7 +5019,7 @@ cli.equity.query_capital_change("600519")
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `annual` | integer | 是 | — | 年报年度（如 2024） |
 | `sampling` | string | 是 | — | 报告期采样（如 "Q4"） |
 
@@ -5049,6 +5037,8 @@ cli.equity.query_capital_change_at("600519", annual=2024, sampling="Q4")
 ```
 
 ### 契约套利条款事件（`cli.workout`）
+
+- `board()` 返回 {as_of, deals, quotes} 进行中看板；`query()` 返回单票 规范化条款行。价格为披露口径（公告对价/现价，元）；现价 < 公告对价的折价 窗口由调用方自行判定，SDK 不内置收益测算（算法放工具仓）。同业数据商暂无 对应接口，属平台独有面。
 
 #### `cli.workout.board` — 进行中契约套利看板
 
@@ -5072,7 +5062,7 @@ cli.workout.board()
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 
 **输出**：ARR · 规范化条款行
 
@@ -5085,6 +5075,8 @@ cli.workout.query("600519")
 ## 港股与美股
 
 ### 港美股披露——CCASS 持仓/主要股东/机构评级/盈利预测/沽空/美股发行（`cli.intl`）
+
+- 需用对应市场的客户端调用（`Client(market="hk")` / `Client(market="us")`）： 网关按标的注册市场校验，cn 客户端调港美股代码会被拒（400 market mismatch）。 函数内部再按标的代码路由到港美数据族；A 股标的调用多返回空。占比字段已由 百分数换算为**小数**；价格为披露币种原值（不做汇率换算）；港股盈利预测行 保留披露原文中文键。
 
 #### `cli.intl.query_ccass` — 港股CCASS持仓
 
@@ -5400,6 +5392,7 @@ cli.info.profile("600519")
 可转债合约快照、条款事件（下修/回售/赎回等）、正股关联、强赎触发计数、 独立日 K 与盘中 1 分钟。日 K 无复权（转债无除权口径）。
 数据来源：发行条款披露、平台数据服务。
 单位口径：price=元（转债价/转股价，面值 100 口径）；ratio=小数（SDK 基础单位；上游 percent 已按 percent 声明换算）。
+- 可用性：仅 A 股（沪深可转债）
 - quote_list/latest_quotes/board 为全市场快照（按日更新）；of_stock 按正股取关联债
 - 在市判据用 outstanding 字段（余额>0 且未到期）。仅判 remainSize>0 会把已到期债当在标
 - callHits 统计正股无复权收盘 ≥ 强赎触发价的近 30 个交易日天数，仅股价已跨线时返回；勿以单日价判定已满足
@@ -5435,7 +5428,7 @@ cli.info.profile("600519")
 | `cbond.counts` | 强赎/下修/回售三项计数与窗口 | 原始数据 | L0 | `code:any`（签名） | MAP · 计数与窗口 | 量级界 `callHits`、`resetHits`、`putHits` | 例：`cli.call("cbond.counts", code='127119')`
 | `cbond.count_hits` | 正股收盘≥触发价天数（按交易日窗） | 原始数据 | L0 | `code:any` · `trig:any` · `window:any`（签名） | int | — | 例：`cli.call("cbond.count_hits", code='113050', trig=130, window=30)`
 | `cbond.count_below` | 正股收盘<触发价天数（下修/回售用） | 原始数据 | L0 | `code:any` · `trig:any` · `window:any`（签名） | int | — | 例：`cli.call("cbond.count_below", code='113050', trig=12, window=30)`
-| `cbond.history` | 转债近 N 日历史（快照+债 K；快照上线前区间自动补齐） | 原始数据 | L0 | `code:any` · `n:any`（签名） | ARR · 日序列 | — | 例：`cli.call("cbond.history", code='127119', n=60)`
+| `cbond.history` | 转债近 N 日历史（快照+债 K；快照上线前区间自动补齐） | 原始数据 | L0 | `code:any` · `n:any`（签名） | ARR · 转债历史行 | 量级界 `convertedRatio`、`remainingYears`、`close`、`transferValue`、`convertPrice`、`stockPrice`、`remainSize` | 例：`cli.call("cbond.history", code='127119', n=60)`
 | `cbond.notices` | 正股近 5 年转债相关公告（上限 200） | 原始数据 | L0 | `code:any` · `limit:any`（签名） | ARR · 公告行 | — | 例：`cli.call("cbond.notices", code='127119', limit=80)`
 | `cbond.market` | 转债市场截面（价格/溢价中位数与折价只数） | 原始数据 | L0 | — | MAP · 中位数与折价只数 | `premiumMedian`:百分数→小数；量级界 `premiumMedian`、`discountN` | 例：`cli.call("cbond.market")`
 | `cbond.concepts_of` | 正股概念标签（精确题材匹配前 12） | 原始数据 | L0 | `stk:any`（签名） | ARR · 概念名 | — | 例：`cli.call("cbond.concepts_of", stk='000887')`
@@ -5450,10 +5443,11 @@ cli.info.profile("600519")
 
 #### 指数（`market.index`）
 
-**性质**：指标 · **版本**：1.5.0  
+**性质**：指标 · **版本**：1.5.1  
 指数维度数据——指数键列表、成分股（含市值/估值中枢，可按 mv/pe/pb/roe/ps 排序）、权重股（披露权重降序）、指数与行业估值趋势（周频整体法 PE/PB，约 14 年， 带 3/5/10 年分位）、宽基估值时序（整体法 PE/PB 季采样 + 当前值/股息率）。 指数行情（K 线/快照）走 cli.kline。
 数据来源：平台数据服务。
 单位口径：money=元（市值）；ratio=小数（roe_ttm 等比率，指标层口径）；weight=小数（披露权重，上游 fmt 已换算，SDK 不再处理）。
+- 可用性：指数键与申万行业为 cn 口径
 - v1.1.0 函数前缀 index.* → indices.*：上游内建 index 常量 MAP 占名（selector policy violation），cli.index 门面不变
 - 成员行 roe_ttm/pe_ttm 等为指标层原值（比率小数、倍数口径），SDK 不再换算
 - valuation.series 为季采样点（d/pe/pb），前端/调用方可自行算分位；trend.base/med 为周频/月频点，均为降序（新→旧）
@@ -5469,7 +5463,7 @@ cli.info.profile("600519")
 | `indices.keys` | 指数键列表 | 指标 | L0 | — | ARR · 指数键 | — | 例：`cli.call("indices.keys")`
 | `indices.members` | 指数成分 | 指标 | L0 | `key:string` · `sort_by:string` · `top_n:int`（签名） | ARR · 成分行 | — | 例：`cli.call("indices.members", key='index.hs300', sort_by='mv', top_n=10)`
 | `indices.weights` | 指数权重股 | 指标 | L0 | `key:string` · `top_n:int`（签名） | ARR · 权重行 | 量级界 `weight` | 例：`cli.call("indices.weights", key='index.hs300', top_n=10)`
-| `indices.valuation` | 指数估值时序 | 指标 | L0 | `key:string` · `points:int`（签名） | MAP · 估值时序 | — | 例：`cli.call("indices.valuation", key='index.hs300', points=12)`
+| `indices.valuation` | 指数估值时序（key 为指数键，如 index.hs300；可用键由 indices.universe_keys 枚举） | 指标 | L0 | `key:string` — 指数键（index.hs300 等，用 indices.universe_keys 枚举） | MAP · 估值序列 | — |
 | `indices.trend` | 指数估值趋势(周频整体法) | 指标 | L0 | `key:string` · `window:string`（签名） | MAP · 周频趋势 | — | 例：`cli.call("indices.trend", key='index.hs300', window='5y')`
 | `indices.universe_keys` | 指数域可用键 | 指标 | L0 | `group:string`（签名） | ARR · 指数键 | — | 例：`cli.call("indices.universe_keys", group='broad')`
 
@@ -5549,6 +5543,7 @@ cli.info.profile("600519")
 个股融资融券日频——融资买入/偿还/余额，融券卖出/偿还/余量。金额=元、 量=股，与全库基础单位一致。
 数据来源：交易所披露、平台数据服务。
 单位口径：money=元（融资买入额/偿还额/余额）；shares=股（融券卖出量/偿还量/余量）。
+- 可用性：仅 A 股（沪深交易所两融披露口径，无港美形态）
 - 仅个股口径；市场级两融汇总上游无独立数据集
 - latest(sym) 返回最新一日单行
 
@@ -5561,10 +5556,11 @@ cli.info.profile("600519")
 
 #### 资金流向（`market.moneyflow`）
 
-**性质**：原始数据 · **版本**：1.1.0  
+**性质**：原始数据 · **版本**：1.2.0  
 个股日频资金流向（主力 / 超大单 / 大单 / 中单 / 小单净流入）、最新一行、 全市场快照一次取数（board）。非 Level2 逐笔数据。
 数据来源：外部行情源。
 单位口径：net=元（净流入金额）；date=YYYY-MM-DD。
+- 可用性：仅 A 股（EOD 日频，不含停牌）——bars/last/live 的 symbol 为 6 位 A 股裸码
 - 日频为 EOD 落库；query_last_live 为外部公开源当日读数（HTTP，短 TTL；非盘中行情）
 - 非 Level2：为单子分级聚合口径，非逐笔委托
 - query_last 上游返回单条 MAP 而非数组，XS normalizer 只吃数组；命中 NotSupportedType:record 属上游返回形态问题，SDK 以 ServerError 透出且 不重试、不静默转空，需要数组口径请用 query_bars(limit=1) / query_valid(limit=1)
@@ -5575,9 +5571,9 @@ cli.info.profile("600519")
 | `moneyflow.query_last` | 最新资金流向 | 原始数据 | L0 | `sym:string` | MAP · 资金流行；字段 sas:string?（SAS） / date:string?（日期） / net_mf:float?（主力净流入） / elg_net:float?（超大单净流入） / lg_net:float?（大单净流入） / md_net:float?（中单净流入） / sm_net:float?（小单净流入） | — | 例：`cli.call("moneyflow.query_last", sym='600519')`
 | `moneyflow.query_valid` | 有效资金流向（过滤空行） | 原始数据 | L0 | `sym:string` · `limit:int=20` | ARR · 资金流行 | — | 例：`cli.call("moneyflow.query_valid", sym='600519', limit=20)`
 | `moneyflow.query_last_live` | 资金流当日读数（外部源） | 原始数据 | L0 | `sym:string` | MAP · 资金流快照 | — | 例：`cli.call("moneyflow.query_last_live", sym='000807')`
-| `moneyflow.snapshot` | 资金流向快照 | 原始数据 | L0 | `sym:string` | MAP · 快照 | — | 例：`cli.call("moneyflow.snapshot", sym='600519')`
+| `moneyflow.snapshot` | 资金流向快照（金额均为元；net_mv_ratio 为小数） | 原始数据 | L0 | `sym:string` | MAP · 快照 | 量级界 `net_mv_ratio`、`net_mf`、`net_5d`、`net_10d`、`net_20d`、`elg_net`、`lg_net`、`md_net`、`sm_net` | 例：`cli.call("moneyflow.snapshot", sym='600519')`
 | `moneyflow.snapshot_net_mf` | 最新主力净流入 | 原始数据 | L0 | `sym:string` | float · 主力净流入（元） | — | 例：`cli.call("moneyflow.snapshot_net_mf", sym='600519')`
-| `moneyflow.board` | 全市场资金流快照 | 原始数据 | L0 | — | ARR · 资金流行（symbol/name/net_mf/net_mv_ratio/lg_net/elg_net/md_net/sm_net/industry，按主力净流入降序）；字段 symbol:string（标的代码） / name:string（证券简称） / net_mf:float?（主力净流入（元）） / net_mv_ratio:float?（主力净流入占流通市值比（小数）） / lg_net:float?（大单净流入（元）） / elg_net:float?（超大单净流入（元）） / md_net:float?（中单净流入（元）） / sm_net:float?（小单净流入（元）） / industry:string?（一级行业） | — | 例：`cli.call("moneyflow.board")`
+| `moneyflow.board` | 全市场资金流快照（金额均为元；net_mv_ratio 为小数） | 原始数据 | L0 | — | ARR · 资金流行（symbol/name/net_mf/net_mv_ratio/lg_net/elg_net/md_net/sm_net/industry，按主力净流入降序） | 量级界 `net_mv_ratio`、`net_mf`、`elg_net`、`lg_net`、`md_net`、`sm_net` | 例：`cli.call("moneyflow.board")`
 | `moneyflow.fmt_maps` | 资金流行规范化 | 原始数据 | L1 | `rows:array`（签名） | ARR · 规范化行 | — |
 | `moneyflow.fmt_lines` | 资金流文本行 | 原始数据 | L1 | `rows:array`（签名） | ARR · 文本 | — |
 | `moneyflow.fmt_line` | 单条资金流文本 | 原始数据 | L1 | `row:any`（签名） | string | — |
@@ -5609,6 +5605,7 @@ cli.info.profile("600519")
 卖方研究数据——机构盈利预测（逐年 EPS/PE，A=实际 E=预测）、预测明细 （机构/研究员/归母净利/评级）、评级统计（综合评级与买卖家数按窗口）、个股研报列表。 金额=元、EPS=元/股、PE=倍。
 数据来源：券商研究披露、平台数据服务。
 单位口径：eps=元/股；money=元（归母净利润）；pe=倍（预测市盈率）。
+- 可用性：仅 A 股（券商研报卖方口径）
 - year_mark A=实际值 E=预测值；YEAR1..YEAR4 为预测年份序列
 - 研报行含标题/机构/作者/行业/报告链接；研报正文不在接口范围
 
@@ -5637,6 +5634,7 @@ cli.info.profile("600519")
 主营构成的多维分解——分产品 / 分业务 / 分区域（境内外）/ 主营标签占比， 外加合并快照与披露覆盖度。数据来自定期报告分部披露与平台清洗归一（clean 口径）， 可选 raw 直采明细。收入构成见分部明细，指标层 revenue_mix 组为其指标化引用。
 数据来源：定期报告披露、平台清洗归一。
 单位口径：money=元（分部收入 tr / 成本 cost 原币口径，实测元；tr_text 为披露展示串如「2334.83亿」）；ratio=小数（占比 ratio/pct、毛利率 margin、同比 yoy；0.332 = 33.2%）。
+- 可用性：仅 A 股（定期报告分部披露）
 - opts = {source: clean\|raw, limit: 截断条数}；clean 为平台清洗归一口径，raw 为披露明细
 - 行结构 {name, tr, tr_text, cost, margin, ratio}；margin = (tr - cost) / tr（小数）， cost 缺失时为 nil；ratio 仅 income 维填充占比、其余维为 0 占位
 - query_region 双形态：opts.source=clean（默认）返回 MAP {domestic, overseas, report_sas}， source=raw 返回披露明细 ARR；无数据时返回 nil
@@ -5658,29 +5656,31 @@ cli.info.profile("600519")
 
 #### 财务报表（`fund.statements`）
 
-**性质**：原始数据 · **版本**：1.3.0  
-三大报表科目原值（资产负债 / 利润 / 现金流）多期透视、合并 vs 母公司比较、 报表目录树与审计意见。科目为披露原值；树视图中的派生比率行（__ 前缀 / pct 行）另注。 外部源主要指标（源端算好直采）亦归本域。
-数据来源：定期报告披露原值、外部数据服务(主要指标)。
-单位口径：amount=报表原币（CN=元，HK=港币，US=美元）；ratio=小数（compare 的差额占比已由 SDK 从百分数换算；树视图 pct 行为原生百分数未换算）；period=报告期（年-采样，如 2024-Q4 / 2024 年报）。
+**性质**：原始数据 · **版本**：1.4.0  
+三大报表科目原值（资产负债 / 利润 / 现金流）多期透视与审计意见。 数据源 = 全市场宽表 fin_income / fin_balance / fin_cashflow（季度粒度、披露原币）； 列名为各市场披露科目原文，不做 CN 口径翻译。
+数据来源：聚源混源宽表(vendor)、外部数据服务(主要指标)。
+单位口径：amount=报表原币（CN=元，HK=港币，US=美元）；ratio=小数；period=报告期（年-采样，如 2024-Q4 / 2026-Q1）。
 - domain 取值 fin.balance_sheet / fin.income_statement / fin.cashflow_statement
-- opts.scope = 合并(默认) \| 母公司；opts.n 期数（默认 5，年报降序）；opts.years 年份数组（如 [2024,2023]）
-- 新旧会计准则口径适配在平台内部层完成，本域输出已归一
-- 可用性：三大报表当前仅 A 股（cn）上线；HK/US 合同已预留原币口径（港币/美元）， 数据尚未上线，对港美标的调用返回空
+- 可用性：mkt_statement 全市场 cn/hk/us——k=各市场披露科目原文 （聚源 cn / HKFRS / USGAAP），披露原币，无派生行与溯源列，映射由消费侧 负责；消费方以门面 cli.statements.* 编程、勿依赖底层函数名
+- opts.n 期数（默认 5，1..10）；opts.sampling = Q4（缺省，年报档）\| Q1..Q3（单季档）\| Q（季报全档 Q4→Q1 逐档，vals 键 "2026:Q1" 形式，n 截 总期数）；无母公司口径、无期间列举接口（v2 宽表无 listbs，latest doc.annual 锚定逐期取，缺期 nil 不填补）
+- statement_audit 仅 cn（聚源混源 Q4 年轴，读 fin.balance 的 opinionType）
+- 内部提取库（alt.bssaa 的 rptdom_*.LIST，含合并/母公司、溯源列、目录树） 不对外提供：statement/compare/tree/years/periods 已退对外目录，仅平台 内部页面经 xs.require 消费
 
 ### 信息披露
 
 #### 分红（`disc.bonus`）
 
-**性质**：原始数据 · **版本**：1.3.1  
+**性质**：原始数据 · **版本**：1.3.2  
 分红历史明细（预案/实施）、每股股利、窗口合计。列表与 DPS 为披露原值； 股息率/派息率 TTM 快照及全市场筛选为计算派生（函数级标注性质）。
 数据来源：公司公告披露。
 单位口径：dps=元/股；total=元（窗口合计金额）；window=如 "3y" / "5y" 窗口字符串；rate=小数（0.03 = 3%）。
+- 可用性：仅 A 股（公司公告分红方案披露）
 - 已知问题：最新年度/中期分红记录的 net_profit/payout_ratio 列可能回填滞后（暂为 0）， 仅影响 history 明细展示；筛选/快照走 TTM 派息指标（$BONUS_TTM_RATE_LAST）不受影响。 screen_quality 默认「精品」窗口=股息率>3% 且派息率 30%–70%，出界判 False 属设计
 - 已知问题：直调 bonus.query_count_window 恒返回 0（上游 count 聚合存在缺陷）； 需要窗口计数用 dividend.window_stats / dividend.history 自行统计（SDK 已按除权日 自行计数绕开该缺陷）
 
 | 函数 | 中文 | 性质 | 层 | 参数 | 返回 | 单位与守护 |
 |---|---|---|---|---|---|---|
-| `bonus.query_list` | 分红历史明细 | 原始数据 | L0 | `sym:string` — 6 位裸码 · `limit:int?` — 条数 | ARR · 分红行（announce/ex_date/pay/dps/total/content/sas/payout_ratio）；字段 sas:string?（SAS） / ex_date:string?（除权日） / ex_div:string?（除权除息日） / dps:float?（每股股利） / total:float?（分红总额） / ccy:string?（货币） / announce:string?（公告日） / pay:string?（派息日） / content:string?（方案摘要） / net_profit:float?（归母净利润） / payout_ratio:float?（派息率） | — | 例：`cli.call("bonus.query_list", sym='600519', limit=20)`
+| `bonus.query_list` | 分红历史明细 | 原始数据 | L0 | `sym:string` — 6 位裸码 · `limit:int?` — 条数 | ARR · 分红行（announce/ex_date/pay/dps/total/content/sas/payout_ratio）；字段 sas:string?（SAS） / ex_date:string?（除权日） / ex_div:string?（除权除息日） / dps:float?（每股股利） / total:float?（分红总额） / ccy:string?（货币） / announce:string?（公告日） / pay:string?（派息日） / content:string?（方案摘要） / net_profit:float?（归母净利润） / payout_ratio:float?（派息率） | 量级界 `dps`、`payout_ratio`、`total`、`net_profit` | 例：`cli.call("bonus.query_list", sym='600519', limit=20)`
 | `bonus.query_last` | 最近一次分红 | 原始数据 | L0 | `sym:string` | 分红行 MAP 或 nil | — | 例：`cli.call("bonus.query_last", sym='600519')`
 | `bonus.query_at_sas` | 指定报告期分红 | 原始数据 | L0 | `sym:string` · `sas:string` — 报告期，如 "2024-Q4" | 分红行 MAP 或 nil | — | 例：`cli.call("bonus.query_at_sas", sym='600519', sas='2024-Q4')`
 | `bonus.dps_rpt` | 财报期每股分红 | 原始数据 | L0 | `sym:string` | float · 财报期每股分红（元/股） | — | 例：`cli.call("bonus.dps_rpt", sym='600519')`
@@ -5689,7 +5689,7 @@ cli.info.profile("600519")
 | `bonus.query_total_window` | 窗口内总分红 | 指标 | L0 | `sym:string` · `window:string` | float · 元 | — | 例：`cli.call("bonus.query_total_window", sym='600519', window='3y')`
 | `bonus.query_count_window` | 窗口内分红次数 | 指标 | L0 | `sym:string` · `window:string` | int | — | 例：`cli.call("bonus.query_count_window", sym='600519', window='5y')`
 | `bonus.query_valid` | 有效分红序列（过滤无效行） | 原始数据 | L0 | `sym:string` · `limit:int?` | ARR · 分红行 | — | 例：`cli.call("bonus.query_valid", sym='600519', limit=20)`
-| `bonus.snapshot` | 股息快照 | 指标 | L0 | `sym:string` | MAP · 股息/率快照 | — | 例：`cli.call("bonus.snapshot", sym='600519')`
+| `bonus.snapshot` | 股息快照（比率均为小数：yield_ttm=0.036 即 3.6%） | 指标 | L0 | `sym:string`（签名） | MAP · 股息/率快照 | 量级界 `yield_ttm`、`yield_lyr`、`yield_3y_avg`、`yield_3y_min`、`payout_ttm`、`pct_yield_3y`、`bonus_npts_rate`、`dps_ttm`、`pe_ttm`、`mv`、`bonus_ttm`、`bonus_total` | 例：`cli.call("bonus.snapshot", sym='600519')`
 | `bonus.snapshot_yield_ttm` | LTM 股息率 | 指标 | L0 | `sym:string` | float · 小数（0.0396 = 3.96%） | — | 例：`cli.call("bonus.snapshot_yield_ttm", sym='600519')`
 | `bonus.snapshot_payout_ttm` | TTM 派息率 | 指标 | L0 | `sym:string` | float · 小数（0.799 = 79.9%） | — | 例：`cli.call("bonus.snapshot_payout_ttm", sym='600519')`
 | `bonus.screen_active` | 近年有分红 | 指标 | L1 | `sym:string`（签名） | bool | — | 例：`cli.call("bonus.screen_active", sym='600519')`
@@ -5716,6 +5716,7 @@ cli.info.profile("600519")
 业绩预告（yjyg：净利/扣非/营收区间+同比+修正轨迹）、业绩快报（yjkb）、 财报预约披露日历（disclosure）。均为交易所披露文件的结构化直采。
 数据来源：交易所披露。
 单位口径：money=元（预告/快报区间与单期金额）；yoy=小数（0.1467 = 14.67%；SDK 自动由脚本的百分数口径换算）；date=YYYY-MM-DD。
+- 可用性：仅 A 股（交易所业绩预告/快报披露）
 - 预告为区间（下限/上限）；快报为披露的近似单值——两者在报告期正式报表发布前使用
 - 脚本原生 np_amp_* / rev_amp_* / np_yoy / rev_yoy / roe 为百分数；SDK 已换算为 小数并守护范围；_units="native"/_raw=True 取脚本原值
 - 预告/快报幅度与同比的下界由 -1 放宽到 -100：净利由盈转亏时降幅可远超 负一百个百分点，实测有 -443.09%（换算后 -4.4309）的合法行，原下界会让 默认调用抛 DataError。量级错配仍由 units.percent 与单位矩阵审计守护
@@ -5738,6 +5739,7 @@ cli.info.profile("600519")
 年报/半年报/季报清单（报告期、标题、PDF 链接）。与 fund.statements （结构化数字）分工：清单与原文链接走本域，结构化科目数字走三表。
 数据来源：交易所披露。
 单位口径：date=YYYY-MM-DD。
+- 可用性：仅 A 股（交易所定期报告披露）
 - type_key 取值：all \| annual(年报) \| semi(半年报) \| quarter(季报)
 
 | 函数 | 中文 | 性质 | 层 | 参数 | 返回 | 单位与守护 |
@@ -5790,6 +5792,7 @@ cli.info.profile("600519")
 契约套利条款事件——要约收购/换股吸收合并/现金选择权等（披露原文提取）， 提供进行中看板与单票条款查询。同业数据商暂无对应接口，属平台独有面。
 数据来源：披露原文提取、平台数据服务。
 单位口径：price=元（公告对价/现价）。
+- 可用性：仅 A 股（要约收购/换股/现金选择权等沪深披露）
 - board() 返回 {as_of, deals, quotes} 进行中看板；query(sym) 返回单票规范化条款行
 - 现价 < 公告对价 的折价窗口由调用方自行判定，SDK 不内置收益测算（算法放工具仓）
 
@@ -5806,6 +5809,7 @@ cli.info.profile("600519")
 股东治理与股本全景——十大股东、股东户数、股权质押（明细+比例+市场/行业/ 机构分布）、限售解禁、机构持股（明细/占比/沪港通/国家队）、高管名册与增减持、股本结构、 回购（方案+执行）、并购重组、关联交易、一致行动人、对外担保、诉讼处罚。披露原值直采， 比例字段统一换算为小数（0.0522 = 5.22%）。
 数据来源：交易所披露、平台数据服务。
 单位口径：ratio=小数（比例字段以各函数 units 声明为准：上游 fmt 部分接口已预换算小数、 部分仍为百分数——2026-10-28 全量审计逐函数核验，勿按字段名臆断）；money=元（持股市值/质押市值/回购金额等，披露源口径）；shares=股（持股数/解禁数量/质押数量）；price=元（交易均价/回购价）。
+- 可用性：仅 A 股（沪深交易所披露口径；公司档案部分经 cli.info 含 hk/us）
 - 公司档案（名称/行业/上市日期/简介）经 cli.info.profile() 与 fund.indicators 的 profile 指标组（$NAME/$INDUSTRY_CUR/$ORG_ORGTYPE/$ORG_LISTINGDATE）获取
 - 比例字段换算以各函数 units 声明为准（同接口内可能混排：institution_summary 的 all_shares_ratio 为百分数、total_shares_ratio 已是小数）；ranges 为 2026-10-28 live 审计实测界；其余未声明字段保持披露原值
 - 2026-10-28 审计已核验为元/股/小数并补 ranges：reorg.deal_amount（元）、 violation.punish_amt（元）、executives.salary（元/年）、capital_change.total_shares （股）、holdernum 比例族（小数）、pledge_market.pledge_ratio_total（小数， 上游 inventory cn「百分数」为遗留标注）；guarantee_amt、exec_change 族仍待样本
@@ -5891,6 +5895,7 @@ cli.info.profile("600519")
 宏观与行业时序——宏观指标原生点列/as-of/采样频率（$CPI/$GDP/$M2 等指标码 经本域取数）、中债收益率曲线按曲线名+期限取值，以及乘联会厂商排行、手机品牌周份额、 新势力周销量与月交付、家电月度产销等市场情报单值查询。指标码层（cli.indicator）可 直接取宏观当前值；本域提供时序结构与原生频率。
 数据来源：平台数据服务。
 单位口径：value=上游原值（宏观指标为原生口径，非全库小数比率口径；见 notes）。
+- 可用性：中国内地宏观口径
 - 宏观数值为上游原生口径不做换算：$CPI 等价格指数=点（上年同期=100，实测 100.9）， $GDP/$M2 等流量存量=元（asof 实测 $GDP 107107120000000 ≈ 107.1 万亿元）；使用时 按指标含义解读，勿套用全库小数比率口径
 - bond_curve 返回小数口径收益率（10年 0.0168 = 1.68%，2026-11 实测）；曲线名/期限 须与服务端披露名一致
 - query.series 与 spots 按期降序（最新在前），期点格式如 "2026:M09"/"2026:Q3"； 指标码大小写与 $ 前缀可省（"cpi" 等价 "$CPI"）

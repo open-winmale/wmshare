@@ -2,7 +2,7 @@
 
 本指南是 **how-to + 解释层**：会做什么 → 怎么做好。其他层各有其位——
 教程看 [README](../README.md) 与 [examples/](../examples/README.md)（可运行课程），
-接口参考看 [API.md](API.md)（按资产类别分章的 135 个核心接口，生成物），
+接口参考看 [API.md](API.md)（按资产类别分章的 132 个核心接口，生成物），
 AI 用法看 [AI.md](AI.md)。
 
 > 代码块里的输出注释都是**真实运行结果**（2026-10-29，cn 市场，免费档凭证），
@@ -42,9 +42,9 @@ export WMSHARE_CLIENT_ID=<AppId> WMSHARE_CLIENT_SECRET=<API Key>
 
 ### 2.1 双层 API：门面 + 目录
 
-- **门面层** `cli.<命名空间>.<方法>()`：22 个命名空间、135 个核心接口，方法名动宾化可猜
+- **门面层** `cli.<命名空间>.<方法>()`：22 个命名空间、132 个核心接口，方法名动宾化可猜
   （`kline.bars`、`dividend.yield_ttm`、`screener.screen_limit_up`）。
-- **目录层** `cli.call("<域>.<函数名>", ...)`：288 个底层函数按目录合同直调，
+- **目录层** `cli.call("<域>.<函数名>", ...)`：285 个底层函数按目录合同直调，
   参数名以 `cat.function(name)["params"]` 为准。门面未包装的函数经属性直达
   （如 `cli.dividend.index_where_high_yield_5()`）；目录之外的名字显式报错——
   门面不遮蔽目录函数，288 个都能直达。
@@ -144,7 +144,6 @@ cli.moneyflow.last("600519")            # net_mf = 821186700（8.2 亿元）
 # 三大报表（多期科目行：cn 中文名 / k 科目键 / vals 各期值）
 cli.statements.income("600519", years=1)    # 25 行科目
 cli.statements.balance("600519", years=3)
-cli.statements.compare("600519")            # 合并 vs 母公司
 # 完整可运行版：examples/11_statements_tour.py（含审计意见、diffp 小数读法）
 
 # 指标码取数（码先查目录；分位 0=最低 1=最高）

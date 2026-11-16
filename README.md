@@ -90,7 +90,7 @@ for r in res["rows"][:5]:
 
 ## 基本功能
 
-随包离线目录：**18 个数据域 · 288 个底层函数 · 2752 个指标代码**；友好层 **135 个核心接口**，
+随包离线目录：**18 个数据域 · 285 个底层函数 · 2752 个指标代码**；友好层 **132 个核心接口**，
 按使用视角组织为（11 个指标组、78 个精选常用指标代码，`cat.search("中文")` 可编程检索）：
 
 | 门面 | 核心能力 | 单位口径 |
@@ -99,7 +99,7 @@ for r in res["rows"][:5]:
 | `cli.screener` | 全市场条件选股（`query`，一条 `$码` 表达式出命中数与前 N 行）+ 单票筛选器（涨停/均线/动量/回撤/放量）+ 全市场涨跌全景/分桶/行业分布/涨跌榜 | 阈值=小数；涨跌家数统计的 `*_pct`=百分数数值 |
 | `cli.backtest` | 单股买卖点回测（取数 + 本地撮合；纯内核 `wmshare.backtest` 可自备数据）：均线金叉/死叉 或 PE/PB/PS/PR 估值阈值（估值序列 ≤3 年）→ 成交明细 + 净值/回撤/胜率（次日开盘成交、T+1、100 股整手、佣金/印花固定） | 价格=元、收益=小数 |
 | `cli.moneyflow` | 主力/超大单/大单/中单/小单净流入（日频） | 金额=元 |
-| `cli.statements` | 三大报表多期、合并 vs 母公司、目录树、审计意见 | 报表原币元 |
+| `cli.statements` | 三大报表多期（cn/hk/us 宽表，`period=annual\|quarter`）、审计意见 | 报表原币元 |
 | `cli.segments` | 经营分部：分产品/业务/区域收入构成 | 元；比率=小数 |
 | `cli.indicator` | 按指标码取数：估值/盈利/成长/现金流/杜邦、期货主力连续（`$FUT_CLOSE` 等 27 码 + `fut_symbol`）；全量码表见 [INDICATORS.md](docs/INDICATORS.md) | 比率=小数 |
 | `cli.valuation` | PE/PB/PS/市赚率(PR)的历史统计与分位（窗口上限 3 年） | 分位=小数 |
@@ -132,7 +132,7 @@ for r in res["rows"][:5]:
 - **全市场批量**：`cli.batch_all(name, codes)` 把 A 股 5,375 家压成 **11 次请求**绕开限流。
 - **全市场筛选服务端直出**：`cli.screener.query("$ROE_TTM_LAST > 0.15")` 一条表达式扫全市场索引
   （`count`=真实命中数）；涨跌全景/分桶/行业分布/涨跌榜同走服务端预计算索引，毫秒级。
-- **离线目录防编造**：288 个底层函数、135 个核心接口、2,752 个指标码离线可查
+- **离线目录防编造**：285 个底层函数、132 个核心接口、2,752 个指标码离线可查
   （`cat.search("中文")`），目录之外的名字显式报错。
 - **零凭证离线试跑**：`wmshare.demo_client()`（同签名、不联网，2026-10-30 固定快照；非实时数据）。
 - **数据守护**：全库单位统一（比率=小数、金额=元、量=股），返回前量级/不变量校验，违例抛 `DataError`。
@@ -141,7 +141,7 @@ for r in res["rows"][:5]:
 
 - **先查目录再写代码**（一行验证）：
   `python3 -c "import wmshare; print(wmshare.load().search('股息'))"`
-- **本地 MCP server**：20 个 task tools；全部 139 个 friendly API——135 登记 + 4 组合——均可用
+- **本地 MCP server**：20 个 task tools；全部 136 个 friendly API——132 登记 + 4 组合——均可用
   `wmshare_call(target=..., mode="api")` 兜底，macro 域仅此路径。配置：`pip install "wmshare[mcp]"`
   → `wmshare-mcp setup --client-id <AppId> --client-secret-stdin --market cn`（提示后粘贴 API Key，
   `wmshare-mcp doctor` 体检）；客户端最小配置
@@ -219,7 +219,6 @@ for r in res["rows"][:5]:
 | 港股筹码在谁手里 | `cli.intl.query_ccass(sym)` | 上披露易→逐日查 CCASS |
 | 今日涨幅榜前十 | `cli.screener.index_top_movers(limit=10)` | 全市场扫描→排序→取头部 |
 | 近半年有无回购/减持 | `cli.notice.has_buyback(sym, "6m")` | 拉公告列表→分类匹配→截窗 |
-| 合并与母公司差多少 | `cli.statements.compare(sym)` | 双表对齐→逐科目相除 |
 | 拿全市场代码池 | `cli.stocks.list()` | 逐页拼列表→核对代码格式 |
 | 银行股都有谁 | `cli.stocks.industry_members("银行")` | 查行业分类→逐票打标签 |
 | 取 CPI/GDP 宏观时序 | `cli.macro.query("$CPI", 6)` | 找数据源→对齐期间→自己建时序 |
@@ -318,7 +317,7 @@ t["pe_pct"], t["pe_pct_window"], t["pct"]["pe"]["p3"]    # 5y 分位, '5y', 3y �
 ## 更多
 
 - **AI 原生**：随包 [SKILL.md](src/wmshare/skills/wmshare/SKILL.md)、[AI 用法](docs/AI.md)、本地 MCP server（skill 可复制进 .agents/.zcode/.claude 的 skills/）；生态工具 [big-winner](https://github.com/open-winmale/big-winner)。
-- **文档中心 [docs/](docs/README.md)**：使用指南 GUIDE（单票菜谱/批量/多市场/故障排查）· 指标库 [INDICATORS.md](docs/INDICATORS.md)（全量指标码按数据类型分章）· AI 用法 · llms.txt 索引 · [API 参考](docs/API.md)（按资产类别分章的 135 个核心接口 + 指标组）
+- **文档中心 [docs/](docs/README.md)**：使用指南 GUIDE（单票菜谱/批量/多市场/故障排查）· 指标库 [INDICATORS.md](docs/INDICATORS.md)（全量指标码按数据类型分章）· AI 用法 · llms.txt 索引 · [API 参考](docs/API.md)（按资产类别分章的 132 个核心接口 + 指标组）
 - **可转债日更管线**：`cli.cbond.daily()` → `article()` → `figures()` 一条命令出图文（三层口径 + 三道闸 + 状态机 + 事件日历，每个数字带 `sources` 与 `as_of`，缺条目抛错而非补猜测值）；实战 notebook 见 [docs/notebooks/cb_double_low.ipynb](docs/notebooks/cb_double_low.ipynb)（2026-11-07 真实数据）
 - **示例课程 [examples/](examples/README.md)**：16 个编号示例（入门→进阶→生产→AI），全部支持演示客户端离线试跑，CI 端到端覆盖
 - **问题反馈 / 交流**：QQ 群 `1127142074`（搜索「wmshare开源交流群」）——使用问题、数据口径、bug 反馈欢迎进群，也欢迎 [GitHub Issues](https://github.com/open-winmale/wmshare/issues)
