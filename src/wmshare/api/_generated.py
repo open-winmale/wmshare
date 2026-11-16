@@ -1086,6 +1086,18 @@ class KlineNS(_Ns):
         """
         return self._client.call("kline.snapshot", sym=sym, _raw=_raw, _df=_df)
 
+    def snapshot_batch(self, codes: list | None = None, _raw: bool = False, _df: bool = False) -> Any:
+        """多标的行情快照（索引批量投影）
+
+:param codes: 标的代码数组；空/nil 返回全市场非停牌
+
+:returns: ARR · 索引原始行 [{row, values}]；values 内为 $指标→值（21 个字段）
+        """
+        kw: dict[str, Any] = {}
+        if codes is not None:
+            kw["codes"] = codes
+        return self._client.call("kline.snapshot_batch", **kw, _raw=_raw, _df=_df)
+
     def screen_above_ma20(self, sym: str, _raw: bool = False, _df: bool = False) -> Any:
         """收盘价在 MA20 之上
 

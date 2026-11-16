@@ -1,6 +1,6 @@
 {
  "schema_version": 2,
- "upstream_rev": "e0aea9a1",
+ "upstream_rev": "a91b36d8",
  "domains": {
   "bonus": {
    "entry": "sys/bonus/init.xs",
@@ -104,7 +104,7 @@
   "notice",
   "segments"
  ],
- "function_count": 294,
+ "function_count": 295,
  "functions": [
   {
    "name": "bonus.dps_rpt",
@@ -6518,6 +6518,38 @@
     {
      "name": "sym",
      "type": "string"
+    }
+   ]
+  },
+  {
+   "name": "kline.snapshot_batch",
+   "cn": "多标的行情快照（索引批量，便宜 400x）",
+   "example": "kline.snapshot_batch([\"600519\",\"000001\"])",
+   "returns": "ARR · 索引行（values 内为 $指标→值）",
+   "returns_shape": {
+    "kind": "array",
+    "items": {
+     "kind": "object",
+     "cn": "索引行",
+     "fields": [
+      {
+       "name": "row",
+       "type": "int",
+       "cn": "行号"
+      },
+      {
+       "name": "values",
+       "type": "object",
+       "cn": "指标值映射（键为 $SYMBOL/$CLOSE_LAST 等）"
+      }
+     ]
+    }
+   },
+   "min_args": 0,
+   "params": [
+    {
+     "name": "codes",
+     "type": "array"
     }
    ]
   },
