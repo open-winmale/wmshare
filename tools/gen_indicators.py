@@ -44,6 +44,8 @@ CHAPTER_TITLES = {
 
 # 场景速查（场景, 指标码, 取数调用）——码与调用均须真实存在，build 内做防编造断言。
 SCENES = [
+    ("停牌状态与原因（是否停牌/市场/原因/起始日/类型）", "$IS_SUSPEND",
+     '`cli.indicator.metrics(sym, ["$IS_SUSPEND", "$SUSPEND_MARKET", "$SUSPEND_REASON", "$SUSPEND_START_DATE", "$SUSPEND_TYPE"])`'),
     ("三年股息率均值 > 3%", "$BONUS_RATE_3Y_AVG_LAST",
      '`cli.indicator.metrics(sym, ["$BONUS_RATE_3Y_AVG_LAST"])`'),
     ("PE(TTM) 十年历史分位", "$PCT_PE_TTM_10Y_LAST",

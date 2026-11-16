@@ -1,5 +1,5 @@
 id: disc.notice
-version: 1.1.0
+version: 1.1.1
 cn: 公告
 kind: raw
 category: disclosure
@@ -153,6 +153,34 @@ functions:
   - {name: notice.query_build_visible, cn: 构建可见日公告 filter, kind: raw, layer: L1, status: internal}
   - {name: notice.query_date_range, cn: 日期区间条件, kind: raw, layer: L1, status: internal}
   - {name: notice.query_ts_range, cn: 入库时间区间条件, kind: raw, layer: L1, status: internal}
+  # ---- L1：正文读取（纯读，未就绪不入队）----
+  - name: notice.read_text
+    cn: 公告正文读取（纯读，未就绪不入队）
+    kind: raw
+    layer: L1
+    params:
+      - {name: sym, type: string, required: true, desc: 6 位裸码/港股 5 位}
+      - {name: date, type: string, required: true, desc: 'YYYY-MM-DD；传 url 时可空串'}
+      - {name: url, type: string, required: false, desc: 'PDF链接；空则由 sym+date 定位'}
+      - {name: full, type: bool, required: false, desc: false=前4000字预览，true=全量}
+    returns:
+      desc: MAP · 正文与状态
+      shape:
+        kind: object
+        cn: 正文读取结果
+        fields:
+          - {name: ok, type: bool, cn: 是否取到正文}
+          - {name: status, type: string, cn: 文档状态}
+          - {name: text, type: string, cn: 正文}
+          - {name: text_chars, type: int, cn: 实际字符数}
+          - {name: text_truncated, type: bool, cn: 是否截断}
+          - {name: file_key, type: string, cn: 文档键}
+          - {name: source_url, type: string, cn: PDF链接}
+          - {name: announce_date, type: string, cn: 披露日}
+          - {name: title, type: string, cn: 标题}
+          - {name: error, type: string, cn: 错误码}
+          - {name: note, type: string, cn: 说明}
+    example: 'notice.read_text("600519", "2026-03-15", "", false)'
   # ---- L1：格式化 ----
   - {name: notice.fmt_maps, cn: 公告行规范化, kind: raw, layer: L1}
   - {name: notice.fmt_lines, cn: 公告文本行, kind: raw, layer: L1}

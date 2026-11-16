@@ -104,7 +104,7 @@
   "notice",
   "segments"
  ],
- "function_count": 295,
+ "function_count": 296,
  "functions": [
   {
    "name": "bonus.dps_rpt",
@@ -7866,6 +7866,92 @@
     {
      "name": "to_date",
      "type": "string"
+    }
+   ]
+  },
+  {
+   "name": "notice.read_text",
+   "cn": "公告正文读取",
+   "example": "notice.read_text(\"600519\", \"2026-03-15\", \"\", false)",
+   "returns": "MAP · 正文与状态",
+   "returns_shape": {
+    "kind": "object",
+    "cn": "正文读取结果",
+    "fields": [
+     {
+      "name": "ok",
+      "type": "bool",
+      "cn": "是否取到正文"
+     },
+     {
+      "name": "status",
+      "type": "string",
+      "cn": "文档状态"
+     },
+     {
+      "name": "text",
+      "type": "string",
+      "cn": "正文"
+     },
+     {
+      "name": "text_chars",
+      "type": "int",
+      "cn": "实际字符数"
+     },
+     {
+      "name": "text_truncated",
+      "type": "bool",
+      "cn": "是否截断"
+     },
+     {
+      "name": "file_key",
+      "type": "string",
+      "cn": "文档键"
+     },
+     {
+      "name": "source_url",
+      "type": "string",
+      "cn": "PDF链接"
+     },
+     {
+      "name": "announce_date",
+      "type": "string",
+      "cn": "披露日"
+     },
+     {
+      "name": "title",
+      "type": "string",
+      "cn": "标题"
+     },
+     {
+      "name": "error",
+      "type": "string",
+      "cn": "错误码"
+     },
+     {
+      "name": "note",
+      "type": "string",
+      "cn": "说明"
+     }
+    ]
+   },
+   "min_args": 2,
+   "params": [
+    {
+     "name": "sym",
+     "type": "string"
+    },
+    {
+     "name": "date",
+     "type": "string"
+    },
+    {
+     "name": "url",
+     "type": "string"
+    },
+    {
+     "name": "full",
+     "type": "bool"
     }
    ]
   },

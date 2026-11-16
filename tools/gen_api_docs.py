@@ -57,6 +57,7 @@ CHAPTERS: list[tuple[str, list[str]]] = [
     ("财务基本面", ["statements", "segments", "valuation", "estimates", "indicator"]),
     ("信息披露与公司行动", ["notice", "filings", "forecast", "dividend", "equity", "workout"]),
     ("港股与美股", ["intl"]),
+    ("基金与 ETF", ["etf"]),  # 组合门面（无核心接口），读 skillhub etf_build 九视图
     ("参考数据", ["info"]),
 ]
 # 指标组挂靠章：该 category 的域（fund.indicators）指标组渲染在章内接口之后

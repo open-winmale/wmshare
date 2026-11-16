@@ -8,7 +8,7 @@
     ``_raw=True`` 取未规范化原始行（仅部分方法）；
   - 本层是目录合同的薄翻译：高频方法显式包装；目录内其余函数经 ``__getattr__``
     属性直达（如 ``cli.kline.screen_above_ma20``、``cli.dividend.screen_quality``），
-    目录之外的名字显式 AttributeError——289 个底层函数零遮蔽。
+    目录之外的名字显式 AttributeError——290 个底层函数零遮蔽。
   - 选股能力集中在 ``cli.screener``：单票筛选器（bool）、全市场宽度/涨跌榜与
     全市场条件选股 ``query()``（服务端索引直出）显式包装，kline 目录的其余筛选
     函数经属性直达。
@@ -35,7 +35,7 @@ from wmshare.backtest import (
     valuation_signals,
 )
 from wmshare.errors import (
-    CatalogError, DataError, LimitError, ServerError, UsageError, WmshareError)
+    ApiError, CatalogError, DataError, LimitError, ServerError, UsageError, WmshareError)
 from wmshare.units import finish_metric
 
 # 服务端分桶 label 的排序前缀（如 i_涨停 / h_+5%~10%），单字母+下划线，对用户是噪音
@@ -1715,6 +1715,20 @@ class NoticeApi(_Api):
             kwargs["market"] = market
         return self._c.call("notice.query_on_date", _raw=_raw, _df=_df, **kwargs)
 
+    def read_text(self, symbol: str, date: str, url: str = "",
+                  full: bool = False) -> Any:
+        """公告正文读取（纯读；未就绪不入队，不触发入队/生成）。
+
+        :param symbol: 6 位 A 股码 / 港股 5 位码（date+空 url 时用于定位 PDF）
+        :param date: 披露日 YYYY-MM-DD；传 url 时可传空串
+        :param url: PDF 链接，非空时直读（跳过 sym+date 定位）
+        :param full: false=前 4000 字预览，true=全量正文
+        :returns: MAP · ok/status/text/text_chars/text_truncated/file_key/
+            source_url/announce_date/title/error/note（11 字段）
+        """
+        return self._c.call("notice.read_text", sym=symbol, date=date,
+                            url=url, full=full)
+
     def has_buyback(self, symbol: str, window: str = "6m") -> bool:
         """窗口内是否有回购公告。"""
         return bool(self._c.call("notice.signal_has_buyback", sym=symbol,
@@ -1835,7 +1849,7 @@ class DividendApi(_Api):
     def history(self, symbol: str, limit: int | None = None,
                 begin: str | None = None, end: str | None = None,
                 _raw: bool = False, _df: bool = False) -> Any:
-        """分红历史明细（announce/ex_date/pay/dps/total/content/sas/payout_ratio）。
+        """分红历史明细（announce/ex_date/pay/dps/total/content/sas/payout_ratio/bonus_share/record_date）。
 
         :param limit: 条数，默认 20；区间查询时默认取 max_limit（上限 10000）
         :param begin: 起始日期（含，YYYY-MM-DD，按除权日），须与 end 同时提供；上限 5 年
@@ -1857,7 +1871,7 @@ class DividendApi(_Api):
                             _raw=_raw, _df=_df)
 
     def last(self, symbol: str, _raw: bool = False) -> Any:
-        """最近一次分红（announce/ex_date/pay/dps/total/content/sas/payout_ratio），无数据返回 None。
+        """最近一次分红（announce/ex_date/pay/dps/total/content/sas/payout_ratio/bonus_share/record_date），无数据返回 None。
 
         复用规范化历史序列取最新一行，字段与 ``history(limit=1)[0]`` 一致；
         ``_raw=True`` 时返回上游原始行。
@@ -2252,6 +2266,166 @@ class MacroApi(_Api):
         return self._c.call("macro.phone_share", brand=brand, field=field)
 
 
+class EtfApi(_Api):
+    """ETF 九视图读取（组合门面；读已发布的 skillhub 脚本，非目录函数）。
+
+    与目录函数不同，本类经 ``eval_result`` 读脚本：走同一取数端点、同价计费，
+    不省 EC，也不额外费 EC；不查 inventory、不过目录层的单位换算与量级守护，
+    故在本地补三道护栏（转义 / 数值守护 / 错误分类），详见 ``_etf``。
+
+    ``asset``/``rank`` 是 SDK 方法名，内部映射到 script view ``fund_asset``/
+    ``etf_rank``；禁止把方法名当 view 直传（脚本只认后两者）。
+    ``mode`` 仅 nav 视图消费：``series`` 展开近 N 期净值序列，``latest`` 取最新；
+    其余视图忽略 mode（script 分发器只对 nav_build 传 mode）。
+    """
+
+    _ETF_VIEWS = frozenset({
+        "card", "nav", "share", "div", "portfolio", "profile", "premium", "asset", "rank",
+    })
+    _VIEW_FOR_METHOD = {"asset": "fund_asset", "rank": "etf_rank"}
+    _ETF_MODES = frozenset({"latest", "series"})
+    _LIMIT_MIN, _LIMIT_MAX = 1, 500
+
+    @staticmethod
+    def _num(value: Any, field: str) -> float | None:
+        """取数值字段；非数值返回 None（守护跳过，不误判 0）。"""
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            return None
+        return float(value)
+
+    @classmethod
+    def _guard_etf(cls, result: Any, view: str) -> Any:
+        """护栏 2：本地单位/量级守护（补回 eval 路径丢掉的数据质量门禁）。
+
+        ETF 落库已是原生口径（比例/百分数/亿元），**禁二次换算**；这里只做
+        量级与不变量校验，异常抛 ``DataError``，绝不静默返回错误量级的数据。
+        阈值取宽区间，只挡「0.25 变 25」这类量级错，不误伤真实极端行情。
+        """
+        if not isinstance(result, dict):
+            raise DataError(f"etf.{view} 返回非 MAP：{type(result).__name__}", code="response")
+        if not result.get("ok", False):
+            err = str(result.get("error") or "")
+            raise DataError(
+                f"etf.{view} 无数据或被拒：{err} {result.get('message', '')}；"
+                f"{result.get('hint', '')}", code="range")
+        # 区间涨幅（%）：合理 [-100, 1000]（极端杠杆/拆分另案），0.25→25 不越界但
+        # 与另两期同号同量级，属口径问题由调用方对账；这里挡的是明显越界量级。
+        for key in ("chg_w1", "chg_m1", "chg_m3"):
+            v = cls._num(result.get(key), key)
+            if v is not None and not -100.0 <= v <= 1000.0:
+                raise DataError(f"etf.{view} {key}={v} 超出涨幅合理区间 [-100,1000]%",
+                                code="range")
+        # 折溢价率（%）：合理 [-100, 1000]。premium 视图顶层字段名是 premium_pct
+        # （card 的 premium 是嵌套 MAP，其内也是 premium_pct；rank 用 premium_mean）。
+        for key in ("premium_pct", "premium_mean"):
+            v = cls._num(result.get(key), key)
+            if v is not None and not -100.0 <= v <= 1000.0:
+                raise DataError(f"etf.{view} {key}={v} 超出折溢价率区间 [-100,1000]%",
+                                code="range")
+        # 规模 net_asset（亿元）：非负、上限 1e6 亿（百万亿，远超真实上限）；
+        # 份额 fd_share（亿份）：非负、上限 1e14（远超真实上限）。
+        for key, upper in (("net_asset", 1e6), ("fd_share", 1e14)):
+            raw = result.get(key)
+            # nav 视图 net_asset 是 {date, 值} MAP，下探一层再校验。
+            if key == "net_asset" and isinstance(raw, dict):
+                raw = raw.get("net_asset")
+            v = cls._num(raw, key)
+            if v is not None and (v < 0 or v > upper):
+                raise DataError(f"etf.{view} {key}={v} 非非负或超出量级上限 {upper:g}",
+                                code="range")
+        # 五类资产占净值比（%）：各自 0~100，合计不超 100（允许浮点误差 0.5）。
+        if view in ("asset", "fund_asset"):
+            ratios = [cls._num(result.get(k), k) for k in
+                      ("stock_ratio", "bond_ratio", "cash_ratio", "other_ratio", "fund_ratio")]
+            vals = [r for r in ratios if r is not None]
+            for k, r in zip(("stock_ratio", "bond_ratio", "cash_ratio",
+                             "other_ratio", "fund_ratio"), ratios):
+                if r is not None and not 0.0 <= r <= 100.0:
+                    raise DataError(f"etf.{view} {k}={r} 占净值比越界 [0,100]", code="range")
+            if vals and sum(vals) > 100.5:
+                raise DataError(f"etf.{view} 五类占净值比合计 {sum(vals):.2f} > 100",
+                                code="invariant")
+        return result
+
+    @staticmethod
+    def _classify_etf_error(exc: ApiError) -> WmshareError:
+        """护栏 3：eval 的 ApiError 按语义翻译，不让调用方拿裸网关错误。"""
+        code = str(getattr(exc, "code", "") or "")
+        msg = str(exc)
+        if any(k in code.upper() for k in ("PARAM", "ARG", "SYNTAX", "UNKNOWN_VIEW")):
+            return UsageError(f"etf 调用参数错误：{msg}", code="params")
+        if any(k in code.upper() for k in ("NOT_ETF", "NO_DATA", "VALIDATION")):
+            return DataError(f"etf 数据/口径错误：{msg}", code="range")
+        return DataError(f"etf 取数或口径异常：{msg}", code="eval")
+
+    def _etf(self, view: str, symbol: str, mode: str = "latest",
+             limit: int | None = None) -> Any:
+        """护栏 1：白名单 + limit 严格校验 + json.dumps 字面量（禁裸 f-string 注入）。"""
+        if view not in self._ETF_VIEWS:
+            raise UsageError(f"未知 view={view!r}；可选 {sorted(self._ETF_VIEWS)}",
+                             code="params")
+        if mode not in self._ETF_MODES:
+            raise UsageError(f"未知 mode={mode!r}；可选 {sorted(self._ETF_MODES)}",
+                             code="params")
+        if limit is not None:
+            if isinstance(limit, bool) or not isinstance(limit, int):
+                raise UsageError(f"limit 必须是整数，收到 {limit!r}", code="params")
+            if not self._LIMIT_MIN <= limit <= self._LIMIT_MAX:
+                raise UsageError(f"limit 超出 [{self._LIMIT_MIN}, {self._LIMIT_MAX}]: {limit}",
+                                 code="params")
+        from wmshare.client import normalize_symbol
+        sym = normalize_symbol(symbol)
+        lit = json.dumps(sym, ensure_ascii=False)
+        limit_lit = json.dumps(limit) if limit is not None else "nil"
+        script_view = self._VIEW_FOR_METHOD.get(view, view)
+        xs = [
+            'xs.require("xs/skillhub/lib/init.xs")',
+            f"return skhub.etf_build({lit}, {json.dumps(script_view)}, "
+            f"{json.dumps(mode)}, {limit_lit})",
+        ]
+        try:
+            result = self._c.eval_result(xs, symbol=sym, market="cn")
+        except ApiError as exc:
+            raise self._classify_etf_error(exc) from exc
+        return self._guard_etf(result, view)
+
+    def card(self, symbol: str, mode: str = "latest") -> Any:
+        """ETF 档案卡（合并档案/净值/份额/分红；mode=latest|series）。"""
+        return self._etf("card", symbol, mode)
+
+    def nav(self, symbol: str, mode: str = "latest") -> Any:
+        """ETF 净值（基金净值 + 规模 net_asset 亿元；mode=latest|series）。"""
+        return self._etf("nav", symbol, mode)
+
+    def share(self, symbol: str, mode: str = "latest") -> Any:
+        """ETF 份额（fd_share；mode=latest|series）。"""
+        return self._etf("share", symbol, mode)
+
+    def div(self, symbol: str, mode: str = "latest") -> Any:
+        """ETF 分红（历史分红行；mode=latest|series）。"""
+        return self._etf("div", symbol, mode)
+
+    def portfolio(self, symbol: str, mode: str = "latest") -> Any:
+        """ETF 持仓（最新披露季 top10；mode=latest|series）。"""
+        return self._etf("portfolio", symbol, mode)
+
+    def profile(self, symbol: str, mode: str = "latest") -> Any:
+        """ETF 产品档案（基金公司/跟踪标的/费率等；mode=latest|series）。"""
+        return self._etf("profile", symbol, mode)
+
+    def premium(self, symbol: str, mode: str = "latest") -> Any:
+        """ETF 折溢价率（premium_pct；mode=latest|series）。"""
+        return self._etf("premium", symbol, mode)
+
+    def asset(self, symbol: str, mode: str = "latest") -> Any:
+        """ETF 资产配置（五类占净值比 + net_asset 亿元；按季披露；→script view fund_asset）。"""
+        return self._etf("asset", symbol, mode)
+
+    def rank(self, symbol: str, mode: str = "latest", limit: int | None = None) -> Any:
+        """ETF 榜单指标（chg_w1/m1/m3、flow_20、premium_mean、net_asset；→script view etf_rank）。"""
+        return self._etf("rank", symbol, mode, limit)
+
+
 # 组合接口：跨多个目录函数的研究级封装（取数 → 规则 → 事实包 → 成稿/出图）。
 # 不登记 FRIENDLY_INDEX（那张表是「核心接口 ↔ 底层目录函数」的一一映射）；
 # 文档在 docs/API.md 的「组合接口」小节单独成文。
@@ -2259,6 +2433,7 @@ COMPOSITE_METHODS: dict[str, set[str]] = {
     "cbond": {"daily", "article", "figures"},
     "backtest": {"run"},
     "statements": {"balance", "income", "cashflow", "indicators"},
+    "etf": {"card", "nav", "share", "div", "portfolio", "profile", "premium", "asset", "rank"},
 }
 
 FRIENDLY_NAMESPACES: dict[str, type[_Api]] = {
@@ -2284,6 +2459,7 @@ FRIENDLY_NAMESPACES: dict[str, type[_Api]] = {
     "intl": IntlApi,
     "macro": MacroApi,
     "backtest": BacktestApi,
+    "etf": EtfApi,
 }
 
 # 文档索引用注册表：(category, namespace, method, cn, 底层函数)
@@ -2356,6 +2532,7 @@ FRIENDLY_INDEX: list[tuple[str, str, str, str, str]] = [
     ("disclosure", "notice", "by_category", "按类别查公告", "notice.query_by_category"),
     ("disclosure", "notice", "find", "按日期区间查公告", "notice.query_find"),
     ("disclosure", "notice", "on_date", "指定日期全市场公告", "notice.query_on_date"),
+    ("disclosure", "notice", "read_text", "公告正文读取", "notice.read_text"),
     ("disclosure", "notice", "has_buyback", "窗口内有回购", "notice.signal_has_buyback"),
     ("disclosure", "notice", "has_reduction", "窗口内有减持", "notice.signal_has_reduction"),
     ("disclosure", "filings", "list", "定期报告列表", "filings.query"),

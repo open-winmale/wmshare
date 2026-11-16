@@ -35,8 +35,9 @@ FULL_PARTS = [
 # docs/INDICATORS.md 约 205 KB，内联会让 llms-full.txt 从 ~281 KB 涨到 ~486 KB，
 # 超出大上下文 agent 的实用预算。改为头部指标族摘要 + 链接，并把预算写成硬断言。
 # 2026-11-16 批 C：fmt 行规范化 shape 合同化（+20 KB 文档合同），预算 320K→350K；
+# 2026-11-16 W3：etf 九视图组合门面文档（+4 KB），预算 350K→360K；
 # 真内联 INDICATORS 全文仍会到 ~540 KB，守护语义不变。
-FULL_SIZE_BUDGET = 350_000  # bytes（UTF-8），不是字符数
+FULL_SIZE_BUDGET = 360_000  # bytes（UTF-8），不是字符数
 
 
 def _indicators_brief(cat) -> str:

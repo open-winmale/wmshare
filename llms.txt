@@ -1,6 +1,6 @@
 # wmshare
 
-> 覆盖 A 股、港股、美股的 Python 财经数据 SDK：18 个数据域、289 个底层函数、2752 个指标码、129 个核心接口 + 8 个组合接口（共 137 个 friendly API）。BSD-3-Clause 开源；取数需开放平台凭证（环境变量 WMSHARE_CLIENT_ID / WMSHARE_CLIENT_SECRET，见 README）。
+> 覆盖 A 股、港股、美股的 Python 财经数据 SDK：18 个数据域、290 个底层函数、2752 个指标码、130 个核心接口 + 17 个组合接口（共 147 个 friendly API）。BSD-3-Clause 开源；取数需开放平台凭证（环境变量 WMSHARE_CLIENT_ID / WMSHARE_CLIENT_SECRET，见 README）。
 
 ## Docs
 
@@ -9,7 +9,7 @@
 - [使用指南 GUIDE](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/GUIDE.md)：单票菜谱、批量取数、多市场、pandas、故障排查
 - [指标库 INDICATORS](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/INDICATORS.md)：全量指标码按族导航——命名语法、11 组精选口径、死码清单与场景速查（先查码，禁止自算已有指标）
 - [AI 用法](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/AI.md)：MCP server、skill、文档上下文与报错驱动的 Agent 接入路径
-- [API 参考](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/API.md)：129 个核心接口 + 8 个组合接口的参数 / 返回 / 单位口径
+- [API 参考](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/API.md)：130 个核心接口 + 17 个组合接口的参数 / 返回 / 单位口径
 - [Agent Skill](https://raw.githubusercontent.com/open-winmale/wmshare/main/src/wmshare/skills/wmshare/SKILL.md)：随包分发的 agent 用法合同（目录先行、单位铁律、决策树、坑位）
 - [可运行示例](https://raw.githubusercontent.com/open-winmale/wmshare/main/examples/README.md)：17 个编号示例（全部支持演示客户端离线试跑），CI 端到端覆盖
 - [CHANGELOG](https://raw.githubusercontent.com/open-winmale/wmshare/main/CHANGELOG.md)：版本历史
@@ -53,6 +53,15 @@
 - `cli.cbond.article(payload: 'dict[str, Any]', date: 'str | None' = None, campaign: 'str | None' = None, fig_dir: 'str' = 'figs') -> 'dict[str, str]'`：把事实包写成图文稿件：源稿 Markdown + 公众号适配稿 + 摘要。
 - `cli.cbond.daily(as_of: 'str | None' = None, top_n: 'int' = 20, budget: 'int' = 30) -> 'dict[str, Any]'`：跑一期可转债日更，返回事实包（三层口径 + 三道闸 + 状态机 + 事件日历）。
 - `cli.cbond.figures(payload: 'dict[str, Any]', out_dir: 'str', date: 'str | None' = None, klines: 'dict[str, Any] | None' = None) -> 'dict[str, str]'`：出当期图：双低榜表格、全市场价差散点、候选个券价格通道。
+- `cli.etf.asset(symbol: 'str', mode: 'str' = 'latest') -> 'Any'`：ETF 资产配置（五类占净值比 + net_asset 亿元；按季披露；→script view fund_asset）。
+- `cli.etf.card(symbol: 'str', mode: 'str' = 'latest') -> 'Any'`：ETF 档案卡（合并档案/净值/份额/分红；mode=latest|series）。
+- `cli.etf.div(symbol: 'str', mode: 'str' = 'latest') -> 'Any'`：ETF 分红（历史分红行；mode=latest|series）。
+- `cli.etf.nav(symbol: 'str', mode: 'str' = 'latest') -> 'Any'`：ETF 净值（基金净值 + 规模 net_asset 亿元；mode=latest|series）。
+- `cli.etf.portfolio(symbol: 'str', mode: 'str' = 'latest') -> 'Any'`：ETF 持仓（最新披露季 top10；mode=latest|series）。
+- `cli.etf.premium(symbol: 'str', mode: 'str' = 'latest') -> 'Any'`：ETF 折溢价率（premium_pct；mode=latest|series）。
+- `cli.etf.profile(symbol: 'str', mode: 'str' = 'latest') -> 'Any'`：ETF 产品档案（基金公司/跟踪标的/费率等；mode=latest|series）。
+- `cli.etf.rank(symbol: 'str', mode: 'str' = 'latest', limit: 'int | None' = None) -> 'Any'`：ETF 榜单指标（chg_w1/m1/m3、flow_20、premium_mean、net_asset；→script view etf_rank）。
+- `cli.etf.share(symbol: 'str', mode: 'str' = 'latest') -> 'Any'`：ETF 份额（fd_share；mode=latest|series）。
 - `cli.statements.balance(symbol: 'str', years: 'int' = 5, period: 'str' = 'annual') -> 'Any'`：资产负债表（fin_balance 宽表；cn/hk/us）。
 - `cli.statements.cashflow(symbol: 'str', years: 'int' = 5, period: 'str' = 'annual') -> 'Any'`：现金流量表（fin_cashflow 宽表；cn/hk/us）。
 - `cli.statements.income(symbol: 'str', years: 'int' = 5, period: 'str' = 'annual') -> 'Any'`：利润表（fin_income 宽表；cn/hk/us）。
@@ -108,7 +117,7 @@
 - `intl.query_shareholders`: {"ranges": {"total_shares_ratio": [0, 1]}}
 - `kline.query_bars`: {"checks": ["volume_amount"], "ranges": {"percent": [-1, 30], "volume": [0, 1000000000000.0]}, "units": {"volume": "lot"}}
 - `kline.query_bars_adj`: {"units": {"volume": "lot"}}
-- `kline.query_bars_period`: {"checks": ["volume_amount"], "ranges": {"percent": [-1, 30], "volume": [0, 1000000000000.0]}, "units": {"volume": "lot"}}
+- `kline.query_bars_period`: {"ranges": {"percent": [-1, 30], "volume": [0, 1000000000000.0]}, "units": {"volume": "lot"}}
 - `kline.query_bars_period_adj`: {"units": {"volume": "lot"}}
 - `kline.query_last`: {"checks": ["volume_amount"], "ranges": {"percent": [-1, 30], "volume": [0, 1000000000000.0]}, "units": {"percent": "percent", "volume": "lot"}}
 - `kline.query_last_adj`: {"ranges": {"percent": [-1, 30], "volume": [0, 1000000000000.0]}, "units": {"percent": "percent", "volume": "lot"}}

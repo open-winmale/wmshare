@@ -31,7 +31,7 @@ class BonusNS(_Ns):
 :param sym: 6 位裸码
 :param limit: 条数
 
-:returns: ARR · 分红行（announce/ex_date/pay/dps/total/content/sas/payout_ratio）
+:returns: ARR · 分红行（announce/ex_date/pay/dps/total/content/sas/payout_ratio/bonus_share/record_date）
         """
         kw: dict[str, Any] = {"sym": sym}
         if limit is not None:
@@ -1784,6 +1784,23 @@ class NoticeNS(_Ns):
     def query_ts_range(self, from_date: str, to_date: str, _raw: bool = False, _df: bool = False) -> Any:
         """入库时间区间条件"""
         return self._client.call("notice.query_ts_range", from_date=from_date, to_date=to_date, _raw=_raw, _df=_df)
+
+    def read_text(self, sym: str, date: str, url: str | None = None, full: bool | None = None, _raw: bool = False, _df: bool = False) -> Any:
+        """公告正文读取（纯读，未就绪不入队）
+
+:param sym: 6 位裸码/港股 5 位
+:param date: YYYY-MM-DD；传 url 时可空串
+:param url: PDF链接；空则由 sym+date 定位
+:param full: false=前4000字预览，true=全量
+
+:returns: MAP · 正文与状态
+        """
+        kw: dict[str, Any] = {"sym": sym, "date": date}
+        if url is not None:
+            kw["url"] = url
+        if full is not None:
+            kw["full"] = full
+        return self._client.call("notice.read_text", **kw, _raw=_raw, _df=_df)
 
     def fmt_maps(self, rows: list, _raw: bool = False, _df: bool = False) -> Any:
         """公告行规范化"""

@@ -5144,6 +5144,107 @@
         }
       }
     },
+    "/notice/read_text": {
+      "post": {
+        "operationId": "notice_read_text",
+        "summary": "公告正文读取（纯读；未就绪不入队，不触发入队/生成）。",
+        "description": ":returns: MAP · ok/status/text/text_chars/text_truncated/file_key/、source_url/announce_date/title/error/note（11 字段）、底层目录函数 `notice.read_text`。SDK 调用：`cli.notice.read_text(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "信息披露"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "symbol": {
+                    "type": "string",
+                    "description": "6 位 A 股码 / 港股 5 位码（date+空 url 时用于定位 PDF）"
+                  },
+                  "date": {
+                    "type": "string",
+                    "description": "披露日 YYYY-MM-DD；传 url 时可传空串"
+                  },
+                  "url": {
+                    "type": "string",
+                    "description": "PDF 链接，非空时直读（跳过 sym+date 定位）"
+                  },
+                  "full": {
+                    "type": "boolean",
+                    "description": "false=前 4000 字预览，true=全量正文"
+                  }
+                },
+                "required": [
+                  "symbol",
+                  "date"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "正文读取结果",
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "description": "是否取到正文"
+                    },
+                    "status": {
+                      "type": "string",
+                      "description": "文档状态"
+                    },
+                    "text": {
+                      "type": "string",
+                      "description": "正文"
+                    },
+                    "text_chars": {
+                      "type": "integer",
+                      "description": "实际字符数"
+                    },
+                    "text_truncated": {
+                      "type": "boolean",
+                      "description": "是否截断"
+                    },
+                    "file_key": {
+                      "type": "string",
+                      "description": "文档键"
+                    },
+                    "source_url": {
+                      "type": "string",
+                      "description": "PDF链接"
+                    },
+                    "announce_date": {
+                      "type": "string",
+                      "description": "披露日"
+                    },
+                    "title": {
+                      "type": "string",
+                      "description": "标题"
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "错误码"
+                    },
+                    "note": {
+                      "type": "string",
+                      "description": "说明"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/notice/has_buyback": {
       "post": {
         "operationId": "notice_has_buyback",
@@ -5938,7 +6039,7 @@
     "/dividend/history": {
       "post": {
         "operationId": "dividend_history",
-        "summary": "分红历史明细（announce/ex_date/pay/dps/total/content/sas/payout_ratio）。",
+        "summary": "分红历史明细（announce/ex_date/pay/dps/total/content/sas/payout_ratio/bonus_share/record_date）。",
         "description": "底层目录函数 `bonus.query_list`。SDK 调用：`cli.dividend.history(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "信息披露"
@@ -6027,6 +6128,14 @@
                       "payout_ratio": {
                         "type": "number",
                         "description": "派息率"
+                      },
+                      "bonus_share": {
+                        "type": "number",
+                        "description": "每股送股数（0=无，转增未暴露）"
+                      },
+                      "record_date": {
+                        "type": "string",
+                        "description": "股权登记日"
                       }
                     }
                   }
@@ -6060,7 +6169,7 @@
     "/dividend/last": {
       "post": {
         "operationId": "dividend_last",
-        "summary": "最近一次分红（announce/ex_date/pay/dps/total/content/sas/payout_ratio），无数据返回 None。",
+        "summary": "最近一次分红（announce/ex_date/pay/dps/total/content/sas/payout_ratio/bonus_share/record_date），无数据返回 None。",
         "description": "复用规范化历史序列取最新一行，字段与 ``history(limit=1)[0]`` 一致；、``_raw=True`` 时返回上游原始行。、底层目录函数 `bonus.query_list`。SDK 调用：`cli.dividend.last(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "信息披露"
@@ -6135,6 +6244,14 @@
                     "payout_ratio": {
                       "type": "number",
                       "description": "派息率"
+                    },
+                    "bonus_share": {
+                      "type": "number",
+                      "description": "每股送股数（0=无，转增未暴露）"
+                    },
+                    "record_date": {
+                      "type": "string",
+                      "description": "股权登记日"
                     }
                   }
                 }

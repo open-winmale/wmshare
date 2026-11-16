@@ -89,6 +89,10 @@ COMPOSITE_NOTES: dict[str, str] = {
                   "按「披露科目原文 × 期次」透视成行式（披露原币，季度粒度；"
                   "period=\"quarter\" 为季报全档，期次键 \"2026:Q1\"）。"
                   "不经过目录合同的单位换算与量级守护层。",
+    "etf": "读取已发布的 skillhub `skhub.etf_build` 脚本（九视图：card/nav/share/div/"
+           "portfolio/profile/premium/asset/rank）；不走目录合同的单位换算层，"
+           "由 SDK 本地补数值守护（量级/不变量异常抛 DataError）。"
+           "取数与目录函数同端点、同价计费，不省 EC；落库为原生口径（比例/百分数/亿元），禁二次换算。",
 }
 
 # 组合接口的文档示例（按命名空间；缺省不渲染示例块）
@@ -110,6 +114,13 @@ COMPOSITE_EXAMPLES: dict[str, list[str]] = {
         "q = cli.statements.income(\"600519\", period=\"quarter\")  # 季报全档（键 2026:Q1）",
         "h = cli.statements.indicators(\"00700\", years=2)      # 主要指标（hk）",
         "audit = cli.statements.audit(\"600519\")               # 审计意见（按年报，cn）",
+    ],
+    "etf": [
+        "card = cli.etf.card(\"510300\")                        # 档案卡（合并档案/净值/份额/分红）",
+        "nav = cli.etf.nav(\"510300\")                          # 净值 + 规模（net_asset 亿元）",
+        "asset = cli.etf.asset(\"510300\")                      # 资产配置（五类占净值比，→fund_asset）",
+        "rank = cli.etf.rank(\"510300\")                        # 榜单指标（→etf_rank）",
+        "series = cli.etf.nav(\"510300\", mode=\"series\")       # 净值序列（默认 latest；仅 nav 消费 mode）",
     ],
 }
 
@@ -155,6 +166,27 @@ FALLBACK_RETURNS = {
         "MAP · {table, scatter, band_<code>: 图片路径}（需 wmshare[figures]）",
     ("backtest", "run"):
         "MAP · {trades: 成交明细, summary: 8 个汇总数字, equity: [{date, nav}], caliber}",
+    # etf 九视图（组合门面，不回溯目录 shape；字段来自 skhub.etf_build 各 build）。
+    ("etf", "card"):
+        "MAP · {ok, view, symbol, quote, premium（嵌套MAP）, nav, share, div, portfolio, profile, freshness}",
+    ("etf", "nav"):
+        "MAP · {ok, view, symbol, latest, net_asset（{date,亿元}；常缺回落 fund_nav）}",
+    ("etf", "share"):
+        "MAP · {ok, view, symbol, date, fd_share（亿份）}",
+    ("etf", "div"):
+        "MAP · {ok, view, symbol, rows: 历史分红行}",
+    ("etf", "portfolio"):
+        "MAP · {ok, view, symbol, date, holdings: 最新披露季 top10（空数组=未披露）}",
+    ("etf", "profile"):
+        "MAP · {ok, view, symbol, profile: {基金公司/跟踪标的/费率等}}",
+    ("etf", "premium"):
+        "MAP · {ok, view, symbol, close, quote_date, unit_nav, nav_date, premium_pct（折溢价率%）}",
+    ("etf", "asset"):
+        "MAP · {ok, view, symbol, date, stock/bond/cash/other/fund_ratio（占净值%），"
+        "net_asset（亿元）；按季披露}",
+    ("etf", "rank"):
+        "MAP · {ok, view, symbol, asof, chg_w1/m1/m3（涨幅%）, avg_amount, flow_20,"
+        "premium_mean, net_asset（亿元；常缺回落 fund_nav）}",
 }
 
 _PARAM_RE = re.compile(r"^:param (\w+):\s*(.*)$")

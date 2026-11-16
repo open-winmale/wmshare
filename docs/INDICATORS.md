@@ -4,7 +4,7 @@
 
 > 服务端已把 **2752** 个指标码算好直出：历史分位、多窗口均值/最低/趋势、行业均值与行业内分位、指数加权、期货主力连续、宏观时序……**取数前先在本页或 `cat.search` 找码——目录里有的码不要自己算**（eval 按标的数逐票计费 EC）。单位铁律：比率/涨跌幅/分位一律小数（0.0396 = 3.96%），金额=元、量=股。精选 78 码带口径与量级守护（违例抛 `DataError`）；其余码不做换算与守护，口径以返回值/cn 注释为准。分类为启发式，最终以 `cat.search` 为准。
 
-全库：18 个数据域 · 129 个核心接口 · 289 个底层函数 · **2752 个指标码**（精选 78 · 死码 20）。
+全库：18 个数据域 · 130 个核心接口 · 290 个底层函数 · **2752 个指标码**（精选 78 · 死码 20）。
 
 ## 目录
 
@@ -5006,6 +5006,7 @@ raw 入口：`cli.cbond`（合约快照、条款事件、正股关联、强赎�
 
 | 场景 | 指标码 | 取数 |
 |---|---|---|
+| 停牌状态与原因（是否停牌/市场/原因/起始日/类型） | `$IS_SUSPEND` | `cli.indicator.metrics(sym, ["$IS_SUSPEND", "$SUSPEND_MARKET", "$SUSPEND_REASON", "$SUSPEND_START_DATE", "$SUSPEND_TYPE"])` |
 | 三年股息率均值 > 3% | `$BONUS_RATE_3Y_AVG_LAST` | `cli.indicator.metrics(sym, ["$BONUS_RATE_3Y_AVG_LAST"])` |
 | PE(TTM) 十年历史分位 | `$PCT_PE_TTM_10Y_LAST` | `cli.indicator.get(sym, "$PCT_PE_TTM_10Y_LAST")` |
 | 行业内 ROE 分位（1=行业最高） | `$CUR_IND_ROE_PCT_LAST` | `cli.indicator.get(sym, "$CUR_IND_ROE_PCT_LAST")` |

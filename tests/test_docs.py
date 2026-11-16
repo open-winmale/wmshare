@@ -165,7 +165,7 @@ def test_readme_counts_match_catalog():
 def test_docs_no_stale_counts():
     """防回归：过时计数口径不得重现（127 曾滞后两个版本、2,639 滞后一个目录代际）。"""
     stale = ("2,639", "2639", "2197", "263 个", "116 个核心接口",
-             "127 个 friendly", "12 个编号示例", "130 个核心接口")
+             "127 个 friendly", "12 个编号示例", "129 个核心接口")
     docs = {
         "README.md": README,
         "docs/GUIDE.md": GUIDE_MD,

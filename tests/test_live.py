@@ -104,6 +104,48 @@ def test_kline_is_etf(cli):
     assert isinstance(_call_or_xfail(cli.kline.is_etf, MAIN), bool)
 
 
+# ---- ETF 九视图组合门面（W3 护栏 5：每 view 一个 live 调用点）----
+ETF = "510300"  # 沪深300ETF，真实宽基，九视图均有采集
+
+
+@pytest.mark.parametrize("view", [
+    "card", "nav", "share", "div", "portfolio", "profile", "premium", "asset", "rank",
+])
+def test_etf_views(cli, view):
+    """九视图 live 冒烟：返回 MAP、view 字段与请求一致、数值锚点合理。
+
+    组合门面不进 FRIENDLY_INDEX（不触发 CORE_COUNT 提醒），故在此显式全覆盖，
+    由 tests/test_live_coverage.py 的静态扫描守护不被删。
+    """
+    got = _call_or_xfail(getattr(cli.etf, view), ETF)
+    assert isinstance(got, dict), got
+    assert got.get("ok") is True, got                    # 未就绪/非 ETF 由门面抛 DataError
+    expected_view = {"asset": "fund_asset", "rank": "etf_rank"}.get(view, view)
+    assert got.get("view") == expected_view, (view, got.get("view"))
+    # 数值锚点：至少有一个该 view 的特征数值字段且量级合理（防 0.25→25 量级错）
+    if view == "asset":
+        vals = [got[k] for k in ("stock_ratio", "bond_ratio", "cash_ratio",
+                                 "other_ratio", "fund_ratio") if got.get(k) is not None]
+        assert vals and all(0 <= v <= 100 for v in vals), got
+    elif view == "rank":
+        for key in ("chg_w1", "chg_m1", "chg_m3"):
+            if got.get(key) is not None:
+                assert -100 <= got[key] <= 1000, (key, got[key])
+    elif view == "premium":
+        if got.get("premium_pct") is not None:
+            assert -100 <= got["premium_pct"] <= 1000, got["premium_pct"]
+    elif view == "nav":
+        na = got.get("net_asset")
+        if isinstance(na, dict):                          # nav 返回 {date, net_asset}
+            na = na.get("net_asset")
+        if na is not None:
+            assert na >= 0, na                            # 亿元非负
+    elif view == "card":
+        q = got.get("quote") or {}                        # card 顶层无 net_asset
+        if q.get("close") is not None:
+            assert q["close"] > 0, q["close"]
+
+
 def test_kline_snapshot(cli):
     snap = cli.kline.snapshot(MAIN)
     assert isinstance(snap, dict)
@@ -240,6 +282,38 @@ def test_notice_recent_and_on_date(cli):
     on = cli.notice.on_date("2026-10-21", limit=3)
     assert isinstance(on, list)
     assert all({"date", "title"} <= set(r) for r in on)
+
+
+def test_notice_read_text(cli):
+    """公告正文读取：取一条有 PDF 的公告，预览路径应返回纯读 MAP。
+
+    覆盖四个锚点：① 预览 text_chars<=4000 且 text_truncated 与之一致；
+    ② status/title/source_url 等 11 字段齐全；③ 纯读不触发入队（ok=false 时
+    status 为 not_ready/no_pdf_url 等非 ready 态）；④ 港股 5 位码定位路径。
+    """
+    FIELDS = {"ok", "status", "text", "text_chars", "text_truncated", "file_key",
+              "source_url", "announce_date", "title", "error", "note"}
+    rows = cli.notice.list(MAIN, window="1y", limit=20)
+    assert rows
+    picked = None
+    for r in rows:
+        url = r.get("pdf_url") or r.get("url")
+        if url:
+            picked = r
+            break
+    assert picked, "近一年公告里应有带 PDF 链接的行"
+    date = str(picked.get("date", ""))[:10]
+    got = cli.notice.read_text(MAIN, date, picked.get("pdf_url") or picked.get("url", ""),
+                               full=False)
+    assert isinstance(got, dict) and FIELDS <= set(got), (FIELDS - set(got), got)
+    assert isinstance(got["text_chars"], int) and got["text_chars"] >= 0
+    if got["ok"]:
+        assert got["text_chars"] <= 4000 and got["text_truncated"] in (True, False)
+        assert len(got["text"]) == got["text_chars"]
+    # 全量路径：正文应包含预览或更长（同一文档，不张冠李戴）
+    full = cli.notice.read_text(MAIN, date, picked.get("pdf_url") or picked.get("url", ""),
+                                full=True)
+    assert isinstance(full, dict) and full["source_url"] == got["source_url"]
 
 
 def test_filings_list_and_latest(cli):

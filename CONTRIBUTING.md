@@ -61,6 +61,13 @@ CI（`.github/workflows/ci.yml`）在每次 push/PR 上跑同样的门禁。
   `tools/extract_from_scripts.py` 从上游同步（含命名空间白名单与文本净化策略）。
 - 友好 API（`src/wmshare/api/` 包）改动必须同步 `FRIENDLY_INDEX` 注册表
   （`tests/test_api.py` 强制两者一致），方法首参统一 `symbol`。
+  **例外**：组合门面（`COMPOSITE_METHODS`，如 `etf`/`cbond`/`backtest`/`statements`）
+  底层是跨接口封装、无单一目录函数，不进 `FRIENDLY_INDEX`。
+- **组合门面准入规则**（护栏 6）：仅当能力**不在目录且无法经维护者同步**时才用
+  组合门面；**数值口径类必须配套本地守护**（量级/不变量校验抛 `DataError`），
+  并补文档注册（签名/返回说明/示例）与每 view 的离线 + live 测试。
+  当前 `etf` 门面是过渡态（`etf_build` 九视图在 `xs/skillhub/`，不在 catalog 扫描面），
+  满足目录化条件（能力进 `sys/` 目录或组合门面纳入门禁）后应迁回目录函数。
 - 命名空间映射：友好层的 `statements`/`dividend` 对应目录命名空间
   `rptdom`/`bonus`（见 `src/wmshare/api/__init__.py` 的 `_FRIENDLY_NS_TO_CATALOG`）；
   未显式包装的目录函数经 `_Api.__getattr__` 目录感知委托直达，
