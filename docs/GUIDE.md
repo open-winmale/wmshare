@@ -141,10 +141,11 @@ cli.kline.min1("600519")                # 当日 1 分钟分时
 # 主力资金净流入（元）
 cli.moneyflow.last("600519")            # net_mf = 821186700（8.2 亿元）
 
-# 三大报表（多期科目行：cn 中文名 / k 科目键 / vals 各期值）
-cli.statements.income("600519", years=1)    # 25 行科目
-cli.statements.balance("600519", years=3)
-# 完整可运行版：examples/11_statements_tour.py（含审计意见、diffp 小数读法）
+# 三大报表 + 主要指标（三加一，cn/hk/us；行 = {k: 披露科目原文, vals: {期次: 值}}）
+cli.statements.income("600519", years=1)          # 利润表，披露原币（元）
+cli.statements.indicators("00700", years=2)       # 主要指标（fin_indicator 宽表）
+cli.statements.income("600519", period="quarter") # 季报全档，期次键 "2026:Q1"
+# 完整可运行版：examples/11_statements_tour.py（含审计意见）
 
 # 指标码取数（码先查目录；分位 0=最低 1=最高）
 cli.indicator.get("600519", "$PCT_PE_TTM_10Y_LAST")   # 0.2115（近 10 年 21% 分位）

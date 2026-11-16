@@ -783,10 +783,11 @@ cli.kline.min1("600519")                # 当日 1 分钟分时
 # 主力资金净流入（元）
 cli.moneyflow.last("600519")            # net_mf = 821186700（8.2 亿元）
 
-# 三大报表（多期科目行：cn 中文名 / k 科目键 / vals 各期值）
-cli.statements.income("600519", years=1)    # 25 行科目
-cli.statements.balance("600519", years=3)
-# 完整可运行版：examples/11_statements_tour.py（含审计意见、diffp 小数读法）
+# 三大报表 + 主要指标（三加一，cn/hk/us；行 = {k: 披露科目原文, vals: {期次: 值}}）
+cli.statements.income("600519", years=1)          # 利润表，披露原币（元）
+cli.statements.indicators("00700", years=2)       # 主要指标（fin_indicator 宽表）
+cli.statements.income("600519", period="quarter") # 季报全档，期次键 "2026:Q1"
+# 完整可运行版：examples/11_statements_tour.py（含审计意见）
 
 # 指标码取数（码先查目录；分位 0=最低 1=最高）
 cli.indicator.get("600519", "$PCT_PE_TTM_10Y_LAST")   # 0.2115（近 10 年 21% 分位）
@@ -5657,7 +5658,7 @@ cli.info.profile("600519")
 #### 财务报表（`fund.statements`）
 
 **性质**：原始数据 · **版本**：1.3.1  
-三大报表科目原值（资产负债 / 利润 / 现金流）多期透视、合并 vs 母公司比较、 报表目录树与审计意见。科目为披露原值；树视图中的派生比率行（__ 前缀 / pct 行）另注。 外部源主要指标（源端算好直采）亦归本域。
+三大报表科目原值（资产负债 / 利润 / 现金流）多期透视、合并 vs 母公司比较、 报表目录树与审计意见——本域目录函数族服务平台内部页面（含合并/母公司口径、 目录树与溯源列）。对外报表走 `cli.statements`（组合门面：三表 + 主要指标 × cn/hk/us，读 fin_* 宽表，科目为披露原值、披露原币）。
 数据来源：定期报告披露原值、外部数据服务(主要指标)。
 单位口径：amount=报表原币（CN=元，HK=港币，US=美元）；ratio=小数（compare 的差额占比已由 SDK 从百分数换算；树视图 pct 行为原生百分数未换算）；period=报告期（年-采样，如 2024-Q4 / 2024 年报）。
 - domain 取值 fin.balance_sheet / fin.income_statement / fin.cashflow_statement
