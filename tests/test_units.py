@@ -108,6 +108,7 @@ def test_range_guard_raises_data_error():
 
 
 
+
 def test_yjyg_amp_percent_converted():
     c, _ = make([dict(YJYG_ROW)])
     out = c.call("forecast.yjyg_rows", sym="688008", limit=1)
@@ -305,8 +306,8 @@ def test_catalog_passthrough_and_metric_meta():
     cat = load()
     kb = cat.function("kline.query_bars")
     assert kb["units"] == {"volume": "lot"} and kb["checks"] == ["volume_amount"]
-    ms = cat.function("rptdom.mkt_statement")
-    assert ms["params"][0]["name"] == "sym"  # 目录合同可查（列映射在消费侧）
+    sc = cat.function("rptdom.statement_compare")
+    assert sc["units"] == {"diffp": "percent"} and sc["checks"] == ["diffp_ratio"]
     assert cat.metric_meta("$ROE_TTM_LAST")["range"] == [-20, 20]
     m = cat.metric("$ROE_TTM_LAST")
     assert m["code"] == "$ROE_TTM_LAST" and m["range"] == [-20, 20]

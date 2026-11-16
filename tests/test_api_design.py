@@ -264,8 +264,6 @@ def test_df_on_list_interfaces(cli):
     cli.session.result = [{"date": "2026-10-21", "close": 1.0}]
     df = cli.notice.list("600519", _df=True)
     assert isinstance(df, pd.DataFrame) and list(df.columns) == ["date", "close"]
-    df2 = cli.statements.income("600519", _df=True)
-    assert isinstance(df2, pd.DataFrame)
 
 
 # ---------------------------------------------------------------- 日期区间

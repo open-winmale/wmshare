@@ -225,7 +225,7 @@ def _count_facts() -> dict[str, int]:
 # 逐行扫描而非全文扫描，避免跨行的历史口径（如 CONTRIBUTING.md 的「44 个 / 核心接口」）误命中。
 _COUNT_PATTERNS = (
     ("core", r"([\d,]+)\s*个\s*(?:SDK\s*)?核心接口", 3),
-    ("composite", r"([\d,]+)\s*个\s*组合接口", 2),
+    ("composite", r"([\d,]+)\s*个\s*组合接口", 8),
     ("functions", r"([\d,]+)\s*个\s*底层函数", 2),
     ("metrics", r"([\d,]+)\s*个\s*指标(?:码|代码)", 3),
     ("tools", r"([\d,]+)\s*个\s*task\s*tools", 2),

@@ -1,6 +1,6 @@
 # wmshare
 
-> 覆盖 A 股、港股、美股的 Python 财经数据 SDK：18 个数据域、285 个底层函数、2752 个指标码、132 个核心接口 + 4 个组合接口（共 136 个 friendly API）。BSD-3-Clause 开源；取数需开放平台凭证（环境变量 WMSHARE_CLIENT_ID / WMSHARE_CLIENT_SECRET，见 README）。
+> 覆盖 A 股、港股、美股的 Python 财经数据 SDK：18 个数据域、288 个底层函数、2752 个指标码、129 个核心接口 + 8 个组合接口（共 137 个 friendly API）。BSD-3-Clause 开源；取数需开放平台凭证（环境变量 WMSHARE_CLIENT_ID / WMSHARE_CLIENT_SECRET，见 README）。
 
 ## Docs
 
@@ -9,7 +9,7 @@
 - [使用指南 GUIDE](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/GUIDE.md)：单票菜谱、批量取数、多市场、pandas、故障排查
 - [指标库 INDICATORS](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/INDICATORS.md)：全量指标码按族导航——命名语法、11 组精选口径、死码清单与场景速查（先查码，禁止自算已有指标）
 - [AI 用法](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/AI.md)：MCP server、skill、文档上下文与报错驱动的 Agent 接入路径
-- [API 参考](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/API.md)：132 个核心接口 + 4 个组合接口的参数 / 返回 / 单位口径
+- [API 参考](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/API.md)：129 个核心接口 + 8 个组合接口的参数 / 返回 / 单位口径
 - [Agent Skill](https://raw.githubusercontent.com/open-winmale/wmshare/main/src/wmshare/skills/wmshare/SKILL.md)：随包分发的 agent 用法合同（目录先行、单位铁律、决策树、坑位）
 - [可运行示例](https://raw.githubusercontent.com/open-winmale/wmshare/main/examples/README.md)：17 个编号示例（全部支持演示客户端离线试跑），CI 端到端覆盖
 - [CHANGELOG](https://raw.githubusercontent.com/open-winmale/wmshare/main/CHANGELOG.md)：版本历史
@@ -35,7 +35,7 @@
 - `fund.estimates`（盈利预测与研报）（cli.estimates）：卖方研究数据——机构盈利预测（逐年 EPS/PE，A=实际 E=预测）、预测明细 （机构/研究员/归母净利/评级）、评级统计（综合评级与买卖家…
 - `fund.indicators`（指标层）：平台公式计算的派生指标——数值不存在于任何披露文件中，由平台以行情/报表/股本/ 分红等原始数据计算得出
 - `fund.segments`（经营分部）：主营构成的多维分解——分产品 / 分业务 / 分区域（境内外）/ 主营标签占比， 外加合并快照与披露覆盖度
-- `fund.statements`（财务报表）：三大报表科目原值（资产负债 / 利润 / 现金流）多期透视与审计意见
+- `fund.statements`（财务报表）：三大报表科目原值（资产负债 / 利润 / 现金流）多期透视、合并 vs 母公司比较、 报表目录树与审计意见
 - `market.cbond`（可转债）（cli.cbond）：可转债合约快照、条款事件（下修/回售/赎回等）、正股关联、强赎触发计数、 独立日 K 与盘中 1 分钟
 - `market.index`（指数）：指数维度数据——指数键列表、成分股（含市值/估值中枢，可按 mv/pe/pb/roe/ps 排序）、权重股（披露权重降序）、指数与行业估值趋势…
 - `market.intl`（港美股披露）（cli.intl）：港美股公司披露维度——港股 CCASS 经纪持仓、主要股东/董事权益、机构评级、 盈利预测（中文键披露原文），港美沽空 interest，美股…
@@ -53,6 +53,10 @@
 - `cli.cbond.article(payload: 'dict[str, Any]', date: 'str | None' = None, campaign: 'str | None' = None, fig_dir: 'str' = 'figs') -> 'dict[str, str]'`：把事实包写成图文稿件：源稿 Markdown + 公众号适配稿 + 摘要。
 - `cli.cbond.daily(as_of: 'str | None' = None, top_n: 'int' = 20, budget: 'int' = 30) -> 'dict[str, Any]'`：跑一期可转债日更，返回事实包（三层口径 + 三道闸 + 状态机 + 事件日历）。
 - `cli.cbond.figures(payload: 'dict[str, Any]', out_dir: 'str', date: 'str | None' = None, klines: 'dict[str, Any] | None' = None) -> 'dict[str, str]'`：出当期图：双低榜表格、全市场价差散点、候选个券价格通道。
+- `cli.statements.balance(symbol: 'str', years: 'int' = 5, period: 'str' = 'annual') -> 'Any'`：资产负债表（fin_balance 宽表；cn/hk/us）。
+- `cli.statements.cashflow(symbol: 'str', years: 'int' = 5, period: 'str' = 'annual') -> 'Any'`：现金流量表（fin_cashflow 宽表；cn/hk/us）。
+- `cli.statements.income(symbol: 'str', years: 'int' = 5, period: 'str' = 'annual') -> 'Any'`：利润表（fin_income 宽表；cn/hk/us）。
+- `cli.statements.indicators(symbol: 'str', years: 'int' = 5, period: 'str' = 'annual') -> 'Any'`：主要指标（fin_indicator 宽表；cn/hk/us）。
 
 ## When NOT to use
 

@@ -20,7 +20,6 @@ AUDIT_REPORT = REPO / ".internal" / "UNIT_AUDIT.md"
 # 实测（2026-11-14）：8 个有函数但 guarded=0 的域；fund.indicators 为 0 函数域，不计。
 ZERO_GUARD_BASELINE = {
     "disc.bonus", "disc.filings", "disc.notice", "disc.workout",
-    "fund.statements",
     "market.macro", "market.margin", "market.moneyflow", "market.stocks",
 }
 DRIFT_WARN_BASELINE = 29
@@ -37,9 +36,9 @@ def _load(path: Path, name: str):
 def test_guard_coverage_cannot_regress():
     mod = _load(GUARD_TOOL, "guard_coverage_baseline")
     result = mod.collect(mod.DEFAULT_DOMAINS)
-    assert result["functions"] == 285
+    assert result["functions"] == 288
     assert result["guarded"] >= 50
-    assert result["ratio"] >= 0.1894
+    assert result["ratio"] >= 0.173611
     zero = {name for name, stat in result["per_domain"].items()
             if stat["functions"] > 0 and stat["guarded"] == 0}
     assert zero <= ZERO_GUARD_BASELINE, f"新增零守护域：{sorted(zero - ZERO_GUARD_BASELINE)}"

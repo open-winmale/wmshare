@@ -1,6 +1,6 @@
 {
  "schema_version": 2,
- "upstream_rev": "90fdefeb",
+ "upstream_rev": "bb158879",
  "domains": {
   "bonus": {
    "entry": "sys/bonus/init.xs",
@@ -104,7 +104,7 @@
   "notice",
   "segments"
  ],
- "function_count": 291,
+ "function_count": 294,
  "functions": [
   {
    "name": "bonus.dps_rpt",
@@ -8227,9 +8227,9 @@
    ]
   },
   {
-   "name": "rptdom.mkt_statement",
-   "cn": "三大报表科目×期次透视（cn/hk/us 全市场宽表；sampling=Q4 年报档（缺省）/Q1..Q3 单季/Q 季报全档）",
-   "example": "rptdom.mkt_statement(\"600519\", \"fin.income_statement\", {\"n\": 5})",
+   "name": "rptdom.statement",
+   "cn": "三报表科目×期次透视（合并/母公司；opts.sampling=Q1..Q4，缺省 Q4 年报档）",
+   "example": "rptdom.statement(\"600519\", \"fin.income_statement\", {\"scope\": \"合并\", \"n\": 5})",
    "returns": "ARR",
    "returns_shape": null,
    "min_args": 2,
@@ -8258,6 +8258,68 @@
    "params": [
     {
      "name": "sym",
+     "type": "string"
+    }
+   ]
+  },
+  {
+   "name": "rptdom.statement_compare",
+   "cn": "合并vs母公司报表比较（差额/差额占比）",
+   "example": "rptdom.statement_compare(\"600519\", \"fin.income_statement\", {\"n\": 2})",
+   "returns": "ARR",
+   "returns_shape": null,
+   "min_args": 2,
+   "params": [
+    {
+     "name": "sym",
+     "type": "string"
+    },
+    {
+     "name": "domain",
+     "type": "string"
+    },
+    {
+     "name": "opts",
+     "type": "object"
+    }
+   ]
+  },
+  {
+   "name": "rptdom.statement_tree",
+   "cn": "三表目录树视图（树序+比率/占比行，整理结构）",
+   "example": "rptdom.statement_tree(\"600519\", \"fin.balance_sheet\", {\"scope\": \"合并\", \"n\": 5})",
+   "returns": "ARR",
+   "returns_shape": null,
+   "min_args": 2,
+   "params": [
+    {
+     "name": "sym",
+     "type": "string"
+    },
+    {
+     "name": "domain",
+     "type": "string"
+    },
+    {
+     "name": "opts",
+     "type": "object"
+    }
+   ]
+  },
+  {
+   "name": "rptdom.statement_years",
+   "cn": "报表可用年报（Q4 档，降序）",
+   "example": "rptdom.statement_years(\"600519\", \"fin.income_statement\")",
+   "returns": "ARR",
+   "returns_shape": null,
+   "min_args": 2,
+   "params": [
+    {
+     "name": "sym",
+     "type": "string"
+    },
+    {
+     "name": "domain",
      "type": "string"
     }
    ]

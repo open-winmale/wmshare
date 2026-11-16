@@ -6,6 +6,7 @@ import pytest
 from wmshare.api import FRIENDLY_INDEX, FRIENDLY_NAMESPACES
 from wmshare.catalog import load
 from wmshare.client import Client, WmshareError
+from wmshare.errors import UsageError
 
 
 class FakeSession:
@@ -129,18 +130,25 @@ def test_last_returns_normalized_latest_row(cli):
 
 
 def test_statements_translation(cli):
+    """statements 门面走 eval_result（内置读取脚本，专业版同款窗口读取）。"""
     cli.statements.income("600519", years=3)
     xs = last_xs(cli)
-    assert xs[0] == 'xs.require("sys/rptdom/init.xs")'
-    assert xs[-1] == ('return rptdom.mkt_statement("600519", "fin.income_statement", '
-                      '{"n": 3})')
-    # period 二档：annual（缺省）不上送 sampling；quarter → sampling="Q" 季报全档
+    body = " ".join(xs)
+    assert 'store.query("fin.income"' in body
+    assert 'sym := "600519"' in body
+    # period 二档：annual 与 quarter 的档位过滤字面量不同
+    cli.statements.income("600519", years=2, period="annual")
+    assert 'IF("annual" == "annual"' in " ".join(last_xs(cli))
+    cli.statements.income("600519", years=2, period="quarter")
+    assert 'IF("quarter" == "annual"' in " ".join(last_xs(cli))
     cli.statements.balance("00700", period="quarter")
-    assert last_xs(cli)[-1] == ('return rptdom.mkt_statement("00700", "fin.balance_sheet", '
-                                '{"n": 5, "sampling": "Q"})')
-    from wmshare import UsageError
+    body_b = " ".join(last_xs(cli))
+    assert 'store.query("fin.balance"' in body_b
     with pytest.raises(UsageError, match="period"):
         cli.statements.income("600519", period="Q2")
+    with pytest.raises(UsageError, match="years"):
+        cli.statements.income("600519", years=13)
+
 
 
 def test_notice_and_dividend(cli):

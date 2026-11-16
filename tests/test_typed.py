@@ -68,10 +68,10 @@ def test_methods_match_catalog_both_ways():
 def test_typed_dispatch(cli):
     cli.bonus.snapshot_yield_ttm(sym="600519")
     assert last_xs(cli) == ['return bonus.snapshot_yield_ttm("600519")']
-    cli.rptdom.mkt_statement(sym="600519", domain="fin.income_statement")
+    cli.rptdom.statement(sym="600519", domain="fin.income_statement", opts={"n": 5})
     xs = last_xs(cli)
     assert xs[0] == 'xs.require("sys/rptdom/init.xs")'
-    assert xs[-1] == 'return rptdom.mkt_statement("600519", "fin.income_statement")'
+    assert xs[-1] == 'return rptdom.statement("600519", "fin.income_statement", {"n": 5})'
 
 
 def test_typed_optional_param_omitted(cli):

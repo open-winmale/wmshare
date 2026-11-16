@@ -84,6 +84,11 @@ COMPOSITE_NOTES: dict[str, str] = {
     "backtest": "纯计算内核在 `wmshare.backtest`（`run_backtest` / `ma_cross_signals` / "
                 "`valuation_signals` / `valuation_by_date`），自备 bars/signals 时"
                 "不联网、不计 EC。",
+    "statements": "读取脚本与平台专业版三表页同构：一次 `store.query` 窗口批量取回 "
+                  "fin_income / fin_balance / fin_cashflow / fin_indicator 宽表全部期次，"
+                  "按「披露科目原文 × 期次」透视成行式（披露原币，季度粒度；"
+                  "period=\"quarter\" 为季报全档，期次键 \"2026:Q1\"）。"
+                  "不经过目录合同的单位换算与量级守护层。",
 }
 
 # 组合接口的文档示例（按命名空间；缺省不渲染示例块）
@@ -98,6 +103,13 @@ COMPOSITE_EXAMPLES: dict[str, list[str]] = {
         "res = cli.backtest.run(\"600519\", rule=\"pe\", buy=20, sell=40)  # 估值阈值（≤3 年）",
         "res[\"trades\"][:2]                                    # 成交明细（买/卖各一行）",
         "res[\"summary\"][\"max_drawdown\"]                      # 净值汇总（8 个数字）",
+    ],
+    "statements": [
+        "rows = cli.statements.income(\"600519\", years=3)      # 利润表近 3 个年报",
+        "rows[0][\"vals\"]                                      # {年份: 值}，披露原币",
+        "q = cli.statements.income(\"600519\", period=\"quarter\")  # 季报全档（键 2026:Q1）",
+        "h = cli.statements.indicators(\"00700\", years=2)      # 主要指标（hk）",
+        "audit = cli.statements.audit(\"600519\")               # 审计意见（按年报，cn）",
     ],
 }
 
@@ -117,6 +129,10 @@ RETURNS_OVERRIDES = {
 
 # 返回说明兜底（FRIENDLY_INDEX 底层列不可回溯目录 shape 的核心接口）
 FALLBACK_RETURNS = {
+    ("statements", "balance"): "ARR · 科目行 {k: 披露科目原文, cn: 同名, vals: {期次: 值}}（披露原币）",
+    ("statements", "income"): "ARR · 科目行 {k: 披露科目原文, cn: 同名, vals: {期次: 值}}（披露原币）",
+    ("statements", "cashflow"): "ARR · 科目行 {k: 披露科目原文, cn: 同名, vals: {期次: 值}}（披露原币）",
+    ("statements", "indicators"): "ARR · 指标行 {k: 指标原文列名, cn: 同名, vals: {期次: 值}}",
     ("indicator", "get"): "数值 · 单指标当前值",
     ("indicator", "metrics"): "MAP · {code: 值}",
     ("indicator", "basic"):

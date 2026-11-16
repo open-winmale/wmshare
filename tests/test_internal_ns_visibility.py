@@ -16,6 +16,7 @@ import sys
 from pathlib import Path
 
 import wmshare
+from wmshare.api import COMPOSITE_METHODS
 from wmshare.api import FRIENDLY_INDEX, _FRIENDLY_NS_TO_CATALOG
 
 REPO = Path(__file__).resolve().parents[1]
@@ -56,15 +57,16 @@ def test_internal_ns_absent_from_every_public_asset():
 
 
 def test_friendly_statements_facade_is_intact():
-    """隐藏内部名字不得以牺牲 cli.statements.* 为代价。"""
+    """隐藏内部名字不得以牺牲 cli.statements.* 为代价（组合门面：三加一 + audit）。"""
     docs = (REPO / "docs" / "API.md").read_text(encoding="utf-8")
     spec = (REPO / "docs" / "openapi.json").read_text(encoding="utf-8")
-    methods = [m for _, ns, m, _, _ in FRIENDLY_INDEX if ns == "statements"]
-    assert methods == ["balance", "income", "cashflow", "audit"], f"statements 门面方法数异常：{methods}"
+    composite = COMPOSITE_METHODS.get("statements", set())
+    assert composite == {"balance", "income", "cashflow", "indicators"}
     assert _FRIENDLY_NS_TO_CATALOG.get("statements") == "rptdom"
-    for method in ("balance", "income", "cashflow", "audit"):
+    for method in sorted(composite | {"audit"}):
         assert f"cli.statements.{method}" in docs, f"docs/API.md 缺少 {method}"
-    assert "statements_balance" in spec, "openapi 缺少 statements 友好 operation"
+    assert "statements_audit" in spec, "openapi 缺少 statements 友好 operation"
+
 
 
 def test_catalog_contract_still_backs_every_facade_method():
@@ -89,7 +91,7 @@ def test_internal_ns_set_covers_inventory_prefixes():
     internal = {n for n in names if ext.is_internal_catalog_name(n)}
     assert internal, "内部命名空间函数应仍保留在目录中（门面委托依赖）"
     assert all(n.partition(".")[0] in ext.INTERNAL_CATALOG_NS for n in internal)
-    assert len(internal) == 2, f"内部命名空间函数数量变化：{len(internal)}"
+    assert len(internal) == 5, f"内部命名空间函数数量变化：{len(internal)}"
 
 
 def test_doc_hidden_rule_covers_internal_namespace():

@@ -8,7 +8,7 @@
     ``_raw=True`` 取未规范化原始行（仅部分方法）；
   - 本层是目录合同的薄翻译：高频方法显式包装；目录内其余函数经 ``__getattr__``
     属性直达（如 ``cli.kline.screen_above_ma20``、``cli.dividend.screen_quality``），
-    目录之外的名字显式 AttributeError——285 个底层函数零遮蔽。
+    目录之外的名字显式 AttributeError——288 个底层函数零遮蔽。
   - 选股能力集中在 ``cli.screener``：单票筛选器（bool）、全市场宽度/涨跌榜与
     全市场条件选股 ``query()``（服务端索引直出）显式包装，kline 目录的其余筛选
     函数经属性直达。
@@ -1295,81 +1295,106 @@ class BacktestApi(_Api):
 
 # ---------------------------------------------------------------- 财务 fundamentals
 class StatementsApi(_Api):
-    """三大报表科目透视（全市场 cn/hk/us；披露原值，金额=报表原币）。
+    """三大报表 + 主要指标透视（三加一，cn/hk/us 全市场；披露原值、报表原币）。
 
-    边界与集成约定：
-    - 数据源为全市场宽表 fin_income/fin_balance/fin_cashflow：k=各市场披露
-      科目原文（HKFRS/USGAAP/cn 混源口径），披露原币（港币/美元/人民币），
-      不做 CN 口径翻译，无派生行与溯源列——列映射由消费侧负责。
-    - ``period`` 两档：``"annual"``（年报档，缺省）/``"quarter"``（季报全档
-      Q1..Q4 混合，期次键 "2026:Q1"）。
-    - 合并/母公司比较、目录树、期间列举基于内部提取库，不再对外提供。
-    - 本命名空间是报表域唯一对外入口；底层目录名内部保留、可能调整——下游
-      集成（如 OpenBB provider）应以本门面签名编程，勿依赖底层函数名。
+    数据源与平台专业版同构：fin_income / fin_balance / fin_cashflow /
+    fin_indicator 宽表（季度粒度、披露原币），一次 ``store.query`` 窗口批量
+    取回全部期次后按「披露科目原文 × 期次」透视成行式。列名为各市场披露
+    科目原文，不做 CN 口径翻译——列映射由消费侧负责。本方法族为组合门面
+    （底层是读取脚本而非单一目录函数），不经过目录合同的单位换算与量级
+    守护层。
 
-    各方法返回科目行列表（科目 × 期次列）。
-    ``kind`` 取值：``balance``（资产负债）/``income``（利润）/``cashflow``（现金流）。
+    ``period`` 两档：``"annual"``（年报档，缺省，vals 键=纯年份）/
+    ``"quarter"``（季报全档 Q1..Q4 混合，键=``2026:Q1``）。``years`` 期数
+    1..12（与专业版前端窗口对齐）。``audit`` 读审计意见（聚源混源 Q4 年轴，
+    仅 cn）。
 
-    :param years: 期数（降序，默认 5；季报档=总期数）
+    ``kind`` 取值：``balance``（资产负债）/``income``（利润）/``cashflow``
+    （现金流）/``indicators``（主要指标）。
     """
 
-    _DOMAINS = {"balance": "fin.balance_sheet",
-                "income": "fin.income_statement",
-                "cashflow": "fin.cashflow_statement"}
+    _CATALOGS = {"balance": "fin.balance",
+                 "income": "fin.income",
+                 "cashflow": "fin.cashflow",
+                 "indicators": "fin.indicator"}
 
     @classmethod
-    def _domain(cls, kind: str) -> str:
+    def _kind_catalog(cls, kind: str) -> str:
         try:
-            return cls._DOMAINS[kind]
+            return cls._CATALOGS[kind]
         except KeyError:
-            raise UsageError(f"未知报表 kind={kind!r}；可选 {sorted(cls._DOMAINS)}",
+            raise UsageError(f"未知报表 kind={kind!r}；可选 {sorted(cls._CATALOGS)}",
                              code="params") from None
 
     @staticmethod
-    def _stmt_opts(years: int, period: str) -> dict:
-        """构造底层取数 opts；period 二档（annual 缺省=Q4 行为不变）。"""
+    def _validate_years(years: int) -> int:
+        if not isinstance(years, int) or not 1 <= years <= 12:
+            raise UsageError(f"years 只支持 1~12（专业版同窗口），收到 {years!r}",
+                             code="params") from None
+        return int(years)
+
+    def _statement(self, kind: str, symbol: str, years: int, period: str) -> Any:
+        from wmshare._stmt_xs import build_statement_xs, infer_market
+
+        catalog = self._kind_catalog(kind)
+        years = self._validate_years(years)
         if period not in ("annual", "quarter"):
             raise UsageError(f"未知 period={period!r}；可选 'annual'（年报档）| 'quarter'（季报全档）",
                              code="params") from None
-        opts: dict = {"n": years}
-        if period == "quarter":
-            opts["sampling"] = "Q"
-        return opts
+        xs = build_statement_xs(catalog, symbol, years, period)
+        return self._c.eval_result(xs, symbol=symbol, market=infer_market(symbol))
 
     def balance(self, symbol: str, years: int = 5,
-                period: str = "annual", _raw: bool = False, _df: bool = False) -> Any:
+                period: str = "annual") -> Any:
         """资产负债表（fin_balance 宽表；cn/hk/us）。
 
-        :param symbol: 6 位 A 股代码 / 港股 5 位代码 / 美股 ticker（自动归一）
+        返回科目行列表（k=披露科目原文，vals=各期值，披露原币）。
+
+        :param symbol: 6 位 A 股代码 / 港股 5 位代码 / 美股 ticker（自动路由市场）
+        :param years: 期数 1..12（缺省 5；季报档=总期数）
         :param period: "annual"（年报档，缺省）或 "quarter"（季报全档 Q1..Q4）
         """
-        return self._c.call("rptdom.mkt_statement", sym=symbol, domain="fin.balance_sheet",
-                            opts=self._stmt_opts(years, period), _raw=_raw, _df=_df)
+        return self._statement("balance", symbol, years, period)
 
     def income(self, symbol: str, years: int = 5,
-               period: str = "annual", _raw: bool = False, _df: bool = False) -> Any:
+               period: str = "annual") -> Any:
         """利润表（fin_income 宽表；cn/hk/us）。
 
-        :param symbol: 6 位 A 股代码 / 港股 5 位代码 / 美股 ticker（自动归一）
+        返回科目行列表（k=披露科目原文，vals=各期值，披露原币）。
+
+        :param symbol: 6 位 A 股代码 / 港股 5 位代码 / 美股 ticker（自动路由市场）
+        :param years: 期数 1..12（缺省 5；季报档=总期数）
         :param period: "annual"（年报档，缺省）或 "quarter"（季报全档 Q1..Q4）
         """
-        return self._c.call("rptdom.mkt_statement", sym=symbol, domain="fin.income_statement",
-                            opts=self._stmt_opts(years, period), _raw=_raw, _df=_df)
+        return self._statement("income", symbol, years, period)
 
     def cashflow(self, symbol: str, years: int = 5,
-                 period: str = "annual", _raw: bool = False, _df: bool = False) -> Any:
+                 period: str = "annual") -> Any:
         """现金流量表（fin_cashflow 宽表；cn/hk/us）。
 
-        :param symbol: 6 位 A 股代码 / 港股 5 位代码 / 美股 ticker（自动归一）
+        返回科目行列表（k=披露科目原文，vals=各期值，披露原币）。
+
+        :param symbol: 6 位 A 股代码 / 港股 5 位代码 / 美股 ticker（自动路由市场）
+        :param years: 期数 1..12（缺省 5；季报档=总期数）
         :param period: "annual"（年报档，缺省）或 "quarter"（季报全档 Q1..Q4）
         """
-        return self._c.call("rptdom.mkt_statement", sym=symbol, domain="fin.cashflow_statement",
-                            opts=self._stmt_opts(years, period), _raw=_raw, _df=_df)
+        return self._statement("cashflow", symbol, years, period)
+
+    def indicators(self, symbol: str, years: int = 5,
+                   period: str = "annual") -> Any:
+        """主要指标（fin_indicator 宽表；cn/hk/us）。
+
+        返回指标行列表（k=指标原文列名，vals=各期值）。
+
+        :param symbol: 6 位 A 股代码 / 港股 5 位代码 / 美股 ticker（自动路由市场）
+        :param years: 期数 1..12（缺省 5；季报档=总期数）
+        :param period: "annual"（年报档，缺省）或 "quarter"（季报全档 Q1..Q4）
+        """
+        return self._statement("indicators", symbol, years, period)
 
     def audit(self, symbol: str) -> Any:
         """审计意见（按年报，返回 {年份: 意见}；cn）。"""
         return self._c.call("rptdom.statement_audit", sym=symbol)
-
 
 
 class SegmentsApi(_Api):
@@ -2233,6 +2258,7 @@ class MacroApi(_Api):
 COMPOSITE_METHODS: dict[str, set[str]] = {
     "cbond": {"daily", "article", "figures"},
     "backtest": {"run"},
+    "statements": {"balance", "income", "cashflow", "indicators"},
 }
 
 FRIENDLY_NAMESPACES: dict[str, type[_Api]] = {
@@ -2307,9 +2333,6 @@ FRIENDLY_INDEX: list[tuple[str, str, str, str, str]] = [
     ("market", "stocks", "list", "全市场证券列表", "stocks.query_list"),
     ("market", "stocks", "industries", "行业目录", "stocks.industry_list"),
     ("market", "stocks", "industry_members", "行业成分股", "stocks.industry_members"),
-    ("fundamentals", "statements", "balance", "资产负债表", "rptdom.mkt_statement"),
-    ("fundamentals", "statements", "income", "利润表", "rptdom.mkt_statement"),
-    ("fundamentals", "statements", "cashflow", "现金流量表", "rptdom.mkt_statement"),
     ("fundamentals", "statements", "audit", "审计意见", "rptdom.statement_audit"),
     ("fundamentals", "indicator", "get", "取单个指标", "指标代码直查"),
     ("fundamentals", "indicator", "metrics", "批量取指标", "指标代码批量直查"),

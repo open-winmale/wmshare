@@ -12,33 +12,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.21.0] - 2026-11-16
 
-### Added
-- 新增示例 `examples/17_prr_dividend_screen.py`：市赚率（PRR）+现金流覆盖三维红利排雷
-  ——硬卡点一条 `screener.query` 全市场筛（count=真命中数），本地补行业剔除、现金流
-  覆盖与 CHI 排名；演示客户端罐头可零凭证走通全流程。
-
 ### Changed（BREAKING）
-- **报表数据源切全市场宽表**：`cli.statements.balance/income/cashflow` 改读
-  fin_income/fin_balance/fin_cashflow（cn/hk/us 统一，季度粒度、披露原币、
-  科目原文列）；底层委托改为新增目录函数 `mkt_statement`（随包目录内部名，
-  对外清单不回显）；`period="quarter"` 取季报全档（Q1..Q4 混合，
-  期次键 "2026:Q1"）。
+- **statements 门面对齐平台专业版实现（三加一 × cn/hk/us）**：数据源 =
+  fin_income / fin_balance / fin_cashflow / fin_indicator 宽表（季度粒度、
+  披露原币、列名=披露科目原文），读取脚本与专业版三表页同构（一次
+  `store.query` 窗口批量取回全部期次后透视成行式）——底层为 SDK 内置读取
+  脚本（组合门面），不再委托任何目录函数；`period="annual"|"quarter"` 二档
+  （quarter 为季报全档，期次键 "2026:Q1"）；`years` 上限 1..12（专业版同
+  窗口）。新增 `indicators()`（主要指标，fin_indicator）。
 - **下线内部提取库派生面**：`compare`（合并 vs 母公司）/`tree`（目录树）/
-  `years`（期间列举）三方法与 `scope` 参数移除——其数据只能来自内部提取库
-  （alt.bssaa 的 LIST 投影），按数据边界不再对外提供；`audit` 保留
-  （读 fin.balance，非提取库内容）。
-- 对外目录收缩：报表族仅保留 `mkt_statement` + `statement_audit`
-  （294→291 函数，friendly 135→132）；`statement` 家族原样保留给平台内部
-  页面/附注链路（摘 xs:catalog，函数逻辑零改动）。
-- 手写计数同步（README/GUIDE/AI/INDICATORS/SKILL：288→285、135→132、
-  139→136）；MCP statement 工具 action 枚举收窄并去 scope。
+  `years`（期间列举）三方法与 `scope` 参数移除——其数据来自平台内部提取库，
+  按数据边界不再对外提供；`audit` 保留（读 fin_balance 宽表 opinionType）。
+- statements 转为组合门面登记（COMPOSITE_METHODS），目录合同
+  fund.statements 回归内部页面口径（v1.3.1，附对外数据源注记）；
+  friendly 计数 135→129 核心 / 4→8 组合（137 friendly）。
 
 ### Fixed
-- MCP server.py 的 wmshare_statement 定义与工具实现同步（去 scope/kind）。
-- `indices.valuation` 合同展开收录（market.index.yaml v1.5.1）：params key+points、
-  returns shape（current + 季频 series）入目录，与上游 inventory（rev 90fdefeb）及
-  类型化门面对齐。
-- 数据商字面量（混源口径表述中性化）从目录与门面 docstring 退场，泄漏门禁清零。
+- 文档机制保持：组合接口按 composite 渲染路径出参数表与示例；
+  手写计数（README/GUIDE/AI/INDICATORS/SKILL/docs）与运行时真值一致
+  （288 函数 / 129 核心 / 137 friendly / 8 组合）。
+
+### Notes
+- raw-eval 读取不经过目录合同的单位换算与量级守护层（与专业版页面同级）；
+  列映射由消费侧负责。上游 script 仓同步回归原状（statement 家族保留给
+  内部页面/附注），本版本与上游部署同窗口发布。
+
 
 ## [1.20.7] - 2026-11-16
 

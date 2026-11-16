@@ -26,7 +26,7 @@ LimitArg = Annotated[int, Field(ge=1, le=100, description="返回条数上限")]
 DateArg = Annotated[str | None, Field(description="日期，格式 YYYY-MM-DD")]
 
 StatementAction = Literal[
-    "income", "balance", "cashflow", "audit"
+    "income", "balance", "cashflow", "indicators", "audit"
 ]
 SegmentAction = Literal[
     "business", "products", "region", "income", "coverage", "periods", "snapshot"

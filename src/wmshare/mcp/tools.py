@@ -563,7 +563,7 @@ def statement(
         raise ValueError(f"action 只支持 {'/'.join(STATEMENT_ACTIONS)}")
     selected_market = _market(market or runtime.market)
     cli = runtime.client(market)
-    if action in {"income", "balance", "cashflow"}:
+    if action in {"income", "balance", "cashflow", "indicators"}:
         data = getattr(cli.statements, action)(str(symbol), years=int(years))
     else:
         data = cli.statements.audit(_symbol(action, symbol))
