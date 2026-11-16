@@ -24,8 +24,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import wmshare  # noqa: E402
 from _introspect import (  # noqa: E402
-    FALLBACK_RETURNS, method_doc, method_params, return_shape_for, shape_to_schema,
-    underlying_fn,
+    FALLBACK_RETURNS, is_internal_catalog_name, method_doc, method_params,
+    return_shape_for, shape_to_schema, underlying_fn,
 )
 from wmshare.api import FRIENDLY_INDEX, FRIENDLY_NAMESPACES  # noqa: E402
 from wmshare.catalog import load  # noqa: E402
@@ -85,7 +85,9 @@ def _core_paths(catalog) -> dict:
         fn_key = underlying_fn(underlying)
         if fn_key:
             resp = shape_to_schema(return_shape_for(catalog, ns, method, underlying))
-            call_note = f"底层目录函数 `{underlying}`"
+            # 内部命名空间只作为目录契约存在：description 里不回显底层函数名，
+            # 用户/Agent 只需看到下面的 `cli.{ns}.{method}(...)` 友好调用。
+            call_note = "" if is_internal_catalog_name(fn_key) else f"底层目录函数 `{underlying}`"
         else:
             resp = {}
             call_note = underlying

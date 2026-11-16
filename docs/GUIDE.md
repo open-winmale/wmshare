@@ -44,7 +44,7 @@ export WMSHARE_CLIENT_ID=<AppId> WMSHARE_CLIENT_SECRET=<API Key>
 
 - **门面层** `cli.<命名空间>.<方法>()`：22 个命名空间、135 个核心接口，方法名动宾化可猜
   （`kline.bars`、`dividend.yield_ttm`、`screener.screen_limit_up`）。
-- **目录层** `cli.call("<域>.<函数名>", ...)`：291 个底层函数按目录合同直调，
+- **目录层** `cli.call("<域>.<函数名>", ...)`：288 个底层函数按目录合同直调，
   参数名以 `cat.function(name)["params"]` 为准。门面未包装的函数经属性直达
   （如 `cli.dividend.index_where_high_yield_5()`）；目录之外的名字显式报错——
   门面不遮蔽目录函数，288 个都能直达。

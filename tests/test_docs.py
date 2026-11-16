@@ -277,14 +277,18 @@ def test_api_md_metric_groups_match_catalog():
 
 
 def visible_catalog_functions(cat) -> list[str]:
-    """与 gen_api_docs.doc_hidden 同规则：排除内部/索引积木类函数。"""
+    """直接复用 gen_api_docs.doc_hidden，避免两处隐藏规则各自漂移。
+
+    隐藏规则含内部命名空间（用户侧只见 cli.statements.* 等友好门面）与
+    索引积木类辅助函数；被隐藏的函数仍留在目录里，cli.call 可调。
+    """
+    import sys
+    sys.path.insert(0, str(REPO / "tools"))
+    from gen_api_docs import doc_hidden  # noqa: E402
     out = []
     for names in cat.functions_by_domain().values():
         for name in names:
-            short = name.split(".", 1)[1]
-            if cat.function(name).get("status") == "internal":
-                continue
-            if short.startswith(("index_where_", "index_field")) or short.endswith("_bin_expr"):
+            if doc_hidden(cat.function(name)):
                 continue
             out.append(name)
     return out

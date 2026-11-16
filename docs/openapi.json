@@ -2852,7 +2852,7 @@
       "post": {
         "operationId": "statements_balance",
         "summary": "资产负债表（fin.balance_sheet）。",
-        "description": "底层目录函数 `rptdom.statement`。SDK 调用：`cli.statements.balance(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "description": "。SDK 调用：`cli.statements.balance(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "财务基本面"
         ],
@@ -2900,7 +2900,7 @@
       "post": {
         "operationId": "statements_income",
         "summary": "利润表（fin.income_statement，含费用四率原料行）。",
-        "description": "底层目录函数 `rptdom.statement`。SDK 调用：`cli.statements.income(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "description": "。SDK 调用：`cli.statements.income(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "财务基本面"
         ],
@@ -2948,7 +2948,7 @@
       "post": {
         "operationId": "statements_cashflow",
         "summary": "现金流量表（fin.cashflow_statement）。",
-        "description": "底层目录函数 `rptdom.statement`。SDK 调用：`cli.statements.cashflow(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "description": "。SDK 调用：`cli.statements.cashflow(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "财务基本面"
         ],
@@ -2996,7 +2996,7 @@
       "post": {
         "operationId": "statements_compare",
         "summary": "合并 vs 母公司比较：科目行 + 合并值/母公司值/差额/差额占比。",
-        "description": "差额占比为**小数**（diffp = 差额 / 合并值，0.078 = 7.8%；SDK 自动由脚本、的百分数口径换算，``_units=\"native\"`` 可取原值）；母公司未披露的科目差额为空。、底层目录函数 `rptdom.statement_compare`。SDK 调用：`cli.statements.compare(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "description": "差额占比为**小数**（diffp = 差额 / 合并值，0.078 = 7.8%；SDK 自动由脚本、的百分数口径换算，``_units=\"native\"`` 可取原值）；母公司未披露的科目差额为空。。SDK 调用：`cli.statements.compare(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "财务基本面"
         ],
@@ -3051,7 +3051,7 @@
       "post": {
         "operationId": "statements_tree",
         "summary": "报表目录树视图：按树序输出科目行，含派生比率行（流动比率/资产负债率/毛利率等）。",
-        "description": "注意：派生行的数值口径按行内标记区分——``pct`` 行的 vals 为百分数（原生，、未换算）、``fmt=\"x\"`` 行为倍数、其余科目行为报表原币元；与 compare() 的统一、小数口径不同，树视图适合展示/核对而非跨接口运算。、底层目录函数 `rptdom.statement_tree`。SDK 调用：`cli.statements.tree(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "description": "注意：派生行的数值口径按行内标记区分——``pct`` 行的 vals 为百分数（原生，、未换算）、``fmt=\"x\"`` 行为倍数、其余科目行为报表原币元；与 compare() 的统一、小数口径不同，树视图适合展示/核对而非跨接口运算。。SDK 调用：`cli.statements.tree(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "财务基本面"
         ],
@@ -3102,7 +3102,7 @@
       "post": {
         "operationId": "statements_years",
         "summary": "该报表可用的年报年份（降序）。",
-        "description": "底层目录函数 `rptdom.statement_years`。SDK 调用：`cli.statements.years(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "description": "。SDK 调用：`cli.statements.years(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "财务基本面"
         ],
@@ -3145,7 +3145,7 @@
       "post": {
         "operationId": "statements_audit",
         "summary": "审计意见（按年报，返回 {年份: 意见}）。",
-        "description": "底层目录函数 `rptdom.statement_audit`。SDK 调用：`cli.statements.audit(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "description": "。SDK 调用：`cli.statements.audit(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "财务基本面"
         ],

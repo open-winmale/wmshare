@@ -27,8 +27,8 @@ sys.path.insert(0, str(REPO / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _introspect import (  # noqa: E402
     COMPOSITE_EXAMPLES, COMPOSITE_NOTES, FALLBACK_RETURNS, RETURNS_OVERRIDES,
-    field_cn, method_doc, method_example, method_params, return_shape_for,
-    underlying_fn,
+    field_cn, is_internal_catalog_name, method_doc, method_example, method_params,
+    return_shape_for, underlying_fn,
 )
 from wmshare.api import (  # noqa: E402
     COMPOSITE_METHODS, FRIENDLY_INDEX, FRIENDLY_NAMESPACES)
@@ -147,7 +147,10 @@ def doc_hidden(fn: dict) -> bool:
     """脚本专用/内部辅助函数不进公开文档（保留在目录中，cli.call 仍可调）。"""
     if fn.get("status") == "internal":
         return True
-    short = fn["name"].split(".", 1)[-1]
+    name = fn["name"]
+    if is_internal_catalog_name(name):
+        return True  # 内部命名空间：用户侧只见友好门面 cli.statements.*
+    short = name.split(".", 1)[-1]
     return short.startswith(("index_where_", "index_field")) or short.endswith("_bin_expr")
 
 

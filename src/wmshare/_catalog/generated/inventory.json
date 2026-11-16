@@ -1,6 +1,6 @@
 {
  "schema_version": 2,
- "upstream_rev": "a778aae7",
+ "upstream_rev": "9d6bfd25",
  "domains": {
   "bonus": {
    "entry": "sys/bonus/init.xs",
@@ -104,7 +104,7 @@
   "notice",
   "segments"
  ],
- "function_count": 297,
+ "function_count": 294,
  "functions": [
   {
    "name": "bonus.dps_rpt",
@@ -8227,50 +8227,6 @@
    ]
   },
   {
-   "name": "rptdom.mkt_get",
-   "cn": "跨市场三大表指定期（原币原列，缺期 nil）",
-   "example": "rptdom.mkt_get(\"AAPL\", \"fin.income_statement\", 2025, \"Q4\")",
-   "returns": "MAP",
-   "returns_shape": null,
-   "min_args": 4,
-   "params": [
-    {
-     "name": "sym",
-     "type": "string"
-    },
-    {
-     "name": "domain",
-     "type": "string"
-    },
-    {
-     "name": "annual",
-     "type": "int"
-    },
-    {
-     "name": "sampling",
-     "type": "string"
-    }
-   ]
-  },
-  {
-   "name": "rptdom.mkt_latest",
-   "cn": "跨市场三大表最新一期（原币原列）",
-   "example": "rptdom.mkt_latest(\"AAPL\", \"fin.income_statement\")",
-   "returns": "MAP",
-   "returns_shape": null,
-   "min_args": 2,
-   "params": [
-    {
-     "name": "sym",
-     "type": "string"
-    },
-    {
-     "name": "domain",
-     "type": "string"
-    }
-   ]
-  },
-  {
    "name": "rptdom.statement",
    "cn": "三报表科目×期次透视（合并/母公司；opts.sampling=Q1..Q4，缺省 Q4 年报档）",
    "example": "rptdom.statement(\"600519\", \"fin.income_statement\", {\"scope\": \"合并\", \"n\": 5})",
@@ -8325,24 +8281,6 @@
     {
      "name": "opts",
      "type": "object"
-    }
-   ]
-  },
-  {
-   "name": "rptdom.statement_periods",
-   "cn": "报表可用期间（SAS 串全集，新→旧）",
-   "example": "rptdom.statement_periods(\"600519\", \"fin.income_statement\")",
-   "returns": "ARR",
-   "returns_shape": null,
-   "min_args": 2,
-   "params": [
-    {
-     "name": "sym",
-     "type": "string"
-    },
-    {
-     "name": "domain",
-     "type": "string"
     }
    ]
   },

@@ -13,24 +13,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.20.5] - 2026-11-14
 
 ### Fixed
-- **随包目录与上游抽取结果的真漂移**：用官方 `tools/extract_from_scripts.py`
-  从上游同步 `generated/inventory.json` 与 `generated/metrics.json`
-  （生成物禁止手改）。`upstream_rev` `d77f0354` → `09949b0a`；
-  `cbond.card.returns` 描述补齐 `projects / share / holders / institution`。
-  连带重跑 `extract_metric_taxonomy.py` 与 6 个生成器，同步
-  `metric_taxonomy.json`、`docs/API.md`、`llms-full.txt`。
-- 本机长期存在的 `test_extractor_check_no_drift` FAIL 消除，全量测试首次
-  **0 failed**（1864 passed / 94 skipped）。
+- **随包目录与上游抽取结果的漂移消除**：用官方 `tools/extract_from_scripts.py`
+  从上游重生成 `generated/inventory.json` / `metrics.json`（生成物禁止手改），
+  `upstream_rev` 锚定 `9d6bfd25`；`cbond.card.returns` 描述补齐
+  `projects / share / holders / institution`。连带重跑
+  `extract_metric_taxonomy.py` 与 6 个生成器，`test_extractor_check_no_drift`
+  恢复绿色。
+- **撤回未走暴露审批的目录扩容**：并发会话曾把 3 个上游**尚未部署、未 live
+  验证**的财报目录函数收进发布白名单（inventory 294 → 297、域版本升到 1.5.0）。
+  本版恢复白名单为 5 项、域回 `v1.3.0`、inventory 回到 **294 函数 / 2752 指标**，
+  并同步恢复受影响的 7 处手写计数（288 函数口径）。上游 A1/A2 仍待部署，
+  如需收录须在部署并 live 验证后单独走暴露审批。
+
+### Changed
+- **内部目录命名空间不再出现在对外清单**：底层函数名仍留在随包目录
+  （`cli.statements.*` 友好门面的目录感知委托依赖 `cat.function()`），但
+  `docs/API.md` 附录函数表、`docs/openapi.json` description、`llms*.txt`
+  的单位声明段、以及 README / GUIDE / INDICATORS / swagger / examples / 技能文档
+  一律不再回显内部命名空间，用户侧只见 `cli.statements.balance/income/...`。
+  生成器通过共享的 `INTERNAL_CATALOG_NS` 统一判定；**运行时调用与 API 行为不变**，
+  `cli.call(...)` 对底层名仍可用。历史版本段两处旧口径同步改写为友好接口名。
+- 与上述可见性策略对齐 P1 的两个门禁（`test_docs` / `test_unit_visibility`），
+  并新增反向约束，未削弱防线。
 
 ### Added
-- **`tests/test_extract_exposure.py`**：extract 同步的暴露面防回归门禁。
-  用抽取器自身的 `in_scope()` / `RPTDOM_KEEP` 做聚合计数校验
-  （不把未审批 name 写进测试台账），并钉住三份生成物 `upstream_rev`
-  必须一致、随包目录与确定性渲染一致。
+- **`tests/test_extract_exposure.py`**（4 用例）：extract 同步的暴露面防回归门禁，
+  用抽取器自身的 `in_scope()` / 白名单做聚合计数校验（不逐条列未审批 name），
+  钉住三份生成物 `upstream_rev` 一致、随包目录与确定性渲染一致。
+- **`tests/test_internal_ns_visibility.py`**（5 用例）：断言内部命名空间零泄漏到
+  全部对外资产、友好门面 7 个方法仍在且每个都能回溯到目录契约、
+  目录中的内部函数数量受控、`doc_hidden()` 规则覆盖该命名空间。
 
 ### Notes
-- 同步前后核对：294 个函数集合零增删、2752 个指标零变化、
-  发布白名单过滤结果未变；本次为元数据同步，运行时行为不变。
+- 验收：16 项静态门禁 + `check_leak`（205 文件）+ mypy 28 文件零问题、
+  6 个生成器 `--check` rc=0、全量 **1869 passed / 94 skipped / 0 failed**、
+  `--cov-branch` **88.31% ≥ 85%**。
 
 ## [1.20.4] - 2026-11-14
 
@@ -1094,7 +1111,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   目录的 YAML 声明做唯一一次换算。本次实际换算的字段：
   - `kline.query_bars / query_last / query_bars_adj / query_last_live` 的 `volume`：
     手 → 股（×100，A 股/港美/ETF 同口径）；
-  - `rptdom.statement_compare` 的 `diffp`（差额占比）：百分数 → 小数；
+  - `cli.statements.compare` 的 `diffp`（差额占比）：百分数 → 小数；
   - `forecast.yjyg_*` 的 `np_amp_* / rev_amp_*` 与 `yjkb_*` 的 `np_yoy / rev_yoy / roe`：
     百分数 → 小数（含 `forecast.snapshot` 嵌套行）。
 - **指标层金额口径文档修正**：实测全部为**元**（历史文档误标"亿元"；上游 cn 名中的
@@ -1121,7 +1138,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - README 的 `cat.search()` 行内引用补充 `cat = wmshare.load()` 装载步骤；
   示例风格统一为 `wmshare.load()`。
 - kline 复权 `query_bars_adj` 不套 `volume_amount` 不变量（复权价与成交额不可比）。
-- `rptdom.statement_tree` 派生行口径文档化（pct 行=原生百分数、`fmt="x"` 行=倍数、
+- `cli.statements.tree` 派生行口径文档化（pct 行=原生百分数、`fmt="x"` 行=倍数、
   科目行=元）；树视图适合展示核对，跨接口运算用 `compare()`。
 - 目录 upstream rev 同步至上游 454585e5（函数/指标计数不变）。
 

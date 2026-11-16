@@ -19,6 +19,8 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _introspect import is_internal_catalog_name  # noqa: E402
 
 RAW = "https://raw.githubusercontent.com/open-winmale/wmshare/main"
 
@@ -58,13 +60,17 @@ def _guard_manifest_lines(cat) -> str:
     llms.txt / llms-full.txt 是 agent 直读的上下文；此前单位口径只有自然语言描述，
     逐函数声明藏在 cat.function() 里。这里按 JSON 逐条列出，agent 可在取数前解析。
     """
-    manifest = cat.guard_manifest()
+    # 内部命名空间（如 rptdom）不对外露出底层函数名：其友好接口的单位声明
+    # 已在 openapi.json 的 x-wmshare-guards 中按 operation 给出，此处不重复列。
+    manifest = {k: v for k, v in cat.guard_manifest().items()
+                if not is_internal_catalog_name(k)}
     lines = [
         "## 单位与守护声明（机器可读）",
         "",
         f"> 共 {len(manifest)} 个函数带 units / ranges / checks 声明；"
         "每行 `` `函数名`: JSON ``，键为 units（换算）/ ranges（量级界）/ checks（不变量）。"
-        "SDK 在返回前按声明换算并校验，违例抛 DataError；原生口径用 `_units=\"native\"`。",
+        "SDK 在返回前按声明换算并校验，违例抛 DataError；原生口径用 `_units=\"native\"`。"
+        "内部命名空间的函数声明见 openapi.json 的 `x-wmshare-guards`（按友好接口）。",
         "",
     ]
     lines += [f"- `{name}`: {json.dumps(guards, ensure_ascii=False, sort_keys=True)}"
