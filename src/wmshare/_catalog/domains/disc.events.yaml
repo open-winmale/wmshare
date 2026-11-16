@@ -13,6 +13,7 @@ units:
   date: YYYY-MM-DD
 requires: {path: sys/forecast/init.xs, preloaded: false}
 notes:
+  - 可用性：仅 A 股（交易所业绩预告/快报披露）
   - 预告为区间（下限/上限）；快报为披露的近似单值——两者在报告期正式报表发布前使用
   - 脚本原生 np_amp_* / rev_amp_* / np_yoy / rev_yoy / roe 为百分数；SDK 已换算为
     小数并守护范围；_units="native"/_raw=True 取脚本原值

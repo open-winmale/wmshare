@@ -1297,11 +1297,21 @@ class BacktestApi(_Api):
 class StatementsApi(_Api):
     """三大报表科目透视（披露原值；金额=报表原币）。
 
+    边界与集成约定：
+    - 全市场 cn/hk/us：cn 为 LIST 投影（科目代码/中文名）；hk/us 为跨市场宽表
+      （k=各市场披露科目原文，披露原币港币/美元，不做 CN 口径翻译，无派生行）。
+    - ``scope`` 合并/母公司、``tree``/``compare`` 为 CN 披露概念——hk/us 调用
+      诚实返回空。
+    - ``period`` 两档：``"annual"``（年报档，缺省）/``"quarter"``（季报全档
+      Q1..Q4 混合，期次键 "2026:Q1"）。
+    - 本命名空间是报表域唯一对外入口；底层目录名内部保留、可能调整——下游
+      集成（如 OpenBB provider）应以本门面签名编程，勿依赖底层函数名。
+
     各方法返回科目行列表（科目代码/中文名 × 期次列）；树视图另含派生比率行。
     ``kind`` 取值：``balance``（资产负债）/``income``（利润）/``cashflow``（现金流）。
 
-    :param years: 期数（年报降序，默认 5）
-    :param scope: "合并"（默认）或 "母公司"
+    :param years: 期数（降序，默认 5；季报档=总期数）
+    :param scope: "合并"（默认）或 "母公司"（仅 cn）
     """
 
     _DOMAINS = {"balance": "fin.balance_sheet",
@@ -1316,23 +1326,46 @@ class StatementsApi(_Api):
             raise UsageError(f"未知报表 kind={kind!r}；可选 {sorted(cls._DOMAINS)}",
                              code="params") from None
 
+    @staticmethod
+    def _stmt_opts(scope: str, years: int, period: str) -> dict:
+        """构造 rptdom.statement 的 opts；period 二档（annual 缺省=Q4 行为不变）。"""
+        if period not in ("annual", "quarter"):
+            raise UsageError(f"未知 period={period!r}；可选 'annual'（年报档）| 'quarter'（季报全档）",
+                             code="params") from None
+        opts: dict = {"scope": scope, "n": years}
+        if period == "quarter":
+            opts["sampling"] = "Q"
+        return opts
+
     def balance(self, symbol: str, years: int = 5, scope: str = "合并",
-                _raw: bool = False, _df: bool = False) -> Any:
-        """资产负债表（fin.balance_sheet）。"""
+                period: str = "annual", _raw: bool = False, _df: bool = False) -> Any:
+        """资产负债表（fin.balance_sheet；cn/hk/us）。
+
+        :param symbol: 6 位 A 股代码 / 港股 5 位代码 / 美股 ticker（自动归一）
+        :param period: "annual"（年报档，缺省）或 "quarter"（季报全档 Q1..Q4）
+        """
         return self._c.call("rptdom.statement", sym=symbol, domain="fin.balance_sheet",
-                            opts={"scope": scope, "n": years}, _raw=_raw, _df=_df)
+                            opts=self._stmt_opts(scope, years, period), _raw=_raw, _df=_df)
 
     def income(self, symbol: str, years: int = 5, scope: str = "合并",
-               _raw: bool = False, _df: bool = False) -> Any:
-        """利润表（fin.income_statement，含费用四率原料行）。"""
+               period: str = "annual", _raw: bool = False, _df: bool = False) -> Any:
+        """利润表（fin.income_statement；cn 含费用四率原料行，cn/hk/us）。
+
+        :param symbol: 6 位 A 股代码 / 港股 5 位代码 / 美股 ticker（自动归一）
+        :param period: "annual"（年报档，缺省）或 "quarter"（季报全档 Q1..Q4）
+        """
         return self._c.call("rptdom.statement", sym=symbol, domain="fin.income_statement",
-                            opts={"scope": scope, "n": years}, _raw=_raw, _df=_df)
+                            opts=self._stmt_opts(scope, years, period), _raw=_raw, _df=_df)
 
     def cashflow(self, symbol: str, years: int = 5, scope: str = "合并",
-                 _raw: bool = False, _df: bool = False) -> Any:
-        """现金流量表（fin.cashflow_statement）。"""
+                 period: str = "annual", _raw: bool = False, _df: bool = False) -> Any:
+        """现金流量表（fin.cashflow_statement；cn/hk/us）。
+
+        :param symbol: 6 位 A 股代码 / 港股 5 位代码 / 美股 ticker（自动归一）
+        :param period: "annual"（年报档，缺省）或 "quarter"（季报全档 Q1..Q4）
+        """
         return self._c.call("rptdom.statement", sym=symbol, domain="fin.cashflow_statement",
-                            opts={"scope": scope, "n": years}, _raw=_raw, _df=_df)
+                            opts=self._stmt_opts(scope, years, period), _raw=_raw, _df=_df)
 
     def compare(self, symbol: str, kind: str = "income", years: int = 2,
                 _raw: bool = False, _df: bool = False,
@@ -1615,50 +1648,76 @@ class IndicatorApi(_Api):
 
 # ---------------------------------------------------------------- 披露 disclosure
 class NoticeApi(_Api):
-    """公告检索与信号。window 枚举 "7d"/"1m"/"3m"/"6m"/"1y"/"3y"/"5y" 或天数整数；keyword 为标题/类型正则（可空）。"""
+    """公告检索与信号。window 枚举 "7d"/"1m"/"3m"/"6m"/"1y"/"3y"/"5y" 或天数整数；keyword 为标题/类型正则（可空）。
+
+    市场：数据含 cn + 港股。``list``/``find``/``has_buyback`` 按标的代码自动
+    路由（港股 5 位码直传）；全市场类方法（recent/by_category/on_date）缺省
+    cn，用 ``market="hk"`` 取港股公告——底层 market 参数在缺省时不上送，
+    行为与 SDK 1.20.5 及之前完全一致。
+    """
 
     def list(self, symbol: str, window: str = "3m", keyword: str = "",
              limit: int = 20, _raw: bool = False, _df: bool = False) -> Any:
-        """单票公告列表（date/title/type/url/pdf_url）。"""
+        """单票公告列表（date/title/type/url/pdf_url）。
+
+        :param symbol: 6 位 A 股代码 / 港股 5 位代码（按代码自动路由市场）
+        """
         days = _window_days(window)
         return self._c.call("notice.query_by_symbol", sym=symbol, window=str(days),
                             type_regex=keyword, limit=limit, _raw=_raw, _df=_df)
 
     def recent(self, window: str = "7d", keyword: str = "", limit: int = 50,
-               _raw: bool = False, _df: bool = False) -> Any:
-        """全市场近期公告（按披露时间倒序）。
+               market: str = "", _raw: bool = False, _df: bool = False) -> Any:
+        """全市场近期公告（按披露时间倒序；cn/hk）。
 
         :param window: 时间窗口，如 "7d"/"1m" 或天数
         :param keyword: 标题/类型正则（可空）
+        :param market: 公告市场，缺省自动（=cn）；港股显式传 "hk"
         """
         days = _window_days(window)
-        return self._c.call("notice.query_recent", window=str(days), type_regex=keyword,
-                            limit=limit, _raw=_raw, _df=_df)
+        kwargs: dict = {"window": str(days), "type_regex": keyword, "limit": limit}
+        if market:
+            kwargs["market"] = market
+        return self._c.call("notice.query_recent", _raw=_raw, _df=_df, **kwargs)
 
     def by_category(self, category: str, window: str = "1m", limit: int = 20,
-                    _raw: bool = False, _df: bool = False) -> Any:
-        """按类别查公告（如 "回购"）。"""
+                    market: str = "", _raw: bool = False, _df: bool = False) -> Any:
+        """按类别查公告（如 "回购"；cn/hk）。
+
+        :param market: 公告市场，缺省自动（=cn）；港股显式传 "hk"
+        """
         days = _window_days(window)
-        return self._c.call("notice.query_by_category", category=category,
-                            window=str(days), limit=limit, _raw=_raw, _df=_df)
+        kwargs: dict = {"category": category, "window": str(days), "limit": limit}
+        if market:
+            kwargs["market"] = market
+        return self._c.call("notice.query_by_category", _raw=_raw, _df=_df, **kwargs)
 
     def find(self, symbol: str, begin: str, end: str, keyword: str = "",
-             limit: int = 50, _raw: bool = False, _df: bool = False) -> Any:
-        """按日期区间查单票公告（begin/end 均含当日，格式 YYYY-MM-DD）。
+             limit: int = 50, market: str = "", _raw: bool = False,
+             _df: bool = False) -> Any:
+        """按日期区间查单票公告（begin/end 均含当日，格式 YYYY-MM-DD；cn/hk）。
 
         :param begin: 起始日期（含）
         :param end: 结束日期（含）
         :param keyword: 标题/类型正则（可空）
+        :param market: 公告市场，缺省自动（按标的代码路由）；全市场语义可显式传 "cn"/"hk"
         """
-        return self._c.call("notice.query_find", from_date=begin, to_date=end,
-                            type_regex=keyword, stock_code=symbol, limit=limit,
-                            _raw=_raw, _df=_df)
+        kwargs: dict = {"from_date": begin, "to_date": end, "type_regex": keyword,
+                        "stock_code": symbol, "limit": limit}
+        if market:
+            kwargs["market"] = market
+        return self._c.call("notice.query_find", _raw=_raw, _df=_df, **kwargs)
 
     def on_date(self, date: str, keyword: str = "", limit: int = 50,
-                _raw: bool = False, _df: bool = False) -> Any:
-        """指定日期的全市场公告（date 格式 YYYY-MM-DD）。"""
-        return self._c.call("notice.query_on_date", date=date, type_regex=keyword,
-                            limit=limit, _raw=_raw, _df=_df)
+                market: str = "", _raw: bool = False, _df: bool = False) -> Any:
+        """指定日期的全市场公告（date 格式 YYYY-MM-DD；cn/hk）。
+
+        :param market: 公告市场，缺省自动（=cn）；港股显式传 "hk"
+        """
+        kwargs: dict = {"date": date, "type_regex": keyword, "limit": limit}
+        if market:
+            kwargs["market"] = market
+        return self._c.call("notice.query_on_date", _raw=_raw, _df=_df, **kwargs)
 
     def has_buyback(self, symbol: str, window: str = "6m") -> bool:
         """窗口内是否有回购公告。"""

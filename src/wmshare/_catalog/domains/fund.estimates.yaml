@@ -14,6 +14,7 @@ units:
   pe: 倍（预测市盈率）
 requires: {path: sys/estimates/init.xs, preloaded: true}
 notes:
+  - 可用性：仅 A 股（券商研报卖方口径）
   - 'year_mark A=实际值 E=预测值；YEAR1..YEAR4 为预测年份序列'
   - '研报行含标题/机构/作者/行业/报告链接；研报正文不在接口范围'
 functions:

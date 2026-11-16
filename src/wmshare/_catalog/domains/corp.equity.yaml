@@ -18,6 +18,7 @@ units:
   price: 元（交易均价/回购价）
 requires: {path: sys/equity/init.xs, preloaded: true}
 notes:
+  - 可用性：仅 A 股（沪深交易所披露口径；公司档案部分经 cli.info 含 hk/us）
   - '公司档案（名称/行业/上市日期/简介）经 cli.info.profile() 与 fund.indicators 的
     profile 指标组（$NAME/$INDUSTRY_CUR/$ORG_ORGTYPE/$ORG_LISTINGDATE）获取'
   - '比例字段换算以各函数 units 声明为准（同接口内可能混排：institution_summary 的

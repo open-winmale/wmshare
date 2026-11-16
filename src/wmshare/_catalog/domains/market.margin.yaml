@@ -12,6 +12,7 @@ units:
   shares: 股（融券卖出量/偿还量/余量）
 requires: {path: sys/margin/init.xs, preloaded: true}
 notes:
+  - 可用性：仅 A 股（沪深交易所两融披露口径，无港美形态）
   - '仅个股口径；市场级两融汇总上游无独立数据集'
   - 'latest(sym) 返回最新一日单行'
 functions:

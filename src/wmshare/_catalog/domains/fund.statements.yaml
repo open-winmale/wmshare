@@ -1,5 +1,5 @@
 id: fund.statements
-version: 1.3.0
+version: 1.3.1
 cn: 财务报表
 kind: raw
 category: fundamentals
@@ -11,28 +11,38 @@ data_origin: [定期报告披露原值, 外部数据服务(主要指标)]
 units:
   amount: 报表原币（CN=元，HK=港币，US=美元）
   ratio: 小数（compare 的差额占比已由 SDK 从百分数换算；树视图 pct 行为原生百分数未换算）
-  period: 报告期（年-采样，如 2024-Q4 / 2024 年报）
+  period: 报告期（年-采样，如 2024-Q4 / 2026-Q1）
 requires: {path: sys/rptdom/init.xs, preloaded: false}
 stores: [fin.balance, fin.income, fin.cashflow, fin.indicator]
 notes:
   - domain 取值 fin.balance_sheet / fin.income_statement / fin.cashflow_statement
-  - opts.scope = 合并(默认) | 母公司；opts.n 期数（默认 5，年报降序）；opts.years 年份数组（如 [2024,2023]）
+  - '可用性：三表透视函数全市场 cn/hk/us——cn 走 alt.bssaa LIST 投影
+    （科目代码/中文名、含派生行与溯源列）；hk/us 走跨市场宽表（k=各市场披露
+    科目原文、披露原币，无派生行与溯源列），由 statement 内部透视成同行式，
+    消费方以门面 cli.statements.* 编程、勿依赖底层函数名（跨市场取数原语
+    已降级为内部实现，不再目录暴露）'
+  - opts.scope = 合并(默认) | 母公司（仅 cn 语义，宽表无母公司口径）；opts.n
+    期数（默认 5，1..10）；opts.years 年份数组（如 [2024,2023]，Q 全档下=限定
+    年份集合）；opts.sampling = Q4（缺省，年报档）| Q1..Q3（单季档）| Q（季报
+    全档 Q1..Q4 混合，vals 键 "2026:Q1" 形式，n 截总期数）
+  - statement_tree / statement_compare 仅 cn（树目录与合并/母公司为 CN 披露
+    概念，hk/us 调用诚实返回空）；statement_audit 仅 cn（聚源混源 Q4 年轴）；
+    statement_years / statement_periods 仅 cn（SAS 期间索引，hk/us 宽表无期间
+    列表、以 latest doc.annual 为锚）
   - 新旧会计准则口径适配在平台内部层完成，本域输出已归一
-  - '可用性：三大报表当前仅 A 股（cn）上线；HK/US 合同已预留原币口径（港币/美元），
-    数据尚未上线，对港美标的调用返回空'
 functions:
   - name: rptdom.statement
-    cn: 三报表科目×期次透视
+    cn: 三报表科目×期次透视（cn/hk/us 全市场）
     kind: raw
     layer: L0
     params:
-      - {name: sym, type: string, required: true, desc: 6 位裸码}
+      - {name: sym, type: string, required: true, desc: 6 位裸码 / 港股 5 位 / 美股 ticker（自动路由市场）}
       - {name: domain, type: string, required: true, enum: [fin.balance_sheet, fin.income_statement, fin.cashflow_statement]}
-      - {name: opts, type: object, required: false, desc: '{scope: 合并|母公司(默认合并), n: 期数(默认5), years: 年份数组}'}
-    returns: {desc: ARR · 科目行（科目代码/中文名×期次列）}
+      - {name: opts, type: object, required: false, desc: '{scope: 合并|母公司(默认合并，仅 cn), n: 期数(默认5), years: 年份数组, sampling: Q4(缺省年报档)|Q1..Q3 单季|Q 季报全档}'}
+    returns: {desc: ARR · 科目行（科目 k×期次列；cn=代码/中文名+派生/溯源，hk/us=披露科目原文原币）}
     example: 'rptdom.statement("600519", "fin.income_statement", {"scope": "合并", "n": 5})'
   - name: rptdom.statement_years
-    cn: 报表可用年报（Q4 档，降序）
+    cn: 报表可用年报（Q4 档，降序；仅 cn）
     kind: raw
     layer: L0
     params:
@@ -41,13 +51,13 @@ functions:
     returns: {desc: ARR · 年份}
     example: 'rptdom.statement_years("600519", "fin.income_statement")'
   - name: rptdom.statement_compare
-    cn: 合并 vs 母公司报表比较
+    cn: 合并 vs 母公司报表比较（仅 cn）
     kind: computed
     layer: L0
     params:
       - {name: sym, type: string, required: true}
       - {name: domain, type: string, required: true}
-      - {name: opts, type: object, required: false, desc: 同 statement（差额/差额占比%为派生计算）}
+      - {name: opts, type: object, required: false, desc: 同 statement（差额/差额占比%为派生计算；sampling=Q 不支持）}
     returns: {desc: 'ARR · 科目行 + 合并/母公司/差额/差额占比'}
     example: 'rptdom.statement_compare("600519", "fin.income_statement", {"n": 2})'
     units: {diffp: percent}
@@ -57,7 +67,7 @@ functions:
       守护用精确不变量 diffp_ratio（diffp≈diff/合并值）而非量级范围（量级豁免）：
       合并值≈0 的科目 diffp 会合法地极大，范围界必然误报']
   - name: rptdom.statement_tree
-    cn: 三表目录树视图（树序 + 比率/占比行）
+    cn: 三表目录树视图（树序 + 比率/占比行；仅 cn）
     kind: raw
     layer: L0
     params:
@@ -70,7 +80,7 @@ functions:
       pct 行 vals 为原生百分数（未换算，如 DART 16.4 = 16.4%）、fmt="x" 行为倍数、
       其余科目行为报表原币元——树视图适合展示核对，跨接口运算请用 statement_compare']
   - name: rptdom.statement_audit
-    cn: 审计意见（Q4 年轴）
+    cn: 审计意见（聚源混源，Q4 年轴；仅 cn）
     kind: raw
     layer: L0
     params:

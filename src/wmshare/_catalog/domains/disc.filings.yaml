@@ -11,6 +11,7 @@ units:
   date: YYYY-MM-DD
 requires: {path: sys/filings/init.xs, preloaded: true}
 notes:
+  - 可用性：仅 A 股（交易所定期报告披露）
   - 'type_key 取值：all | annual(年报) | semi(半年报) | quarter(季报)'
 functions:
   - name: filings.query

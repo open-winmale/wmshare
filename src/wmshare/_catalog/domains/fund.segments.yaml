@@ -13,6 +13,7 @@ units:
   ratio: 小数（占比 ratio/pct、毛利率 margin、同比 yoy；0.332 = 33.2%）
 requires: {path: sys/segments/init.xs, preloaded: false}
 notes:
+  - 可用性：仅 A 股（定期报告分部披露）
   - 'opts = {source: clean|raw, limit: 截断条数}；clean 为平台清洗归一口径，raw 为披露明细'
   - '行结构 {name, tr, tr_text, cost, margin, ratio}；margin = (tr - cost) / tr（小数），
     cost 缺失时为 nil；ratio 仅 income 维填充占比、其余维为 0 占位'

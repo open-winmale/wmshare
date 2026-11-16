@@ -134,6 +134,14 @@ def test_statements_translation(cli):
     assert xs[0] == 'xs.require("sys/rptdom/init.xs")'
     assert xs[-1] == ('return rptdom.statement("600519", "fin.income_statement", '
                       '{"scope": "合并", "n": 3})')
+    # period 二档：annual（缺省）不上送 sampling（与 1.20.5 行为字节一致）；
+    # quarter → sampling="Q" 季报全档；未知值 UsageError
+    cli.statements.balance("00700", period="quarter")
+    assert last_xs(cli)[-1] == ('return rptdom.statement("00700", "fin.balance_sheet", '
+                                '{"scope": "合并", "n": 5, "sampling": "Q"})')
+    from wmshare import UsageError
+    with pytest.raises(UsageError, match="period"):
+        cli.statements.income("600519", period="Q2")
 
 
 def test_notice_and_dividend(cli):
@@ -144,6 +152,10 @@ def test_notice_and_dividend(cli):
     assert last_xs(cli) == ['return notice.query_by_symbol("600519", "90", "回购", 5)']
     cli.notice.find("600519", "2026-01-01", "2026-03-31", keyword="回购", limit=10)
     assert last_xs(cli) == ['__r := notice.query_find("2026-01-01", "2026-03-31", "回购", "600519", 10)',
+                            'return notice.fmt_maps(__r)']
+    # market 缺省不上送（行为与 1.20.5 字节一致）；显式 "hk" 才上送
+    cli.notice.recent(window="7d", market="hk")
+    assert last_xs(cli) == ['__r := notice.query_recent("7", "", 50, "hk")',
                             'return notice.fmt_maps(__r)']
     cli.dividend.yield_ttm("600519")
     assert last_xs(cli) == ['return bonus.snapshot_yield_ttm("600519")']

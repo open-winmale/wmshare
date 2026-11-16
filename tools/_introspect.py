@@ -196,8 +196,15 @@ def method_params(cls: type, method: str) -> list[Param]:
         out.append(Param(name=name, json_type=jt, py_ann=py, required=not has_default,
                          default=repr(p.default) if has_default else None))
     descs = parse_docstring(inspect.getdoc(fn))[2]
-    if not descs:  # 参数说明写在类 docstring 时（如 StatementsApi）
-        descs = parse_docstring(inspect.getdoc(cls))[2]
+    cls_descs = parse_docstring(inspect.getdoc(cls))[2]
+    if not descs:  # 参数说明全在类 docstring 时（如 StatementsApi 旧式）
+        descs = cls_descs
+    else:
+        # 方法级与类级按参数名合并：方法 docstring 只写新增参数时，
+        # 其余参数（scope/years 等）仍继承类级说明，不落「—」
+        _merged = dict(cls_descs)
+        _merged.update(descs)
+        descs = _merged
     for p in out:
         p.desc = descs.get(p.name, "")
     return out

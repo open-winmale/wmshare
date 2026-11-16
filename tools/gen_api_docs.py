@@ -78,6 +78,15 @@ PARAM_DOCS: dict[str, str] = {
     "points": "采样点数",
 }
 
+# 按 ns 覆写兜底表：仅 A 股数据的门面，symbol 不得宣传港美（真多市场门面
+# kline/notice/intl/stocks/info/indicator 不在表内，走通用兜底或目录 desc）。
+PARAM_DOCS_CN_ONLY: dict[str, dict[str, str]] = {
+    ns: {"symbol": "6 位 A 股裸码（自动归一前缀/后缀）"}
+    for ns in ("margin", "moneyflow", "screener", "dividend", "equity",
+               "filings", "forecast", "segments", "estimates", "workout",
+               "cbond", "backtest", "index", "macro")
+}
+
 
 def esc(s: object) -> str:
     return str(s if s is not None else "").replace("|", "\\|").replace("\n", " ")
@@ -233,14 +242,61 @@ def ns_title(ns: str) -> str:
     return head or ns
 
 
+def ns_notes(ns: str) -> list[str]:
+    """命名空间节头注记：类 docstring 正文（去首句标题行与 :param 行）。
+
+    边界/可用性说明写在类 docstring 里即自动流进正文节头——生成器单一事实
+    源，正文与附录（域 yaml notes）两处口径同源。docstring 硬换行按段并行。
+    """
+    import re as _re
+    doc = inspect.getdoc(FRIENDLY_NAMESPACES[ns]) or ""
+    paras: list[str] = []
+    buf: list[str] = []
+    in_bullet = False  # 上一弹点是否待续行（硬换行的条目内容并入该弹点）
+    for ln in doc.strip().splitlines()[1:]:
+        t = ln.strip()
+        if not t or t.startswith(":param"):
+            if buf:
+                paras.append(" ".join(buf))
+                buf = []
+            in_bullet = False
+            continue
+        if t.startswith("- "):  # 条目行各自成弹点（边界/约定清单）
+            if buf:
+                paras.append(" ".join(buf))
+                buf = []
+            paras.append(t[2:])
+            in_bullet = True
+            continue
+        if in_bullet and paras:
+            paras[-1] += t  # 条目续行（docstring 79 列硬换行）
+            continue
+        buf.append(t)
+    if buf:
+        paras.append(" ".join(buf))
+    return [_re.sub(r"``([^`]+)``", r"`\1`", p) for p in paras]
+
+
 # ---------------------------------------------------------------- 每接口小节
+# 友好层参数名 → 目录合同参数名的别名（目录里多为 sym/stk/code/stock_code，
+# 名字对不上会让目录真值永远输给通用兜底——曾致「港股 5 位、美股字母码」
+# 一句兜底文案铺满仅 A 股门面的系统性误导）。
+_PARAM_ALIASES: dict[str, tuple[str, ...]] = {
+    "symbol": ("sym", "stk", "code", "stock_code"),
+}
+
+
 def _param_desc(ns: str, method: str, p, fn: dict) -> str:
-    """参数说明：友好层 docstring :param → 目录同名参数 desc → 通用兜底表 → —。"""
+    """参数说明：友好层 docstring :param → 目录同名（含别名）参数 desc → 按 ns 覆写兜底 → 通用兜底表 → —。"""
     if getattr(p, "desc", ""):
         return esc(p.desc)
+    names = (p.name,) + _PARAM_ALIASES.get(p.name, ())
     for cp in fn.get("params") or []:
-        if cp.get("name") == p.name and cp.get("desc"):
+        if cp.get("name") in names and cp.get("desc"):
             return esc(cp["desc"])
+    ov = PARAM_DOCS_CN_ONLY.get(ns, {}).get(p.name)
+    if ov:
+        return ov
     return PARAM_DOCS.get(p.name, "—")
 
 
@@ -678,6 +734,11 @@ def build() -> str:
             if not rows and not COMPOSITE_METHODS.get(ns):
                 continue
             out += [f"### {ns_title(ns)}（`cli.{ns}`）", ""]
+            notes = ns_notes(ns)
+            if notes:
+                for note in notes:
+                    out += [f"- {note}"]
+                out += [""]
             for _, ns_, method, cn, underlying in rows:
                 out += interface_block(ns_, method, cn, underlying, merged)
             out += composite_section(ns)
