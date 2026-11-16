@@ -10,6 +10,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.21.1] - 2026-11-16
+
+### Fixed
+- **修正 PyPI 1.21.0 门面指向已下线的底层函数**：1.21.0 的 statements 门面
+  委托一个目录函数（内部命名空间，现已随后续上游回归移除）——从 PyPI 安装
+  1.21.0 的用户调用 `cli.statements.income()` 会报「未知函数」。本版改为
+  SDK 内置读取脚本实现（三加一 × cn/hk/us，读 fin_* 宽表），含
+  `indicators()`（主要指标）。
+
+### Notes
+- 1.21.0 的 rest 行为（`period` 二档、`quarters`、`compare/tree/years`
+  下线）保持不变；本次仅修正底层取数实现与文档。
+
 ## [1.21.0] - 2026-11-16
 
 ### Changed（BREAKING）
