@@ -1,5 +1,5 @@
 id: fund.segments
-version: 1.0.1
+version: 1.0.3
 cn: 经营分部
 kind: raw
 category: fundamentals
@@ -108,8 +108,22 @@ functions:
         fields:
           - {name: source, type: string, cn: 口径标识}
           - {name: report_sas, type: string, cn: 报告期}
-          - {name: domestic, type: object, cn: '境内 {tr, pct, margin, yoy}'}
-          - {name: overseas, type: object, cn: '境外 {tr, pct, margin, yoy}'}
+          - name: domestic
+            type: object
+            cn: 境内分部
+            fields:
+              - {name: tr, type: float64, cn: 收入（元）}
+              - {name: pct, type: float64, cn: 占比（小数）}
+              - {name: margin, type: float64, cn: 毛利率（小数）}
+              - {name: yoy, type: float64, cn: 同比（小数）}
+          - name: overseas
+            type: object
+            cn: 境外分部
+            fields:
+              - {name: tr, type: float64, cn: 收入（元）}
+              - {name: pct, type: float64, cn: 占比（小数）}
+              - {name: margin, type: float64, cn: 毛利率（小数）}
+              - {name: yoy, type: float64, cn: 同比（小数）}
     example: 'segments.query_region("600519", {})'
     ranges: {tr: [-1.0e+13, 1.0e+13], pct: [0, 1], margin: [-5, 1], yoy: [-1, 100]}
   - name: segments.snapshot
@@ -119,7 +133,111 @@ functions:
     params:
       - {name: sym, type: string, required: true}
       - {name: opts, type: object, required: false, desc: 同 query_products}
-    returns: {desc: 'MAP · 快照 {overview, income, region, product, business, coverage}'}
+    returns:
+      desc: 'MAP · 快照 {overview, income, region, product, business, coverage}'
+      shape:
+        kind: object
+        cn: 经营分部快照
+        fields:
+          - {name: symbol, type: string, cn: 股票代码}
+          - {name: name, type: string, cn: 股票名称, optional: true}
+          - {name: report_sas, type: string, cn: 报告期, optional: true}
+          - {name: goods_sas, type: string, cn: 商品维报告期锚, optional: true}
+          - {name: note, type: string, cn: 口径说明, optional: true}
+          - name: overview
+            type: object
+            cn: 合并概览
+            optional: true
+            fields:
+              - {name: max_name, type: string, cn: 最大分部名称, optional: true}
+              - {name: max_ratio, type: float64, cn: 最大分部占比（小数）, optional: true}
+              - name: product_tags
+                type: array
+                cn: 产品标签（字符串列表）
+                optional: true
+                items: {kind: string, cn: 标签}
+              - {name: profile, type: string, cn: 公司简介, optional: true}
+          - name: income
+            type: array
+            cn: 主营标签行（结构同 query_income）
+            items:
+              kind: object
+              cn: 标签行
+              fields:
+                - {name: name, type: string, cn: 标签名称}
+                - {name: tr, type: float64, cn: 收入（元）, optional: true}
+                - {name: tr_text, type: string, cn: 收入展示串, optional: true}
+                - {name: cost, type: float64, cn: 成本（元）, optional: true}
+                - {name: margin, type: float64, cn: 毛利率（小数）, optional: true}
+                - {name: ratio, type: float64, cn: 占比（小数）, optional: true}
+          - name: region
+            type: object
+            cn: 境内外分部（结构同 query_region clean 口径）
+            fields:
+              - {name: source, type: string, cn: 口径标识}
+              - {name: report_sas, type: string, cn: 报告期}
+              - name: domestic
+                type: object
+                cn: 境内分部
+                fields:
+                  - {name: tr, type: float64, cn: 收入（元）}
+                  - {name: pct, type: float64, cn: 占比（小数）}
+                  - {name: margin, type: float64, cn: 毛利率（小数）}
+                  - {name: yoy, type: float64, cn: 同比（小数）}
+              - name: overseas
+                type: object
+                cn: 境外分部
+                fields:
+                  - {name: tr, type: float64, cn: 收入（元）}
+                  - {name: pct, type: float64, cn: 占比（小数）}
+                  - {name: margin, type: float64, cn: 毛利率（小数）}
+                  - {name: yoy, type: float64, cn: 同比（小数）}
+          - name: products
+            type: array
+            cn: 产品分部行（结构同 query_products）
+            items:
+              kind: object
+              cn: 分部行
+              fields:
+                - {name: name, type: string, cn: 分部名称}
+                - {name: tr, type: float64, cn: 收入（元）, optional: true}
+                - {name: tr_text, type: string, cn: 收入展示串, optional: true}
+                - {name: cost, type: float64, cn: 成本（元）, optional: true}
+                - {name: margin, type: float64, cn: 毛利率（小数）, optional: true}
+                - {name: ratio, type: float64, cn: 占比占位（income 维才有值）, optional: true}
+          - name: business
+            type: array
+            cn: 业务分部行（结构同 query_business）
+            items:
+              kind: object
+              cn: 分部行
+              fields:
+                - {name: name, type: string, cn: 分部名称}
+                - {name: tr, type: float64, cn: 收入（元）, optional: true}
+                - {name: tr_text, type: string, cn: 收入展示串, optional: true}
+                - {name: cost, type: float64, cn: 成本（元）, optional: true}
+                - {name: margin, type: float64, cn: 毛利率（小数）, optional: true}
+                - {name: ratio, type: float64, cn: 占比（小数，income 维填充）, optional: true}
+          - name: coverage
+            type: object
+            cn: 披露覆盖度
+            fields:
+              - {name: has_income, type: bool, cn: 收入维有数据, optional: true}
+              - {name: has_region, type: bool, cn: 地区维有数据, optional: true}
+              - {name: has_products, type: bool, cn: 产品维有数据, optional: true}
+              - {name: has_business, type: bool, cn: 业务维有数据, optional: true}
+              - {name: has_overview, type: bool, cn: 概览维有数据, optional: true}
+              - {name: goods_sas, type: string, cn: 商品维报告期锚, optional: true}
+              - {name: report_sas, type: string, cn: 报告期, optional: true}
+              - {name: symbol, type: string, cn: 股票代码, optional: true}
+          - name: sources
+            type: object
+            cn: 各维数据来源标识
+            fields:
+              - {name: business, type: string, cn: 业务维来源, optional: true}
+              - {name: income, type: string, cn: 收入维来源, optional: true}
+              - {name: product, type: string, cn: 产品维来源, optional: true}
+              - {name: region, type: string, cn: 地区维来源, optional: true}
     example: 'segments.snapshot("600519", {})'
     ranges: {tr: [-1.0e+13, 1.0e+13], cost: [0, 1.0e+13], margin: [-5, 1], ratio: [0, 1], pct: [0, 1], yoy: [-1, 100]}
   - name: segments.coverage

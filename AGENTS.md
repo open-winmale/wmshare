@@ -13,6 +13,7 @@ python tools/validate_metric_taxonomy.py         # sidecar 与 metrics.json 1:1
 python tools/validate_units.py                   # 单位台账（手/亿元/百分数）
 python tools/check_version.py --check  # 六处版本声明互校（含 SECURITY.md 表头）
 python tools/guard_coverage.py --min 0.156  # 守护声明覆盖率下限
+python -m tools.audit_units drift --strict  # shape/units/ranges 声明漂移（ERROR/WARN 均拦）
 python tools/gen_api_docs.py --check  # 以下五个是生成物漂移门禁
 python tools/gen_typed_api.py --check
 python tools/gen_openapi.py --check

@@ -590,11 +590,17 @@ class EquityNS(_Ns):
         return self._client.call("equity.fmt_holder10", rows=rows, _raw=_raw, _df=_df)
 
     def fmt_holdernum(self, props: Any, _raw: bool = False, _df: bool = False) -> Any:
-        """股东户数规范化"""
+        """股东户数规范化
+
+:returns: ARR · 规范化股东户数行
+        """
         return self._client.call("equity.fmt_holdernum", props=props, _raw=_raw, _df=_df)
 
     def fmt_pledge_detail(self, rows: list, _raw: bool = False, _df: bool = False) -> Any:
-        """质押明细规范化"""
+        """质押明细规范化
+
+:returns: ARR · 规范化质押明细行
+        """
         return self._client.call("equity.fmt_pledge_detail", rows=rows, _raw=_raw, _df=_df)
 
     def fmt_pledge_summary(self, rows: list, _raw: bool = False, _df: bool = False) -> Any:
@@ -602,7 +608,10 @@ class EquityNS(_Ns):
         return self._client.call("equity.fmt_pledge_summary", rows=rows, _raw=_raw, _df=_df)
 
     def fmt_pledge_market(self, rows: list, _raw: bool = False, _df: bool = False) -> Any:
-        """市场质押规范化"""
+        """市场质押规范化
+
+:returns: ARR · 规范化市场质押行
+        """
         return self._client.call("equity.fmt_pledge_market", rows=rows, _raw=_raw, _df=_df)
 
     def fmt_pledge_industry(self, rows: list, _raw: bool = False, _df: bool = False) -> Any:
@@ -614,23 +623,38 @@ class EquityNS(_Ns):
         return self._client.call("equity.fmt_pledge_org", rows=rows, _raw=_raw, _df=_df)
 
     def fmt_institution_detail(self, rows: list, _raw: bool = False, _df: bool = False) -> Any:
-        """机构明细规范化"""
+        """机构明细规范化
+
+:returns: ARR · 规范化机构持股明细行
+        """
         return self._client.call("equity.fmt_institution_detail", rows=rows, _raw=_raw, _df=_df)
 
     def fmt_institution_summary(self, rows: list, _raw: bool = False, _df: bool = False) -> Any:
-        """机构占比规范化"""
+        """机构占比规范化
+
+:returns: ARR · 规范化机构持仓占比行
+        """
         return self._client.call("equity.fmt_institution_summary", rows=rows, _raw=_raw, _df=_df)
 
     def fmt_hgt(self, rows: list, _raw: bool = False, _df: bool = False) -> Any:
-        """沪港通行规范化"""
+        """沪港通行规范化
+
+:returns: ARR · 规范化沪港通持股行
+        """
         return self._client.call("equity.fmt_hgt", rows=rows, _raw=_raw, _df=_df)
 
     def fmt_national_team(self, rows: list, _raw: bool = False, _df: bool = False) -> Any:
-        """国家队行规范化"""
+        """国家队行规范化
+
+:returns: ARR · 规范化国家队持股行
+        """
         return self._client.call("equity.fmt_national_team", rows=rows, _raw=_raw, _df=_df)
 
     def fmt_release(self, rows: list, _raw: bool = False, _df: bool = False) -> Any:
-        """解禁行规范化"""
+        """解禁行规范化
+
+:returns: ARR · 规范化解禁行
+        """
         return self._client.call("equity.fmt_release", rows=rows, _raw=_raw, _df=_df)
 
     def fmt_buyback_plan(self, rows: list, _raw: bool = False, _df: bool = False) -> Any:
@@ -642,7 +666,10 @@ class EquityNS(_Ns):
         return self._client.call("equity.fmt_buyback_detail", props=props, _raw=_raw, _df=_df)
 
     def fmt_reorg(self, rows: list, _raw: bool = False, _df: bool = False) -> Any:
-        """重组行规范化"""
+        """重组行规范化
+
+:returns: ARR · 规范化重组行
+        """
         return self._client.call("equity.fmt_reorg", rows=rows, _raw=_raw, _df=_df)
 
     def fmt_related_trade(self, rows: list, _raw: bool = False, _df: bool = False) -> Any:
@@ -713,7 +740,10 @@ class EstimatesNS(_Ns):
         return self._client.call("estimates.query_reports", **kw, _raw=_raw, _df=_df)
 
     def fmt_maps(self, rows: list, _raw: bool = False, _df: bool = False) -> Any:
-        """预测行规范化"""
+        """预测行规范化
+
+:returns: ARR · 规范化预测/研报行（字段并集按行取，缺字段为空）
+        """
         return self._client.call("estimates.fmt_maps", rows=rows, _raw=_raw, _df=_df)
 
 class FilingsNS(_Ns):
@@ -918,7 +948,10 @@ class IntlNS(_Ns):
         return self._client.call("intl.issue_info", sym=sym, _raw=_raw, _df=_df)
 
     def fmt_maps(self, rows: list, _raw: bool = False, _df: bool = False) -> Any:
-        """港美股行规范化"""
+        """港美股行规范化
+
+:returns: ARR · 规范化港美股行（字段并集按行取，缺字段为空）
+        """
         return self._client.call("intl.fmt_maps", rows=rows, _raw=_raw, _df=_df)
 
     def fmt_issue(self, props: Any, _raw: bool = False, _df: bool = False) -> Any:

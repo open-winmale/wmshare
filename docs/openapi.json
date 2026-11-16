@@ -3600,10 +3600,10 @@
                       "description": "报告期"
                     },
                     "domestic": {
-                      "description": "境内 {tr, pct, margin, yoy}"
+                      "description": "境内分部"
                     },
                     "overseas": {
-                      "description": "境外 {tr, pct, margin, yoy}"
+                      "description": "境外分部"
                     }
                   }
                 }
@@ -3749,23 +3749,49 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "description": "分部快照",
+                  "description": "经营分部快照",
                   "type": "object",
                   "properties": {
+                    "symbol": {
+                      "type": "string",
+                      "description": "股票代码"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "股票名称"
+                    },
+                    "report_sas": {
+                      "type": "string",
+                      "description": "报告期"
+                    },
+                    "goods_sas": {
+                      "type": "string",
+                      "description": "商品维报告期锚"
+                    },
+                    "note": {
+                      "type": "string",
+                      "description": "口径说明"
+                    },
                     "overview": {
-                      "description": "概览"
+                      "description": "合并概览"
                     },
                     "income": {
-                      "description": "主营标签"
+                      "description": "主营标签行（结构同 query_income）"
                     },
                     "region": {
-                      "description": "地区"
+                      "description": "境内外分部（结构同 query_region clean 口径）"
                     },
-                    "product": {
-                      "description": "产品"
+                    "products": {
+                      "description": "产品分部行（结构同 query_products）"
                     },
                     "business": {
-                      "description": "业务线"
+                      "description": "业务分部行（结构同 query_business）"
+                    },
+                    "coverage": {
+                      "description": "披露覆盖度"
+                    },
+                    "sources": {
+                      "description": "各维数据来源标识"
                     }
                   }
                 }
@@ -4004,25 +4030,173 @@
                   "items": {
                     "type": "object",
                     "properties": {
+                      "security_code": {
+                        "type": "string",
+                        "description": "证券代码"
+                      },
+                      "security_name": {
+                        "type": "string",
+                        "description": "证券简称"
+                      },
+                      "publish_date": {
+                        "type": "string",
+                        "description": "报告发布日"
+                      },
                       "org_name": {
                         "type": "string",
                         "description": "机构名称"
                       },
-                      "publish_date": {
+                      "org_code": {
                         "type": "string",
-                        "description": "发布日期"
+                        "description": "机构代码"
+                      },
+                      "researcher": {
+                        "type": "string",
+                        "description": "分析师"
+                      },
+                      "date_type": {
+                        "type": "string",
+                        "description": "预测年度口径"
+                      },
+                      "year1": {
+                        "type": "number",
+                        "description": "预测年度1"
+                      },
+                      "year_mark1": {
+                        "type": "string",
+                        "description": "年度1标记"
                       },
                       "eps1": {
                         "type": "number",
-                        "description": "第一年每股收益"
+                        "description": "每股收益1（元）"
                       },
                       "pe1": {
                         "type": "number",
-                        "description": "第一年市盈率"
+                        "description": "市盈率1（倍）"
+                      },
+                      "parent_netprofit1": {
+                        "type": "number",
+                        "description": "归母净利1（元）"
+                      },
+                      "year2": {
+                        "type": "number",
+                        "description": "预测年度2"
+                      },
+                      "year_mark2": {
+                        "type": "string",
+                        "description": "年度2标记"
+                      },
+                      "eps2": {
+                        "type": "number",
+                        "description": "每股收益2（元）"
+                      },
+                      "pe2": {
+                        "type": "number",
+                        "description": "市盈率2（倍）"
+                      },
+                      "parent_netprofit2": {
+                        "type": "number",
+                        "description": "归母净利2（元）"
+                      },
+                      "year3": {
+                        "type": "number",
+                        "description": "预测年度3"
+                      },
+                      "year_mark3": {
+                        "type": "string",
+                        "description": "年度3标记"
+                      },
+                      "eps3": {
+                        "type": "number",
+                        "description": "每股收益3（元）"
+                      },
+                      "pe3": {
+                        "type": "number",
+                        "description": "市盈率3（倍）"
+                      },
+                      "parent_netprofit3": {
+                        "type": "number",
+                        "description": "归母净利3（元）"
+                      },
+                      "year4": {
+                        "type": "number",
+                        "description": "预测年度4"
+                      },
+                      "year_mark4": {
+                        "type": "string",
+                        "description": "年度4标记"
+                      },
+                      "eps4": {
+                        "type": "number",
+                        "description": "每股收益4（元）"
+                      },
+                      "pe4": {
+                        "type": "number",
+                        "description": "市盈率4（倍）"
+                      },
+                      "parent_netprofit4": {
+                        "type": "number",
+                        "description": "归母净利4（元）"
                       },
                       "rating": {
                         "type": "string",
                         "description": "评级"
+                      },
+                      "compre_rating": {
+                        "type": "string",
+                        "description": "综合评级"
+                      },
+                      "compre_rating_num": {
+                        "type": "number",
+                        "description": "综合评级数值"
+                      },
+                      "rating_org_num": {
+                        "type": "number",
+                        "description": "评级机构家数"
+                      },
+                      "rating_buy_num": {
+                        "type": "number",
+                        "description": "买入家数"
+                      },
+                      "rating_add_num": {
+                        "type": "number",
+                        "description": "增持家数"
+                      },
+                      "rating_neutral_num": {
+                        "type": "number",
+                        "description": "中性家数"
+                      },
+                      "rating_reduce_num": {
+                        "type": "number",
+                        "description": "减持家数"
+                      },
+                      "rating_sale_num": {
+                        "type": "number",
+                        "description": "卖出家数"
+                      },
+                      "title": {
+                        "type": "string",
+                        "description": "报告标题"
+                      },
+                      "org_sname": {
+                        "type": "string",
+                        "description": "机构简称"
+                      },
+                      "author": {
+                        "type": "string",
+                        "description": "作者"
+                      },
+                      "info_code": {
+                        "type": "string",
+                        "description": "报告编码"
+                      },
+                      "industry": {
+                        "type": "string",
+                        "description": "行业"
+                      },
+                      "report_url": {
+                        "type": "string",
+                        "description": "报告链接"
                       }
                     }
                   }
@@ -4109,25 +4283,173 @@
                   "items": {
                     "type": "object",
                     "properties": {
+                      "security_code": {
+                        "type": "string",
+                        "description": "证券代码"
+                      },
+                      "security_name": {
+                        "type": "string",
+                        "description": "证券简称"
+                      },
+                      "publish_date": {
+                        "type": "string",
+                        "description": "报告发布日"
+                      },
                       "org_name": {
                         "type": "string",
                         "description": "机构名称"
                       },
-                      "publish_date": {
+                      "org_code": {
                         "type": "string",
-                        "description": "发布日期"
+                        "description": "机构代码"
+                      },
+                      "researcher": {
+                        "type": "string",
+                        "description": "分析师"
+                      },
+                      "date_type": {
+                        "type": "string",
+                        "description": "预测年度口径"
+                      },
+                      "year1": {
+                        "type": "number",
+                        "description": "预测年度1"
+                      },
+                      "year_mark1": {
+                        "type": "string",
+                        "description": "年度1标记"
                       },
                       "eps1": {
                         "type": "number",
-                        "description": "第一年每股收益"
+                        "description": "每股收益1（元）"
                       },
                       "pe1": {
                         "type": "number",
-                        "description": "第一年市盈率"
+                        "description": "市盈率1（倍）"
+                      },
+                      "parent_netprofit1": {
+                        "type": "number",
+                        "description": "归母净利1（元）"
+                      },
+                      "year2": {
+                        "type": "number",
+                        "description": "预测年度2"
+                      },
+                      "year_mark2": {
+                        "type": "string",
+                        "description": "年度2标记"
+                      },
+                      "eps2": {
+                        "type": "number",
+                        "description": "每股收益2（元）"
+                      },
+                      "pe2": {
+                        "type": "number",
+                        "description": "市盈率2（倍）"
+                      },
+                      "parent_netprofit2": {
+                        "type": "number",
+                        "description": "归母净利2（元）"
+                      },
+                      "year3": {
+                        "type": "number",
+                        "description": "预测年度3"
+                      },
+                      "year_mark3": {
+                        "type": "string",
+                        "description": "年度3标记"
+                      },
+                      "eps3": {
+                        "type": "number",
+                        "description": "每股收益3（元）"
+                      },
+                      "pe3": {
+                        "type": "number",
+                        "description": "市盈率3（倍）"
+                      },
+                      "parent_netprofit3": {
+                        "type": "number",
+                        "description": "归母净利3（元）"
+                      },
+                      "year4": {
+                        "type": "number",
+                        "description": "预测年度4"
+                      },
+                      "year_mark4": {
+                        "type": "string",
+                        "description": "年度4标记"
+                      },
+                      "eps4": {
+                        "type": "number",
+                        "description": "每股收益4（元）"
+                      },
+                      "pe4": {
+                        "type": "number",
+                        "description": "市盈率4（倍）"
+                      },
+                      "parent_netprofit4": {
+                        "type": "number",
+                        "description": "归母净利4（元）"
                       },
                       "rating": {
                         "type": "string",
                         "description": "评级"
+                      },
+                      "compre_rating": {
+                        "type": "string",
+                        "description": "综合评级"
+                      },
+                      "compre_rating_num": {
+                        "type": "number",
+                        "description": "综合评级数值"
+                      },
+                      "rating_org_num": {
+                        "type": "number",
+                        "description": "评级机构家数"
+                      },
+                      "rating_buy_num": {
+                        "type": "number",
+                        "description": "买入家数"
+                      },
+                      "rating_add_num": {
+                        "type": "number",
+                        "description": "增持家数"
+                      },
+                      "rating_neutral_num": {
+                        "type": "number",
+                        "description": "中性家数"
+                      },
+                      "rating_reduce_num": {
+                        "type": "number",
+                        "description": "减持家数"
+                      },
+                      "rating_sale_num": {
+                        "type": "number",
+                        "description": "卖出家数"
+                      },
+                      "title": {
+                        "type": "string",
+                        "description": "报告标题"
+                      },
+                      "org_sname": {
+                        "type": "string",
+                        "description": "机构简称"
+                      },
+                      "author": {
+                        "type": "string",
+                        "description": "作者"
+                      },
+                      "info_code": {
+                        "type": "string",
+                        "description": "报告编码"
+                      },
+                      "industry": {
+                        "type": "string",
+                        "description": "行业"
+                      },
+                      "report_url": {
+                        "type": "string",
+                        "description": "报告链接"
                       }
                     }
                   }
@@ -4214,25 +4536,173 @@
                   "items": {
                     "type": "object",
                     "properties": {
+                      "security_code": {
+                        "type": "string",
+                        "description": "证券代码"
+                      },
+                      "security_name": {
+                        "type": "string",
+                        "description": "证券简称"
+                      },
+                      "publish_date": {
+                        "type": "string",
+                        "description": "报告发布日"
+                      },
                       "org_name": {
                         "type": "string",
                         "description": "机构名称"
                       },
-                      "publish_date": {
+                      "org_code": {
                         "type": "string",
-                        "description": "发布日期"
+                        "description": "机构代码"
+                      },
+                      "researcher": {
+                        "type": "string",
+                        "description": "分析师"
+                      },
+                      "date_type": {
+                        "type": "string",
+                        "description": "预测年度口径"
+                      },
+                      "year1": {
+                        "type": "number",
+                        "description": "预测年度1"
+                      },
+                      "year_mark1": {
+                        "type": "string",
+                        "description": "年度1标记"
                       },
                       "eps1": {
                         "type": "number",
-                        "description": "第一年每股收益"
+                        "description": "每股收益1（元）"
                       },
                       "pe1": {
                         "type": "number",
-                        "description": "第一年市盈率"
+                        "description": "市盈率1（倍）"
+                      },
+                      "parent_netprofit1": {
+                        "type": "number",
+                        "description": "归母净利1（元）"
+                      },
+                      "year2": {
+                        "type": "number",
+                        "description": "预测年度2"
+                      },
+                      "year_mark2": {
+                        "type": "string",
+                        "description": "年度2标记"
+                      },
+                      "eps2": {
+                        "type": "number",
+                        "description": "每股收益2（元）"
+                      },
+                      "pe2": {
+                        "type": "number",
+                        "description": "市盈率2（倍）"
+                      },
+                      "parent_netprofit2": {
+                        "type": "number",
+                        "description": "归母净利2（元）"
+                      },
+                      "year3": {
+                        "type": "number",
+                        "description": "预测年度3"
+                      },
+                      "year_mark3": {
+                        "type": "string",
+                        "description": "年度3标记"
+                      },
+                      "eps3": {
+                        "type": "number",
+                        "description": "每股收益3（元）"
+                      },
+                      "pe3": {
+                        "type": "number",
+                        "description": "市盈率3（倍）"
+                      },
+                      "parent_netprofit3": {
+                        "type": "number",
+                        "description": "归母净利3（元）"
+                      },
+                      "year4": {
+                        "type": "number",
+                        "description": "预测年度4"
+                      },
+                      "year_mark4": {
+                        "type": "string",
+                        "description": "年度4标记"
+                      },
+                      "eps4": {
+                        "type": "number",
+                        "description": "每股收益4（元）"
+                      },
+                      "pe4": {
+                        "type": "number",
+                        "description": "市盈率4（倍）"
+                      },
+                      "parent_netprofit4": {
+                        "type": "number",
+                        "description": "归母净利4（元）"
                       },
                       "rating": {
                         "type": "string",
                         "description": "评级"
+                      },
+                      "compre_rating": {
+                        "type": "string",
+                        "description": "综合评级"
+                      },
+                      "compre_rating_num": {
+                        "type": "number",
+                        "description": "综合评级数值"
+                      },
+                      "rating_org_num": {
+                        "type": "number",
+                        "description": "评级机构家数"
+                      },
+                      "rating_buy_num": {
+                        "type": "number",
+                        "description": "买入家数"
+                      },
+                      "rating_add_num": {
+                        "type": "number",
+                        "description": "增持家数"
+                      },
+                      "rating_neutral_num": {
+                        "type": "number",
+                        "description": "中性家数"
+                      },
+                      "rating_reduce_num": {
+                        "type": "number",
+                        "description": "减持家数"
+                      },
+                      "rating_sale_num": {
+                        "type": "number",
+                        "description": "卖出家数"
+                      },
+                      "title": {
+                        "type": "string",
+                        "description": "报告标题"
+                      },
+                      "org_sname": {
+                        "type": "string",
+                        "description": "机构简称"
+                      },
+                      "author": {
+                        "type": "string",
+                        "description": "作者"
+                      },
+                      "info_code": {
+                        "type": "string",
+                        "description": "报告编码"
+                      },
+                      "industry": {
+                        "type": "string",
+                        "description": "行业"
+                      },
+                      "report_url": {
+                        "type": "string",
+                        "description": "报告链接"
                       }
                     }
                   }
@@ -4283,25 +4753,173 @@
                   "items": {
                     "type": "object",
                     "properties": {
+                      "security_code": {
+                        "type": "string",
+                        "description": "证券代码"
+                      },
+                      "security_name": {
+                        "type": "string",
+                        "description": "证券简称"
+                      },
+                      "publish_date": {
+                        "type": "string",
+                        "description": "报告发布日"
+                      },
                       "org_name": {
                         "type": "string",
                         "description": "机构名称"
                       },
-                      "publish_date": {
+                      "org_code": {
                         "type": "string",
-                        "description": "发布日期"
+                        "description": "机构代码"
+                      },
+                      "researcher": {
+                        "type": "string",
+                        "description": "分析师"
+                      },
+                      "date_type": {
+                        "type": "string",
+                        "description": "预测年度口径"
+                      },
+                      "year1": {
+                        "type": "number",
+                        "description": "预测年度1"
+                      },
+                      "year_mark1": {
+                        "type": "string",
+                        "description": "年度1标记"
                       },
                       "eps1": {
                         "type": "number",
-                        "description": "第一年每股收益"
+                        "description": "每股收益1（元）"
                       },
                       "pe1": {
                         "type": "number",
-                        "description": "第一年市盈率"
+                        "description": "市盈率1（倍）"
+                      },
+                      "parent_netprofit1": {
+                        "type": "number",
+                        "description": "归母净利1（元）"
+                      },
+                      "year2": {
+                        "type": "number",
+                        "description": "预测年度2"
+                      },
+                      "year_mark2": {
+                        "type": "string",
+                        "description": "年度2标记"
+                      },
+                      "eps2": {
+                        "type": "number",
+                        "description": "每股收益2（元）"
+                      },
+                      "pe2": {
+                        "type": "number",
+                        "description": "市盈率2（倍）"
+                      },
+                      "parent_netprofit2": {
+                        "type": "number",
+                        "description": "归母净利2（元）"
+                      },
+                      "year3": {
+                        "type": "number",
+                        "description": "预测年度3"
+                      },
+                      "year_mark3": {
+                        "type": "string",
+                        "description": "年度3标记"
+                      },
+                      "eps3": {
+                        "type": "number",
+                        "description": "每股收益3（元）"
+                      },
+                      "pe3": {
+                        "type": "number",
+                        "description": "市盈率3（倍）"
+                      },
+                      "parent_netprofit3": {
+                        "type": "number",
+                        "description": "归母净利3（元）"
+                      },
+                      "year4": {
+                        "type": "number",
+                        "description": "预测年度4"
+                      },
+                      "year_mark4": {
+                        "type": "string",
+                        "description": "年度4标记"
+                      },
+                      "eps4": {
+                        "type": "number",
+                        "description": "每股收益4（元）"
+                      },
+                      "pe4": {
+                        "type": "number",
+                        "description": "市盈率4（倍）"
+                      },
+                      "parent_netprofit4": {
+                        "type": "number",
+                        "description": "归母净利4（元）"
                       },
                       "rating": {
                         "type": "string",
                         "description": "评级"
+                      },
+                      "compre_rating": {
+                        "type": "string",
+                        "description": "综合评级"
+                      },
+                      "compre_rating_num": {
+                        "type": "number",
+                        "description": "综合评级数值"
+                      },
+                      "rating_org_num": {
+                        "type": "number",
+                        "description": "评级机构家数"
+                      },
+                      "rating_buy_num": {
+                        "type": "number",
+                        "description": "买入家数"
+                      },
+                      "rating_add_num": {
+                        "type": "number",
+                        "description": "增持家数"
+                      },
+                      "rating_neutral_num": {
+                        "type": "number",
+                        "description": "中性家数"
+                      },
+                      "rating_reduce_num": {
+                        "type": "number",
+                        "description": "减持家数"
+                      },
+                      "rating_sale_num": {
+                        "type": "number",
+                        "description": "卖出家数"
+                      },
+                      "title": {
+                        "type": "string",
+                        "description": "报告标题"
+                      },
+                      "org_sname": {
+                        "type": "string",
+                        "description": "机构简称"
+                      },
+                      "author": {
+                        "type": "string",
+                        "description": "作者"
+                      },
+                      "info_code": {
+                        "type": "string",
+                        "description": "报告编码"
+                      },
+                      "industry": {
+                        "type": "string",
+                        "description": "行业"
+                      },
+                      "report_url": {
+                        "type": "string",
+                        "description": "报告链接"
                       }
                     }
                   }
@@ -5032,33 +5650,73 @@
                         "type": "string",
                         "description": "报告期"
                       },
+                      "ann_date": {
+                        "type": "string",
+                        "description": "公告日"
+                      },
                       "predict_type": {
                         "type": "string",
                         "description": "预告类型"
                       },
                       "np_lower": {
                         "type": "number",
-                        "description": "净利润下限(元)"
+                        "description": "净利下限（元）"
                       },
                       "np_upper": {
                         "type": "number",
-                        "description": "净利润上限(元)"
+                        "description": "净利上限（元）"
                       },
                       "np_amp_lower": {
                         "type": "number",
-                        "description": "同比变动下限(%)"
+                        "description": "净利增幅下限（小数）"
                       },
                       "np_amp_upper": {
                         "type": "number",
-                        "description": "同比变动上限(%)"
+                        "description": "净利增幅上限（小数）"
                       },
-                      "ann_date": {
+                      "rev_amp_lower": {
+                        "type": "number",
+                        "description": "营收增幅下限（小数）"
+                      },
+                      "rev_amp_upper": {
+                        "type": "number",
+                        "description": "营收增幅上限（小数）"
+                      },
+                      "rev_lower": {
+                        "type": "number",
+                        "description": "营收下限（元）"
+                      },
+                      "rev_upper": {
+                        "type": "number",
+                        "description": "营收上限（元）"
+                      },
+                      "deduct_lower": {
+                        "type": "number",
+                        "description": "扣非净利下限（元）"
+                      },
+                      "deduct_upper": {
+                        "type": "number",
+                        "description": "扣非净利上限（元）"
+                      },
+                      "np_preyear": {
+                        "type": "number",
+                        "description": "上年同期净利（元）"
+                      },
+                      "revised_count": {
+                        "type": "number",
+                        "description": "修正次数"
+                      },
+                      "first_ann_date": {
                         "type": "string",
-                        "description": "公告日"
+                        "description": "首次公告日"
                       },
                       "content": {
                         "type": "string",
-                        "description": "预告原文"
+                        "description": "预告内容"
+                      },
+                      "source": {
+                        "type": "string",
+                        "description": "数据来源标识"
                       }
                     }
                   }
@@ -5204,21 +5862,49 @@
                         "type": "string",
                         "description": "报告期"
                       },
-                      "revenue": {
-                        "type": "number",
-                        "description": "营业收入(元)"
-                      },
-                      "netprofit": {
-                        "type": "number",
-                        "description": "净利润(元)"
-                      },
-                      "basic_eps": {
-                        "type": "number",
-                        "description": "每股收益(元)"
-                      },
                       "ann_date": {
                         "type": "string",
                         "description": "公告日"
+                      },
+                      "revenue": {
+                        "type": "number",
+                        "description": "营业收入（元）"
+                      },
+                      "netprofit": {
+                        "type": "number",
+                        "description": "净利润（元）"
+                      },
+                      "np_yoy": {
+                        "type": "number",
+                        "description": "净利同比（小数）"
+                      },
+                      "rev_yoy": {
+                        "type": "number",
+                        "description": "营收同比（小数）"
+                      },
+                      "roe": {
+                        "type": "number",
+                        "description": "ROE（小数）"
+                      },
+                      "basic_eps": {
+                        "type": "number",
+                        "description": "基本每股收益（元）"
+                      },
+                      "bvps": {
+                        "type": "number",
+                        "description": "每股净资产（元）"
+                      },
+                      "netprofit_ly": {
+                        "type": "number",
+                        "description": "上年同期净利（元）"
+                      },
+                      "revenue_ly": {
+                        "type": "number",
+                        "description": "上年同期营收（元）"
+                      },
+                      "source": {
+                        "type": "string",
+                        "description": "数据来源标识"
                       }
                     }
                   }
@@ -6120,20 +6806,46 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "description": "户数行",
-                  "type": "object",
-                  "properties": {
-                    "end_date": {
-                      "type": "string",
-                      "description": "截止日期"
-                    },
-                    "hold_focus": {
-                      "type": "number",
-                      "description": "持股集中度"
-                    },
-                    "avg_hold_amt": {
-                      "type": "number",
-                      "description": "平均持股金额"
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "end_date": {
+                        "type": "string",
+                        "description": "截止日期"
+                      },
+                      "total_num_ratio": {
+                        "type": "number",
+                        "description": "股东户数环比（小数）"
+                      },
+                      "avg_free_shares": {
+                        "type": "number",
+                        "description": "户均流通持股数（股）"
+                      },
+                      "avg_freeshares_ratio": {
+                        "type": "number",
+                        "description": "户均流通占比（小数）"
+                      },
+                      "hold_focus": {
+                        "type": "string",
+                        "description": "持股集中度描述"
+                      },
+                      "price": {
+                        "type": "number",
+                        "description": "最新价（元）"
+                      },
+                      "avg_hold_amt": {
+                        "type": "number",
+                        "description": "户均持股市值（元）"
+                      },
+                      "hold_ratio_total": {
+                        "type": "number",
+                        "description": "持股比例合计（小数）"
+                      },
+                      "freehold_ratio_total": {
+                        "type": "number",
+                        "description": "流通股持股比例合计（小数）"
+                      }
                     }
                   }
                 }
@@ -6213,7 +6925,19 @@
                     "properties": {
                       "holder_name": {
                         "type": "string",
-                        "description": "股东名称"
+                        "description": "质押股东"
+                      },
+                      "is_control_shareholder": {
+                        "type": "string",
+                        "description": "控股股东标识"
+                      },
+                      "accum_pledge_tsr": {
+                        "type": "number",
+                        "description": "累计质押占总股本比（小数）"
+                      },
+                      "notice_date": {
+                        "type": "string",
+                        "description": "公告日"
                       },
                       "pf_org": {
                         "type": "string",
@@ -6221,19 +6945,39 @@
                       },
                       "pf_num": {
                         "type": "number",
-                        "description": "质押数量(股)"
+                        "description": "质押股数（股）"
+                      },
+                      "pf_hold_ratio": {
+                        "type": "number",
+                        "description": "质押占所持股份比（小数）"
                       },
                       "pf_tsr": {
                         "type": "number",
-                        "description": "质押总股本比例(百分数)"
+                        "description": "质押占总股本比（小数）"
                       },
-                      "notice_date": {
+                      "pf_start_date": {
                         "type": "string",
-                        "description": "公告日期"
+                        "description": "质押起始日"
+                      },
+                      "unfreeze_date": {
+                        "type": "string",
+                        "description": "解押日"
                       },
                       "unfreeze_state": {
                         "type": "string",
                         "description": "解押状态"
+                      },
+                      "warning_state": {
+                        "type": "string",
+                        "description": "平仓风险标识"
+                      },
+                      "pf_purpose": {
+                        "type": "string",
+                        "description": "质押用途"
+                      },
+                      "pforg_type": {
+                        "type": "string",
+                        "description": "质押机构类型"
                       }
                     }
                   }
@@ -6375,15 +7119,35 @@
                     "properties": {
                       "trade_date": {
                         "type": "string",
-                        "description": "交易日期"
+                        "description": "交易日"
+                      },
+                      "total_pledged_shares": {
+                        "type": "number",
+                        "description": "质押总股数（股）"
+                      },
+                      "pledge_market_value": {
+                        "type": "number",
+                        "description": "质押市值（元）"
+                      },
+                      "csi300": {
+                        "type": "number",
+                        "description": "沪深300点位"
+                      },
+                      "csi300_chg": {
+                        "type": "number",
+                        "description": "沪深300涨跌幅（小数）"
                       },
                       "pledge_ratio_total": {
                         "type": "number",
-                        "description": "A股质押总比例(百分数)"
+                        "description": "市场质押比例（小数）"
                       },
                       "pledge_company_num": {
-                        "type": "integer",
-                        "description": "质押公司数"
+                        "type": "number",
+                        "description": "质押公司家数"
+                      },
+                      "pledge_deal_num": {
+                        "type": "number",
+                        "description": "质押笔数"
                       }
                     }
                   }
@@ -6570,25 +7334,33 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "holder_name": {
+                      "org_type": {
                         "type": "string",
-                        "description": "机构名称"
+                        "description": "机构类型"
                       },
                       "report_date": {
                         "type": "string",
                         "description": "报告期"
                       },
+                      "holder_name": {
+                        "type": "string",
+                        "description": "机构名称"
+                      },
                       "total_shares": {
                         "type": "number",
-                        "description": "持股总数(股)"
+                        "description": "持股数量（股）"
                       },
                       "hold_value": {
                         "type": "number",
-                        "description": "持股市值"
+                        "description": "持股市值（元）"
                       },
                       "total_shares_ratio": {
                         "type": "number",
-                        "description": "持股比例(百分数)"
+                        "description": "占总股本比（小数）"
+                      },
+                      "free_shares_ratio": {
+                        "type": "number",
+                        "description": "占流通股比（小数）"
                       }
                     }
                   }
@@ -6659,17 +7431,33 @@
                         "type": "string",
                         "description": "报告期"
                       },
+                      "org_type": {
+                        "type": "string",
+                        "description": "机构类型"
+                      },
                       "org_num": {
-                        "type": "integer",
-                        "description": "机构总数"
+                        "type": "number",
+                        "description": "机构家数"
                       },
                       "total_shares_ratio": {
                         "type": "number",
-                        "description": "总股本比例(百分数)"
+                        "description": "持股比例合计（小数）"
+                      },
+                      "org_name_type": {
+                        "type": "string",
+                        "description": "统计口径"
+                      },
+                      "is_increase": {
+                        "type": "string",
+                        "description": "增减仓标识"
                       },
                       "change_ratio": {
                         "type": "number",
-                        "description": "变化比例(百分数)"
+                        "description": "持股变化比例（小数）"
+                      },
+                      "all_shares_ratio": {
+                        "type": "number",
+                        "description": "占总股本比（小数）"
                       }
                     }
                   }
@@ -6745,11 +7533,27 @@
                       },
                       "hold_shares": {
                         "type": "number",
-                        "description": "持股数量(股)"
+                        "description": "持股数量（股）"
                       },
                       "hold_market_cap": {
                         "type": "number",
-                        "description": "持股市值"
+                        "description": "持股市值（元）"
+                      },
+                      "add_market_cap": {
+                        "type": "number",
+                        "description": "增持市值（元）"
+                      },
+                      "free_shares_ratio": {
+                        "type": "number",
+                        "description": "流通股占比（小数）"
+                      },
+                      "total_shares_ratio": {
+                        "type": "number",
+                        "description": "总股本占比（小数）"
+                      },
+                      "add_shares_pct": {
+                        "type": "number",
+                        "description": "持股变动比例（小数）"
                       }
                     }
                   }
@@ -6823,13 +7627,33 @@
                         "type": "string",
                         "description": "证券代码"
                       },
+                      "security_name": {
+                        "type": "string",
+                        "description": "证券简称"
+                      },
+                      "org_num": {
+                        "type": "number",
+                        "description": "机构家数"
+                      },
                       "report_date": {
                         "type": "string",
                         "description": "报告期"
                       },
+                      "total_shares": {
+                        "type": "number",
+                        "description": "持股数量（股）"
+                      },
+                      "market_cap": {
+                        "type": "number",
+                        "description": "持股市值（元）"
+                      },
                       "shares_ratio": {
                         "type": "number",
-                        "description": "持股比例合计(百分数)"
+                        "description": "持股比例合计（小数）"
+                      },
+                      "shares_ratio_change": {
+                        "type": "number",
+                        "description": "持股比例变动（小数）"
                       }
                     }
                   }
@@ -6896,17 +7720,25 @@
                   "items": {
                     "type": "object",
                     "properties": {
+                      "secucode": {
+                        "type": "string",
+                        "description": "证券代码"
+                      },
                       "lift_date": {
                         "type": "string",
                         "description": "解禁日期"
                       },
                       "lift_num": {
                         "type": "number",
-                        "description": "解禁数量(股)"
+                        "description": "解禁数量（股）"
                       },
                       "total_shares_ratio": {
                         "type": "number",
-                        "description": "总股本比例(百分数)"
+                        "description": "解禁占总股本比（小数）"
+                      },
+                      "unlimited_ratio": {
+                        "type": "number",
+                        "description": "解禁占无限售流通股比（小数）"
                       },
                       "lift_type": {
                         "type": "string",
@@ -7097,17 +7929,53 @@
                   "items": {
                     "type": "object",
                     "properties": {
+                      "security_code": {
+                        "type": "string",
+                        "description": "证券代码"
+                      },
+                      "security_name": {
+                        "type": "string",
+                        "description": "证券简称"
+                      },
+                      "transferee": {
+                        "type": "string",
+                        "description": "受让方"
+                      },
+                      "transferor": {
+                        "type": "string",
+                        "description": "转让方"
+                      },
+                      "transfer_ratio": {
+                        "type": "number",
+                        "description": "转让比例（小数）"
+                      },
+                      "object_type": {
+                        "type": "string",
+                        "description": "标的类型"
+                      },
+                      "deal_amount": {
+                        "type": "number",
+                        "description": "交易金额（元）"
+                      },
                       "progress": {
                         "type": "string",
                         "description": "进度"
                       },
-                      "deal_amount": {
-                        "type": "number",
-                        "description": "交易金额"
+                      "transfer_way": {
+                        "type": "string",
+                        "description": "转让方式"
+                      },
+                      "list_notice_date": {
+                        "type": "string",
+                        "description": "权益变动披露日"
                       },
                       "notice_date": {
                         "type": "string",
-                        "description": "公告日期"
+                        "description": "公告日"
+                      },
+                      "ccy": {
+                        "type": "string",
+                        "description": "币种"
                       }
                     }
                   }
@@ -7818,25 +8686,121 @@
                   "items": {
                     "type": "object",
                     "properties": {
+                      "query_date": {
+                        "type": "string",
+                        "description": "查询日期"
+                      },
+                      "participant_id": {
+                        "type": "string",
+                        "description": "参与者ID"
+                      },
                       "participant_name": {
                         "type": "string",
                         "description": "参与者名称"
                       },
                       "shareholding": {
                         "type": "number",
-                        "description": "持股数(股)"
+                        "description": "持股数（股）"
+                      },
+                      "pct_of_issued": {
+                        "type": "number",
+                        "description": "占已发行股份比（小数）"
                       },
                       "holder_name": {
                         "type": "string",
                         "description": "股东名称"
                       },
+                      "hold_identity": {
+                        "type": "string",
+                        "description": "权益身份"
+                      },
+                      "report_date": {
+                        "type": "string",
+                        "description": "报告期"
+                      },
+                      "total_shares": {
+                        "type": "number",
+                        "description": "总股本（股）"
+                      },
+                      "shares_type": {
+                        "type": "string",
+                        "description": "股份类型"
+                      },
+                      "equity_type": {
+                        "type": "string",
+                        "description": "权益类型"
+                      },
+                      "total_shares_ratio": {
+                        "type": "number",
+                        "description": "占总股本比（小数）"
+                      },
+                      "notice_date": {
+                        "type": "string",
+                        "description": "申报日期"
+                      },
+                      "publish_date": {
+                        "type": "string",
+                        "description": "发布日期"
+                      },
+                      "org_name": {
+                        "type": "string",
+                        "description": "券商机构"
+                      },
                       "rating_name": {
                         "type": "string",
                         "description": "评级"
                       },
+                      "target_price": {
+                        "type": "number",
+                        "description": "目标价"
+                      },
+                      "pre_rating_name": {
+                        "type": "string",
+                        "description": "前次评级"
+                      },
+                      "pre_target_price": {
+                        "type": "number",
+                        "description": "前次目标价"
+                      },
+                      "settle_date": {
+                        "type": "string",
+                        "description": "结算日期"
+                      },
                       "short_selling_shares": {
                         "type": "number",
-                        "description": "未平仓做空(股)"
+                        "description": "未平仓做空股数（股）"
+                      },
+                      "cover_days": {
+                        "type": "number",
+                        "description": "回补天数"
+                      },
+                      "fiscal_year": {
+                        "type": "string",
+                        "description": "财政年度"
+                      },
+                      "net_profit": {
+                        "type": "number",
+                        "description": "纯利（港币）"
+                      },
+                      "eps": {
+                        "type": "number",
+                        "description": "每股盈利（港币）"
+                      },
+                      "dps": {
+                        "type": "number",
+                        "description": "每股派息（港币）"
+                      },
+                      "nav": {
+                        "type": "number",
+                        "description": "每股资产净值（港币）"
+                      },
+                      "high": {
+                        "type": "number",
+                        "description": "最高价"
+                      },
+                      "low": {
+                        "type": "number",
+                        "description": "最低价"
                       }
                     }
                   }
@@ -7898,25 +8862,121 @@
                   "items": {
                     "type": "object",
                     "properties": {
+                      "query_date": {
+                        "type": "string",
+                        "description": "查询日期"
+                      },
+                      "participant_id": {
+                        "type": "string",
+                        "description": "参与者ID"
+                      },
                       "participant_name": {
                         "type": "string",
                         "description": "参与者名称"
                       },
                       "shareholding": {
                         "type": "number",
-                        "description": "持股数(股)"
+                        "description": "持股数（股）"
+                      },
+                      "pct_of_issued": {
+                        "type": "number",
+                        "description": "占已发行股份比（小数）"
                       },
                       "holder_name": {
                         "type": "string",
                         "description": "股东名称"
                       },
+                      "hold_identity": {
+                        "type": "string",
+                        "description": "权益身份"
+                      },
+                      "report_date": {
+                        "type": "string",
+                        "description": "报告期"
+                      },
+                      "total_shares": {
+                        "type": "number",
+                        "description": "总股本（股）"
+                      },
+                      "shares_type": {
+                        "type": "string",
+                        "description": "股份类型"
+                      },
+                      "equity_type": {
+                        "type": "string",
+                        "description": "权益类型"
+                      },
+                      "total_shares_ratio": {
+                        "type": "number",
+                        "description": "占总股本比（小数）"
+                      },
+                      "notice_date": {
+                        "type": "string",
+                        "description": "申报日期"
+                      },
+                      "publish_date": {
+                        "type": "string",
+                        "description": "发布日期"
+                      },
+                      "org_name": {
+                        "type": "string",
+                        "description": "券商机构"
+                      },
                       "rating_name": {
                         "type": "string",
                         "description": "评级"
                       },
+                      "target_price": {
+                        "type": "number",
+                        "description": "目标价"
+                      },
+                      "pre_rating_name": {
+                        "type": "string",
+                        "description": "前次评级"
+                      },
+                      "pre_target_price": {
+                        "type": "number",
+                        "description": "前次目标价"
+                      },
+                      "settle_date": {
+                        "type": "string",
+                        "description": "结算日期"
+                      },
                       "short_selling_shares": {
                         "type": "number",
-                        "description": "未平仓做空(股)"
+                        "description": "未平仓做空股数（股）"
+                      },
+                      "cover_days": {
+                        "type": "number",
+                        "description": "回补天数"
+                      },
+                      "fiscal_year": {
+                        "type": "string",
+                        "description": "财政年度"
+                      },
+                      "net_profit": {
+                        "type": "number",
+                        "description": "纯利（港币）"
+                      },
+                      "eps": {
+                        "type": "number",
+                        "description": "每股盈利（港币）"
+                      },
+                      "dps": {
+                        "type": "number",
+                        "description": "每股派息（港币）"
+                      },
+                      "nav": {
+                        "type": "number",
+                        "description": "每股资产净值（港币）"
+                      },
+                      "high": {
+                        "type": "number",
+                        "description": "最高价"
+                      },
+                      "low": {
+                        "type": "number",
+                        "description": "最低价"
                       }
                     }
                   }
@@ -7975,25 +9035,121 @@
                   "items": {
                     "type": "object",
                     "properties": {
+                      "query_date": {
+                        "type": "string",
+                        "description": "查询日期"
+                      },
+                      "participant_id": {
+                        "type": "string",
+                        "description": "参与者ID"
+                      },
                       "participant_name": {
                         "type": "string",
                         "description": "参与者名称"
                       },
                       "shareholding": {
                         "type": "number",
-                        "description": "持股数(股)"
+                        "description": "持股数（股）"
+                      },
+                      "pct_of_issued": {
+                        "type": "number",
+                        "description": "占已发行股份比（小数）"
                       },
                       "holder_name": {
                         "type": "string",
                         "description": "股东名称"
                       },
+                      "hold_identity": {
+                        "type": "string",
+                        "description": "权益身份"
+                      },
+                      "report_date": {
+                        "type": "string",
+                        "description": "报告期"
+                      },
+                      "total_shares": {
+                        "type": "number",
+                        "description": "总股本（股）"
+                      },
+                      "shares_type": {
+                        "type": "string",
+                        "description": "股份类型"
+                      },
+                      "equity_type": {
+                        "type": "string",
+                        "description": "权益类型"
+                      },
+                      "total_shares_ratio": {
+                        "type": "number",
+                        "description": "占总股本比（小数）"
+                      },
+                      "notice_date": {
+                        "type": "string",
+                        "description": "申报日期"
+                      },
+                      "publish_date": {
+                        "type": "string",
+                        "description": "发布日期"
+                      },
+                      "org_name": {
+                        "type": "string",
+                        "description": "券商机构"
+                      },
                       "rating_name": {
                         "type": "string",
                         "description": "评级"
                       },
+                      "target_price": {
+                        "type": "number",
+                        "description": "目标价"
+                      },
+                      "pre_rating_name": {
+                        "type": "string",
+                        "description": "前次评级"
+                      },
+                      "pre_target_price": {
+                        "type": "number",
+                        "description": "前次目标价"
+                      },
+                      "settle_date": {
+                        "type": "string",
+                        "description": "结算日期"
+                      },
                       "short_selling_shares": {
                         "type": "number",
-                        "description": "未平仓做空(股)"
+                        "description": "未平仓做空股数（股）"
+                      },
+                      "cover_days": {
+                        "type": "number",
+                        "description": "回补天数"
+                      },
+                      "fiscal_year": {
+                        "type": "string",
+                        "description": "财政年度"
+                      },
+                      "net_profit": {
+                        "type": "number",
+                        "description": "纯利（港币）"
+                      },
+                      "eps": {
+                        "type": "number",
+                        "description": "每股盈利（港币）"
+                      },
+                      "dps": {
+                        "type": "number",
+                        "description": "每股派息（港币）"
+                      },
+                      "nav": {
+                        "type": "number",
+                        "description": "每股资产净值（港币）"
+                      },
+                      "high": {
+                        "type": "number",
+                        "description": "最高价"
+                      },
+                      "low": {
+                        "type": "number",
+                        "description": "最低价"
                       }
                     }
                   }
@@ -8044,25 +9200,121 @@
                   "items": {
                     "type": "object",
                     "properties": {
+                      "query_date": {
+                        "type": "string",
+                        "description": "查询日期"
+                      },
+                      "participant_id": {
+                        "type": "string",
+                        "description": "参与者ID"
+                      },
                       "participant_name": {
                         "type": "string",
                         "description": "参与者名称"
                       },
                       "shareholding": {
                         "type": "number",
-                        "description": "持股数(股)"
+                        "description": "持股数（股）"
+                      },
+                      "pct_of_issued": {
+                        "type": "number",
+                        "description": "占已发行股份比（小数）"
                       },
                       "holder_name": {
                         "type": "string",
                         "description": "股东名称"
                       },
+                      "hold_identity": {
+                        "type": "string",
+                        "description": "权益身份"
+                      },
+                      "report_date": {
+                        "type": "string",
+                        "description": "报告期"
+                      },
+                      "total_shares": {
+                        "type": "number",
+                        "description": "总股本（股）"
+                      },
+                      "shares_type": {
+                        "type": "string",
+                        "description": "股份类型"
+                      },
+                      "equity_type": {
+                        "type": "string",
+                        "description": "权益类型"
+                      },
+                      "total_shares_ratio": {
+                        "type": "number",
+                        "description": "占总股本比（小数）"
+                      },
+                      "notice_date": {
+                        "type": "string",
+                        "description": "申报日期"
+                      },
+                      "publish_date": {
+                        "type": "string",
+                        "description": "发布日期"
+                      },
+                      "org_name": {
+                        "type": "string",
+                        "description": "券商机构"
+                      },
                       "rating_name": {
                         "type": "string",
                         "description": "评级"
                       },
+                      "target_price": {
+                        "type": "number",
+                        "description": "目标价"
+                      },
+                      "pre_rating_name": {
+                        "type": "string",
+                        "description": "前次评级"
+                      },
+                      "pre_target_price": {
+                        "type": "number",
+                        "description": "前次目标价"
+                      },
+                      "settle_date": {
+                        "type": "string",
+                        "description": "结算日期"
+                      },
                       "short_selling_shares": {
                         "type": "number",
-                        "description": "未平仓做空(股)"
+                        "description": "未平仓做空股数（股）"
+                      },
+                      "cover_days": {
+                        "type": "number",
+                        "description": "回补天数"
+                      },
+                      "fiscal_year": {
+                        "type": "string",
+                        "description": "财政年度"
+                      },
+                      "net_profit": {
+                        "type": "number",
+                        "description": "纯利（港币）"
+                      },
+                      "eps": {
+                        "type": "number",
+                        "description": "每股盈利（港币）"
+                      },
+                      "dps": {
+                        "type": "number",
+                        "description": "每股派息（港币）"
+                      },
+                      "nav": {
+                        "type": "number",
+                        "description": "每股资产净值（港币）"
+                      },
+                      "high": {
+                        "type": "number",
+                        "description": "最高价"
+                      },
+                      "low": {
+                        "type": "number",
+                        "description": "最低价"
                       }
                     }
                   }
@@ -8113,25 +9365,121 @@
                   "items": {
                     "type": "object",
                     "properties": {
+                      "query_date": {
+                        "type": "string",
+                        "description": "查询日期"
+                      },
+                      "participant_id": {
+                        "type": "string",
+                        "description": "参与者ID"
+                      },
                       "participant_name": {
                         "type": "string",
                         "description": "参与者名称"
                       },
                       "shareholding": {
                         "type": "number",
-                        "description": "持股数(股)"
+                        "description": "持股数（股）"
+                      },
+                      "pct_of_issued": {
+                        "type": "number",
+                        "description": "占已发行股份比（小数）"
                       },
                       "holder_name": {
                         "type": "string",
                         "description": "股东名称"
                       },
+                      "hold_identity": {
+                        "type": "string",
+                        "description": "权益身份"
+                      },
+                      "report_date": {
+                        "type": "string",
+                        "description": "报告期"
+                      },
+                      "total_shares": {
+                        "type": "number",
+                        "description": "总股本（股）"
+                      },
+                      "shares_type": {
+                        "type": "string",
+                        "description": "股份类型"
+                      },
+                      "equity_type": {
+                        "type": "string",
+                        "description": "权益类型"
+                      },
+                      "total_shares_ratio": {
+                        "type": "number",
+                        "description": "占总股本比（小数）"
+                      },
+                      "notice_date": {
+                        "type": "string",
+                        "description": "申报日期"
+                      },
+                      "publish_date": {
+                        "type": "string",
+                        "description": "发布日期"
+                      },
+                      "org_name": {
+                        "type": "string",
+                        "description": "券商机构"
+                      },
                       "rating_name": {
                         "type": "string",
                         "description": "评级"
                       },
+                      "target_price": {
+                        "type": "number",
+                        "description": "目标价"
+                      },
+                      "pre_rating_name": {
+                        "type": "string",
+                        "description": "前次评级"
+                      },
+                      "pre_target_price": {
+                        "type": "number",
+                        "description": "前次目标价"
+                      },
+                      "settle_date": {
+                        "type": "string",
+                        "description": "结算日期"
+                      },
                       "short_selling_shares": {
                         "type": "number",
-                        "description": "未平仓做空(股)"
+                        "description": "未平仓做空股数（股）"
+                      },
+                      "cover_days": {
+                        "type": "number",
+                        "description": "回补天数"
+                      },
+                      "fiscal_year": {
+                        "type": "string",
+                        "description": "财政年度"
+                      },
+                      "net_profit": {
+                        "type": "number",
+                        "description": "纯利（港币）"
+                      },
+                      "eps": {
+                        "type": "number",
+                        "description": "每股盈利（港币）"
+                      },
+                      "dps": {
+                        "type": "number",
+                        "description": "每股派息（港币）"
+                      },
+                      "nav": {
+                        "type": "number",
+                        "description": "每股资产净值（港币）"
+                      },
+                      "high": {
+                        "type": "number",
+                        "description": "最高价"
+                      },
+                      "low": {
+                        "type": "number",
+                        "description": "最低价"
                       }
                     }
                   }

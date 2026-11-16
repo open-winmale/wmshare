@@ -1,5 +1,5 @@
 id: disc.events
-version: 1.1.0
+version: 1.1.2
 cn: 业绩披露事件
 kind: raw
 category: disclosure
@@ -27,7 +27,32 @@ functions:
     params:
       - {name: sym, type: string, required: true, desc: 6 位裸码}
       - {name: limit, type: int, required: false, desc: 条数}
-    returns: {desc: ARR · 预告行（报告期/类型/净利与扣非区间/同比/修正轨迹）}
+    returns:
+      desc: ARR · 预告行（报告期/类型/净利与扣非区间/同比/修正轨迹）
+      shape:
+        kind: array
+        items:
+          kind: object
+          cn: 预告行
+          fields:
+            - {name: report_date, type: string, cn: 报告期}
+            - {name: ann_date, type: string, cn: 公告日}
+            - {name: predict_type, type: string, cn: 预告类型}
+            - {name: np_lower, type: float64, cn: 净利下限（元）}
+            - {name: np_upper, type: float64, cn: 净利上限（元）}
+            - {name: np_amp_lower, type: float64, cn: 净利增幅下限（小数）}
+            - {name: np_amp_upper, type: float64, cn: 净利增幅上限（小数）}
+            - {name: rev_amp_lower, type: float64, cn: 营收增幅下限（小数）}
+            - {name: rev_amp_upper, type: float64, cn: 营收增幅上限（小数）}
+            - {name: rev_lower, type: float64, cn: 营收下限（元）, optional: true}
+            - {name: rev_upper, type: float64, cn: 营收上限（元）, optional: true}
+            - {name: deduct_lower, type: float64, cn: 扣非净利下限（元）, optional: true}
+            - {name: deduct_upper, type: float64, cn: 扣非净利上限（元）, optional: true}
+            - {name: np_preyear, type: float64, cn: 上年同期净利（元）, optional: true}
+            - {name: revised_count, type: float64, cn: 修正次数, optional: true}
+            - {name: first_ann_date, type: string, cn: 首次公告日, optional: true}
+            - {name: content, type: string, cn: 预告内容, optional: true}
+            - {name: source, type: string, cn: 数据来源标识, optional: true}
     example: 'forecast.yjyg_rows("688008", 8)'
     units: {np_amp_lower: percent, np_amp_upper: percent, rev_amp_lower: percent, rev_amp_upper: percent}
     ranges: {np_amp_lower: [-100, 1000], np_amp_upper: [-100, 1000], rev_amp_lower: [-100, 1000], rev_amp_upper: [-100, 1000]}
@@ -48,7 +73,26 @@ functions:
     params:
       - {name: sym, type: string, required: true}
       - {name: limit, type: int, required: false}
-    returns: {desc: ARR · 快报行}
+    returns:
+      desc: ARR · 快报行
+      shape:
+        kind: array
+        items:
+          kind: object
+          cn: 快报行
+          fields:
+            - {name: report_date, type: string, cn: 报告期}
+            - {name: ann_date, type: string, cn: 公告日}
+            - {name: revenue, type: float64, cn: 营业收入（元）}
+            - {name: netprofit, type: float64, cn: 净利润（元）}
+            - {name: np_yoy, type: float64, cn: 净利同比（小数）}
+            - {name: rev_yoy, type: float64, cn: 营收同比（小数）}
+            - {name: roe, type: float64, cn: ROE（小数）}
+            - {name: basic_eps, type: float64, cn: 基本每股收益（元）}
+            - {name: bvps, type: float64, cn: 每股净资产（元）}
+            - {name: netprofit_ly, type: float64, cn: 上年同期净利（元）, optional: true}
+            - {name: revenue_ly, type: float64, cn: 上年同期营收（元）, optional: true}
+            - {name: source, type: string, cn: 数据来源标识, optional: true}
     example: 'forecast.yjkb_rows("603092", 8)'
     units: {np_yoy: percent, rev_yoy: percent, roe: percent}
     ranges: {np_yoy: [-100, 1000], rev_yoy: [-100, 1000], roe: [-2, 5]}
@@ -85,7 +129,59 @@ functions:
     layer: L0
     params:
       - {name: sym, type: string, required: true}
-    returns: {desc: MAP · 快照}
+    returns:
+      desc: MAP · 快照
+      shape:
+        kind: object
+        cn: 业绩披露快照
+        fields:
+          - {name: symbol, type: string, cn: 股票代码}
+          - name: yjyg
+            type: object
+            cn: 最新业绩预告
+            optional: true
+            fields:
+              - {name: report_date, type: string, cn: 报告期}
+              - {name: ann_date, type: string, cn: 公告日}
+              - {name: predict_type, type: string, cn: 预告类型}
+              - {name: np_lower, type: float64, cn: 净利下限（元）}
+              - {name: np_upper, type: float64, cn: 净利上限（元）}
+              - {name: np_amp_lower, type: float64, cn: 净利增幅下限（小数）}
+              - {name: np_amp_upper, type: float64, cn: 净利增幅上限（小数）}
+              - {name: rev_amp_lower, type: float64, cn: 营收增幅下限（小数）}
+              - {name: rev_amp_upper, type: float64, cn: 营收增幅上限（小数）}
+              - {name: rev_lower, type: float64, cn: 营收下限（元）, optional: true}
+              - {name: rev_upper, type: float64, cn: 营收上限（元）, optional: true}
+              - {name: deduct_lower, type: float64, cn: 扣非净利下限（元）, optional: true}
+              - {name: deduct_upper, type: float64, cn: 扣非净利上限（元）, optional: true}
+              - {name: np_preyear, type: float64, cn: 上年同期净利（元）, optional: true}
+              - {name: revised_count, type: float64, cn: 修正次数, optional: true}
+              - {name: first_ann_date, type: string, cn: 首次公告日, optional: true}
+              - {name: content, type: string, cn: 预告内容, optional: true}
+              - {name: source, type: string, cn: 数据来源标识, optional: true}
+          - name: yjkb
+            type: object
+            cn: 最新业绩快报
+            optional: true
+            fields:
+              - {name: report_date, type: string, cn: 报告期}
+              - {name: ann_date, type: string, cn: 公告日}
+              - {name: revenue, type: float64, cn: 营业收入（元）}
+              - {name: netprofit, type: float64, cn: 净利润（元）}
+              - {name: np_yoy, type: float64, cn: 净利同比（小数）}
+              - {name: rev_yoy, type: float64, cn: 营收同比（小数）}
+              - {name: roe, type: float64, cn: ROE（小数）}
+              - {name: basic_eps, type: float64, cn: 基本每股收益（元）}
+              - {name: bvps, type: float64, cn: 每股净资产（元）}
+              - {name: netprofit_ly, type: float64, cn: 上年同期净利（元）, optional: true}
+              - {name: revenue_ly, type: float64, cn: 上年同期营收（元）, optional: true}
+              - {name: source, type: string, cn: 数据来源标识, optional: true}
+          - name: next_disclosure
+            type: object
+            cn: 下次财报披露
+            optional: true
+            fields:
+              - {name: report_date, type: string, cn: 预约披露日}
     example: 'forecast.snapshot("688008")'
     units: {np_amp_lower: percent, np_amp_upper: percent, rev_amp_lower: percent, rev_amp_upper: percent, np_yoy: percent, rev_yoy: percent, roe: percent}
     ranges: {np_amp_lower: [-100, 1000], np_amp_upper: [-100, 1000], rev_amp_lower: [-100, 1000], rev_amp_upper: [-100, 1000], np_yoy: [-100, 1000], rev_yoy: [-100, 1000], roe: [-2, 5]}

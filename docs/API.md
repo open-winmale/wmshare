@@ -1734,8 +1734,8 @@ cli.segments.business("600519", limit=10)
 |---|---|---|
 | `source` | string | 口径标识 |
 | `report_sas` | string | 报告期 |
-| `domestic` | object | 境内 {tr, pct, margin, yoy} |
-| `overseas` | object | 境外 {tr, pct, margin, yoy} |
+| `domestic` | object | 境内分部 |
+| `overseas` | object | 境外分部 |
 
 **示例**
 
@@ -1786,11 +1786,18 @@ cli.segments.income("600519", limit=10)
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
-| `overview` | map[string]any? | 概览 |
-| `income` | []any? | 主营标签 |
-| `region` | []any? | 地区 |
-| `product` | []any? | 产品 |
-| `business` | []any? | 业务线 |
+| `symbol` | string | 股票代码 |
+| `name` | string? | 股票名称 |
+| `report_sas` | string? | 报告期 |
+| `goods_sas` | string? | 商品维报告期锚 |
+| `note` | string? | 口径说明 |
+| `overview` | object? | 合并概览 |
+| `income` | array | 主营标签行（结构同 query_income） |
+| `region` | object | 境内外分部（结构同 query_region clean 口径） |
+| `products` | array | 产品分部行（结构同 query_products） |
+| `business` | array | 业务分部行（结构同 query_business） |
+| `coverage` | object | 披露覆盖度 |
+| `sources` | object | 各维数据来源标识 |
 
 **示例**
 
@@ -1887,11 +1894,48 @@ cli.valuation.hist_stats("600519", metric="pe", window="3y")
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
+| `security_code` | string | 证券代码 |
+| `security_name` | string? | 证券简称 |
+| `publish_date` | string? | 报告发布日 |
 | `org_name` | string? | 机构名称 |
-| `publish_date` | string? | 发布日期 |
-| `eps1` | float? | 第一年每股收益 |
-| `pe1` | float? | 第一年市盈率 |
+| `org_code` | string? | 机构代码 |
+| `researcher` | string? | 分析师 |
+| `date_type` | string? | 预测年度口径 |
+| `year1` | float? | 预测年度1 |
+| `year_mark1` | string? | 年度1标记 |
+| `eps1` | float? | 每股收益1（元） |
+| `pe1` | float? | 市盈率1（倍） |
+| `parent_netprofit1` | float? | 归母净利1（元） |
+| `year2` | float? | 预测年度2 |
+| `year_mark2` | string? | 年度2标记 |
+| `eps2` | float? | 每股收益2（元） |
+| `pe2` | float? | 市盈率2（倍） |
+| `parent_netprofit2` | float? | 归母净利2（元） |
+| `year3` | float? | 预测年度3 |
+| `year_mark3` | string? | 年度3标记 |
+| `eps3` | float? | 每股收益3（元） |
+| `pe3` | float? | 市盈率3（倍） |
+| `parent_netprofit3` | float? | 归母净利3（元） |
+| `year4` | float? | 预测年度4 |
+| `year_mark4` | string? | 年度4标记 |
+| `eps4` | float? | 每股收益4（元） |
+| `pe4` | float? | 市盈率4（倍） |
+| `parent_netprofit4` | float? | 归母净利4（元） |
 | `rating` | string? | 评级 |
+| `compre_rating` | string? | 综合评级 |
+| `compre_rating_num` | float? | 综合评级数值 |
+| `rating_org_num` | float? | 评级机构家数 |
+| `rating_buy_num` | float? | 买入家数 |
+| `rating_add_num` | float? | 增持家数 |
+| `rating_neutral_num` | float? | 中性家数 |
+| `rating_reduce_num` | float? | 减持家数 |
+| `rating_sale_num` | float? | 卖出家数 |
+| `title` | string? | 报告标题 |
+| `org_sname` | string? | 机构简称 |
+| `author` | string? | 作者 |
+| `info_code` | string? | 报告编码 |
+| `industry` | string? | 行业 |
+| `report_url` | string? | 报告链接 |
 
 **示例**
 
@@ -1914,11 +1958,48 @@ cli.estimates.query_forecast("600519", limit=10)
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
+| `security_code` | string | 证券代码 |
+| `security_name` | string? | 证券简称 |
+| `publish_date` | string? | 报告发布日 |
 | `org_name` | string? | 机构名称 |
-| `publish_date` | string? | 发布日期 |
-| `eps1` | float? | 第一年每股收益 |
-| `pe1` | float? | 第一年市盈率 |
+| `org_code` | string? | 机构代码 |
+| `researcher` | string? | 分析师 |
+| `date_type` | string? | 预测年度口径 |
+| `year1` | float? | 预测年度1 |
+| `year_mark1` | string? | 年度1标记 |
+| `eps1` | float? | 每股收益1（元） |
+| `pe1` | float? | 市盈率1（倍） |
+| `parent_netprofit1` | float? | 归母净利1（元） |
+| `year2` | float? | 预测年度2 |
+| `year_mark2` | string? | 年度2标记 |
+| `eps2` | float? | 每股收益2（元） |
+| `pe2` | float? | 市盈率2（倍） |
+| `parent_netprofit2` | float? | 归母净利2（元） |
+| `year3` | float? | 预测年度3 |
+| `year_mark3` | string? | 年度3标记 |
+| `eps3` | float? | 每股收益3（元） |
+| `pe3` | float? | 市盈率3（倍） |
+| `parent_netprofit3` | float? | 归母净利3（元） |
+| `year4` | float? | 预测年度4 |
+| `year_mark4` | string? | 年度4标记 |
+| `eps4` | float? | 每股收益4（元） |
+| `pe4` | float? | 市盈率4（倍） |
+| `parent_netprofit4` | float? | 归母净利4（元） |
 | `rating` | string? | 评级 |
+| `compre_rating` | string? | 综合评级 |
+| `compre_rating_num` | float? | 综合评级数值 |
+| `rating_org_num` | float? | 评级机构家数 |
+| `rating_buy_num` | float? | 买入家数 |
+| `rating_add_num` | float? | 增持家数 |
+| `rating_neutral_num` | float? | 中性家数 |
+| `rating_reduce_num` | float? | 减持家数 |
+| `rating_sale_num` | float? | 卖出家数 |
+| `title` | string? | 报告标题 |
+| `org_sname` | string? | 机构简称 |
+| `author` | string? | 作者 |
+| `info_code` | string? | 报告编码 |
+| `industry` | string? | 行业 |
+| `report_url` | string? | 报告链接 |
 
 **示例**
 
@@ -1941,11 +2022,48 @@ cli.estimates.query_forecast_detail("600519", limit=10)
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
+| `security_code` | string | 证券代码 |
+| `security_name` | string? | 证券简称 |
+| `publish_date` | string? | 报告发布日 |
 | `org_name` | string? | 机构名称 |
-| `publish_date` | string? | 发布日期 |
-| `eps1` | float? | 第一年每股收益 |
-| `pe1` | float? | 第一年市盈率 |
+| `org_code` | string? | 机构代码 |
+| `researcher` | string? | 分析师 |
+| `date_type` | string? | 预测年度口径 |
+| `year1` | float? | 预测年度1 |
+| `year_mark1` | string? | 年度1标记 |
+| `eps1` | float? | 每股收益1（元） |
+| `pe1` | float? | 市盈率1（倍） |
+| `parent_netprofit1` | float? | 归母净利1（元） |
+| `year2` | float? | 预测年度2 |
+| `year_mark2` | string? | 年度2标记 |
+| `eps2` | float? | 每股收益2（元） |
+| `pe2` | float? | 市盈率2（倍） |
+| `parent_netprofit2` | float? | 归母净利2（元） |
+| `year3` | float? | 预测年度3 |
+| `year_mark3` | string? | 年度3标记 |
+| `eps3` | float? | 每股收益3（元） |
+| `pe3` | float? | 市盈率3（倍） |
+| `parent_netprofit3` | float? | 归母净利3（元） |
+| `year4` | float? | 预测年度4 |
+| `year_mark4` | string? | 年度4标记 |
+| `eps4` | float? | 每股收益4（元） |
+| `pe4` | float? | 市盈率4（倍） |
+| `parent_netprofit4` | float? | 归母净利4（元） |
 | `rating` | string? | 评级 |
+| `compre_rating` | string? | 综合评级 |
+| `compre_rating_num` | float? | 综合评级数值 |
+| `rating_org_num` | float? | 评级机构家数 |
+| `rating_buy_num` | float? | 买入家数 |
+| `rating_add_num` | float? | 增持家数 |
+| `rating_neutral_num` | float? | 中性家数 |
+| `rating_reduce_num` | float? | 减持家数 |
+| `rating_sale_num` | float? | 卖出家数 |
+| `title` | string? | 报告标题 |
+| `org_sname` | string? | 机构简称 |
+| `author` | string? | 作者 |
+| `info_code` | string? | 报告编码 |
+| `industry` | string? | 行业 |
+| `report_url` | string? | 报告链接 |
 
 **示例**
 
@@ -1968,11 +2086,48 @@ cli.estimates.query_rating("600519", limit=10)
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
+| `security_code` | string | 证券代码 |
+| `security_name` | string? | 证券简称 |
+| `publish_date` | string? | 报告发布日 |
 | `org_name` | string? | 机构名称 |
-| `publish_date` | string? | 发布日期 |
-| `eps1` | float? | 第一年每股收益 |
-| `pe1` | float? | 第一年市盈率 |
+| `org_code` | string? | 机构代码 |
+| `researcher` | string? | 分析师 |
+| `date_type` | string? | 预测年度口径 |
+| `year1` | float? | 预测年度1 |
+| `year_mark1` | string? | 年度1标记 |
+| `eps1` | float? | 每股收益1（元） |
+| `pe1` | float? | 市盈率1（倍） |
+| `parent_netprofit1` | float? | 归母净利1（元） |
+| `year2` | float? | 预测年度2 |
+| `year_mark2` | string? | 年度2标记 |
+| `eps2` | float? | 每股收益2（元） |
+| `pe2` | float? | 市盈率2（倍） |
+| `parent_netprofit2` | float? | 归母净利2（元） |
+| `year3` | float? | 预测年度3 |
+| `year_mark3` | string? | 年度3标记 |
+| `eps3` | float? | 每股收益3（元） |
+| `pe3` | float? | 市盈率3（倍） |
+| `parent_netprofit3` | float? | 归母净利3（元） |
+| `year4` | float? | 预测年度4 |
+| `year_mark4` | string? | 年度4标记 |
+| `eps4` | float? | 每股收益4（元） |
+| `pe4` | float? | 市盈率4（倍） |
+| `parent_netprofit4` | float? | 归母净利4（元） |
 | `rating` | string? | 评级 |
+| `compre_rating` | string? | 综合评级 |
+| `compre_rating_num` | float? | 综合评级数值 |
+| `rating_org_num` | float? | 评级机构家数 |
+| `rating_buy_num` | float? | 买入家数 |
+| `rating_add_num` | float? | 增持家数 |
+| `rating_neutral_num` | float? | 中性家数 |
+| `rating_reduce_num` | float? | 减持家数 |
+| `rating_sale_num` | float? | 卖出家数 |
+| `title` | string? | 报告标题 |
+| `org_sname` | string? | 机构简称 |
+| `author` | string? | 作者 |
+| `info_code` | string? | 报告编码 |
+| `industry` | string? | 行业 |
+| `report_url` | string? | 报告链接 |
 
 **示例**
 
@@ -2486,13 +2641,23 @@ cli.filings.latest("600519", kind="annual")
 | 字段 | 类型 | 说明 |
 |---|---|---|
 | `report_date` | string | 报告期 |
-| `predict_type` | string? | 预告类型 |
-| `np_lower` | float? | 净利润下限(元) |
-| `np_upper` | float? | 净利润上限(元) |
-| `np_amp_lower` | float? | 同比变动下限(%) |
-| `np_amp_upper` | float? | 同比变动上限(%) |
-| `ann_date` | string? | 公告日 |
-| `content` | string? | 预告原文 |
+| `ann_date` | string | 公告日 |
+| `predict_type` | string | 预告类型 |
+| `np_lower` | float | 净利下限（元） |
+| `np_upper` | float | 净利上限（元） |
+| `np_amp_lower` | float | 净利增幅下限（小数） |
+| `np_amp_upper` | float | 净利增幅上限（小数） |
+| `rev_amp_lower` | float | 营收增幅下限（小数） |
+| `rev_amp_upper` | float | 营收增幅上限（小数） |
+| `rev_lower` | float? | 营收下限（元） |
+| `rev_upper` | float? | 营收上限（元） |
+| `deduct_lower` | float? | 扣非净利下限（元） |
+| `deduct_upper` | float? | 扣非净利上限（元） |
+| `np_preyear` | float? | 上年同期净利（元） |
+| `revised_count` | float? | 修正次数 |
+| `first_ann_date` | string? | 首次公告日 |
+| `content` | string? | 预告内容 |
+| `source` | string? | 数据来源标识 |
 
 **示例**
 
@@ -2534,10 +2699,17 @@ cli.forecast.yjyg_latest("600519")
 | 字段 | 类型 | 说明 |
 |---|---|---|
 | `report_date` | string | 报告期 |
-| `revenue` | float? | 营业收入(元) |
-| `netprofit` | float? | 净利润(元) |
-| `basic_eps` | float? | 每股收益(元) |
-| `ann_date` | string? | 公告日 |
+| `ann_date` | string | 公告日 |
+| `revenue` | float | 营业收入（元） |
+| `netprofit` | float | 净利润（元） |
+| `np_yoy` | float | 净利同比（小数） |
+| `rev_yoy` | float | 营收同比（小数） |
+| `roe` | float | ROE（小数） |
+| `basic_eps` | float | 基本每股收益（元） |
+| `bvps` | float | 每股净资产（元） |
+| `netprofit_ly` | float? | 上年同期净利（元） |
+| `revenue_ly` | float? | 上年同期营收（元） |
+| `source` | string? | 数据来源标识 |
 
 **示例**
 
@@ -2849,9 +3021,15 @@ cli.equity.query_holder10("600519")
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
-| `end_date` | string? | 截止日期 |
-| `hold_focus` | float? | 持股集中度 |
-| `avg_hold_amt` | float? | 平均持股金额 |
+| `end_date` | string | 截止日期 |
+| `total_num_ratio` | float? | 股东户数环比（小数） |
+| `avg_free_shares` | float? | 户均流通持股数（股） |
+| `avg_freeshares_ratio` | float? | 户均流通占比（小数） |
+| `hold_focus` | string? | 持股集中度描述 |
+| `price` | float? | 最新价（元） |
+| `avg_hold_amt` | float? | 户均持股市值（元） |
+| `hold_ratio_total` | float? | 持股比例合计（小数） |
+| `freehold_ratio_total` | float? | 流通股持股比例合计（小数） |
 
 **示例**
 
@@ -2874,12 +3052,20 @@ cli.equity.query_holdernum("600519")
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
-| `holder_name` | string | 股东名称 |
+| `holder_name` | string | 质押股东 |
+| `is_control_shareholder` | string? | 控股股东标识 |
+| `accum_pledge_tsr` | float? | 累计质押占总股本比（小数） |
+| `notice_date` | string? | 公告日 |
 | `pf_org` | string? | 质押机构 |
-| `pf_num` | float? | 质押数量(股) |
-| `pf_tsr` | float? | 质押总股本比例(百分数) |
-| `notice_date` | string? | 公告日期 |
+| `pf_num` | float? | 质押股数（股） |
+| `pf_hold_ratio` | float? | 质押占所持股份比（小数） |
+| `pf_tsr` | float? | 质押占总股本比（小数） |
+| `pf_start_date` | string? | 质押起始日 |
+| `unfreeze_date` | string? | 解押日 |
 | `unfreeze_state` | string? | 解押状态 |
+| `warning_state` | string? | 平仓风险标识 |
+| `pf_purpose` | string? | 质押用途 |
+| `pforg_type` | string? | 质押机构类型 |
 
 **示例**
 
@@ -2927,9 +3113,14 @@ cli.equity.query_pledge_summary("600519", limit=10)
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
-| `trade_date` | string | 交易日期 |
-| `pledge_ratio_total` | float? | A股质押总比例(百分数) |
-| `pledge_company_num` | int? | 质押公司数 |
+| `trade_date` | string | 交易日 |
+| `total_pledged_shares` | float? | 质押总股数（股） |
+| `pledge_market_value` | float? | 质押市值（元） |
+| `csi300` | float? | 沪深300点位 |
+| `csi300_chg` | float? | 沪深300涨跌幅（小数） |
+| `pledge_ratio_total` | float? | 市场质押比例（小数） |
+| `pledge_company_num` | float? | 质押公司家数 |
+| `pledge_deal_num` | float? | 质押笔数 |
 
 **示例**
 
@@ -2999,11 +3190,13 @@ cli.equity.query_pledge_org(limit=10)
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
+| `org_type` | string | 机构类型 |
+| `report_date` | string | 报告期 |
 | `holder_name` | string | 机构名称 |
-| `report_date` | string? | 报告期 |
-| `total_shares` | float? | 持股总数(股) |
-| `hold_value` | float? | 持股市值 |
-| `total_shares_ratio` | float? | 持股比例(百分数) |
+| `total_shares` | float? | 持股数量（股） |
+| `hold_value` | float? | 持股市值（元） |
+| `total_shares_ratio` | float? | 占总股本比（小数） |
+| `free_shares_ratio` | float? | 占流通股比（小数） |
 
 **示例**
 
@@ -3027,9 +3220,13 @@ cli.equity.query_institution_detail("600519", limit=10)
 | 字段 | 类型 | 说明 |
 |---|---|---|
 | `report_date` | string | 报告期 |
-| `org_num` | int? | 机构总数 |
-| `total_shares_ratio` | float? | 总股本比例(百分数) |
-| `change_ratio` | float? | 变化比例(百分数) |
+| `org_type` | string | 机构类型 |
+| `org_num` | float? | 机构家数 |
+| `total_shares_ratio` | float? | 持股比例合计（小数） |
+| `org_name_type` | string? | 统计口径 |
+| `is_increase` | string? | 增减仓标识 |
+| `change_ratio` | float? | 持股变化比例（小数） |
+| `all_shares_ratio` | float? | 占总股本比（小数） |
 
 **示例**
 
@@ -3053,8 +3250,12 @@ cli.equity.query_institution_summary("600519", limit=10)
 | 字段 | 类型 | 说明 |
 |---|---|---|
 | `org_name` | string | 持股机构 |
-| `hold_shares` | float? | 持股数量(股) |
-| `hold_market_cap` | float? | 持股市值 |
+| `hold_shares` | float? | 持股数量（股） |
+| `hold_market_cap` | float? | 持股市值（元） |
+| `add_market_cap` | float? | 增持市值（元） |
+| `free_shares_ratio` | float? | 流通股占比（小数） |
+| `total_shares_ratio` | float? | 总股本占比（小数） |
+| `add_shares_pct` | float? | 持股变动比例（小数） |
 
 **示例**
 
@@ -3078,8 +3279,13 @@ cli.equity.query_hgt("600519", limit=10)
 | 字段 | 类型 | 说明 |
 |---|---|---|
 | `security_code` | string | 证券代码 |
+| `security_name` | string | 证券简称 |
+| `org_num` | float? | 机构家数 |
 | `report_date` | string? | 报告期 |
-| `shares_ratio` | float? | 持股比例合计(百分数) |
+| `total_shares` | float? | 持股数量（股） |
+| `market_cap` | float? | 持股市值（元） |
+| `shares_ratio` | float? | 持股比例合计（小数） |
+| `shares_ratio_change` | float? | 持股比例变动（小数） |
 
 **示例**
 
@@ -3102,9 +3308,11 @@ cli.equity.query_national_team("600519", limit=10)
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
+| `secucode` | string | 证券代码 |
 | `lift_date` | string | 解禁日期 |
-| `lift_num` | float | 解禁数量(股) |
-| `total_shares_ratio` | float? | 总股本比例(百分数) |
+| `lift_num` | float? | 解禁数量（股） |
+| `total_shares_ratio` | float? | 解禁占总股本比（小数） |
+| `unlimited_ratio` | float? | 解禁占无限售流通股比（小数） |
 | `lift_type` | string? | 解禁类型 |
 
 **示例**
@@ -3178,9 +3386,18 @@ cli.equity.query_buyback_detail("600519")
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
+| `security_code` | string | 证券代码 |
+| `security_name` | string | 证券简称 |
+| `transferee` | string? | 受让方 |
+| `transferor` | string? | 转让方 |
+| `transfer_ratio` | float? | 转让比例（小数） |
+| `object_type` | string? | 标的类型 |
+| `deal_amount` | float? | 交易金额（元） |
 | `progress` | string? | 进度 |
-| `deal_amount` | float? | 交易金额 |
-| `notice_date` | string? | 公告日期 |
+| `transfer_way` | string? | 转让方式 |
+| `list_notice_date` | string? | 权益变动披露日 |
+| `notice_date` | string? | 公告日 |
+| `ccy` | string? | 币种 |
 
 **示例**
 
@@ -3491,11 +3708,35 @@ cli.workout.query("600519")
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
+| `query_date` | string? | 查询日期 |
+| `participant_id` | string? | 参与者ID |
 | `participant_name` | string? | 参与者名称 |
-| `shareholding` | float? | 持股数(股) |
+| `shareholding` | float? | 持股数（股） |
+| `pct_of_issued` | float? | 占已发行股份比（小数） |
 | `holder_name` | string? | 股东名称 |
+| `hold_identity` | string? | 权益身份 |
+| `report_date` | string? | 报告期 |
+| `total_shares` | float? | 总股本（股） |
+| `shares_type` | string? | 股份类型 |
+| `equity_type` | string? | 权益类型 |
+| `total_shares_ratio` | float? | 占总股本比（小数） |
+| `notice_date` | string? | 申报日期 |
+| `publish_date` | string? | 发布日期 |
+| `org_name` | string? | 券商机构 |
 | `rating_name` | string? | 评级 |
-| `short_selling_shares` | float? | 未平仓做空(股) |
+| `target_price` | float? | 目标价 |
+| `pre_rating_name` | string? | 前次评级 |
+| `pre_target_price` | float? | 前次目标价 |
+| `settle_date` | string? | 结算日期 |
+| `short_selling_shares` | float? | 未平仓做空股数（股） |
+| `cover_days` | float? | 回补天数 |
+| `fiscal_year` | string? | 财政年度 |
+| `net_profit` | float? | 纯利（港币） |
+| `eps` | float? | 每股盈利（港币） |
+| `dps` | float? | 每股派息（港币） |
+| `nav` | float? | 每股资产净值（港币） |
+| `high` | float? | 最高价 |
+| `low` | float? | 最低价 |
 
 **示例**
 
@@ -3518,11 +3759,35 @@ cli.intl.query_ccass("00700", limit=10)
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
+| `query_date` | string? | 查询日期 |
+| `participant_id` | string? | 参与者ID |
 | `participant_name` | string? | 参与者名称 |
-| `shareholding` | float? | 持股数(股) |
+| `shareholding` | float? | 持股数（股） |
+| `pct_of_issued` | float? | 占已发行股份比（小数） |
 | `holder_name` | string? | 股东名称 |
+| `hold_identity` | string? | 权益身份 |
+| `report_date` | string? | 报告期 |
+| `total_shares` | float? | 总股本（股） |
+| `shares_type` | string? | 股份类型 |
+| `equity_type` | string? | 权益类型 |
+| `total_shares_ratio` | float? | 占总股本比（小数） |
+| `notice_date` | string? | 申报日期 |
+| `publish_date` | string? | 发布日期 |
+| `org_name` | string? | 券商机构 |
 | `rating_name` | string? | 评级 |
-| `short_selling_shares` | float? | 未平仓做空(股) |
+| `target_price` | float? | 目标价 |
+| `pre_rating_name` | string? | 前次评级 |
+| `pre_target_price` | float? | 前次目标价 |
+| `settle_date` | string? | 结算日期 |
+| `short_selling_shares` | float? | 未平仓做空股数（股） |
+| `cover_days` | float? | 回补天数 |
+| `fiscal_year` | string? | 财政年度 |
+| `net_profit` | float? | 纯利（港币） |
+| `eps` | float? | 每股盈利（港币） |
+| `dps` | float? | 每股派息（港币） |
+| `nav` | float? | 每股资产净值（港币） |
+| `high` | float? | 最高价 |
+| `low` | float? | 最低价 |
 
 **示例**
 
@@ -3545,11 +3810,35 @@ cli.intl.query_shareholders("00700", limit=10)
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
+| `query_date` | string? | 查询日期 |
+| `participant_id` | string? | 参与者ID |
 | `participant_name` | string? | 参与者名称 |
-| `shareholding` | float? | 持股数(股) |
+| `shareholding` | float? | 持股数（股） |
+| `pct_of_issued` | float? | 占已发行股份比（小数） |
 | `holder_name` | string? | 股东名称 |
+| `hold_identity` | string? | 权益身份 |
+| `report_date` | string? | 报告期 |
+| `total_shares` | float? | 总股本（股） |
+| `shares_type` | string? | 股份类型 |
+| `equity_type` | string? | 权益类型 |
+| `total_shares_ratio` | float? | 占总股本比（小数） |
+| `notice_date` | string? | 申报日期 |
+| `publish_date` | string? | 发布日期 |
+| `org_name` | string? | 券商机构 |
 | `rating_name` | string? | 评级 |
-| `short_selling_shares` | float? | 未平仓做空(股) |
+| `target_price` | float? | 目标价 |
+| `pre_rating_name` | string? | 前次评级 |
+| `pre_target_price` | float? | 前次目标价 |
+| `settle_date` | string? | 结算日期 |
+| `short_selling_shares` | float? | 未平仓做空股数（股） |
+| `cover_days` | float? | 回补天数 |
+| `fiscal_year` | string? | 财政年度 |
+| `net_profit` | float? | 纯利（港币） |
+| `eps` | float? | 每股盈利（港币） |
+| `dps` | float? | 每股派息（港币） |
+| `nav` | float? | 每股资产净值（港币） |
+| `high` | float? | 最高价 |
+| `low` | float? | 最低价 |
 
 **示例**
 
@@ -3572,11 +3861,35 @@ cli.intl.query_org_rating("00700", limit=10)
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
+| `query_date` | string? | 查询日期 |
+| `participant_id` | string? | 参与者ID |
 | `participant_name` | string? | 参与者名称 |
-| `shareholding` | float? | 持股数(股) |
+| `shareholding` | float? | 持股数（股） |
+| `pct_of_issued` | float? | 占已发行股份比（小数） |
 | `holder_name` | string? | 股东名称 |
+| `hold_identity` | string? | 权益身份 |
+| `report_date` | string? | 报告期 |
+| `total_shares` | float? | 总股本（股） |
+| `shares_type` | string? | 股份类型 |
+| `equity_type` | string? | 权益类型 |
+| `total_shares_ratio` | float? | 占总股本比（小数） |
+| `notice_date` | string? | 申报日期 |
+| `publish_date` | string? | 发布日期 |
+| `org_name` | string? | 券商机构 |
 | `rating_name` | string? | 评级 |
-| `short_selling_shares` | float? | 未平仓做空(股) |
+| `target_price` | float? | 目标价 |
+| `pre_rating_name` | string? | 前次评级 |
+| `pre_target_price` | float? | 前次目标价 |
+| `settle_date` | string? | 结算日期 |
+| `short_selling_shares` | float? | 未平仓做空股数（股） |
+| `cover_days` | float? | 回补天数 |
+| `fiscal_year` | string? | 财政年度 |
+| `net_profit` | float? | 纯利（港币） |
+| `eps` | float? | 每股盈利（港币） |
+| `dps` | float? | 每股派息（港币） |
+| `nav` | float? | 每股资产净值（港币） |
+| `high` | float? | 最高价 |
+| `low` | float? | 最低价 |
 
 **示例**
 
@@ -3599,11 +3912,35 @@ cli.intl.query_profit_forecast("00700", limit=10)
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
+| `query_date` | string? | 查询日期 |
+| `participant_id` | string? | 参与者ID |
 | `participant_name` | string? | 参与者名称 |
-| `shareholding` | float? | 持股数(股) |
+| `shareholding` | float? | 持股数（股） |
+| `pct_of_issued` | float? | 占已发行股份比（小数） |
 | `holder_name` | string? | 股东名称 |
+| `hold_identity` | string? | 权益身份 |
+| `report_date` | string? | 报告期 |
+| `total_shares` | float? | 总股本（股） |
+| `shares_type` | string? | 股份类型 |
+| `equity_type` | string? | 权益类型 |
+| `total_shares_ratio` | float? | 占总股本比（小数） |
+| `notice_date` | string? | 申报日期 |
+| `publish_date` | string? | 发布日期 |
+| `org_name` | string? | 券商机构 |
 | `rating_name` | string? | 评级 |
-| `short_selling_shares` | float? | 未平仓做空(股) |
+| `target_price` | float? | 目标价 |
+| `pre_rating_name` | string? | 前次评级 |
+| `pre_target_price` | float? | 前次目标价 |
+| `settle_date` | string? | 结算日期 |
+| `short_selling_shares` | float? | 未平仓做空股数（股） |
+| `cover_days` | float? | 回补天数 |
+| `fiscal_year` | string? | 财政年度 |
+| `net_profit` | float? | 纯利（港币） |
+| `eps` | float? | 每股盈利（港币） |
+| `dps` | float? | 每股派息（港币） |
+| `nav` | float? | 每股资产净值（港币） |
+| `high` | float? | 最高价 |
+| `low` | float? | 最低价 |
 
 **示例**
 
@@ -3875,7 +4212,7 @@ cli.info.profile("600519")
 
 #### 盈利预测与研报（`fund.estimates`）
 
-**性质**：原始数据 · **版本**：1.1.0  
+**性质**：原始数据 · **版本**：1.1.1  
 卖方研究数据——机构盈利预测（逐年 EPS/PE，A=实际 E=预测）、预测明细 （机构/研究员/归母净利/评级）、评级统计（综合评级与买卖家数按窗口）、个股研报列表。 金额=元、EPS=元/股、PE=倍。
 数据来源：券商研究披露、平台数据服务。
 单位口径：eps=元/股；money=元（归母净利润）；pe=倍（预测市盈率）。
@@ -3884,11 +4221,11 @@ cli.info.profile("600519")
 
 | 函数 | 中文 | 性质 | 层 | 参数 | 返回 | 单位与守护 |
 |---|---|---|---|---|---|---|
-| `estimates.query_forecast` | 机构盈利预测 | 原始数据 | L0 | `sym:string` · `limit:int`（签名） | ARR · 预测行；字段 org_name:string?（机构名称） / publish_date:string?（发布日期） / eps1:float?（第一年每股收益） / pe1:float?（第一年市盈率） / rating:string?（评级） | 量级界 `eps1`、`eps2`、`eps3`、`eps4`、`pe1`、`pe2`、`pe3`、`pe4` | 例：`cli.call("estimates.query_forecast", sym='600900', limit=20)`
-| `estimates.query_forecast_detail` | 盈利预测明细 | 原始数据 | L0 | `sym:string` · `limit:int`（签名） | ARR · 明细行；字段 org_name:string?（机构名称） / publish_date:string?（发布日期） / eps1:float?（第一年每股收益） / pe1:float?（第一年市盈率） / rating:string?（评级） | 量级界 `eps1`、`eps2`、`eps3`、`eps4`、`pe1`、`pe2`、`pe3`、`pe4` | 例：`cli.call("estimates.query_forecast_detail", sym='600900', limit=20)`
-| `estimates.query_rating` | 评级统计 | 原始数据 | L0 | `sym:string` · `limit:int`（签名） | ARR · 评级行；字段 org_name:string?（机构名称） / publish_date:string?（发布日期） / eps1:float?（第一年每股收益） / pe1:float?（第一年市盈率） / rating:string?（评级） | — | 例：`cli.call("estimates.query_rating", sym='600660', limit=20)`
-| `estimates.query_reports` | 个股研报 | 原始数据 | L0 | `sym:string` · `limit:int`（签名） | ARR · 研报行；字段 org_name:string?（机构名称） / publish_date:string?（发布日期） / eps1:float?（第一年每股收益） / pe1:float?（第一年市盈率） / rating:string?（评级） | — | 例：`cli.call("estimates.query_reports", sym='000001', limit=20)`
-| `estimates.fmt_maps` | 预测行规范化 | 原始数据 | L1 | `rows:array`（签名） | ARR · 规范化行 | — |
+| `estimates.query_forecast` | 机构盈利预测 | 原始数据 | L0 | `sym:string` · `limit:int`（签名） | ARR · 预测行；字段 security_code:string（证券代码） / security_name:string?（证券简称） / publish_date:string?（报告发布日） / org_name:string?（机构名称） / org_code:string?（机构代码） / researcher:string?（分析师） / date_type:string?（预测年度口径） / year1:float?（预测年度1） / year_mark1:string?（年度1标记） / eps1:float?（每股收益1（元）） / pe1:float?（市盈率1（倍）） / parent_netprofit1:float?（归母净利1（元）） / year2:float?（预测年度2） / year_mark2:string?（年度2标记） / eps2:float?（每股收益2（元）） / pe2:float?（市盈率2（倍）） / parent_netprofit2:float?（归母净利2（元）） / year3:float?（预测年度3） / year_mark3:string?（年度3标记） / eps3:float?（每股收益3（元）） / pe3:float?（市盈率3（倍）） / parent_netprofit3:float?（归母净利3（元）） / year4:float?（预测年度4） / year_mark4:string?（年度4标记） / eps4:float?（每股收益4（元）） / pe4:float?（市盈率4（倍）） / parent_netprofit4:float?（归母净利4（元）） / rating:string?（评级） / compre_rating:string?（综合评级） / compre_rating_num:float?（综合评级数值） / rating_org_num:float?（评级机构家数） / rating_buy_num:float?（买入家数） / rating_add_num:float?（增持家数） / rating_neutral_num:float?（中性家数） / rating_reduce_num:float?（减持家数） / rating_sale_num:float?（卖出家数） / title:string?（报告标题） / org_sname:string?（机构简称） / author:string?（作者） / info_code:string?（报告编码） / industry:string?（行业） / report_url:string?（报告链接） | 量级界 `eps1`、`eps2`、`eps3`、`eps4`、`pe1`、`pe2`、`pe3`、`pe4` | 例：`cli.call("estimates.query_forecast", sym='600900', limit=20)`
+| `estimates.query_forecast_detail` | 盈利预测明细 | 原始数据 | L0 | `sym:string` · `limit:int`（签名） | ARR · 明细行；字段 security_code:string（证券代码） / security_name:string?（证券简称） / publish_date:string?（报告发布日） / org_name:string?（机构名称） / org_code:string?（机构代码） / researcher:string?（分析师） / date_type:string?（预测年度口径） / year1:float?（预测年度1） / year_mark1:string?（年度1标记） / eps1:float?（每股收益1（元）） / pe1:float?（市盈率1（倍）） / parent_netprofit1:float?（归母净利1（元）） / year2:float?（预测年度2） / year_mark2:string?（年度2标记） / eps2:float?（每股收益2（元）） / pe2:float?（市盈率2（倍）） / parent_netprofit2:float?（归母净利2（元）） / year3:float?（预测年度3） / year_mark3:string?（年度3标记） / eps3:float?（每股收益3（元）） / pe3:float?（市盈率3（倍）） / parent_netprofit3:float?（归母净利3（元）） / year4:float?（预测年度4） / year_mark4:string?（年度4标记） / eps4:float?（每股收益4（元）） / pe4:float?（市盈率4（倍）） / parent_netprofit4:float?（归母净利4（元）） / rating:string?（评级） / compre_rating:string?（综合评级） / compre_rating_num:float?（综合评级数值） / rating_org_num:float?（评级机构家数） / rating_buy_num:float?（买入家数） / rating_add_num:float?（增持家数） / rating_neutral_num:float?（中性家数） / rating_reduce_num:float?（减持家数） / rating_sale_num:float?（卖出家数） / title:string?（报告标题） / org_sname:string?（机构简称） / author:string?（作者） / info_code:string?（报告编码） / industry:string?（行业） / report_url:string?（报告链接） | 量级界 `eps1`、`eps2`、`eps3`、`eps4`、`pe1`、`pe2`、`pe3`、`pe4` | 例：`cli.call("estimates.query_forecast_detail", sym='600900', limit=20)`
+| `estimates.query_rating` | 评级统计 | 原始数据 | L0 | `sym:string` · `limit:int`（签名） | ARR · 评级行；字段 security_code:string（证券代码） / security_name:string?（证券简称） / publish_date:string?（报告发布日） / org_name:string?（机构名称） / org_code:string?（机构代码） / researcher:string?（分析师） / date_type:string?（预测年度口径） / year1:float?（预测年度1） / year_mark1:string?（年度1标记） / eps1:float?（每股收益1（元）） / pe1:float?（市盈率1（倍）） / parent_netprofit1:float?（归母净利1（元）） / year2:float?（预测年度2） / year_mark2:string?（年度2标记） / eps2:float?（每股收益2（元）） / pe2:float?（市盈率2（倍）） / parent_netprofit2:float?（归母净利2（元）） / year3:float?（预测年度3） / year_mark3:string?（年度3标记） / eps3:float?（每股收益3（元）） / pe3:float?（市盈率3（倍）） / parent_netprofit3:float?（归母净利3（元）） / year4:float?（预测年度4） / year_mark4:string?（年度4标记） / eps4:float?（每股收益4（元）） / pe4:float?（市盈率4（倍）） / parent_netprofit4:float?（归母净利4（元）） / rating:string?（评级） / compre_rating:string?（综合评级） / compre_rating_num:float?（综合评级数值） / rating_org_num:float?（评级机构家数） / rating_buy_num:float?（买入家数） / rating_add_num:float?（增持家数） / rating_neutral_num:float?（中性家数） / rating_reduce_num:float?（减持家数） / rating_sale_num:float?（卖出家数） / title:string?（报告标题） / org_sname:string?（机构简称） / author:string?（作者） / info_code:string?（报告编码） / industry:string?（行业） / report_url:string?（报告链接） | — | 例：`cli.call("estimates.query_rating", sym='600660', limit=20)`
+| `estimates.query_reports` | 个股研报 | 原始数据 | L0 | `sym:string` · `limit:int`（签名） | ARR · 研报行；字段 security_code:string（证券代码） / security_name:string?（证券简称） / publish_date:string?（报告发布日） / org_name:string?（机构名称） / org_code:string?（机构代码） / researcher:string?（分析师） / date_type:string?（预测年度口径） / year1:float?（预测年度1） / year_mark1:string?（年度1标记） / eps1:float?（每股收益1（元）） / pe1:float?（市盈率1（倍）） / parent_netprofit1:float?（归母净利1（元）） / year2:float?（预测年度2） / year_mark2:string?（年度2标记） / eps2:float?（每股收益2（元）） / pe2:float?（市盈率2（倍）） / parent_netprofit2:float?（归母净利2（元）） / year3:float?（预测年度3） / year_mark3:string?（年度3标记） / eps3:float?（每股收益3（元）） / pe3:float?（市盈率3（倍）） / parent_netprofit3:float?（归母净利3（元）） / year4:float?（预测年度4） / year_mark4:string?（年度4标记） / eps4:float?（每股收益4（元）） / pe4:float?（市盈率4（倍）） / parent_netprofit4:float?（归母净利4（元）） / rating:string?（评级） / compre_rating:string?（综合评级） / compre_rating_num:float?（综合评级数值） / rating_org_num:float?（评级机构家数） / rating_buy_num:float?（买入家数） / rating_add_num:float?（增持家数） / rating_neutral_num:float?（中性家数） / rating_reduce_num:float?（减持家数） / rating_sale_num:float?（卖出家数） / title:string?（报告标题） / org_sname:string?（机构简称） / author:string?（作者） / info_code:string?（报告编码） / industry:string?（行业） / report_url:string?（报告链接） | — | 例：`cli.call("estimates.query_reports", sym='000001', limit=20)`
+| `estimates.fmt_maps` | 预测行规范化 | 原始数据 | L1 | `rows:array`（签名） | ARR · 规范化预测/研报行（字段并集按行取，缺字段为空） | — |
 
 #### 指标层（`fund.indicators`）
 
@@ -3903,7 +4240,7 @@ cli.info.profile("600519")
 
 #### 经营分部（`fund.segments`）
 
-**性质**：原始数据 · **版本**：1.0.1  
+**性质**：原始数据 · **版本**：1.0.3  
 主营构成的多维分解——分产品 / 分业务 / 分区域（境内外）/ 主营标签占比， 外加合并快照与披露覆盖度。数据来自定期报告分部披露与平台清洗归一（clean 口径）， 可选 raw 直采明细。收入构成见分部明细，指标层 revenue_mix 组为其指标化引用。
 数据来源：定期报告披露、平台清洗归一。
 单位口径：money=元（分部收入 tr / 成本 cost 原币口径，实测元；tr_text 为披露展示串如「2334.83亿」）；ratio=小数（占比 ratio/pct、毛利率 margin、同比 yoy；0.332 = 33.2%）。
@@ -3982,7 +4319,7 @@ cli.info.profile("600519")
 
 #### 业绩披露事件（`disc.events`）
 
-**性质**：原始数据 · **版本**：1.1.0  
+**性质**：原始数据 · **版本**：1.1.2  
 业绩预告（yjyg：净利/扣非/营收区间+同比+修正轨迹）、业绩快报（yjkb）、 财报预约披露日历（disclosure）。均为交易所披露文件的结构化直采。
 数据来源：交易所披露。
 单位口径：money=元（预告/快报区间与单期金额）；yoy=小数（0.1467 = 14.67%；SDK 自动由脚本的百分数口径换算）；date=YYYY-MM-DD。
@@ -4072,7 +4409,7 @@ cli.info.profile("600519")
 
 #### 股东与股本（`corp.equity`）
 
-**性质**：原始数据 · **版本**：2.1.0  
+**性质**：原始数据 · **版本**：2.1.1  
 股东治理与股本全景——十大股东、股东户数、股权质押（明细+比例+市场/行业/ 机构分布）、限售解禁、机构持股（明细/占比/沪港通/国家队）、高管名册与增减持、股本结构、 回购（方案+执行）、并购重组、关联交易、一致行动人、对外担保、诉讼处罚。披露原值直采， 比例字段统一换算为小数（0.0522 = 5.22%）。
 数据来源：交易所披露、平台数据服务。
 单位口径：ratio=小数（比例字段以各函数 units 声明为准：上游 fmt 部分接口已预换算小数、 部分仍为百分数——2026-10-28 全量审计逐函数核验，勿按字段名臆断）；money=元（持股市值/质押市值/回购金额等，披露源口径）；shares=股（持股数/解禁数量/质押数量）；price=元（交易均价/回购价）。
@@ -4084,20 +4421,20 @@ cli.info.profile("600519")
 | 函数 | 中文 | 性质 | 层 | 参数 | 返回 | 单位与守护 |
 |---|---|---|---|---|---|---|
 | `equity.query_holder10` | 最新一期十大股东 | 原始数据 | L0 | `sym:string`（签名） | ARR · 股东行；字段 holder_name:string（股东名称） / hold_num:float?（持股数量(股)） / hold_num_ratio:float?（持股比例(百分数)） | 量级界 `hold_num_ratio` | 例：`cli.call("equity.query_holder10", sym='600519')`
-| `equity.query_holdernum` | 最新股东户数 | 原始数据 | L0 | `sym:string`（签名） | MAP · 户数行；字段 end_date:string?（截止日期） / hold_focus:float?（持股集中度） / avg_hold_amt:float?（平均持股金额） | 量级界 `hold_ratio_total`、`freehold_ratio_total`、`total_num_ratio`、`avg_freeshares_ratio`、`avg_hold_amt`、`avg_free_shares` | 例：`cli.call("equity.query_holdernum", sym='600519')`
-| `equity.query_pledge_detail` | 主要股东质押明细 | 原始数据 | L0 | `sym:string` · `limit:int`（签名） | ARR · 质押明细行；字段 holder_name:string（股东名称） / pf_org:string?（质押机构） / pf_num:float?（质押数量(股)） / pf_tsr:float?（质押总股本比例(百分数)） / notice_date:string?（公告日期） / unfreeze_state:string?（解押状态） | `accum_pledge_tsr`:百分数→小数；`pf_hold_ratio`:百分数→小数；`pf_tsr`:百分数→小数；量级界 `accum_pledge_tsr`、`pf_hold_ratio`、`pf_tsr` | 例：`cli.call("equity.query_pledge_detail", sym='002424', limit=40)`
+| `equity.query_holdernum` | 最新股东户数 | 原始数据 | L0 | `sym:string`（签名） | MAP · 户数行；字段 end_date:string（截止日期） / total_num_ratio:float?（股东户数环比（小数）） / avg_free_shares:float?（户均流通持股数（股）） / avg_freeshares_ratio:float?（户均流通占比（小数）） / hold_focus:string?（持股集中度描述） / price:float?（最新价（元）） / avg_hold_amt:float?（户均持股市值（元）） / hold_ratio_total:float?（持股比例合计（小数）） / freehold_ratio_total:float?（流通股持股比例合计（小数）） | 量级界 `hold_ratio_total`、`freehold_ratio_total`、`total_num_ratio`、`avg_freeshares_ratio`、`avg_hold_amt`、`avg_free_shares` | 例：`cli.call("equity.query_holdernum", sym='600519')`
+| `equity.query_pledge_detail` | 主要股东质押明细 | 原始数据 | L0 | `sym:string` · `limit:int`（签名） | ARR · 质押明细行；字段 holder_name:string（质押股东） / is_control_shareholder:string?（控股股东标识） / accum_pledge_tsr:float?（累计质押占总股本比（小数）） / notice_date:string?（公告日） / pf_org:string?（质押机构） / pf_num:float?（质押股数（股）） / pf_hold_ratio:float?（质押占所持股份比（小数）） / pf_tsr:float?（质押占总股本比（小数）） / pf_start_date:string?（质押起始日） / unfreeze_date:string?（解押日） / unfreeze_state:string?（解押状态） / warning_state:string?（平仓风险标识） / pf_purpose:string?（质押用途） / pforg_type:string?（质押机构类型） | `accum_pledge_tsr`:百分数→小数；`pf_hold_ratio`:百分数→小数；`pf_tsr`:百分数→小数；量级界 `accum_pledge_tsr`、`pf_hold_ratio`、`pf_tsr` | 例：`cli.call("equity.query_pledge_detail", sym='002424', limit=40)`
 | `equity.query_pledge_summary` | 公司质押比例 | 原始数据 | L0 | `sym:string` · `limit:int`（签名） | ARR · 质押比例行；字段 trade_date:string（交易日期） / pledge_ratio:float（质押比例(百分数)） / pledge_shares:float?（质押股数(股)） / pledge_market_cap:float?（质押市值） | 量级界 `pledge_ratio` | 例：`cli.call("equity.query_pledge_summary", sym='600196', limit=40)`
-| `equity.query_pledge_market` | 市场整体质押 | 原始数据 | L0 | `limit:int`（签名） | ARR · 市场质押行；字段 trade_date:string（交易日期） / pledge_ratio_total:float?（A股质押总比例(百分数)） / pledge_company_num:int?（质押公司数） | 量级界 `pledge_ratio_total`、`csi300_chg`、`pledge_market_value`、`total_pledged_shares` | 例：`cli.call("equity.query_pledge_market", limit=10)`
+| `equity.query_pledge_market` | 市场整体质押 | 原始数据 | L0 | `limit:int`（签名） | ARR · 市场质押行；字段 trade_date:string（交易日） / total_pledged_shares:float?（质押总股数（股）） / pledge_market_value:float?（质押市值（元）） / csi300:float?（沪深300点位） / csi300_chg:float?（沪深300涨跌幅（小数）） / pledge_ratio_total:float?（市场质押比例（小数）） / pledge_company_num:float?（质押公司家数） / pledge_deal_num:float?（质押笔数） | 量级界 `pledge_ratio_total`、`csi300_chg`、`pledge_market_value`、`total_pledged_shares` | 例：`cli.call("equity.query_pledge_market", limit=10)`
 | `equity.query_pledge_industry` | 行业质押比例 | 原始数据 | L0 | `limit:int`（签名） | ARR · 行业质押行；字段 industry:string（行业名称） / trade_date:string（交易日期） / avg_pledge_ratio:float?（平均质押比例(百分数)） | 量级界 `avg_pledge_ratio` | 例：`cli.call("equity.query_pledge_industry", limit=20)`
 | `equity.query_pledge_org` | 质押机构分布 | 原始数据 | L0 | `limit:int`（签名） | ARR · 机构分布行；字段 org_name:string（质押机构） / pforg_type:string?（机构类型） | — | 例：`cli.call("equity.query_pledge_org", limit=20)`
-| `equity.query_institution_detail` | 机构持股明细 | 原始数据 | L0 | `sym:string` · `limit:int`（签名） | ARR · 机构明细行；字段 holder_name:string（机构名称） / report_date:string?（报告期） / total_shares:float?（持股总数(股)） / hold_value:float?（持股市值） / total_shares_ratio:float?（持股比例(百分数)） | `total_shares_ratio`:百分数→小数；`free_shares_ratio`:百分数→小数；量级界 `total_shares_ratio`、`free_shares_ratio` | 例：`cli.call("equity.query_institution_detail", sym='600900', limit=40)`
-| `equity.query_institution_summary` | 机构持仓占比 | 原始数据 | L0 | `sym:string` · `limit:int`（签名） | ARR · 机构占比行；字段 report_date:string（报告期） / org_num:int?（机构总数） / total_shares_ratio:float?（总股本比例(百分数)） / change_ratio:float?（变化比例(百分数)） | `all_shares_ratio`:百分数→小数；量级界 `all_shares_ratio`、`total_shares_ratio`、`change_ratio` | 例：`cli.call("equity.query_institution_summary", sym='600900', limit=40)`
-| `equity.query_hgt` | 沪港通持股 | 原始数据 | L0 | `sym:string` · `limit:int`（签名） | ARR · 沪港通行；字段 org_name:string（持股机构） / hold_shares:float?（持股数量(股)） / hold_market_cap:float?（持股市值） | `add_shares_pct`:百分数→小数；量级界 `add_shares_pct`、`free_shares_ratio`、`total_shares_ratio` | 例：`cli.call("equity.query_hgt", sym='600900', limit=40)`
-| `equity.query_national_team` | 国家队持股 | 原始数据 | L0 | `sym:string` · `limit:int`（签名） | ARR · 国家队行；字段 security_code:string（证券代码） / report_date:string?（报告期） / shares_ratio:float?（持股比例合计(百分数)） | `shares_ratio`:百分数→小数；`shares_ratio_change`:百分数→小数；量级界 `shares_ratio`、`shares_ratio_change` | 例：`cli.call("equity.query_national_team", sym='000088', limit=40)`
-| `equity.query_release` | 限售解禁日程 | 原始数据 | L0 | `sym:string` · `limit:int`（签名） | ARR · 解禁行；字段 lift_date:string（解禁日期） / lift_num:float（解禁数量(股)） / total_shares_ratio:float?（总股本比例(百分数)） / lift_type:string?（解禁类型） | `total_shares_ratio`:百分数→小数；`unlimited_ratio`:百分数→小数；量级界 `total_shares_ratio`、`unlimited_ratio` | 例：`cli.call("equity.query_release", sym='600900', limit=40)`
+| `equity.query_institution_detail` | 机构持股明细 | 原始数据 | L0 | `sym:string` · `limit:int`（签名） | ARR · 机构明细行；字段 org_type:string（机构类型） / report_date:string（报告期） / holder_name:string（机构名称） / total_shares:float?（持股数量（股）） / hold_value:float?（持股市值（元）） / total_shares_ratio:float?（占总股本比（小数）） / free_shares_ratio:float?（占流通股比（小数）） | `total_shares_ratio`:百分数→小数；`free_shares_ratio`:百分数→小数；量级界 `total_shares_ratio`、`free_shares_ratio` | 例：`cli.call("equity.query_institution_detail", sym='600900', limit=40)`
+| `equity.query_institution_summary` | 机构持仓占比 | 原始数据 | L0 | `sym:string` · `limit:int`（签名） | ARR · 机构占比行；字段 report_date:string（报告期） / org_type:string（机构类型） / org_num:float?（机构家数） / total_shares_ratio:float?（持股比例合计（小数）） / org_name_type:string?（统计口径） / is_increase:string?（增减仓标识） / change_ratio:float?（持股变化比例（小数）） / all_shares_ratio:float?（占总股本比（小数）） | `all_shares_ratio`:百分数→小数；量级界 `all_shares_ratio`、`total_shares_ratio`、`change_ratio` | 例：`cli.call("equity.query_institution_summary", sym='600900', limit=40)`
+| `equity.query_hgt` | 沪港通持股 | 原始数据 | L0 | `sym:string` · `limit:int`（签名） | ARR · 沪港通行；字段 org_name:string（持股机构） / hold_shares:float?（持股数量（股）） / hold_market_cap:float?（持股市值（元）） / add_market_cap:float?（增持市值（元）） / free_shares_ratio:float?（流通股占比（小数）） / total_shares_ratio:float?（总股本占比（小数）） / add_shares_pct:float?（持股变动比例（小数）） | `add_shares_pct`:百分数→小数；量级界 `add_shares_pct`、`free_shares_ratio`、`total_shares_ratio` | 例：`cli.call("equity.query_hgt", sym='600900', limit=40)`
+| `equity.query_national_team` | 国家队持股 | 原始数据 | L0 | `sym:string` · `limit:int`（签名） | ARR · 国家队行；字段 security_code:string（证券代码） / security_name:string（证券简称） / org_num:float?（机构家数） / report_date:string?（报告期） / total_shares:float?（持股数量（股）） / market_cap:float?（持股市值（元）） / shares_ratio:float?（持股比例合计（小数）） / shares_ratio_change:float?（持股比例变动（小数）） | `shares_ratio`:百分数→小数；`shares_ratio_change`:百分数→小数；量级界 `shares_ratio`、`shares_ratio_change` | 例：`cli.call("equity.query_national_team", sym='000088', limit=40)`
+| `equity.query_release` | 限售解禁日程 | 原始数据 | L0 | `sym:string` · `limit:int`（签名） | ARR · 解禁行；字段 secucode:string（证券代码） / lift_date:string（解禁日期） / lift_num:float?（解禁数量（股）） / total_shares_ratio:float?（解禁占总股本比（小数）） / unlimited_ratio:float?（解禁占无限售流通股比（小数）） / lift_type:string?（解禁类型） | `total_shares_ratio`:百分数→小数；`unlimited_ratio`:百分数→小数；量级界 `total_shares_ratio`、`unlimited_ratio` | 例：`cli.call("equity.query_release", sym='600900', limit=40)`
 | `equity.query_buyback_plan` | 回购方案全览 | 原始数据 | L0 | `sym:string` · `limit:int`（签名） | ARR · 回购方案行；字段 progress:string?（回购进度） / price_cap:float?（回购价格上限） / amount_limit:float?（回购金额上限） / start_date:string?（开始日期） | — | 例：`cli.call("equity.query_buyback_plan", sym='688496', limit=40)`
 | `equity.query_buyback_detail` | 回购执行明细 | 原始数据 | L0 | `sym:string`（签名） | MAP · 回购明细；字段 repurchase_shares:float?（回购数量） / repurchase_amount:float?（回购金额） / notice_date:string?（公告日期） | — | 例：`cli.call("equity.query_buyback_detail", sym='300347')`
-| `equity.query_reorg` | 并购重组 | 原始数据 | L0 | `sym:string` · `limit:int`（签名） | ARR · 重组行；字段 progress:string?（进度） / deal_amount:float?（交易金额） / notice_date:string?（公告日期） | `transfer_ratio`:百分数→小数；量级界 `transfer_ratio` | 例：`cli.call("equity.query_reorg", sym='603363', limit=40)`
+| `equity.query_reorg` | 并购重组 | 原始数据 | L0 | `sym:string` · `limit:int`（签名） | ARR · 重组行；字段 security_code:string（证券代码） / security_name:string（证券简称） / transferee:string?（受让方） / transferor:string?（转让方） / transfer_ratio:float?（转让比例（小数）） / object_type:string?（标的类型） / deal_amount:float?（交易金额（元）） / progress:string?（进度） / transfer_way:string?（转让方式） / list_notice_date:string?（权益变动披露日） / notice_date:string?（公告日） / ccy:string?（币种） | `transfer_ratio`:百分数→小数；量级界 `transfer_ratio` | 例：`cli.call("equity.query_reorg", sym='603363', limit=40)`
 | `equity.query_related_trade` | 关联交易 | 原始数据 | L0 | `sym:string` · `limit:int`（签名） | ARR · 关联交易行；字段 related_party:string（交易方） / trade_amt:float?（交易金额） / notice_date:string?（公告日期） | — | 例：`cli.call("equity.query_related_trade", sym='600900', limit=40)`
 | `equity.query_concert` | 一致行动人 | 原始数据 | L0 | `sym:string` · `limit:int`（签名） | ARR · 一致行动人行；字段 holder_names:string（股东名称(组)） / hold_ratio:float?（持股比例(百分数)） | `hold_ratio`:百分数→小数；量级界 `hold_ratio` | 例：`cli.call("equity.query_concert", sym='688211', limit=40)`
 | `equity.query_guarantee` | 对外担保 | 原始数据 | L0 | `sym:string` · `limit:int`（签名） | ARR · 担保行；字段 guarantor:string?（担保方） / guarantee_amt:float?（担保金额） / is_performed:string?（是否履行） | — | 例：`cli.call("equity.query_guarantee", sym='600900', limit=40)`
@@ -4109,20 +4446,20 @@ cli.info.profile("600519")
 | `equity.query_capital_change` | 股本结构最新 | 原始数据 | L0 | `sym:string`（签名） | MAP · 股本行；字段 total_shares:float?（总股份） / free_shares:float?（流通股份） | 量级界 `total_shares`、`free_shares` | 例：`cli.call("equity.query_capital_change", sym='600519')`
 | `equity.query_capital_change_at` | 指定报告期股本 | 原始数据 | L1 | `sym:string` · `annual:int` · `sampling:string`（签名） | MAP · 股本行；字段 total_shares:float?（总股份） / free_shares:float?（流通股份） | — | 例：`cli.call("equity.query_capital_change_at", sym='600519', annual=2024, sampling='Q4')`
 | `equity.fmt_holder10` | 十大股东行规范化 | 原始数据 | L1 | `rows:array`（签名） | ARR · 规范化行 | — |
-| `equity.fmt_holdernum` | 股东户数规范化 | 原始数据 | L1 | `props:any`（签名） | MAP · 户数行 | — |
-| `equity.fmt_pledge_detail` | 质押明细规范化 | 原始数据 | L1 | `rows:array`（签名） | ARR · 规范化行 | — |
+| `equity.fmt_holdernum` | 股东户数规范化 | 原始数据 | L1 | `props:any`（签名） | ARR · 规范化股东户数行 | — |
+| `equity.fmt_pledge_detail` | 质押明细规范化 | 原始数据 | L1 | `rows:array`（签名） | ARR · 规范化质押明细行 | — |
 | `equity.fmt_pledge_summary` | 质押比例规范化 | 原始数据 | L1 | `rows:array`（签名） | ARR · 规范化行 | — |
-| `equity.fmt_pledge_market` | 市场质押规范化 | 原始数据 | L1 | `rows:array`（签名） | ARR · 规范化行 | — |
+| `equity.fmt_pledge_market` | 市场质押规范化 | 原始数据 | L1 | `rows:array`（签名） | ARR · 规范化市场质押行 | — |
 | `equity.fmt_pledge_industry` | 行业质押规范化 | 原始数据 | L1 | `rows:array`（签名） | ARR · 规范化行 | — |
 | `equity.fmt_pledge_org` | 质押机构分布规范化 | 原始数据 | L1 | `rows:array`（签名） | ARR · 规范化行 | — |
-| `equity.fmt_institution_detail` | 机构明细规范化 | 原始数据 | L1 | `rows:array`（签名） | ARR · 规范化行 | — |
-| `equity.fmt_institution_summary` | 机构占比规范化 | 原始数据 | L1 | `rows:array`（签名） | ARR · 规范化行 | — |
-| `equity.fmt_hgt` | 沪港通行规范化 | 原始数据 | L1 | `rows:array`（签名） | ARR · 规范化行 | — |
-| `equity.fmt_national_team` | 国家队行规范化 | 原始数据 | L1 | `rows:array`（签名） | ARR · 规范化行 | — |
-| `equity.fmt_release` | 解禁行规范化 | 原始数据 | L1 | `rows:array`（签名） | ARR · 规范化行 | — |
+| `equity.fmt_institution_detail` | 机构明细规范化 | 原始数据 | L1 | `rows:array`（签名） | ARR · 规范化机构持股明细行 | — |
+| `equity.fmt_institution_summary` | 机构占比规范化 | 原始数据 | L1 | `rows:array`（签名） | ARR · 规范化机构持仓占比行 | — |
+| `equity.fmt_hgt` | 沪港通行规范化 | 原始数据 | L1 | `rows:array`（签名） | ARR · 规范化沪港通持股行 | — |
+| `equity.fmt_national_team` | 国家队行规范化 | 原始数据 | L1 | `rows:array`（签名） | ARR · 规范化国家队持股行 | — |
+| `equity.fmt_release` | 解禁行规范化 | 原始数据 | L1 | `rows:array`（签名） | ARR · 规范化解禁行 | — |
 | `equity.fmt_buyback_plan` | 回购方案行规范化 | 原始数据 | L1 | `rows:array`（签名） | ARR · 规范化行 | — |
 | `equity.fmt_buyback_detail` | 回购明细规范化 | 原始数据 | L1 | `props:any`（签名） | MAP · 回购明细 | — |
-| `equity.fmt_reorg` | 重组行规范化 | 原始数据 | L1 | `rows:array`（签名） | ARR · 规范化行 | — |
+| `equity.fmt_reorg` | 重组行规范化 | 原始数据 | L1 | `rows:array`（签名） | ARR · 规范化重组行 | — |
 | `equity.fmt_related_trade` | 关联交易行规范化 | 原始数据 | L1 | `rows:array`（签名） | ARR · 规范化行 | — |
 | `equity.fmt_concert` | 一致行动人行规范化 | 原始数据 | L1 | `rows:array`（签名） | ARR · 规范化行 | — |
 | `equity.fmt_guarantee` | 担保行规范化 | 原始数据 | L1 | `rows:array`（签名） | ARR · 规范化行 | — |
@@ -4135,7 +4472,7 @@ cli.info.profile("600519")
 
 #### 港美股披露（`market.intl`）
 
-**性质**：原始数据 · **版本**：1.2.0  
+**性质**：原始数据 · **版本**：1.2.1  
 港美股公司披露维度——港股 CCASS 经纪持仓、主要股东/董事权益、机构评级、 盈利预测（中文键披露原文），港美沽空 interest，美股发行信息。客户端须用对应市场 （函数内部按标的代码路由到港美数据族）。
 数据来源：交易所披露、平台数据服务。
 单位口径：shares=股（持股数/沽空量）；ratio=小数（占比字段已由百分数换算）；price=披露币种（目标价/发行价随市场币种，不做汇率换算）。
@@ -4146,13 +4483,13 @@ cli.info.profile("600519")
 
 | 函数 | 中文 | 性质 | 层 | 参数 | 返回 | 单位与守护 |
 |---|---|---|---|---|---|---|
-| `intl.query_ccass` | 港股CCASS持仓 | 原始数据 | L0 | `sym:string` · `limit:int`（签名） | ARR · CCASS行；字段 participant_name:string?（参与者名称） / shareholding:float?（持股数(股)） / holder_name:string?（股东名称） / rating_name:string?（评级） / short_selling_shares:float?（未平仓做空(股)） | `pct_of_issued`:百分数→小数；量级界 `pct_of_issued` | 例：`cli.call("intl.query_ccass", sym='00700', limit=20)`
-| `intl.query_shareholders` | 港股主要股东 | 原始数据 | L0 | `sym:string` · `limit:int`（签名） | ARR · 股东行；字段 participant_name:string?（参与者名称） / shareholding:float?（持股数(股)） / holder_name:string?（股东名称） / rating_name:string?（评级） / short_selling_shares:float?（未平仓做空(股)） | 量级界 `total_shares_ratio` | 例：`cli.call("intl.query_shareholders", sym='00700', limit=20)`
-| `intl.query_org_rating` | 港股机构评级 | 原始数据 | L0 | `sym:string` · `limit:int`（签名） | ARR · 评级行；字段 participant_name:string?（参与者名称） / shareholding:float?（持股数(股)） / holder_name:string?（股东名称） / rating_name:string?（评级） / short_selling_shares:float?（未平仓做空(股)） | — | 例：`cli.call("intl.query_org_rating", sym='00700', limit=20)`
-| `intl.query_profit_forecast` | 港股盈利预测 | 原始数据 | L0 | `sym:string` · `limit:int`（签名） | ARR · 预测行；字段 participant_name:string?（参与者名称） / shareholding:float?（持股数(股)） / holder_name:string?（股东名称） / rating_name:string?（评级） / short_selling_shares:float?（未平仓做空(股)） | — | 例：`cli.call("intl.query_profit_forecast", sym='00700', limit=20)`
-| `intl.query_sellshort` | 港美沽空 | 原始数据 | L0 | `sym:string` · `limit:int`（签名） | ARR · 沽空行；字段 participant_name:string?（参与者名称） / shareholding:float?（持股数(股)） / holder_name:string?（股东名称） / rating_name:string?（评级） / short_selling_shares:float?（未平仓做空(股)） | — | 例：`cli.call("intl.query_sellshort", sym='BRK_B', limit=10)`
+| `intl.query_ccass` | 港股CCASS持仓 | 原始数据 | L0 | `sym:string` · `limit:int`（签名） | ARR · CCASS行；字段 query_date:string?（查询日期） / participant_id:string?（参与者ID） / participant_name:string?（参与者名称） / shareholding:float?（持股数（股）） / pct_of_issued:float?（占已发行股份比（小数）） / holder_name:string?（股东名称） / hold_identity:string?（权益身份） / report_date:string?（报告期） / total_shares:float?（总股本（股）） / shares_type:string?（股份类型） / equity_type:string?（权益类型） / total_shares_ratio:float?（占总股本比（小数）） / notice_date:string?（申报日期） / publish_date:string?（发布日期） / org_name:string?（券商机构） / rating_name:string?（评级） / target_price:float?（目标价） / pre_rating_name:string?（前次评级） / pre_target_price:float?（前次目标价） / settle_date:string?（结算日期） / short_selling_shares:float?（未平仓做空股数（股）） / cover_days:float?（回补天数） / fiscal_year:string?（财政年度） / net_profit:float?（纯利（港币）） / eps:float?（每股盈利（港币）） / dps:float?（每股派息（港币）） / nav:float?（每股资产净值（港币）） / high:float?（最高价） / low:float?（最低价） | `pct_of_issued`:百分数→小数；量级界 `pct_of_issued` | 例：`cli.call("intl.query_ccass", sym='00700', limit=20)`
+| `intl.query_shareholders` | 港股主要股东 | 原始数据 | L0 | `sym:string` · `limit:int`（签名） | ARR · 股东行；字段 query_date:string?（查询日期） / participant_id:string?（参与者ID） / participant_name:string?（参与者名称） / shareholding:float?（持股数（股）） / pct_of_issued:float?（占已发行股份比（小数）） / holder_name:string?（股东名称） / hold_identity:string?（权益身份） / report_date:string?（报告期） / total_shares:float?（总股本（股）） / shares_type:string?（股份类型） / equity_type:string?（权益类型） / total_shares_ratio:float?（占总股本比（小数）） / notice_date:string?（申报日期） / publish_date:string?（发布日期） / org_name:string?（券商机构） / rating_name:string?（评级） / target_price:float?（目标价） / pre_rating_name:string?（前次评级） / pre_target_price:float?（前次目标价） / settle_date:string?（结算日期） / short_selling_shares:float?（未平仓做空股数（股）） / cover_days:float?（回补天数） / fiscal_year:string?（财政年度） / net_profit:float?（纯利（港币）） / eps:float?（每股盈利（港币）） / dps:float?（每股派息（港币）） / nav:float?（每股资产净值（港币）） / high:float?（最高价） / low:float?（最低价） | 量级界 `total_shares_ratio` | 例：`cli.call("intl.query_shareholders", sym='00700', limit=20)`
+| `intl.query_org_rating` | 港股机构评级 | 原始数据 | L0 | `sym:string` · `limit:int`（签名） | ARR · 评级行；字段 query_date:string?（查询日期） / participant_id:string?（参与者ID） / participant_name:string?（参与者名称） / shareholding:float?（持股数（股）） / pct_of_issued:float?（占已发行股份比（小数）） / holder_name:string?（股东名称） / hold_identity:string?（权益身份） / report_date:string?（报告期） / total_shares:float?（总股本（股）） / shares_type:string?（股份类型） / equity_type:string?（权益类型） / total_shares_ratio:float?（占总股本比（小数）） / notice_date:string?（申报日期） / publish_date:string?（发布日期） / org_name:string?（券商机构） / rating_name:string?（评级） / target_price:float?（目标价） / pre_rating_name:string?（前次评级） / pre_target_price:float?（前次目标价） / settle_date:string?（结算日期） / short_selling_shares:float?（未平仓做空股数（股）） / cover_days:float?（回补天数） / fiscal_year:string?（财政年度） / net_profit:float?（纯利（港币）） / eps:float?（每股盈利（港币）） / dps:float?（每股派息（港币）） / nav:float?（每股资产净值（港币）） / high:float?（最高价） / low:float?（最低价） | — | 例：`cli.call("intl.query_org_rating", sym='00700', limit=20)`
+| `intl.query_profit_forecast` | 港股盈利预测 | 原始数据 | L0 | `sym:string` · `limit:int`（签名） | ARR · 预测行；字段 query_date:string?（查询日期） / participant_id:string?（参与者ID） / participant_name:string?（参与者名称） / shareholding:float?（持股数（股）） / pct_of_issued:float?（占已发行股份比（小数）） / holder_name:string?（股东名称） / hold_identity:string?（权益身份） / report_date:string?（报告期） / total_shares:float?（总股本（股）） / shares_type:string?（股份类型） / equity_type:string?（权益类型） / total_shares_ratio:float?（占总股本比（小数）） / notice_date:string?（申报日期） / publish_date:string?（发布日期） / org_name:string?（券商机构） / rating_name:string?（评级） / target_price:float?（目标价） / pre_rating_name:string?（前次评级） / pre_target_price:float?（前次目标价） / settle_date:string?（结算日期） / short_selling_shares:float?（未平仓做空股数（股）） / cover_days:float?（回补天数） / fiscal_year:string?（财政年度） / net_profit:float?（纯利（港币）） / eps:float?（每股盈利（港币）） / dps:float?（每股派息（港币）） / nav:float?（每股资产净值（港币）） / high:float?（最高价） / low:float?（最低价） | — | 例：`cli.call("intl.query_profit_forecast", sym='00700', limit=20)`
+| `intl.query_sellshort` | 港美沽空 | 原始数据 | L0 | `sym:string` · `limit:int`（签名） | ARR · 沽空行；字段 query_date:string?（查询日期） / participant_id:string?（参与者ID） / participant_name:string?（参与者名称） / shareholding:float?（持股数（股）） / pct_of_issued:float?（占已发行股份比（小数）） / holder_name:string?（股东名称） / hold_identity:string?（权益身份） / report_date:string?（报告期） / total_shares:float?（总股本（股）） / shares_type:string?（股份类型） / equity_type:string?（权益类型） / total_shares_ratio:float?（占总股本比（小数）） / notice_date:string?（申报日期） / publish_date:string?（发布日期） / org_name:string?（券商机构） / rating_name:string?（评级） / target_price:float?（目标价） / pre_rating_name:string?（前次评级） / pre_target_price:float?（前次目标价） / settle_date:string?（结算日期） / short_selling_shares:float?（未平仓做空股数（股）） / cover_days:float?（回补天数） / fiscal_year:string?（财政年度） / net_profit:float?（纯利（港币）） / eps:float?（每股盈利（港币）） / dps:float?（每股派息（港币）） / nav:float?（每股资产净值（港币）） / high:float?（最高价） / low:float?（最低价） | — | 例：`cli.call("intl.query_sellshort", sym='BRK_B', limit=10)`
 | `intl.issue_info` | 美股发行信息 | 原始数据 | L0 | `sym:string`（签名） | MAP · 发行行 | — | 例：`cli.call("intl.issue_info", sym='BRK_B')`
-| `intl.fmt_maps` | 港美股行规范化 | 原始数据 | L1 | `rows:array`（签名） | ARR · 规范化行 | — |
+| `intl.fmt_maps` | 港美股行规范化 | 原始数据 | L1 | `rows:array`（签名） | ARR · 规范化港美股行（字段并集按行取，缺字段为空） | — |
 | `intl.fmt_issue` | 发行行规范化 | 原始数据 | L1 | `props:any`（签名） | MAP · 发行行 | — |
 
 #### 宏观（`market.macro`）

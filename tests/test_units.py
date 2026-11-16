@@ -287,6 +287,29 @@ def test_segments_snapshot_nested_guard():
         c2.segments.snapshot("600519")
 
 
+def test_forecast_snapshot_nested_shape_covers_guards():
+    """批 B 回归：snapshot 的守护字段须能在 returns_shape 嵌套层找到。
+
+    drift 曾把这些嵌套守护误报为「上游 shape 声明滞后」；声明补全后，
+    嵌套换算（百分数→小数）与量级守护必须照常生效。
+    """
+    snap = {"symbol": "688008",
+            "yjyg": dict(YJYG_ROW),
+            "yjkb": dict(YJKB_ROW),
+            "next_disclosure": {"report_date": "2026-09-30"}}
+    c, _ = make(dict(snap))
+    out = c.forecast.snapshot("688008")
+    assert out["yjyg"]["rev_amp_upper"] == pytest.approx(0.46)
+    assert out["yjkb"]["roe"] == pytest.approx(0.1128)
+
+    bad = dict(snap)
+    # percent 换算先于 ranges：roe=1128（原生百分数）换算后 11.28，超 [-2, 5] 上界
+    bad["yjkb"] = dict(YJKB_ROW, roe=1128)
+    c2, _ = make(bad)
+    with pytest.raises(DataError, match="roe"):
+        c2.forecast.snapshot("688008")
+
+
 # ---- 目录透传与声明自检 ----
 
 def test_catalog_passthrough_and_metric_meta():
@@ -342,3 +365,39 @@ def test_valuation_hist_stats_passthrough_and_validation():
         c.valuation.hist_stats("600900", window="5y")  # 上限 3 年
     out6 = c.valuation.hist_stats("600900", metric="pb", window="6m")  # 半年窗口
     assert out6["current"] == 3.334  # 引擎结果原样透传
+
+
+def test_normalized_query_shapes_cover_guards():
+    """批 C 回归：normalize_with 继承链上的守护字段必须落在 returns_shape 里。
+
+    catalog returns_shape 优先级是 YAML shape → normalize_with 目标 shape →
+    inventory shape；fmt 行规范化的 shape 曾滞后于守护声明，导致 openapi
+    文档少列字段（query_hgt 只列 3 个，实际返回 7 个）。
+    """
+    import wmshare as m
+
+    cat = m.load()
+    cases = {
+        "equity.query_hgt": {"add_shares_pct", "free_shares_ratio", "total_shares_ratio"},
+        "equity.query_holdernum": {"total_num_ratio", "avg_free_shares",
+                                   "hold_ratio_total", "freehold_ratio_total"},
+        "equity.query_institution_detail": {"total_shares_ratio", "free_shares_ratio"},
+        "equity.query_institution_summary": {"all_shares_ratio", "total_shares_ratio"},
+        "equity.query_national_team": {"shares_ratio", "shares_ratio_change"},
+        "equity.query_pledge_detail": {"accum_pledge_tsr", "pf_hold_ratio"},
+        "equity.query_pledge_market": {"csi300_chg", "pledge_market_value",
+                                       "total_pledged_shares"},
+        "equity.query_release": {"unlimited_ratio"},
+        "equity.query_reorg": {"transfer_ratio"},
+        "estimates.query_forecast": {"eps2", "eps3", "eps4", "pe2", "pe3", "pe4"},
+        "estimates.query_forecast_detail": {"eps2", "eps3", "eps4", "pe2", "pe3", "pe4"},
+        "intl.query_ccass": {"pct_of_issued"},
+        "intl.query_shareholders": {"total_shares_ratio"},
+    }
+    for name, guarded in cases.items():
+        shape = cat.function(name).get("returns_shape") or {}
+        items = shape.get("items") if isinstance(shape.get("items"), dict) else shape
+        fields = {f.get("name") for f in (items or {}).get("fields") or []
+                  if isinstance(f, dict)}
+        missing = guarded - fields
+        assert not missing, f"{name}: 守护字段 {sorted(missing)} 不在 returns_shape"

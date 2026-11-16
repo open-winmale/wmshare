@@ -10,6 +10,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.20.6] - 2026-11-16
+
+### Fixed
+- **returns_shape 声明滞后清零（drift WARN 29 → 0）**：units/ranges 守护声明引用的
+  字段未出现在 `returns_shape` 合同里，机器读 openapi/llms.txt 会以为返回行没有这些
+  字段——文档比实际"少说了字段"，用户按文档取数会拿漏。三批治理：
+  - **T1（segments）**：`query_region` 的 `domestic`/`overseas` 从 `cn` 文本升级为
+    结构化嵌套 fields；`snapshot` 补全七键结构（含 `overview` 嵌套
+    `max_name/max_ratio/product_tags/profile`、`coverage` 结构化）。
+    **修正一处 desc 笔误**：快照顶层键是 `products`（复数），desc 误写单数。
+  - **T2（forecast）**：`yjyg_rows`/`yjkb_rows` 补 SDK 侧 `returns.shape` 覆盖
+    （字段集 = 上游 shape ∪ fixtures，补齐被守护的 `rev_amp_*`/`np_yoy`/`roe` 等）；
+    `snapshot` 的 `yjyg`/`yjkb`/`next_disclosure` 结构化嵌套。
+  - **T3（normalize_with 错位，18 条）**：9 个 fmt 行规范化函数的 `returns.shape`
+    按 XS row 函数字面量重写，13 个 query 函数经目录优先级链自动继承修正
+    （`fmt_maps` 一处修正顺带修好 5 个 estimates/intl 函数的文档合同）。
+    **`equity.query_hgt` 文档曾只列 3 字段、实际返回 7**，此类失真全部消除。
+- **`_shape_fields` 递归化**：`tools/audit_units.py` 现在递归收集嵌套 fields，
+  与运行时 `walk` 下探嵌套容器的语义对齐。
+
+### Changed
+- **`drift --strict` 纳入门禁**（AGENTS.md 门禁清单 + CI 同款）：shape/units/ranges
+  声明漂移 ERROR/WARN 均拦截，防合同回归。
+- **llms-full.txt 预算 320K → 350K 字节**：shape 合同化带来约 20KB 正当合同增长；
+  预算防的是"内联 205KB INDICATORS.md"反模式（真内联约 540K），守护语义不变。
+
+### Added
+- **`tests/test_normalized_query_shapes_cover_guards`**：13 个改动函数的守护字段
+  ⊆ returns_shape 回归锚。
+- `tests/test_audit_drift.py` +2 嵌套用例、2 处断言随 WARN 清零更新（默认档断 `[]`，
+  strict 升级语义用注入 WARN 验证）。
+- `tests/test_units.py` +2 回归：segments/forecast 嵌套换算与量级守护
+  （负例须取"percent 换算后仍超界"的值）。
+
+### Notes
+- **字段面取证三层**：XS row 函数字面量（服务端写死的输出键）+ fixtures 并集 +
+  **live 对账 23 接口双向核验**（声明的字段运行时都在、运行时的字段声明都覆盖、
+  守护换算生效）。4 个接口（national_team/pledge_detail/release/query_reports）
+  上游暂无数据，以 XS 字面量为据。
+- 验收：drift `--strict` exit 0、16 项静态门禁绿、mypy 零问题、
+  5 个生成器 `--check` rc=0、全量 **1967 passed / 94 skipped / 0 failed**、
+  分支覆盖率 **88% ≥ 85%**。
+- 域版本：`corp.equity` 2.1.1、`fund.estimates` 1.1.1、`market.intl` 1.2.1、
+  `fund.segments` 1.0.3、`disc.events` 1.1.2。API 行为无变化（纯合同/文档修正）。
+
 ## [1.20.5] - 2026-11-14
 
 ### Fixed
