@@ -10,6 +10,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.22.0] - 2026-11-16
+### Added
+- **`kline.snapshot_batch(codes)` 多标的行情快照**：走当日全市场索引批量投影，
+  全市场 5,686 票约 142,260 EC（25 EC/行），按自然日缓存后重复调用约 28 EC。
+  替代「把上百个代码拼成一个 MAP 逐票调 `snapshot`」的写法——后者每票要付均线
+  首算费约 10,250 EC，150 票即 156 万 EC。返回索引原始 `[{row, values}]` 结构
+  （`values` 内为 `$指标`→值）；逐行扁平化会额外烧约 107 万 EC，故不做。
+  均线/价格字段与逐票 `snapshot` 逐值一致；价格类为索引快照值（非实时 tick）。
+  目录 288 → 289 函数。
+
+### Changed
+- `kline.snapshot` 加按「标的+自然日」缓存：首个新标的仍约 10,250 EC（均线需
+  回看 K 线序列），重复调用降到约 26 EC。notes 补成本模型与 `snapshot_batch` 指引。
+
 ## [1.21.2] - 2026-11-16
 
 ### Fixed
