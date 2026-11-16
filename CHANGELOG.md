@@ -12,6 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.21.0] - 2026-11-16
 
+### Added
+- 新增示例 `examples/17_prr_dividend_screen.py`：市赚率（PRR）+现金流覆盖三维红利排雷
+  ——硬卡点一条 `screener.query` 全市场筛（count=真命中数），本地补行业剔除、现金流
+  覆盖与 CHI 排名；演示客户端罐头可零凭证走通全流程。
+
 ### Changed（BREAKING）
 - **报表数据源切全市场宽表**：`cli.statements.balance/income/cashflow` 改读
   fin_income/fin_balance/fin_cashflow（cn/hk/us 统一，季度粒度、披露原币、
@@ -30,6 +35,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - MCP server.py 的 wmshare_statement 定义与工具实现同步（去 scope/kind）。
+- `indices.valuation` 合同展开收录（market.index.yaml v1.5.1）：params key+points、
+  returns shape（current + 季频 series）入目录，与上游 inventory（rev 90fdefeb）及
+  类型化门面对齐。
+- 数据商字面量（混源口径表述中性化）从目录与门面 docstring 退场，泄漏门禁清零。
 
 ## [1.20.7] - 2026-11-16
 

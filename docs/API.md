@@ -25,7 +25,7 @@
 | `fund.estimates`（盈利预测与研报） | 机构盈利预测、盈利预测明细、评级统计、个股研报 | eps=元/股；money=元（归母净利润）；pe=倍（预测市盈率） |
 | `fund.indicators`（指标层） | 指标组：估值、盈利与回报（含杜邦）、成长、营收与利润规模、现金流… | ratio=小数（如 0.332 = 33.2%；指标层比率统一为小数，不是 15.0=15%）；money=元（与报表/资金流同口径；精选指标声明了量级守护范围） |
 | `fund.segments`（经营分部） | 产品/商品分部、业务线分部、主营标签占比、地区/境内外分部、经营分部截面快照… | money=元（分部收入 tr / 成本 cost 原币口径，实测元；tr_text 为披露展示串如「2334.83亿」）；ratio=小数（占比 ratio/pct、毛利率 margin、同比 yoy；0.332 = 33.2%） |
-| `fund.statements`（财务报表） | 三大报表科目×期次透视（cn/hk/us 全市场宽表）、审计意见（聚源混源，Q4 年轴；仅 cn） | amount=报表原币（CN=元，HK=港币，US=美元）；ratio=小数；period=报告期（年-采样，如 2024-Q4 / 2026-Q1） |
+| `fund.statements`（财务报表） | 三大报表科目×期次透视（cn/hk/us 全市场宽表）、审计意见（混源，Q4 年轴；仅 cn） | amount=报表原币（CN=元，HK=港币，US=美元）；ratio=小数；period=报告期（年-采样，如 2024-Q4 / 2026-Q1） |
 | `disc.bonus`（分红） | 分红历史明细、最近一次分红、指定报告期分红、财报期每股分红、财报期每股分红（截至日）… | dps=元/股；total=元（窗口合计金额）；window=如 "3y" / "5y" 窗口字符串；rate=小数（0.03 = 3%） |
 | `disc.events`（业绩披露事件） | 业绩预告历史、最新业绩预告、业绩快报历史、最新业绩快报、财报预约披露历史… | money=元（预告/快报区间与单期金额）；yoy=小数（0.1467 = 14.67%；SDK 自动由脚本的百分数口径换算）；date=YYYY-MM-DD |
 | `disc.filings`（定期报告清单） | 定期报告列表、最新一条定期报告 | date=YYYY-MM-DD |
@@ -1538,7 +1538,7 @@ cli.macro.phone_share(brand="小米", field="share")
 ### 三大报表科目透视（`cli.statements`）
 
 - 边界与集成约定：
-- 数据源为全市场宽表 fin_income/fin_balance/fin_cashflow：k=各市场披露科目原文（HKFRS/USGAAP/聚源 cn 口径），披露原币（港币/美元/人民币），不做 CN 口径翻译，无派生行与溯源列——列映射由消费侧负责。
+- 数据源为全市场宽表 fin_income/fin_balance/fin_cashflow：k=各市场披露科目原文（HKFRS/USGAAP/cn 混源口径），披露原币（港币/美元/人民币），不做 CN 口径翻译，无派生行与溯源列——列映射由消费侧负责。
 - `period` 两档：`"annual"`（年报档，缺省）/`"quarter"`（季报全档Q1..Q4 混合，期次键 "2026:Q1"）。
 - 合并/母公司比较、目录树、期间列举基于内部提取库，不再对外提供。
 - 本命名空间是报表域唯一对外入口；底层目录名内部保留、可能调整——下游集成（如 OpenBB provider）应以本门面签名编程，勿依赖底层函数名。
@@ -4068,7 +4068,7 @@ cli.info.profile("600519")
 | `indices.keys` | 指数键列表 | 指标 | L0 | — | ARR · 指数键 | — | 例：`cli.call("indices.keys")`
 | `indices.members` | 指数成分 | 指标 | L0 | `key:string` · `sort_by:string` · `top_n:int`（签名） | ARR · 成分行 | — | 例：`cli.call("indices.members", key='index.hs300', sort_by='mv', top_n=10)`
 | `indices.weights` | 指数权重股 | 指标 | L0 | `key:string` · `top_n:int`（签名） | ARR · 权重行 | 量级界 `weight` | 例：`cli.call("indices.weights", key='index.hs300', top_n=10)`
-| `indices.valuation` | 指数估值时序（key 为指数键，如 index.hs300；可用键由 indices.universe_keys 枚举） | 指标 | L0 | `key:string` — 指数键（index.hs300 等，用 indices.universe_keys 枚举） | MAP · 估值序列 | — |
+| `indices.valuation` | 指数估值时序（key 为指数键，如 index.hs300；可用键由 indices.universe_keys 枚举） | 指标 | L0 | `key:string` — 指数键（index.hs300 等，用 indices.universe_keys 枚举） · `points:int?` — 季采样点数；series 可自行算分位 | MAP · 估值序列 | — | 例：`cli.call("indices.valuation", key='index.hs300', points=12)`
 | `indices.trend` | 指数估值趋势(周频整体法) | 指标 | L0 | `key:string` · `window:string`（签名） | MAP · 周频趋势 | — | 例：`cli.call("indices.trend", key='index.hs300', window='5y')`
 | `indices.universe_keys` | 指数域可用键 | 指标 | L0 | `group:string`（签名） | ARR · 指数键 | — | 例：`cli.call("indices.universe_keys", group='broad')`
 
@@ -4263,12 +4263,12 @@ cli.info.profile("600519")
 
 **性质**：原始数据 · **版本**：1.4.0  
 三大报表科目原值（资产负债 / 利润 / 现金流）多期透视与审计意见。 数据源 = 全市场宽表 fin_income / fin_balance / fin_cashflow（季度粒度、披露原币）； 列名为各市场披露科目原文，不做 CN 口径翻译。
-数据来源：聚源混源宽表(vendor)、外部数据服务(主要指标)。
+数据来源：混源宽表(vendor)、外部数据服务(主要指标)。
 单位口径：amount=报表原币（CN=元，HK=港币，US=美元）；ratio=小数；period=报告期（年-采样，如 2024-Q4 / 2026-Q1）。
 - domain 取值 fin.balance_sheet / fin.income_statement / fin.cashflow_statement
-- 可用性：mkt_statement 全市场 cn/hk/us——k=各市场披露科目原文 （聚源 cn / HKFRS / USGAAP），披露原币，无派生行与溯源列，映射由消费侧 负责；消费方以门面 cli.statements.* 编程、勿依赖底层函数名
+- 可用性：mkt_statement 全市场 cn/hk/us——k=各市场披露科目原文 （cn / HKFRS / USGAAP），披露原币，无派生行与溯源列，映射由消费侧 负责；消费方以门面 cli.statements.* 编程、勿依赖底层函数名
 - opts.n 期数（默认 5，1..10）；opts.sampling = Q4（缺省，年报档）\| Q1..Q3（单季档）\| Q（季报全档 Q4→Q1 逐档，vals 键 "2026:Q1" 形式，n 截 总期数）；无母公司口径、无期间列举接口（v2 宽表无 listbs，latest doc.annual 锚定逐期取，缺期 nil 不填补）
-- statement_audit 仅 cn（聚源混源 Q4 年轴，读 fin.balance 的 opinionType）
+- statement_audit 仅 cn（混源 Q4 年轴，读 fin.balance 的 opinionType）
 - 内部提取库（alt.bssaa 的 rptdom_*.LIST，含合并/母公司、溯源列、目录树） 不对外提供：statement/compare/tree/years/periods 已退对外目录，仅平台 内部页面经 xs.require 消费
 
 ### 信息披露

@@ -1,5 +1,5 @@
 id: market.index
-version: 1.5.0
+version: 1.5.1
 cn: 指数
 kind: computed
 category: market
@@ -15,6 +15,7 @@ units:
   weight: 小数（披露权重，上游 fmt 已换算，SDK 不再处理）
 requires: {path: sys/index/init.xs, preloaded: true}
 notes:
+  - 可用性：指数键与申万行业为 cn 口径
   - 'v1.1.0 函数前缀 index.* → indices.*：上游内建 index 常量 MAP 占名（selector policy violation），cli.index 门面不变'
   - '成员行 roe_ttm/pe_ttm 等为指标层原值（比率小数、倍数口径），SDK 不再换算'
   - 'valuation.series 为季采样点（d/pe/pb），前端/调用方可自行算分位；trend.base/med 为周频/月频点，均为降序（新→旧）'
@@ -28,6 +29,34 @@ functions:
   - {name: indices.keys, cn: 指数键列表, layer: L0}
   - {name: indices.members, cn: 指数成分, layer: L0}
   - {name: indices.weights, cn: 指数权重股, layer: L0, ranges: {weight: [0, 1]}}
-  - {name: indices.valuation, cn: 指数估值时序, layer: L0}
+  - name: indices.valuation
+    cn: 指数估值时序（key 为指数键，如 index.hs300；可用键由 indices.universe_keys 枚举）
+    layer: L0
+    params:
+      - {name: key, type: string, required: true, desc: 指数键（index.hs300 等，用 indices.universe_keys 枚举）}
+      - {name: points, type: int, required: false, desc: 季采样点数；series 可自行算分位}
+    returns:
+      desc: MAP · 估值序列
+      shape:
+        kind: object
+        cn: 指数估值（当前值 + 季频历史序列；上游未供数的键 pb/dv 为 0、pe 为 null）
+        fields:
+          - name: current
+            type: object
+            cn: 最新估值
+            fields:
+              - {name: pe, type: float64, cn: 市盈率（倍）, optional: true}
+              - {name: pb, type: float64, cn: 市净率（倍）}
+              - {name: dv, type: float64, cn: 股息率}
+          - name: series
+            type: array
+            cn: 季频历史序列（新→旧）
+            items:
+              kind: object
+              cn: 估值点
+              fields:
+                - {name: d, type: string, cn: 报告期}
+                - {name: pe, type: float64, cn: 市盈率（倍）, optional: true}
+                - {name: pb, type: float64, cn: 市净率（倍）}
   - {name: indices.trend, cn: 指数估值趋势(周频整体法), layer: L0}
   - {name: indices.universe_keys, cn: 指数域可用键, layer: L0}

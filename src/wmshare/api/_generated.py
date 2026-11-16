@@ -890,14 +890,18 @@ class IndicesNS(_Ns):
             kw["top_n"] = top_n
         return self._client.call("indices.weights", **kw, _raw=_raw, _df=_df)
 
-    def valuation(self, key: str, _raw: bool = False, _df: bool = False) -> Any:
+    def valuation(self, key: str, points: int | None = None, _raw: bool = False, _df: bool = False) -> Any:
         """指数估值时序（key 为指数键，如 index.hs300；可用键由 indices.universe_keys 枚举）
 
 :param key: 指数键（index.hs300 等，用 indices.universe_keys 枚举）
+:param points: 季采样点数；series 可自行算分位
 
 :returns: MAP · 估值序列
         """
-        return self._client.call("indices.valuation", key=key, _raw=_raw, _df=_df)
+        kw: dict[str, Any] = {"key": key}
+        if points is not None:
+            kw["points"] = points
+        return self._client.call("indices.valuation", **kw, _raw=_raw, _df=_df)
 
     def trend(self, key: str, window: str | None = None, _raw: bool = False, _df: bool = False) -> Any:
         """指数估值趋势(周频整体法)"""
@@ -1802,7 +1806,7 @@ class RptdomNS(_Ns):
         return self._client.call("rptdom.mkt_statement", **kw, _raw=_raw, _df=_df)
 
     def statement_audit(self, sym: str, _raw: bool = False, _df: bool = False) -> Any:
-        """审计意见（聚源混源，Q4 年轴；仅 cn）
+        """审计意见（混源，Q4 年轴；仅 cn）
 
 :returns: MAP · {年份: 审计意见}
         """

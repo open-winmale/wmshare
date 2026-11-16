@@ -1299,7 +1299,7 @@ class StatementsApi(_Api):
 
     边界与集成约定：
     - 数据源为全市场宽表 fin_income/fin_balance/fin_cashflow：k=各市场披露
-      科目原文（HKFRS/USGAAP/聚源 cn 口径），披露原币（港币/美元/人民币），
+      科目原文（HKFRS/USGAAP/cn 混源口径），披露原币（港币/美元/人民币），
       不做 CN 口径翻译，无派生行与溯源列——列映射由消费侧负责。
     - ``period`` 两档：``"annual"``（年报档，缺省）/``"quarter"``（季报全档
       Q1..Q4 混合，期次键 "2026:Q1"）。
