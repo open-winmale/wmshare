@@ -1,5 +1,5 @@
 id: market.kline
-version: 1.5.0
+version: 1.5.1
 cn: 行情K线
 kind: raw
 category: market
@@ -64,11 +64,14 @@ functions:
     normalize_with: kline.fmt_maps
     units: {volume: lot}
     ranges: {percent: [-1, 30], volume: [0, 1.0e+12]}
-    checks: [volume_amount]
     notes:
       - 周/月 K 为服务端预派生（由日线聚合，日期=周期末交易日），不是客户端重采样
       - 指数键只有日频：period 非 D 返回空数组（不静默降级成日K）
       - 美股周/月自 2026-11 起由上游日更管线派生；更早周期为历史快照
+      - 不套 volume_amount 不变量：volume×close/amount 恒等于「期末价/期内成交均价」，
+        日线两者近似相等，聚合周期则天然偏离（实测月线 2,269 样本落在 [0.07, 2.59]，
+        周线 3,600 样本 [0.85, 1.15]）；拆股月与早年 amount 口径差异会放大到数倍，
+        套用 [0.4, 2.5] 会把正常序列判成单位漂移
   - name: kline.query_bars_period_adj
     cn: 历史 K 线（周/月周期·复权）
     kind: raw

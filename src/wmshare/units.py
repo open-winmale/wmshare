@@ -131,10 +131,14 @@ def _check_diffp_ratio(row: dict, fname: str, path: str) -> None:
 
 
 def _check_volume_amount(row: dict, fname: str, path: str) -> None:
-    """K 线行：volume（已换算为股）× close ≈ amount（元），容 close≠VWAP 的偏离。"""
+    """K 线行：volume（已换算为股）× close ≈ amount（元），容 close≠VWAP 的偏离。
+
+    ``volume == 0`` 时无法验算，跳过：上游部分期次只有 amount 没有 volume
+    （A 股 2001-08~2016-08 的月线，180/302 行如此），把它当违例会误杀整条调用。
+    """
     f_v, f_close, f_amt = (_num(row.get("volume")), _num(row.get("close")),
                            _num(row.get("amount")))
-    if f_v is None or f_close is None or f_amt is None or f_amt == 0 or f_close <= 0:
+    if f_v is None or f_close is None or f_amt is None or f_amt == 0 or f_close <= 0 or f_v == 0:
         return
     ratio = f_v * f_close / f_amt
     if not 0.4 <= ratio <= 2.5:

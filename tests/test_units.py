@@ -91,6 +91,38 @@ def test_volume_amount_invariant_passes_and_violates():
         c2.call("kline.query_bars", sym="600519", limit=1)
 
 
+def test_volume_amount_skips_zero_volume_rows():
+    """volume=0 无从验算，跳过而不是误判（日线入口直接验守卫行为）。
+
+    A 股 2001-08~2016-08 月线只有 amount 没有 volume（实测 180/302 行），
+    守卫按 [0.4, 2.5] 判会算出 ratio=0 → 整条调用被误杀。
+    """
+    c, _ = make([dict(BAR, volume=0)])
+    out = c.call("kline.query_bars", sym="600519", limit=1)
+    assert out[0]["volume"] == 0  # 未换算、未拦下
+
+
+def test_period_bars_carry_no_volume_amount_check():
+    """聚合周期不套 volume_amount：ratio 恒等于「期末价/期内均价」，天然偏离。
+
+    月线实测 2,269 样本落在 [0.07, 2.59]（拆股月与早年 amount 口径差异放大），
+    套个股日线带 [0.4, 2.5] 会把正常序列判成单位漂移。
+    """
+    cat = load()
+    assert "volume_amount" not in (cat.function("kline.query_bars_period").get("checks") or [])
+    # 极端偏离的行不该被拦（这里 close/amount 比例远离 1）
+    c, _ = make([dict(BAR, volume=0), dict(BAR, volume=3413500.0)])
+    out = c.call("kline.query_bars_period", sym="600519", limit=2, period="M")
+    assert len(out) == 2
+
+
+def test_volume_amount_zero_skip_does_not_relax_daily_bars():
+    """日线同源守卫不受影响：坏行照旧抛。"""
+    c, _ = make([dict(BAR, volume=3413500.0)])
+    with pytest.raises(DataError, match="volume_amount"):
+        c.call("kline.query_bars", sym="600519", limit=1)
+
+
 def test_invariant_message_carries_escape_hatch():
     c, _ = make([dict(BAR, volume=3413500.0)])
     with pytest.raises(DataError) as ei:
