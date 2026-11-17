@@ -387,29 +387,31 @@ cron 每交易日收盘后分批增量（16:20 宽基、16:23/16:26 申万一级
 
 | 入口 | 用途 | 请求数（N 个标的） | 关键参数 |
 |---|---|---|---|
-| `batch_all(name, symbols)` | 一站式：自动分批并聚合 | ⌈N/500⌉ | `on_batch_error="raise"/"skip"` |
-| `batch_iter(name, symbols)` | 逐批流式：进度/中断/落盘 | ⌈N/500⌉ | 逐批 yield `BatchResult` |
-| `call_batch(name, symbols)` | 单批（≤500） | 1 | `on_error` 是**票级**，勿做容错 |
+| `batch_all(name, symbols)` | 一站式：自动分批并聚合 | 路由接口 1 次；其余 ⌈N/500⌉ | `on_batch_error="raise"/"skip"` |
+| `batch_iter(name, symbols)` | 逐批流式：进度/中断/落盘 | 同上 | 逐批 yield `BatchResult` |
+| `call_batch(name, symbols)` | 单批（≤500，路由接口不限） | 1 | `on_error` 是**票级**，勿做容错 |
 
-**批量省的是请求次数，不是 EC。** 开放平台开放 API 按计算量（EC）计费：
-多标的批量在服务端仍按标的数逐票计算，一轮全市场 ≈ 12 批 × 每标的固定成本，
-重放几百遍就是数亿 EC。两个习惯：① `BatchResult.ec_cost` 与
+**批量省的是请求次数，多数接口不省 EC。** 开放平台开放 API 按计算量（EC）计费：
+除批量原生路由接口（如 `kline.snapshot`，按量计费）外，多标的批量在服务端仍按
+标的数逐票计算，重放几百遍就是数亿 EC。两个习惯：① `BatchResult.ec_cost` 与
 `cli.last_ec_cost` 会回传每次消耗，单次超过 `Client(ec_warn_threshold=…)`
 （默认 10 万）SDK 直接告警；② 全市场**最新快照**类数据（资金流等）优先用
 服务端一次取数接口（如 `cli.moneyflow.board()`），逐票批量留给确需逐票
-历史的场景，并配合 `batch_iter` 边取边落盘。
+历史的场景，并配合 `batch_iter` 边取边落盘。动手前可用
+`cli.cost_estimate(name, **params)` 先估 EC 区间。
 
-### 5.2 一站式：全市场 = 11 次请求
+### 5.2 一站式：全市场快照 = 1 次请求
 
 ```python
 codes = [r["symbol"] for r in cli.stocks.list()]
-res = cli.batch_all("kline.snapshot", codes)
-len(res.results), res.requests    # (5375, 11)——逐票要 5,375 次，批量 11 次
-res.to_df()                       # 每标的一行长表（symbol 列在前；需 pandas）
+res = cli.batch_all("kline.snapshot", codes)   # 批量原生路由：单次 eval
+len(res.results), res.requests    # 全市场一轮 1 次请求（逐票要 5,375 次）
+res.to_df()                       # 每标的一行长表（symbol 列在前）
 ```
 
-**1.22.1 起 `kline.snapshot` 传列表自动走批量原生（推荐）**：单次请求、按量计费
-60~90 EC/票，全市场一轮 ≈15 万 EC（对比逐票拼接首算的数千万 EC）：
+**`kline.snapshot` 传列表自动走批量原生（2.0 默认，推荐）**：单次请求、按量计费
+60~90 EC/票；≥4,000 票的准全市场清单自动走空参捷径（≈11~15 万 EC，对比逐票
+拼接首算的数千万 EC）：
 
 ```python
 res = cli.kline.snapshot(codes)   # 自动路由 kline.snapshot_batch，1 次请求
@@ -419,23 +421,24 @@ res.results["600519"]["ma60"]     # 23 字段快照（kline_date/kline_sas 为 N
 `batch_all`/`call_batch` 对 `kline.snapshot` 同样自动路由且不再分批；
 `kline_date/kline_sas` 索引未物化置 None，价格为索引 EOD 快照值（盘中实时价用
 `live`/`batch_live`），ETF/新上市等索引外标的自动回退逐票快照（数值一致）。
+`Client(native_batch=False)` 或 `native_batch_min=N` 可回到逐票拼接语义。
 其余接口的批量仍是「同次计算逐票计费」，继续按本节习惯控制 EC。
 
 实测（2026-10-30，免费档，当时全市场 5,691 家）：500 标的单批 0.7–4 秒（随网络波动），
-A 股全市场 12 批 9–16 秒一次跑完，0 错误；20 只银行股单批 0.06 秒 1 次请求。
+全市场一波 9–16 秒跑完，0 错误；20 只银行股单批 0.06 秒 1 次请求。
 历史类多行结果（`kline.bars`/`dividend.history`）建议改用 `batch_iter` 边取边落盘。
 
 ### 5.3 容错与续跑
 
 - **批级容错**：`batch_all(..., on_batch_error="skip")` 跳过失败批继续，失败批进 `errors`
   （键形如 `batch#3[1000:1500]`）。**不要用 `call_batch(on_error="skip")` 做容错**——
-  它逐票发请求，11 批会放大成 5,375 次、正好制造 429。
+  它逐票发请求，全市场会放大成 5,375 次、正好制造 429。
 - **429 续跑**：限流在任何模式下都会停止并给出续跑位置——消息含已完成标的数与
   `codes[done:]` 切片，稍后续跑 `batch_all(name, codes[done:])` 即可，不要无脑重试。
 - **算力超限**：单批触发 `CALC_LIMIT_EXCEEDED` 时减小 `batch_size`。
 - 三个入口的 `name`/`symbols` 都是位置参数；`_raw=True`/`_units="native"` 通用；
-  批量入口不提供 `_df`（长表用 `to_df()`）。
-- **`name` 必须是目录函数名**（292 个公开函数，`cat.functions_by_domain()` 可查）；指标码不是
+  批量入口的 `results` 恒为行数组/逐票 MAP（长表用 `to_df()`，门面级 DF 见第 4 章）。
+- **`name` 必须是目录函数名**（298 个公开函数，`cat.functions_by_domain()` 可查）；指标码不是
   函数名——一票多码用 `cli.indicator.metrics(sym, codes)`（传 `"indicator.get"` 会报
   `CatalogError`）。**全市场按指标条件选股不要逐票批量**：一条表达式交给
   `cli.screener.query(...)`（服务端索引引擎，见第 3 章与 10.1）。
@@ -445,7 +448,8 @@ A 股全市场 12 批 9–16 秒一次跑完，0 错误；20 只银行股单批 
 `Client(market="cn")` 只传 A 股代码。混入他市场代码 SDK 直接报 `UsageError`——
 网关不校验批内代码，但错误市场的代码会在本市场引擎里走错数据管线，返回的
 close/涨跌幅不可信（实测同一港股标的混批后涨跌方向都相反）。跨市场分别调用：
-A 股 12 批 + 港股 6 批 + 美股 11 批 = 29 次请求。
+`kline.snapshot` 每市场 1 次请求（批量原生路由），其余接口按 ⌈N/500⌉ 分批
+（A 股 12 批 + 港股 6 批 + 美股 11 批 = 29 次）。
 
 ## 6. 多市场与港美专项
 
@@ -554,9 +558,10 @@ poller.start()               # 或切后台：daemon 线程定时轮询；退出
 ## 10. 配额与性能实测
 
 免费档：500 次/小时、5,000 次/日（更高额度与条款以开放平台为准）。
-按请求次数计费意味着批量是乘法级省**请求次数**：全市场 4 个指标 × 11 批 = 44 次，
-仍占小时额度不到 10%。实测基线（2026-10-29，当时全市场 5,691 家）：快照 12 批约 9 秒、
-0 错误；`res.requests` 字段可直接对比标的数看省了多少。
+按请求次数计费意味着批量是乘法级省**请求次数**：非路由接口全市场 4 个指标 × 11 批
+= 44 次，仍占小时额度不到 10%；`kline.snapshot` 走批量原生后全市场 1 次请求。
+实测基线（2026-10-29，当时全市场 5,691 家）：全市场一波 9 秒、0 错误；
+`res.requests` 字段可直接对比标的数看省了多少。
 
 注意口径：SDK 配额按请求次数算，开放平台 EC 按**计算量**算（第 5.1 节）——
 批量对前者是省、对后者不省。EC 消耗经 `BatchResult.ec_cost` /
