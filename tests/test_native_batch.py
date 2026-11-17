@@ -44,6 +44,8 @@ class RouteSession:
                 joined = "\n".join(lines)
                 if "snapshot_batch(" in joined:
                     codes = _codes_from_lines(lines)
+                    if not codes:   # 空参 = 服务端全市场（捷径路径）
+                        codes = [f"{i:06d}" for i in range(5693)]
                     rows = []
                     for i, c in enumerate(codes):
                         if c in _MISSING:

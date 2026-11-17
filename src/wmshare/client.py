@@ -198,7 +198,8 @@ _SNAPSHOT_BATCH_FIELDS: tuple[tuple[str | None, str], ...] = (
 )
 
 
-def _adapt_snapshot_batch(rows: Any, syms: list[str], name: str) -> dict[str, dict]:
+def _adapt_snapshot_batch(rows: Any, syms: list[str], name: str,
+                          *, allow_missing: bool = False) -> dict[str, dict]:
     """kline.snapshot_batch 原始行 [{row, values}] → {标的: snapshot 23 字段 MAP}。
 
     values 的 $指标键平化为 snapshot 的扁平字段名（均线/涨跌类逐值一致，2026-11-16
@@ -213,8 +214,11 @@ def _adapt_snapshot_batch(rows: Any, syms: list[str], name: str) -> dict[str, di
             continue
         out[sym] = {flat: (None if k is None else v.get(k))
                     for k, flat in _SNAPSHOT_BATCH_FIELDS}
+    if allow_missing:
+        # 捷径模式下服务端返回全市场，只保留请求集合内的标的
+        out = {s: out[s] for s in syms if s in out}
     missing = [s for s in syms if s not in out]
-    if missing:
+    if missing and not allow_missing:
         raise ApiError(
             f"{name}: 批量返回缺少 {len(missing)} 个标的：{missing[:10]}"
             + (f" 等 {len(missing)} 个" if len(missing) > 10 else ""),
@@ -229,6 +233,9 @@ def _adapt_snapshot_batch(rows: Any, syms: list[str], name: str) -> dict[str, di
 BATCH_NATIVE_ROUTES: dict[str, tuple[str, Any]] = {
     "kline.snapshot": ("kline.snapshot_batch", _adapt_snapshot_batch),
 }
+# 达到此票数的清单视为「准全市场」：批量原生调用改传空数组（服务端全市场
+# 一次投影 + 客户端过滤），避免数组字面量按 AST 逐元素计费。
+NATIVE_FULL_MARKET_MIN = 4000
 
 
 def _to_dataframe(result: Any) -> Any:
@@ -904,8 +911,13 @@ class Client:
         if not syms:
             return BatchResult(requested=0)
         self._assert_same_market(name, syms)
-        raw = self.call(impl, _raw=True, **{arr_param: list(syms)}, **kwargs)
-        adapted = adapter(raw, syms, name)
+        # 准全市场清单走空参捷径：服务端全市场扫描 + 客户端过滤，
+        # 省掉数千元素数组字面量的求值计费（实测 5,693 票 ≈11 万 EC）。
+        # 捷径语义 = 服务端「非停牌全市场」，停牌/ETF/无效票静默缺席。
+        shortcut = len(syms) >= NATIVE_FULL_MARKET_MIN
+        raw = self.call(impl, _raw=True,
+                        **{arr_param: [] if shortcut else list(syms)}, **kwargs)
+        adapted = adapter(raw, syms, name, allow_missing=shortcut)
         if not _raw and _units == "base":
             adapted = apply_units(adapted, self._resolve_function(name), fname=name,
                                   validate=self._validate, market=self.market,
