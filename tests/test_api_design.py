@@ -260,10 +260,13 @@ def test_context_manager_owns_only_internal_session():
 
 
 def test_df_on_list_interfaces(cli):
+    """2.0 契约：门面行表默认 DataFrame；_raw=True 才是行数组。"""
     pd = pytest.importorskip("pandas")
     cli.session.result = [{"date": "2026-10-21", "close": 1.0}]
-    df = cli.notice.list("600519", _df=True)
+    df = cli.notice.list("600519")
     assert isinstance(df, pd.DataFrame) and list(df.columns) == ["date", "close"]
+    raw = cli.notice.list("600519", _raw=True)
+    assert isinstance(raw, list) and raw[0]["date"] == "2026-10-21"
 
 
 # ---------------------------------------------------------------- 日期区间
@@ -274,7 +277,7 @@ def test_kline_range_filters_within_bounds(cli):
         {"date": "2026-08-31", "close": 3.0},
     ]
     out = cli.kline.bars("600519", begin="2026-09-01", end="2026-09-30")
-    assert [r["date"] for r in out] == ["2026-09-30", "2026-09-01"]
+    assert list(out["date"]) == ["2026-09-01", "2026-09-30"]  # 2.0 升序
     # 区间查询默认按 max_limit 取数（默认 500）
     assert 'kline.query_bars("600519", 500)' in last_ev(cli)["xs_lines"][0]
 
@@ -283,7 +286,7 @@ def test_moneyflow_range_filters(cli):
     cli.session.result = [{"date": "2026-09-30", "net_mf": 1},
                           {"date": "2026-08-01", "net_mf": 2}]
     out = cli.moneyflow.bars("600519", begin="2026-09-01", end="2026-09-30")
-    assert [r["date"] for r in out] == ["2026-09-30"]
+    assert list(out["date"]) == ["2026-09-30"]
     assert 'moneyflow.query_bars("600519", 500)' in last_ev(cli)["xs_lines"][0]
 
 
@@ -310,7 +313,7 @@ def test_dividend_history_normalized_and_ranged(cli):
         {"ex_div": "2023-06-26", "dps": 20.0, "total": 1, "announce": "2023-06-22"},
     ]
     out = cli.dividend.history("600519", begin="2025-01-01", end="2026-12-31")
-    assert len(out) == 1 and out[0]["ex_div"] == "2026-06-26"
+    assert len(out) == 1 and list(out["ex_div"]) == ["2026-06-26"]
     with pytest.raises(UsageError, match="_raw=True"):
         cli.dividend.history("600519", begin="2025-01-01", end="2026-01-01", _raw=True)
 

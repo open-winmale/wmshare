@@ -2,6 +2,7 @@
 import inspect
 
 import pytest
+import pandas as pd
 
 from wmshare.api import FRIENDLY_INDEX, FRIENDLY_NAMESPACES
 from wmshare.catalog import load
@@ -108,7 +109,7 @@ def test_kline_bars_period_dispatch(cli):
     bars = cli.kline.bars("AAPL", freq="W", begin="2026-01-01", end="2026-11-30")
     assert last_xs(cli) == ['__r := kline.query_bars_period("AAPL", 500, "W")',
                             'return kline.fmt_maps(__r)']
-    assert [b["date"] for b in bars] == ["2026-11-06"]
+    assert isinstance(bars, pd.DataFrame) and list(bars["date"]) == ["2026-11-06"]
 
 
 def test_last_returns_normalized_latest_row(cli):
@@ -239,10 +240,13 @@ def test_indicator_anti_fabrication(cli):
 
 
 def test_info_profile(cli):
-    cli.info.profile("600519")
-    assert last_xs(cli) == ['return {"name": $NAME, "industry": $INDUSTRY_CUR, '
-                            '"style_industry": $STYLE_INDUSTRY, "org_type": $ORG_ORGTYPE, '
-                            '"listing_date": $ORG_LISTINGDATE}']
+    cli.info.profile("600519")  # 2.0 扩列：10 字段档案摘要
+    assert last_xs(cli) == ['return {"name": $NAME, "full_name": $ORG_FULLNAME, '
+                            '"name_en": $NAMEEN, "industry_l1": $INDUSTRY_CUR_1, '
+                            '"industry": $INDUSTRY_CUR, "style_industry": $STYLE_INDUSTRY, '
+                            '"org_type": $ORG_ORGTYPE, "listing_date": $ORG_LISTINGDATE, '
+                            '"listing_board": $LISTING_BOARD, '
+                            '"business_scope": $ORG_BUSINESSSCOPE}']
 
 
 def test_unknown_param_still_guards(cli):
@@ -319,6 +323,7 @@ def test_screener_top_movers_limit_clamped(cli):
 
 def test_screener_query_builds_index_spec(cli):
     """全市场条件选股：一条 XS 出 count + 前 N 行（服务端索引，不是逐票 eval）。"""
+    pd = pytest.importorskip("pandas")
     cli.session.eval_result = {"count": 108,
                                "rows": [["900948", "伊泰B股", 0.2104, 0.1631, False]]}
     res = cli.screener.query(
@@ -333,11 +338,13 @@ def test_screener_query_builds_index_spec(cli):
     assert ('"order": "$BONUS_RATE_3Y_AVG_LAST", "order_desc": true, "limit": 10, '
             '"offset": 0') in xs[3]
     assert xs[4].startswith("return") and "LEN(ids)" in xs[4]
-    # count 是全市场命中数（不受 limit 截断）；行键 = symbol/name + 指标码原文
-    assert res["count"] == 108
-    assert res["rows"] == [{"symbol": "900948", "name": "伊泰B股",
-                            "$BONUS_RATE_3Y_AVG_LAST": 0.2104,
-                            "$ROE_TTM_LAST": 0.1631, "$IS_ST": False}]
+    # 2.0 统一信封：count/rows 进 data；rows 为 DataFrame（行键 = symbol/name + 指标码原文）
+    assert res["ok"] is True and res["data"]["count"] == 108
+    rows = res["data"]["rows"]
+    assert isinstance(rows, pd.DataFrame)
+    assert rows.iloc[0].to_dict() == {"symbol": "900948", "name": "伊泰B股",
+                                      "$BONUS_RATE_3Y_AVG_LAST": 0.2104,
+                                      "$ROE_TTM_LAST": 0.1631, "$IS_ST": False}
 
 
 def test_screener_query_fields_and_count_only(cli):
@@ -348,8 +355,9 @@ def test_screener_query_fields_and_count_only(cli):
     assert xs[1] == "_ := INDEX_FIELD_LOAD(idx, $SYMBOL, $NAME, $PE_TTM_LAST)"
     assert '"order"' not in xs[3]          # 未传 order 不生成 order 键
     cli.session.eval_result = {"count": 164, "rows": []}
-    assert cli.screener.query("$ROE_TTM_LAST > 0.3", limit=0) == {"count": 164,
-                                                                  "rows": []}
+    res0 = cli.screener.query("$ROE_TTM_LAST > 0.3", limit=0)
+    assert res0["data"]["count"] == 164  # 信封 + 空 DataFrame
+    assert isinstance(res0["data"]["rows"], pd.DataFrame) and res0["data"]["rows"].empty
     xs = last_xs(cli)
     assert len([ln for ln in xs if "INDEX_QUERY_SPEC" in ln]) == 1
     assert xs[-1] == 'return {"count": LEN(ids), "rows": []}'
@@ -373,27 +381,28 @@ def test_screener_query_validates(cli):
 
 
 def test_screener_query_limit_df_and_passthrough(cli):
-    """limit 受 max_limit 钳制；_df 只转 rows；上游异常形态原样透传。"""
+    """limit 受 max_limit 钳制；rows 默认 DataFrame（2.0 信封）；非 MAP 原样透传。"""
     from wmshare import LimitError
     with pytest.raises(LimitError, match="超过单次上限"):
         cli.screener.query("$ROE_TTM_LAST > 0.15", limit=20000)
     pd = pytest.importorskip("pandas")
     cli.session.eval_result = {"count": 1, "rows": [["600519", "贵州茅台", 0.33]]}
-    df = cli.screener.query("$ROE_TTM_LAST > 0.3", _df=True)
-    assert isinstance(df, pd.DataFrame)
-    assert list(df.columns) == ["symbol", "name", "$ROE_TTM_LAST"]
+    res = cli.screener.query("$ROE_TTM_LAST > 0.3")
+    assert isinstance(res["data"]["rows"], pd.DataFrame)
+    assert list(res["data"]["rows"].columns) == ["symbol", "name", "$ROE_TTM_LAST"]
     cli.session.eval_result = [{"ok": True}]
-    assert cli.screener.query("$ROE_TTM_LAST > 0.3") == [{"ok": True}]
+    assert cli.screener.query("$ROE_TTM_LAST > 0.3") == [{"ok": True}]  # 异常形态透传
 
 
 def test_screener_breadth_supports_df(cli):
-    """列表返回的宽度接口支持 _df=True（模块 docstring 的承诺，列表方法逐一对齐）。"""
-    pd = pytest.importorskip("pandas")   # CI 离线环境不装可选依赖
+    """2.0：宽度接口默认 DataFrame，且 pct_of_total 百分数已统一换算为小数。"""
+    pd = pytest.importorskip("pandas")
     cli.session.eval_result = [{"label": "i_涨停", "count": 109, "pct_of_total": 1.9}]
-    df = cli.screener.index_breadth_bins(_df=True)
+    df = cli.screener.index_breadth_bins()
     assert isinstance(df, pd.DataFrame)
     assert list(df.columns) == ["label", "count", "pct_of_total"]
     assert df.iloc[0]["label"] == "涨停"   # 服务端排序前缀在展示层剥除
+    assert float(df.iloc[0]["pct_of_total"]) == pytest.approx(0.019)  # 1.9% → 小数
 
 
 def test_screener_bins_label_prefix_stripped(cli):
@@ -403,10 +412,11 @@ def test_screener_bins_label_prefix_stripped(cli):
         {"label": "h_+5%~10%", "count": 113, "pct_of_total": 2.0},
     ]
     rows = cli.screener.index_breadth_bins()
-    assert [r["label"] for r in rows] == ["涨停", "+5%~10%"]
+    assert list(rows["label"]) == ["涨停", "+5%~10%"]
     cli.session.eval_result = [{"bin": "g_+3%~5%", "industry": "银行", "count": 4}]
     rows = cli.screener.index_breadth_bin_industries()
-    assert rows[0]["bin"] == "+3%~5%"
-    # 非 dict/非字符串行原样透传，不误伤
-    cli.session.eval_result = [{"label": "涨停"}, {"x": 1}, "raw"]
-    assert cli.screener.index_breadth_bins() == [{"label": "涨停"}, {"x": 1}, "raw"]
+    assert rows.iloc[0]["bin"] == "+3%~5%"
+    # 非标行进 DataFrame 不误伤（str 行按 pandas 语义落 NaN，剥离仍只作用于 dict 行）
+    cli.session.eval_result = [{"label": "涨停"}, {"x": 1}]
+    rows = cli.screener.index_breadth_bins()
+    assert rows.iloc[0]["label"] == "涨停" and rows.iloc[1]["x"] == 1

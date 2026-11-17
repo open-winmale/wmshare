@@ -645,8 +645,12 @@ def test_docstring_params_exist_in_signature():
         fn = getattr(FRIENDLY_NAMESPACES[ns], method)
         doc = inspect.getdoc(fn) or ""
         params = set(re.findall(r"^:param (\w+):", doc, re.M))
-        sig = set(inspect.signature(fn).parameters) - {"self", "_raw", "_df"}
-        assert params <= sig, f"{ns}.{method} docstring 参数 {params - sig} 不在签名中"
+        sig = set(inspect.signature(fn).parameters) - {"self"}
+        # _raw/_df 等逃生口可以入 doc（2.0 仅剩 _raw）；其余 docstring 参数必须在签名里
+        assert params - {"_raw", "_df"} <= sig, \
+            f"{ns}.{method} docstring 参数 {params - sig} 不在签名中"
+        unknown = params & ({"_df"} - {"_raw"})
+        assert not unknown, f"{ns}.{method} docstring 仍引用已废除的 _df"
 
 
 def test_unit_wording_matches_catalog():

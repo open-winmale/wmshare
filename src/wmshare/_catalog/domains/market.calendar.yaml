@@ -1,0 +1,23 @@
+id: market.calendar
+version: 1.0.0
+cn: 交易日历
+kind: raw
+category: market
+priority: P1
+description: A 股交易日历——区间交易日、是否开市、之后 N 个交易日。年表落库
+  （airflow tasks/cn_trade_calendar，每年 11 月灌次年历），回测/窗口计算的前置面
+  （此前交易日历上游缺失，靠日 K 存在性隐式判定的坑就此移除）。
+data_origin: [交易所年历, 平台采集]
+units:
+  date: ISO 日期字符串（YYYY-MM-DD）
+requires: {path: sys/calendar/init.xs, preloaded: true}
+notes:
+  - 可用性：仅 A 股日历（无港美交易日历）
+  - days 返回 date 升序（旧→新，2.0 标准）；跨年区间自动合并年档，
+    年档缺失（如次年历未灌）按空处理——返回行数即覆盖度
+  - next 交易日不足 N 个时如实返回（LEN 判断），绝不静默循环补齐
+functions:
+  - {name: calendar.days, cn: 交易日历区间, layer: L0, normalize_with: calendar.fmt_maps, checks: [date_iso]}
+  - {name: calendar.is_open, cn: 是否交易日, layer: L0}
+  - {name: calendar.next, cn: 之后 N 个交易日, layer: L0, normalize_with: calendar.fmt_maps, checks: [date_iso]}
+  - {name: calendar.fmt_maps, cn: 交易日行规范化, layer: L1, internal: true}

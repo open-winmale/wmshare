@@ -6,6 +6,10 @@
    "entry": "sys/bonus/init.xs",
    "exports": []
   },
+  "calendar": {
+   "entry": "sys/calendar/init.xs",
+   "exports": []
+  },
   "cbond": {
    "entry": "sys/cbond/init.xs",
    "exports": []
@@ -104,7 +108,7 @@
   "notice",
   "segments"
  ],
- "function_count": 296,
+ "function_count": 304,
  "functions": [
   {
    "name": "bonus.dps_rpt",
@@ -1044,6 +1048,112 @@
     {
      "name": "sym",
      "type": "string"
+    }
+   ]
+  },
+  {
+   "name": "calendar.days",
+   "cn": "交易日历区间",
+   "example": "calendar.days(\"2026-01-01\", \"2026-03-31\")",
+   "returns": "ARR · 交易日行（date 升序）",
+   "returns_shape": {
+    "kind": "array",
+    "items": {
+     "kind": "object",
+     "cn": "交易日行",
+     "fields": [
+      {
+       "name": "date",
+       "type": "string",
+       "cn": "交易日期"
+      },
+      {
+       "name": "is_open",
+       "type": "bool",
+       "cn": "是否开市"
+      }
+     ],
+     "name": ""
+    }
+   },
+   "min_args": 2,
+   "params": [
+    {
+     "name": "begin",
+     "type": "string"
+    },
+    {
+     "name": "end",
+     "type": "string"
+    },
+    {
+     "name": "limit",
+     "type": "int"
+    }
+   ]
+  },
+  {
+   "name": "calendar.fmt_maps",
+   "cn": "交易日行规范化",
+   "example": "calendar.fmt_maps(calendar.days(\"2026-01-01\", \"2026-03-31\"))",
+   "returns": "ARR · 规范化行（MAP 输入返回单行 MAP）",
+   "returns_shape": {
+    "kind": "array",
+    "items": {
+     "kind": "object",
+     "cn": "交易日行",
+     "fields": [
+      {
+       "name": "date",
+       "type": "string",
+       "cn": "交易日期"
+      },
+      {
+       "name": "is_open",
+       "type": "bool",
+       "cn": "是否开市"
+      }
+     ],
+     "name": ""
+    }
+   },
+   "min_args": null,
+   "params": [
+    {
+     "name": "rows",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "calendar.is_open",
+   "cn": "是否交易日",
+   "example": "calendar.is_open(\"2026-10-01\")",
+   "returns": "bool",
+   "returns_shape": null,
+   "min_args": null,
+   "params": [
+    {
+     "name": "date",
+     "type": "string"
+    }
+   ]
+  },
+  {
+   "name": "calendar.next",
+   "cn": "之后 N 个交易日",
+   "example": "calendar.next(\"2026-11-17\", 5)",
+   "returns": "ARR · 交易日行",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "date",
+     "type": "string"
+    },
+    {
+     "name": "n",
+     "type": "int"
     }
    ]
   },
@@ -6864,6 +6974,114 @@
    ]
   },
   {
+   "name": "margin.fmt_summary_maps",
+   "cn": "市场两融汇总行规范化",
+   "example": "margin.fmt_summary_maps(margin.market_summary(5))",
+   "returns": "ARR · 规范化行（MAP 输入返回单行 MAP）",
+   "returns_shape": {
+    "kind": "array",
+    "items": {
+     "kind": "object",
+     "cn": "市场两融汇总行",
+     "fields": [
+      {
+       "name": "trade_date",
+       "type": "string",
+       "cn": "交易日期"
+      },
+      {
+       "name": "exchange",
+       "type": "string",
+       "cn": "交易所(SSE/SZSE)"
+      },
+      {
+       "name": "fin_buy_amt",
+       "type": "float64",
+       "cn": "融资买入额(元)",
+       "optional": true
+      },
+      {
+       "name": "fin_repay_amt",
+       "type": "float64",
+       "cn": "融资偿还额(元)",
+       "optional": true
+      },
+      {
+       "name": "fin_balance",
+       "type": "float64",
+       "cn": "融资余额(元)",
+       "optional": true
+      },
+      {
+       "name": "loan_sell_vol",
+       "type": "float64",
+       "cn": "融券卖出量(股)",
+       "optional": true
+      },
+      {
+       "name": "loan_repay_vol",
+       "type": "float64",
+       "cn": "融券偿还量(股)",
+       "optional": true
+      },
+      {
+       "name": "loan_balance",
+       "type": "float64",
+       "cn": "融券余量(股)",
+       "optional": true
+      }
+     ],
+     "name": ""
+    }
+   },
+   "min_args": null,
+   "params": [
+    {
+     "name": "rows",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "margin.fmt_universe_maps",
+   "cn": "两融标的行规范化",
+   "example": "margin.fmt_universe_maps(margin.universe(20))",
+   "returns": "ARR · 规范化行（MAP 输入返回单行 MAP）",
+   "returns_shape": {
+    "kind": "array",
+    "items": {
+     "kind": "object",
+     "cn": "两融标的行",
+     "fields": [
+      {
+       "name": "security_code",
+       "type": "string",
+       "cn": "标的代码"
+      },
+      {
+       "name": "exchange",
+       "type": "string",
+       "cn": "交易所"
+      },
+      {
+       "name": "out_date",
+       "type": "string",
+       "cn": "调出日期(空=生效)",
+       "optional": true
+      }
+     ],
+     "name": ""
+    }
+   },
+   "min_args": null,
+   "params": [
+    {
+     "name": "rows",
+     "type": "any"
+    }
+   ]
+  },
+  {
    "name": "margin.latest",
    "cn": "最新两融",
    "example": "margin.latest(\"000568\")",
@@ -6874,6 +7092,75 @@
     {
      "name": "sym",
      "type": "string"
+    }
+   ]
+  },
+  {
+   "name": "margin.market_summary",
+   "cn": "市场级两融汇总",
+   "example": "margin.market_summary(20)",
+   "returns": "ARR · 市场两融汇总行",
+   "returns_shape": {
+    "kind": "array",
+    "items": {
+     "kind": "object",
+     "cn": "市场两融汇总行",
+     "fields": [
+      {
+       "name": "trade_date",
+       "type": "string",
+       "cn": "交易日期"
+      },
+      {
+       "name": "exchange",
+       "type": "string",
+       "cn": "交易所(SSE/SZSE/BSE)"
+      },
+      {
+       "name": "fin_buy_amt",
+       "type": "float64",
+       "cn": "融资买入额(元)",
+       "optional": true
+      },
+      {
+       "name": "fin_repay_amt",
+       "type": "float64",
+       "cn": "融资偿还额(元)",
+       "optional": true
+      },
+      {
+       "name": "fin_balance",
+       "type": "float64",
+       "cn": "融资余额(元)",
+       "optional": true
+      },
+      {
+       "name": "loan_sell_vol",
+       "type": "float64",
+       "cn": "融券卖出量(股)",
+       "optional": true
+      },
+      {
+       "name": "loan_repay_vol",
+       "type": "float64",
+       "cn": "融券偿还量(股)",
+       "optional": true
+      },
+      {
+       "name": "loan_balance",
+       "type": "float64",
+       "cn": "融券余量(股)",
+       "optional": true
+      }
+     ],
+     "name": ""
+    }
+   },
+   "min_args": 0,
+   "params": [
+    {
+     "name": "limit",
+     "type": "int"
     }
    ]
   },
@@ -6889,6 +7176,62 @@
      "name": "sym",
      "type": "string"
     },
+    {
+     "name": "limit",
+     "type": "int"
+    }
+   ]
+  },
+  {
+   "name": "margin.universe",
+   "cn": "两融标的名单",
+   "example": "margin.universe(2000)",
+   "returns": "ARR · 两融标的行",
+   "returns_shape": {
+    "kind": "array",
+    "items": {
+     "kind": "object",
+     "cn": "两融标的行",
+     "fields": [
+      {
+       "name": "security_code",
+       "type": "string",
+       "cn": "标的代码"
+      },
+      {
+       "name": "security_name",
+       "type": "string",
+       "cn": "标的简称"
+      },
+      {
+       "name": "exchange",
+       "type": "string",
+       "cn": "交易所(SSE/SZSE/BSE)"
+      },
+      {
+       "name": "in_date",
+       "type": "string",
+       "cn": "纳入日期",
+       "optional": true
+      },
+      {
+       "name": "out_date",
+       "type": "string",
+       "cn": "调出日期",
+       "optional": true
+      },
+      {
+       "name": "effective_date",
+       "type": "string",
+       "cn": "名单生效日",
+       "optional": true
+      }
+     ],
+     "name": ""
+    }
+   },
+   "min_args": 0,
+   "params": [
     {
      "name": "limit",
      "type": "int"

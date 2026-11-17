@@ -1,23 +1,25 @@
 """友好 API：按四大类组织的推荐入口（行情 / 财务 / 披露 / 参考）。
 
-设计约定：
+2.0 设计契约（标准化规范，破坏性变更集中在 2.0.0）：
   - 参数统一 ``symbol``（6 位裸码；自动归一 cn./sh./sz./bj. 前缀与 .SH/.SZ/.BJ 后缀；
-    港股 5 位、美股字母码）；
-  - 方法名动宾化、可猜（bars/last/live/list/history/yield_ttm…）；
-  - 返回 list[dict] / dict；返回列表的方法支持 ``_df=True`` 转 DataFrame，
-    ``_raw=True`` 取未规范化原始行（仅部分方法）；
-  - 本层是目录合同的薄翻译：高频方法显式包装；目录内其余函数经 ``__getattr__``
-    属性直达（如 ``cli.kline.screen_above_ma20``、``cli.dividend.screen_quality``），
-    目录之外的名字显式 AttributeError——290 个底层函数零遮蔽。
+    港股 5 位、美股字母码）；日期一律 ``YYYY-MM-DD``；比率/涨跌幅/分位=小数、
+    金额/价格/市值=元、量=股（units.yaml 台账登记码由 SDK 默认换算）；
+  - 返回形态：行表/序列类默认 **pandas DataFrame**（``date`` 列 ISO、按日期
+    **升序**=旧→新）；单行取数返回 dict（无数据 None）；面板/时序组合面返回
+    统一信封 ``{ok, as_of, data, meta}``；单票快照 MAP 保持扁平。
+    ``_raw=True`` 取上游原始行（list[dict]，跳过规范化与换算）——诊断逃生口；
+  - 本层是目录合同的薄翻译：高频方法显式包装；目录内其余非内部函数经 ``__getattr__``
+    属性直达（如 ``cli.kline.screen_above_ma20``）；目录标 ``internal: true`` 的
+    规范化辅助（fmt_* 等）不再直达，请走 ``cli.call``——298 个底层函数零遮蔽；
   - 选股能力集中在 ``cli.screener``：单票筛选器（bool）、全市场宽度/涨跌榜与
     全市场条件选股 ``query()``（服务端索引直出）显式包装，kline 目录的其余筛选
     函数经属性直达。
 
 使用：
     cli = wmshare.Client.from_env()
-    cli.kline.bars("600519", n=30)
+    cli.kline.bars("600519", n=30)          # -> DataFrame（date 升序）
     cli.statements.income("600519", years=5)
-    cli.notice.list("600519", window="3m")
+    cli.notice.list("600519", window="3m")  # -> DataFrame（date 升序）
 """
 from __future__ import annotations
 
@@ -36,7 +38,12 @@ from wmshare.backtest import (
 )
 from wmshare.errors import (
     ApiError, CatalogError, DataError, LimitError, ServerError, UsageError, WmshareError)
-from wmshare.units import finish_metric
+from wmshare.units import (apply_facade_units, finish_metric, is_index_symbol,
+                           ledger_convert)
+
+# 期货门面的求值锚点（cn 默认锚）与日期归一（client.py 单一事实源）
+from wmshare.client import DEFAULT_SYMBOLS as _DEFAULT_SYMBOLS  # noqa: E402
+from wmshare.client import normalize_date as _normalize_date  # noqa: E402
 
 # 服务端分桶 label 的排序前缀（如 i_涨停 / h_+5%~10%），单字母+下划线，对用户是噪音
 _BIN_PREFIX = re.compile(r"^[a-z]_")
@@ -135,9 +142,68 @@ def _window_days(window: str | int) -> int:
     return days
 
 
-def _to_df(result: Any) -> Any:
-    from wmshare.client import _to_dataframe
-    return _to_dataframe(result)
+def _out(result: Any, raw: bool = False) -> Any:
+    """2.0 门面返回收口：行数组默认转 DataFrame；``_raw=True`` 原样透传。
+
+    dict（MAP/信封）、标量、None、BatchResult 容器由 ``to_output_frame``
+    决定去留（容器仅把 results 里的行数组逐标的转 DF）。
+    """
+    if raw:
+        return result
+    from wmshare.client import to_output_frame
+    return to_output_frame(result)
+
+
+def _rows(result: Any) -> Any:
+    """SDK 内部取行数组的统一入口（供 backtest/cb 等内部消费方）。
+
+    门面已默认 DataFrame，内部消费者经此还原为行数组：list 原样、
+    DataFrame→records、其它形态原样透传。
+    """
+    if isinstance(result, list):
+        return result
+    to_dict = getattr(result, "to_dict", None)
+    if callable(to_dict):
+        try:
+            return result.to_dict("records")
+        except TypeError:  # pragma: no cover - 非 records 兼容形态
+            return result
+    return result
+
+
+def _sort_rows_by_date(rows: Any, key: str = "date") -> Any:
+    """序列方向标准化（2.0）：按日期键**升序**（旧→新）稳定排序。
+
+    上游 store 窗口/查询返回新→旧（cursor.ds 顺序），1.x 契约把它透传给用户
+    是全局 footgun；2.0 起时间序列门面统一在此翻转为升序。非行数组原样。
+    """
+    if isinstance(rows, list) and rows and isinstance(rows[0], dict):
+        return sorted(rows, key=lambda r: str(r.get(key) or ""))
+    return rows
+
+
+def _envelope(ok: bool, data: Any, as_of: str = "", **meta: Any) -> dict[str, Any]:
+    """2.0 组合面统一信封：``{ok, as_of, data, meta}``。
+
+    ok=False 时 data 恒为空 dict，失败原因进 meta（cache="miss" 等）——
+    绝不静默把降级结果伪装成正常数据。
+    """
+    if not ok:
+        return {"ok": False, "as_of": str(as_of or ""), "data": {}, "meta": meta}
+    return {"ok": True, "as_of": str(as_of or ""), "data": data, "meta": meta}
+
+
+def _compact_date(value: str) -> str:
+    """日期入参宽容归一（2.0 全库统一接受 ISO）；返回紧凑 YYYYMMDD（文件名用）。"""
+    s = str(value or "").strip()
+    if not s:
+        return ""
+    if re.fullmatch(r"\d{8}", s):
+        return s
+    try:
+        return date.fromisoformat(s[:10]).strftime("%Y%m%d")
+    except ValueError:
+        return s
 
 
 def _per_symbol(v: Any, fn: Any) -> Any:
@@ -184,18 +250,6 @@ def _kline_last_row(row: Any) -> Any:
     }
 
 
-def _finish_df(out: Any, df_flag: bool) -> Any:
-    """_df 收口：批量结果逐标的转 DataFrame（与 call_batch(_df=True) 同语义）。"""
-    if not df_flag:
-        return out
-    from wmshare.client import BatchResult
-
-    if isinstance(out, BatchResult):
-        out.results = {s: _to_df(x) for s, x in out.results.items()}
-        return out
-    return _to_df(out)
-
-
 def _warn_large_moneyflow_list(symbol: Any) -> None:
     """全市场级资金流大列表的 EC 提示：批量按标的数逐票计价，逐票×全市场
     一轮就是百万级 EC（2026-11 事故：5,691 家 × 318 EC × 400 余遍 = 6 亿）。
@@ -227,6 +281,7 @@ _FRIENDLY_NS_TO_CATALOG: dict[str, str] = {
     "dividend": "bonus",
     "equity": "equity",
     "margin": "margin",
+    "calendar": "calendar",
     "estimates": "estimates",
     "cbond": "cbond",
     "workout": "workout",
@@ -268,6 +323,13 @@ class _Api:
             raise AttributeError(
                 f"{type(self).__name__!s}.{name} 不存在；请查目录："
                 f"cat.search({name!r}) 或 docs/API.md") from None
+        # 2.0 命名空间净化：internal: true（fmt_* 规范化辅助）不再属性直达——
+        # 这些是 SDK/文档管线的内部函数，不是用户接口；确需原始口径请走
+        # ``cli.call("{qualified}")``（_raw/_units 逃生口都在）。
+        if meta.get("internal"):
+            raise AttributeError(
+                f"{qualified} 是目录标注的内部辅助（internal: true），2.0 起不经属性直达；"
+                f"确需调用请 cli.call({qualified!r}, ...)，或查 docs/API.md 附录")
         params = meta.get("params") or client.catalog.inventory_params(qualified)
         param_names = [p["name"] for p in params]
         call = client.call
@@ -293,24 +355,32 @@ class _Api:
 
 # ---------------------------------------------------------------- 行情 market
 class KlineApi(_Api):
-    """行情与 K 线。单位：价格=元，量=股(A股默认换算；`native` 保留手)，涨跌幅=小数。"""
+    """行情与 K 线。单位：价格=元、量=股、涨跌幅=小数；序列按 date 升序（旧→新）。"""
 
     def bars(self, symbol: str, n: int | None = None, adj: str | None = None,
              begin: str | None = None, end: str | None = None,
              freq: str | None = None,
-             _raw: bool = False, _df: bool = False) -> Any:
-        """K 线序列（日/周/月，date/open/high/low/close/volume/amount/percent）。
+             _raw: bool = False) -> Any:
+        """K 线序列（日/周/月）→ DataFrame：date/open/high/low/close/volume/amount/percent。
 
         日 K 覆盖自上市首日起的全部交易日（最早 1991 年）；周/月 K 为服务端预派生
         （由日线先复权再聚合，date 为周期末交易日）。
+        2.0 契约：按 ``date`` **升序**（旧→新）返回；``_raw=True`` 返回上游原始行
+        （诊断逃生口，不支持 begin/end）。指数只有日频：``freq`` 非 D 显式报错
+        （1.x 静默返回空序列的坑已移除）。
 
         :param n: 根数（按所选周期计），默认 120；区间查询时默认取 max_limit（上限 10000）
         :param adj: None=不复权；"qfq"=前复权；"hfq"=后复权
         :param begin: 起始日期（含，YYYY-MM-DD），须与 end 同时提供；区间上限 5 年
         :param end: 结束日期（含）
-        :param freq: None/"D"=日 K（默认）；"W"=周 K；"M"=月 K；指数只有日频，freq 非 D 返回空列表
+        :param freq: None/"D"=日 K（默认）；"W"=周 K；"M"=月 K（指数仅 D）
+        :param _raw: True=上游原始行（跳过规范化/单位换算）
         """
         period = _kline_period_tag(freq)
+        if period != "D" and is_index_symbol(str(symbol)):
+            raise UsageError(
+                "指数只有日频（上游不派生指数周/月 K）；周/月聚合请取日 K 后自行重采样",
+                code="freq")
         period_args: dict[str, Any] = {} if period == "D" else {"period": period}
         if begin is not None or end is not None:
             if not (begin and end):
@@ -329,26 +399,28 @@ class KlineApi(_Api):
                 kwargs["adj"] = adj
             kwargs.update(period_args)
             rows = self._c.call(fn, **kwargs)
-            out = _per_symbol(rows, lambda r: _filter_by_date(r, begin, end, "date", limit))
-            return _finish_df(out, _df)
+            out = _per_symbol(rows, lambda r: _sort_rows_by_date(
+                _filter_by_date(r, begin, end, "date", limit)))
+            return _out(out, raw=_raw)
         limit = 120 if n is None else n
         if adj is None:
             fn = "kline.query_bars_period" if period_args else "kline.query_bars"
         else:
             fn = ("kline.query_bars_period_adj" if period_args
                   else "kline.query_bars_adj")
-        kwargs = {"sym": symbol, "limit": limit, "_raw": _raw, "_df": _df}
+        kwargs = {"sym": symbol, "limit": limit, "_raw": _raw}
         if adj is not None:
             kwargs["adj"] = adj
         kwargs.update(period_args)
-        return self._c.call(fn, **kwargs)
+        out = _per_symbol(self._c.call(fn, **kwargs), _sort_rows_by_date)
+        return _out(out, raw=_raw)
 
     def last(self, symbol: str, _raw: bool = False) -> Any:
-        """最新一根日 K（date/open/high/low/close/volume/amount/percent），无数据返回 None。
+        """最新一根日 K（dict：date/open/high/low/close/volume/amount/percent），无数据返回 None。
 
         取 store 最新一行（``kline.query_last`` / ``store.latest``），含当日已入库的日 K；
-        不受回测锚点截断——需要「锚点内最新一根」请用 ``bars(n=1)[0]``。
-        字段与 ``bars()`` 一致；``_raw=True`` 时跳过规范化，返回上游原始行
+        不受回测锚点截断——需要「锚点内最新一根」请用 ``bars(n=1)``（DataFrame 末行）。
+        字段与 ``bars()`` 列一致；``_raw=True`` 时跳过规范化，返回上游原始行
         （字段名不同，含 CreatedAt/sampling 等）。
         """
         value = self._c.call("kline.query_last", sym=symbol, _raw=_raw)
@@ -400,7 +472,7 @@ class KlineApi(_Api):
         percent 与 chg_* 为小数，volume=股，amount 与市值=元；布尔字段为 ma60_up、is_st、is_suspend。
         目录 returns_shape 由本仓精修条目给出完整字段表，不依赖上游注释。
         """
-        return self._c.call("kline.snapshot", sym=symbol)
+        return _out(self._c.call("kline.snapshot", sym=symbol))
 
     def is_etf(self, symbol: str) -> bool:
         """是否场内 ETF。"""
@@ -412,12 +484,13 @@ class MoneyflowApi(_Api):
 
     def bars(self, symbol: str, n: int | None = None,
              begin: str | None = None, end: str | None = None,
-             _raw: bool = False, _df: bool = False) -> Any:
-        """资金流历史（date/net_mf/elg_net/lg_net/md_net/sm_net）。
+             _raw: bool = False) -> Any:
+        """资金流历史（DataFrame：date/net_mf/elg_net/lg_net/md_net/sm_net，date 升序）。
 
         :param n: 条数，默认 20；区间查询时默认取 max_limit（上限 10000）
         :param begin: 起始日期（含，YYYY-MM-DD），须与 end 同时提供；区间上限 5 年
         :param end: 结束日期（含）
+        :param _raw: True=上游原始行（跳过规范化/换算）
         """
         _warn_large_moneyflow_list(symbol)
         if begin is not None or end is not None:
@@ -428,11 +501,13 @@ class MoneyflowApi(_Api):
                                  code="range")
             limit = min(int(n) if n is not None else (self._c.max_limit or 10000), 10000)
             rows = self._c.call("moneyflow.query_bars", sym=symbol, limit=limit, _raw=_raw)
-            out = _per_symbol(rows, lambda r: _filter_by_date(r, begin, end, "date", limit))
-            return _finish_df(out, _df)
+            out = _per_symbol(rows, lambda r: _sort_rows_by_date(
+                _filter_by_date(r, begin, end, "date", limit)))
+            return _out(out, raw=_raw)
         limit = 20 if n is None else n
-        return self._c.call("moneyflow.query_bars", sym=symbol, limit=limit,
-                            _raw=_raw, _df=_df)
+        out = _per_symbol(self._c.call("moneyflow.query_bars", sym=symbol,
+                                       limit=limit, _raw=_raw), _sort_rows_by_date)
+        return _out(out, raw=_raw)
 
     def last(self, symbol: str, _raw: bool = False) -> Any:
         """最新一行资金流（date/net_mf/elg_net/lg_net/md_net/sm_net），无数据返回 None。
@@ -448,7 +523,7 @@ class MoneyflowApi(_Api):
         """资金流当日读数（外部公开源、短 TTL、非盘中行情、仅 A 股）；无快照时返回 None。"""
         return self._c.call("moneyflow.query_last_live", sym=symbol, _raw=_raw)
 
-    def board(self, _df: bool = False) -> Any:
+    def board(self) -> Any:
         """全市场资金流快照：一次取数，按主力净流入降序（日频 EOD，仅 A 股非停牌）。
 
         字段 symbol/name/net_mf/net_mv_ratio/lg_net/elg_net/md_net/sm_net/industry，
@@ -456,25 +531,79 @@ class MoneyflowApi(_Api):
         EC 只花一次求值的计算量，不再是 标的数 × 单票成本。非交易日数据不变；
         当日读数用 ``live()``（外部公开源，非盘中行情）。
         """
-        return self._c.call("moneyflow.board", _df=_df)
+        return _out(self._c.call("moneyflow.board"))
 
 class MarginApi(_Api):
-    """融资融券（个股日频）。
+    """融资融券（个股日频 + 市场级汇总/标的名单，2.0 P1 新增面）。
 
     融资买入/偿还/余额与融券卖出/偿还/余量；金额=元、量=股（与全库基础单位
-    一致）。``latest`` 为最新一日单行；仅个股口径，市场级两融汇总上游无数据集。
+    一致）。``latest`` 为最新一日单行；``market_summary`` 为沪深交易所汇总日表
+    （BSE 无公开口径缺席）；``universe`` 为标的名单快照+调整史（out_date 空=生效）。
     """
 
-    def query(self, symbol: str, limit: int = 20, _df: bool = False) -> Any:
-        """个股两融历史（trade_date/fin_buy_amt/fin_repay_amt/fin_balance/…）。
+    def query(self, symbol: str, limit: int = 20) -> Any:
+        """个股两融历史（DataFrame：trade_date/fin_buy_amt/fin_repay_amt/fin_balance/…，升序）。
 
         :param limit: 条数，默认 20
         """
-        return self._c.call("margin.query", sym=symbol, limit=limit, _df=_df)
+        return _out(_sort_rows_by_date(
+            self._c.call("margin.query", sym=symbol, limit=limit), key="trade_date"))
 
     def latest(self, symbol: str) -> Any:
         """最新一日两融单行，字段同 ``query()``。"""
         return self._c.call("margin.latest", sym=symbol)
+
+    def market_summary(self, limit: int = 60) -> Any:
+        """市场级两融汇总（DataFrame：trade_date/exchange/fin_buy_amt/…，升序）。
+
+        沪深交易所汇总日表（金额=元、量=股）；BSE 无公开汇总口径，缺席属源边界。
+        服务端按交易日披露（约 17:00 后），非交易日不刷新。
+
+        :param limit: 条数，默认 60（每交易所日一行；跨交易所同日并存）
+        """
+        return _out(_sort_rows_by_date(
+            self._c.call("margin.market_summary", limit=limit), key="trade_date"))
+
+    def universe(self, limit: int = 500) -> Any:
+        """两融标的名单（DataFrame：security_code/security_name/exchange/in_date/out_date/…）。
+
+        快照 + 调整史：``out_date`` 为空 = 当前生效；非空 = 已调出（保留供回溯）。
+        名单约 2,000+ 行，全量取用请 ``Client(max_limit=None)`` 或分批。
+
+        :param limit: 条数，默认 500
+        """
+        return _out(_sort_rows_by_date(
+            self._c.call("margin.universe", limit=limit), key="security_code"))
+
+
+class CalendarApi(_Api):
+    """A 股交易日历（年表；回测/窗口计算的前置面，2.0 P1 新增）。
+
+    交易日行结构 ``{date, is_open: true}``（非交易日不出行）；数据由交易所年历
+    每年 11 月定稿后灌库（当年+次年）。次日历未灌时 ``next`` 如实返回可得行数。
+    """
+
+    def days(self, begin: str, end: str, limit: int | None = None) -> Any:
+        """区间内交易日（DataFrame：date 升序；跨年自动合并年档）。
+
+        :param begin: 起始日期（含，YYYY-MM-DD）
+        :param end: 结束日期（含）
+        :param limit: 行数上限（默认 800/年档；5 年区间 ≈1215 行，按需调高）
+        """
+        if limit is None:
+            return _out(_sort_rows_by_date(
+                self._c.call("calendar.days", begin=begin, end=end)))
+        return _out(_sort_rows_by_date(
+            self._c.call("calendar.days", begin=begin, end=end, limit=limit)))
+
+    def is_open(self, date: str) -> bool:
+        """某日是否交易日（缺行=非交易日，含周末与节假日）。"""
+        return bool(self._c.call("calendar.is_open", date=_normalize_date(date)))
+
+    def next(self, date: str, n: int = 1) -> Any:
+        """某日之后 N 个交易日（DataFrame：date 升序；不足 N 个如实返回）。"""
+        return _out(_sort_rows_by_date(
+            self._c.call("calendar.next", date=_normalize_date(date), n=int(n))))
 
 
 class CbondApi(_Api):
@@ -487,32 +616,32 @@ class CbondApi(_Api):
     目录内其余函数（quote_list/event_list/min1_live 等）经属性直达。
     """
 
-    def board(self, _raw: bool = False, _df: bool = False) -> Any:
+    def board(self, _raw: bool = False) -> Any:
         """转债全市场面板：快照行 + 每债最新条款事件 + 盘中债价 overlay
         + 强赎触发计数（callHits）+ 下修地板价（resetFloor）。
 
         行为 latest_quotes 规范化行的超集（event/bondPercent/callHits/resetFloor）。
         注意：全市场重计算，openapi 沙箱（xs eval）有燃料上限，经 API 端点调用不受限。
         """
-        return self._c.call("cbond.board", _raw=_raw, _df=_df)
+        return _out(self._c.call("cbond.board", _raw=_raw), raw=_raw)
 
-    def latest_quotes(self, _raw: bool = False, _df: bool = False) -> Any:
+    def latest_quotes(self, _raw: bool = False) -> Any:
         """全市场转债最新快照（按日更新；行字段经 fmt_quote 规范化）。"""
-        return self._c.call("cbond.latest_quotes", _raw=_raw, _df=_df)
+        return _out(self._c.call("cbond.latest_quotes", _raw=_raw), raw=_raw)
 
-    def of_stock(self, symbol: str, _raw: bool = False, _df: bool = False) -> Any:
+    def of_stock(self, symbol: str, _raw: bool = False) -> Any:
         """正股关联的转债快照行。
 
         :param symbol: 正股代码（6 位裸码）
         """
-        return self._c.call("cbond.of_stock", stk=symbol, _raw=_raw, _df=_df)
+        return _out(self._c.call("cbond.of_stock", stk=symbol, _raw=_raw), raw=_raw)
 
-    def query(self, symbol: str, _df: bool = False) -> Any:
+    def query(self, symbol: str) -> Any:
         """按转债标的查条款事件（下修/回售/赎回等，规范化事件行）。
 
         :param symbol: 转债代码
         """
-        return self._c.call("cbond.query", sym=symbol, _df=_df)
+        return _out(self._c.call("cbond.query", sym=symbol))
 
     def call_hits(self, symbol: str, trig: float) -> Any:
         """正股近窗收盘 ≥ 强赎触发价 trig 的交易日数（int）。
@@ -531,20 +660,22 @@ class CbondApi(_Api):
         return self._c.call("cbond.kline_window", code=symbol, n=n)
 
     def bars(self, symbol: str, n: int = 120) -> Any:
-        """转债日线表（行式）：列式窗口转成每根一行。
+        """转债日线表 → DataFrame：date/open/high/low/close/volume/amount（date 升序）。
 
-        字段为 ``date/open/high/low/close/volume/amount``。只做列转行，不改数值、
-        不做重排：行序与上游窗口一致，``date`` 取上游采样名前 10 位；某列缺失时
-        该位置补 ``None``。不复权；价格与金额单位为元（本币），成交量单位为**张**
-        （转债面值口径，1 张 = 100 元面值；live 实测 ``amount / close ≈ volume``）。
-        窗口无数据或返回非 MAP 形态时，空列表 / 原值透传。
+        列式窗口转每根一行（``date`` 取上游采样名前 10 位）；某列缺失时补 ``None``。
+        不复权；价格与金额单位为元（本币），成交量单位为**张**（转债面值口径，
+        1 张 = 100 元面值；live 实测 ``amount / close ≈ volume``）。
+        窗口无数据时返回空 DataFrame。
 
         :param symbol: 转债代码（6 位裸码）
         :param n: 窗口根数，默认 120
         """
         raw = self._c.call("cbond.kline_window", code=symbol, n=n)
         if not isinstance(raw, dict):
-            return raw if raw is not None else []
+            # 异常形态原值透传（dict 行数组仍走 DF 收口）；空窗口给空 DataFrame
+            if isinstance(raw, list) and raw and isinstance(raw[0], dict):
+                return _out(_sort_rows_by_date(raw))
+            return raw if raw is not None else _out([])
         names = raw.get("samplingName") or []
         columns = ("open", "high", "low", "close", "volume", "amount")
         series = {c: raw.get(c) or [] for c in columns}
@@ -555,11 +686,11 @@ class CbondApi(_Api):
                 col = series[col_name]
                 row[col_name] = col[i] if i < len(col) else None
             rows.append(row)
-        return rows
+        return _out(_sort_rows_by_date(rows))
 
-    def universe_codes(self, _raw: bool = False, _df: bool = False) -> Any:
+    def universe_codes(self, _raw: bool = False) -> Any:
         """转债代码全集（与快照口径一致）。"""
-        return self._c.call("cbond.universe_codes", _raw=_raw, _df=_df)
+        return _out(self._c.call("cbond.universe_codes", _raw=_raw), raw=_raw)
 
     # ---- 研究级组合接口：取数 → 规则 → 事实包 → 成稿/出图，一条链路。----
     # 这些方法**不是**目录函数的薄翻译，故不登记 FRIENDLY_INDEX（那张表是
@@ -592,16 +723,17 @@ class CbondApi(_Api):
         数字只从 ``payload`` 里拷贝，缺条目即抛 ``LookupError``——不补猜测值。
 
         :param payload: ``daily()`` 返回的事实包
-        :param date: 文件名日期 ``YYYYMMDD``（缺省取事实包的快照日）
+        :param date: 文件名日期（``YYYY-MM-DD`` 或 ``YYYYMMDD``，2.0 起统一接受 ISO；
+            缺省取事实包的快照日）
         :param campaign: UTM campaign（缺省 ``day{date}cb``）
         :param fig_dir: 正文图片链接前缀；正式发布用相对路径 ``figs``，
             演练写临时目录时传绝对路径，配图存在性校验才能定位到真实文件
         """
         from wmshare.cb import article as A
 
-        d = date or str(payload.get("date") or "").replace("-", "")
+        d = _compact_date(date or str(payload.get("date") or ""))
         if not d:
-            raise UsageError("缺少日期：请传 date=YYYYMMDD 或使用带 date 的事实包",
+            raise UsageError("缺少日期：请传 date=YYYY-MM-DD 或使用带 date 的事实包",
                              code="params")
         camp = campaign or f"day{d}cb"
         fa = A.Facts(payload)
@@ -619,15 +751,16 @@ class CbondApi(_Api):
 
         :param payload: ``daily()`` 返回的事实包
         :param out_dir: 输出目录（不存在则创建）
-        :param date: 文件名日期 ``YYYYMMDD``（缺省取事实包快照日）
+        :param date: 文件名日期（``YYYY-MM-DD`` 或 ``YYYYMMDD``，2.0 起统一接受 ISO；
+            缺省取事实包快照日）
         :param klines: 通道图用的日 K（缺省取事实包里的 featured_klines）
         """
         from wmshare.cb import article as A
         from wmshare.cb import figures as G
 
-        d = date or str(payload.get("date") or "").replace("-", "")
+        d = _compact_date(date or str(payload.get("date") or ""))
         if not d:
-            raise UsageError("缺少日期：请传 date=YYYYMMDD 或使用带 date 的事实包",
+            raise UsageError("缺少日期：请传 date=YYYY-MM-DD 或使用带 date 的事实包",
                              code="params")
         fa = A.Facts(payload)
         outs = G.render_all(fa, out_dir, date=d,
@@ -644,12 +777,12 @@ class IndexApi(_Api):
     指数行情（K 线/快照）走 ``cli.kline``。
     """
 
-    def keys(self, _df: bool = False) -> Any:
+    def keys(self) -> Any:
         """可用指数键列表（``members``/``weights``/``valuation`` 的 key 取值域）。"""
-        return self._c.call("indices.keys", _df=_df)
+        return _out(self._c.call("indices.keys"))
 
     def members(self, key: str, sort_by: str | None = None,
-                top_n: int | None = None, _df: bool = False) -> Any:
+                top_n: int | None = None) -> Any:
         """指数成分股（含市值/估值中枢，可按 mv/pe/pb/roe/ps 排序）。
 
         :param key: 指数键（见 ``keys()``）
@@ -661,10 +794,9 @@ class IndexApi(_Api):
             kw["sort_by"] = sort_by
         if top_n is not None:
             kw["top_n"] = top_n
-        return self._c.call("indices.members", **kw, _df=_df)
+        return _out(self._c.call("indices.members", **kw))
 
-    def weights(self, key: str, top_n: int | None = None,
-                _df: bool = False) -> Any:
+    def weights(self, key: str, top_n: int | None = None) -> Any:
         """指数权重股（披露权重降序；weight 为小数，0.071 = 7.1%）。
 
         :param key: 指数键（见 ``keys()``）
@@ -673,10 +805,10 @@ class IndexApi(_Api):
         kw: dict[str, Any] = {"key": key}
         if top_n is not None:
             kw["top_n"] = top_n
-        return self._c.call("indices.weights", **kw, _df=_df)
+        return _out(self._c.call("indices.weights", **kw))
 
     def valuation(self, key: str, points: int | None = None) -> Any:
-        """宽基估值时序（整体法 PE/PB 季采样点 d/pe/pb + 当前值/股息率）。
+        """宽基估值时序（信封：``data.series`` 为 DataFrame，d/pe/pb 按 d 升序）。
 
         :param key: 指数键（见 ``keys()``）
         :param points: 季采样点数；series 可自行算分位
@@ -684,7 +816,13 @@ class IndexApi(_Api):
         kw: dict[str, Any] = {"key": key}
         if points is not None:
             kw["points"] = points
-        return self._c.call("indices.valuation", **kw)
+        res = self._c.call("indices.valuation", **kw)
+        if not isinstance(res, dict):
+            return res
+        series = res.get("series")
+        if isinstance(series, list) and series and isinstance(series[0], dict):
+            res["series"] = _sort_rows_by_date(series, key="d")
+        return _envelope(True, res, as_of=str(res.get("asof") or ""))
 
     def universe_keys(self, group: str = "broad") -> Any:
         """指数域可用键（榜单/估值场景的推荐取值域，按组返回）。
@@ -706,24 +844,26 @@ class IndexApi(_Api):
     def trend(self, key: str, window: str = "5y") -> dict[str, Any]:
         """周频整体法估值趋势（平台预热缓存，指数估值分位的推荐基座）。
 
-        返回 ``{ok, key, as_of, density, points, pe_pct, pb_pct, med, window,
-        win_start, win_n, win_trunc, pct, pct_source, dv_has_history}``：
+        2.0 统一信封 ``{ok, as_of, data, meta}``：
 
-        - ``points`` 为 ``[{date, pe, pb}, ...]``，**降序（新→旧）**，
-          ``points[0]`` 是最新点——服务端 ``cursor.ds`` 的原始顺序
-        - ``pe_pct``/``pb_pct`` 是最新点在 ``window`` 窗口内的历史分位
+        - ``data.points`` 为 DataFrame（date/pe/pb），**升序（旧→新）**——最新点
+          用 ``points.iloc[-1]``；预热缓存未命中时 ``ok=False``、
+          ``meta.cache="miss"``、``data`` 为空（绝不静默给错值）
+        - ``data.pe_pct``/``data.pb_pct`` 是最新点在 ``window`` 窗口内的历史分位
           （0=最低，1=最高）；口径 ``rank0/(n-1)``、并列取中点，与前端一致
-        - ``pe_pct_window`` 是 ``pe_pct``/``pb_pct`` **实际生效**的窗口：正常等于入参
+        - ``data.pe_pct_window`` 是分位**实际生效**的窗口：正常等于入参
           ``window``；该窗口被截断或拿不到分位时为 None
-        - ``pct`` 给出 3y/5y/10y 三档：``{"pe": {...}, "pb": {...}, "pe_med": {...}}``，
-          每档含 ``p``/``p3``/``p5``/``p10`` 与样本数 ``n3``/``n5``/``n10``。
-          注意服务端的 ``p`` 恒为 5 年分位（与入参 window 无关），故本方法按窗口
+        - ``data.pct`` 给出 3y/5y/10y 三档原始分位束（p3/p5/p10 与样本数）。
+          注意服务端的 ``p`` 恒为 5 年分位（与入参 window 无关），本方法按窗口
           取 ``p3``/``p5``/``p10``，不读 ``p``
-        - ``win_trunc=True`` 表示缓存序列盖不住所选窗口，此时相关分位为 None
+        - ``data.win_trunc=True`` 表示缓存序列盖不住所选窗口，此时相关分位为 None
           （**不拿短窗口冒充长窗口**，不降级到更短窗口）
-        - ``pe_missing``/``pb_missing``：该口径**最新点本身**无值（整体法下行业近期
-          整体亏损时 ``ΣNPTS_TTM ≤ 0``，价格侧指标为 nil；实测 ``industry.S11`` 最新
-          PE=None 而 PB 正常）。与「窗口不够」造成的 None 是两回事，看这两个标志区分
+        - ``data.pe_missing``/``data.pb_missing``：该口径**最新点本身**无值（整体法下
+          行业近期整体亏损时 ``ΣNPTS_TTM ≤ 0``，价格侧指标为 nil；实测
+          ``industry.S11`` 最新 PE=None 而 PB 正常）。与「窗口不够」造成的 None
+          是两回事，看这两个标志区分
+        - ``meta.pct_source``：``server``（服务端分位）/ ``client``（本地补算）；
+          ``meta.dv_has_history``：股息率是否有历史序列
 
         :param key: 指数/行业/红利键（见 ``universe_keys()``）
         :param window: 分位窗口 ``3y``/``5y``/``10y``，默认 ``5y``
@@ -731,7 +871,7 @@ class IndexApi(_Api):
         .. note::
            指数/行业 PE 历史的本入口是 **周频整体法**（平台预热缓存，约 14 年跨度）。
            个股的 ``$PCT_PE_TTM_*`` 分位码按求值会话 ``$SYMBOL`` 绑定，**不随指数/行业
-           键切换**——给指数或行业算分位只能用本方法（或 ``valuation().series`` 自算）。
+           键切换**——给指数或行业算分位只能用本方法（或 ``valuation().data.series`` 自算）。
         """
         w = str(window or "5y").lower()
         if w not in ("3y", "5y", "10y"):
@@ -744,11 +884,8 @@ class IndexApi(_Api):
             # 否则一次失败会变成两次请求，且真实故障被掩盖成「服务端没部署 pct」。
             raw = self._c.call("indices.trend", key=key)
         if not isinstance(raw, dict):
-            return {"ok": False, "key": key, "as_of": "", "density": "weekly",
-                    "points": [], "pe_pct": None, "pb_pct": None, "med": [],
-                    "pe_pct_window": None, "pe_missing": True, "pb_missing": True,
-                    "window": w, "win_start": "", "win_n": 0, "win_trunc": True,
-                    "pct": {}, "pct_source": "client", "dv_has_history": False}
+            # 预热缓存未命中：显式降级（ok=False + meta.cache="miss"），不静默给错值
+            return _envelope(False, {}, as_of="", cache="miss", pct_source="client")
         base = raw.get("base") or []
         pts = [{"date": str(p[0])[:10], "pe": p[1], "pb": p[2]}
                for p in base if isinstance(p, (list, tuple)) and len(p) >= 3]
@@ -838,21 +975,31 @@ class IndexApi(_Api):
             pb_pct, pb_n, pb_trunc = _win("pb", years)
             win_n, win_trunc, source = max(pe_n, pb_n), (pe_trunc or pb_trunc), "client"
             eff_win = None if win_trunc else w
-        return {"ok": bool(raw.get("ok")), "key": key,
-                "as_of": str(raw.get("asof") or ""),
-                "density": str(raw.get("density") or "weekly"),
-                "n": len(pts), "points": pts,
-                "pe_pct": pe_pct, "pb_pct": pb_pct,
-                "pe_pct_window": eff_win,
-                "pe_missing": pe_missing, "pb_missing": pb_missing,
-                "med": raw.get("med") or [],
-                "window": str(raw.get("window") or w),
-                "win_start": str(raw.get("win_start") or ""),
-                "win_n": win_n,
-                "win_trunc": win_trunc,
-                "pct": server_pct,
-                "pct_source": source,
-                "dv_has_history": bool(raw.get("dv_has_history", False))}
+        # 2.0 契约：points/med 统一升序（旧→新）输出——服务端 base 是新→旧
+        # （cursor.ds 顺序），1.x 直接透传是全局方向 footgun。分位计算内部仍按
+        # 降序进行（head=pts[0] 是最新点），只在出口翻转，两套语义不再混淆。
+        pts_asc = list(reversed(pts))
+        med = raw.get("med") or []
+        if isinstance(med, list) and med and isinstance(med[0], (list, tuple)):
+            med = list(reversed(med))
+        med_df = _out([{"date": str(m[0])[:10], "pe_med": m[1]}
+                       for m in med if isinstance(m, (list, tuple)) and len(m) >= 2]) \
+            if med and isinstance(med[0], (list, tuple)) else med
+        return _envelope(
+            True,
+            {"key": key, "density": str(raw.get("density") or "weekly"),
+             "n": len(pts), "points": _out(pts_asc),
+             "pe_pct": pe_pct, "pb_pct": pb_pct,
+             "pe_pct_window": eff_win,
+             "pe_missing": pe_missing, "pb_missing": pb_missing,
+             "med": med_df,
+             "pct": server_pct,
+             "window": str(raw.get("window") or w),
+             "win_start": str(raw.get("win_start") or ""),
+             "win_n": win_n,
+             "win_trunc": win_trunc},
+            as_of=str(raw.get("asof") or ""),
+            pct_source=source, dv_has_history=bool(raw.get("dv_has_history", False)))
 
 
 # ---------------------------------------------------------------- 证券基础 market
@@ -863,14 +1010,14 @@ class StocksApi(_Api):
     美股：列表与个股行业码可用；行业目录树上游未灌数，``industries()`` 恒空。
     """
 
-    def list(self, _df: bool = False) -> Any:
+    def list(self) -> Any:
         """全市场证券列表（当前市场；A≈5.7k / 港≈2.8k / 美≈5.3k 行，排序不保证）。
 
         全表单次返回，无分页；随上游每日刷新（美股 universe 为手动刷新，有滞后）。
         """
-        return self._c.call("stocks.query_list", _df=_df)
+        return _out(self._c.call("stocks.query_list"))
 
-    def industries(self, level: int | None = None, _df: bool = False) -> Any:
+    def industries(self, level: int | None = None) -> Any:
         """行业目录（standard: sw2021 申万 | hsi 恒生）。
 
         :param level: None=全部层级；1..3=指定级
@@ -879,10 +1026,9 @@ class StocksApi(_Api):
         kw: dict[str, Any] = {}
         if level is not None:
             kw["level"] = int(level)
-        return self._c.call("stocks.industry_list", _df=_df, **kw)
+        return _out(self._c.call("stocks.industry_list",**kw))
 
-    def industry_members(self, industry: str, top_n: int | None = None,
-                         _df: bool = False) -> Any:
+    def industry_members(self, industry: str, top_n: int | None = None) -> Any:
         """行业成分股（任意层级节点；行字段同 ``list()``）。
 
         :param industry: 行业键 "industry.S48"、行业代码 "S48"、或中文名（如 "银行"；
@@ -898,10 +1044,7 @@ class StocksApi(_Api):
         rows = rows if isinstance(rows, list) else []
         if top_n is not None:
             rows = rows[: max(int(top_n), 0)]
-        if _df:
-            from wmshare.client import _to_dataframe
-            return _to_dataframe(rows)
-        return rows
+        return _out(rows)
 
     def _resolve_industry(self, name: str) -> str:
         """中文名 → 行业键：唯一包含匹配直用；多候选/未命中报错列候选。"""
@@ -923,14 +1066,13 @@ class StocksApi(_Api):
 class ScreenerApi(_Api):
     """选股与全景：单票筛选器（bool）+ 全市场条件选股 + 涨跌宽度（服务端索引直出）。
 
-    筛选阈值统一**小数**（0.10 = 10%）；事件筛选以「当日有成交」为前置
-    （停牌恒 False）。全市场四件套（全景/分桶/行业分布/涨跌榜）由服务端索引
-    聚合直出、免本地计算；``idx`` 不传时由服务端解析 A 股最新查询索引。
+    筛选阈值与返回占比统一**小数**（0.10 = 10%；1.x 宽度返回的 ``*_pct`` 百分数
+    反例已在 2.0 统一换算为小数，全库单位口径不再有例外）；事件筛选以「当日有
+    成交」为前置（停牌恒 False）。全市场四件套（全景/分桶/行业分布/涨跌榜）由
+    服务端索引聚合直出、免本地计算；``idx`` 不传时由服务端解析 A 股最新查询索引。
     ``query()`` 是条件选股主入口：一条 ``$码`` 表达式出全市场命中数与前 N 行，
-    替代「先批量取数再本地过滤」的逐票路径。
-    口径注记：宽度返回中 ``up_pct``/``down_pct``/``flat_pct`` 与分桶
-    ``pct_of_total`` 为百分数数值（52.3 = 52.3%），``median_pct`` 与涨跌幅为
-    小数（0.01 = 1%）。kline 目录的其余筛选函数经属性直达
+    替代「先批量取数再本地过滤」的逐票路径；返回列与 indicator/macro 同一台账
+    换算管线（登记码默认换算到基础单位）。kline 目录的其余筛选函数经属性直达
     （如 ``cli.screener.screen_up_today("600519")``），``cat.search("screen")``
     可查全部；股息质量筛选器见 ``cli.dividend.screen_*``。
     """
@@ -983,7 +1125,24 @@ class ScreenerApi(_Api):
     # ---- 全市场宽度（服务端索引直出，免本地计算）----
     # idx 不传时由服务端解析最新 A 股查询索引（LatestIndexKey，动态 cache_key，
     # 无稳定字面量——不要臆造 "index.cn.all" 之类的键，实测 500）。
-    def _breadth(self, fn: str, idx: str | None, _df: bool,
+    # 1.x 的 up_pct/down_pct/flat_pct/pct_of_total 是百分数（全库唯一反例），
+    # 2.0 起统一 ×0.01 换算为小数，与 median_pct 同口径。
+    _PCT_FIELDS = ("up_pct", "down_pct", "flat_pct", "pct_of_total")
+
+    @classmethod
+    def _normalize_pct(cls, node: Any) -> Any:
+        if isinstance(node, dict):
+            for k in cls._PCT_FIELDS:
+                v = node.get(k)
+                if isinstance(v, (int, float)) and not isinstance(v, bool):
+                    node[k] = v * 0.01
+        elif isinstance(node, list):
+            for r in node:
+                if isinstance(r, dict):
+                    cls._normalize_pct(r)
+        return node
+
+    def _breadth(self, fn: str, idx: str | None,
                  label_key: str | None = None) -> Any:
         if idx is None:
             rows = self._c.eval_result(f"return {fn}(LatestIndexKey())")
@@ -991,35 +1150,34 @@ class ScreenerApi(_Api):
             rows = self._c.call(fn, idx=idx)
         if label_key is not None:
             rows = _strip_bin_prefixes(rows, label_key)
-        return _to_df(rows) if _df else rows
+        return _out(self._normalize_pct(rows))
 
     def index_breadth_summary(self, idx: str | None = None) -> dict:
-        """全市场涨跌全景（上涨/下跌/平盘家数、占比与涨跌幅中位数）。
+        """全市场涨跌全景（上涨/下跌/平盘家数、占比与涨跌幅中位数；占比=小数）。
 
         :param idx: 服务端索引键（高级；默认不传 = A 股最新查询索引）
         """
-        return self._breadth("kline.index_breadth_summary", idx, _df=False)
+        return self._breadth("kline.index_breadth_summary", idx)
 
-    def index_breadth_bins(self, idx: str | None = None, _df: bool = False) -> Any:
-        """涨跌幅 9 档分桶（涨停/±5%/±3%/平盘/…/跌停），行含 label/count/pct_of_total。
+    def index_breadth_bins(self, idx: str | None = None) -> Any:
+        """涨跌幅 9 档分桶（DataFrame：label/count/pct_of_total 小数）。
 
         label 已剥服务端排序前缀（上游 `i_涨停` → `涨停`）。
 
         :param idx: 服务端索引键（高级；默认不传 = A 股最新查询索引）
         """
-        return self._breadth("kline.index_breadth_bins", idx, _df, label_key="label")
+        return self._breadth("kline.index_breadth_bins", idx, label_key="label")
 
-    def index_breadth_bin_industries(self, idx: str | None = None,
-                                     _df: bool = False) -> Any:
-        """涨跌幅分桶 × 一级行业分布（行含 bin/industry/count；bin 同样剥前缀）。
+    def index_breadth_bin_industries(self, idx: str | None = None) -> Any:
+        """涨跌幅分桶 × 一级行业分布（DataFrame：bin/industry/count；bin 同样剥前缀）。
 
         :param idx: 服务端索引键（高级；默认不传 = A 股最新查询索引）
         """
-        return self._breadth("kline.index_breadth_bin_industries", idx, _df,
+        return self._breadth("kline.index_breadth_bin_industries", idx,
                              label_key="bin")
 
     def index_top_movers(self, limit: int = 20, desc: bool = True,
-                         idx: str | None = None, _df: bool = False) -> Any:
+                         idx: str | None = None) -> Any:
         """涨跌榜（按当日涨跌幅排序，行含 symbol/name/percent；percent 为小数）。
 
         :param limit: 条数，默认 20；受 Client(max_limit=...) 与单次 10000 行硬上限钳制
@@ -1038,7 +1196,7 @@ class ScreenerApi(_Api):
             rows = self._c.eval_result(xs)
         else:
             rows = self._c.call("kline.index_top_movers", idx=idx, limit=limit, desc=desc)
-        return _to_df(rows) if _df else rows
+        return _out(rows)
 
     # ---- 全市场条件选股（服务端索引引擎直出，免逐票 eval）----
     def _metric_code(self, code: Any, *, what: str) -> str:
@@ -1059,7 +1217,7 @@ class ScreenerApi(_Api):
 
     def query(self, where: str, order: str | None = None, desc: bool = True,
               limit: int = 50, offset: int = 0, fields: list[str] | None = None,
-              idx: str | None = None, _df: bool = False) -> Any:
+              idx: str | None = None) -> Any:
         """全市场条件选股：一条表达式扫最新索引，返回命中总数与前 N 行。
 
         ``where`` 是 XS 布尔表达式（与/或用 ``&&`` / ``||``、非用 ``!``；比率一律
@@ -1075,12 +1233,13 @@ class ScreenerApi(_Api):
         :param fields: 额外返回列（$码 列表）；传了就用它替代默认列集合
         :param idx: 服务端索引键（高级；默认不传 = 当前市场最新查询索引）
 
-        口径与成本：索引为**日频 EOD**（盘中不刷新）；行键 = ``symbol`` / ``name``
-        + 指标码原文（同 ``indicator.metrics`` 的键）。``$IS_ST``/``$IS_SUSPEND``
+        返回统一信封：``data.count`` 是全市场真实命中数（与 limit 无关，防把 topN
+        当全市场）、``data.rows`` 为 DataFrame（列=symbol/name+$码原文）。
+        口径与成本：索引为**日频 EOD**（盘中不刷新）；返回列与 indicator/macro
+        同一台账换算管线（登记码默认换算到基础单位）。``$IS_ST``/``$IS_SUSPEND``
         仅 A 股索引有列，港美请改用其它条件。成本 = 1 次请求，EC 随 where/order
         引用列的物化成本变化（实测 70~4.8 万，不计标的数），远低于全市场逐票
-        eval（≈45.6 万且按标的数放大）；``_df=True`` 只把 rows 转 DataFrame，
-        count 从默认返回取。
+        eval（≈45.6 万且按标的数放大）。
         """
         text = str(where or "").strip()
         if not text:
@@ -1145,8 +1304,16 @@ class ScreenerApi(_Api):
             return res  # 上游异常形态原样透传（同 indicator.metrics）
         rows = res.get("rows") or []
         keys = ["symbol", "name", *labels[2:]]
+        metric_keys = labels[2:]
         out = [dict(zip(keys, r)) if isinstance(r, (list, tuple)) else r for r in rows]
-        return _to_df(out) if _df else {"count": int(res.get("count") or 0), "rows": out}
+        # 返回列与 indicator/macro 同一台账换算管线：登记码（成交量/亿元/百分数族）
+        # 在选股结果里同样换算到基础单位，跨链路口径一致。
+        for row in out:
+            if isinstance(row, dict):
+                for k in metric_keys:
+                    if k in row:
+                        row[k] = ledger_convert(k, row[k])
+        return _envelope(True, {"count": int(res.get("count") or 0), "rows": _out(out)})
 
 
 # ---------------------------------------------------------------- 回测 backtest
@@ -1244,7 +1411,7 @@ class BacktestApi(_Api):
             days = (date.fromisoformat(str(end)[:10]) - date.fromisoformat(str(begin)[:10])).days
             limit = min(10000, max(int(days * 0.8) + slow + 20, slow + 2))
         try:
-            rows = self._c.kline.bars(symbol, n=limit, adj=adj)
+            rows = _rows(self._c.kline.bars(symbol, n=limit, adj=adj))
         except LimitError as e:
             raise UsageError(
                 f"回测要取的日 K 根数（{limit}）超过当前客户端单次上限 max_limit="
@@ -1263,7 +1430,24 @@ class BacktestApi(_Api):
         warnings: list[str] = []
         if valuation:
             stats = self._c.valuation.hist_stats(symbol, metric=rule, window="3y")
-            values = valuation_by_date((stats or {}).get("series") or [])
+            # 2.0：hist_stats 返回统一信封（data.series 为 DataFrame，date=ISO），
+            # 还原为引擎契约的 [[unix 秒, 值], ...]（北京零点 epoch，与 +08 归日一致）
+            stats_data = stats.get("data") if isinstance(stats, dict) \
+                and isinstance(stats.get("data"), dict) else stats
+            sv = stats_data.get("series") if isinstance(stats_data, dict) else None
+            series_rows = _rows(sv if sv is not None else [])  # DF/行数组两态都收
+            series: list[list[Any]] = []
+            for point in series_rows:
+                if isinstance(point, (list, tuple)):      # 引擎原值形态（直连时）
+                    series.append([point[0], point[1]])
+                    continue
+                d = str(point.get("date") or "")[:10]
+                v = point.get("value")
+                if not d or v is None:
+                    continue
+                epoch = (date.fromisoformat(d) - date(1970, 1, 1)).days * 86400 - 8 * 3600
+                series.append([epoch, v])
+            values = valuation_by_date(series)
             if not values:
                 raise DataError(f"{symbol} 没有 {rule.upper()} 历史序列（亏损期无 PE、"
                                 "或该标的未被估值序列覆盖）")
@@ -1313,9 +1497,9 @@ class StatementsApi(_Api):
     守护层。
 
     ``period`` 两档：``"annual"``（年报档，缺省，vals 键=纯年份）/
-    ``"quarter"``（季报全档 Q1..Q4 混合，键=``2026:Q1``）。``years`` 期数
-    1..12（与专业版前端窗口对齐）。``audit`` 读审计意见（按报告期对齐的年轴口径，
-    仅 cn）。
+    ``"quarter"``（季报全档 Q1..Q4 混合，键=``2026-Q1``，2.0 起由 ``2026:Q1``
+    统一为 ISO 风格连字符）。``years`` 期数 1..12（与专业版前端窗口对齐）。
+    ``audit`` 读审计意见（按报告期对齐的年轴口径，仅 cn）。
 
     ``kind`` 取值：``balance``（资产负债）/``income``（利润）/``cashflow``
     （现金流）/``indicators``（主要指标）。
@@ -1350,13 +1534,18 @@ class StatementsApi(_Api):
             raise UsageError(f"未知 period={period!r}；可选 'annual'（年报档）| 'quarter'（季报全档）",
                              code="params") from None
         xs = build_statement_xs(catalog, symbol, years, period)
-        return self._c.eval_result(xs, symbol=symbol, market=infer_market(symbol))
+        rows = self._c.eval_result(xs, symbol=symbol, market=infer_market(symbol))
+        # 2.0 期次键归一：quarter 档上游键 "2026:Q1" → "2026-Q1"（全库连字符口径）
+        if isinstance(rows, list):
+            for r in rows:
+                if isinstance(r, dict) and isinstance(r.get("vals"), dict):
+                    r["vals"] = {re.sub(r"^(\d{4}):Q(\d)$", r"\1-Q\2", k): v
+                                 for k, v in r["vals"].items()}
+        return _out(rows)
 
     def balance(self, symbol: str, years: int = 5,
                 period: str = "annual") -> Any:
-        """资产负债表（fin_balance 宽表；cn/hk/us）。
-
-        返回科目行列表（k=披露科目原文，vals=各期值，披露原币）。
+        """资产负债表（fin_balance 宽表；cn/hk/us）→ DataFrame（k=科目原文，vals=各期值）。
 
         :param symbol: 6 位 A 股代码 / 港股 5 位代码 / 美股 ticker（自动路由市场）
         :param years: 期数 1..12（缺省 5；季报档=总期数）
@@ -1366,9 +1555,7 @@ class StatementsApi(_Api):
 
     def income(self, symbol: str, years: int = 5,
                period: str = "annual") -> Any:
-        """利润表（fin_income 宽表；cn/hk/us）。
-
-        返回科目行列表（k=披露科目原文，vals=各期值，披露原币）。
+        """利润表（fin_income 宽表；cn/hk/us）→ DataFrame（k=科目原文，vals=各期值）。
 
         :param symbol: 6 位 A 股代码 / 港股 5 位代码 / 美股 ticker（自动路由市场）
         :param years: 期数 1..12（缺省 5；季报档=总期数）
@@ -1378,9 +1565,7 @@ class StatementsApi(_Api):
 
     def cashflow(self, symbol: str, years: int = 5,
                  period: str = "annual") -> Any:
-        """现金流量表（fin_cashflow 宽表；cn/hk/us）。
-
-        返回科目行列表（k=披露科目原文，vals=各期值，披露原币）。
+        """现金流量表（fin_cashflow 宽表；cn/hk/us）→ DataFrame（k=科目原文，vals=各期值）。
 
         :param symbol: 6 位 A 股代码 / 港股 5 位代码 / 美股 ticker（自动路由市场）
         :param years: 期数 1..12（缺省 5；季报档=总期数）
@@ -1390,9 +1575,7 @@ class StatementsApi(_Api):
 
     def indicators(self, symbol: str, years: int = 5,
                    period: str = "annual") -> Any:
-        """主要指标（fin_indicator 宽表；cn/hk/us）。
-
-        返回指标行列表（k=指标原文列名，vals=各期值）。
+        """主要指标（fin_indicator 宽表；cn/hk/us）→ DataFrame（k=指标原文，vals=各期值）。
 
         :param symbol: 6 位 A 股代码 / 港股 5 位代码 / 美股 ticker（自动路由市场）
         :param years: 期数 1..12（缺省 5；季报档=总期数）
@@ -1416,34 +1599,26 @@ class SegmentsApi(_Api):
     :param source: "clean"（默认，清洗归一）或 "raw"（披露明细）
     """
 
-    def products(self, symbol: str, source: str = "clean", limit: int = 20,
-                 _df: bool = False) -> Any:
+    def products(self, symbol: str, source: str = "clean", limit: int = 20) -> Any:
         """分产品/商品收入构成（行按收入降序）。"""
-        return self._c.call("segments.query_products", sym=symbol,
-                            opts={"source": source, "limit": limit}, _df=_df)
+        return _out(self._c.call("segments.query_products", sym=symbol, opts={"source": source, "limit": limit}, ))
 
-    def business(self, symbol: str, source: str = "clean", limit: int = 20,
-                 _df: bool = False) -> Any:
+    def business(self, symbol: str, source: str = "clean", limit: int = 20) -> Any:
         """分业务线收入构成（行按收入降序）。"""
-        return self._c.call("segments.query_business", sym=symbol,
-                            opts={"source": source, "limit": limit}, _df=_df)
+        return _out(self._c.call("segments.query_business", sym=symbol, opts={"source": source, "limit": limit}, ))
 
-    def region(self, symbol: str, source: str = "clean", limit: int = 20,
-               _df: bool = False) -> Any:
+    def region(self, symbol: str, source: str = "clean", limit: int = 20) -> Any:
         """境内外分部。clean 口径返回 MAP（domestic/overseas 各含 tr/pct/margin/yoy），
         source="raw" 返回披露明细 ARR；无分部披露时为 None。"""
-        return self._c.call("segments.query_region", sym=symbol,
-                            opts={"source": source, "limit": limit}, _df=_df)
+        return _out(self._c.call("segments.query_region", sym=symbol, opts={"source": source, "limit": limit}, ))
 
-    def income(self, symbol: str, limit: int = 20, _df: bool = False) -> Any:
+    def income(self, symbol: str, limit: int = 20) -> Any:
         """主营标签占比（name + ratio 小数；tr/cost 恒 0，margin 为 None）。"""
-        return self._c.call("segments.query_income", sym=symbol,
-                            opts={"limit": limit}, _df=_df)
+        return _out(self._c.call("segments.query_income", sym=symbol, opts={"limit": limit}, ))
 
-    def snapshot(self, symbol: str, source: str = "clean", _df: bool = False) -> Any:
+    def snapshot(self, symbol: str, source: str = "clean") -> Any:
         """四维合并快照：{overview, income, region, product, business, coverage}。"""
-        return self._c.call("segments.snapshot", sym=symbol,
-                            opts={"source": source}, _df=_df)
+        return _out(self._c.call("segments.snapshot", sym=symbol, opts={"source": source}, ))
 
     def coverage(self, symbol: str) -> Any:
         """各维是否有数据（has_income/has_region/has_products/has_business 布尔）。"""
@@ -1457,10 +1632,10 @@ class SegmentsApi(_Api):
 class ValuationApi(_Api):
     """估值历史统计（与平台 web「估值通道」取数同源，宿主函数 HIST_STATS）。
 
-    返回窗口内每日估值序列与统计量：``{avg, current, median, min, max, pct,
-    count, series}``——pct 为当前值的历史分位（小数，0.42 = 42% 分位）；
-    series 为 ``[[unix 秒, 值], ...]`` 升序；引擎不返回 stddev，需要通道带宽时
-    由调用方按总体口径（÷N）自算。
+    2.0 统一信封 ``{ok, as_of, data, meta}``：``data`` 含 ``avg/current/median/
+    min/max/pct/count/series``——pct 为当前值的历史分位（小数，0.42 = 42% 分位）；
+    ``data.series`` 为 DataFrame（date ISO / value），按日期升序。引擎不返回
+    stddev，需要通道带宽时由调用方按总体口径（÷N）自算。
     口径注记：亏损期 PE 无数据、净资产为负期间不参与统计（与平台免责一致）。
     """
 
@@ -1481,8 +1656,24 @@ class ValuationApi(_Api):
         if window not in self._WINDOWS:
             raise UsageError(
                 f"window 只支持 {list(self._WINDOWS)}（上限 3 年）", code="params")
-        return self._c.eval_result(
+        raw = self._c.eval_result(
             f'return HIST_STATS("{window}", "{self._METRICS[metric]}")', symbol=symbol)
+        if not isinstance(raw, dict):
+            return _envelope(False, {}, note="上游返回非 MAP")
+        series = raw.get("series") or []
+        rows = []
+        for item in series:
+            if isinstance(item, (list, tuple)) and len(item) >= 2:
+                ts = item[0]
+                d = ""
+                if isinstance(ts, (int, float)) and not isinstance(ts, bool) and ts > 0:
+                    # 引擎按交易所本地零点（+08:00）落 unix 秒，与 _kline_last_row 同口径
+                    d = (date(1970, 1, 1)
+                         + timedelta(seconds=float(ts) + 8 * 3600)).isoformat()
+                rows.append({"date": d, "value": item[1]})
+        data = {k: v for k, v in raw.items() if k != "series"}
+        data["series"] = _out(rows)
+        return _envelope(True, data, metric=metric, window=window)
 
 
 class EstimatesApi(_Api):
@@ -1494,34 +1685,34 @@ class EstimatesApi(_Api):
     范围）。EPS=元/股、金额=元、PE=倍。
     """
 
-    def query_forecast(self, symbol: str, limit: int = 8, _df: bool = False) -> Any:
+    def query_forecast(self, symbol: str, limit: int = 8) -> Any:
         """机构盈利预测（逐年 EPS/PE，A=实际 E=预测）。
 
         :param limit: 条数，默认 8
         """
-        return self._c.call("estimates.query_forecast", sym=symbol, limit=limit, _df=_df)
+        return _out(self._c.call("estimates.query_forecast", sym=symbol, limit=limit))
 
-    def query_forecast_detail(self, symbol: str, limit: int = 8, _df: bool = False) -> Any:
+    def query_forecast_detail(self, symbol: str, limit: int = 8) -> Any:
         """盈利预测明细（机构/研究员/归母净利/评级）。
 
         :param limit: 条数，默认 8
         """
-        return self._c.call("estimates.query_forecast_detail", sym=symbol,
-                            limit=limit, _df=_df)
+        return _out(self._c.call("estimates.query_forecast_detail", sym=symbol,
+                                 limit=limit))
 
-    def query_rating(self, symbol: str, limit: int = 8, _df: bool = False) -> Any:
+    def query_rating(self, symbol: str, limit: int = 8) -> Any:
         """评级统计（综合评级与买卖家数按窗口）。
 
         :param limit: 条数，默认 8
         """
-        return self._c.call("estimates.query_rating", sym=symbol, limit=limit, _df=_df)
+        return _out(self._c.call("estimates.query_rating", sym=symbol, limit=limit))
 
-    def query_reports(self, symbol: str, limit: int = 8, _df: bool = False) -> Any:
+    def query_reports(self, symbol: str, limit: int = 8) -> Any:
         """个股研报列表（标题/机构/作者/行业/报告链接）。
 
         :param limit: 条数，默认 8
         """
-        return self._c.call("estimates.query_reports", sym=symbol, limit=limit, _df=_df)
+        return _out(self._c.call("estimates.query_reports", sym=symbol, limit=limit))
 
 
 # 截面字段 → 指标码：一一对应且全部经指标目录校验，防止凭空造码。
@@ -1550,9 +1741,11 @@ FINANCIAL_FIELDS: dict[str, str] = {
 class IndicatorApi(_Api):
     """平台指标（按指标代码寻址）。
 
-    单位统一为基础单位：比率类为小数（ROE 0.332 = 33.2%）、金额/市值为元、
-    分位为小数（0.42 = 42% 分位）；精选组声明过 range 的指标在返回前做量级守护
-    （违例抛 DataError）。非精选代码按脚本原值返回（目录未声明单位的代码不做换算）。
+    2.0 单位标准化：比率类为小数（ROE 0.332 = 33.2%）、金额/市值为元、分位为
+    小数、量为股；精选组声明过 range 的指标在返回前做量级守护（违例抛
+    DataError）。units.yaml 台账登记码（成交量族=手、宏观房地产=亿元、
+    $ROC_TTM 族=百分数）由 SDK **默认换算**到基础单位；``native=True`` 取
+    上游原值（诊断逃生口）。
 
     美股标的按随包代码表归一，``AAPL.O``/``BRK.B`` 与裸码 ``AAPL``/``BRK_B`` 等价
     （见 ``normalize_symbol``）；上游仍报 ``symbol`` 未绑定时翻译成带代码写法指引的
@@ -1561,13 +1754,16 @@ class IndicatorApi(_Api):
     期货指标码（``$FUT_*``）用 ``fut_symbol`` 指定合约键：国内带市场前缀
     （``cn.SR.ZCE`` 郑商所、``cn.RB.SHF`` 上期所；后缀不是 .CZCE），外盘用
     ``global.CL`` 等 V2 键；``symbol`` 传任意 A 股代码（绑定期期间上下文），
-    缺省合约 ``cn.SR.ZCE``。eval 引擎须为 cn 客户端。
+    缺省合约 ``cn.SR.ZCE``。eval 引擎须为 cn 客户端；2.0 推荐走
+    ``cli.futures`` 门面（锚定已内部封装）。
     """
 
-    def get(self, symbol: str, code: str, fut_symbol: str | None = None) -> Any:
+    def get(self, symbol: str, code: str, fut_symbol: str | None = None,
+            *, native: bool = False) -> Any:
         """取单个指标当前值，如 cli.indicator.get("600519", "$PE_TTM_LAST")。
 
         期货码传 fut_symbol（如 "global.CL"），symbol 传任意 A 股代码。
+        台账登记码默认换算到基础单位；``native=True`` 返回上游原值。
         """
         meta = self._c.catalog.metric_meta(code)
         if meta is None and self._c.catalog.metric(code) is None:
@@ -1575,13 +1771,15 @@ class IndicatorApi(_Api):
                                code="metric")
         value = self._eval_metric(f"return {code}", symbol=symbol, label=code,
                                   fut_symbol=fut_symbol)
-        return finish_metric(value, meta, code=code, validate=self._c._validate)
+        return finish_metric(value, meta, code=code, validate=self._c._validate,
+                             native=native)
 
     def metrics(self, symbol: str, codes: list[str],
-                fut_symbol: str | None = None) -> dict:
-        """批量取多个指标当前值，返回 {code: value}（精选代码带换算与量级守护）。
+                fut_symbol: str | None = None, *, native: bool = False) -> dict:
+        """批量取多个指标当前值，返回 {code: value}（精选/台账码带换算与量级守护）。
 
         期货码传 fut_symbol（如 "cn.SR.ZCE"），symbol 传任意 A 股代码。
+        ``native=True`` 返回上游原值。
         """
         missing = [c for c in codes if self._c.catalog.metric(c) is None]
         if missing:
@@ -1594,7 +1792,7 @@ class IndicatorApi(_Api):
         if not isinstance(values, dict):  # 上游恒返回 MAP；异常形态原样透传
             return values
         return {c: finish_metric(v, self._c.catalog.metric_meta(c), code=c,
-                                 validate=self._c._validate)
+                                 validate=self._c._validate, native=native)
                 for c, v in values.items()}
 
     def basic(self, symbol: str) -> Any:
@@ -1656,72 +1854,81 @@ class NoticeApi(_Api):
 
     市场：数据含 cn + 港股。``list``/``find``/``has_buyback`` 按标的代码自动
     路由（港股 5 位码直传）；全市场类方法（recent/by_category/on_date）缺省
-    cn，用 ``market="hk"`` 取港股公告——底层 market 参数在缺省时不上送，
-    行为与 SDK 1.20.5 及之前完全一致。
+    cn，用 ``market="hk"`` 取港股公告。列表类返回 DataFrame，按 ``date``
+    **升序**（旧→新，2.0 标准；1.x 为倒序透传）。
     """
 
     def list(self, symbol: str, window: str = "3m", keyword: str = "",
-             limit: int = 20, _raw: bool = False, _df: bool = False) -> Any:
-        """单票公告列表（date/title/type/url/pdf_url）。
+             limit: int = 20, _raw: bool = False) -> Any:
+        """单票公告列表（DataFrame：date/title/type/url/pdf_url，date 升序）。
 
         :param symbol: 6 位 A 股代码 / 港股 5 位代码（按代码自动路由市场）
+        :param _raw: True=上游原始行（跳过规范化）
         """
         days = _window_days(window)
-        return self._c.call("notice.query_by_symbol", sym=symbol, window=str(days),
-                            type_regex=keyword, limit=limit, _raw=_raw, _df=_df)
+        rows = self._c.call("notice.query_by_symbol", sym=symbol, window=str(days),
+                            type_regex=keyword, limit=limit, _raw=_raw)
+        return _out(_sort_rows_by_date(rows), raw=_raw)
 
     def recent(self, window: str = "7d", keyword: str = "", limit: int = 50,
-               market: str = "", _raw: bool = False, _df: bool = False) -> Any:
-        """全市场近期公告（按披露时间倒序；cn/hk）。
+               market: str = "", _raw: bool = False) -> Any:
+        """全市场近期公告（DataFrame：date/title/type/symbol/url，date 升序；cn/hk）。
 
         :param window: 时间窗口，如 "7d"/"1m" 或天数
         :param keyword: 标题/类型正则（可空）
         :param market: 公告市场，缺省自动（=cn）；港股显式传 "hk"
+        :param _raw: True=上游原始行
         """
         days = _window_days(window)
         kwargs: dict = {"window": str(days), "type_regex": keyword, "limit": limit}
         if market:
             kwargs["market"] = market
-        return self._c.call("notice.query_recent", _raw=_raw, _df=_df, **kwargs)
+        rows = self._c.call("notice.query_recent", _raw=_raw, **kwargs)
+        return _out(_sort_rows_by_date(rows), raw=_raw)
 
     def by_category(self, category: str, window: str = "1m", limit: int = 20,
-                    market: str = "", _raw: bool = False, _df: bool = False) -> Any:
-        """按类别查公告（如 "回购"；cn/hk）。
+                    market: str = "", _raw: bool = False) -> Any:
+        """按类别查公告（DataFrame，date 升序；如 "回购"；cn/hk）。
 
         :param market: 公告市场，缺省自动（=cn）；港股显式传 "hk"
+        :param _raw: True=上游原始行
         """
         days = _window_days(window)
         kwargs: dict = {"category": category, "window": str(days), "limit": limit}
         if market:
             kwargs["market"] = market
-        return self._c.call("notice.query_by_category", _raw=_raw, _df=_df, **kwargs)
+        rows = self._c.call("notice.query_by_category", _raw=_raw, **kwargs)
+        return _out(_sort_rows_by_date(rows), raw=_raw)
 
     def find(self, symbol: str, begin: str, end: str, keyword: str = "",
-             limit: int = 50, market: str = "", _raw: bool = False,
-             _df: bool = False) -> Any:
-        """按日期区间查单票公告（begin/end 均含当日，格式 YYYY-MM-DD；cn/hk）。
+             limit: int = 50, market: str = "", _raw: bool = False) -> Any:
+        """按日期区间查单票公告（DataFrame，date 升序；begin/end 均含当日，YYYY-MM-DD）。
 
         :param begin: 起始日期（含）
         :param end: 结束日期（含）
         :param keyword: 标题/类型正则（可空）
         :param market: 公告市场，缺省自动（按标的代码路由）；全市场语义可显式传 "cn"/"hk"
+        :param _raw: True=上游原始行
         """
         kwargs: dict = {"from_date": begin, "to_date": end, "type_regex": keyword,
                         "stock_code": symbol, "limit": limit}
         if market:
             kwargs["market"] = market
-        return self._c.call("notice.query_find", _raw=_raw, _df=_df, **kwargs)
+        rows = self._c.call("notice.query_find", _raw=_raw, **kwargs)
+        return _out(_sort_rows_by_date(rows), raw=_raw)
 
     def on_date(self, date: str, keyword: str = "", limit: int = 50,
-                market: str = "", _raw: bool = False, _df: bool = False) -> Any:
-        """指定日期的全市场公告（date 格式 YYYY-MM-DD；cn/hk）。
+                market: str = "", _raw: bool = False) -> Any:
+        """指定日期的全市场公告（DataFrame；date 格式 YYYY-MM-DD；cn/hk）。
 
         :param market: 公告市场，缺省自动（=cn）；港股显式传 "hk"
+        :param _raw: True=上游原始行
         """
         kwargs: dict = {"date": date, "type_regex": keyword, "limit": limit}
         if market:
             kwargs["market"] = market
-        return self._c.call("notice.query_on_date", _raw=_raw, _df=_df, **kwargs)
+        rows = self._c.call("notice.query_on_date", _raw=_raw, **kwargs)
+        return _out(_sort_rows_by_date(rows), raw=_raw)
 
     def read_text(self, symbol: str, date: str, url: str = "",
                   full: bool = False) -> Any:
@@ -1751,10 +1958,9 @@ class NoticeApi(_Api):
 class FilingsApi(_Api):
     """定期报告清单。kind = all | annual | semi | quarter。"""
 
-    def list(self, symbol: str, kind: str = "all", limit: int = 10,
-             _df: bool = False) -> Any:
+    def list(self, symbol: str, kind: str = "all", limit: int = 10) -> Any:
         """定期报告列表（报告期/标题/PDF 链接）。"""
-        return self._c.call("filings.query", sym=symbol, type_key=kind, limit=limit, _df=_df)
+        return _out(self._c.call("filings.query", sym=symbol, type_key=kind, limit=limit))
 
     def latest(self, symbol: str, kind: str = "all") -> Any:
         """最新一条定期报告。"""
@@ -1764,25 +1970,25 @@ class FilingsApi(_Api):
 class ForecastApi(_Api):
     """业绩预告 / 快报 / 披露日历（正式报表发布前的披露文件结构化）。"""
 
-    def yjyg(self, symbol: str, limit: int = 8, _df: bool = False) -> Any:
+    def yjyg(self, symbol: str, limit: int = 8) -> Any:
         """业绩预告历史（净利/扣非/营收区间 + 同比 + 修正轨迹）。"""
-        return self._c.call("forecast.yjyg_rows", sym=symbol, limit=limit, _df=_df)
+        return _out(self._c.call("forecast.yjyg_rows", sym=symbol, limit=limit))
 
     def yjyg_latest(self, symbol: str) -> Any:
         """最新业绩预告。"""
         return self._c.call("forecast.yjyg_latest", sym=symbol)
 
-    def yjkb(self, symbol: str, limit: int = 8, _df: bool = False) -> Any:
+    def yjkb(self, symbol: str, limit: int = 8) -> Any:
         """业绩快报历史。"""
-        return self._c.call("forecast.yjkb_rows", sym=symbol, limit=limit, _df=_df)
+        return _out(self._c.call("forecast.yjkb_rows", sym=symbol, limit=limit))
 
     def yjkb_latest(self, symbol: str) -> Any:
         """最新业绩快报。"""
         return self._c.call("forecast.yjkb_latest", sym=symbol)
 
-    def disclosure_history(self, symbol: str, limit: int = 8, _df: bool = False) -> Any:
+    def disclosure_history(self, symbol: str, limit: int = 8) -> Any:
         """历史财报预约披露（报告期/计划披露日/实际日）。"""
-        return self._c.call("forecast.disclosure_rows", sym=symbol, limit=limit, _df=_df)
+        return _out(self._c.call("forecast.disclosure_rows", sym=symbol, limit=limit))
 
     def next_disclosure(self, symbol: str) -> Any:
         """下次财报预约披露。"""
@@ -1792,19 +1998,28 @@ class ForecastApi(_Api):
 class WorkoutApi(_Api):
     """契约套利条款事件（要约收购/换股吸收合并/现金选择权等，披露原文提取）。
 
-    ``board()`` 返回 {as_of, deals, quotes} 进行中看板；``query()`` 返回单票
-    规范化条款行。价格为披露口径（公告对价/现价，元）；现价 < 公告对价的折价
-    窗口由调用方自行判定，SDK 不内置收益测算（算法放工具仓）。同业数据商暂无
-    对应接口，属平台独有面。
+    ``board()`` 返回统一信封（``data`` = {deals DataFrame, quotes DataFrame}、
+    ``as_of`` 为快照日）；``query()`` 返回单票规范化条款 DataFrame。
+    价格为披露口径（公告对价/现价，元）；现价 < 公告对价的折价窗口由调用方
+    自行判定，SDK 不内置收益测算（算法放工具仓）。同业数据商暂无对应接口，
+    属平台独有面。
     """
 
     def board(self) -> Any:
-        """进行中契约套利看板（{as_of, deals, quotes}）。"""
-        return self._c.call("workout.board")
+        """进行中契约套利看板（信封：data.deals / data.quotes）。"""
+        res = self._c.call("workout.board")
+        if not isinstance(res, dict):
+            return res
+        data = dict(res)
+        as_of = str(data.pop("as_of", "") or "")
+        for k in ("deals", "quotes"):
+            if isinstance(data.get(k), list):
+                data[k] = _out(data[k])
+        return _envelope(True, data, as_of=as_of)
 
-    def query(self, symbol: str, _df: bool = False) -> Any:
+    def query(self, symbol: str) -> Any:
         """单票契约套利条款（规范化条款行）。"""
-        return self._c.call("workout.query", sym=symbol, _df=_df)
+        return _out(self._c.call("workout.query", sym=symbol))
 
 
 class DividendApi(_Api):
@@ -1818,8 +2033,7 @@ class DividendApi(_Api):
     # 常用筛选器提为显式方法（docstring 在 IDE 可见；底层合同与目录一致）
     def screen_quality(self, symbol: str, min_yield: float | None = None,
                        payout_min: float | None = None,
-                       payout_max: float | None = None, _raw: bool = False,
-                       _df: bool = False) -> Any:
+                       payout_max: float | None = None, _raw: bool = False) -> Any:
         """分红质量优（高股息 + 派息可持续，阈值可调）。
 
         :param min_yield: 最低股息率（小数，如 0.03 = 3%）
@@ -1833,35 +2047,38 @@ class DividendApi(_Api):
             kw["payout_min"] = payout_min
         if payout_max is not None:
             kw["payout_max"] = payout_max
-        return self._c.call("bonus.screen_quality", **kw, _raw=_raw, _df=_df)
+        return _out(self._c.call("bonus.screen_quality", **kw, _raw=_raw), raw=_raw)
 
     def screen_high_yield(self, symbol: str, min_yield: float | None = None,
-                          _raw: bool = False, _df: bool = False) -> Any:
+                          _raw: bool = False) -> Any:
         """高股息（min_yield 为小数，如 0.04 = 4%）。"""
         kw: dict[str, Any] = {"sym": symbol}
         if min_yield is not None:
             kw["min_yield"] = min_yield
-        return self._c.call("bonus.screen_high_yield", **kw, _raw=_raw, _df=_df)
+        return _out(self._c.call("bonus.screen_high_yield", **kw, _raw=_raw), raw=_raw)
 
     def screen_undervalued_yield(self, symbol: str, min_yield: float | None = None,
-                                 min_pct: float | None = None, _raw: bool = False,
-                                 _df: bool = False) -> Any:
+                                 min_pct: float | None = None, _raw: bool = False) -> Any:
         """低估 + 高股息（min_yield 为小数；min_pct 为低估值百分位门槛）。"""
         kw: dict[str, Any] = {"sym": symbol}
         if min_yield is not None:
             kw["min_yield"] = min_yield
         if min_pct is not None:
             kw["min_pct"] = min_pct
-        return self._c.call("bonus.screen_undervalued_yield", **kw, _raw=_raw, _df=_df)
+        return _out(self._c.call("bonus.screen_undervalued_yield", **kw, _raw=_raw), raw=_raw)
 
     def history(self, symbol: str, limit: int | None = None,
                 begin: str | None = None, end: str | None = None,
-                _raw: bool = False, _df: bool = False) -> Any:
-        """分红历史明细（announce/ex_date/pay/dps/total/content/sas/payout_ratio/bonus_share/record_date）。
+                _raw: bool = False) -> Any:
+        """分红历史明细 → DataFrame（ex_date 升序；dps=元/股、payout_ratio=小数）。
+
+        字段：announce/ex_date/pay/dps/total/content/sas/payout_ratio/bonus_share/
+        record_date（与目录 returns 契约一致）。
 
         :param limit: 条数，默认 20；区间查询时默认取 max_limit（上限 10000）
         :param begin: 起始日期（含，YYYY-MM-DD，按除权日），须与 end 同时提供；上限 5 年
         :param end: 结束日期（含）
+        :param _raw: True=上游原始行（跳过规范化/换算）
         """
         if begin is not None or end is not None:
             if not (begin and end):
@@ -1872,16 +2089,18 @@ class DividendApi(_Api):
             fetch = min(int(limit) if limit is not None else (self._c.max_limit or 10000),
                         10000)
             rows = self._c.call("bonus.query_list", sym=symbol, limit=fetch)
-            out = _per_symbol(rows, lambda r: _filter_by_date(r, begin, end, "ex_div", fetch))
-            return _finish_df(out, _df)
+            out = _per_symbol(rows, lambda r: _sort_rows_by_date(
+                _filter_by_date(r, begin, end, "ex_div", fetch), key="ex_div"))
+            return _out(out, raw=_raw)
         limit = 20 if limit is None else limit
-        return self._c.call("bonus.query_list", sym=symbol, limit=limit,
-                            _raw=_raw, _df=_df)
+        out = _per_symbol(self._c.call("bonus.query_list", sym=symbol, limit=limit,
+                                       _raw=_raw),
+                          lambda r: _sort_rows_by_date(r, key="ex_div"))
+        return _out(out, raw=_raw)
 
     def last(self, symbol: str, _raw: bool = False) -> Any:
-        """最近一次分红（announce/ex_date/pay/dps/total/content/sas/payout_ratio/bonus_share/record_date），无数据返回 None。
+        """最近一次分红（dict，无数据返回 None），字段与 ``history`` 列一致。
 
-        复用规范化历史序列取最新一行，字段与 ``history(limit=1)[0]`` 一致；
         ``_raw=True`` 时返回上游原始行。
         """
         rows = self._c.call("bonus.query_list", sym=symbol, limit=1, _raw=_raw)
@@ -1930,29 +2149,57 @@ class DividendApi(_Api):
 
 # ---------------------------------------------------------------- 参考 reference
 class InfoApi(_Api):
-    """公司档案与参考信息。"""
+    """公司档案与参考信息。
 
-    _PROFILE_CODES = ["$NAME", "$INDUSTRY_CUR", "$STYLE_INDUSTRY",
-                      "$ORG_ORGTYPE", "$ORG_LISTINGDATE"]
-    _PROFILE_KEYS = ["name", "industry", "style_industry", "org_type", "listing_date"]
-    # 单个 undefined variable 会让整包 eval 直接 HTTP 400，故按市场排除不可用码，
-    # 而不是逐码降级（后者把 1 次请求变成 5 次）。实测 2026-11-14：
-    # cn 五码齐备；hk 五码齐备且 $STYLE_INDUSTRY 返回 None；us 仅 $STYLE_INDUSTRY
-    # 为 undefined variable，其余四码可用。指标目录里这五码均无 markets 声明。
+    ``profile`` 返回 10 字段档案摘要（2.0 扩列：全称/英文名/一级行业/上市板块/
+    经营范围）。单个 undefined variable 会让整包 eval 直接 HTTP 400，故：
+    ①按市场静态排除已知不可用码；②对未预知的缺码，捕获上游错误后**自动剔除
+    该码重试一次**（实例级记忆，同 Client 生命周期只降一次）——保证返回键集合
+    在各市场一致（缺的字段显式 None）。
+    """
+
+    _PROFILE_CODES = ["$NAME", "$ORG_FULLNAME", "$NAMEEN", "$INDUSTRY_CUR_1",
+                      "$INDUSTRY_CUR", "$STYLE_INDUSTRY", "$ORG_ORGTYPE",
+                      "$ORG_LISTINGDATE", "$LISTING_BOARD", "$ORG_BUSINESSSCOPE"]
+    _PROFILE_KEYS = ["name", "full_name", "name_en", "industry_l1", "industry",
+                     "style_industry", "org_type", "listing_date", "listing_board",
+                     "business_scope"]
+    # 实测 2026-11-14：cn/hk 全码可用（hk 的 $STYLE_INDUSTRY 返回 None）；
+    # us 仅 $STYLE_INDUSTRY 为 undefined variable，静态排除。
     _PROFILE_SKIP_BY_MARKET = {"us": {"$STYLE_INDUSTRY"}}
 
-    def profile(self, symbol: str) -> dict:
-        """公司档案摘要（name/industry/style_industry/org_type/listing_date）。
+    def __init__(self, client: "Client"):
+        super().__init__(client)
+        # 实例级缺码记忆：{market: {code}}——一次探测，后续调用零重试
+        self._dynamic_skip: dict[str, set[str]] = {}
 
-        美股无 ``$STYLE_INDUSTRY`` 变量，该字段返回 ``None``；港股亦可能为空。
-        返回键集合在各市场保持一致，便于调用方按同一结构解包。
+    def profile(self, symbol: str) -> dict:
+        """公司档案摘要（10 字段，缺码字段显式 None）。
+
+        键集合：``name/full_name/name_en/industry_l1/industry/style_industry/
+        org_type/listing_date/listing_board/business_scope``，各市场一致。
+        美股无 ``$STYLE_INDUSTRY``（静态排除）；其它市场若存在未预知缺码，
+        自动剔除重试一次并记忆（同 Client 生命周期只降一次）。
         """
         market = getattr(self._c, "market", "cn")
-        skip = self._PROFILE_SKIP_BY_MARKET.get(market, set())
-        pairs = [(k, c) for k, c in zip(self._PROFILE_KEYS, self._PROFILE_CODES)
-                 if c not in skip]
-        body = ", ".join(f'"{k}": {c}' for k, c in pairs)
-        out = self._c.eval_result(f"return {{{body}}}", symbol=symbol) or {}
+        skip = set(self._PROFILE_SKIP_BY_MARKET.get(market, set())) \
+            | self._dynamic_skip.setdefault(market, set())
+        for attempt in range(2):  # 最多一次缺码降级重试
+            pairs = [(k, c) for k, c in zip(self._PROFILE_KEYS, self._PROFILE_CODES)
+                     if c not in skip]
+            body = ", ".join(f'"{k}": {c}' for k, c in pairs)
+            try:
+                out = self._c.eval_result(f"return {{{body}}}", symbol=symbol) or {}
+                break
+            except ServerError as e:
+                m = re.search(r'undefined variable "(\$?[A-Za-z_]\w*)"', str(e))
+                if m is None or attempt == 1:
+                    raise
+                bad = m.group(1).upper()
+                if not bad.startswith("$"):
+                    bad = f"${bad}"
+                self._dynamic_skip.setdefault(market, set()).add(bad)
+                skip.add(bad)
         # 上游正常返回 MAP；非 MAP 时按无数据处理，仍保持 dict 返回契约
         values = out if isinstance(out, dict) else {}
         selected = {k for k, _ in pairs}
@@ -1972,158 +2219,144 @@ class EquityApi(_Api):
     """
 
     # ---- 股东 ----
-    def query_holder10(self, symbol: str, _df: bool = False) -> Any:
+    def query_holder10(self, symbol: str) -> Any:
         """最新一期十大股东（holder_name/hold_num/hold_num_ratio）。"""
-        return self._c.call("equity.query_holder10", sym=symbol, _df=_df)
+        return _out(self._c.call("equity.query_holder10", sym=symbol))
 
     def query_holdernum(self, symbol: str) -> Any:
         """最新股东户数（end_date/hold_focus/avg_hold_amt 单行）。"""
         return self._c.call("equity.query_holdernum", sym=symbol)
 
     # ---- 质押 ----
-    def query_pledge_detail(self, symbol: str, limit: int = 20,
-                            _df: bool = False) -> Any:
+    def query_pledge_detail(self, symbol: str, limit: int = 20) -> Any:
         """主要股东质押明细（质押家数/数量/比例/状态）。
 
         :param limit: 条数，默认 20
         """
-        return self._c.call("equity.query_pledge_detail", sym=symbol,
-                            limit=limit, _df=_df)
+        return _out(self._c.call("equity.query_pledge_detail", sym=symbol,limit=limit, ))
 
-    def query_pledge_summary(self, symbol: str, limit: int = 20,
-                             _df: bool = False) -> Any:
+    def query_pledge_summary(self, symbol: str, limit: int = 20) -> Any:
         """公司质押比例时序（trade_date/pledge_ratio/质押股数/质押市值）。
 
         :param limit: 条数，默认 20
         """
-        return self._c.call("equity.query_pledge_summary", sym=symbol,
-                            limit=limit, _df=_df)
+        return _out(self._c.call("equity.query_pledge_summary", sym=symbol,limit=limit, ))
 
-    def query_pledge_market(self, limit: int = 20, _df: bool = False) -> Any:
+    def query_pledge_market(self, limit: int = 20) -> Any:
         """市场整体质押（全市场两融式时序，不传标的）。
 
         :param limit: 条数，默认 20
         """
-        return self._c.call("equity.query_pledge_market", limit=limit, _df=_df)
+        return _out(self._c.call("equity.query_pledge_market", limit=limit))
 
-    def query_pledge_industry(self, limit: int = 20, _df: bool = False) -> Any:
+    def query_pledge_industry(self, limit: int = 20) -> Any:
         """行业质押比例（全市场按行业，不传标的）。
 
         :param limit: 条数，默认 20
         """
-        return self._c.call("equity.query_pledge_industry", limit=limit, _df=_df)
+        return _out(self._c.call("equity.query_pledge_industry", limit=limit))
 
-    def query_pledge_org(self, limit: int = 20, _df: bool = False) -> Any:
+    def query_pledge_org(self, limit: int = 20) -> Any:
         """质押机构分布（质权人类型维度，不传标的）。
 
         :param limit: 条数，默认 20
         """
-        return self._c.call("equity.query_pledge_org", limit=limit, _df=_df)
+        return _out(self._c.call("equity.query_pledge_org", limit=limit))
 
     # ---- 机构 ----
-    def query_institution_detail(self, symbol: str, limit: int = 20,
-                                 _df: bool = False) -> Any:
+    def query_institution_detail(self, symbol: str, limit: int = 20) -> Any:
         """机构持股明细（机构 × 报告期持股数/市值/占比）。
 
         :param limit: 条数，默认 20
         """
-        return self._c.call("equity.query_institution_detail", sym=symbol,
-                            limit=limit, _df=_df)
+        return _out(self._c.call("equity.query_institution_detail", sym=symbol,limit=limit, ))
 
-    def query_institution_summary(self, symbol: str, limit: int = 20,
-                                  _df: bool = False) -> Any:
+    def query_institution_summary(self, symbol: str, limit: int = 20) -> Any:
         """机构持仓占比时序（机构家数/合计占比/环比变动）。
 
         :param limit: 条数，默认 20
         """
-        return self._c.call("equity.query_institution_summary", sym=symbol,
-                            limit=limit, _df=_df)
+        return _out(self._c.call("equity.query_institution_summary", sym=symbol,limit=limit, ))
 
-    def query_hgt(self, symbol: str, limit: int = 20, _df: bool = False) -> Any:
+    def query_hgt(self, symbol: str, limit: int = 20) -> Any:
         """沪港通持股（机构/持股数/市值/占比变动）。
 
         :param limit: 条数，默认 20
         """
-        return self._c.call("equity.query_hgt", sym=symbol, limit=limit, _df=_df)
+        return _out(self._c.call("equity.query_hgt", sym=symbol, limit=limit))
 
-    def query_national_team(self, symbol: str, limit: int = 20,
-                            _df: bool = False) -> Any:
+    def query_national_team(self, symbol: str, limit: int = 20) -> Any:
         """国家队持股（证券主体 × 报告期持股占比）。
 
         :param limit: 条数，默认 20
         """
-        return self._c.call("equity.query_national_team", sym=symbol,
-                            limit=limit, _df=_df)
+        return _out(self._c.call("equity.query_national_team", sym=symbol,limit=limit, ))
 
     # ---- 治理事件 ----
-    def query_release(self, symbol: str, limit: int = 20, _df: bool = False) -> Any:
+    def query_release(self, symbol: str, limit: int = 20) -> Any:
         """限售解禁日程（解禁日期/数量/占比/类型）。
 
         :param limit: 条数，默认 20
         """
-        return self._c.call("equity.query_release", sym=symbol, limit=limit, _df=_df)
+        return _out(self._c.call("equity.query_release", sym=symbol, limit=limit))
 
-    def query_buyback_plan(self, symbol: str, limit: int = 20,
-                           _df: bool = False) -> Any:
+    def query_buyback_plan(self, symbol: str, limit: int = 20) -> Any:
         """回购方案全览（进度/价格上限/金额上限/起始日）。
 
         :param limit: 条数，默认 20
         """
-        return self._c.call("equity.query_buyback_plan", sym=symbol,
-                            limit=limit, _df=_df)
+        return _out(self._c.call("equity.query_buyback_plan", sym=symbol,limit=limit, ))
 
     def query_buyback_detail(self, symbol: str) -> Any:
         """回购执行明细单行（已回购股数/金额/公告日）。"""
         return self._c.call("equity.query_buyback_detail", sym=symbol)
 
-    def query_reorg(self, symbol: str, limit: int = 20, _df: bool = False) -> Any:
+    def query_reorg(self, symbol: str, limit: int = 20) -> Any:
         """并购重组（进度/交易金额/公告日）。
 
         :param limit: 条数，默认 20
         """
-        return self._c.call("equity.query_reorg", sym=symbol, limit=limit, _df=_df)
+        return _out(self._c.call("equity.query_reorg", sym=symbol, limit=limit))
 
-    def query_related_trade(self, symbol: str, limit: int = 20,
-                            _df: bool = False) -> Any:
+    def query_related_trade(self, symbol: str, limit: int = 20) -> Any:
         """关联交易（关联方/交易金额/公告日）。
 
         :param limit: 条数，默认 20
         """
-        return self._c.call("equity.query_related_trade", sym=symbol,
-                            limit=limit, _df=_df)
+        return _out(self._c.call("equity.query_related_trade", sym=symbol,limit=limit, ))
 
-    def query_concert(self, symbol: str, limit: int = 20, _df: bool = False) -> Any:
+    def query_concert(self, symbol: str, limit: int = 20) -> Any:
         """一致行动人（组合名称/合计持股比例）。
 
         :param limit: 条数，默认 20
         """
-        return self._c.call("equity.query_concert", sym=symbol, limit=limit, _df=_df)
+        return _out(self._c.call("equity.query_concert", sym=symbol, limit=limit))
 
-    def query_guarantee(self, symbol: str, limit: int = 20, _df: bool = False) -> Any:
+    def query_guarantee(self, symbol: str, limit: int = 20) -> Any:
         """对外担保（担保方/金额/是否履行完毕）。
 
         :param limit: 条数，默认 20
         """
-        return self._c.call("equity.query_guarantee", sym=symbol, limit=limit, _df=_df)
+        return _out(self._c.call("equity.query_guarantee", sym=symbol, limit=limit))
 
-    def query_litigation(self, symbol: str, limit: int = 20, _df: bool = False) -> Any:
+    def query_litigation(self, symbol: str, limit: int = 20) -> Any:
         """诉讼记录（案名/涉案金额/原告/被告）。
 
         :param limit: 条数，默认 20
         """
-        return self._c.call("equity.query_litigation", sym=symbol, limit=limit, _df=_df)
+        return _out(self._c.call("equity.query_litigation", sym=symbol, limit=limit))
 
-    def query_violation(self, symbol: str, limit: int = 20, _df: bool = False) -> Any:
+    def query_violation(self, symbol: str, limit: int = 20) -> Any:
         """违规处罚（类型/处分/罚款金额）。
 
         :param limit: 条数，默认 20
         """
-        return self._c.call("equity.query_violation", sym=symbol, limit=limit, _df=_df)
+        return _out(self._c.call("equity.query_violation", sym=symbol, limit=limit))
 
     # ---- 高管与股本 ----
-    def query_executives(self, symbol: str, _df: bool = False) -> Any:
+    def query_executives(self, symbol: str) -> Any:
         """高管名册（姓名/职务/薪酬/持股）。"""
-        return self._c.call("equity.query_executives", sym=symbol, _df=_df)
+        return _out(self._c.call("equity.query_executives", sym=symbol))
 
     def query_exec_change(self, symbol: str) -> Any:
         """高管增减持最新一行（日期/高管/变动股数/均价）。"""
@@ -2162,43 +2395,40 @@ class IntlApi(_Api):
     保留披露原文中文键。
     """
 
-    def query_ccass(self, symbol: str, limit: int = 20, _df: bool = False) -> Any:
+    def query_ccass(self, symbol: str, limit: int = 20) -> Any:
         """港股 CCASS 经纪持仓（经纪商/持股数/占发行股比）。
 
         :param limit: 条数，默认 20
         """
-        return self._c.call("intl.query_ccass", sym=symbol, limit=limit, _df=_df)
+        return _out(self._c.call("intl.query_ccass", sym=symbol, limit=limit))
 
-    def query_shareholders(self, symbol: str, limit: int = 20,
-                           _df: bool = False) -> Any:
+    def query_shareholders(self, symbol: str, limit: int = 20) -> Any:
         """港股主要股东/董事权益（股东/持股数/占总股比）。
 
         :param limit: 条数，默认 20
         """
-        return self._c.call("intl.query_shareholders", sym=symbol, limit=limit, _df=_df)
+        return _out(self._c.call("intl.query_shareholders", sym=symbol, limit=limit))
 
-    def query_org_rating(self, symbol: str, limit: int = 20, _df: bool = False) -> Any:
+    def query_org_rating(self, symbol: str, limit: int = 20) -> Any:
         """港股机构评级（机构/评级/目标价，披露币种）。
 
         :param limit: 条数，默认 20
         """
-        return self._c.call("intl.query_org_rating", sym=symbol, limit=limit, _df=_df)
+        return _out(self._c.call("intl.query_org_rating", sym=symbol, limit=limit))
 
-    def query_profit_forecast(self, symbol: str, limit: int = 20,
-                              _df: bool = False) -> Any:
+    def query_profit_forecast(self, symbol: str, limit: int = 20) -> Any:
         """港股盈利预测（披露原文中文键：财政年度/纯利/每股盈利等）。
 
         :param limit: 条数，默认 20
         """
-        return self._c.call("intl.query_profit_forecast", sym=symbol,
-                            limit=limit, _df=_df)
+        return _out(self._c.call("intl.query_profit_forecast", sym=symbol,limit=limit, ))
 
-    def query_sellshort(self, symbol: str, limit: int = 20, _df: bool = False) -> Any:
+    def query_sellshort(self, symbol: str, limit: int = 20) -> Any:
         """港美沽空（沽空量/占比，shares=股）。
 
         :param limit: 条数，默认 20
         """
-        return self._c.call("intl.query_sellshort", sym=symbol, limit=limit, _df=_df)
+        return _out(self._c.call("intl.query_sellshort", sym=symbol, limit=limit))
 
     def issue_info(self, symbol: str) -> Any:
         """美股发行信息快照（发行价/数量/日期，以披露源为准）。"""
@@ -2208,28 +2438,46 @@ class IntlApi(_Api):
 class MacroApi(_Api):
     """宏观与行业时序。
 
-    覆盖宏观指标时序/as-of/采样频率、中债收益率、行业情报单值。宏观数值为
-    上游原生口径（非全库小数比率口径）：$CPI 等价格指数=点（上年同期=100）、
-    $GDP/$M2 等流量存量=元；bond_curve 收益率为小数（0.0168 = 1.68%）。
+    覆盖宏观指标时序/as-of/采样频率、中债收益率、行业情报单值。2.0 单位标准化：
+    units.yaml 台账登记码默认换算到基础单位（``$RE_*`` 亿元→元、``$ROC_TTM`` 族
+    百分数→小数）；``$CPI`` 等价格指数=点（index_point，不换算）、``$GDP``/``$M2``
+    等流量存量=元；bond_curve 收益率为小数（0.0168 = 1.68%）。
     指标码层等价物：``cli.indicator.get(sym, "$CPI")`` 与 ``asof`` 同源
-    （指标码层走单位换算管线）。时序最新在前。
+    （同一台账换算管线）。时序 series 按 sas 升序（旧→新，2.0 标准）。
     """
 
     def query(self, code: str, n: int = 6) -> Any:
-        """宏观指标时序：{frequency, periods, latest, series[{sas, annual, sampling, value}]}。
+        """宏观指标时序（信封：data.series 为 DataFrame，sas 升序）。
 
         :param code: 指标码或名称（``$CPI`` / ``cpi`` 均可，服务端归一）
         :param n: 期数（1–48）
         """
-        return self._c.call("macro.query", code=code, n=n)
+        res = self._c.call("macro.query", code=code, n=n)
+        if not isinstance(res, dict):
+            return res
+        series = res.get("series") or []
+        latest = ledger_convert(code, res.get("latest"))
+        if isinstance(series, list) and series and isinstance(series[0], dict):
+            for row in series:
+                row["value"] = ledger_convert(code, row.get("value"))
+            series = _out(_sort_rows_by_date(series, key="sas"))
+        return _envelope(True, {"frequency": res.get("frequency"),
+                                "periods": res.get("periods"),
+                                "latest": latest, "series": series})
 
     def asof(self, code: str) -> Any:
-        """宏观指标最新一期原生值（无数据返回 None；人口类序列勿用）。"""
-        return self._c.call("macro.asof", code=code)
+        """宏观指标最新一期值（无数据返回 None；人口类序列勿用）。
+
+        台账登记码已换算到基础单位（如 ``$RE_INVEST`` 亿元→元）。
+        """
+        return ledger_convert(code, self._c.call("macro.asof", code=code))
 
     def spots(self, code: str, n: int = 4) -> Any:
-        """宏观指标原生采样期点（降序，如 ["2026:M09", "2026:M08"]）。"""
-        return self._c.call("macro.spots", code=code, n=n)
+        """宏观指标原生采样期点（升序，如 ["2026:M08", "2026:M09"]）。"""
+        spots = self._c.call("macro.spots", code=code, n=n)
+        if isinstance(spots, list):
+            spots = sorted(str(s) for s in spots)
+        return spots
 
     def sampling_of(self, code: str) -> Any:
         """宏观指标原生采样频率："month"/"quarter"/"year"/"day"。"""
@@ -2278,8 +2526,10 @@ class EtfApi(_Api):
     """ETF 九视图读取（组合门面；读已发布的 skillhub 脚本，非目录函数）。
 
     与目录函数不同，本类经 ``eval_result`` 读脚本：走同一取数端点、同价计费，
-    不省 EC，也不额外费 EC；不查 inventory、不过目录层的单位换算与量级守护，
-    故在本地补三道护栏（转义 / 数值守护 / 错误分类），详见 ``_etf``。
+    不省 EC，也不额外费 EC。单位与量级守护经 units.yaml ``facades."etf.views"``
+    声明接入全库单一口径（2.0：占比/涨幅/折溢价换算为小数、规模亿元→元、
+    份额亿份→份），本地三道护栏（转义 / 数值守护 / 错误分类）见 ``_etf``；
+    返回统一信封 ``{ok, as_of, data, meta}``。
 
     ``asset``/``rank`` 是 SDK 方法名，内部映射到 script view ``fund_asset``/
     ``etf_rank``；禁止把方法名当 view 直传（脚本只认后两者）。
@@ -2303,11 +2553,11 @@ class EtfApi(_Api):
 
     @classmethod
     def _guard_etf(cls, result: Any, view: str) -> Any:
-        """护栏 2：本地单位/量级守护（补回 eval 路径丢掉的数据质量门禁）。
+        """护栏 2：量级/不变量守护（声明见 units.yaml facades."etf.views"）。
 
-        ETF 落库已是原生口径（比例/百分数/亿元），**禁二次换算**；这里只做
-        量级与不变量校验，异常抛 ``DataError``，绝不静默返回错误量级的数据。
-        阈值取宽区间，只挡「0.25 变 25」这类量级错，不误伤真实极端行情。
+        2.0 单位标准化：载荷先经 ``apply_facade_units`` 换算到基础单位
+        （占比/涨幅/折溢价 %→小数、规模亿元→元、份额亿份→份），守护在**换算后**
+        数值上进行。阈值取宽区间，只挡量级错，不误伤真实极端行情。
         """
         if not isinstance(result, dict):
             raise DataError(f"etf.{view} 返回非 MAP：{type(result).__name__}", code="response")
@@ -2316,43 +2566,34 @@ class EtfApi(_Api):
             raise DataError(
                 f"etf.{view} 无数据或被拒：{err} {result.get('message', '')}；"
                 f"{result.get('hint', '')}", code="range")
-        # 区间涨幅（%）：合理 [-100, 1000]（极端杠杆/拆分另案），0.25→25 不越界但
-        # 与另两期同号同量级，属口径问题由调用方对账；这里挡的是明显越界量级。
-        for key in ("chg_w1", "chg_m1", "chg_m3"):
+        result = apply_facade_units("etf.views", result)
+        # 区间涨幅/折溢价（小数）：合理 [-1, 10]（极端杠杆/拆分另案）。
+        for key in ("chg_w1", "chg_m1", "chg_m3", "premium_pct", "premium_mean"):
             v = cls._num(result.get(key), key)
-            if v is not None and not -100.0 <= v <= 1000.0:
-                raise DataError(f"etf.{view} {key}={v} 超出涨幅合理区间 [-100,1000]%",
+            if v is not None and not -1.0 <= v <= 10.0:
+                raise DataError(f"etf.{view} {key}={v} 超出合理区间 [-1,10]（小数）",
                                 code="range")
-        # 折溢价率（%）：合理 [-100, 1000]。premium 视图顶层字段名是 premium_pct
-        # （card 的 premium 是嵌套 MAP，其内也是 premium_pct；rank 用 premium_mean）。
-        for key in ("premium_pct", "premium_mean"):
-            v = cls._num(result.get(key), key)
-            if v is not None and not -100.0 <= v <= 1000.0:
-                raise DataError(f"etf.{view} {key}={v} 超出折溢价率区间 [-100,1000]%",
-                                code="range")
-        # 规模 net_asset（亿元）：非负、上限 1e6 亿（百万亿，远超真实上限）；
-        # 份额 fd_share（亿份，与 etf.xs:7 单位红线一致）：非负，上限与
-        # net_asset 同为 1e6 亿份；旧值 1e14 按「份」误设，等同不设防。
-        for key, upper in (("net_asset", 1e6), ("fd_share", 1e6)):
+        # 规模 net_asset（元）与份额 fd_share（份）：非负、上限 1e14。
+        for key in ("net_asset", "fd_share"):
             raw = result.get(key)
             # nav 视图 net_asset 是 {date, 值} MAP，下探一层再校验。
             if key == "net_asset" and isinstance(raw, dict):
                 raw = raw.get("net_asset")
             v = cls._num(raw, key)
-            if v is not None and (v < 0 or v > upper):
-                raise DataError(f"etf.{view} {key}={v} 非非负或超出量级上限 {upper:g}",
+            if v is not None and (v < 0 or v > 1e14):
+                raise DataError(f"etf.{view} {key}={v} 非非负或超出量级上限 1e14",
                                 code="range")
-        # 五类资产占净值比（%）：各自 0~100，合计不超 100（允许浮点误差 0.5）。
+        # 五类资产占净值比（小数）：各自 0~1，合计不超 1（允许浮点误差 0.005）。
         if view in ("asset", "fund_asset"):
             ratios = [cls._num(result.get(k), k) for k in
                       ("stock_ratio", "bond_ratio", "cash_ratio", "other_ratio", "fund_ratio")]
             vals = [r for r in ratios if r is not None]
             for k, r in zip(("stock_ratio", "bond_ratio", "cash_ratio",
                              "other_ratio", "fund_ratio"), ratios):
-                if r is not None and not 0.0 <= r <= 100.0:
-                    raise DataError(f"etf.{view} {k}={r} 占净值比越界 [0,100]", code="range")
-            if vals and sum(vals) > 100.5:
-                raise DataError(f"etf.{view} 五类占净值比合计 {sum(vals):.2f} > 100",
+                if r is not None and not 0.0 <= r <= 1.0:
+                    raise DataError(f"etf.{view} {k}={r} 占净值比越界 [0,1]（小数）", code="range")
+            if vals and sum(vals) > 1.005:
+                raise DataError(f"etf.{view} 五类占净值比合计 {sum(vals):.4f} > 1",
                                 code="invariant")
         return result
 
@@ -2396,43 +2637,158 @@ class EtfApi(_Api):
             result = self._c.eval_result(xs, symbol=sym, market="cn")
         except ApiError as exc:
             raise self._classify_etf_error(exc) from exc
-        return self._guard_etf(result, view)
+        payload = self._guard_etf(result, view)
+        # 2.0 统一信封：脚本业务字段进 data，脚本传输字段（ok/error/message/hint）剥离
+        data = {k: v for k, v in payload.items()
+                if k not in ("ok", "error", "message", "hint")}
+        as_of = str(payload.get("date") or payload.get("asof") or "")
+        return _envelope(True, data, as_of=as_of, view=view, mode=mode)
 
     def card(self, symbol: str, mode: str = "latest") -> Any:
-        """ETF 档案卡（合并档案/净值/份额/分红；mode=latest|series）。"""
+        """ETF 档案卡（信封：合并档案/净值/份额/分红；mode=latest|series）。"""
         return self._etf("card", symbol, mode)
 
     def nav(self, symbol: str, mode: str = "latest") -> Any:
-        """ETF 净值（基金净值 + 规模 net_asset 亿元；mode=latest|series）。"""
+        """ETF 净值（信封：基金净值 + 规模 net_asset 元；mode=latest|series）。"""
         return self._etf("nav", symbol, mode)
 
     def share(self, symbol: str, mode: str = "latest") -> Any:
-        """ETF 份额（fd_share；mode=latest|series）。"""
+        """ETF 份额（信封：fd_share 份；mode=latest|series）。"""
         return self._etf("share", symbol, mode)
 
     def div(self, symbol: str, mode: str = "latest") -> Any:
-        """ETF 分红（历史分红行；mode=latest|series）。"""
+        """ETF 分红（信封：历史分红行；mode=latest|series）。"""
         return self._etf("div", symbol, mode)
 
     def portfolio(self, symbol: str, mode: str = "latest") -> Any:
-        """ETF 持仓（最新披露季 top10；mode=latest|series）。"""
+        """ETF 持仓（信封：最新披露季 top10；mode=latest|series）。"""
         return self._etf("portfolio", symbol, mode)
 
     def profile(self, symbol: str, mode: str = "latest") -> Any:
-        """ETF 产品档案（基金公司/跟踪标的/费率等；mode=latest|series）。"""
+        """ETF 产品档案（信封：基金公司/跟踪标的/费率等；mode=latest|series）。"""
         return self._etf("profile", symbol, mode)
 
     def premium(self, symbol: str, mode: str = "latest") -> Any:
-        """ETF 折溢价率（premium_pct；mode=latest|series）。"""
+        """ETF 折溢价率（信封：premium_pct 小数；mode=latest|series）。"""
         return self._etf("premium", symbol, mode)
 
     def asset(self, symbol: str, mode: str = "latest") -> Any:
-        """ETF 资产配置（五类占净值比 + net_asset 亿元；按季披露；→script view fund_asset）。"""
+        """ETF 资产配置（信封：五类占净值比小数 + net_asset 元；→script view fund_asset）。"""
         return self._etf("asset", symbol, mode)
 
     def rank(self, symbol: str, mode: str = "latest", limit: int | None = None) -> Any:
         """ETF 榜单指标（chg_w1/m1/m3、flow_20、premium_mean、net_asset；→script view etf_rank）。"""
         return self._etf("rank", symbol, mode, limit)
+
+
+class FuturesApi(_Api):
+    """期货连续合约快照（27 个 ``$FUT_*`` 指标码 × 82 品种，eval 求值）。
+
+    1.x 要「传任意 A 股代码做求值锚定 + fut_symbol 传参」的 hack 已封装：
+    本门面内部固定用 cn 默认锚点求值，用户只传 ``fut_code``。**须 cn 客户端**
+    （求值引擎按 A 股上下文锚定）。``fut_code`` 语法：``RB.SHF``/``cn.RB.SHF``
+    （cn 商品，交易所 SHF/CZCE/DCE/GFEX/INE）或 ``global.CL``（外盘 V2 键）；
+    品种白名单（74 商品 + 8 金融）由上游校验，未命中品种的报错按原样透传。
+
+    单位为**期货原生口径**（显式豁免全库基础单位）：价格=元、量=手（期货一手
+    = 合约乘数，换算成「股」无意义）、金额=万元——与交易所披露一致。
+
+    ``freq``：``d``（默认，日频 11 字段）/ ``w``（周频 8 字段）/ ``m``（月频 8 字段）。
+    """
+
+    _CN_FUT_RE = re.compile(r"^cn\.[A-Z]{1,3}\.(SHF|CZCE|DCE|GFEX|INE)$")
+    _GLOBAL_FUT_RE = re.compile(r"^global\.[A-Z]{1,4}$")
+    _FREQ_CODES: dict[str, dict[str, str]] = {
+        "d": {"$FUT_OPEN": "open", "$FUT_HIGH": "high", "$FUT_LOW": "low",
+              "$FUT_CLOSE": "close", "$FUT_SETTLE": "settle",
+              "$FUT_PRE_SETTLE": "pre_settle", "$FUT_VOLUME": "volume",
+              "$FUT_AMOUNT": "amount", "$FUT_OI": "open_interest",
+              "$FUT_OI_CHG": "oi_chg", "$FUT_HAS": "has_kline"},
+        "w": {"$FUT_OPEN_WEEK": "open", "$FUT_HIGH_WEEK": "high",
+              "$FUT_LOW_WEEK": "low", "$FUT_CLOSE_WEEK": "close",
+              "$FUT_SETTLE_WEEK": "settle", "$FUT_VOLUME_WEEK": "volume",
+              "$FUT_OI_WEEK": "open_interest", "$FUT_HAS_WEEK": "has_kline"},
+        "m": {"$FUT_OPEN_MONTH": "open", "$FUT_HIGH_MONTH": "high",
+              "$FUT_LOW_MONTH": "low", "$FUT_CLOSE_MONTH": "close",
+              "$FUT_SETTLE_MONTH": "settle", "$FUT_VOLUME_MONTH": "volume",
+              "$FUT_OI_MONTH": "open_interest", "$FUT_HAS_MONTH": "has_kline"},
+    }
+    _FREQ_ALIAS = {None: "d", "": "d", "d": "d", "day": "d", "daily": "d",
+                   "w": "w", "week": "w", "weekly": "w",
+                   "m": "m", "month": "m", "monthly": "m"}
+    _FIELD_TO_CODE = {v: k for codes in _FREQ_CODES.values()
+                      for k, v in codes.items()}
+
+    def _normalize_fut(self, fut_code: str) -> str:
+        s = str(fut_code or "").strip().upper()
+        if s and "." not in s:
+            raise UsageError(
+                f"fut_code={fut_code!r} 缺少交易所/市场段；国内形如 \"RB.SHF\"/"
+                f"\"cn.RB.SHF\"，外盘形如 \"global.CL\"", code="params")
+        # 裸「品种.交易所」补 cn. 前缀（RB.SHF → cn.RB.SHF）
+        if re.fullmatch(r"[A-Z]{1,3}\.(SHF|CZCE|DCE|GFEX|INE)", s):
+            s = f"cn.{s}"
+        if s.startswith(("CN.", "GLOBAL.")):
+            s = s[:3].lower() + s[3:]  # 前缀小写约定（cn./global.），品种段大写
+        if not (self._CN_FUT_RE.match(s) or self._GLOBAL_FUT_RE.match(s)):
+            raise UsageError(
+                f"fut_code={fut_code!r} 不合法；国内 \"cn.RB.SHF\"（SHF/CZCE/DCE/"
+                "GFEX/INE）或外盘 \"global.CL\"", code="params")
+        return s
+
+    def _require_cn_client(self) -> None:
+        if str(getattr(self._c, "market", "cn")).lower() != "cn":
+            raise UsageError(
+                "期货取数须 cn 客户端（求值引擎按 A 股上下文锚定）；"
+                "Client(market=\"cn\") 重建", code="market")
+
+    def get(self, fut_code: str, field: str = "close",
+            freq: str | None = None, native: bool = False) -> Any:
+        """期货连续合约单字段值（价格=元、量=手、金额=万元）。
+
+        :param fut_code: 合约键（如 ``"RB.SHF"`` / ``"cn.RB.SHF"`` / ``"global.CL"``）
+        :param field: 字段名（``close``/``volume``/``open_interest``…）或 ``$码``
+            （如 ``"$FUT_SETTLE"``；传 $ 码时 freq 被忽略）
+        :param freq: ``d``（默认）/ ``w`` / ``m``（field 用短名时生效）
+        :param native: 期货量价已为原生口径，本参数仅为接口一致性保留
+        """
+        self._require_cn_client()
+        code = self._normalize_fut(fut_code)
+        text = str(field or "").strip()
+        xs_code: str | None = None
+        if text.startswith("$"):
+            if self._c.catalog.metric(text) is None:
+                raise CatalogError(f"未知指标 {text!r}（防编造：code 必须在指标目录内）",
+                                   code="metric")
+            xs_code = text
+        else:
+            f = self._FREQ_ALIAS.get(str(freq or "d").lower(), None)
+            key = "d" if f is None else f
+            mapping = self._FREQ_CODES[key]
+            rev = {v: k for k, v in mapping.items()}  # 字段名 → $码（freq 域内反查）
+            xs_code = rev.get(text)
+            if xs_code is None:
+                raise UsageError(
+                    f"未知字段 {field!r}（freq={key}）；可选 {sorted(rev)} 或直接传 $码",
+                    code="params")
+        anchor = _DEFAULT_SYMBOLS.get("cn", "600519")
+        return self._c.indicator.get(anchor, xs_code, fut_symbol=code)
+
+    def snapshot(self, fut_code: str, freq: str = "d") -> dict:
+        """期货连续合约一族字段快照（一次指标批量求值，返回 {字段: 值}）。
+
+        :param fut_code: 合约键（同 ``get()``
+        :param freq: ``d``（默认，11 字段）/ ``w`` / ``m``（各 8 字段）
+        """
+        self._require_cn_client()
+        code = self._normalize_fut(fut_code)
+        key = self._FREQ_ALIAS.get(str(freq or "d").strip().lower(), "d")
+        mapping = self._FREQ_CODES[key]
+        anchor = _DEFAULT_SYMBOLS.get("cn", "600519")
+        values = self._c.indicator.metrics(anchor, list(mapping), fut_symbol=code)
+        if not isinstance(values, dict):
+            return values
+        return {field: values.get(code_) for code_, field in mapping.items()}
 
 
 # 组合接口：跨多个目录函数的研究级封装（取数 → 规则 → 事实包 → 成稿/出图）。
@@ -2469,6 +2825,8 @@ FRIENDLY_NAMESPACES: dict[str, type[_Api]] = {
     "macro": MacroApi,
     "backtest": BacktestApi,
     "etf": EtfApi,
+    "futures": FuturesApi,
+    "calendar": CalendarApi,
 }
 
 # 文档索引用注册表：(category, namespace, method, cn, 底层函数)
@@ -2501,6 +2859,11 @@ FRIENDLY_INDEX: list[tuple[str, str, str, str, str]] = [
     ("market", "screener", "query", "全市场条件选股", "组合接口（宿主 INDEX_QUERY_SPEC）"),
     ("market", "margin", "query", "个股融资融券历史", "margin.query"),
     ("market", "margin", "latest", "最新两融单行", "margin.latest"),
+    ("market", "margin", "market_summary", "市场级两融汇总", "margin.market_summary"),
+    ("market", "margin", "universe", "两融标的名单", "margin.universe"),
+    ("market", "calendar", "days", "交易日历区间", "calendar.days"),
+    ("market", "calendar", "is_open", "是否交易日", "calendar.is_open"),
+    ("market", "calendar", "next", "之后 N 个交易日", "calendar.next"),
     ("market", "cbond", "board", "转债全市场面板", "cbond.board"),
     ("market", "cbond", "latest_quotes", "转债最新快照", "cbond.latest_quotes"),
     ("market", "cbond", "of_stock", "正股关联转债", "cbond.of_stock"),
@@ -2518,6 +2881,8 @@ FRIENDLY_INDEX: list[tuple[str, str, str, str, str]] = [
     ("market", "stocks", "list", "全市场证券列表", "stocks.query_list"),
     ("market", "stocks", "industries", "行业目录", "stocks.industry_list"),
     ("market", "stocks", "industry_members", "行业成分股", "stocks.industry_members"),
+    ("market", "futures", "get", "期货连续合约单字段", "指标码 $FUT_*（fut_symbol 求值）"),
+    ("market", "futures", "snapshot", "期货连续合约快照", "指标码 $FUT_*（fut_symbol 求值）"),
     ("fundamentals", "statements", "audit", "审计意见", "rptdom.statement_audit"),
     ("fundamentals", "indicator", "get", "取单个指标", "指标代码直查"),
     ("fundamentals", "indicator", "metrics", "批量取指标", "指标代码批量直查"),

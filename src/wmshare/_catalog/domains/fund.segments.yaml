@@ -259,6 +259,7 @@ functions:
     example: 'segments.list_sas("600519")'
   # ---- L1：规范化工具 ----
   - name: segments.fmt_maps
+    internal: true
     cn: 分部行规范化
     kind: raw
     layer: L1
@@ -281,6 +282,7 @@ functions:
 
     example: 'segments.fmt_maps(rows)'
   - name: segments.fmt_item
+    internal: true
     cn: 单条分部规范化
     kind: raw
     layer: L1

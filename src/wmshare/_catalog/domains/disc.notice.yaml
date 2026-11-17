@@ -182,7 +182,7 @@ functions:
           - {name: note, type: string, cn: 说明}
     example: 'notice.read_text("600519", "2026-03-15", "", false)'
   # ---- L1：格式化 ----
-  - {name: notice.fmt_maps, cn: 公告行规范化, kind: raw, layer: L1}
-  - {name: notice.fmt_lines, cn: 公告文本行, kind: raw, layer: L1}
-  - {name: notice.fmt_line, cn: 单条公告文本, kind: raw, layer: L1}
-  - {name: notice.fmt_count_by_type, cn: 按类型计数, kind: raw, layer: L1}
+  - {name: notice.fmt_maps, cn: 公告行规范化, kind: raw, layer: L1, internal: true}
+  - {name: notice.fmt_lines, cn: 公告文本行, kind: raw, layer: L1, internal: true}
+  - {name: notice.fmt_line, cn: 单条公告文本, kind: raw, layer: L1, internal: true}
+  - {name: notice.fmt_count_by_type, cn: 按类型计数, kind: raw, layer: L1, internal: true}

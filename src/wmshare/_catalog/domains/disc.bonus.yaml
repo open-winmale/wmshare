@@ -204,6 +204,7 @@ functions:
   - {name: bonus.index_fields_analysis, cn: 分红分析字段列表, kind: computed, layer: L1}
   # ---- L1：格式化（raw 传递）----
   - name: bonus.fmt_maps
+    internal: true
     cn: 分红行规范化
     kind: raw
     layer: L1
@@ -229,6 +230,6 @@ functions:
             - {name: payout_ratio, type: float64, cn: 派息率, optional: true}
             - {name: bonus_share, type: float64, cn: 每股送股数（0=无，转增未暴露）, optional: true}
             - {name: record_date, type: string, cn: 股权登记日, optional: true}
-  - {name: bonus.fmt_lines, cn: 分红文本行, kind: raw, layer: L1}
-  - {name: bonus.fmt_line, cn: 单条分红文本, kind: raw, layer: L1}
-  - {name: bonus.fmt_snapshot_line, cn: 股息快照一行文本, kind: raw, layer: L1}
+  - {name: bonus.fmt_lines, cn: 分红文本行, kind: raw, layer: L1, internal: true}
+  - {name: bonus.fmt_line, cn: 单条分红文本, kind: raw, layer: L1, internal: true}
+  - {name: bonus.fmt_snapshot_line, cn: 股息快照一行文本, kind: raw, layer: L1, internal: true}

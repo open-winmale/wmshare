@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pandas as pd
 import pytest
 
 from wmshare.api import BASIC_FIELDS, FINANCIAL_FIELDS, FRIENDLY_INDEX
@@ -101,15 +102,12 @@ def test_cbond_bars_column_to_row_numeric_anchor(monkeypatch):
         return raw
 
     monkeypatch.setattr(cli, "call", fake_call)
-    rows = cli.cbond.bars("113050", n=2)
+    df = cli.cbond.bars("113050", n=2)  # 2.0：行式 DataFrame，date 升序
     assert seen["name"] == "cbond.kline_window"
     assert seen["kwargs"] == {"code": "113050", "n": 2}
-    assert rows == [
-        {"date": "2026-11-13", "open": 101.0, "high": 103.0, "low": 100.0,
-         "close": 102.0, "volume": 1000, "amount": 102000.0},
-        {"date": "2026-11-12", "open": 100.0, "high": 102.0, "low": 99.0,
-         "close": 101.0, "volume": 900, "amount": 90900.0},
-    ]
+    assert list(df["date"]) == ["2026-11-12", "2026-11-13"]
+    assert list(df["close"]) == [101.0, 102.0]
+    assert list(df["volume"]) == [900, 1000]
 
 
 def test_cbond_bars_handles_missing_column_and_empty(monkeypatch):
@@ -117,14 +115,15 @@ def test_cbond_bars_handles_missing_column_and_empty(monkeypatch):
     cli = _client()
     monkeypatch.setattr(cli, "call",
                         lambda name, **kw: {"samplingName": ["2026-11-13"], "close": [102.0]})
-    assert cli.cbond.bars("113050") == [
-        {"date": "2026-11-13", "open": None, "high": None, "low": None,
-         "close": 102.0, "volume": None, "amount": None},
-    ]
+    df = cli.cbond.bars("113050")
+    assert isinstance(df, pd.DataFrame)
+    assert df.iloc[0].to_dict() == {"date": "2026-11-13", "open": None, "high": None,
+                                    "low": None, "close": 102.0, "volume": None,
+                                    "amount": None}
     monkeypatch.setattr(cli, "call", lambda name, **kw: {"samplingName": []})
-    assert cli.cbond.bars("113050") == []
+    assert cli.cbond.bars("113050").empty
     monkeypatch.setattr(cli, "call", lambda name, **kw: ["opaque"])
-    assert cli.cbond.bars("113050") == ["opaque"]
+    assert cli.cbond.bars("113050") == ["opaque"]  # 非 MAP 透传
 
 
 def test_basic_and_financials_return_named_fields(monkeypatch):

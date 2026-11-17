@@ -542,6 +542,7 @@ def _add_resources(mcp: FastMCP, rt: MCPRuntime) -> None:
             "first_class_tools": len(TOOL_NAMES),
             "api_gateway": "wmshare_call(mode='api')",
             "catalog_gateway": "wmshare_call(mode='catalog')",
+            "cost_gateway": "wmshare_call(mode='cost')",
             "batchable_catalog_functions": len(apis.batchable_catalog_functions()),
             "excluded_from_mcp": ["pandas DataFrame / _df=True", "notice_poller", "长驻订阅"],
             "contract_paths": [
@@ -559,7 +560,8 @@ def _add_resources(mcp: FastMCP, rt: MCPRuntime) -> None:
                 "wmshare_symbols/wmshare_search 解析标的、函数、指标或 API",
                 "wmshare_contract 查参数与单位",
                 "优先用 task tool；多标的用 wmshare_batch",
-                "长尾用 wmshare_call(mode='catalog' 或 'api')",
+                "长尾用 wmshare_call(mode='catalog' 或 'api')；"
+                "调用前估算 EC 用 wmshare_call(mode='cost', target=..., arguments={...})",
             ],
             "task_tools": list(TOOL_NAMES),
             "generic_modes": {

@@ -37,7 +37,7 @@ FULL_PARTS = [
 # 2026-11-16 批 C：fmt 行规范化 shape 合同化（+20 KB 文档合同），预算 320K→350K；
 # 2026-11-16 W3：etf 九视图组合门面文档（+4 KB），预算 350K→360K；
 # 真内联 INDICATORS 全文仍会到 ~540 KB，守护语义不变。
-FULL_SIZE_BUDGET = 360_000  # bytes（UTF-8），不是字符数
+FULL_SIZE_BUDGET = 395_000  # bytes（UTF-8），不是字符数；2.0 新域（futures/calendar/margin 市场面）后留 <5k 余量，禁内联 INDICATORS 全文
 
 
 def _indicators_brief(cat) -> str:
@@ -140,7 +140,9 @@ def build_llms_txt() -> str:
         "## Key Concepts",
         "",
         "- **单位铁律**：比率/涨跌幅/分位一律小数（0.0396 = 3.96%、0.42 = 42% 分位），"
-        "金额=元、量=股；唯一例外是 cli.screener 宽度接口的 `*_pct`（百分数数值）",
+        "金额=元、量=股，全库无例外（宽度接口 *_pct 1.x 曾为百分数，2.0 起统一小数）；"
+        "门面查询/序列默认 DataFrame 且 date 升序（旧→新），面板/时序组合面为 "
+        "统一信封 {ok, as_of, data, meta}；底层 cli.call 保持行数组",
         "- **目录先行**：`wmshare.load()` 后 `cat.search(\"中文\")` 检索函数与指标码、"
         '`cat.function(name)["params"]` 查合同；禁止编造指标码（未知名在发请求前即报错）',
         "- **指标码命名**：`$主题+[窗口 3Y/5Y/10Y]+[统计量 TTM/YOY/AVG/MIN/TREND]+[_LAST]`；"

@@ -22,7 +22,7 @@ def main(cli=None, demo: bool = False) -> None:
     # ---- 市场行情 ----
     bars = cli.kline.bars(SYMBOL, n=5)
     print("最近 5 根日 K：")
-    for bar in bars:
+    for bar in bars.to_dict("records"):
         print(f"  {bar['date']}  收盘 {bar['close']}  涨跌 {bar['percent']:.2%}")
 
     snapshot = cli.kline.snapshot(SYMBOL)
@@ -30,7 +30,7 @@ def main(cli=None, demo: bool = False) -> None:
 
     mf = cli.moneyflow.last(SYMBOL)
     if mf:
-        print(f"最新主力净流入：{mf.get('net_mf'):,.0f} 元")
+        print(f"最新主力净流入：{mf['net_mf']:,.0f} 元")
 
     # ---- 财务基本面 ----
     income = cli.statements.income(SYMBOL, years=3)
@@ -43,7 +43,7 @@ def main(cli=None, demo: bool = False) -> None:
     # ---- 信息披露 ----
     notices = cli.notice.list(SYMBOL, window="3m", limit=3)
     print(f"近 3 个月公告（前 3 条）：")
-    for n in notices or []:
+    for n in notices.to_dict("records"):
         print(f"  {n.get('date', '')}  {str(n.get('title', ''))[:40]}")
 
     div = cli.dividend.last(SYMBOL)
@@ -56,7 +56,7 @@ def main(cli=None, demo: bool = False) -> None:
     print(f"{profile.get('name')} · {profile.get('industry')} · 上市 {profile.get('listing_date')}")
 
     # ---- 批量取数：真实 Client 是全市场；demo 是 10 只演示宇宙 ----
-    codes = [r["symbol"] for r in cli.stocks.list()]
+    codes = list(cli.stocks.list()["symbol"])
     scope = "演示宇宙" if demo else "全市场"
     res = cli.batch_all("kline.snapshot", codes)
     print(f"{scope} {len(res.results)} 家：{res.requests} 次请求"

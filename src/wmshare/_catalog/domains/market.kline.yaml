@@ -247,6 +247,7 @@ functions:
     example: 'kline.screen_momentum_20d("600519", 0.1)'
   # ---- L0：格式化 ----
   - name: kline.fmt_maps
+    internal: true
     cn: K 线规范化 MAP 列表
     kind: raw
     layer: L0
@@ -255,6 +256,7 @@ functions:
     returns: {desc: ARR · 规范化 bar MAP}
     example: 'kline.fmt_maps(bars)'
   - name: kline.fmt_lines
+    internal: true
     cn: K 线文本行
     kind: raw
     layer: L0
@@ -335,6 +337,6 @@ functions:
   - {name: kline.index_fields_analysis, cn: 分析字段列表, kind: computed, layer: L1}
   - {name: kline.index_fields_breadth, cn: 涨跌全景字段列表, kind: computed, layer: L1}
   # ---- L1：格式化（raw 传递）----
-  - {name: kline.fmt_line, cn: 单根 K 线文本, kind: raw, layer: L1}
-  - {name: kline.fmt_snapshot_line, cn: 快照一行文本, kind: raw, layer: L1}
-  - {name: kline.fmt_bins, cn: 涨跌幅分桶格式化, kind: raw, layer: L1}
+  - {name: kline.fmt_line, cn: 单根 K 线文本, kind: raw, layer: L1, internal: true}
+  - {name: kline.fmt_snapshot_line, cn: 快照一行文本, kind: raw, layer: L1, internal: true}
+  - {name: kline.fmt_bins, cn: 涨跌幅分桶格式化, kind: raw, layer: L1, internal: true}

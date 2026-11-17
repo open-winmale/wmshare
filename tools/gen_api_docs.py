@@ -49,10 +49,10 @@ CATEGORY_ORDER = ["market", "fundamentals", "disclosure", "reference"]
 # 每章内按命名空间分节；无友好层命名空间的章（期货）为指标码专题。
 # 断言：FRIENDLY_INDEX 的每个 ns 恰好归入一章（build() 内校验，防漂移漏收）。
 CHAPTERS: list[tuple[str, list[str]]] = [
-    ("A 股行情与选股", ["kline", "screener", "backtest", "moneyflow", "margin", "stocks"]),
+    ("A 股行情与选股", ["kline", "screener", "backtest", "moneyflow", "margin", "calendar", "stocks"]),
     ("可转债", ["cbond"]),
     ("指数", ["index"]),
-    ("期货", []),  # $FUT_* 指标码专题（指标码层，无函数级域）
+    ("期货", ["futures"]),  # 2.0：连续合约快照门面（$FUT_* 指标码求值封装）
     ("宏观", ["macro"]),
     ("财务基本面", ["statements", "segments", "valuation", "estimates", "indicator"]),
     ("信息披露与公司行动", ["notice", "filings", "forecast", "dividend", "equity", "workout"]),
@@ -427,19 +427,23 @@ def composite_section(ns: str) -> list[str]:
 
 
 def futures_section() -> list[str]:
-    """期货章：$FUT_* 指标码专题（数据在 mkt.futures_kline，管线已在生产）。"""
+    """期货章：cli.futures 门面（2.0 新面）+ $FUT_* 指标码专题。"""
     rows = [m for m in CAT.metrics["metrics"] if m["code"].startswith("$FUT")]
     out = [
-        "期货数据走**指标码层**：主力连续 K 线指标（日/周/月三族），经 `cli.indicator` 取数。",
+        "**2.0 新面** `cli.futures`：连续合约快照门面（锚定已内部封装，只需 `fut_code`；"
+        "须 cn 客户端；量=手、金额=万元为期货原生口径）：",
         "",
-        "调用姿势（指标实现引用期间上下文，`symbol` 传任意 A 股代码即可；合约键经"
-        " `fut_symbol` 指定，国内带市场前缀、后缀不是 .CZCE；外盘为 `global.` 前缀的 V2 键；"
-        "eval 引擎须为 cn 客户端）：",
+        "```python",
+        'cli.futures.snapshot("RB.SHF")                 # 日频 11 字段（open/close/volume(手)…）',
+        'cli.futures.get("global.CL", "close")          # 外盘 WTI 收盘价',
+        'cli.futures.snapshot("cn.SR.ZCE", freq="w")    # 周频 8 字段',
+        "```",
+        "",
+        "指标码层等价形态（1.x 兼容姿势；`symbol` 传任意 A 股代码锚定）：",
         "",
         "```python",
         'cli.indicator.get("600519", "$FUT_CLOSE")                          # 缺省合约 cn.SR.ZCE',
         'cli.indicator.get("600519", "$FUT_CLOSE", fut_symbol="cn.RB.SHF")  # 上期所螺纹钢主力',
-        'cli.indicator.get("600519", "$FUT_CLOSE", fut_symbol="global.CL")  # 外盘 WTI 原油',
         "```",
         "",
         "| 指标代码 | 中文 | 市场 |", "|---|---|---|",
@@ -729,6 +733,18 @@ def build() -> str:
         out.append("")
         if title == "期货":
             out += futures_section()
+            # 2.0：cli.futures 门面接口小节（与 FRIENDLY_INDEX 一一对应）
+            for ns in nss:
+                rows = [r for r in by_chapter[title] if r[1] == ns]
+                if not rows:
+                    continue
+                out += [f"### {ns_title(ns)}（`cli.{ns}`）", ""]
+                notes = ns_notes(ns)
+                for note in notes:
+                    out += [f"- {note}"]
+                out += [""]
+                for _, ns_, method, cn, underlying in rows:
+                    out += interface_block(ns_, method, cn, underlying, merged)
             continue
         for ns in nss:
             rows = [r for r in by_chapter[title] if r[1] == ns]

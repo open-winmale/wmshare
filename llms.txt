@@ -1,6 +1,6 @@
 # wmshare
 
-> 覆盖 A 股、港股、美股的 Python 财经数据 SDK：18 个数据域、290 个底层函数、2752 个指标码、130 个核心接口 + 17 个组合接口（共 147 个 friendly API）。BSD-3-Clause 开源；取数需开放平台凭证（环境变量 WMSHARE_CLIENT_ID / WMSHARE_CLIENT_SECRET，见 README）。
+> 覆盖 A 股、港股、美股的 Python 财经数据 SDK：20 个数据域、298 个底层函数、2752 个指标码、137 个核心接口 + 17 个组合接口（共 154 个 friendly API）。BSD-3-Clause 开源；取数需开放平台凭证（环境变量 WMSHARE_CLIENT_ID / WMSHARE_CLIENT_SECRET，见 README）。
 
 ## Docs
 
@@ -9,14 +9,14 @@
 - [使用指南 GUIDE](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/GUIDE.md)：单票菜谱、批量取数、多市场、pandas、故障排查
 - [指标库 INDICATORS](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/INDICATORS.md)：全量指标码按族导航——命名语法、11 组精选口径、死码清单与场景速查（先查码，禁止自算已有指标）
 - [AI 用法](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/AI.md)：MCP server、skill、文档上下文与报错驱动的 Agent 接入路径
-- [API 参考](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/API.md)：130 个核心接口 + 17 个组合接口的参数 / 返回 / 单位口径
+- [API 参考](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/API.md)：137 个核心接口 + 17 个组合接口的参数 / 返回 / 单位口径
 - [Agent Skill](https://raw.githubusercontent.com/open-winmale/wmshare/main/src/wmshare/skills/wmshare/SKILL.md)：随包分发的 agent 用法合同（目录先行、单位铁律、决策树、坑位）
-- [可运行示例](https://raw.githubusercontent.com/open-winmale/wmshare/main/examples/README.md)：17 个编号示例（全部支持演示客户端离线试跑），CI 端到端覆盖
+- [可运行示例](https://raw.githubusercontent.com/open-winmale/wmshare/main/examples/README.md)：18 个编号示例（全部支持演示客户端离线试跑），CI 端到端覆盖
 - [CHANGELOG](https://raw.githubusercontent.com/open-winmale/wmshare/main/CHANGELOG.md)：版本历史
 
 ## Key Concepts
 
-- **单位铁律**：比率/涨跌幅/分位一律小数（0.0396 = 3.96%、0.42 = 42% 分位），金额=元、量=股；唯一例外是 cli.screener 宽度接口的 `*_pct`（百分数数值）
+- **单位铁律**：比率/涨跌幅/分位一律小数（0.0396 = 3.96%、0.42 = 42% 分位），金额=元、量=股，全库无例外（宽度接口 *_pct 1.x 曾为百分数，2.0 起统一小数）；门面查询/序列默认 DataFrame 且 date 升序（旧→新），面板/时序组合面为 统一信封 {ok, as_of, data, meta}；底层 cli.call 保持行数组
 - **目录先行**：`wmshare.load()` 后 `cat.search("中文")` 检索函数与指标码、`cat.function(name)["params"]` 查合同；禁止编造指标码（未知名在发请求前即报错）
 - **指标码命名**：`$主题+[窗口 3Y/5Y/10Y]+[统计量 TTM/YOY/AVG/MIN/TREND]+[_LAST]`；族前缀 `$PCT_*` 历史分位、`$ID_*` 行业均值、`$CUR_IND_*` 行业内分位、`$INDEX_*` 指数层、`$FUT_*` 期货主力——先查 `cat.search`，禁止自算已有指标（eval 按标的数逐票计费 EC，预置码便宜得多）
 - **MCP 优先**：`pip install "wmshare[mcp]"` 后先用 `wmshare_search` / `wmshare_contract`，再用 quote/history/metrics/company/screen/disclosures/batch/call
@@ -36,7 +36,9 @@
 - `fund.indicators`（指标层）：平台公式计算的派生指标——数值不存在于任何披露文件中，由平台以行情/报表/股本/ 分红等原始数据计算得出
 - `fund.segments`（经营分部）：主营构成的多维分解——分产品 / 分业务 / 分区域（境内外）/ 主营标签占比， 外加合并快照与披露覆盖度
 - `fund.statements`（财务报表）：三大报表科目原值（资产负债 / 利润 / 现金流）多期透视、合并 vs 母公司比较、 报表目录树与审计意见——本域目录函数族服务平台内部页面（…
+- `market.calendar`（交易日历）（cli.calendar）：A 股交易日历——区间交易日、是否开市、之后 N 个交易日
 - `market.cbond`（可转债）（cli.cbond）：可转债合约快照、条款事件（下修/回售/赎回等）、正股关联、强赎触发计数、 独立日 K 与盘中 1 分钟
+- `market.fund`（场内基金（ETF））：场内交易基金（ETF）的产品档案、净值、份额、分红、持仓、资产配置、折溢价与 榜单九视图
 - `market.index`（指数）：指数维度数据——指数键列表、成分股（含市值/估值中枢，可按 mv/pe/pb/roe/ps 排序）、权重股（披露权重降序）、指数与行业估值趋势…
 - `market.intl`（港美股披露）（cli.intl）：港美股公司披露维度——港股 CCASS 经纪持仓、主要股东/董事权益、机构评级、 盈利预测（中文键披露原文），港美沽空 interest，美股…
 - `market.kline`（行情K线）（cli.kline / cli.screener）：个股日 K（不复权 / 前复权 / 后复权）、最新一根、盘中最新快照、分钟分时、 单股快照与均线类筛选、全市场涨跌宽度
@@ -53,19 +55,19 @@
 - `cli.cbond.article(payload: 'dict[str, Any]', date: 'str | None' = None, campaign: 'str | None' = None, fig_dir: 'str' = 'figs') -> 'dict[str, str]'`：把事实包写成图文稿件：源稿 Markdown + 公众号适配稿 + 摘要。
 - `cli.cbond.daily(as_of: 'str | None' = None, top_n: 'int' = 20, budget: 'int' = 30) -> 'dict[str, Any]'`：跑一期可转债日更，返回事实包（三层口径 + 三道闸 + 状态机 + 事件日历）。
 - `cli.cbond.figures(payload: 'dict[str, Any]', out_dir: 'str', date: 'str | None' = None, klines: 'dict[str, Any] | None' = None) -> 'dict[str, str]'`：出当期图：双低榜表格、全市场价差散点、候选个券价格通道。
-- `cli.etf.asset(symbol: 'str', mode: 'str' = 'latest') -> 'Any'`：ETF 资产配置（五类占净值比 + net_asset 亿元；按季披露；→script view fund_asset）。
-- `cli.etf.card(symbol: 'str', mode: 'str' = 'latest') -> 'Any'`：ETF 档案卡（合并档案/净值/份额/分红；mode=latest|series）。
-- `cli.etf.div(symbol: 'str', mode: 'str' = 'latest') -> 'Any'`：ETF 分红（历史分红行；mode=latest|series）。
-- `cli.etf.nav(symbol: 'str', mode: 'str' = 'latest') -> 'Any'`：ETF 净值（基金净值 + 规模 net_asset 亿元；mode=latest|series）。
-- `cli.etf.portfolio(symbol: 'str', mode: 'str' = 'latest') -> 'Any'`：ETF 持仓（最新披露季 top10；mode=latest|series）。
-- `cli.etf.premium(symbol: 'str', mode: 'str' = 'latest') -> 'Any'`：ETF 折溢价率（premium_pct；mode=latest|series）。
-- `cli.etf.profile(symbol: 'str', mode: 'str' = 'latest') -> 'Any'`：ETF 产品档案（基金公司/跟踪标的/费率等；mode=latest|series）。
+- `cli.etf.asset(symbol: 'str', mode: 'str' = 'latest') -> 'Any'`：ETF 资产配置（信封：五类占净值比小数 + net_asset 元；→script view fund_asset）。
+- `cli.etf.card(symbol: 'str', mode: 'str' = 'latest') -> 'Any'`：ETF 档案卡（信封：合并档案/净值/份额/分红；mode=latest|series）。
+- `cli.etf.div(symbol: 'str', mode: 'str' = 'latest') -> 'Any'`：ETF 分红（信封：历史分红行；mode=latest|series）。
+- `cli.etf.nav(symbol: 'str', mode: 'str' = 'latest') -> 'Any'`：ETF 净值（信封：基金净值 + 规模 net_asset 元；mode=latest|series）。
+- `cli.etf.portfolio(symbol: 'str', mode: 'str' = 'latest') -> 'Any'`：ETF 持仓（信封：最新披露季 top10；mode=latest|series）。
+- `cli.etf.premium(symbol: 'str', mode: 'str' = 'latest') -> 'Any'`：ETF 折溢价率（信封：premium_pct 小数；mode=latest|series）。
+- `cli.etf.profile(symbol: 'str', mode: 'str' = 'latest') -> 'Any'`：ETF 产品档案（信封：基金公司/跟踪标的/费率等；mode=latest|series）。
 - `cli.etf.rank(symbol: 'str', mode: 'str' = 'latest', limit: 'int | None' = None) -> 'Any'`：ETF 榜单指标（chg_w1/m1/m3、flow_20、premium_mean、net_asset；→script view etf_rank）。
-- `cli.etf.share(symbol: 'str', mode: 'str' = 'latest') -> 'Any'`：ETF 份额（fd_share；mode=latest|series）。
-- `cli.statements.balance(symbol: 'str', years: 'int' = 5, period: 'str' = 'annual') -> 'Any'`：资产负债表（fin_balance 宽表；cn/hk/us）。
-- `cli.statements.cashflow(symbol: 'str', years: 'int' = 5, period: 'str' = 'annual') -> 'Any'`：现金流量表（fin_cashflow 宽表；cn/hk/us）。
-- `cli.statements.income(symbol: 'str', years: 'int' = 5, period: 'str' = 'annual') -> 'Any'`：利润表（fin_income 宽表；cn/hk/us）。
-- `cli.statements.indicators(symbol: 'str', years: 'int' = 5, period: 'str' = 'annual') -> 'Any'`：主要指标（fin_indicator 宽表；cn/hk/us）。
+- `cli.etf.share(symbol: 'str', mode: 'str' = 'latest') -> 'Any'`：ETF 份额（信封：fd_share 份；mode=latest|series）。
+- `cli.statements.balance(symbol: 'str', years: 'int' = 5, period: 'str' = 'annual') -> 'Any'`：资产负债表（fin_balance 宽表；cn/hk/us）→ DataFrame（k=科目原文，vals=各期值）。
+- `cli.statements.cashflow(symbol: 'str', years: 'int' = 5, period: 'str' = 'annual') -> 'Any'`：现金流量表（fin_cashflow 宽表；cn/hk/us）→ DataFrame（k=科目原文，vals=各期值）。
+- `cli.statements.income(symbol: 'str', years: 'int' = 5, period: 'str' = 'annual') -> 'Any'`：利润表（fin_income 宽表；cn/hk/us）→ DataFrame（k=科目原文，vals=各期值）。
+- `cli.statements.indicators(symbol: 'str', years: 'int' = 5, period: 'str' = 'annual') -> 'Any'`：主要指标（fin_indicator 宽表；cn/hk/us）→ DataFrame（k=指标原文，vals=各期值）。
 
 ## When NOT to use
 
@@ -76,10 +78,12 @@
 
 ## 单位与守护声明（机器可读）
 
-> 共 54 个函数带 units / ranges / checks 声明；每行 `` `函数名`: JSON ``，键为 units（换算）/ ranges（量级界）/ checks（不变量）。SDK 在返回前按声明换算并校验，违例抛 DataError；原生口径用 `_units="native"`。内部命名空间的函数声明见 openapi.json 的 `x-wmshare-guards`（按友好接口）。
+> 共 57 个函数带 units / ranges / checks 声明；每行 `` `函数名`: JSON ``，键为 units（换算）/ ranges（量级界）/ checks（不变量）。SDK 在返回前按声明换算并校验，违例抛 DataError；原生口径用 `_units="native"`。内部命名空间的函数声明见 openapi.json 的 `x-wmshare-guards`（按友好接口）。
 
 - `bonus.query_list`: {"ranges": {"dps": [0, 500], "net_profit": [0, 1000000000000.0], "payout_ratio": [0, 20], "total": [0, 2000000000000.0]}}
 - `bonus.snapshot`: {"ranges": {"bonus_npts_rate": [0, 1], "bonus_total": [0, 2000000000000.0], "bonus_ttm": [0, 1000000000000.0], "dps_ttm": [0, 200], "mv": [0, 5000000000000.0], "payout_ttm": [0, 5], "pct_yield_3y": [0, 1], "pe_ttm": [-500, 5000], "yield_3y_avg": [0, 0.5], "yield_3y_min": [0, 0.5], "yield_lyr": [0, 0.5], "yield_ttm": [0, 0.5]}}
+- `calendar.days`: {"checks": ["date_iso"]}
+- `calendar.next`: {"checks": ["date_iso"]}
 - `cbond.board`: {"ranges": {"couponIr": [0, 0.15], "premiumRatio": [-100, 1000]}, "units": {"couponIr": "percent", "premiumRatio": "percent"}}
 - `cbond.counts`: {"ranges": {"callHits": [0, 30], "putHits": [0, 30], "resetHits": [0, 30]}}
 - `cbond.history`: {"ranges": {"close": [0, 2000], "convertPrice": [0, 2000], "convertedRatio": [0, 1], "remainSize": [0, 100000000000.0], "remainingYears": [0, 100], "stockPrice": [0, 5000], "transferValue": [0, 2000]}}
@@ -125,6 +129,7 @@
 - `kline.query_last_live_many`: {"units": {"volume": "lot"}}
 - `kline.query_min1_live`: {"units": {"volume": "lot"}}
 - `kline.snapshot`: {"units": {"volume": "lot"}}
+- `margin.market_summary`: {"ranges": {"fin_balance": [0, 10000000000000.0], "fin_buy_amt": [0, 1000000000000.0], "loan_balance": [0, 100000000000.0], "loan_sell_vol": [0, 100000000000.0]}}
 - `moneyflow.board`: {"ranges": {"elg_net": [-100000000000.0, 100000000000.0], "lg_net": [-100000000000.0, 100000000000.0], "md_net": [-100000000000.0, 100000000000.0], "net_mf": [-100000000000.0, 100000000000.0], "net_mv_ratio": [-0.5, 0.5], "sm_net": [-100000000000.0, 100000000000.0]}}
 - `moneyflow.snapshot`: {"ranges": {"elg_net": [-100000000000.0, 100000000000.0], "lg_net": [-100000000000.0, 100000000000.0], "md_net": [-100000000000.0, 100000000000.0], "net_10d": [-300000000000.0, 300000000000.0], "net_20d": [-500000000000.0, 500000000000.0], "net_5d": [-200000000000.0, 200000000000.0], "net_mf": [-100000000000.0, 100000000000.0], "net_mv_ratio": [-0.5, 0.5], "sm_net": [-100000000000.0, 100000000000.0]}}
 - `segments.query_business`: {"ranges": {"cost": [0, 10000000000000.0], "margin": [-5, 1], "ratio": [0, 1], "tr": [-10000000000000.0, 10000000000000.0]}}

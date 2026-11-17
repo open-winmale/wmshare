@@ -53,8 +53,8 @@
     "/kline/bars": {
       "post": {
         "operationId": "kline_bars",
-        "summary": "K 线序列（日/周/月，date/open/high/low/close/volume/amount/percent）。",
-        "description": "日 K 覆盖自上市首日起的全部交易日（最早 1991 年）；周/月 K 为服务端预派生、（由日线先复权再聚合，date 为周期末交易日）。、底层目录函数 `kline.query_bars[_adj]`。SDK 调用：`cli.kline.bars(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "summary": "K 线序列（日/周/月）→ DataFrame：date/open/high/low/close/volume/amount/percent。",
+        "description": "日 K 覆盖自上市首日起的全部交易日（最早 1991 年）；周/月 K 为服务端预派生、（由日线先复权再聚合，date 为周期末交易日）。、2.0 契约：按 ``date`` **升序**（旧→新）返回；``_raw=True`` 返回上游原始行、（诊断逃生口，不支持 begin/end）。指数只有日频：``freq`` 非 D 显式报错、（1.x 静默返回空序列的坑已移除）。、底层目录函数 `kline.query_bars[_adj]`。SDK 调用：`cli.kline.bars(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "市场行情"
         ],
@@ -86,7 +86,7 @@
                   },
                   "freq": {
                     "type": "string",
-                    "description": "None/\"D\"=日 K（默认）；\"W\"=周 K；\"M\"=月 K；指数只有日频，freq 非 D 返回空列表"
+                    "description": "None/\"D\"=日 K（默认）；\"W\"=周 K；\"M\"=月 K（指数仅 D）"
                   }
                 },
                 "required": [
@@ -173,8 +173,8 @@
     "/kline/last": {
       "post": {
         "operationId": "kline_last",
-        "summary": "最新一根日 K（date/open/high/low/close/volume/amount/percent），无数据返回 None。",
-        "description": "取 store 最新一行（``kline.query_last`` / ``store.latest``），含当日已入库的日 K；、不受回测锚点截断——需要「锚点内最新一根」请用 ``bars(n=1)[0]``。、字段与 ``bars()`` 一致；``_raw=True`` 时跳过规范化，返回上游原始行、（字段名不同，含 CreatedAt/sampling 等）。、底层目录函数 `kline.query_last`。SDK 调用：`cli.kline.last(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "summary": "最新一根日 K（dict：date/open/high/low/close/volume/amount/percent），无数据返回 None。",
+        "description": "取 store 最新一行（``kline.query_last`` / ``store.latest``），含当日已入库的日 K；、不受回测锚点截断——需要「锚点内最新一根」请用 ``bars(n=1)``（DataFrame 末行）。、字段与 ``bars()`` 列一致；``_raw=True`` 时跳过规范化，返回上游原始行、（字段名不同，含 CreatedAt/sampling 等）。、底层目录函数 `kline.query_last`。SDK 调用：`cli.kline.last(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "市场行情"
         ],
@@ -630,7 +630,7 @@
     "/moneyflow/bars": {
       "post": {
         "operationId": "moneyflow_bars",
-        "summary": "资金流历史（date/net_mf/elg_net/lg_net/md_net/sm_net）。",
+        "summary": "资金流历史（DataFrame：date/net_mf/elg_net/lg_net/md_net/sm_net，date 升序）。",
         "description": "底层目录函数 `moneyflow.query_bars`。SDK 调用：`cli.moneyflow.bars(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "市场行情"
@@ -1292,7 +1292,7 @@
     "/screener/index_breadth_summary": {
       "post": {
         "operationId": "screener_index_breadth_summary",
-        "summary": "全市场涨跌全景（上涨/下跌/平盘家数、占比与涨跌幅中位数）。",
+        "summary": "全市场涨跌全景（上涨/下跌/平盘家数、占比与涨跌幅中位数；占比=小数）。",
         "description": "底层目录函数 `kline.index_breadth_summary`。SDK 调用：`cli.screener.index_breadth_summary(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "市场行情"
@@ -1354,7 +1354,7 @@
     "/screener/index_breadth_bins": {
       "post": {
         "operationId": "screener_index_breadth_bins",
-        "summary": "涨跌幅 9 档分桶（涨停/±5%/±3%/平盘/…/跌停），行含 label/count/pct_of_total。",
+        "summary": "涨跌幅 9 档分桶（DataFrame：label/count/pct_of_total 小数）。",
         "description": "label 已剥服务端排序前缀（上游 `i_涨停` → `涨停`）。、底层目录函数 `kline.index_breadth_bins`。SDK 调用：`cli.screener.index_breadth_bins(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "市场行情"
@@ -1394,7 +1394,7 @@
     "/screener/index_breadth_bin_industries": {
       "post": {
         "operationId": "screener_index_breadth_bin_industries",
-        "summary": "涨跌幅分桶 × 一级行业分布（行含 bin/industry/count；bin 同样剥前缀）。",
+        "summary": "涨跌幅分桶 × 一级行业分布（DataFrame：bin/industry/count；bin 同样剥前缀）。",
         "description": "底层目录函数 `kline.index_breadth_bin_industries`。SDK 调用：`cli.screener.index_breadth_bin_industries(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "市场行情"
@@ -1499,7 +1499,7 @@
       "post": {
         "operationId": "screener_query",
         "summary": "全市场条件选股：一条表达式扫最新索引，返回命中总数与前 N 行。",
-        "description": "``where`` 是 XS 布尔表达式（与/或用 ``&&`` / ``||``、非用 ``!``；比率一律、小数，0.03 = 3%），服务端索引引擎一次查完，**不是**逐票 eval、也不需要先、拉全市场再本地过滤。返回 ``{\"count\": 命中总数, \"rows\": [...]}``——``count``、是全市场真实命中数，与 ``limit`` 无关（防把 topN 当全市场）。、口径与成本：索引为**日频 EOD**（盘中不刷新）；行键 = ``symbol`` / ``name``、+ 指标码原文（同 ``indicator.metrics`` 的键）。``$IS_ST``/``$IS_SUSPEND``、仅 A 股索引有列，港美请改用其它条件。成本 = 1 次请求，EC 随 where/order、引用列的物化成本变化（实测 70~4.8 万，不计标的数），远低于全市场逐票、eval（≈45.6 万且按标的数放大）；``_df=True`` 只把 rows 转 DataFrame，、count 从默认返回取。、组合接口（宿主 INDEX_QUERY_SPEC）。SDK 调用：`cli.screener.query(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "description": "``where`` 是 XS 布尔表达式（与/或用 ``&&`` / ``||``、非用 ``!``；比率一律、小数，0.03 = 3%），服务端索引引擎一次查完，**不是**逐票 eval、也不需要先、拉全市场再本地过滤。返回 ``{\"count\": 命中总数, \"rows\": [...]}``——``count``、是全市场真实命中数，与 ``limit`` 无关（防把 topN 当全市场）。、返回统一信封：``data.count`` 是全市场真实命中数（与 limit 无关，防把 topN、当全市场）、``data.rows`` 为 DataFrame（列=symbol/name+$码原文）。、口径与成本：索引为**日频 EOD**（盘中不刷新）；返回列与 indicator/macro、同一台账换算管线（登记码默认换算到基础单位）。``$IS_ST``/``$IS_SUSPEND``、仅 A 股索引有列，港美请改用其它条件。成本 = 1 次请求，EC 随 where/order、引用列的物化成本变化（实测 70~4.8 万，不计标的数），远低于全市场逐票、eval（≈45.6 万且按标的数放大）。、组合接口（宿主 INDEX_QUERY_SPEC）。SDK 调用：`cli.screener.query(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "市场行情"
         ],
@@ -1563,7 +1563,7 @@
     "/margin/query": {
       "post": {
         "operationId": "margin_query",
-        "summary": "个股两融历史（trade_date/fin_buy_amt/fin_repay_amt/fin_balance/…）。",
+        "summary": "个股两融历史（DataFrame：trade_date/fin_buy_amt/fin_repay_amt/fin_balance/…，升序）。",
         "description": "底层目录函数 `margin.query`。SDK 调用：`cli.margin.query(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "市场行情"
@@ -1707,6 +1707,327 @@
               }
             }
           }
+        }
+      }
+    },
+    "/margin/market_summary": {
+      "post": {
+        "operationId": "margin_market_summary",
+        "summary": "市场级两融汇总（DataFrame：trade_date/exchange/fin_buy_amt/…，升序）。",
+        "description": "沪深交易所汇总日表（金额=元、量=股）；BSE 无公开汇总口径，缺席属源边界。、服务端按交易日披露（约 17:00 后），非交易日不刷新。、底层目录函数 `margin.market_summary`。SDK 调用：`cli.margin.market_summary(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "市场行情"
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "limit": {
+                    "type": "integer",
+                    "description": "条数，默认 60（每交易所日一行；跨交易所同日并存）"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "trade_date": {
+                        "type": "string",
+                        "description": "交易日期"
+                      },
+                      "exchange": {
+                        "type": "string",
+                        "description": "交易所(SSE/SZSE)"
+                      },
+                      "fin_buy_amt": {
+                        "type": "number",
+                        "description": "融资买入额(元)"
+                      },
+                      "fin_repay_amt": {
+                        "type": "number",
+                        "description": "融资偿还额(元)"
+                      },
+                      "fin_balance": {
+                        "type": "number",
+                        "description": "融资余额(元)"
+                      },
+                      "loan_sell_vol": {
+                        "type": "number",
+                        "description": "融券卖出量(股)"
+                      },
+                      "loan_repay_vol": {
+                        "type": "number",
+                        "description": "融券偿还量(股)"
+                      },
+                      "loan_balance": {
+                        "type": "number",
+                        "description": "融券余量(股)"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "fin_balance": [
+              0,
+              10000000000000.0
+            ],
+            "loan_balance": [
+              0,
+              100000000000.0
+            ],
+            "fin_buy_amt": [
+              0,
+              1000000000000.0
+            ],
+            "loan_sell_vol": [
+              0,
+              100000000000.0
+            ]
+          }
+        }
+      }
+    },
+    "/margin/universe": {
+      "post": {
+        "operationId": "margin_universe",
+        "summary": "两融标的名单（DataFrame：security_code/security_name/exchange/in_date/out_date/…）。",
+        "description": "快照 + 调整史：``out_date`` 为空 = 当前生效；非空 = 已调出（保留供回溯）。、名单约 2,000+ 行，全量取用请 ``Client(max_limit=None)`` 或分批。、底层目录函数 `margin.universe`。SDK 调用：`cli.margin.universe(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "市场行情"
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "limit": {
+                    "type": "integer",
+                    "description": "条数，默认 500"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "security_code": {
+                        "type": "string",
+                        "description": "标的代码"
+                      },
+                      "exchange": {
+                        "type": "string",
+                        "description": "交易所"
+                      },
+                      "out_date": {
+                        "type": "string",
+                        "description": "调出日期(空=生效)"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/calendar/days": {
+      "post": {
+        "operationId": "calendar_days",
+        "summary": "区间内交易日（DataFrame：date 升序；跨年自动合并年档）。",
+        "description": "底层目录函数 `calendar.days`。SDK 调用：`cli.calendar.days(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "市场行情"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "begin": {
+                    "type": "string",
+                    "description": "起始日期（含，YYYY-MM-DD）"
+                  },
+                  "end": {
+                    "type": "string",
+                    "description": "结束日期（含）"
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "description": "行数上限（默认 800/年档；5 年区间 ≈1215 行，按需调高）"
+                  }
+                },
+                "required": [
+                  "begin",
+                  "end"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "date": {
+                        "type": "string",
+                        "description": "交易日期"
+                      },
+                      "is_open": {
+                        "type": "boolean",
+                        "description": "是否开市"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-wmshare-guards": {
+          "checks": [
+            "date_iso"
+          ]
+        }
+      }
+    },
+    "/calendar/is_open": {
+      "post": {
+        "operationId": "calendar_is_open",
+        "summary": "某日是否交易日（缺行=非交易日，含周末与节假日）。",
+        "description": "底层目录函数 `calendar.is_open`。SDK 调用：`cli.calendar.is_open(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "市场行情"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "date": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "date"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/calendar/next": {
+      "post": {
+        "operationId": "calendar_next",
+        "summary": "某日之后 N 个交易日（DataFrame：date 升序；不足 N 个如实返回）。",
+        "description": "底层目录函数 `calendar.next`。SDK 调用：`cli.calendar.next(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "市场行情"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "date": {
+                    "type": "string"
+                  },
+                  "n": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "date"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "date": {
+                        "type": "string",
+                        "description": "交易日期"
+                      },
+                      "is_open": {
+                        "type": "boolean",
+                        "description": "是否开市"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-wmshare-guards": {
+          "checks": [
+            "date_iso"
+          ]
         }
       }
     },
@@ -2416,8 +2737,8 @@
     "/cbond/bars": {
       "post": {
         "operationId": "cbond_bars",
-        "summary": "转债日线表（行式）：列式窗口转成每根一行。",
-        "description": "字段为 ``date/open/high/low/close/volume/amount``。只做列转行，不改数值、、不做重排：行序与上游窗口一致，``date`` 取上游采样名前 10 位；某列缺失时、该位置补 ``None``。不复权；价格与金额单位为元（本币），成交量单位为**张**、（转债面值口径，1 张 = 100 元面值；live 实测 ``amount / close ≈ volume``）。、窗口无数据或返回非 MAP 形态时，空列表 / 原值透传。、底层目录函数 `cbond.kline_window`。SDK 调用：`cli.cbond.bars(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "summary": "转债日线表 → DataFrame：date/open/high/low/close/volume/amount（date 升序）。",
+        "description": "列式窗口转每根一行（``date`` 取上游采样名前 10 位）；某列缺失时补 ``None``。、不复权；价格与金额单位为元（本币），成交量单位为**张**（转债面值口径，、1 张 = 100 元面值；live 实测 ``amount / close ≈ volume``）。、窗口无数据时返回空 DataFrame。、底层目录函数 `cbond.kline_window`。SDK 调用：`cli.cbond.bars(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "市场行情"
         ],
@@ -2631,7 +2952,7 @@
     "/index/valuation": {
       "post": {
         "operationId": "index_valuation",
-        "summary": "宽基估值时序（整体法 PE/PB 季采样点 d/pe/pb + 当前值/股息率）。",
+        "summary": "宽基估值时序（信封：``data.series`` 为 DataFrame，d/pe/pb 按 d 升序）。",
         "description": "底层目录函数 `indices.valuation`。SDK 调用：`cli.index.valuation(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "市场行情"
@@ -2686,7 +3007,7 @@
       "post": {
         "operationId": "index_trend",
         "summary": "周频整体法估值趋势（平台预热缓存，指数估值分位的推荐基座）。",
-        "description": "返回 ``{ok, key, as_of, density, points, pe_pct, pb_pct, med, window,、win_start, win_n, win_trunc, pct, pct_source, dv_has_history}``：、- ``points`` 为 ``[{date, pe, pb}, ...]``，**降序（新→旧）**，、``points[0]`` 是最新点——服务端 ``cursor.ds`` 的原始顺序、- ``pe_pct``/``pb_pct`` 是最新点在 ``window`` 窗口内的历史分位、（0=最低，1=最高）；口径 ``rank0/(n-1)``、并列取中点，与前端一致、- ``pe_pct_window`` 是 ``pe_pct``/``pb_pct`` **实际生效**的窗口：正常等于入参、``window``；该窗口被截断或拿不到分位时为 None、- ``pct`` 给出 3y/5y/10y 三档：``{\"pe\": {...}, \"pb\": {...}, \"pe_med\": {...}}``，、每档含 ``p``/``p3``/``p5``/``p10`` 与样本数 ``n3``/``n5``/``n10``。、注意服务端的 ``p`` 恒为 5 年分位（与入参 window 无关），故本方法按窗口、取 ``p3``/``p5``/``p10``，不读 ``p``、- ``win_trunc=True`` 表示缓存序列盖不住所选窗口，此时相关分位为 None、（**不拿短窗口冒充长窗口**，不降级到更短窗口）、- ``pe_missing``/``pb_missing``：该口径**最新点本身**无值（整体法下行业近期、整体亏损时 ``ΣNPTS_TTM ≤ 0``，价格侧指标为 nil；实测 ``industry.S11`` 最新、PE=None 而 PB 正常）。与「窗口不够」造成的 None 是两回事，看这两个标志区分、.. note::、指数/行业 PE 历史的本入口是 **周频整体法**（平台预热缓存，约 14 年跨度）。、个股的 ``$PCT_PE_TTM_*`` 分位码按求值会话 ``$SYMBOL`` 绑定，**不随指数/行业、键切换**——给指数或行业算分位只能用本方法（或 ``valuation().series`` 自算）。、底层目录函数 `indices.trend`。SDK 调用：`cli.index.trend(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "description": "2.0 统一信封 ``{ok, as_of, data, meta}``：、- ``data.points`` 为 DataFrame（date/pe/pb），**升序（旧→新）**——最新点、用 ``points.iloc[-1]``；预热缓存未命中时 ``ok=False``、、``meta.cache=\"miss\"``、``data`` 为空（绝不静默给错值）、- ``data.pe_pct``/``data.pb_pct`` 是最新点在 ``window`` 窗口内的历史分位、（0=最低，1=最高）；口径 ``rank0/(n-1)``、并列取中点，与前端一致、- ``data.pe_pct_window`` 是分位**实际生效**的窗口：正常等于入参、``window``；该窗口被截断或拿不到分位时为 None、- ``data.pct`` 给出 3y/5y/10y 三档原始分位束（p3/p5/p10 与样本数）。、注意服务端的 ``p`` 恒为 5 年分位（与入参 window 无关），本方法按窗口、取 ``p3``/``p5``/``p10``，不读 ``p``、- ``data.win_trunc=True`` 表示缓存序列盖不住所选窗口，此时相关分位为 None、（**不拿短窗口冒充长窗口**，不降级到更短窗口）、- ``data.pe_missing``/``data.pb_missing``：该口径**最新点本身**无值（整体法下、行业近期整体亏损时 ``ΣNPTS_TTM ≤ 0``，价格侧指标为 nil；实测、``industry.S11`` 最新 PE=None 而 PB 正常）。与「窗口不够」造成的 None、是两回事，看这两个标志区分、- ``meta.pct_source``：``server``（服务端分位）/ ``client``（本地补算）；、``meta.dv_has_history``：股息率是否有历史序列、.. note::、指数/行业 PE 历史的本入口是 **周频整体法**（平台预热缓存，约 14 年跨度）。、个股的 ``$PCT_PE_TTM_*`` 分位码按求值会话 ``$SYMBOL`` 绑定，**不随指数/行业、键切换**——给指数或行业算分位只能用本方法（或 ``valuation().data.series`` 自算）。、底层目录函数 `indices.trend`。SDK 调用：`cli.index.trend(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "市场行情"
         ],
@@ -2884,6 +3205,104 @@
         }
       }
     },
+    "/futures/get": {
+      "post": {
+        "operationId": "futures_get",
+        "summary": "期货连续合约单字段值（价格=元、量=手、金额=万元）。",
+        "description": "（如 ``\"$FUT_SETTLE\"``；传 $ 码时 freq 被忽略）、指标码 $FUT_*（fut_symbol 求值）。SDK 调用：`cli.futures.get(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "市场行情"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fut_code": {
+                    "type": "string",
+                    "description": "合约键（如 ``\"RB.SHF\"`` / ``\"cn.RB.SHF\"`` / ``\"global.CL\"``）"
+                  },
+                  "field": {
+                    "type": "string",
+                    "description": "字段名（``close``/``volume``/``open_interest``…）或 ``$码``"
+                  },
+                  "freq": {
+                    "type": "string",
+                    "description": "``d``（默认）/ ``w`` / ``m``（field 用短名时生效）"
+                  },
+                  "native": {
+                    "type": "boolean",
+                    "description": "期货量价已为原生口径，本参数仅为接口一致性保留"
+                  }
+                },
+                "required": [
+                  "fut_code"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/futures/snapshot": {
+      "post": {
+        "operationId": "futures_snapshot",
+        "summary": "期货连续合约一族字段快照（一次指标批量求值，返回 {字段: 值}）。",
+        "description": "指标码 $FUT_*（fut_symbol 求值）。SDK 调用：`cli.futures.snapshot(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "市场行情"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fut_code": {
+                    "type": "string",
+                    "description": "合约键（同 ``get()``"
+                  },
+                  "freq": {
+                    "type": "string",
+                    "description": "``d``（默认，11 字段）/ ``w`` / ``m``（各 8 字段）"
+                  }
+                },
+                "required": [
+                  "fut_code"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/statements/audit": {
       "post": {
         "operationId": "statements_audit",
@@ -2928,7 +3347,7 @@
       "post": {
         "operationId": "indicator_get",
         "summary": "取单个指标当前值，如 cli.indicator.get(\"600519\", \"$PE_TTM_LAST\")。",
-        "description": "期货码传 fut_symbol（如 \"global.CL\"），symbol 传任意 A 股代码。、指标代码直查。SDK 调用：`cli.indicator.get(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "description": "期货码传 fut_symbol（如 \"global.CL\"），symbol 传任意 A 股代码。、台账登记码默认换算到基础单位；``native=True`` 返回上游原值。、指标代码直查。SDK 调用：`cli.indicator.get(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "财务基本面"
         ],
@@ -2947,6 +3366,9 @@
                   },
                   "fut_symbol": {
                     "type": "string"
+                  },
+                  "native": {
+                    "type": "boolean"
                   }
                 },
                 "required": [
@@ -2974,8 +3396,8 @@
     "/indicator/metrics": {
       "post": {
         "operationId": "indicator_metrics",
-        "summary": "批量取多个指标当前值，返回 {code: value}（精选代码带换算与量级守护）。",
-        "description": "期货码传 fut_symbol（如 \"cn.SR.ZCE\"），symbol 传任意 A 股代码。、指标代码批量直查。SDK 调用：`cli.indicator.metrics(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "summary": "批量取多个指标当前值，返回 {code: value}（精选/台账码带换算与量级守护）。",
+        "description": "期货码传 fut_symbol（如 \"cn.SR.ZCE\"），symbol 传任意 A 股代码。、``native=True`` 返回上游原值。、指标代码批量直查。SDK 调用：`cli.indicator.metrics(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "财务基本面"
         ],
@@ -2994,6 +3416,9 @@
                   },
                   "fut_symbol": {
                     "type": "string"
+                  },
+                  "native": {
+                    "type": "boolean"
                   }
                 },
                 "required": [
@@ -4676,7 +5101,7 @@
     "/notice/list": {
       "post": {
         "operationId": "notice_list",
-        "summary": "单票公告列表（date/title/type/url/pdf_url）。",
+        "summary": "单票公告列表（DataFrame：date/title/type/url/pdf_url，date 升序）。",
         "description": "底层目录函数 `notice.query_by_symbol`。SDK 调用：`cli.notice.list(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "信息披露"
@@ -4768,7 +5193,7 @@
     "/notice/recent": {
       "post": {
         "operationId": "notice_recent",
-        "summary": "全市场近期公告（按披露时间倒序；cn/hk）。",
+        "summary": "全市场近期公告（DataFrame：date/title/type/symbol/url，date 升序；cn/hk）。",
         "description": "底层目录函数 `notice.query_recent`。SDK 调用：`cli.notice.recent(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "信息披露"
@@ -4860,7 +5285,7 @@
     "/notice/by_category": {
       "post": {
         "operationId": "notice_by_category",
-        "summary": "按类别查公告（如 \"回购\"；cn/hk）。",
+        "summary": "按类别查公告（DataFrame，date 升序；如 \"回购\"；cn/hk）。",
         "description": "底层目录函数 `notice.query_by_category`。SDK 调用：`cli.notice.by_category(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "信息披露"
@@ -4952,7 +5377,7 @@
     "/notice/find": {
       "post": {
         "operationId": "notice_find",
-        "summary": "按日期区间查单票公告（begin/end 均含当日，格式 YYYY-MM-DD；cn/hk）。",
+        "summary": "按日期区间查单票公告（DataFrame，date 升序；begin/end 均含当日，YYYY-MM-DD）。",
         "description": "底层目录函数 `notice.query_find`。SDK 调用：`cli.notice.find(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "信息披露"
@@ -5055,7 +5480,7 @@
     "/notice/on_date": {
       "post": {
         "operationId": "notice_on_date",
-        "summary": "指定日期的全市场公告（date 格式 YYYY-MM-DD；cn/hk）。",
+        "summary": "指定日期的全市场公告（DataFrame；date 格式 YYYY-MM-DD；cn/hk）。",
         "description": "底层目录函数 `notice.query_on_date`。SDK 调用：`cli.notice.on_date(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "信息披露"
@@ -5965,7 +6390,7 @@
     "/workout/board": {
       "post": {
         "operationId": "workout_board",
-        "summary": "进行中契约套利看板（{as_of, deals, quotes}）。",
+        "summary": "进行中契约套利看板（信封：data.deals / data.quotes）。",
         "description": "底层目录函数 `workout.board`。SDK 调用：`cli.workout.board(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "信息披露"
@@ -6039,8 +6464,8 @@
     "/dividend/history": {
       "post": {
         "operationId": "dividend_history",
-        "summary": "分红历史明细（announce/ex_date/pay/dps/total/content/sas/payout_ratio/bonus_share/record_date）。",
-        "description": "底层目录函数 `bonus.query_list`。SDK 调用：`cli.dividend.history(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "summary": "分红历史明细 → DataFrame（ex_date 升序；dps=元/股、payout_ratio=小数）。",
+        "description": "字段：announce/ex_date/pay/dps/total/content/sas/payout_ratio/bonus_share/、record_date（与目录 returns 契约一致）。、底层目录函数 `bonus.query_list`。SDK 调用：`cli.dividend.history(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "信息披露"
         ],
@@ -6169,8 +6594,8 @@
     "/dividend/last": {
       "post": {
         "operationId": "dividend_last",
-        "summary": "最近一次分红（announce/ex_date/pay/dps/total/content/sas/payout_ratio/bonus_share/record_date），无数据返回 None。",
-        "description": "复用规范化历史序列取最新一行，字段与 ``history(limit=1)[0]`` 一致；、``_raw=True`` 时返回上游原始行。、底层目录函数 `bonus.query_list`。SDK 调用：`cli.dividend.last(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "summary": "最近一次分红（dict，无数据返回 None），字段与 ``history`` 列一致。",
+        "description": "``_raw=True`` 时返回上游原始行。、底层目录函数 `bonus.query_list`。SDK 调用：`cli.dividend.last(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "信息披露"
         ],
@@ -6589,8 +7014,8 @@
     "/info/profile": {
       "post": {
         "operationId": "info_profile",
-        "summary": "公司档案摘要（name/industry/style_industry/org_type/listing_date）。",
-        "description": "美股无 ``$STYLE_INDUSTRY`` 变量，该字段返回 ``None``；港股亦可能为空。、返回键集合在各市场保持一致，便于调用方按同一结构解包。、档案指标（$NAME 等）。SDK 调用：`cli.info.profile(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "summary": "公司档案摘要（10 字段，缺码字段显式 None）。",
+        "description": "键集合：``name/full_name/name_en/industry_l1/industry/style_industry/、org_type/listing_date/listing_board/business_scope``，各市场一致。、美股无 ``$STYLE_INDUSTRY``（静态排除）；其它市场若存在未预知缺码，、自动剔除重试一次并记忆（同 Client 生命周期只降一次）。、档案指标（$NAME 等）。SDK 调用：`cli.info.profile(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "参考数据"
         ],
@@ -9450,7 +9875,7 @@
     "/macro/query": {
       "post": {
         "operationId": "macro_query",
-        "summary": "宏观指标时序：{frequency, periods, latest, series[{sas, annual, sampling, value}]}。",
+        "summary": "宏观指标时序（信封：data.series 为 DataFrame，sas 升序）。",
         "description": "底层目录函数 `macro.query`。SDK 调用：`cli.macro.query(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "宏观数据"
@@ -9495,8 +9920,8 @@
     "/macro/asof": {
       "post": {
         "operationId": "macro_asof",
-        "summary": "宏观指标最新一期原生值（无数据返回 None；人口类序列勿用）。",
-        "description": "底层目录函数 `macro.asof`。SDK 调用：`cli.macro.asof(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "summary": "宏观指标最新一期值（无数据返回 None；人口类序列勿用）。",
+        "description": "台账登记码已换算到基础单位（如 ``$RE_INVEST`` 亿元→元）。、底层目录函数 `macro.asof`。SDK 调用：`cli.macro.asof(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "宏观数据"
         ],
@@ -9535,7 +9960,7 @@
     "/macro/spots": {
       "post": {
         "operationId": "macro_spots",
-        "summary": "宏观指标原生采样期点（降序，如 [\"2026:M09\", \"2026:M08\"]）。",
+        "summary": "宏观指标原生采样期点（升序，如 [\"2026:M08\", \"2026:M09\"]）。",
         "description": "底层目录函数 `macro.spots`。SDK 调用：`cli.macro.spots(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "宏观数据"

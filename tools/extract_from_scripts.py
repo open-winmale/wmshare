@@ -55,6 +55,8 @@ INCLUDED_NS = frozenset({
     "stocks",
     # v1.11.0：宏观时序域（中债曲线/宏观指标采样/行业月度）
     "macro",
+    # 2.0：交易日历域（P1 数据面：回测/窗口计算的前置面）
+    "calendar",
 })
 # rptdom 只保留三表透视族（年报 PDF 提取类 rows/notes/note_index 不发布）
 RPTDOM_KEEP = frozenset({"statement", "statement_years", "statement_compare", "statement_tree", "statement_audit"})

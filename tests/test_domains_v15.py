@@ -233,7 +233,8 @@ def test_facade_registered_and_delegates(cli, domain):
     assert core, f"{ns}: FRIENDLY_INDEX 应登记核心接口"
     for method in core:
         assert callable(getattr(type(facade), method, None)), f"{ns}.{method} 应为显式方法"
-    all_short = {n.split(".", 1)[1] for n in domain_fns(domain)}
+    all_short = {n.split(".", 1)[1] for n in domain_fns(domain)
+                 if not load().function(n).get("internal")}
     for short in all_short - core:
         delegate = getattr(facade, short)
         assert callable(delegate), f"{ns}.{short} 应可动态委托"

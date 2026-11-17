@@ -23,6 +23,7 @@ functions:
   - {name: estimates.query_rating, cn: 评级统计, layer: L0, normalize_with: estimates.fmt_maps}
   - {name: estimates.query_reports, cn: 个股研报, layer: L0, normalize_with: estimates.fmt_maps}
   - name: estimates.fmt_maps
+    internal: true
     cn: 预测行规范化
     layer: L1
     returns:

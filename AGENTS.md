@@ -45,6 +45,20 @@ pytest -q --cov-branch                # 离线全量（行/分支覆盖率 ≥85
 - **凭证纪律**：密钥只走环境变量或 `~/.wmshare/credentials.env`，任何密钥字面量不得入库；
 - 提交信息用 conventional 前缀（`feat:`/`fix:`/`docs:`/`chore:`）。
 
+## 2.0 接口契约（破坏性变更已定版，新代码必须遵守）
+
+- **返回形态**：门面（`cli.ns.method`）行表/序列默认 DataFrame（date 升序=旧→新；
+  `_out()` 收口）；面板/时序组合面用统一信封 `{ok, as_of, data, meta}`；
+  底层 `cli.call` 保持行数组。`_df` 已废除，`_raw=True` 是唯一原始口径逃生口。
+- **单位**：率=小数/额=元/量=股全库默认；台账（units.yaml overrides/facades）是
+  **运行时换算声明**（`ledger_convert`/`apply_facade_units` 消费），不是纯文档；
+  新增偏离口径的码必须登记台账 + `validate_units` 锚点测试。
+- **内部函数**：目录标 `internal: true`（fmt_* 等）不进任何门面属性直达；
+  新增辅助函数默认标 internal。
+- **新接口验收模板**：目录 yaml（units/ranges/checks 非空声明）→ FRIENDLY_INDEX →
+  六 gen 再生成 → INDICATORS 锚点 → examples 课程表条目 → demo 同形（DF/升序/信封，
+  未回放面显式 `demo_unsupported`）→ 计数级联（README/AI/GUIDE/SKILL/llms）。
+
 ## 防坑清单（都踩过，别再踩）
 
 1. **HIST_PCT 家族丢 key 绑定**：`$PCT_PE_TTM_3Y/5Y/10Y` 在指数/行业键上**不按 key 区分**，

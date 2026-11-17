@@ -24,7 +24,7 @@ _VIEW_FOR_METHOD = {"asset": "fund_asset", "rank": "etf_rank"}
 ANCHORS = {
     "card": {"view": "card", "quote": {"close": 3.87}},
     "nav": {"view": "nav", "latest": {"unit_nav": 3.87}},
-    "share": {"view": "share", "fd_share": 285.5299},     # 亿份；live 510300 实测锚点
+    "share": {"view": "share", "fd_share": 285.5299},     # 亿份（上游原值；SDK ×1e8）
     "div": {"view": "div", "rows": [{"amount": 0.052}]},
     "portfolio": {"view": "portfolio", "holdings": [{"code": "600519"}]},
     "profile": {"view": "profile", "profile": {"short_name": "沪深300ETF"}},
@@ -59,7 +59,10 @@ def test_every_view_builds_script_and_passes_result(view):
     sess = FakeSession(anchor)
     api = _api(sess)
     got = getattr(api, view)("cn.510300")
-    assert isinstance(got, dict) and got.get("view") == anchor["view"]
+    # 2.0 统一信封：业务字段进 data，view 进 meta
+    assert isinstance(got, dict) and got["ok"] is True
+    assert got["meta"]["view"] == view  # meta 记 SDK 方法名；script view 见 xs 断言
+    got = got["data"]
     # 生成脚本：require + return skhub.etf_build(字面量, view, mode, limit)
     xs = sess.calls[0]["xs"]
     assert len(xs) == 2

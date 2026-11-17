@@ -141,7 +141,7 @@ functions:
       - 服务端索引一次取数（免逐票批量）
       - 日频 EOD 口径，非交易日数据不变；仅 A 股（不含停牌）
   # ---- L1：格式化 ----
-  - {name: moneyflow.fmt_maps, cn: 资金流行规范化, kind: raw, layer: L1}
-  - {name: moneyflow.fmt_lines, cn: 资金流文本行, kind: raw, layer: L1}
-  - {name: moneyflow.fmt_line, cn: 单条资金流文本, kind: raw, layer: L1}
-  - {name: moneyflow.fmt_snapshot_line, cn: 资金流快照一行文本, kind: raw, layer: L1}
+  - {name: moneyflow.fmt_maps, cn: 资金流行规范化, kind: raw, layer: L1, internal: true}
+  - {name: moneyflow.fmt_lines, cn: 资金流文本行, kind: raw, layer: L1, internal: true}
+  - {name: moneyflow.fmt_line, cn: 单条资金流文本, kind: raw, layer: L1, internal: true}
+  - {name: moneyflow.fmt_snapshot_line, cn: 资金流快照一行文本, kind: raw, layer: L1, internal: true}

@@ -62,8 +62,9 @@ functions:
   - {name: equity.query_capital_change, cn: 股本结构最新, layer: L0, normalize_with: equity.fmt_capital_change, ranges: {total_shares: [0, 1.0e+13], free_shares: [0, 1.0e+13]}}
   - {name: equity.query_capital_change_at, cn: 指定报告期股本, layer: L1, normalize_with: equity.fmt_capital_change}
   # ---- L1：规范化工具 ----
-  - {name: equity.fmt_holder10, cn: 十大股东行规范化, layer: L1}
+  - {name: equity.fmt_holder10, cn: 十大股东行规范化, layer: L1, internal: true}
   - name: equity.fmt_holdernum
+    internal: true
     cn: 股东户数规范化
     layer: L1
     returns:
@@ -84,6 +85,7 @@ functions:
             - {name: hold_ratio_total, type: float64, cn: 持股比例合计（小数）, optional: true}
             - {name: freehold_ratio_total, type: float64, cn: 流通股持股比例合计（小数）, optional: true}
   - name: equity.fmt_pledge_detail
+    internal: true
     cn: 质押明细规范化
     layer: L1
     returns:
@@ -108,8 +110,9 @@ functions:
             - {name: warning_state, type: string, cn: 平仓风险标识, optional: true}
             - {name: pf_purpose, type: string, cn: 质押用途, optional: true}
             - {name: pforg_type, type: string, cn: 质押机构类型, optional: true}
-  - {name: equity.fmt_pledge_summary, cn: 质押比例规范化, layer: L1}
+  - {name: equity.fmt_pledge_summary, cn: 质押比例规范化, layer: L1, internal: true}
   - name: equity.fmt_pledge_market
+    internal: true
     cn: 市场质押规范化
     layer: L1
     returns:
@@ -128,9 +131,10 @@ functions:
             - {name: pledge_ratio_total, type: float64, cn: 市场质押比例（小数）, optional: true}
             - {name: pledge_company_num, type: float64, cn: 质押公司家数, optional: true}
             - {name: pledge_deal_num, type: float64, cn: 质押笔数, optional: true}
-  - {name: equity.fmt_pledge_industry, cn: 行业质押规范化, layer: L1}
-  - {name: equity.fmt_pledge_org, cn: 质押机构分布规范化, layer: L1}
+  - {name: equity.fmt_pledge_industry, cn: 行业质押规范化, layer: L1, internal: true}
+  - {name: equity.fmt_pledge_org, cn: 质押机构分布规范化, layer: L1, internal: true}
   - name: equity.fmt_institution_detail
+    internal: true
     cn: 机构明细规范化
     layer: L1
     returns:
@@ -149,6 +153,7 @@ functions:
             - {name: total_shares_ratio, type: float64, cn: 占总股本比（小数）, optional: true}
             - {name: free_shares_ratio, type: float64, cn: 占流通股比（小数）, optional: true}
   - name: equity.fmt_institution_summary
+    internal: true
     cn: 机构占比规范化
     layer: L1
     returns:
@@ -168,6 +173,7 @@ functions:
             - {name: change_ratio, type: float64, cn: 持股变化比例（小数）, optional: true}
             - {name: all_shares_ratio, type: float64, cn: 占总股本比（小数）, optional: true}
   - name: equity.fmt_hgt
+    internal: true
     cn: 沪港通行规范化
     layer: L1
     returns:
@@ -186,6 +192,7 @@ functions:
             - {name: total_shares_ratio, type: float64, cn: 总股本占比（小数）, optional: true}
             - {name: add_shares_pct, type: float64, cn: 持股变动比例（小数）, optional: true}
   - name: equity.fmt_national_team
+    internal: true
     cn: 国家队行规范化
     layer: L1
     returns:
@@ -205,6 +212,7 @@ functions:
             - {name: shares_ratio, type: float64, cn: 持股比例合计（小数）, optional: true}
             - {name: shares_ratio_change, type: float64, cn: 持股比例变动（小数）, optional: true}
   - name: equity.fmt_release
+    internal: true
     cn: 解禁行规范化
     layer: L1
     returns:
@@ -221,9 +229,10 @@ functions:
             - {name: total_shares_ratio, type: float64, cn: 解禁占总股本比（小数）, optional: true}
             - {name: unlimited_ratio, type: float64, cn: 解禁占无限售流通股比（小数）, optional: true}
             - {name: lift_type, type: string, cn: 解禁类型, optional: true}
-  - {name: equity.fmt_buyback_plan, cn: 回购方案行规范化, layer: L1}
-  - {name: equity.fmt_buyback_detail, cn: 回购明细规范化, layer: L1}
+  - {name: equity.fmt_buyback_plan, cn: 回购方案行规范化, layer: L1, internal: true}
+  - {name: equity.fmt_buyback_detail, cn: 回购明细规范化, layer: L1, internal: true}
   - name: equity.fmt_reorg
+    internal: true
     cn: 重组行规范化
     layer: L1
     returns:
@@ -246,12 +255,12 @@ functions:
             - {name: list_notice_date, type: string, cn: 权益变动披露日, optional: true}
             - {name: notice_date, type: string, cn: 公告日, optional: true}
             - {name: ccy, type: string, cn: 币种, optional: true}
-  - {name: equity.fmt_related_trade, cn: 关联交易行规范化, layer: L1}
-  - {name: equity.fmt_concert, cn: 一致行动人行规范化, layer: L1}
-  - {name: equity.fmt_guarantee, cn: 担保行规范化, layer: L1}
-  - {name: equity.fmt_litigation, cn: 诉讼行规范化, layer: L1}
-  - {name: equity.fmt_violation, cn: 处罚行规范化, layer: L1}
-  - {name: equity.fmt_executives, cn: 高管行规范化, layer: L1}
-  - {name: equity.fmt_exec_change, cn: 增减持行规范化, layer: L1}
-  - {name: equity.fmt_capital_change, cn: 股本行规范化, layer: L1}
-  - {name: equity.fmt_lines, cn: 规范化行转文本, layer: L1}
+  - {name: equity.fmt_related_trade, cn: 关联交易行规范化, layer: L1, internal: true}
+  - {name: equity.fmt_concert, cn: 一致行动人行规范化, layer: L1, internal: true}
+  - {name: equity.fmt_guarantee, cn: 担保行规范化, layer: L1, internal: true}
+  - {name: equity.fmt_litigation, cn: 诉讼行规范化, layer: L1, internal: true}
+  - {name: equity.fmt_violation, cn: 处罚行规范化, layer: L1, internal: true}
+  - {name: equity.fmt_executives, cn: 高管行规范化, layer: L1, internal: true}
+  - {name: equity.fmt_exec_change, cn: 增减持行规范化, layer: L1, internal: true}
+  - {name: equity.fmt_capital_change, cn: 股本行规范化, layer: L1, internal: true}
+  - {name: equity.fmt_lines, cn: 规范化行转文本, layer: L1, internal: true}

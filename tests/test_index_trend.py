@@ -19,11 +19,11 @@ def _trend():
 
 
 def test_points_are_newest_first():
-    """points[0] 必须是最新点（服务端 cursor.ds 顺序），不能是升序。"""
+    """2.0 方向契约：points 按日期升序（旧→新），最新点在末行（iloc[-1]）。"""
     t = _trend()
-    dates = [p["date"] for p in t["points"]]
+    dates = list(t["data"]["points"]["date"])
     assert dates, "demo trend 不应为空"
-    assert dates == sorted(dates, reverse=True), f"points 必须新→旧，实际首尾 {dates[0]} / {dates[-1]}"
+    assert dates == sorted(dates), f"points 必须旧→新（2.0 标准），实际首尾 {dates[0]} / {dates[-1]}"
     # as_of 是快照日，可能晚于最后一个周频点（demo 罐头即如此），但不得早于它
     assert t["as_of"] >= dates[0], f"as_of {t['as_of']} 早于最新点 {dates[0]}"
 
@@ -31,20 +31,20 @@ def test_points_are_newest_first():
 def test_percentile_anchors_on_latest_point():
     """分位基准点是 points[0]，不是序列末尾。"""
     t = _trend()
-    pts = t["points"]
-    latest = next(p for p in pts if isinstance(p.get("pe"), (int, float)) and p["pe"] > 0)
-    assert t["pe_pct"] is not None
+    pts = t["data"]["points"].to_dict("records")
+    latest = next(p for p in reversed(pts) if isinstance(p.get("pe"), (int, float)) and p["pe"] > 0)
+    assert t["data"]["pe_pct"] is not None
     # 用最新点独立复算，必须与 SDK 输出逐位一致
     vals = sorted(p["pe"] for p in pts if isinstance(p.get("pe"), (int, float)) and p["pe"] > 0)
     cur = latest["pe"]
     if len(vals) >= 2:
         rank0 = (sum(1 for v in vals if v < cur) + sum(1 for v in vals if v <= cur) - 1) / 2
-        assert t["pe_pct"] == pytest.approx(rank0 / (len(vals) - 1)), "分位应与最新点独立复算一致"
+        assert t["data"]["pe_pct"] == pytest.approx(rank0 / (len(vals) - 1)), "分位应与最新点独立复算一致"
     # 用最旧点复算，除非两端分位恰好相同，否则不应等于 SDK 输出
-    oldest = next(p for p in reversed(pts) if isinstance(p.get("pe"), (int, float)) and p["pe"] > 0)
+    oldest = next(p for p in pts if isinstance(p.get("pe"), (int, float)) and p["pe"] > 0)
     if oldest["pe"] != cur and len(vals) >= 2:
         old_rank0 = (sum(1 for v in vals if v < oldest["pe"]) + sum(1 for v in vals if v <= oldest["pe"]) - 1) / 2
-        assert t["pe_pct"] != pytest.approx(old_rank0 / (len(vals) - 1)), \
+        assert t["data"]["pe_pct"] != pytest.approx(old_rank0 / (len(vals) - 1)), \
             "分位疑似仍锚定最旧点（reversed 回归）"
 
 
@@ -55,25 +55,25 @@ def test_percentile_formula_matches_frontend():
     pct = IndexApi.__dict__["trend"]  # 存在性守卫
     assert pct is not None
     t = _trend()
-    pts = t["points"]
+    pts = t["data"]["points"].to_dict("records")
     pbs = sorted(p["pb"] for p in pts if isinstance(p.get("pb"), (int, float)) and p["pb"] > 0)
-    cur = next(p["pb"] for p in pts if isinstance(p.get("pb"), (int, float)) and p["pb"] > 0)
+    cur = [p["pb"] for p in pts if isinstance(p.get("pb"), (int, float)) and p["pb"] > 0][-1]
     expected = ((sum(1 for v in pbs if v < cur) + sum(1 for v in pbs if v <= cur) - 1) / 2) / (len(pbs) - 1)
-    assert t["pb_pct"] == pytest.approx(expected)
+    assert t["data"]["pb_pct"] == pytest.approx(expected)
 
 
 def test_window_and_truncation_flags():
     """窗口与截断标记齐备；sample 不足 10 年时 p10 必须为 None（不拿短窗口冒充）。"""
     t = demo_client().index.trend("index.hs300", "10y")
-    assert t["window"] == "10y"
-    assert "win_n" in t and "win_trunc" in t and "pct" in t
-    assert t["pct_source"] in ("server", "client")
-    assert t["dv_has_history"] is False, "股息率无历史序列，不得声称有"
-    node = (t["pct"] or {}).get("pe") or {}
-    if t["win_trunc"]:
+    assert t["data"]["window"] == "10y"
+    assert "win_n" in t["data"] and "win_trunc" in t["data"] and "pct" in t["data"]
+    assert t["meta"]["pct_source"] in ("server", "client")
+    assert t["meta"]["dv_has_history"] is False, "股息率无历史序列，不得声称有"
+    node = (t["data"]["pct"] or {}).get("pe") or {}
+    if t["data"]["win_trunc"]:
         # 只看所选档位（p10），不能用「p 为 None」放行——服务端的 p 恒为 5y 分位，
         # 它非 None 恰恰是 bug 的表征。
-        assert t["pe_pct"] is None and node.get("p10") is None, \
+        assert t["data"]["pe_pct"] is None and node.get("p10") is None, \
             "10y 窗口被截断时不得给出分位，也不得降级到更短窗口"
 
 
@@ -87,13 +87,13 @@ def test_pe_pct_follows_window():
     cli = demo_client()
     t3 = cli.index.trend("index.hs300", "3y")
     t5 = cli.index.trend("index.hs300", "5y")
-    assert t3["pe_pct"] == pytest.approx(t3["pct"]["pe"]["p3"]), "3y 必须取 p3"
-    assert t5["pe_pct"] == pytest.approx(t5["pct"]["pe"]["p5"]), "5y 必须取 p5"
-    assert t3["pe_pct_window"] == "3y" and t5["pe_pct_window"] == "5y"
+    assert t3["data"]["pe_pct"] == pytest.approx(t3["data"]["pct"]["pe"]["p3"]), "3y 必须取 p3"
+    assert t5["data"]["pe_pct"] == pytest.approx(t5["data"]["pct"]["pe"]["p5"]), "5y 必须取 p5"
+    assert t3["data"]["pe_pct_window"] == "3y" and t5["data"]["pe_pct_window"] == "5y"
     # demo 三档必须算出不同值，否则这条断言形同虚设（旧 demo 三档全相等）
-    assert t3["pct"]["pe"]["p3"] != t3["pct"]["pe"]["p5"], \
+    assert t3["data"]["pct"]["pe"]["p3"] != t3["data"]["pct"]["pe"]["p5"], \
         "demo 三档分位不得相同，否则无法暴露「恒取 5y」的回归"
-    assert t3["pct"]["pe"]["n3"] < t3["pct"]["pe"]["n5"], "3y 样本数应少于 5y"
+    assert t3["data"]["pct"]["pe"]["n3"] < t3["data"]["pct"]["pe"]["n5"], "3y 样本数应少于 5y"
 
 
 def test_pb_pct_follows_window():
@@ -101,8 +101,8 @@ def test_pb_pct_follows_window():
     cli = demo_client()
     t3 = cli.index.trend("index.hs300", "3y")
     t5 = cli.index.trend("index.hs300", "5y")
-    assert t3["pb_pct"] == pytest.approx(t3["pct"]["pb"]["p3"]), "3y 必须取 pb.p3"
-    assert t5["pb_pct"] == pytest.approx(t5["pct"]["pb"]["p5"]), "5y 必须取 pb.p5"
+    assert t3["data"]["pb_pct"] == pytest.approx(t3["data"]["pct"]["pb"]["p3"]), "3y 必须取 pb.p3"
+    assert t5["data"]["pb_pct"] == pytest.approx(t5["data"]["pct"]["pb"]["p5"]), "5y 必须取 pb.p5"
 
 
 def test_industry_keys_have_trend_history():
@@ -119,8 +119,8 @@ def test_industry_keys_have_trend_history():
         assert k.startswith("industry."), f"行业键格式应为 industry.SXX：{k}"
         t = cli.index.trend(k, "5y")
         assert t["ok"] is True, f"{k} 应能取到估值趋势"
-        assert t["points"], f"{k} 应返回非空序列"
-        assert t["pe_pct"] is not None, f"{k} 应给出 5y 分位"
+        assert not t["data"]["points"].empty, f"{k} 应返回非空序列"
+        assert t["data"]["pe_pct"] is not None, f"{k} 应给出 5y 分位"
 
 
 def test_universe_keys_groups():
@@ -180,10 +180,10 @@ def test_real_logic_pe_pct_uses_window_field():
     api = IndexApi(_StubClient(_raw(p3=p3, p5=p5)))
     t3 = api.trend("index.hs300", "3y")
     t5 = api.trend("index.hs300", "5y")
-    assert t3["pe_pct"] == pytest.approx(p3), "3y 必须取 p3，不能取 p（=p5）"
-    assert t5["pe_pct"] == pytest.approx(p5)
-    assert t3["pb_pct"] == pytest.approx(p3), "pb 侧同口径"
-    assert t3["pe_pct_window"] == "3y" and t5["pe_pct_window"] == "5y"
+    assert t3["data"]["pe_pct"] == pytest.approx(p3), "3y 必须取 p3，不能取 p（=p5）"
+    assert t5["data"]["pe_pct"] == pytest.approx(p5)
+    assert t3["data"]["pb_pct"] == pytest.approx(p3), "pb 侧同口径"
+    assert t3["data"]["pe_pct_window"] == "3y" and t5["data"]["pe_pct_window"] == "5y"
 
 
 def test_real_logic_10y_truncated_gives_none():
@@ -192,8 +192,8 @@ def test_real_logic_10y_truncated_gives_none():
 
     api = IndexApi(_StubClient(_raw(p3=0.61, p5=0.77, p10=None, trunc10=True)))
     t = api.trend("index.hs300", "10y")
-    assert t["pe_pct"] is None and t["pb_pct"] is None
-    assert t["pe_pct_window"] is None, "截断时不应声称任何窗口生效"
+    assert t["data"]["pe_pct"] is None and t["data"]["pb_pct"] is None
+    assert t["data"]["pe_pct_window"] is None, "截断时不应声称任何窗口生效"
 
 
 def test_real_logic_10y_when_covered():
@@ -202,8 +202,8 @@ def test_real_logic_10y_when_covered():
 
     api = IndexApi(_StubClient(_raw(p3=0.61, p5=0.77, p10=0.55, trunc10=False)))
     t = api.trend("index.hs300", "10y")
-    assert t["pe_pct"] == pytest.approx(0.55)
-    assert t["pe_pct_window"] == "10y"
+    assert t["data"]["pe_pct"] == pytest.approx(0.55)
+    assert t["data"]["pe_pct_window"] == "10y"
 
 
 def test_real_logic_passes_window_through():
@@ -228,13 +228,13 @@ def test_real_logic_loss_making_subject_distinguished_from_truncation():
     # 最新点 PE 为 None（亏损），PB 正常
     payload["base"][0][1] = None
     t = IndexApi(_StubClient(payload)).trend("index.hs300", "5y")
-    assert t["pe_pct"] is None, "亏损主体无 PE 分位"
-    assert t["pe_missing"] is True, "必须标记最新点无 PE，区别于窗口截断"
-    assert t["pb_missing"] is False
+    assert t["data"]["pe_pct"] is None, "亏损主体无 PE 分位"
+    assert t["data"]["pe_missing"] is True, "必须标记最新点无 PE，区别于窗口截断"
+    assert t["data"]["pb_missing"] is False
     # 窗口截断场景：最新点有值但 10y 档盖不住
     t2 = IndexApi(_StubClient(_raw(p3=0.6, p5=0.7, p10=None, trunc10=True))).trend(
         "index.hs300", "10y")
-    assert t2["pe_pct"] is None and t2["pe_missing"] is False, \
+    assert t2["data"]["pe_pct"] is None and t2["data"]["pe_missing"] is False, \
         "截断造成的 None 不得被误标为「无 PE」"
 
 
@@ -273,16 +273,17 @@ def test_real_logic_only_usage_error_falls_back():
     # 旧服务端无 pct：降级为按窗口本地自算（pct_source=client）。
     # 本例 base 仅 3 个点，低于本地兜底的 60 样本门槛，故分位为 None 是**正确行为**
     # （小样本不出分位，与 _pct 的 len(vals) < 60 守护一致）。
-    assert t["pct_source"] == "client"
-    assert t["pe_pct"] is None and t["win_trunc"] is True
+    assert t["meta"]["pct_source"] == "client"
+    assert t["data"]["pe_pct"] is None and t["data"]["win_trunc"] is True
 
 
 def test_bad_window_falls_back_to_5y():
     t = demo_client().index.trend("index.hs300", "7y")
-    assert t["window"] == "5y"
+    assert t["data"]["window"] == "5y"
 
 
 def test_demo_direction_matches_live_contract():
-    """demo 与 live 必须同向：两边都由 points[0] 表示最新点。"""
+    """demo 与 live 必须同向：2.0 两边都按升序，最新点在末行（iloc[-1]）。"""
     t = _trend()
-    assert t["points"][0]["date"] >= t["points"][-1]["date"]
+    dates = list(t["data"]["points"]["date"])
+    assert dates[-1] >= dates[0]

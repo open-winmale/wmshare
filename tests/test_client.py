@@ -7,6 +7,7 @@ FakeSession 复现 OpenAPI 合同：
 import json
 import threading
 
+import pandas as pd
 import pytest
 
 from wmshare.catalog import load
@@ -276,10 +277,15 @@ def test_inventory_min_args_optional(client):
 
 
 def test_dataframe_option(client):
-    pytest.importorskip("pandas")
+    """2.0：底层 call() 保持行数组；DataFrame 默认转换在门面层（to_output_frame）。"""
+    pd = pytest.importorskip("pandas")
     client.session.eval_result = [{"date": "2026-10-21", "close": 1309.69}]
-    df = client.call("kline.query_bars", sym="600519", limit=1, _df=True)
-    assert list(df.columns) == ["date", "close"] and len(df) == 1
+    rows = client.call("kline.query_bars", sym="600519", limit=1)
+    assert isinstance(rows, list) and rows[0]["date"] == "2026-10-21"
+    df = client.kline.last  # noqa: B018 - 属性存在性
+    from wmshare.client import to_output_frame
+    df = to_output_frame(rows)
+    assert isinstance(df, pd.DataFrame) and list(df.columns) == ["date", "close"]
 
 
 def test_token_cached(client):
@@ -446,7 +452,7 @@ def test_eval_default_anchor_follows_market():
 def test_stocks_list_routes_with_require(client):
     client.session.eval_result = [{"symbol": "600519", "name": "贵州茅台"}]
     rows = client.stocks.list()
-    assert rows and rows[0]["symbol"] == "600519"
+    assert not rows.empty and rows.iloc[0]["symbol"] == "600519"
     lines = last_eval(client)["json"]["xs_lines"]
     assert any("stocks.query_list()" in ln for ln in lines)
     assert any('xs.require("sys/stocks/init.xs")' in ln for ln in lines)
@@ -455,7 +461,8 @@ def test_stocks_list_routes_with_require(client):
 def test_stocks_industry_members_and_fuzzy(client):
     client.session.eval_result = [{"symbol": "600519", "name": "贵州茅台"}]
     rows = client.stocks.industry_members("S48", top_n=1)
-    assert rows == [{"symbol": "600519", "name": "贵州茅台"}]
+    assert isinstance(rows, pd.DataFrame)
+    assert rows.iloc[0].to_dict() == {"symbol": "600519", "name": "贵州茅台"}
     assert last_eval(client)["json"]["xs_lines"][-1] == \
         'return stocks.industry_members("S48")'
 

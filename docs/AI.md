@@ -8,7 +8,7 @@ wmshare 取数代码**。优先用 MCP；没有 MCP 时用 skill 或文档上下
 - **目录先行**：指标码与函数可编程检索（`cat.search("中文")`），AI 不需要"背"接口，
   查一下再用；编造的码在发请求前就被 `CatalogError` 拦下。
 - **本地 MCP server**：20 个 task tools 覆盖发现、行情、财务、治理、披露、港美与批量；
-  全部 147 个 friendly API（130 登记 + 17 个组合接口）均可经 `wmshare_call(mode="api")` 兜底
+  全部 154 个 friendly API（137 登记 + 17 个组合接口）均可经 `wmshare_call(mode="api")` 兜底
   （macro 域 11 个接口仅此路径）。输出统一 units/rows/next_action。
 - **skill 随包分发**：单位铁律、意图→接口决策树、坑位清单、错误速查，装进 agent 即生效
   （`wmshare.skill_dir()`）。
@@ -51,7 +51,8 @@ Agent 工作流：
    market、intl、notice 等领域面都已 first-class 暴露）；
 4. 多标的用 `wmshare_batch`；`params/raw/units` 会透传给 SDK `batch_iter`；
 5. 长尾目录函数用 `wmshare_call(mode="catalog")`，长尾 friendly API 用
-   `wmshare_call(mode="api")`；
+   `wmshare_call(mode="api")`；**调用前想估算 EC 消耗**用 `wmshare_call(mode="cost",
+   target=..., arguments={...})`（返回区间估算，不发起取数；无模型接口如实返回 None）；
 6. 超限结果先读 `meta.next_action`，再改 `output=summary/count` 或缩小范围；
 7. 429 时保留 `partial=true`、已完成结果、`resume_start`、`resume_symbols` 和
    `retry_after_seconds`，等待后续跑，不重试已完成部分。
@@ -89,7 +90,7 @@ cp -r "$(python3 -c 'import wmshare; print(wmshare.skill_dir())')" ~/.agents/ski
 1. 目录先行：任何指标码/函数名/参数先查离线目录（wmshare.load() 后 cat.search /
    cat.function），禁止凭记忆编造；
 2. 单位铁律：比率/涨跌幅/分位一律小数（0.0396 = 3.96%、0.42 = 42% 分位），金额=元、
-   量=股，不要做二次换算；cli.screener 宽度接口的 *_pct 例外，是百分数数值；
+   量=股，不要做二次换算；宽度接口的 *_pct 2.0 起也是小数（1.x 百分数例外已移除）；
 3. 批量铁律：多标的取数用 cli.batch_all / cli.batch_iter（自动分批，A 股 5,375 家
    只发 11 次请求），绝不写 for 循环逐票请求；一个批次只能同一个市场；
    注意批量省的是请求次数不省 EC（开放 API 按计算量计费，多标的脚本按标的数
@@ -127,7 +128,7 @@ cp -r "$(python3 -c 'import wmshare; print(wmshare.skill_dir())')" ~/.agents/ski
 | MCP 长结果塞爆上下文 | 后续推理变慢 | "改 `output=summary/count`，或缩小日期/标的范围" |
 | 一个批次混 A 股与港股 | 数据静默错误 | "一个 Client 只服务一个市场，分三次跑（共 29 批）" |
 | try/except 吞 `DataError` | 错误量级入库 | "DataError 是数据报警，先看消息再决定" |
-| `up_pct` 当小数 | 差 100 倍 | "宽度接口的 `*_pct` 是百分数数值（80.3 = 80.3%）" |
+| `up_pct` 当百分数 | 差 100 倍 | 1.x 宽度接口 `*_pct` 是百分数；**2.0 起为小数**（0.803 = 80.3%） |
 
 自查一行命令（验证 AI 写的指标码是否存在）：
 

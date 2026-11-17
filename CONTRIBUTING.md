@@ -2,6 +2,20 @@
 
 感谢关注 wmshare。本文件同时是**内容规范**：违反任一条会被 CI 门禁拦截。
 
+## 2.0 接口契约（改接口前必读，破坏性变更已定版）
+
+- **返回形态**：门面（`cli.ns.method`）行表/序列默认 pandas DataFrame（date 升序=旧→新，
+  统一经 `to_output_frame` 收口）；面板/时序组合面用统一信封 `{ok, as_of, data, meta}`；
+  底层 `cli.call` 保持规范化行数组。`_df` 参数已废除；`_raw=True` 是唯一原始口径逃生口。
+- **单位**：率=小数/额=元/量=股全库默认。`units.yaml` 的 overrides/facades 是**运行时
+  换算声明**（`ledger_convert` / `apply_facade_units` 消费），不是纯文档；新增偏离口径
+  的码必须登记台账 + `test_units_ledger` 锚点。
+- **内部函数**：目录标 `internal: true` 的辅助（fmt_* 等）不进任何门面属性直达；
+  新增内部辅助默认标 internal。
+- **新接口验收**：目录 yaml（units/ranges/checks 非空）→ FRIENDLY_INDEX → 六 gen 再生成
+  → INDICATORS 锚点 → examples 课程表条目 → demo 同形（DF/升序/信封；未回放面显式
+  `demo_unsupported`）→ 计数级联（README/AI/GUIDE/SKILL/llms/docs/README）。
+
 ## 提交前门禁（全部必须通过）
 
 ```bash

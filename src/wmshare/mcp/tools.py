@@ -66,6 +66,7 @@ def status(
         "capabilities": {
             "friendly_apis": route_count(),
             "api_gateway": "wmshare_call(mode='api')",
+            "cost_gateway": "wmshare_call(mode='cost', target=…, arguments={…})",
             "batchable_catalog_functions": len(batchable_catalog_functions()),
             "first_class_tools": len(TOOL_NAMES),
             "excluded_from_mcp": ["pandas/_df", "notice_poller", "长驻订阅"],
@@ -513,8 +514,13 @@ def call(
         return success(runtime, data, output=output, max_rows=max_rows,
                        target=str(target), mode=mode, raw=raw, units=units,
                        market=selected_market, ec_cost=ec_cost)
+    if mode == "cost":
+        # 2.0 计费透明度：调用前预估 EC 区间（估算值；不发起取数请求）。
+        est = runtime.client(market).cost_estimate(str(target), **args)
+        return success(runtime, est, output="sample", max_rows=100,
+                       target=str(target), mode=mode, market=selected_market)
     if mode != "catalog":
-        raise ValueError("mode 只支持 catalog/api")
+        raise ValueError("mode 只支持 catalog/api/cost")
     fn = wmshare.load().function(str(target))
     allowed = {
         item["name"] for item in (

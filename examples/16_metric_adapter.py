@@ -57,7 +57,7 @@ def main(cli=None, demo: bool = False) -> None:
         print(f"  {symbol}: {values}")
 
     # ---- ⑤ 全市场截面不走 many：交给 screener.query 一次查完 ----
-    print("\n全市场截面：cli.screener.query(fields=codes, _df=True)"
+    print("\n全市场截面：cli.screener.query(fields=codes)"
           "（服务端索引，不是逐票 many）")
 
 

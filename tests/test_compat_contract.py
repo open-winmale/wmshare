@@ -33,9 +33,9 @@ def test_metrics_json_schema_and_fields_unchanged():
 
 def test_indicator_api_signatures_unchanged():
     assert list(inspect.signature(IndicatorApi.get).parameters) == [
-        "self", "symbol", "code", "fut_symbol"]
+        "self", "symbol", "code", "fut_symbol", "native"]  # 2.0：native keyword-only
     assert list(inspect.signature(IndicatorApi.metrics).parameters) == [
-        "self", "symbol", "codes", "fut_symbol"]
+        "self", "symbol", "codes", "fut_symbol", "native"]  # 2.0：native keyword-only
 
 
 def test_catalog_public_signatures_unchanged():

@@ -2,7 +2,7 @@
 
 **编号即学习路径**：每个脚本独立可跑；输出里的数值都带单位注释——读输出就能学会
 「率/分位=小数（0.0396 = 3.96%）、金额=元、量=股」的基础口径。
-4 个离线示例在 CI 里以子进程真实执行，11 个凭证示例注入演示客户端（`main(cli=None)`）
+4 个离线示例在 CI 里以子进程真实执行，12 个凭证示例注入演示客户端（`main(cli=None)`；2.0 新面 18 在 demo 下显式降级）
 端到端跑过——可放心照抄。
 
 ## 运行
@@ -29,7 +29,7 @@ python examples/01_quickstart.py
 | 05 | `05_dividend_screener.py` | 进阶 | 凭证 | 分红质量筛选；call_batch 票级批量；底层函数属性直达 | GUIDE·单票菜谱 |
 | 06 | `06_indicator_tour.py` | 进阶 | 凭证 | 指标码体系：`cat.search`→分位/TTM→`hist_stats`，小数读法 | GUIDE·核心概念 |
 | 07 | `07_stocks_industry_batch.py` | 生产 | 凭证 | 全市场列表→行业成分→batch_all/batch_iter/call_batch 三入口分工 | GUIDE·批量取数 |
-| 08 | `08_pandas_analysis.py` | 生产 | 凭证+pandas | `_df=True` 转 DataFrame：MA20/动量/资金流/分红表 | GUIDE·pandas |
+| 08 | `08_pandas_analysis.py` | 生产 | 凭证 | 门面默认 DataFrame（date 升序）：MA20/动量/资金流/分红表 | GUIDE·pandas |
 | 09 | `09_ai_skill_setup.py` | AI | **离线** | skill 自检与装入 agent；AI 正确行为的验证标准 | AI.md（全文） |
 | 10 | `10_notice_monitor.py` | 进阶 | 凭证 | 公告轮询器：poll_now 手动一轮、ack/at-least-once、seek_oldest 重置 | GUIDE·公告变更订阅 |
 | 11 | `11_statements_tour.py` | 进阶 | 凭证 | 三大报表科目行结构、合并 vs 母公司（diffp 小数）、审计意见 | GUIDE·单票菜谱 |
@@ -39,6 +39,7 @@ python examples/01_quickstart.py
 | 15 | `15_backtest_ma.py` | 进阶 | 凭证 | 单股均线买卖点回测：逐笔成交明细（买/卖、费用、盈亏、持有天数）+ 净值/回撤汇总；固定口径次日开盘、T+1、整手 | GUIDE·单票菜谱·单股回测 |
 | 16 | `16_metric_adapter.py` | 进阶 | 凭证 / **`--demo`** | 指标适配层：scope/topic 找码、combinable_groups 看组合边界、table 长表、many 小列表多标的 | docs/METRIC_ADAPTER.md |
 | 17 | `17_prr_dividend_screen.py` | 生产 | 凭证 / **`--demo`** | 三维红利排雷：硬卡点全压一条 where（count=真命中数）→ 本地剔金融、现金流覆盖、PRR 分位与 CHI 排名 | GUIDE·单票菜谱 |
+| 18 | `18_calendar_margin.py` | 2.0 新面 | 凭证（demo 未回放，显式降级） | 交易日历（回测窗口前置）+ 市场级两融汇总（杠杆水位）+ 标的名单资格判定 | API·market.calendar / market.margin |
 
 ## 约定（新增示例请遵守）
 

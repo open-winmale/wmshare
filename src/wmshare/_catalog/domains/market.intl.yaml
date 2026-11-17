@@ -28,6 +28,7 @@ functions:
   - {name: intl.query_sellshort, cn: 港美沽空, layer: L0, normalize_with: intl.fmt_maps}
   - {name: intl.issue_info, cn: 美股发行信息, layer: L0, normalize_with: intl.fmt_issue}
   - name: intl.fmt_maps
+    internal: true
     cn: 港美股行规范化
     layer: L1
     returns:
@@ -67,4 +68,4 @@ functions:
             - {name: nav, type: float64, cn: 每股资产净值（港币）, optional: true}
             - {name: high, type: float64, cn: 最高价, optional: true}
             - {name: low, type: float64, cn: 最低价, optional: true}
-  - {name: intl.fmt_issue, cn: 发行行规范化, layer: L1}
+  - {name: intl.fmt_issue, cn: 发行行规范化, layer: L1, internal: true}

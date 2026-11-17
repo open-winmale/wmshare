@@ -904,3 +904,16 @@ def test_all_core_interfaces_are_exercised_here():
         if f".{ns}.{method}(" not in src and f".{ns}.{method}," not in src:
             missing.append(f"{ns}.{method}")
     assert not missing, f"live 冒烟未覆盖：{missing}（共 {CORE_COUNT} 个核心接口）"
+
+
+def test_v2_new_faces_smoke(cli):
+    """2.0 P1/P2 新面 live 冒烟：calendar / margin 市场面 / futures。"""
+    days = _call_or_xfail(lambda: cli.calendar.days("2026-01-01", "2026-03-31"))
+    assert days is not None and len(days) > 0
+    _call_or_xfail(lambda: cli.calendar.is_open("2026-01-05"))
+    _call_or_xfail(lambda: cli.calendar.next("2026-01-30", 3))
+    _call_or_xfail(lambda: cli.margin.market_summary(5))
+    _call_or_xfail(lambda: cli.margin.universe(20))
+    _call_or_xfail(lambda: cli.futures.get("RB.SHF", "close"))
+    snap = _call_or_xfail(lambda: cli.futures.snapshot("RB.SHF"))
+    assert snap is None or isinstance(snap, dict)

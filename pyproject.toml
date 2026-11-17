@@ -34,10 +34,11 @@ classifiers = [
 dependencies = [
     "requests>=2.28",
     "PyYAML>=6",
+    "pandas>=1.5",
 ]
 
 [project.optional-dependencies]
-# 出图（cb.figures）才需要 matplotlib；SDK 本体保持零重依赖
+# 出图（cb.figures）才需要 matplotlib
 figures = ["matplotlib>=3.6"]
 dev = [
     "pytest>=7",
@@ -47,7 +48,6 @@ dev = [
     "mcp>=1.7,<2",
     "matplotlib>=3.6",
 ]
-dataframe = ["pandas>=1.5"]
 mcp = ["mcp>=1.7,<2"]
 
 [project.urls]

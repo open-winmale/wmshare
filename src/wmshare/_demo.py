@@ -437,17 +437,51 @@ class DemoClient:
             screen_volume_spike=lambda sym: self._screen(sym, "volume_spike"),
             screen_up_today=lambda sym: self._screen(sym, "up_today"),
             index_breadth_summary=lambda: dict(self._data["screener"]["breadth_summary"]),
-            index_breadth_bins=lambda: [dict(row) for row in self._data["screener"]["breadth_bins"]],
+            index_breadth_bins=lambda: (lambda rows: (
+                __import__("wmshare.client", fromlist=["to_output_frame"]).to_output_frame(rows)))(
+                [dict(row) for row in self._data["screener"]["breadth_bins"]]),
             index_top_movers=self._top_movers,
             query=self._screen_query,
         )
         self.valuation = SimpleNamespace(hist_stats=self._valuation_hist_stats)
         self.index = self._index_ns()
+        # 2.0 新面：demo 快照（2026-10-30 拍摄）不覆盖，显式报错不伪造。
+        # 待快照重拍后逐面回放（与 live 同向 + DataFrame 同形）。
+        self.futures = SimpleNamespace(
+            get=lambda *a, **kw: (_ for _ in ()).throw(
+                _unsupported("futures.get", "2.0 新接口")),
+            snapshot=lambda *a, **kw: (_ for _ in ()).throw(
+                _unsupported("futures.snapshot", "2.0 新接口")),
+        )
+        self.calendar = SimpleNamespace(
+            days=lambda *a, **kw: (_ for _ in ()).throw(
+                _unsupported("calendar.days", "2.0 新接口")),
+            is_open=lambda *a, **kw: (_ for _ in ()).throw(
+                _unsupported("calendar.is_open", "2.0 新接口")),
+            next=lambda *a, **kw: (_ for _ in ()).throw(
+                _unsupported("calendar.next", "2.0 新接口")),
+        )
+        self.margin = SimpleNamespace(
+            query=lambda *a, **kw: (_ for _ in ()).throw(
+                _unsupported("margin.query", "底层函数")),
+            market_summary=lambda *a, **kw: (_ for _ in ()).throw(
+                _unsupported("margin.market_summary", "2.0 新接口")),
+            universe=lambda *a, **kw: (_ for _ in ()).throw(
+                _unsupported("margin.universe", "2.0 新接口")),
+        )
         self.batch_all = self._batch_all
         self.batch_iter = self._batch_iter
         self.call_batch = self._call_batch
         self.notice_poller = self._notice_poller
         self.call = self._call
+
+
+    def _df_asc(self, rows: Any, key: str = "date") -> Any:
+        """2.0 同形：demo 行列表也按升序 + DataFrame 输出（与 live 门面同形同向）。"""
+        from wmshare.client import to_output_frame
+        if isinstance(rows, list) and rows and isinstance(rows[0], dict):
+            rows = sorted(rows, key=lambda r: str(r.get(key) or ""))
+        return to_output_frame(rows)
 
     def _require_symbol(self, symbol: str) -> str:
         sym = str(symbol)
@@ -466,19 +500,9 @@ class DemoClient:
             )
         return sym
 
-    def _maybe_df(self, rows: list[dict[str, Any]], df_flag: bool) -> Any:
-        if not df_flag:
-            return rows
-        try:
-            import pandas as pd
-        except ImportError as e:
-            raise UsageError('_df=True 需要 pandas：pip install "wmshare[dataframe]"') from e
-        return pd.DataFrame(rows)
-
-    # ---- market data ----
     def _kline_bars(self, symbol: str, n: int | None = None, adj: str | None = None,
                     begin: str | None = None, end: str | None = None,
-                    _raw: bool = False, _df: bool = False) -> Any:
+                    _raw: bool = False) -> Any:
         if adj is not None or begin is not None or end is not None or _raw:
             raise UsageError(
                 "demo 快照只覆盖不复权、不带日期区间的 kline.bars(n<=120)",
@@ -493,14 +517,29 @@ class DemoClient:
             )
         sym = self._require_symbol(symbol)
         rows = [dict(row) for row in self._data["kline_bars"][sym][:count]]
-        return self._maybe_df(rows, _df)
+        return self._df_asc(rows)
 
-    def _kline_snapshot(self, symbol: str) -> dict[str, Any]:
+    def _kline_snapshot(self, symbol: Any) -> Any:
+        """单票 MAP；传列表（≥3 票）与 live 同形——一次请求的 BatchResult。
+
+        1.22.1 起 live 的列表入参自动路由批量原生实现（单次 eval、EC 按量），
+        demo 必须同形同次数，否则示例会教出「批量=12 次请求」的旧口径。
+        """
+        if isinstance(symbol, (list, tuple)):
+            syms = list(dict.fromkeys(str(s) for s in symbol))
+            if len(syms) >= 3:
+                return BatchResult(results={self._require_snapshot_symbol(s):
+                                            self._kline_snapshot(s) for s in syms},
+                                   requests=1, requested=len(syms))
+            return BatchResult(
+                results={self._require_snapshot_symbol(s): self._kline_snapshot(s)
+                         for s in syms},
+                requests=len(syms), requested=len(syms))
         sym = self._require_snapshot_symbol(symbol)
         return dict(self._data["kline_snapshot"][sym])
 
     def _kline_batch_live(self, symbols: list[str]) -> dict[str, dict[str, Any]]:
-        return {self._require_snapshot_symbol(s): self._kline_snapshot(s)
+        return {self._require_snapshot_symbol(s): dict(self._data["kline_snapshot"][s])
                 for s in symbols}
 
     def _moneyflow_last(self, symbol: str, _raw: bool = False) -> Any:
@@ -510,8 +549,7 @@ class DemoClient:
         value = self._data["moneyflow_last"][sym]
         return dict(value) if isinstance(value, dict) else value
 
-    def _moneyflow_bars(self, symbol: str, n: int = 20, _raw: bool = False,
-                        _df: bool = False) -> Any:
+    def _moneyflow_bars(self, symbol: str, n: int = 20, _raw: bool = False) -> Any:
         if _raw:
             raise UsageError("demo 快照不提供 _raw 原始口径", code="demo_unsupported")
         count = int(n)
@@ -522,9 +560,9 @@ class DemoClient:
             )
         sym = self._require_symbol(symbol)
         rows = [dict(row) for row in self._data["moneyflow_bars"][sym][:count]]
-        return self._maybe_df(rows, _df)
+        return self._df_asc(rows)
 
-    def _moneyflow_board(self, _df: bool = False) -> Any:
+    def _moneyflow_board(self) -> Any:
         """演示宇宙（10 只）的全市场快照罐头：由 moneyflow_last 派生、按净流入降序。"""
         rows = []
         for sym, v in self._data["moneyflow_last"].items():
@@ -541,12 +579,13 @@ class DemoClient:
                 "industry": snap.get("industry", ""),
             })
         rows.sort(key=lambda r: r["net_mf"], reverse=True)
-        return self._maybe_df(rows, _df)
+        from wmshare.client import to_output_frame
+        return to_output_frame(rows)
 
     # ---- fundamentals ----
     def _statement(self, kind: str):
         def method(symbol: str, years: int = 5, period: str = "annual",
-                   _df: bool = False, **_kw) -> Any:
+                   **_kw) -> Any:
             if period not in ("annual", "quarter"):
                 raise UsageError(f"未知 period={period!r}", code="params")
             if int(years) <= 0:
@@ -555,7 +594,8 @@ class DemoClient:
             if sym != "600519":
                 raise UsageError("demo 报表快照只覆盖 600519", code="demo_symbol")
             rows = _slice_statement_rows(self._data["statements"][kind], int(years))
-            return self._maybe_df(rows, _df)
+            from wmshare.client import to_output_frame
+            return to_output_frame(rows)
         return method
 
 
@@ -581,10 +621,10 @@ class DemoClient:
 
     # ---- disclosure ----
     def _notice_list(self, symbol: str, window: str = "3m", keyword: str = "",
-                     limit: int = 20, _raw: bool = False, _df: bool = False) -> Any:
+                     limit: int = 20, _raw: bool = False) -> Any:
         self._require_symbol(symbol)
         rows = [dict(row) for row in self._data["notices"][:max(0, int(limit))]]
-        return self._maybe_df(rows, _df)
+        return self._df_asc(rows)
 
     def _dividend_last(self, symbol: str, _raw: bool = False) -> Any:
         if _raw:
@@ -598,7 +638,7 @@ class DemoClient:
 
     def _dividend_history(self, symbol: str, limit: int | None = None,
                           begin: str | None = None, end: str | None = None,
-                          _raw: bool = False, _df: bool = False) -> Any:
+                          _raw: bool = False) -> Any:
         if begin is not None or end is not None or _raw:
             raise UsageError("demo 分红快照只支持 limit 查询", code="demo_unsupported")
         count = 20 if limit is None else int(limit)
@@ -608,14 +648,14 @@ class DemoClient:
             )
         sym = self._require_symbol(symbol)
         rows = [dict(row) for row in self._data["dividend"]["history"][sym][:count]]
-        return self._maybe_df(rows, _df)
+        return self._df_asc(rows, key="ex_div")
 
     def _dividend_screen_quality(self, symbol: str, min_yield: float | None = None,
                                  payout_min: float | None = None,
                                  payout_max: float | None = None,
-                                 _raw: bool = False, _df: bool = False) -> bool:
-        if _raw or _df:
-            raise UsageError("demo screen_quality 只返回布尔值", code="demo_unsupported")
+                                 _raw: bool = False) -> bool:
+        if _raw:
+            raise UsageError("demo screen_quality 不提供 _raw 原始口径", code="demo_unsupported")
         sym = self._require_symbol(symbol)
         wanted = _quality_args_key(min_yield, payout_min, payout_max)
         for variant in self._data["dividend"]["screen_quality_by_args"]:
@@ -640,18 +680,17 @@ class DemoClient:
             raise UsageError("demo profile 只覆盖 600519", code="demo_symbol")
         return dict(self._data["profile"])
 
-    def _stocks_list(self, _df: bool = False) -> Any:
-        rows = [dict(row) for row in self._data["stocks_list"]]
-        return self._maybe_df(rows, _df)
+    def _stocks_list(self) -> Any:
+        from wmshare.client import to_output_frame
+        return to_output_frame([dict(row) for row in self._data["stocks_list"]])
 
-    def _industries(self, level: int | None = None, _df: bool = False) -> Any:
+    def _industries(self, level: int | None = None) -> Any:
         if level is not None and int(level) != 1:
             raise UsageError("demo 快照只保存一级行业", code="demo_limit")
-        rows = [dict(row) for row in self._data["industries"]]
-        return self._maybe_df(rows, _df)
+        from wmshare.client import to_output_frame
+        return to_output_frame([dict(row) for row in self._data["industries"]])
 
-    def _industry_members(self, industry: str, top_n: int | None = None,
-                          _df: bool = False) -> Any:
+    def _industry_members(self, industry: str, top_n: int | None = None) -> Any:
         if str(industry) not in ("银行", "S48"):
             raise UsageError(
                 "demo 快照只保存「银行」行业成分；可传 银行 或 S48", code="demo_symbol",
@@ -659,7 +698,8 @@ class DemoClient:
         rows = [dict(row) for row in self._data["industry_members_bank"]]
         if top_n is not None:
             rows = rows[:max(0, int(top_n))]
-        return self._maybe_df(rows, _df)
+        from wmshare.client import to_output_frame
+        return to_output_frame(rows)
 
     # ---- screener ----
     def _screen(self, symbol: str, key: str) -> bool:
@@ -680,7 +720,8 @@ class DemoClient:
         rule = str(rule or "ma_cross").lower()
         if rule == "ma":
             rule = "ma_cross"
-        rows = [dict(r) for r in self._kline_bars(symbol, n=120, adj=None)]
+        bars = self._kline_bars(symbol, n=120, adj=None)
+        rows = bars.to_dict("records") if hasattr(bars, "to_dict") else bars
         rows.sort(key=lambda r: str(r.get("date") or ""))
         warnings: list[str] = []
         if rule in VALUATION_RULES:
@@ -716,8 +757,7 @@ class DemoClient:
 
     def _screen_query(self, where: str, order: str | None = None, desc: bool = True,
                       limit: int = 50, offset: int = 0,
-                      fields: list[str] | None = None, idx: str | None = None,
-                      _df: bool = False) -> Any:
+                      fields: list[str] | None = None, idx: str | None = None) -> Any:
         """演示快照只有 10 只票的截面，没有全市场索引列——不做假筛选。"""
         raise UsageError(
             "demo 快照不含全市场索引，screener.query 需真实凭证（Client.from_env()）；"
@@ -726,14 +766,15 @@ class DemoClient:
         )
 
     def _top_movers(self, limit: int = 20, desc: bool = True,
-                    idx: str | None = None, _df: bool = False) -> Any:
+                    idx: str | None = None) -> Any:
         if idx is not None:
             raise UsageError("demo 快照只保存默认全市场索引", code="demo_unsupported")
         if int(limit) <= 0 or int(limit) > 10:
             raise UsageError("demo 涨跌榜最多保存 10 行", code="demo_limit")
         key = "top_movers_up" if desc else "top_movers_down"
         rows = [dict(row) for row in self._data["screener"][key][:int(limit)]]
-        return self._maybe_df(rows, _df)
+        from wmshare.client import to_output_frame
+        return to_output_frame(rows)
 
     def _valuation_hist_stats(self, symbol: str, metric: str = "pe",
                               window: str = "3y") -> dict[str, Any]:
@@ -773,18 +814,18 @@ class DemoClient:
         yield self._batch(name, list(symbols))
 
     def _call_batch(self, name: str, symbols: list[str], /, on_error: str = "raise",
-                    _raw: bool = False, _df: bool = False, _units: str = "base",
+                    _raw: bool = False, _units: str = "base",
                     **kwargs: Any) -> BatchResult:
         if on_error not in ("raise", "skip"):
             raise UsageError("on_error 只支持 raise 或 skip", code="params")
         return self._batch(name, list(symbols))
 
-    def _call(self, name: str, /, _raw: bool = False, _df: bool = False,
+    def _call(self, name: str, /, _raw: bool = False,
               _units: str = "base", **kwargs: Any) -> Any:
         symbol = kwargs.get("symbol") or kwargs.get("sym") or ""
         if name == "kline.query_bars":
             return self._kline_bars(symbol, n=kwargs.get("n") or kwargs.get("limit") or 120,
-                                    _raw=_raw, _df=_df)
+                                    _raw=_raw)
         if name == "kline.snapshot":
             return self._kline_snapshot(symbol)
         if name == "bonus.snapshot_yield_ttm":
@@ -854,7 +895,7 @@ class DemoClient:
         def _trend(key: str, window: str = "5y") -> dict:
             # 确定性合成周频序列：每键目标分位按 seed 铺开 5%~95%（分位演示各不相同；
             # 序列形状仍为正弦波，真实数据以 live 为准）。
-            # 方向必须与 live 一致：**新→旧**，points[0] 是最新点。
+            # 2.0 方向契约：与 live 一致按**升序**（旧→新）输出，最新点在末行。
             import math
             base = cur.get(key) or {"pe": 20.0, "pb": 2.0}
             seed = sum(ord(c) for c in key) % 11
@@ -876,9 +917,8 @@ class DemoClient:
             pe_s = _series("pe", tgt_pe)
             pb_s = _series("pb", tgt_pb)
             pts: list[list[float | str]] = []
-            for i in range(n):  # 行=[date, pe, pb]，生成升序；落库前反转为新→旧
+            for i in range(n):  # 行=[date, pe, pb]，升序（旧→新，2.0 标准）
                 pts.append([_demo_date(i, n), round(pe_s[i], 4), round(pb_s[i], 4)])
-            pts.reverse()  # 落库前反转为新→旧（与 cursor.ds 顺序一致）
             w = str(window or "5y").lower()
             if w not in ("3y", "5y", "10y"):
                 w = "5y"
@@ -887,9 +927,9 @@ class DemoClient:
                 """单列分位：rank0/(n-1)，并列取中点（与 live/前端同口径）。
 
                 ``window_n`` 为窗口内的点数（取最近 window_n 个点；0=全序列）。
-                pts 是新→旧，故 ``pts[:window_n]`` 恰是最近的一段。
+                pts 是旧→新，故 ``pts[-window_n:]`` 恰是最近的一段。
                 """
-                rows = list(reversed(pts[:window_n] if window_n else pts))  # 升序
+                rows = pts[len(pts) - window_n:] if window_n else pts
                 vals: list[float] = []
                 for p in rows:
                     v = p[col]
@@ -920,7 +960,7 @@ class DemoClient:
                 return {"p": b5["p"], "p3": b3["p"], "p5": b5["p"], "p10": None,
                         "n3": b3["n"], "n5": b5["n"], "n10": b10["n"], "trunc10": True}
 
-            last_pe, last_pb = float(pts[0][1]), float(pts[0][2])  # 行=[date, pe, pb]
+            last_pe, last_pb = float(pts[-1][1]), float(pts[-1][2])  # 最新点=末行
             pe_b = _bundle(1, last_pe)
             pb_b = _bundle(2, last_pb)
             # 与 live 同选择逻辑：按 window 取档；10y 因 trunc10 给 None（不降级）
@@ -929,15 +969,17 @@ class DemoClient:
             pe_sel = None if _trunc else pe_b.get(_FIELD[w])
             pb_sel = None if _trunc else pb_b.get(_FIELD[w])
             eff_win = None if _trunc else w
-            return {"ok": True, "key": key, "as_of": "2026-10-30", "density": "weekly",
-                    "n": n,
-                    "points": [{"date": p[0], "pe": p[1], "pb": p[2]} for p in pts],
+            from wmshare.client import to_output_frame
+            data = {"key": key, "density": "weekly", "n": n,
+                    "points": to_output_frame(
+                        [{"date": p[0], "pe": p[1], "pb": p[2]} for p in pts]),
                     "pe_pct": pe_sel,
                     "pb_pct": pb_sel, "pe_pct_window": eff_win,
                     "pe_missing": False, "pb_missing": False, "med": [],
-                    "window": w, "win_start": pts[-1][0], "win_n": n, "win_trunc": True,
-                    "pct": {"pe": pe_b, "pb": pb_b, "pe_med": {}},
-                    "pct_source": "server", "dv_has_history": False}
+                    "window": w, "win_start": pts[0][0], "win_n": n, "win_trunc": True,
+                    "pct": {"pe": pe_b, "pb": pb_b, "pe_med": {}}}
+            return {"ok": True, "as_of": "2026-10-30", "data": data,
+                    "meta": {"pct_source": "server", "dv_has_history": False}}
 
         def _demo_date(i: int, n: int) -> str:
             """第 i 周（0=最旧）的日期，升序生成；落库时整体反转为新→旧。"""
@@ -947,12 +989,15 @@ class DemoClient:
         def _valuation(key: str, points: int | None = None):
             c = cur.get(key)
             if not c:
-                return {"current": {"pe": None, "pb": None, "dv": None}, "series": []}
+                data = {"current": {"pe": None, "pb": None, "dv": None}, "series": []}
+                return {"ok": True, "as_of": "2026-10-30", "data": data, "meta": {}}
             series = [{"d": _demo_date(i, 8),
-                       "pe": round(c["pe"] * (1 - 0.02 * (7 - i) / 7), 4),
-                       "pb": round(c["pb"] * (1 - 0.02 * (7 - i) / 7), 4)}
-                      for i in range(8)]
-            return {"current": dict(c), "series": series}
+                       "pe": round(c["pe"] * (1 - 0.02 * i / 7), 4),
+                       "pb": round(c["pb"] * (1 - 0.02 * i / 7), 4)}
+                      for i in range(8)]  # 升序（旧→新，2.0 标准）
+            from wmshare.client import to_output_frame
+            data = {"current": dict(c), "series": to_output_frame(series)}
+            return {"ok": True, "as_of": "2026-10-30", "data": data, "meta": {}}
 
         def _members(key: str, sort_by: str = "mv", top_n: int | None = None):
             rows = [

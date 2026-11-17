@@ -30,7 +30,7 @@ def test_packaged_surface(snapshot, cli):
     pct_value = snapshot["data"]["indicators"]["$PCT_PE_TTM_10Y_LAST"]
     assert cli.dividend.yield_ttm("600519") == yield_value
     assert cli.indicator.get("600519", "$PCT_PE_TTM_10Y_LAST") == pct_value
-    codes = [row["symbol"] for row in cli.stocks.list()]
+    codes = list(cli.stocks.list()["symbol"])
     assert codes == snapshot["data"]["universe"]
     result = cli.batch_all("kline.snapshot", codes)
     assert len(result.results) == 10 and result.requests == 1
@@ -42,18 +42,19 @@ def test_units_are_base(snapshot, cli):
     mf = cli.moneyflow.last("600519")
     if mf is not None:
         assert mf["net_mf"] > 1
-    bar = cli.kline.bars("600519", n=3)[0]
-    assert 100 < bar["close"] < 10000 and bar["volume"] >= 0
+    bars = cli.kline.bars("600519", n=3)
+    assert 100 < float(bars.iloc[-1]["close"]) < 10000 and bars.iloc[-1]["volume"] >= 0
     breadth = cli.screener.index_breadth_summary()
     assert breadth["up_pct"] >= 0
     assert -1 <= breadth["median_pct"] <= 1
 
 
-def test_bars_are_date_descending_and_slice_real_rows(snapshot, cli):
-    dates = [row["date"] for row in cli.kline.bars("600519", n=5)]
-    assert dates == sorted(dates, reverse=True)
-    expected = [row["date"] for row in snapshot["data"]["kline_bars"]["600519"][:5]]
-    assert dates == expected
+def test_bars_are_date_ascending_and_slice_real_rows(snapshot, cli):
+    """2.0 方向契约：demo 与 live 同为升序（旧→新），切片取快照最新 5 根。"""
+    dates = list(cli.kline.bars("600519", n=5)["date"])
+    assert dates == sorted(dates)
+    expected_desc = [row["date"] for row in snapshot["data"]["kline_bars"]["600519"][:5]]
+    assert sorted(expected_desc) == dates
     with pytest.raises(UsageError, match="120"):
         cli.kline.bars("600519", n=121)
 
@@ -93,7 +94,7 @@ def test_backtest_pe_runs_on_demo_snapshot(cli):
 def test_snapshot_matches_latest_bar(snapshot, cli):
     for symbol in snapshot["data"]["universe"]:
         bars = cli.kline.bars(symbol, n=1)
-        assert cli.kline.snapshot(symbol)["close"] == bars[0]["close"]
+        assert cli.kline.snapshot(symbol)["close"] == float(bars.iloc[-1]["close"])
 
 
 def test_unknown_symbol_is_rejected(cli):
@@ -104,7 +105,7 @@ def test_unknown_symbol_is_rejected(cli):
 
 def test_statements_shapes_match_real(snapshot, cli):
     for kind in ("income", "balance", "cashflow"):
-        rows = getattr(cli.statements, kind)("600519", years=2)
+        rows = getattr(cli.statements, kind)("600519", years=2).to_dict("records")
         assert rows and all({"k", "cn", "vals"} <= set(row) for row in rows)
         for row in rows:
             assert set(row["vals"]).issubset(set(snapshot["data"]["statements"][kind][0]["vals"]))
@@ -155,10 +156,10 @@ def test_example_quality_thresholds_are_captured(snapshot, cli):
 
 
 def test_moneyflow_board_is_sorted_desc_and_covers_universe(snapshot, cli):
-    rows = cli.moneyflow.board()
+    rows = cli.moneyflow.board()  # 2.0：DataFrame（按主力净流入降序）
     assert len(rows) == len(snapshot["data"]["moneyflow_last"])
-    net = [r["net_mf"] for r in rows]
+    net = list(rows["net_mf"])
     assert net == sorted(net, reverse=True)
-    row = rows[0]
+    row = rows.iloc[0].to_dict()  # Series 直接 set 会迭代值；转 dict 取键
     assert {"symbol", "name", "net_mf", "net_mv_ratio", "lg_net", "elg_net",
             "md_net", "sm_net", "industry"} <= set(row)

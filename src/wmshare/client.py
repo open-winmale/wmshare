@@ -6,6 +6,7 @@
 """
 from __future__ import annotations
 
+import datetime as _dt
 import json
 import math
 import os
@@ -240,14 +241,54 @@ NATIVE_FULL_MARKET_MIN = 4000
 
 def _to_dataframe(result: Any) -> Any:
     try:
-        import pandas as pd  # optional dependency
+        import pandas as pd
     except ImportError as e:  # pragma: no cover
-        raise UsageError("_df=True 需要安装 pandas：pip install pandas", code="pandas") from e
+        raise UsageError(
+            "DataFrame 返回需要 pandas：pip install pandas", code="pandas") from e
     if isinstance(result, list):
         return pd.DataFrame(result)
     if isinstance(result, dict):
         return pd.DataFrame([result])
     raise UsageError(f"结果类型 {type(result).__name__} 无法转 DataFrame", code="dataframe")
+
+
+def to_output_frame(value: Any) -> Any:
+    """2.0 门面返回形态收口：行数组（list[dict]）默认转 DataFrame，其余原样。
+
+    这是「查询/序列类默认 DataFrame」规范的唯一收口点：
+      - list[dict] → DataFrame（列序与行序由门面保证：标识列在前、时间升序）
+      - dict（MAP/信封）、标量、None → 原样
+      - BatchResult 容器 → 原样，仅把 results 里的行数组逐标的转 DF
+    两层契约：门面（``cli.ns.method``）给 DataFrame/dict/信封；底层
+    ``cli.call`` / ``cli.call_batch`` 保持规范化行数组（``BatchResult.to_df()``
+    出长表）。
+    """
+    if isinstance(value, list):
+        return _to_dataframe(value)
+    if isinstance(value, BatchResult):
+        value.results = {k: (_to_dataframe(v) if isinstance(v, list) else v)
+                         for k, v in value.results.items()}
+        return value
+    return value
+
+
+def normalize_date(value: Any) -> str:
+    """日期入参归一（2.0 全库统一 ISO ``YYYY-MM-DD``）。
+
+    接受 ``date``/``datetime``、``YYYY-MM-DD``、紧凑 ``YYYYMMDD``（含 3.11+
+    ``fromisoformat`` 原生支持）；非法输入抛 ``UsageError``（不静默透传）。
+    """
+    if isinstance(value, _dt.datetime):
+        return value.date().isoformat()
+    if isinstance(value, _dt.date):
+        return value.isoformat()
+    s = str(value or "").strip()
+    try:
+        return _dt.date.fromisoformat(s[:10]).isoformat()
+    except ValueError:
+        raise UsageError(
+            f"日期 {value!r} 不合法；需 YYYY-MM-DD（或 YYYYMMDD 紧凑格式）",
+            code="range") from None
 
 
 def _legacy_finpipe_hints() -> str:
@@ -839,15 +880,16 @@ class Client:
                 args.append("nil")
         return f"{name}({', '.join(args)})"
 
-    def call(self, name: str, /, _raw: bool = False, _df: bool = False,
+    def call(self, name: str, /, _raw: bool = False,
              _units: str = "base", **kwargs: Any) -> Any:
         """按目录合同调用目录内函数：校验参数 → 生成 XS（自动 require + 规范化）→ eval(call)。
 
-        选项以下划线开头，避免与 XS 参数名（如 etf_build 的 raw）冲突：
+        底层入口保持**规范化行数组**（list[dict]/dict/标量）；DataFrame 默认
+        转换在门面层（``cli.ns.method`` → ``to_output_frame``）完成，2.0 起
+        本方法不再提供 ``_df``。选项以下划线开头，避免与 XS 参数名冲突：
           _raw=True        跳过 normalize_with 与单位换算，返回 store 原始 Unit
           _units="native"  保留脚本输出的原有单位（字段名仍规范化）；默认 "base" 把
                            目录声明的非基础单位换算为小数/元/股，并做量级与不变量校验
-          _df=True         结果为 list[dict] 时转 pandas.DataFrame（需安装 pandas）
         参数合同：优先用域目录精修 params；L1 精简条目回退到 inventory 的签名参数。
         标的参数（sym/symbol/stk）自动归一：去 cn./sh./sz./bj. 前缀与 .SH/.SZ/.BJ 后缀。
         """
@@ -869,8 +911,8 @@ class Client:
                 if self.native_batch and name in BATCH_NATIVE_ROUTES \
                         and len(syms) >= self.native_batch_min:
                     return self._call_native_batch(name, syms, _raw=_raw,
-                                                   _df=_df, _units=_units, **rest)
-                return self.call_batch(name, syms, _raw=_raw, _df=_df,
+                                                   _units=_units, **rest)
+                return self.call_batch(name, syms, _raw=_raw,
                                        _units=_units, **rest)
         call_line = self._build_call_line(name, params, kwargs)
         normalizer = fn.get("normalize_with")
@@ -888,10 +930,10 @@ class Client:
         if not _raw and _units == "base":
             result = apply_units(result, fn, fname=name, validate=self._validate,
                                  market=self.market, symbol=symbol)
-        return _to_dataframe(result) if _df else result
+        return result
 
     def _call_native_batch(self, name: str, syms: list[str], *, _raw: bool = False,
-                           _df: bool = False, _units: str = "base",
+                           _units: str = "base",
                            **kwargs: Any) -> BatchResult:
         """批量原生路由：单次 eval 调批量实现，适配回逐票合同。
 
@@ -899,6 +941,7 @@ class Client:
         如 kline.snapshot 拼接是 N×均线首算 10,250 EC/票，snapshot_batch ≈58 EC/票。
         on_error="skip" 不走此路径（原生批量无法逐票隔离错误）。
         _raw=True 跳过单位换算（返回未换算的原始值 MAP，仍为逐票 dict）。
+        results 值保持逐票 MAP（2.0 门面层的 ``to_output_frame`` 才做 DF 转换）。
         """
         impl, adapter = BATCH_NATIVE_ROUTES[name]
         impl_fn = self._resolve_function(impl)
@@ -915,22 +958,20 @@ class Client:
         # 省掉数千元素数组字面量的求值计费（实测 5,693 票 ≈11 万 EC）。
         # 捷径语义 = 服务端「非停牌全市场」，停牌/ETF/无效票静默缺席。
         shortcut = len(syms) >= NATIVE_FULL_MARKET_MIN
-        raw = self.call(impl, _raw=True,
-                        **{arr_param: [] if shortcut else list(syms)}, **kwargs)
+        arr_kwargs: dict[str, Any] = {arr_param: [] if shortcut else list(syms)}
+        raw = self.call(impl, _raw=True, **arr_kwargs, **kwargs)
         adapted = adapter(raw, syms, name, allow_missing=shortcut)
         if not _raw and _units == "base":
             adapted = apply_units(adapted, self._resolve_function(name), fname=name,
                                   validate=self._validate, market=self.market,
                                   symbol=syms[0])
-        if _df:
-            adapted = {k: _to_dataframe(v) for k, v in adapted.items()}
         return BatchResult(results=adapted, requests=1, requested=len(syms),
                            ec_cost=self.last_ec_cost or 0)
 
     def call_batch(self, name: str, symbols: list[str], /, on_error: str = "raise",
-                   _raw: bool = False, _df: bool = False, _units: str = "base",
+                   _raw: bool = False, _units: str = "base",
                    **kwargs: Any) -> BatchResult:
-        """同一目录函数在多个标的上的批量调用。
+        """同一目录函数在多个标的上的批量调用（results 值保持行数组；``to_df()`` 出长表）。
 
         on_error="raise"（默认）：把所有标的组装成**一次** eval（map 字面量），单次 HTTP；
         任一标的失败则整体抛出（服务端无 try/catch，无法在单次请求内隔离）。
@@ -938,7 +979,7 @@ class Client:
         批量原生路由（BATCH_NATIVE_ROUTES，如 kline.snapshot → kline.snapshot_batch）：
         raise 模式不再拼接，改为单次 eval 调批量实现并适配回逐票合同——EC 按量
         （≈58 EC/票）而非 N×单票首算（10,250/票）；skip 模式恒为逐票拼接。
-        _raw/_df/_units 语义与 call() 一致（_units="native" 时跳过单条 HTTP 路径的单位换算）。
+        _raw/_units 语义与 call() 一致（_units="native" 时跳过单位换算）。
         """
         if on_error not in ("raise", "skip"):
             raise UsageError('on_error 只支持 "raise" 或 "skip"', code="params")
@@ -965,8 +1006,7 @@ class Client:
         route = BATCH_NATIVE_ROUTES.get(name)
         if (on_error == "raise" and self.native_batch and route is not None
                 and len(syms) >= self.native_batch_min):
-            return self._call_native_batch(name, syms, _raw=_raw, _df=_df,
-                                           _units=_units)
+            return self._call_native_batch(name, syms, _raw=_raw, _units=_units)
         if self.max_limit is not None and len(syms) > self.max_limit:
             raise LimitError(
                 f"{name}: 批量标的数 {len(syms)} 超过上限 {self.max_limit}"
@@ -979,7 +1019,7 @@ class Client:
             error_details: dict[str, BatchError] = {}
             for s in syms:
                 try:
-                    results[s] = self.call(name, _raw=_raw, _df=_df, _units=_units,
+                    results[s] = self.call(name, _raw=_raw, _units=_units,
                                            **kwargs, **{sym_param: s})
                 except WmshareError as e:
                     errors[s] = str(e)
@@ -1022,8 +1062,6 @@ class Client:
             for s, v in result.items():
                 result[s] = apply_units(v, fn, fname=name, validate=self._validate,
                                         market=self.market, symbol=s)
-        if _df:
-            result = {k: _to_dataframe(v) for k, v in result.items()}
         # raise 模式把 N 个标的压进一次 eval：1 次请求
         return BatchResult(results=result, requests=1, requested=requested,
                            ec_cost=self.last_ec_cost or 0)
@@ -1111,10 +1149,12 @@ class Client:
         if on_batch_error not in ("raise", "skip"):
             raise UsageError('on_batch_error 只支持 "raise" 或 "skip"', code="params")
         if "_df" in kwargs:
+            # 2.0 起 call() 已无 _df；批量入口的 results 恒为行数组，
+            # 这里显式拦截以防 _df 被当成 XS 参数下发（报错更可读）。
             raise UsageError(
-                f"{name}: 批量入口不支持 _df——它会让每标的值变成 DataFrame，"
-                "聚合后 to_df() 长表失真。长表请用 BatchResult.to_df()（每标的一行），"
-                "单标的多行结果读 BatchResult.results[代码]。", code="params")
+                f"{name}: 批量入口不支持 _df（2.0 已移除）——results 保持规范化行数组；"
+                "长表用 BatchResult.to_df()（每标的一行），"
+                "门面级 DataFrame 请逐批对 results 取值后自转。", code="params")
         size = self._batch_size(batch_size, name)
         syms = list(dict.fromkeys(self._canon_symbol(s) for s in symbols))
         self._assert_same_market(name, syms)
@@ -1176,7 +1216,8 @@ class Client:
         """一站式分批取数：自动切片并聚合为单个 ``BatchResult``。
 
         ``cli.batch_all("kline.snapshot", [r["symbol"] for r in cli.stocks.list()])``
-        → A 股 5691 家只花 12 次请求（而非 5691 次），一次跑完不撞限流。
+        → A 股 5691 家一次 eval（批量原生路由接口不分批；非路由接口按 500/批，
+        如 12 次请求而非 5691 次），一次跑完不撞限流。
 
         :param name: 目录函数名，**位置参数**
         :param symbols: 标的代码序列，**位置参数**（须同属客户端市场，跨市场混批报错）
@@ -1206,6 +1247,100 @@ class Client:
             out.error_details.update(part.error_details)
             out.ec_cost += part.ec_cost
         return out
+
+    # ---- EC 成本预估（2.0：计费透明度前置）----
+    # 系数来自仓库内记录的 live 实测（GUIDE §配额实测 / CHANGELOG 1.22.0 / examples/17），
+    # 是「区间估算」不是承诺——实际消耗以 meta.metering 回传为准。
+    _EC_PER_ROW = (60, 75)          # 行数驱动类接口（K 线/资金流/分红列表）每行 EC
+    _EC_SCREENER_BASE = (70, 1_000)         # 轻列条件选股
+    _EC_SCREENER_HEAVY = (40_000, 60_000)   # 重列（TTM 同比/年化族）
+    _EC_SCREENER_COLD_NOTE = ("fields 引用未物化重列时有一次全市场物化成本，"
+                              "实测可达 60 万 EC——先用轻列跑通，重列二次查询")
+    _EC_HEAVY_SCREENER_TOKENS = ("NPTS_TTM_YOY", "NPTS_AR_", "TR_AR_", "DPPR_TTM_YOY")
+
+    def cost_estimate(self, name: str, /, **params: Any) -> dict:
+        """预估一次调用的 EC 消耗区间（按请求行数/列物化的经验模型）。
+
+        返回 ``{"name", "requests", "ec_lo", "ec_hi", "model", "note"}``；
+        没有成本模型的接口如实返回 ``ec_lo=ec_hi=None``（绝不编造数字）。
+        估算不含预热缓存的复跑折扣（如 ``kline.snapshot`` 复跑 ≈26 EC）。
+        """
+        try:
+            self._resolve_function(name)  # 目录函数：合同存在性校验
+        except CatalogError:
+            pass  # 组合接口（backtest.run/screener.query/valuation.hist_stats 等）不在目录
+        out: dict[str, Any] = {"name": name, "requests": 1,
+                               "ec_lo": None, "ec_hi": None, "model": "", "note": ""}
+        p = params or {}
+        limit = p.get("limit") or p.get("n") or p.get("lim")
+        rows = None
+        try:
+            rows = int(limit) if limit is not None else None
+        except (TypeError, ValueError):
+            rows = None
+        if name.startswith(("kline.query_bars", "moneyflow.query_bars",
+                            "bonus.query_list", "cbond.query")):
+            n = rows if (rows and rows > 0) else (120 if "query_bars" in name else 20)
+            out.update(ec_lo=n * self._EC_PER_ROW[0], ec_hi=n * self._EC_PER_ROW[1],
+                       model="rows", note=f"按 {n} 行 × {self._EC_PER_ROW} EC/行估算")
+        elif name == "kline.snapshot" or name == "kline.snapshot_batch":
+            codes = p.get("sym") or p.get("codes") or []
+            n = len(codes) if isinstance(codes, (list, tuple)) else 1
+            # 阈值读真实属性（native_batch_min，默认 3）；getattr 兜底演示客户端
+            if n >= int(getattr(self, "native_batch_min", 3) or 3):
+                if n >= NATIVE_FULL_MARKET_MIN:
+                    # 准全市场走空参捷径：服务端全市场一次投影 + 客户端过滤，
+                    # 省掉数千元素数组字面量的求值计费（实测 ≈11~15 万 EC）。
+                    out.update(ec_lo=110_000, ec_hi=150_000,
+                               model="full_market_shortcut",
+                               note=f"{n} 票达准全市场阈值 {NATIVE_FULL_MARKET_MIN}，"
+                                    "走空参捷径（服务端全市场投影）；停牌/ETF 索引外标的"
+                                    "静默缺席，需完整名单请分批到阈值以下")
+                else:
+                    out.update(ec_lo=n * 55, ec_hi=n * 65, model="batch_per_symbol",
+                               note=f"批量原生路由 ≈58 EC/票 × {n} 票；"
+                                    "单票首触另计均线回看 ≈10,250 EC")
+            else:
+                out.update(ec_lo=10_000, ec_hi=11_000, model="first_touch",
+                           note="单票首算含均线回看（≈10,250 EC）；同标的当日复跑 ≈26 EC")
+        elif name == "screener.query" or (name.startswith("kline.") and "where" in p):
+            codes = " ".join([str(p.get("where") or ""), str(p.get("order") or ""),
+                              *map(str, p.get("fields") or [])])
+            if any(tok in codes for tok in self._EC_HEAVY_SCREENER_TOKENS):
+                out.update(ec_lo=self._EC_SCREENER_HEAVY[0],
+                           ec_hi=self._EC_SCREENER_HEAVY[1], model="screener_heavy",
+                           note=self._EC_SCREENER_COLD_NOTE)
+            else:
+                out.update(ec_lo=self._EC_SCREENER_BASE[0],
+                           ec_hi=self._EC_SCREENER_BASE[1], model="screener_base",
+                           note="轻列 70~1,000 EC；重列物化另计（count-only 更低）")
+        elif name.startswith("backtest.run") or name == "backtest.run":
+            begin, end = p.get("begin"), p.get("end")
+            if begin and end:
+                days = abs(self._days_between(begin, end))
+                n = min(10000, max(int(days * 0.8) + 40, 22))
+                out.update(ec_lo=n * self._EC_PER_ROW[0], ec_hi=n * self._EC_PER_ROW[1],
+                           model="rows", note=f"按区间 {n} 根日 K 估算；不给区间拉全历史 ≈40 万 EC")
+            else:
+                out.update(ec_lo=380_000, ec_hi=420_000, model="full_history",
+                           note="全历史 1 万根 ≈40 万 EC；传 begin/end 可降 1~2 个数量级")
+        elif name.startswith(("valuation.hist_stats", "indices.trend")):
+            out.update(ec_lo=100_000, ec_hi=180_000, model="cached_eval",
+                       note="trend 走预热缓存近似免费（按键），缓存冷时现算 ≈15.7 万 EC；"
+                            "hist_stats 序列走缓存实测整次 ≈4 EC")
+        else:
+            out["note"] = ("暂无该接口的成本模型；多数读接口在数百 EC 量级。"
+                           "可用 cli.last_ec_cost 观测实际消耗后反馈补模型。")
+        return out
+
+    @staticmethod
+    def _days_between(begin: Any, end: Any) -> int:
+        try:
+            b = _dt.date.fromisoformat(str(begin)[:10])
+            e = _dt.date.fromisoformat(str(end)[:10])
+            return (e - b).days
+        except ValueError:
+            return 365
 
     def notice_poller(self, *, group: str, consumer: str, on_events: Any = None,
                       **kw: Any) -> "NoticePoller":

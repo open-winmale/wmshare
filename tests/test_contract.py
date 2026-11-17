@@ -26,6 +26,9 @@ SAMPLES = {
     "category": "回购", "window": "3y", "adj": "qfq", "scope": "合并",
     "metric": "pe", "where": "$ROE_TTM_LAST > 0.15",
     "opts": {"scope": "合并", "n": 2}, "fields": ["percent"],
+    "fut_code": "cn.RB.SHF", "fut_symbol": "cn.RB.SHF", "field": "close",
+    "date": "2026-03-31", "n": 5, "curve_name": "中债国债收益率曲线",
+    "tenor": "10年", "brand": "比亚迪", "manufacturer": "比亚迪", "category": "回购",
 }
 _BY_TYPE = {"string": "x", "int": 1, "float": 1.0, "bool": True, "array": [], "object": {}}
 
@@ -125,14 +128,19 @@ def test_generated_facade_signatures_match_catalog():
     for full_name in ALL_FNS:
         ns, short = full_name.split(".", 1)
         cls = GENERATED_NAMESPACES[ns]
+        # 2.0：internal: true（fmt_* 等）已退出类型化门面，只校验公开面
+        if CAT.function(full_name).get("internal"):
+            assert not hasattr(cls, short), f"{full_name} 应退出类型化门面"
+            continue
         assert hasattr(cls, short), f"生成层缺方法 {full_name}"
         sig_params = [p for p in inspect.signature(getattr(cls, short)).parameters
-                      if p not in ("self", "_raw", "_df")]
+                      if p not in ("self", "_raw")]
         fn = CAT.function(full_name)
         catalog_params = [p["name"] for p in (fn.get("params") or CAT.inventory_params(full_name))]
         assert sig_params == catalog_params, f"{full_name} 签名 {sig_params} != 目录 {catalog_params}"
         checked += 1
-    assert checked == len(ALL_FNS)
+    public_fns = [n for n in ALL_FNS if not CAT.function(n).get("internal")]
+    assert checked == len(public_fns)
 
 
 def test_every_core_interface_has_openapi_operation():

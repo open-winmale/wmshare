@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import os
 
+import pandas as pd
 import pytest
 
 import wmshare
@@ -318,7 +319,9 @@ def test_kline_last_and_bars_high_level_api(client):
     assert last["percent"] == pytest.approx(-0.007798)
 
     client.session.eval_result = [dict(INDEX_BAR)]
-    assert client.kline.bars(IDX, n=1)[0]["volume"] == INDEX_BAR["volume"]
+    bars = client.kline.bars(IDX, n=1)
+    assert isinstance(bars, pd.DataFrame)
+    assert float(bars.iloc[0]["volume"]) == INDEX_BAR["volume"]
 
 
 def test_batch_live_mixed_container(client):

@@ -23,14 +23,14 @@ def main(cli=None, demo: bool = False) -> None:
     # ---- 三大报表：科目行 {k 科目键, cn 同列名, vals:{年份: 值}}，金额=披露原币 ----
     for kind, title in (("income", "利润表"), ("balance", "资产负债表"),
                         ("cashflow", "现金流量表")):
-        rows = getattr(cli.statements, kind)(SYMBOL, years=1)
-        first = next(r for r in rows if r.get("vals"))
+        df = getattr(cli.statements, kind)(SYMBOL, years=1)
+        first = next(r for r in df.to_dict("records") if r.get("vals"))
         y, v = next(iter(first["vals"].items()))
-        print(f"{title}：{len(rows)} 行科目；如「{first['k']}」（{y}）= {v:,.0f}")
+        print(f"{title}：{len(df)} 行科目；如「{first['k']}」（{y}）= {v:,.0f}")
 
-    # ---- 季报全档：period="quarter"，期次键 "2026:Q1" 形式 ----
+    # ---- 季报全档：period="quarter"，期次键 "2026-Q1" 形式（2.0 连字符口径） ----
     q_rows = cli.statements.income(SYMBOL, years=1, period="quarter")
-    q_first = next((r for r in q_rows if r.get("vals")), None)
+    q_first = next((r for r in q_rows.to_dict("records") if r.get("vals")), None)
     if q_first:
         qk = sorted(q_first["vals"], reverse=True)[:3]
         print(f"季报档（近 3 期）：{qk}")

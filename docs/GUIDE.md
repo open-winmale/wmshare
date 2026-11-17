@@ -2,7 +2,7 @@
 
 本指南是 **how-to + 解释层**：会做什么 → 怎么做好。其他层各有其位——
 教程看 [README](../README.md) 与 [examples/](../examples/README.md)（可运行课程），
-接口参考看 [API.md](API.md)（按资产类别分章的 130 个核心接口，生成物），
+接口参考看 [API.md](API.md)（按资产类别分章的 137 个核心接口，生成物），
 AI 用法看 [AI.md](AI.md)。
 
 > 代码块里的输出注释都是**真实运行结果**（2026-10-29，cn 市场，免费档凭证），
@@ -14,7 +14,6 @@ AI 用法看 [AI.md](AI.md)。
 
 ```bash
 pip install wmshare                  # 基础安装
-pip install "wmshare[dataframe]"     # 可选：pandas 支持（_df=True）
 python3 -c "import wmshare; print(wmshare.__version__)"   # 验证安装
 ```
 
@@ -42,12 +41,12 @@ export WMSHARE_CLIENT_ID=<AppId> WMSHARE_CLIENT_SECRET=<API Key>
 
 ### 2.1 双层 API：门面 + 目录
 
-- **门面层** `cli.<命名空间>.<方法>()`：22 个命名空间、130 个核心接口，方法名动宾化可猜
+- **门面层** `cli.<命名空间>.<方法>()`：25 个命名空间、137 个核心接口，方法名动宾化可猜
   （`kline.bars`、`dividend.yield_ttm`、`screener.screen_limit_up`）。
-- **目录层** `cli.call("<域>.<函数名>", ...)`：290 个底层函数按目录合同直调，
+- **目录层** `cli.call("<域>.<函数名>", ...)`：298 个底层函数按目录合同直调，
   参数名以 `cat.function(name)["params"]` 为准。门面未包装的函数经属性直达
   （如 `cli.dividend.index_where_high_yield_5()`）；目录之外的名字显式报错——
-  门面不遮蔽目录函数，289 个都能直达。
+  门面不遮蔽目录公开函数（internal 辅助除外），292 个都能直达。
 
 两层的名字对不上是常态：目录按上游域组织，门面按使用视角命名（如目录 `bonus` 对应
 门面 `dividend`），17 个域挂 20 个门面。不必背映射——`cat.search("分红")` 一查即得；
@@ -77,7 +76,7 @@ cat.functions_by_domain()             # 按域列全部函数名（cli.call 的�
 | 金额 / 价格 / 市值 | 元（报表原币） | — |
 | 股数 / 成交量 | 股 | — |
 
-唯一例外：`cli.screener` 宽度接口的 `up_pct`/`down_pct`/`pct_of_total` 是**百分数数值**
+无例外：宽度接口 `up_pct`/`down_pct`/`pct_of_total` 1.x 曾是百分数数值，2.0 起**统一小数**
 （80.3 = 80.3%），同返回的 `median_pct` 与涨跌幅仍是小数。
 每次返回前 SDK 做量级与关系不变量校验，违例抛 `DataError`——**数据在报警，不要吞掉**。
 逃生口：`_raw=True`（返回上游原始行，字段名与规范化后不同）、`_units="native"`
@@ -123,7 +122,7 @@ import wmshare
 
 cli = wmshare.Client.from_env()
 
-# 最近 N 根日 K（按日期降序；percent 为小数）
+# 最近 N 根日 K（2.0：date 升序=旧→新；percent 为小数）
 cli.kline.bars("600519", n=3)
 # [{'date': '2026-10-29', 'close': 1354, 'percent': 0.017471}, ...]
 
@@ -191,7 +190,7 @@ b = cli.cbond.board()                   # 行 = 快照行 + event/callHits/reset
 # 可转债：条款事件流（下修提案/实施、强赎/不强赎、回售、除权调价、转股期等 9 类）
 evs = cli.cbond.event_list()            # 90 日回看；行含 convert_price_old/new 与公告原文链接
 
-# 可转债：转债日 K（列式 MAP：open/close/high/low/volume/amount；samplingName 日期降序）
+# 可转债：转债日 K 窗口（列式 MAP：open/close/high/low/volume/amount；读行式用 cbond.bars，date 升序）
 kw = cli.cbond.kline_window("113050", 60)
 
 # 可转债：一条链路跑完一期日更（取数 → 三道闸 → 事实包 → 成稿 → 出图）
@@ -220,7 +219,7 @@ res["rows"][0]                               # {'symbol': '900948', 'name': '伊
                                              #  '$BONUS_RATE_3Y_AVG_LAST': 0.2104, ...}
 cli.screener.query("$ROE_TTM_LAST > 0.30", limit=0)   # 只要命中数（不拉行）
 
-# 全市场宽度（服务端索引直出；*_pct 是百分数数值、median_pct 是小数）
+# 全市场宽度（服务端索引直出；2.0：*_pct 与 median_pct 均为小数）
 cli.screener.index_breadth_summary()
 # {'total': 5685, 'up': 540, 'down': 5002, 'up_pct': 9.5, 'median_pct': -0.0154, ...}
 # total = 当日参与涨跌统计的家数（全市场列表是 5,375，含停牌等不参与统计的）
@@ -308,7 +307,7 @@ import wmshare
 cli = wmshare.Client.from_env()
 
 t = cli.index.trend("index.hs300", "5y")     # 宽基：11 个键（index.hs300/csi500/sz50/…）
-t["n"], t["points"][0], t["points"][-1]      # 730 个周频点；points[0] 是最新点（新→旧）
+t["data"]["n"], t["data"]["points"].iloc[0], t["data"]["points"].iloc[-1]      # 730 个周频点；升序（旧→新），最新点在末行
 t["pe_pct"], t["pb_pct"]                     # 0.7671 / 0.5753（小数，0.7671 = 76.7% 分位）
 t["pe_pct_window"]                           # '5y'：实际生效的分位窗口
 
@@ -372,7 +371,7 @@ cron 每交易日收盘后分批增量（16:20 宽基、16:23/16:26 申万一级
 
 | 现象 | 含义 |
 |---|---|
-| `points` 是**新→旧** | `points[0]` 是最新点。写成 `points[-1]` 会拿到 2016 年的值 |
+| `points` 是**升序**（旧→新，2.0 标准） | 最新点在 `points.iloc[-1]`。写成 `points.iloc[0]` 会拿到 2016 年的值 |
 | `pe_pct` 为 `None` 且 `pe_missing=True` | 该主体**当前无 PE**（行业整体亏损），不是数据缺失 |
 | `pe_pct` 为 `None` 且 `win_trunc=True` | 窗口盖不住（如 10y），可降窗口重取 |
 | `dv_has_history=False` | 股息率**只有当前值、无历史序列**，因此没有股息率分位 |
@@ -436,7 +435,7 @@ A 股全市场 12 批 9–16 秒一次跑完，0 错误；20 只银行股单批 
 - **算力超限**：单批触发 `CALC_LIMIT_EXCEEDED` 时减小 `batch_size`。
 - 三个入口的 `name`/`symbols` 都是位置参数；`_raw=True`/`_units="native"` 通用；
   批量入口不提供 `_df`（长表用 `to_df()`）。
-- **`name` 必须是目录函数名**（289 个，`cat.functions_by_domain()` 可查）；指标码不是
+- **`name` 必须是目录函数名**（292 个公开函数，`cat.functions_by_domain()` 可查）；指标码不是
   函数名——一票多码用 `cli.indicator.metrics(sym, codes)`（传 `"indicator.get"` 会报
   `CatalogError`）。**全市场按指标条件选股不要逐票批量**：一条表达式交给
   `cli.screener.query(...)`（服务端索引引擎，见第 3 章与 10.1）。
@@ -478,7 +477,7 @@ us.intl.query_sellshort("AAPL")       # 美股沽空
 宏观走 `cli.macro`（上游原生口径：$CPI 等价格指数=点、$GDP/$M2=元；中债收益率=小数）：
 
 ```python
-cli.macro.query("$CPI", 6)            # 时序：series 每点含 sas/annual/sampling/value（最新在前）
+cli.macro.query("$CPI", 6)            # 信封：data.series 为 DataFrame（sas 升序）；台账码默认换算
 cli.macro.asof("$GDP")                # 最新单值（元；实测 107107120000000 ≈ 107.1 万亿）
 cli.macro.sampling_of("$CPI")         # 原生频率 "month"/"quarter"/"year"/"day"
 cli.macro.bond_curve("中债国债收益率曲线", "10年")   # 0.0168 = 1.68%（小数）
@@ -497,11 +496,11 @@ cli.indicator.get("600519", "$FUT_CLOSE", fut_symbol="global.CL")   # 外盘 WTI
 
 ## 7. pandas 与 DataFrame
 
-可运行版本：`examples/08_pandas_analysis.py`。需要 `pip install "wmshare[dataframe]"`。
+可运行版本：`examples/08_pandas_analysis.py`（pandas 为 2.0 硬依赖，随包安装）。
 
 ```python
-df = cli.kline.bars("600519", n=120, _df=True).sort_values("date")
-# bars 按日期降序返回（最新在前），先升序再算指标——直接 rolling 会算在最老一段上
+df = cli.kline.bars("600519", n=120)  # 2.0：默认 DataFrame，date 已升序
+# 2.0：bars 默认 DataFrame 且 date 已升序，直接 rolling 即可（1.x「降序返回」的坑已移除）
 df["ma20"] = df["close"].rolling(20).mean()
 
 snap = cli.batch_all("kline.snapshot", codes).to_df()   # BatchResult 长表
@@ -596,7 +595,7 @@ poller.start()               # 或切后台：daemon 线程定时轮询；退出
 
 - **和直接下交易所数据比，图什么？** 目录先行 + 单位统一 + 数据守护 + 批量限流治理——
   取数正确性的工程问题 SDK 替你管了。
-- **数据能离线吗？** 目录（289 个函数/2752 个指标码/代码表）随包离线；行情财报数据在云端，
+- **数据能离线吗？** 目录（298 个函数/2752 个指标码/代码表）随包离线；行情财报数据在云端，
   需凭证与额度。
 - **支持哪些 Python？** ≥3.11（3.10 已 EOL，1.19.0 起不再支持）；pandas 为可选依赖。
 - **怎么贡献/报漏洞？** 见 [CONTRIBUTING](../CONTRIBUTING.md) 与 [SECURITY](../SECURITY.md)；

@@ -39,6 +39,13 @@ EXAMPLE_VALUES = {
 
 # 方法级示例值覆盖（同一参数名在不同接口语义不同，如 kind）
 METHOD_EXAMPLE_VALUES = {
+    # 2.0 新面（fut_code 必填缺表会落 … 占位并打红示例执行测试）
+    ("futures", "get"): {"fut_code": '"RB.SHF"', "field": '"close"'},
+    ("futures", "snapshot"): {"fut_code": '"RB.SHF"'},
+    ("calendar", "is_open"): {"date": '"2026-01-05"'},
+    ("calendar", "next"): {"date": '"2026-01-30"', "n": "3"},
+    ("margin", "market_summary"): {"limit": "6"},
+    ("margin", "universe"): {"limit": "20"},
     ("statements", "compare"): {"kind": '"income"'},
     ("statements", "tree"): {"kind": '"balance"'},
     ("statements", "years"): {"kind": '"income"'},

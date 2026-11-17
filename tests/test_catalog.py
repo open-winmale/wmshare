@@ -6,9 +6,9 @@ from wmshare.catalog import load
 def test_load_and_stats():
     cat = load()
     s = cat.stats()
-    assert s["domains"] == 18, s
-    assert s["functions"] == 290, s
-    assert s["raw"] == 208 and s["computed"] == 82, s
+    assert s["domains"] == 20, s
+    assert s["functions"] == 298, s
+    assert s["raw"] == 216 and s["computed"] == 82, s  # 2.0：calendar 年表 + margin 市场面（raw+8）
     assert s["metric_catalog_total"] == 2752, s
     assert s["upstream_rev"], "inventory 应锚定 upstream rev"
 
@@ -79,7 +79,8 @@ def test_namespaces_and_metrics():
     cat = load()
     assert {"kline", "moneyflow", "notice", "filings", "forecast",
             "bonus", "rptdom", "segments", "equity", "margin", "estimates",
-            "cbond", "workout", "indices", "intl", "stocks", "macro"} == cat.namespaces()
+            "cbond", "workout", "indices", "intl", "stocks", "macro",
+            "calendar"} == cat.namespaces()  # 2.0：交易日历域
     m = cat.metric("$PE_TTM_LAST")
     assert m and m["cn"]
     assert cat.metric("$NOT_EXIST") is None
@@ -144,6 +145,6 @@ def test_catalog_shipped_inside_package():
     cdir = catmod.catalog_dir()
     assert cdir == pkg_root / "_catalog"
     assert (cdir / "schema" / "domain.schema.json").is_file()
-    assert len(list((cdir / "domains").glob("*.yaml"))) == 18
+    assert len(list((cdir / "domains").glob("*.yaml"))) == 20
     for g in ("inventory.json", "metrics.json"):
         assert (cdir / "generated" / g).is_file()

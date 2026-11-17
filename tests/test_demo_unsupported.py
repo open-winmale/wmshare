@@ -43,7 +43,8 @@ def test_batch_uses_the_same_contract(cli):
 
 
 def test_known_replay_branches_still_work(cli):
-    assert cli.call("kline.query_bars", sym="600519", limit=3)
+    bars = cli.call("kline.query_bars", sym="600519", limit=3)  # 2.0：DataFrame
+    assert not bars.empty
     assert cli.call("kline.snapshot", sym="600519")["close"] > 0
     assert 0 <= cli.call("bonus.snapshot_yield_ttm", sym="600519") < 1
 

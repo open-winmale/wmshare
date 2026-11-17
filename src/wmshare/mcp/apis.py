@@ -86,7 +86,8 @@ def _recommended_tool(domain: str, method: str) -> str:
         return "wmshare_market"
     if domain == "screener":
         return "wmshare_screen"
-    if domain in {"moneyflow", "margin", "cbond", "index", "valuation"}:
+    if domain in {"moneyflow", "margin", "cbond", "index", "valuation",
+                  "calendar", "futures"}:
         return "wmshare_market"
     if domain == "stocks":
         return "wmshare_market" if method == "list" else "wmshare_screen"

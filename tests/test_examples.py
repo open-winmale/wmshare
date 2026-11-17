@@ -47,9 +47,17 @@ def _load(name: str):
 
 # ---- 离线示例：子进程真实执行（不联网、零凭证） ----
 
+def _catalog_counts_needles() -> list[str]:
+    """02 示例计数从目录动态派生（2.0 起新域随上游增减，不再手写死数）。"""
+    from wmshare.catalog import load
+    s = load().stats()
+    return [f"数据域：{s['domains']}", "指标代码：精选 ",
+            f"/ 目录全量 {s['metric_catalog_total']}"]
+
+
 @pytest.mark.parametrize("name,needles", [
     # 计数从目录派生（精选码数会随 curated 组增减），只锁结构不锁数字。
-    ("02_catalog_tour.py", ["数据域：18", "指标代码：精选 ", "/ 目录全量 2752"]),
+    ("02_catalog_tour.py", _catalog_counts_needles()),
     ("03_error_handling.py", ["[auth]", "[limit]", "open.winmale.com",
                               "WMSHARE_CLIENT_ID"]),
     ("09_ai_skill_setup.py", ["skill 位置", "skill 自检", "cat.search"]),
@@ -205,11 +213,19 @@ def test_17_prr_dividend_screen(capsys):
     assert "取数失败跳过 0 只" in out          # 失败显式计数，不静默
 
 
+def test_18_calendar_margin(capsys):
+    """2.0 新面：FakeClient 注入端到端（demo 下显式降级不伪造）。"""
+    _load("18_calendar_margin.py").main(fake_client(), demo=True)
+    out = capsys.readouterr().out
+    assert "交易日历" in out
+
+
+
 def test_examples_index_covers_dir():
     """examples/README.md 课程表必须覆盖目录里每个脚本（防孤儿示例）。"""
     index = (EXAMPLES / "README.md").read_text(encoding="utf-8")
     scripts = sorted(p.name for p in EXAMPLES.glob("*.py"))
-    assert len(scripts) == 17, f"示例应恰为 17 个（编号课程），实际 {len(scripts)}：{scripts}"
+    assert len(scripts) == 18, f"示例应恰为 18 个（编号课程），实际 {len(scripts)}：{scripts}"
     for name in scripts:
         assert f"`{name}`" in index, f"examples/README.md 缺 {name} 的索引行"
 
@@ -219,6 +235,7 @@ def test_examples_index_covers_dir():
     "06_indicator_tour.py", "07_stocks_industry_batch.py", "08_pandas_analysis.py",
     "10_notice_monitor.py", "11_statements_tour.py", "15_backtest_ma.py",
     "16_metric_adapter.py", "17_prr_dividend_screen.py",
+        "18_calendar_margin.py",
 ])
 def test_credential_examples_run_with_demo_snapshot(name):
     if name in ("07_stocks_industry_batch.py", "08_pandas_analysis.py"):

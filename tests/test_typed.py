@@ -62,6 +62,9 @@ def test_methods_match_catalog_both_ways():
         ns, short = full.split(".", 1)
         if ns in FRIENDLY_NAMESPACES:
             continue  # 友好层接管，生成层仍生成但被遮蔽
+        if load().function(full).get("internal"):
+            assert not hasattr(GENERATED_NAMESPACES[ns], short), f"{full} 应退出类型化门面"
+            continue
         assert hasattr(GENERATED_NAMESPACES[ns], short), f"目录函数 {full} 缺少生成方法"
 
 

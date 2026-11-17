@@ -28,15 +28,18 @@ def main(cli=None, demo: bool = False) -> None:
     # ---- 1) 证券列表（真实 Client 全市场；demo 为演示宇宙） ----
     rows = cli.stocks.list()
     scope = "演示宇宙" if demo else "全市场"
-    print(f"{scope}共 {len(rows)} 家（字段：{sorted(rows[0].keys())}）")
+    first = rows.iloc[0].to_dict() if hasattr(rows, "iloc") else rows[0]
+    print(f"{scope}共 {len(rows)} 家（字段：{sorted(first.keys())}）")
 
     # ---- 2) 行业目录 + 行业成分（中文名/代码皆可） ----
     hint = os.environ.get("BANK_HINT", "银行")
-    l1 = cli.stocks.industries(1)
+    l1_df = cli.stocks.industries(1)
+    l1 = l1_df.to_dict("records")
     print(f"一级行业 {len(l1)} 个，如："
           + "、".join(f"{r['symbol']} {r['name']}" for r in l1[:5]) + " …")
     try:
-        members = cli.stocks.industry_members(hint)
+        members_df = cli.stocks.industry_members(hint)
+        members = members_df.to_dict("records")
         print(f"「{hint}」成分 {len(members)} 家，前 5 家：")
         for r in members[:5]:
             print(f"  {r['symbol']}  {r['name']}  {r.get('industry_name', '')}"
@@ -47,7 +50,7 @@ def main(cli=None, demo: bool = False) -> None:
         return
 
     # ---- 3) 批量取数：真实全市场分批；demo 是演示宇宙一次批量 ----
-    all_codes = [r["symbol"] for r in rows]
+    all_codes = list(rows["symbol"]) if hasattr(rows, "columns") else [r["symbol"] for r in rows]
     res = cli.batch_all("kline.snapshot", all_codes)
     naive = len(all_codes)
     print(f"{scope} {len(res.results)} 家：批量 {res.requests} 次请求"

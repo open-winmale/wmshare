@@ -44,7 +44,7 @@ def main(cli=None, demo: bool = False) -> None:
     # ---- 涨跌幅 9 档分桶：涨停档 / 大涨档家数一目了然 ----
     print("\n--- 涨跌幅分桶（前 3 档）---")
     try:
-        for b in cli.screener.index_breadth_bins()[:3]:
+        for b in cli.screener.index_breadth_bins().head(3).to_dict("records"):
             print(f"  {b['label']:<12} {b['count']:>5} 家（{b['pct_of_total']}%）")
     except WmshareError as e:
         print(f"  跳过：code={e.code} {e}")
@@ -52,10 +52,10 @@ def main(cli=None, demo: bool = False) -> None:
     # ---- 涨跌榜：行含 symbol/name/percent（percent 为小数）----
     print("\n--- 涨幅榜 Top5 / 跌幅榜 Top3 ---")
     try:
-        for r in cli.screener.index_top_movers(limit=5):
+        for r in cli.screener.index_top_movers(limit=5).to_dict("records"):
             print(f"  {r['symbol']}  {r['name']:<6} {r['percent']:+.2%}")
         print("  ---")
-        for r in cli.screener.index_top_movers(limit=3, desc=False):
+        for r in cli.screener.index_top_movers(limit=3, desc=False).to_dict("records"):
             print(f"  {r['symbol']}  {r['name']:<6} {r['percent']:+.2%}")
     except WmshareError as e:
         print(f"  跳过：code={e.code} {e}")

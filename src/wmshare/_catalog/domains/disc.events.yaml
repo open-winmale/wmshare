@@ -187,5 +187,5 @@ functions:
     units: {np_amp_lower: percent, np_amp_upper: percent, rev_amp_lower: percent, rev_amp_upper: percent, np_yoy: percent, rev_yoy: percent, roe: percent}
     ranges: {np_amp_lower: [-100, 1000], np_amp_upper: [-100, 1000], rev_amp_lower: [-100, 1000], rev_amp_upper: [-100, 1000], np_yoy: [-100, 1000], rev_yoy: [-100, 1000], roe: [-2, 5]}
   # ---- L1：格式化 ----
-  - {name: forecast.fmt_line, cn: 预告文本行, kind: raw, layer: L1}
-  - {name: forecast.fmt_lines, cn: 预告文本行列表, kind: raw, layer: L1}
+  - {name: forecast.fmt_line, cn: 预告文本行, kind: raw, layer: L1, internal: true}
+  - {name: forecast.fmt_lines, cn: 预告文本行列表, kind: raw, layer: L1, internal: true}

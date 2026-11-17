@@ -17,7 +17,7 @@ disclosures/statement/segments/dividend/estimates/corporate/market/intl/notice �
 
 **它不是**：撮合级/组合级回测引擎（单股均线买卖点回测用 `cli.backtest.run`：次日开盘成交、
 T+1、整手、佣金/印花固定，不复现盘口排队与分红税）；数据库（数据经云端 API 运行时获取，
-不随包分发）；全品类数据超市（18 个数据域，覆盖 A 股个股常用研究数据、宏观时序与期货主力连续指标码，
+不随包分发）；全品类数据超市（20 个数据域，覆盖 A 股个股常用研究数据、宏观时序与期货主力连续指标码，
 基金净值/期权/债券未覆盖）。
 
 ## 1. 环境前置
@@ -60,7 +60,7 @@ wmshare-mcp doctor
 | 股数 / 成交量 | 股 | — |
 
 例外要在读数时留意：`cli.screener` 宽度接口（全景/分桶）的 `up_pct`/`down_pct`/
-`pct_of_total` 是**百分数数值**（80.3 = 80.3%），同返回里的 `median_pct` 与
+`pct_of_total` 与 `median_pct` 均为**小数**（2.0 统一；1.x pct_of_total 曾是百分数）
 涨跌幅仍是小数——字段级口径以各方法 docstring 为准。
 
 每次返回前 SDK 做量级守护与关系不变量校验，违例抛 `DataError`（含字段/实际值/
@@ -119,7 +119,7 @@ cat.metrics_in_group("dividend")                         # 指标组内全部精
 | 行业目录 / 行业成分 | `cli.stocks.industries(1)`（申万/恒生；美股目录树暂缺）/ `cli.stocks.industry_members("银行")`（中文名或代码 S48） |
 | 少量标的单批（≤500） | `cli.call_batch("kline.snapshot", ["600519", "000001"])` 或任意单标的接口传 list：`cli.kline.last(["600519", "000001"])`；`to_df()` 出每标的一行长表 |
 
-完整 130 个核心接口 + 17 个组合接口（可转债 3 + 回测 1 + 报表 4 + ETF 9）与全部底层函数：仓库用户看 docs/GUIDE.md（上手）与
+完整 137 个核心接口 + 17 个组合接口（可转债 3 + 回测 1 + 报表 4 + ETF 9）与全部底层函数：仓库用户看 docs/GUIDE.md（上手）与
 docs/API.md（参考）；pip 用户用 `cat.search(...)` / `cat.function(...)` 查（同一份合同）。
 全量指标码（2752 个）按数据类型分章的导航、命名语法与死码清单见 docs/INDICATORS.md（生成物）。
 
@@ -130,13 +130,13 @@ import wmshare
 
 cli = wmshare.Client.from_env()
 
-# 日 K：按日期降序；percent 为小数（0.005215 = 0.52%）、volume 为股
+# 日 K：date 升序（旧→新，2.0 标准）；percent 为小数（0.005215 = 0.52%）、volume 为股
 bars = cli.kline.bars("600519", n=5)
 print(bars[0])
 # {'date': '2026-10-20', 'close': 1331.88, 'volume': 3413500.0,
 #  'amount': 4525398959.0, 'percent': 0.005215, 'open': ..., 'high': ..., 'low': ...}
 
-# 全市场涨跌全景：服务端预计算索引直出；*_pct 是百分数数值、median_pct 是小数
+# 全市场涨跌全景：服务端预计算索引直出；*_pct 与 median_pct 均为小数（2.0）
 s = cli.screener.index_breadth_summary()
 print(s)
 # {'total': 5685, 'up': 4567, 'down': 934, 'flat': 184,
@@ -155,7 +155,7 @@ print(cli.dividend.window_stats("600519", "3y"))   # {'dps': ..., 'total': ..., 
 ## 6. 坑位清单
 
 - **率与涨跌幅都是小数**（0.04 = 4%）；业绩预告的同比才是百分数口径换算后的小数。
-  唯一例外是 `cli.screener` 宽度接口的 `*_pct`/`pct_of_total`（百分数数值）。
+  无例外（宽度接口 `*_pct` 1.x 曾为百分数，2.0 起统一小数）。
 - **window 白名单**：`"7d"/"1m"/"3m"/"6m"/"1y"/"3y"/"5y"` 或天数整数；未知 token
   显式报错（不会静默按 30 天处理）。
 - **日期区间上限 5 年**（`begin/end` 含端点）；数据覆盖不足抛 `LimitError`，
@@ -194,7 +194,7 @@ print(cli.dividend.window_stats("600519", "3y"))   # {'dps': ..., 'total': ..., 
   `cli.dividend.yield_ttm(sym)` 与 `cli.indicator.get(sym, "$BONUS_TTM_RATE_LAST")`。
 - **宽度接口的 `idx` 不要传臆造键**：不传 = 服务端自动解析 A 股最新查询索引。
 - **空结果 ≠ 市场为空**：先核对 symbol 与窗口再下结论。
-- `_df=True` 转 DataFrame 需要安装 pandas（可选依赖）。
+- 门面默认 DataFrame（pandas 为硬依赖）；`_df` 参数已移除，`_raw=True` 取原始行。
 - ETF 用 6 位码直接查（如 `510300`）；`cli.kline.is_etf(sym)` 可判断。
 
 ## 7. 错误处理速查（都是 `WmshareError` 子类）
