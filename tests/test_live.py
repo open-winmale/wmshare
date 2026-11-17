@@ -316,6 +316,24 @@ def test_notice_read_text(cli):
     assert isinstance(full, dict) and full["source_url"] == got["source_url"]
 
 
+def test_notice_read_text_empty_date_returns_business_failure(cli):
+    """review P1-1 回归：date 为空串（契约允许）不得抛 ServerError。
+
+    script 侧修复前，空串切片在远程沙箱返回 null，使 `_date != ""` 守卫失效，
+    query_find → DATE(null) 触发 HTTP 500；修复后应直接返回可预期的
+    no_pdf_url 业务失败包，且 announce_date 为 str 空串。
+
+    该用例依赖 script 修复已发布；未发布时会如实失败，不用 xfail 吞掉 500。
+    """
+    got = cli.notice.read_text(MAIN, "", "", full=False)
+    assert isinstance(got, dict)
+    assert got.get("ok") is False, got
+    assert got.get("status") == "no_pdf_url", got
+    assert got.get("error") == "no_pdf_url", got
+    assert isinstance(got.get("announce_date"), str), got
+    assert got.get("announce_date") == "", got
+
+
 def test_filings_list_and_latest(cli):
     rows = cli.filings.list(MAIN, kind="annual", limit=3)
     assert isinstance(rows, list) and rows

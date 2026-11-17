@@ -24,7 +24,7 @@ _VIEW_FOR_METHOD = {"asset": "fund_asset", "rank": "etf_rank"}
 ANCHORS = {
     "card": {"view": "card", "quote": {"close": 3.87}},
     "nav": {"view": "nav", "latest": {"unit_nav": 3.87}},
-    "share": {"view": "share", "fd_share": 9.2},          # 亿份
+    "share": {"view": "share", "fd_share": 285.5299},     # 亿份；live 510300 实测锚点
     "div": {"view": "div", "rows": [{"amount": 0.052}]},
     "portfolio": {"view": "portfolio", "holdings": [{"code": "600519"}]},
     "profile": {"view": "profile", "profile": {"short_name": "沪深300ETF"}},
@@ -112,7 +112,8 @@ def test_unknown_view_and_mode_rejected():
     {"ok": True, "chg_w1": 2500},                    # 涨幅量级
     {"ok": True, "premium_pct": -500},               # 折溢价率越界
     {"ok": True, "net_asset": -1},                   # 规模非负
-    {"ok": True, "fd_share": 1e15},                  # 份额量级（份，上限 1e14）
+    {"ok": True, "fd_share": 1e15},                  # 份额越界（亿份，上限 1e6）
+    {"ok": True, "fd_share": 1e7},                   # 旧 1e14 会放过 → 护栏有效性回归
     {"ok": True, "view": "fund_asset", "stock_ratio": 150},  # 占比越界
     {"ok": True, "view": "fund_asset", "stock_ratio": 80,
      "bond_ratio": 40},                              # 合计 >100

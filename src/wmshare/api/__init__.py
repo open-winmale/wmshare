@@ -2323,8 +2323,9 @@ class EtfApi(_Api):
                 raise DataError(f"etf.{view} {key}={v} 超出折溢价率区间 [-100,1000]%",
                                 code="range")
         # 规模 net_asset（亿元）：非负、上限 1e6 亿（百万亿，远超真实上限）；
-        # 份额 fd_share（亿份）：非负、上限 1e14（远超真实上限）。
-        for key, upper in (("net_asset", 1e6), ("fd_share", 1e14)):
+        # 份额 fd_share（亿份，与 etf.xs:7 单位红线一致）：非负，上限与
+        # net_asset 同为 1e6 亿份；旧值 1e14 按「份」误设，等同不设防。
+        for key, upper in (("net_asset", 1e6), ("fd_share", 1e6)):
             raw = result.get(key)
             # nav 视图 net_asset 是 {date, 值} MAP，下探一层再校验。
             if key == "net_asset" and isinstance(raw, dict):

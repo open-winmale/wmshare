@@ -111,3 +111,28 @@ def test_method_signature_optional_url_and_full():
     assert list(sig.parameters) == ["self", "symbol", "date", "url", "full"]
     assert sig.parameters["url"].default == ""
     assert sig.parameters["full"].default is False
+
+
+def test_empty_date_is_valid_positional_arg():
+    """契约回归：date 位置必传但值可空串，dispatch 原样透传、不抛异常。
+
+    review P1-1：空串切片在远程沙箱返回 null，曾使 `_date != \"\"` 守卫失效
+    并触发服务端 500。本用例锁定 SDK 侧契约与 dispatch；服务端行为由
+    tests/test_live.py 的空 date 用例覆盖（需 script 发布后才有意义）。
+    """
+    fn = _fn()
+    params = fn["params"]
+    assert params[1]["name"] == "date" and params[1]["required"] is True
+    desc = str(params[1].get("desc", ""))
+    if desc:
+        assert "空串" in desc, desc
+
+    from wmshare.client import Client
+
+    sess = _FakeSession()
+    cli = Client(base_url="https://t", client_id="i", client_secret="s",
+                 catalog=wmshare.load(), session=sess)
+    cli.notice.read_text("600519", "", "", False)
+    xs = [c["json"]["xs_lines"] for c in sess.calls
+          if c["url"].endswith("/xs/eval")][-1]
+    assert xs[-1] == 'return notice.read_text("600519", "", "", false)', xs[-1]
