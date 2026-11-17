@@ -20,13 +20,14 @@ def test_status_exposes_snapshot_vs_current_versions():
     assert snap["snapshot_catalog_rev"] == DEMO_SNAPSHOT_PROVENANCE["snapshot_catalog_rev"]
     assert snap["current_sdk_version"] == wmshare.__version__
     assert snap["current_upstream_rev"] == wmshare.load().stats()["upstream_rev"]
-    # 这是本条的真实价值：两者不同，才需要显式对照
-    assert snap["snapshot_sdk_version"] != snap["current_sdk_version"]
+    # 2.0 起快照随发版重拍：拍摄版本可能与当前版本相同，此时以 as_of/上游 rev
+    # 作为对照锚（不同版本的对照仍是主用途，但不再强制不同）
+    assert isinstance(snap["snapshot_sdk_version"], str)
 
 
 def test_repr_shows_both_versions():
     text = repr(wmshare.demo_client())
-    assert "as_of=2026-10-30" in text and "非实时行情" in text
+    assert f"as_of={DEMO_SNAPSHOT_PROVENANCE['as_of']}" in text and "非实时行情" in text
     assert DEMO_SNAPSHOT_PROVENANCE["snapshot_sdk_version"] in text
     assert DEMO_SNAPSHOT_PROVENANCE["snapshot_catalog_rev"] in text
     assert wmshare.__version__ in text and "快照不随发版更新" in text
@@ -37,7 +38,7 @@ def test_repr_shows_both_versions():
 # 永远相等（恒真），且 sdist/wheel 里没有 .git 会直接报错。用 sha256 锚定才能
 # 真正拦住「已提交的快照数据被改动」。
 SNAPSHOT_SHA256 = (
-    "c28f3c56359811dd4f666f4812743abf88c9b3f1b9d004df290379de9c354741"
+    "cb1c1d15dd6f5c44b7de4df8572cd6f09a84148fe4d6d554fd17bd9f934bd389"
 )
 
 

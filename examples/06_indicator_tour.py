@@ -43,7 +43,8 @@ def main(cli=None, demo: bool = False) -> None:
     print(f"行业内 ROE 分位 = {ind}（1 = 同行业最高）")
 
     # ---- ⑥ 历史统计：PE 3 年窗口的高低与中位（pct 为小数分位） ----
-    st = cli.valuation.hist_stats(SYM, metric="pe", window="3y")
+    resp = cli.valuation.hist_stats(SYM, metric="pe", window="3y")
+    st = resp["data"]          # 2.0：统一信封 {ok, as_of, data, meta}
     print("PE 3 年统计：当前={current:.1f}  中位={median:.1f}  "
           "区间=[{min:.1f}, {max:.1f}]  位置={pct:.0%}".format(**st))
 

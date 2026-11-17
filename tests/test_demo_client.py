@@ -22,7 +22,9 @@ def cli():
 def test_repr_marks_demo_data():
     text = repr(wmshare.demo_client())
     assert "演示" in text and "非实时行情" in text
-    assert "as_of=2026-10-30" in text
+    from wmshare._demo import SNAPSHOT_AS_OF
+
+    assert f"as_of={SNAPSHOT_AS_OF}" in text
 
 
 def test_packaged_surface(snapshot, cli):
@@ -38,7 +40,10 @@ def test_packaged_surface(snapshot, cli):
 
 def test_units_are_base(snapshot, cli):
     assert 0 <= cli.dividend.yield_ttm("600519") < 1
-    assert cli.dividend.last("600519")["dps"] > 1
+    # dps=元/股：上游「最近一条」可能是零派息的期中记录（2026-06-30 中期 0），
+    # 单位口径看历史里的最大 dps——若退化成「分」或「元/10股」，这个数会相差 10~100 倍。
+    hist = cli.dividend.history("600519", limit=20)
+    assert float(hist["dps"].max()) > 1
     mf = cli.moneyflow.last("600519")
     if mf is not None:
         assert mf["net_mf"] > 1
@@ -53,8 +58,8 @@ def test_bars_are_date_ascending_and_slice_real_rows(snapshot, cli):
     """2.0 方向契约：demo 与 live 同为升序（旧→新），切片取快照最新 5 根。"""
     dates = list(cli.kline.bars("600519", n=5)["date"])
     assert dates == sorted(dates)
-    expected_desc = [row["date"] for row in snapshot["data"]["kline_bars"]["600519"][:5]]
-    assert sorted(expected_desc) == dates
+    expected = [row["date"] for row in snapshot["data"]["kline_bars"]["600519"][-5:]]
+    assert expected == dates
     with pytest.raises(UsageError, match="120"):
         cli.kline.bars("600519", n=121)
 
@@ -92,9 +97,16 @@ def test_backtest_pe_runs_on_demo_snapshot(cli):
 
 
 def test_snapshot_matches_latest_bar(snapshot, cli):
+    """快照为拍摄日盘中价，日 K 结算到上一交易日——同量级（±20%）即同标的同单位。
+
+    精确相等只在收盘后拍摄成立；盘中拍摄必然偏离（2026-11-17 快照：快照 1439.55
+    vs 11-16 收盘 1453.9）。这条测试守的是「单位/标的没串」，不是「价格相同」。
+    """
     for symbol in snapshot["data"]["universe"]:
         bars = cli.kline.bars(symbol, n=1)
-        assert cli.kline.snapshot(symbol)["close"] == float(bars.iloc[-1]["close"])
+        snap_close = float(cli.kline.snapshot(symbol)["close"])
+        bar_close = float(bars.iloc[-1]["close"])
+        assert abs(snap_close / bar_close - 1) < 0.20, symbol
 
 
 def test_unknown_symbol_is_rejected(cli):

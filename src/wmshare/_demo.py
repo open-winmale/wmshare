@@ -1,12 +1,13 @@
 """离线演示客户端：真实 API 固定快照回放，零凭证、不联网。
 
-快照日为 2026-10-30，由维护者用 ``tools/generate_demo_snapshot.py`` 生成。
+快照日为 2026-11-16，由维护者用 ``tools/generate_demo_snapshot.py`` 生成。
 数据覆盖 examples 的 demo 路径：10 只 A 股演示宇宙 + 当日真实全市场 screener。
 它不是实时行情，也不承诺覆盖全部 288 个目录函数；接真实数据用
 ``wmshare.Client.from_env()``。
 """
 from __future__ import annotations
 
+import datetime as _dt
 import hashlib
 import json
 import math
@@ -28,9 +29,9 @@ from wmshare.notice_stream import NoticeStreamEvent
 
 _DATA_PATH = Path(__file__).with_name("_demo_data.json")
 _SNAPSHOT_SCHEMA_VERSION = 1
-_AS_OF = "2026-10-30"
-_CATALOG_REV = "d9bbd944"
-_SDK_VERSION = "1.11.0"
+_AS_OF = "2026-11-17"
+_CATALOG_REV = "490f5f18"
+_SDK_VERSION = "2.0.0"
 
 # 对外溯源常量：显式 SNAPSHOT_ 前缀，避免把「拍快照时的 SDK 版本」误当成当前版本。
 # 保留上面的短名供模块内部快照校验使用（不重拍 _demo_data.json、不改哈希合同）。
@@ -53,8 +54,8 @@ _MAX_BARS = 120
 _MAX_MONEYFLOW_BARS = 30
 _MAX_DIVIDEND_HISTORY = 20
 _MAX_BANK_MEMBERS = 20
-# 期货与宏观罐头（v1.11 后新数据面）：PROD 活体探针实证值（2026-11-07），不在
-# 2026-10-30 快照采集范围内，故不进 _demo_data.json（避免破坏快照哈希合同）
+# 期货/宏观罐头（v1.11 后新数据面）：期货已由 2026-11-17 快照覆盖
+# （data.futures）；宏观仍为 PROD 活体探针实证值，不在快照采集范围内。
 _FUT_CANS: dict[str, float] = {"$FUT_CLOSE": 5354.0, "$FUT_VOLUME": 302888.0}
 
 
@@ -168,17 +169,21 @@ def _validate_snapshot(document: Any) -> dict[str, Any]:
             if abs(float(row["percent"])) > 1:
                 raise ValueError(f"{where}.percent 不是小数口径")
         dates = [str(row.get("date", ""))[:10] for row in rows]
-        if dates != sorted(dates, reverse=True):
-            raise ValueError(f"kline_bars[{sym}] 不是日期降序")
+        if dates != sorted(dates):
+            raise ValueError(f"kline_bars[{sym}] 不是日期升序（2.0 全库旧→新）")
         snapshot = _require_mapping(snapshots[sym], f"kline_snapshot[{sym}]")
         _check_finite(snapshot.get("close"), f"kline_snapshot[{sym}].close")
         _check_date_not_after(snapshot.get("kline_date"), f"kline_snapshot[{sym}].kline_date")
-        if str(snapshot.get("kline_date", ""))[:10] != dates[0]:
-            raise ValueError(f"{sym} snapshot.kline_date 与最新 bar.date 不一致")
-        _check_finite(rows[0].get("close"), f"kline_bars[{sym}][0].close")
-        if not math.isclose(float(snapshot["close"]), float(rows[0]["close"]),
-                            rel_tol=0.0, abs_tol=1e-9):
-            raise ValueError(f"{sym} snapshot.close 与最新 bar.close 不一致")
+        # 2.0：快照是拍摄日盘中价（kline_date=拍摄日），日 K 结算面到上一交易日；
+        # 升序下最新 bar 在尾行。价格只做同量级校验（盘中必然偏离上一收盘）。
+        snap_date = str(snapshot.get("kline_date", ""))[:10]
+        last_date = dates[-1]
+        if snap_date and snap_date < last_date:
+            raise ValueError(f"{sym} snapshot.kline_date 早于最新 bar.date")
+        _check_finite(rows[-1].get("close"), f"kline_bars[{sym}][-1].close")
+        if not math.isclose(float(snapshot["close"]), float(rows[-1]["close"]),
+                            rel_tol=0.20):
+            raise ValueError(f"{sym} snapshot.close 与最新 bar.close 相差超 20%")
 
     for group, max_len in (("moneyflow_bars", _MAX_MONEYFLOW_BARS),
                            ("dividend_history", _MAX_DIVIDEND_HISTORY)):
@@ -445,29 +450,22 @@ class DemoClient:
         )
         self.valuation = SimpleNamespace(hist_stats=self._valuation_hist_stats)
         self.index = self._index_ns()
-        # 2.0 新面：demo 快照（2026-10-30 拍摄）不覆盖，显式报错不伪造。
-        # 待快照重拍后逐面回放（与 live 同向 + DataFrame 同形）。
+        # 2.0 新面：快照已覆盖（calendar/margin 市场面/futures），逐面回放。
+        # 快照是真实 API 固定日拍摄，方向/形态与 live 同构。
         self.futures = SimpleNamespace(
-            get=lambda *a, **kw: (_ for _ in ()).throw(
-                _unsupported("futures.get", "2.0 新接口")),
-            snapshot=lambda *a, **kw: (_ for _ in ()).throw(
-                _unsupported("futures.snapshot", "2.0 新接口")),
+            snapshot=self._futures_snapshot,
+            get=self._futures_get,
         )
         self.calendar = SimpleNamespace(
-            days=lambda *a, **kw: (_ for _ in ()).throw(
-                _unsupported("calendar.days", "2.0 新接口")),
-            is_open=lambda *a, **kw: (_ for _ in ()).throw(
-                _unsupported("calendar.is_open", "2.0 新接口")),
-            next=lambda *a, **kw: (_ for _ in ()).throw(
-                _unsupported("calendar.next", "2.0 新接口")),
+            days=self._calendar_days,
+            is_open=self._calendar_is_open,
+            next=self._calendar_next,
         )
         self.margin = SimpleNamespace(
             query=lambda *a, **kw: (_ for _ in ()).throw(
                 _unsupported("margin.query", "底层函数")),
-            market_summary=lambda *a, **kw: (_ for _ in ()).throw(
-                _unsupported("margin.market_summary", "2.0 新接口")),
-            universe=lambda *a, **kw: (_ for _ in ()).throw(
-                _unsupported("margin.universe", "2.0 新接口")),
+            market_summary=self._margin_market_summary,
+            universe=self._margin_universe,
         )
         self.batch_all = self._batch_all
         self.batch_iter = self._batch_iter
@@ -516,7 +514,8 @@ class DemoClient:
                 f"demo 快照最多保存 {_MAX_BARS} 根日 K，收到 {count}", code="demo_limit",
             )
         sym = self._require_symbol(symbol)
-        rows = [dict(row) for row in self._data["kline_bars"][sym][:count]]
+        # 快照升序存储（2.0 口径）；n = 最近 n 根 → 取尾部，与 live 语义一致
+        rows = [dict(row) for row in self._data["kline_bars"][sym][-count:]]
         return self._df_asc(rows)
 
     def _kline_snapshot(self, symbol: Any) -> Any:
@@ -542,6 +541,79 @@ class DemoClient:
         return {self._require_snapshot_symbol(s): dict(self._data["kline_snapshot"][s])
                 for s in symbols}
 
+    # ---- 2.0 新面回放（calendar / margin 市场面 / futures）----
+    def _calendar_rows(self) -> list[dict[str, Any]]:
+        return [dict(r) for r in self._data["calendar"]["days"]]
+
+    def _calendar_days(self, begin: str, end: str, limit: int | None = None) -> Any:
+        from wmshare.client import normalize_date
+
+        b, e = normalize_date(begin), normalize_date(end)
+        rows = [r for r in self._calendar_rows() if b <= str(r.get("date")) <= e]
+        if limit:
+            rows = rows[: int(limit)]
+        return self._df_asc(rows, "date")
+
+    def _calendar_is_open(self, date: str) -> bool:
+        from wmshare.client import normalize_date
+
+        d = normalize_date(date)
+        stored = self._data["calendar"].get("is_open") or {}
+        if d in stored:
+            return bool(stored[d])
+        return any(str(r.get("date")) == d for r in self._calendar_rows())
+
+    def _calendar_next(self, date: str, n: int | None = None) -> Any:
+        from wmshare.client import normalize_date
+
+        d = normalize_date(date)
+        rows = [dict(r) for r in self._data["calendar"]["next"]
+                if str(r.get("date")) > d]
+        cap = int(n or 1)
+        return self._df_asc(rows[:cap], "date")
+
+    def _margin_market_summary(self, limit: int | None = None) -> Any:
+        rows = [dict(r) for r in self._data["margin"]["market_summary"]]
+        rows.sort(key=lambda r: str(r.get("trade_date")))      # 2.0 升序
+        if limit:
+            rows = rows[-int(limit):]                          # 取最近 N 行
+        return self._df_asc(rows, "trade_date")
+
+    def _margin_universe(self, limit: int | None = None) -> Any:
+        rows = [dict(r) for r in self._data["margin"]["universe"]]
+        rows.sort(key=lambda r: str(r.get("security_code")))
+        if limit:
+            rows = rows[: int(limit)]
+        return self._df_asc(rows, "security_code")
+
+    def _futures_snapshot(self, fut_code: str, freq: str = "d") -> dict[str, Any]:
+        code = str(fut_code or "").strip().upper()
+        bare = code[3:] if code.startswith("CN.") else code      # RB.SHF / IF.CFX
+        if str(freq or "d").lower() not in ("d", "day", "daily"):
+            raise _unsupported(f"futures.snapshot(freq={freq!r})", "演示快照只回放日频")
+        book = self._data.get("futures") or {}
+        snap = book.get(bare) or book.get(f"cn.{bare}")
+        if snap is None:
+            raise UsageError(
+                f"演示快照未回放 {fut_code}（快照覆盖 {sorted(book)}）",
+                code="demo_unsupported")
+        return dict(snap)
+
+    def _futures_get(self, fut_code: str, field: str = "close",
+                     freq: str | None = None, native: bool = False) -> Any:
+        snap = self._futures_snapshot(fut_code, freq or "d")
+        text = str(field or "").strip()
+        if text.startswith("$"):
+            # $码 → 短名（与 live 同口径：日频域内 code→短名 反查）
+            from wmshare.api import FuturesApi
+
+            text = FuturesApi._FREQ_CODES["d"].get(text, "")
+            if not text:
+                raise UsageError(f"未知指标 {field!r}", code="params")
+        if text not in snap:
+            raise UsageError(f"演示快照 {fut_code} 无字段 {text!r}", code="demo_unsupported")
+        return snap[text]
+
     def _moneyflow_last(self, symbol: str, _raw: bool = False) -> Any:
         if _raw:
             raise UsageError("demo 快照不提供 _raw 原始口径", code="demo_unsupported")
@@ -559,7 +631,7 @@ class DemoClient:
                 code="demo_limit",
             )
         sym = self._require_symbol(symbol)
-        rows = [dict(row) for row in self._data["moneyflow_bars"][sym][:count]]
+        rows = [dict(row) for row in self._data["moneyflow_bars"][sym][-count:]]
         return self._df_asc(rows)
 
     def _moneyflow_board(self) -> Any:
@@ -734,7 +806,17 @@ class DemoClient:
             if not (0 < buy < sell):
                 raise UsageError(f"估值阈值需 0 < buy < sell，收到 buy={buy}, sell={sell}",
                                  code="params")
-            values = valuation_by_date(self._data["valuation"]["series"])
+            # 快照 series 为 [{date, value}]（2.0 口径）；valuation_by_date 收
+            # [[unix 秒, 值]]——按交易所本地零点（+08:00）换回 epoch，与 live 同源
+            ep = _dt.date(1970, 1, 1)
+            pairs = []
+            for row in self._data["valuation"]["series"]:
+                try:
+                    d = _dt.date.fromisoformat(str(row.get("date"))[:10])
+                except ValueError:
+                    continue
+                pairs.append([(d - ep).days * 86400 - 8 * 3600, row.get("value")])
+            values = valuation_by_date(pairs)
             first = min(values)
             rows = [r for r in rows if str(r.get("date") or "")[:10] >= first]
             if not rows:
@@ -752,7 +834,7 @@ class DemoClient:
         if rule in VALUATION_RULES:
             out["caliber"]["valuation"] = {"metric": rule, "window": "3y"}
         out["warnings"] = warnings + out["warnings"] + [
-            "演示快照：120 根不复权日 K（2026-10-30，非实时），仅用于验证调用形态"]
+            f"演示快照：120 根不复权日 K（{_AS_OF}，非实时），仅用于验证调用形态"]
         return out
 
     def _screen_query(self, where: str, order: str | None = None, desc: bool = True,
@@ -778,10 +860,15 @@ class DemoClient:
 
     def _valuation_hist_stats(self, symbol: str, metric: str = "pe",
                               window: str = "3y") -> dict[str, Any]:
+        """与 live 同形：统一信封 + ``data.series`` 为 DataFrame（date/value 升序）。"""
         if metric != "pe" or window != "3y":
             raise UsageError("demo valuation 快照只保存 pe/3y", code="demo_unsupported")
         self._require_symbol(symbol)
-        return dict(self._data["valuation"])
+        snap = self._data["valuation"]
+        data = {k: v for k, v in snap.items() if k != "series"}
+        data["series"] = self._df_asc([dict(r) for r in snap.get("series") or []], "date")
+        return {"ok": True, "as_of": _AS_OF, "data": data,
+                "meta": {"metric": metric, "window": window}}
 
     # ---- generic and batch surfaces ----
     def _notice_poller(self, *, group: str, consumer: str,
@@ -856,7 +943,7 @@ class DemoClient:
 
 
     def _index_ns(self) -> SimpleNamespace:
-        """指数域罐头：universe_keys/keys/valuation/trend（冻结快照 2026-10-30 口径）。
+        """指数域罐头：universe_keys/keys/valuation/trend（冻结快照 2026-11-16 口径）。
 
         trend 覆盖与 live 同构的三组键：11 宽基 + 申万一级行业（此处取 6 个代表键，
         live 为全部 31 个）+ 2 个红利键——行业路径必须可离线验证，否则
@@ -978,7 +1065,7 @@ class DemoClient:
                     "pe_missing": False, "pb_missing": False, "med": [],
                     "window": w, "win_start": pts[0][0], "win_n": n, "win_trunc": True,
                     "pct": {"pe": pe_b, "pb": pb_b, "pe_med": {}}}
-            return {"ok": True, "as_of": "2026-10-30", "data": data,
+            return {"ok": True, "as_of": _AS_OF, "data": data,
                     "meta": {"pct_source": "server", "dv_has_history": False}}
 
         def _demo_date(i: int, n: int) -> str:
@@ -990,14 +1077,14 @@ class DemoClient:
             c = cur.get(key)
             if not c:
                 data = {"current": {"pe": None, "pb": None, "dv": None}, "series": []}
-                return {"ok": True, "as_of": "2026-10-30", "data": data, "meta": {}}
+                return {"ok": True, "as_of": _AS_OF, "data": data, "meta": {}}
             series = [{"d": _demo_date(i, 8),
                        "pe": round(c["pe"] * (1 - 0.02 * i / 7), 4),
                        "pb": round(c["pb"] * (1 - 0.02 * i / 7), 4)}
                       for i in range(8)]  # 升序（旧→新，2.0 标准）
             from wmshare.client import to_output_frame
             data = {"current": dict(c), "series": to_output_frame(series)}
-            return {"ok": True, "as_of": "2026-10-30", "data": data, "meta": {}}
+            return {"ok": True, "as_of": _AS_OF, "data": data, "meta": {}}
 
         def _members(key: str, sort_by: str = "mv", top_n: int | None = None):
             rows = [
@@ -1033,7 +1120,7 @@ class DemoClient:
 def demo_client() -> DemoClient:
     """创建零凭证、离线、固定快照的演示客户端。
 
-    快照来自真实 API 的 2026-10-30 固定日，包含 10 只演示宇宙与当日全市场 screener。
+    快照来自真实 API 的 2026-11-16 固定日，包含 10 只演示宇宙与当日全市场 screener。
     与真实 Client 不同处：数据不更新、只覆盖公开示例调用面、未知演示标的报错。
     """
     return DemoClient()

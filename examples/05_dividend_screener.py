@@ -27,7 +27,8 @@ def main(cli=None, demo: bool = False) -> None:
         try:
             ok = cli.dividend.screen_quality(sym, min_yield=0.02, payout_max=1.2)
             y = cli.dividend.yield_ttm(sym)
-            print(f"  {sym}  TTM股息率={y if y is not None else '—':<8} 质量优={ok}")
+            shown = "—" if y is None else f"{float(y):.4f}"
+            print(f"  {sym}  TTM股息率={shown:<8} 质量优={ok}")
         except WmshareError as e:
             print(f"  {sym}  跳过：code={e.code} {e}")
 

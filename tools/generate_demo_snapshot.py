@@ -22,12 +22,16 @@ import requests
 from wmshare import __version__, load
 from wmshare.client import Client
 
-AS_OF = date(2026, 10, 30)
+# 拍摄日：日 K / 资金流等结算面截至最近已收盘交易日，行情快照为拍摄日盘中最新价。
+# 发版时按当日重锚（盘中拍也可，快照的 kline_date 会等于 AS_OF）。
+AS_OF = date(2026, 11, 17)
 UNIVERSE = (
     "600519", "000858", "601088", "600900", "601318",
     "000001", "600036", "000333", "300750", "688981",
 )
 WATCHLIST = UNIVERSE[:5]
+# 2.0 新面：期货快照（商品 + 中金所金融各一，覆盖 cfx 分支）
+FUTURES = ("RB.SHF", "IF.CFX")
 INDICATORS = (
     "$PE_TTM_LAST", "$ROE_TTM_LAST",
     "$PCT_PE_TTM_10Y_LAST", "$CUR_IND_ROE_PCT_LAST",
@@ -59,6 +63,16 @@ def _require_num(value: Any, label: str) -> float:
     if not math.isfinite(result):
         raise ValueError(f"{label} 必须是有限数字，收到 {value!r}")
     return result
+
+
+def _require_iso_date(value: Any, label: str) -> str:
+    """只校验 ISO 日期格式（不看是否晚于拍摄日）——未来交易日/期次键用。"""
+    text = str(value or "")[:10]
+    try:
+        date.fromisoformat(text)
+    except ValueError as e:
+        raise ValueError(f"{label} 日期非法：{value!r}") from e
+    return text
 
 
 def _require_date(value: Any, label: str) -> str:
@@ -93,11 +107,19 @@ def _parse_date(value: Any) -> str:
 
 
 def _require_rows(value: Any, label: str, *, min_len: int = 1) -> list[dict[str, Any]]:
+    """行数组校验；2.0 门面默认 DataFrame → 就地转 records（快照只存行）。"""
+    if hasattr(value, "to_dict") and hasattr(value, "columns"):   # pandas.DataFrame
+        value = value.to_dict("records")
     if not isinstance(value, list) or len(value) < min_len:
         raise ValueError(f"{label} 必须至少有 {min_len} 行，收到 {type(value).__name__}")
     if not all(isinstance(row, dict) for row in value):
         raise ValueError(f"{label} 必须全是 MAP 行")
-    return value
+    # pandas 的 NaN 不能进快照（allow_nan=False 会拒；且 demo 不该出现伪值）
+    out: list[dict[str, Any]] = []
+    for row in value:
+        out.append({k: (None if isinstance(v, float) and v != v else v)
+                    for k, v in row.items()})
+    return out
 
 
 def _slice_years(values: dict[str, Any], years: int) -> dict[str, Any]:
@@ -161,10 +183,13 @@ def capture() -> tuple[dict[str, Any], int]:
             bars = _require_rows(
                 cli.kline.bars(sym, n=120), f"kline.bars({sym})", min_len=20,
             )
-            latest = bars[0]
-            if _require_date(latest.get("date"), f"kline.bars({sym}).date") != AS_OF.isoformat():
+            latest = bars[-1]   # 2.0 门面升序（旧→新），最新一根在尾部
+            latest_date = _require_date(latest.get("date"), f"kline.bars({sym}).date")
+            if latest_date > AS_OF.isoformat():
+                raise ValueError(f"{sym} 最新 K 线日期 {latest_date} 晚于拍摄日 {AS_OF}")
+            if (AS_OF - date.fromisoformat(latest_date)).days > 10:
                 raise ValueError(
-                    f"{sym} 最新 K 线日期不是 {AS_OF}，而是 {latest.get('date')!r}"
+                    f"{sym} 最新 K 线 {latest_date} 距拍摄日 {AS_OF} 超过 10 天（停牌或数据断档）"
                 )
             for i, row in enumerate(bars):
                 where = f"kline.bars({sym})[{i}]"
@@ -185,10 +210,26 @@ def capture() -> tuple[dict[str, Any], int]:
                 raise ValueError(f"kline.snapshot({sym}) 返回 {type(snapshot).__name__}")
             close = _require_num(snapshot.get("close"), f"kline.snapshot({sym}).close")
             bar_close = _require_num(latest.get("close"), f"kline.bars({sym}).close")
-            if not math.isclose(close, bar_close, rel_tol=0.0, abs_tol=1e-9):
+            # snapshot 是「盘中最新价」，收盘后拍摄才与当日 bar 相等；盘中拍摄必然
+            # 高于/低于最近收盘价。锚定口径改用 snapshot.kline_date == AS_OF，
+            # 价格只做同量级粗校验（±20% 拦单位/标错位，不拦盘中偏离）。
+            if not math.isclose(close, bar_close, rel_tol=0.20):
                 raise ValueError(
-                    f"{sym} snapshot.close={close} 与最新 bar.close={bar_close} 不一致"
+                    f"{sym} snapshot.close={close} 与最新 bar.close={bar_close} "
+                    "相差超过 20%（疑似单位或标的错位）"
                 )
+            # 快照是拍摄日盘中价（kline_date=拍摄日），日 K 结算面到上一交易日，
+            # 两者相差 0~1 个交易日属正常（盘中拍摄）；跨多日说明数据断档。
+            snap_bar_date = str(snapshot.get("kline_date") or "")[:10]
+            if snap_bar_date:
+                _d = _parse_date(snap_bar_date)
+                if _d > AS_OF.isoformat():
+                    raise ValueError(f"{sym} snapshot.kline_date={_d} 晚于拍摄日 {AS_OF}")
+                if (date.fromisoformat(_d) - date.fromisoformat(latest_date)).days > 5:
+                    raise ValueError(
+                        f"{sym} snapshot.kline_date={_d} 与最新 bar.date={latest_date} "
+                        "相差超过 5 天（数据断档）"
+                    )
             kline_bars[sym] = bars
             snapshots[sym] = snapshot
 
@@ -211,8 +252,10 @@ def capture() -> tuple[dict[str, Any], int]:
                 if not 0 <= y < 1:
                     raise ValueError(f"dividend.yield_ttm({sym}) 不是小数口径：{y}")
             dividend_last[sym] = cli.dividend.last(sym)
-            history = cli.dividend.history(sym, limit=20)
-            dividend_history[sym] = history if isinstance(history, list) else []
+            # 2.0 门面返回 DataFrame：_require_rows 统一转 records（1.x 分支不再需要）
+            dividend_history[sym] = _require_rows(
+                cli.dividend.history(sym, limit=20), f"dividend.history({sym})", min_len=0,
+            )
             for i, row in enumerate(dividend_history[sym]):
                 for field in ("ex_div", "pay"):
                     value = row.get(field)
@@ -292,9 +335,16 @@ def capture() -> tuple[dict[str, Any], int]:
                 raise ValueError(f"指标 {code} 不是小数口径：{value}")
             indicators[code] = value
 
-        valuation = cli.valuation.hist_stats(primary, metric="pe", window="3y")
-        if not isinstance(valuation, dict):
+        resp = cli.valuation.hist_stats(primary, metric="pe", window="3y")
+        if not isinstance(resp, dict):
             raise ValueError("valuation.hist_stats 返回非 MAP")
+        # 2.0 起 hist_stats 返回信封 {ok, as_of, data, meta}；快照只存 data 段
+        valuation = resp.get("data") if "data" in resp else resp
+        if not isinstance(valuation, dict) or valuation.get("ok") is False:
+            raise ValueError(f"valuation.hist_stats 信封异常：{str(resp)[:200]}")
+        series = valuation.get("series")
+        if hasattr(series, "to_dict") and hasattr(series, "columns"):
+            valuation["series"] = _require_rows(series, "valuation.series", min_len=1)
         for key in ("current", "median", "min", "max", "pct"):
             _require_num(valuation.get(key), f"valuation.{key}")
         if not 0 <= float(valuation["pct"]) <= 1:
@@ -328,6 +378,53 @@ def capture() -> tuple[dict[str, Any], int]:
             percent = _require_num(row.get("percent"), f"movers[{i}].percent")
             if abs(percent) > 1:
                 raise ValueError(f"movers[{i}].percent 不是小数口径：{percent}")
+
+        # ---- 2.0 新面：交易日历 / 市场级两融 / 期货 ----
+        # 窗口截至快照日：快照只回放「已发生」的交易日，未来日历不外带
+        cal_days = _require_rows(
+            cli.calendar.days("2026-01-01", AS_OF.isoformat()),
+            "calendar.days(2026)", min_len=200,
+        )
+        for i, row in enumerate(cal_days):
+            d = _require_date(row.get("date"), f"calendar.days[{i}].date")
+            if d > AS_OF.isoformat():
+                raise ValueError(f"calendar.days[{i}] 晚于快照日：{d}")
+        cal_is_open = {
+            "2026-01-01": bool(cli.calendar.is_open("2026-01-01")),   # 元旦
+            AS_OF.isoformat(): True,                                   # 快照日（交易日）
+        }
+        if cal_is_open["2026-01-01"] is not False:
+            raise ValueError("calendar.is_open(2026-01-01) 应为 False（元旦）")
+        cal_next = _require_rows(cli.calendar.next(AS_OF.isoformat(), 5),
+                                 "calendar.next(as_of)", min_len=1)
+        for i, row in enumerate(cal_next):
+            d = _require_iso_date(row.get("date"), f"calendar.next[{i}].date")
+            if d <= AS_OF.isoformat():
+                raise ValueError(f"calendar.next[{i}] 未严格晚于快照日：{d}")
+
+        margin_summary = _require_rows(
+            cli.margin.market_summary(limit=30), "margin.market_summary(30)", min_len=2,
+        )
+        for i, row in enumerate(margin_summary):
+            d = _require_date(row.get("trade_date"), f"margin_summary[{i}].trade_date")
+            if d > AS_OF.isoformat():
+                raise ValueError(f"margin_summary[{i}] 晚于快照日：{d}")
+            _require_num(row.get("fin_balance"), f"margin_summary[{i}].fin_balance")
+        margin_universe = _require_rows(
+            cli.margin.universe(limit=100), "margin.universe(100)", min_len=50,
+        )
+        for i, row in enumerate(margin_universe):
+            if not str(row.get("security_code") or "").strip():
+                raise ValueError(f"margin_universe[{i}].security_code 为空")
+
+        futures_snap: dict[str, dict[str, Any]] = {}
+        for fut in FUTURES:
+            snap = cli.futures.snapshot(fut)
+            if not isinstance(snap, dict):
+                raise ValueError(f"futures.snapshot({fut}) 返回非 MAP")
+            _require_num(snap.get("close"), f"futures.snapshot({fut}).close")
+            _require_num(snap.get("settle"), f"futures.snapshot({fut}).settle")
+            futures_snap[fut] = snap
 
         screens: dict[str, dict[str, bool]] = {}
         for sym in WATCHLIST:
@@ -372,6 +469,17 @@ def capture() -> tuple[dict[str, Any], int]:
                 "top_movers_down": movers_down,
                 "screens": screens,
             },
+            # 2.0 新面（2026-11 起快照覆盖）
+            "calendar": {
+                "days": cal_days,
+                "is_open": cal_is_open,
+                "next": cal_next,
+            },
+            "margin": {
+                "market_summary": margin_summary,
+                "universe": margin_universe,
+            },
+            "futures": futures_snap,
         }
         return data, session.request_count
     finally:
@@ -431,7 +539,7 @@ def render(document: Mapping[str, Any]) -> bytes:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--as-of", required=True, help="固定快照日，必须是 2026-10-30")
+    parser.add_argument("--as-of", required=True, help="固定快照日（与 AS_OF 一致）")
     parser.add_argument("--output", required=True, help="输出 JSON 路径")
     args = parser.parse_args()
     if args.as_of != AS_OF.isoformat():

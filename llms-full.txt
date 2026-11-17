@@ -118,7 +118,7 @@
 import wmshare
 
 cli = wmshare.demo_client()
-print(f"{cli.dividend.yield_ttm('600519'):.2%}")        # 3.73%
+print(f"{cli.dividend.yield_ttm('600519'):.2%}")        # 3.57%
 print(cli.screener.index_breadth_summary()["total"])   # 5686
 ```
 

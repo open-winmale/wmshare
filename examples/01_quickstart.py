@@ -48,8 +48,10 @@ def main(cli=None, demo: bool = False) -> None:
 
     div = cli.dividend.last(SYMBOL)
     if div:
-        print(f"最近一次分红：除权 {div.get('ex_div')}  DPS {div.get('dps')}  "
-              f"总额 {div.get('total')}")
+        dps = float(div.get("dps") or 0)
+        total = float(div.get("total") or 0)
+        print(f"最近一次分红：除权 {div.get('ex_div')}  DPS {dps:.5f}  "
+              f"总额 {total:.2f}")
 
     # ---- 参考数据 ----
     profile = cli.info.profile(SYMBOL)
