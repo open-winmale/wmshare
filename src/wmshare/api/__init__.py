@@ -557,23 +557,26 @@ class MarginApi(_Api):
         """市场级两融汇总（DataFrame：trade_date/exchange/fin_buy_amt/…，升序）。
 
         沪深交易所汇总日表（金额=元、量=股）；BSE 无公开汇总口径，缺席属源边界。
-        服务端按交易日披露（约 17:00 后），非交易日不刷新。
+        服务端按交易日披露（约 17:00 后），非交易日不刷新。源无「融资偿还额/
+        融券偿还量」两列（上游未披露，不造假填充），其余 6 列齐全。
 
-        :param limit: 条数，默认 60（每交易所日一行；跨交易所同日并存）
+        :param limit: 条数，默认 60（每交易所日一行；跨交易所同日并存）；
+            长历史（如 3 年 ≈1,500 行）需 ``Client(max_limit=None)`` 或分批
         """
         return _out(_sort_rows_by_date(
             self._c.call("margin.market_summary", limit=limit), key="trade_date"))
 
-    def universe(self, limit: int = 500) -> Any:
+    def universe(self, limit: int | None = None) -> Any:
         """两融标的名单（DataFrame：security_code/security_name/exchange/in_date/out_date/…）。
 
-        快照 + 调整史：``out_date`` 为空 = 当前生效；非空 = 已调出（保留供回溯）。
-        名单约 2,000+ 行，全量取用请 ``Client(max_limit=None)`` 或分批。
+        当前可两融标的（沪深保证金比例表口径 ≈4,000 行）。``out_date`` 为空 =
+        当前生效；源不提供调入调出日期，故 ``in_date/out_date`` 为空（字段保留）。
 
-        :param limit: 条数，默认 500
+        :param limit: 条数；默认 ``None`` = 全量快照（服务端上限 5,000）
         """
+        kw: dict[str, Any] = {} if limit is None else {"limit": limit}
         return _out(_sort_rows_by_date(
-            self._c.call("margin.universe", limit=limit), key="security_code"))
+            self._c.call("margin.universe", **kw), key="security_code"))
 
 
 class CalendarApi(_Api):

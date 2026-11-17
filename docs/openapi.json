@@ -1714,7 +1714,7 @@
       "post": {
         "operationId": "margin_market_summary",
         "summary": "市场级两融汇总（DataFrame：trade_date/exchange/fin_buy_amt/…，升序）。",
-        "description": "沪深交易所汇总日表（金额=元、量=股）；BSE 无公开汇总口径，缺席属源边界。、服务端按交易日披露（约 17:00 后），非交易日不刷新。、底层目录函数 `margin.market_summary`。SDK 调用：`cli.margin.market_summary(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "description": "沪深交易所汇总日表（金额=元、量=股）；BSE 无公开汇总口径，缺席属源边界。、服务端按交易日披露（约 17:00 后），非交易日不刷新。源无「融资偿还额/、融券偿还量」两列（上游未披露，不造假填充），其余 6 列齐全。、长历史（如 3 年 ≈1,500 行）需 ``Client(max_limit=None)`` 或分批、底层目录函数 `margin.market_summary`。SDK 调用：`cli.margin.market_summary(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "市场行情"
         ],
@@ -1727,7 +1727,7 @@
                 "properties": {
                   "limit": {
                     "type": "integer",
-                    "description": "条数，默认 60（每交易所日一行；跨交易所同日并存）"
+                    "description": "条数，默认 60（每交易所日一行；跨交易所同日并存）；"
                   }
                 },
                 "required": []
@@ -1810,7 +1810,7 @@
       "post": {
         "operationId": "margin_universe",
         "summary": "两融标的名单（DataFrame：security_code/security_name/exchange/in_date/out_date/…）。",
-        "description": "快照 + 调整史：``out_date`` 为空 = 当前生效；非空 = 已调出（保留供回溯）。、名单约 2,000+ 行，全量取用请 ``Client(max_limit=None)`` 或分批。、底层目录函数 `margin.universe`。SDK 调用：`cli.margin.universe(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "description": "当前可两融标的（沪深保证金比例表口径 ≈4,000 行）。``out_date`` 为空 =、当前生效；源不提供调入调出日期，故 ``in_date/out_date`` 为空（字段保留）。、底层目录函数 `margin.universe`。SDK 调用：`cli.margin.universe(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "市场行情"
         ],
@@ -1823,7 +1823,7 @@
                 "properties": {
                   "limit": {
                     "type": "integer",
-                    "description": "条数，默认 500"
+                    "description": "条数；默认 ``None`` = 全量快照（服务端上限 5,000）"
                   }
                 },
                 "required": []
