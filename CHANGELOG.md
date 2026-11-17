@@ -10,6 +10,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.22.1] - 2026-11-17
+### Added
+- **`kline.snapshot(list)` 自动路由批量原生**（`BATCH_NATIVE_ROUTES`）：传代码列表
+  （≥ `Client(native_batch_min=3)` 票）不再拼 N 次单票调用，而是单次 eval 调
+  `kline.snapshot_batch` 并适配回逐票合同——返回 `BatchResult`，`results` 为
+  `{代码: 23 字段 MAP}`（`kline_date/kline_sas` 因索引未物化为 None；ETF/新上市
+  等索引外标的自动回退逐票快照，数值一致）。EC 从 N×均线首算 10,250 EC/票
+  降为按量 60~90 EC/票：500 票从 ≈550 万 → 3.3~4.4 万（约 150 倍）。
+- `Client(native_batch=True/False)`、`Client(native_batch_min=N)`：批量原生路由开关
+  与阈值；`batch_all`/`call_batch`（raise 模式）同样命中路由且不分批。
+- 拼接护栏：非路由接口 ≥200 票拼进单次 eval 时发出 EC 线性放大提示（不阻断）。
+### Changed
+- **（平台侧，script 仓 57eb307f）`kline.snapshot_batch` 双路径计费**：codes 1~1999
+  逐票点查 + 一次批量投影（60~90 EC/票，2026-11-17 实测 500 票纯 A 股 3.3~4.4 万 EC）；
+  ≥2000 全市场无过滤扫描（含停牌，~14.8 万 EC）；空参仍为非停牌全市场投影 + 按日缓存。
+- 索引未收录代码（ETF/新上市/无效码）回退 `kline.snapshot`（memo 化；无效码返回
+  全零，与逐票拼接语义一致），回退行 `row=-1`。
+- 背景：某 pro 用户以 `batch_all("kline.snapshot", 全市场清单)` 日扫一轮，
+  1.19.0 拼接路径 2 分钟烧 6,300 万 EC（12 笔 ≥500 万单次告警）。本版配合平台
+  双路径把它压到 ≈15 万 EC/轮（约 430 倍）。老版本（≤1.21）用户请升级后改用
+  `cli.kline.snapshot(codes)`；服务端双路径对旧版本的拼接路径无回旋（首触照旧计价）。
+
 ## [1.22.0] - 2026-11-16
 ### Added
 - **`kline.snapshot_batch(codes)` 多标的行情快照**：走当日全市场索引批量投影，

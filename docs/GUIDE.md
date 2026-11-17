@@ -409,6 +409,19 @@ len(res.results), res.requests    # (5375, 11)——逐票要 5,375 次，批量
 res.to_df()                       # 每标的一行长表（symbol 列在前；需 pandas）
 ```
 
+**1.22.1 起 `kline.snapshot` 传列表自动走批量原生（推荐）**：单次请求、按量计费
+60~90 EC/票，全市场一轮 ≈15 万 EC（对比逐票拼接首算的数千万 EC）：
+
+```python
+res = cli.kline.snapshot(codes)   # 自动路由 kline.snapshot_batch，1 次请求
+res.results["600519"]["ma60"]     # 23 字段快照（kline_date/kline_sas 为 None）
+```
+
+`batch_all`/`call_batch` 对 `kline.snapshot` 同样自动路由且不再分批；
+`kline_date/kline_sas` 索引未物化置 None，价格为索引 EOD 快照值（盘中实时价用
+`live`/`batch_live`），ETF/新上市等索引外标的自动回退逐票快照（数值一致）。
+其余接口的批量仍是「同次计算逐票计费」，继续按本节习惯控制 EC。
+
 实测（2026-10-30，免费档，当时全市场 5,691 家）：500 标的单批 0.7–4 秒（随网络波动），
 A 股全市场 12 批 9–16 秒一次跑完，0 错误；20 只银行股单批 0.06 秒 1 次请求。
 历史类多行结果（`kline.bars`/`dividend.history`）建议改用 `batch_iter` 边取边落盘。

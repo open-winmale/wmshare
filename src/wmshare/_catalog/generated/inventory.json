@@ -1,6 +1,6 @@
 {
  "schema_version": 2,
- "upstream_rev": "f8ef3652",
+ "upstream_rev": "15e407b5",
  "domains": {
   "bonus": {
    "entry": "sys/bonus/init.xs",
@@ -6523,7 +6523,7 @@
   },
   {
    "name": "kline.snapshot_batch",
-   "cn": "多标的行情快照（索引批量，便宜 400x）",
+   "cn": "多标的行情快照（索引按量投影，60~90 EC/票）",
    "example": "kline.snapshot_batch([\"600519\",\"000001\"])",
    "returns": "ARR · 索引行（values 内为 $指标→值）",
    "returns_shape": {
@@ -6535,7 +6535,7 @@
       {
        "name": "row",
        "type": "int",
-       "cn": "行号"
+       "cn": "行号（索引行≥0；ETF/新上市回退行=-1）"
       },
       {
        "name": "values",

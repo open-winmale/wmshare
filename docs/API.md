@@ -246,7 +246,7 @@ cli.kline.min1("600519")
 
 #### `cli.kline.snapshot` — 行情摘要
 
-单股行情快照（23 字段：价量、涨跌、均线、市值、标识）。
+行情快照（23 字段：价量、涨跌、均线、市值、标识）。
 
 **输入参数**
 
@@ -4238,8 +4238,8 @@ cli.info.profile("600519")
 | `kline.query_bars_live` | 盘中拉最近 n 根日K（外部行情源 HTTP，≠分时） | 原始数据 | L0 | `sym:string` · `limit:int?` — 最近 n 个交易日 | ARR · bars | — | 例：`cli.call("kline.query_bars_live", sym='000807', limit=5)`
 | `kline.query_min1_live` | 当日 1 分钟分时（有损滚桶） | 原始数据 | L0 | `sym:string` | MAP · 分时包 {trading_day, bars:[t,hm,close,volume,amount,...], bar_n}；休市读上一交易日 | `volume`:手→股 | 例：`cli.call("kline.query_min1_live", sym='600519')`
 | `kline.query_min1_live_meta` | 分时头（无 bars） | 原始数据 | L0 | `sym:string` | MAP · {trading_day, updated_at, bar_n} | — | 例：`cli.call("kline.query_min1_live_meta", sym='600519')`
-| `kline.snapshot` | 单股行情快照 | 原始数据 | L0 | `sym:string` | MAP · 23 字段行情快照（价量/涨跌/均线/市值/标识） | `volume`:手→股 | 例：`cli.call("kline.snapshot", sym='600519')`
-| `kline.snapshot_batch` | 多标的行情快照（索引批量投影） | 原始数据 | L0 | `codes:array?` — 标的代码数组；空/nil 返回全市场非停牌 | ARR · 索引原始行 [{row, values}]；values 内为 $指标→值（21 个字段） | — | 例：`cli.call("kline.snapshot_batch", codes=['600519', '000001'])`
+| `kline.snapshot` | 行情快照（单票 MAP；列表 ≥3 票自动路由批量） | 原始数据 | L0 | `sym:string` | MAP · 23 字段行情快照（价量/涨跌/均线/市值/标识） | `volume`:手→股 | 例：`cli.call("kline.snapshot", sym='600519')`
+| `kline.snapshot_batch` | 多标的行情快照（索引按量投影，60~90 EC/票） | 原始数据 | L0 | `codes:array?` — 标的代码数组；空/nil 返回全市场非停牌 | ARR · 索引原始行 [{row, values}]；values 内为 $指标→值（21 个字段） | — | 例：`cli.call("kline.snapshot_batch", codes=['600519', '000001'])`
 | `kline.screen_above_ma20` | 收盘价在 MA20 之上 | 指标 | L0 | `sym:string` | bool | — | 例：`cli.call("kline.screen_above_ma20", sym='600519')`
 | `kline.screen_momentum_20d` | 近 20 日涨幅达标 | 指标 | L0 | `sym:string` · `min_chg:float` — 如 0.1 = 10% | bool | — | 例：`cli.call("kline.screen_momentum_20d", sym='600519', min_chg=0.1)`
 | `kline.fmt_maps` | K 线规范化 MAP 列表 | 原始数据 | L0 | `rows:array` — query_bars 等返回的 bars | ARR · 规范化 bar MAP | — |

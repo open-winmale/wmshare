@@ -1080,14 +1080,14 @@ class KlineNS(_Ns):
         return self._client.call("kline.query_min1_live_meta", sym=sym, _raw=_raw, _df=_df)
 
     def snapshot(self, sym: str, _raw: bool = False, _df: bool = False) -> Any:
-        """单股行情快照
+        """行情快照（单票 MAP；列表 ≥3 票自动路由批量）
 
 :returns: MAP · 23 字段行情快照（价量/涨跌/均线/市值/标识）
         """
         return self._client.call("kline.snapshot", sym=sym, _raw=_raw, _df=_df)
 
     def snapshot_batch(self, codes: list | None = None, _raw: bool = False, _df: bool = False) -> Any:
-        """多标的行情快照（索引批量投影）
+        """多标的行情快照（索引按量投影，60~90 EC/票）
 
 :param codes: 标的代码数组；空/nil 返回全市场非停牌
 

@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "wmshare 数据 API",
-    "version": "1.22.0",
+    "version": "1.22.1",
     "description": "覆盖 A 股、港股、美股的财经数据核心接口（Python SDK，`pip install wmshare`；`import wmshare`）。凭证必填：在开放平台（open.winmale.com）获取 client_id/api-key；遇到 401/403/429 错误消息即完整的申请与配置指引。覆盖行情 K 线（不复权/前复权/后复权、盘中、分时、ETF、指数）、三大报表（多期、合并 vs 母公司、树视图、新旧会计准则归一）、分红（历史/DPS/窗口/TTM 率）、公告与业绩披露、资金流与指标层。平台指标经 /indicator/get、/indicator/metrics 按指标代码寻址，全量 2752 个指标代码随包内置目录分发（分组清单见 docs/API.md）。",
     "license": {
       "name": "BSD-3-Clause",
@@ -450,8 +450,8 @@
     "/kline/snapshot": {
       "post": {
         "operationId": "kline_snapshot",
-        "summary": "单股行情快照（23 字段：价量、涨跌、均线、市值、标识）。",
-        "description": "价量与涨跌：close、percent、volume、amount、chg_5d、chg_10d、chg_20d、chg_90d、roi_1y。、均线与市值：ma20、ma60、ma120、ma60_up、vol_ratio_5、mv、mv_free。、标识与日期：symbol、name、industry、is_st、is_suspend、kline_date、kline_sas。、percent 与 chg_* 为小数，volume=股，amount 与市值=元；布尔字段为 ma60_up、is_st、is_suspend。、目录 returns_shape 由本仓精修条目给出完整字段表，不依赖上游注释。、底层目录函数 `kline.snapshot`。SDK 调用：`cli.kline.snapshot(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "summary": "行情快照（23 字段：价量、涨跌、均线、市值、标识）。",
+        "description": "传单个代码返回该票快照 MAP；传代码列表（≥3 票）自动路由批量原生实现、``kline.snapshot_batch``（单次 eval，EC 按量 60~90 EC/票，而非逐票首算、10,250 EC/票），返回 BatchResult——``results`` 为 ``{代码: 23 字段 MAP}``。、批量路径下 ``kline_date/kline_sas`` 为 None（当日索引未物化这两个字段），、价格为索引 EOD 快照值（非实时 tick），盘中实时价请用 ``live``/``batch_live``；、ETF/新上市等索引外标的自动回退逐票快照（数值与单票一致）。列表 <3 票或、``Client(native_batch=False)`` 时退回逐票拼接（语义同单票）。、价量与涨跌：close、percent、volume、amount、chg_5d、chg_10d、chg_20d、chg_90d、roi_1y。、均线与市值：ma20、ma60、ma120、ma60_up、vol_ratio_5、mv、mv_free。、标识与日期：symbol、name、industry、is_st、is_suspend、kline_date、kline_sas。、percent 与 chg_* 为小数，volume=股，amount 与市值=元；布尔字段为 ma60_up、is_st、is_suspend。、目录 returns_shape 由本仓精修条目给出完整字段表，不依赖上游注释。、底层目录函数 `kline.snapshot`。SDK 调用：`cli.kline.snapshot(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "市场行情"
         ],

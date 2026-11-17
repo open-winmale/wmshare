@@ -383,8 +383,16 @@ class KlineApi(_Api):
         """
         return self._c.call("kline.query_min1_live", sym=symbol)
 
-    def snapshot(self, symbol: str) -> Any:
-        """单股行情快照（23 字段：价量、涨跌、均线、市值、标识）。
+    def snapshot(self, symbol: str | list[str]) -> Any:
+        """行情快照（23 字段：价量、涨跌、均线、市值、标识）。
+
+        传单个代码返回该票快照 MAP；传代码列表（≥3 票）自动路由批量原生实现
+        ``kline.snapshot_batch``（单次 eval，EC 按量 60~90 EC/票，而非逐票首算
+        10,250 EC/票），返回 BatchResult——``results`` 为 ``{代码: 23 字段 MAP}``。
+        批量路径下 ``kline_date/kline_sas`` 为 None（当日索引未物化这两个字段），
+        价格为索引 EOD 快照值（非实时 tick），盘中实时价请用 ``live``/``batch_live``；
+        ETF/新上市等索引外标的自动回退逐票快照（数值与单票一致）。列表 <3 票或
+        ``Client(native_batch=False)`` 时退回逐票拼接（语义同单票）。
 
         价量与涨跌：close、percent、volume、amount、chg_5d、chg_10d、chg_20d、chg_90d、roi_1y。
         均线与市值：ma20、ma60、ma120、ma60_up、vol_ratio_5、mv、mv_free。

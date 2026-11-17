@@ -181,6 +181,56 @@ def _xs_literal(v: Any) -> str:
     return json.dumps(v, ensure_ascii=False)
 
 
+# kline.snapshot 23 字段（目录顺序）与 snapshot_batch 索引 $指标 的映射。
+# (None, 字段) = 索引未物化（$KLINE_* 为 cursor 侧指标），适配时置 None。
+_SNAPSHOT_BATCH_FIELDS: tuple[tuple[str | None, str], ...] = (
+    ("$SYMBOL", "symbol"), ("$NAME", "name"), ("$CLOSE_LAST", "close"),
+    ("$PERCENT_LAST", "percent"), ("$VOLUME_LAST", "volume"),
+    ("$AMOUNT_LAST", "amount"), ("$MV_LAST", "mv"), ("$MV_FREE_LAST", "mv_free"),
+    (None, "kline_date"), (None, "kline_sas"),
+    ("$MA_CLOSE_20_LAST", "ma20"), ("$MA_CLOSE_60_LAST", "ma60"),
+    ("$MA120_LAST", "ma120"), ("$CHG_5D_LAST", "chg_5d"),
+    ("$CHG_10D_LAST", "chg_10d"), ("$CHG_20D_LAST", "chg_20d"),
+    ("$CHG_90D_LAST", "chg_90d"), ("$ROI_NERAST_1", "roi_1y"),
+    ("$VOL_RATIO_5_LAST", "vol_ratio_5"), ("$MA60_UP_LAST", "ma60_up"),
+    ("$INDUSTRY_CUR_1", "industry"), ("$IS_SUSPEND", "is_suspend"),
+    ("$IS_ST", "is_st"),
+)
+
+
+def _adapt_snapshot_batch(rows: Any, syms: list[str], name: str) -> dict[str, dict]:
+    """kline.snapshot_batch 原始行 [{row, values}] → {标的: snapshot 23 字段 MAP}。
+
+    values 的 $指标键平化为 snapshot 的扁平字段名（均线/涨跌类逐值一致，2026-11-16
+    实测）；kline_date/kline_sas 索引未物化，置 None。请求了但索引无行的标的按
+    call_batch 同口径抛 batch_missing。
+    """
+    out: dict[str, dict] = {}
+    for row in rows or []:
+        v = (row or {}).get("values") or {}
+        sym = str(v.get("$SYMBOL") or "")
+        if not sym:
+            continue
+        out[sym] = {flat: (None if k is None else v.get(k))
+                    for k, flat in _SNAPSHOT_BATCH_FIELDS}
+    missing = [s for s in syms if s not in out]
+    if missing:
+        raise ApiError(
+            f"{name}: 批量返回缺少 {len(missing)} 个标的：{missing[:10]}"
+            + (f" 等 {len(missing)} 个" if len(missing) > 10 else ""),
+            code="batch_missing",
+        )
+    return out
+
+
+# 逐票拼接 → 批量原生接口自动路由表：值 = (批量实现名, 适配器)。
+# 命中时列表入参不再拼 N 次单票调用，而是一次 eval 调批量实现再整形回逐票合同——
+# EC 从 N×单票首算（snapshot 均线 10,250/票）降为按量（snapshot_batch ≈58 EC/票）。
+BATCH_NATIVE_ROUTES: dict[str, tuple[str, Any]] = {
+    "kline.snapshot": ("kline.snapshot_batch", _adapt_snapshot_batch),
+}
+
+
 def _to_dataframe(result: Any) -> Any:
     try:
         import pandas as pd  # optional dependency
@@ -224,6 +274,8 @@ class Client:
         validate: bool = True,
         ec_warn_threshold: int | None = 100_000,
         allow_custom_host: bool = False,
+        native_batch: bool = True,
+        native_batch_min: int = 3,
     ):
         market = str(market or "cn").strip().lower()
         if market not in ("cn", "hk", "us"):
@@ -247,6 +299,11 @@ class Client:
         if max_limit is not None and (isinstance(max_limit, bool)
                                       or not isinstance(max_limit, int) or max_limit <= 0):
             raise UsageError("max_limit 必须为正整数或 None", code="config")
+        if not isinstance(native_batch, bool):
+            raise UsageError("native_batch 必须是布尔值", code="config")
+        if isinstance(native_batch_min, bool) or not isinstance(native_batch_min, int) \
+                or native_batch_min < 1:
+            raise UsageError("native_batch_min 必须是正整数", code="config")
         self.base_url = (base_url or DEFAULT_BASE_URL).rstrip("/")
         self.client_id = client_id or ""
         self.client_secret = client_secret or ""
@@ -280,6 +337,11 @@ class Client:
             session_headers.setdefault("X-WM-Client", f"wmshare-py/{SDK_VERSION}")
         self.timeout = timeout
         self.max_limit = max_limit
+        # 批量原生路由开关：命中 BATCH_NATIVE_ROUTES 的接口收列表时自动改走
+        # 批量实现（如 kline.snapshot → kline.snapshot_batch，EC 按量而非 N×单票）。
+        # native_batch_min 以下的列表仍走拼接——极小列表首触更便宜，且保留逐票语义。
+        self.native_batch = native_batch
+        self.native_batch_min = native_batch_min
         self.retries = max(0, int(retries))
         self.backoff = backoff
         if isinstance(backoff_jitter, bool) or not isinstance(backoff_jitter, (int, float)) \
@@ -788,14 +850,20 @@ class Client:
         fn = self._resolve_function(name)
         params = fn.get("params") or self.catalog.inventory_params(name)
         kwargs = self._resolve_symbol_alias(name, params, kwargs)
-        # 传列表即批量：标的参数收到 list/tuple 自动转 call_batch
-        # （≤500，超限 LimitError；语义与显式 call_batch 一致）。
+        # 传列表即批量：标的参数收到 list/tuple 自动转批量。
+        # 命中 BATCH_NATIVE_ROUTES 且票数达 native_batch_min 时走批量原生实现
+        # （单次 eval、EC 按量）；否则转 call_batch 拼接（≤500，超限 LimitError）。
         for p in params:
             v = kwargs.get(p["name"])
             if (p["name"] in self.BATCH_SYMBOL_PARAMS
                     and isinstance(v, (list, tuple))):
                 rest = {k: w for k, w in kwargs.items() if k != p["name"]}
-                return self.call_batch(name, list(v), _raw=_raw, _df=_df,
+                syms = list(v)
+                if self.native_batch and name in BATCH_NATIVE_ROUTES \
+                        and len(syms) >= self.native_batch_min:
+                    return self._call_native_batch(name, syms, _raw=_raw,
+                                                   _df=_df, _units=_units, **rest)
+                return self.call_batch(name, syms, _raw=_raw, _df=_df,
                                        _units=_units, **rest)
         call_line = self._build_call_line(name, params, kwargs)
         normalizer = fn.get("normalize_with")
@@ -815,6 +883,38 @@ class Client:
                                  market=self.market, symbol=symbol)
         return _to_dataframe(result) if _df else result
 
+    def _call_native_batch(self, name: str, syms: list[str], *, _raw: bool = False,
+                           _df: bool = False, _units: str = "base",
+                           **kwargs: Any) -> BatchResult:
+        """批量原生路由：单次 eval 调批量实现，适配回逐票合同。
+
+        与拼接（call_batch raise 模式）同返回 BatchResult，但 EC 按量计费——
+        如 kline.snapshot 拼接是 N×均线首算 10,250 EC/票，snapshot_batch ≈58 EC/票。
+        on_error="skip" 不走此路径（原生批量无法逐票隔离错误）。
+        _raw=True 跳过单位换算（返回未换算的原始值 MAP，仍为逐票 dict）。
+        """
+        impl, adapter = BATCH_NATIVE_ROUTES[name]
+        impl_fn = self._resolve_function(impl)
+        arr_param = next((p["name"] for p in (impl_fn.get("params") or [])
+                          if p.get("type") == "array"), None)
+        if arr_param is None:
+            raise UsageError(f"{impl}: 批量原生实现缺少数组参数", code="params")
+        # 与 call_batch 同口径：归一 + 去重（保持首现顺序）；跨市场混批同拒。
+        syms = list(dict.fromkeys(self._canon_symbol(s) for s in syms))
+        if not syms:
+            return BatchResult(requested=0)
+        self._assert_same_market(name, syms)
+        raw = self.call(impl, _raw=True, **{arr_param: list(syms)}, **kwargs)
+        adapted = adapter(raw, syms, name)
+        if not _raw and _units == "base":
+            adapted = apply_units(adapted, self._resolve_function(name), fname=name,
+                                  validate=self._validate, market=self.market,
+                                  symbol=syms[0])
+        if _df:
+            adapted = {k: _to_dataframe(v) for k, v in adapted.items()}
+        return BatchResult(results=adapted, requests=1, requested=len(syms),
+                           ec_cost=self.last_ec_cost or 0)
+
     def call_batch(self, name: str, symbols: list[str], /, on_error: str = "raise",
                    _raw: bool = False, _df: bool = False, _units: str = "base",
                    **kwargs: Any) -> BatchResult:
@@ -823,6 +923,9 @@ class Client:
         on_error="raise"（默认）：把所有标的组装成**一次** eval（map 字面量），单次 HTTP；
         任一标的失败则整体抛出（服务端无 try/catch，无法在单次请求内隔离）。
         on_error="skip"：逐标的调用并捕获错误，成功项进 results、失败项进 errors（N 次 HTTP）。
+        批量原生路由（BATCH_NATIVE_ROUTES，如 kline.snapshot → kline.snapshot_batch）：
+        raise 模式不再拼接，改为单次 eval 调批量实现并适配回逐票合同——EC 按量
+        （≈58 EC/票）而非 N×单票首算（10,250/票）；skip 模式恒为逐票拼接。
         _raw/_df/_units 语义与 call() 一致（_units="native" 时跳过单条 HTTP 路径的单位换算）。
         """
         if on_error not in ("raise", "skip"):
@@ -845,6 +948,13 @@ class Client:
             return BatchResult()
         requested = len(syms)
         self._assert_same_market(name, syms)
+        # 批量原生路由（raise 模式）：单次 eval 调批量实现，EC 按量而非 N×单票放大。
+        # 置于 max_limit 检查之前——原生路径单次 eval 可承载全市场清单，不受拼接 500 上限。
+        route = BATCH_NATIVE_ROUTES.get(name)
+        if (on_error == "raise" and self.native_batch and route is not None
+                and len(syms) >= self.native_batch_min):
+            return self._call_native_batch(name, syms, _raw=_raw, _df=_df,
+                                           _units=_units)
         if self.max_limit is not None and len(syms) > self.max_limit:
             raise LimitError(
                 f"{name}: 批量标的数 {len(syms)} 超过上限 {self.max_limit}"
@@ -872,6 +982,14 @@ class Client:
                                requested=requested, error_details=error_details)
 
         normalizer = fn.get("normalize_with")
+        if name not in BATCH_NATIVE_ROUTES and len(syms) >= 200:
+            # 拼接护栏：EC 随票数线性放大（如均线首算类接口 10,250 EC/票 × N）。
+            # 仅提示不阻断——数据量驱动型接口（如资金流全历史）本就该批量拉。
+            warnings.warn(
+                f"{name}: 逐票拼接 {len(syms)} 票进单次 eval，总 EC 按票数放大；"
+                "若该接口单票成本高请优先使用批量原生接口（如 kline.snapshot_batch），"
+                "否则建议分批 + 增量拉取。",
+                stacklevel=3)
         pairs = []
         for s in syms:
             line = self._build_call_line(name, params, kwargs, sym_override=s, sym_param=sym_param)
@@ -1060,6 +1178,11 @@ class Client:
         长表用 ``.to_df()``（每标的一行）；多行历史类数据（``bars``/``history``）
         建议改用 ``batch_iter`` 边取边落盘，或读 ``results[代码]``。
         """
+        # 批量原生路由接口不分批：单次 eval 可承载全市场清单，切片反而多次点查。
+        if self.native_batch and name in BATCH_NATIVE_ROUTES \
+                and on_batch_error != "skip":
+            syms = list(dict.fromkeys(self._canon_symbol(s) for s in symbols))
+            return self.call_batch(name, syms, _raw=_raw, _units=_units)
         out = BatchResult()
         for part in self.batch_iter(name, symbols, batch_size=batch_size,
                                     on_batch_error=on_batch_error, _raw=_raw,
