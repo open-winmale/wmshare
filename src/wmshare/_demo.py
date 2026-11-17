@@ -472,7 +472,14 @@ class DemoClient:
         self.call_batch = self._call_batch
         self.notice_poller = self._notice_poller
         self.call = self._call
+        self.cost_estimate = self._cost_estimate
 
+
+    def _cost_estimate(self, name: str, /, **params: Any) -> dict:
+        """EC 预估与真实客户端同源（模块级 estimate_cost，纯离线零请求）。"""
+        from wmshare.client import estimate_cost
+
+        return estimate_cost(name, params)
 
     def _df_asc(self, rows: Any, key: str = "date") -> Any:
         """2.0 同形：demo 行列表也按升序 + DataFrame 输出（与 live 门面同形同向）。"""

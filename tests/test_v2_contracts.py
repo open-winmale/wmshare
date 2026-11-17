@@ -362,3 +362,17 @@ def test_futures_cffex_codes_addressable(cli):
         norm("RB.XXX")          # 未知交易所
     with pytest.raises(UsageError):
         norm("RB")              # 缺市场段
+
+
+def test_cost_estimate_available_offline_on_both_clients():
+    """EC 预估是纯离线能力：真实客户端与 demo 客户端共用同一模型。"""
+    import wmshare
+
+    real = Client(base_url="https://t", client_id="i", client_secret="s",
+                  catalog=load(), session=FakeSession())
+    demo = wmshare.demo_client()
+    for cli in (real, demo):
+        est = cli.cost_estimate("margin.universe", limit=500)
+        assert est["model"] == "rows_per_symbol"
+        assert est["ec_lo"] == 50_400
+        assert cli.cost_estimate("kline.snapshot")["model"] == "first_touch"

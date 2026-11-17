@@ -10,6 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.1] - 2026-11-17
+
+### Fixed
+- `demo_client().cost_estimate(...)` 缺失（GUIDE 推荐的先估后取在演示模式直接
+  AttributeError）：EC 预估模型上提为模块级 `estimate_cost`，真实客户端与 demo
+  共用同一套函数，纯离线零请求。
+
+### Changed
+- 无行为变更；`Client._EC_*` 类属性保留为模块常量的别名（既有取值不破）。
+
 ## [2.0.0] - 2026-11-17
 
 > **标准化大版本**：接口形态全面对齐行业标准（对标主流金融数据 SDK 的可用性基线），

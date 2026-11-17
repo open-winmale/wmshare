@@ -239,6 +239,105 @@ BATCH_NATIVE_ROUTES: dict[str, tuple[str, Any]] = {
 NATIVE_FULL_MARKET_MIN = 4000
 
 
+# ---- EC 成本模型（2.0：计费透明度前置）----
+# 系数来自仓库内记录的 live 实测（GUIDE §配额实测 / CHANGELOG / examples/17），
+# 是「区间估算」不是承诺——实际消耗以 meta.metering 回传为准。
+EC_PER_ROW = (60, 75)                 # 行数驱动类接口（K 线/资金流/分红列表）每行 EC
+EC_SCREENER_BASE = (70, 1_000)        # 轻列条件选股
+EC_SCREENER_HEAVY = (40_000, 60_000)  # 重列（TTM 同比/年化族）
+EC_SCREENER_COLD_NOTE = ("fields 引用未物化重列时有一次全市场物化成本，"
+                         "实测可达 60 万 EC——先用轻列跑通，重列二次查询")
+EC_HEAVY_SCREENER_TOKENS = ("NPTS_TTM_YOY", "NPTS_AR_", "TR_AR_", "DPPR_TTM_YOY")
+
+
+def _days_between(begin: Any, end: Any) -> int:
+    try:
+        b = _dt.date.fromisoformat(str(begin)[:10])
+        e = _dt.date.fromisoformat(str(end)[:10])
+        return (e - b).days
+    except ValueError:
+        return 365
+
+
+def estimate_cost(name: str, params: dict[str, Any] | None = None, *,
+                  native_batch_min: int = 3) -> dict:
+    """EC 消耗区间估算（纯离线，发不发请求都在此返回）。
+
+    供 ``Client.cost_estimate`` 与 demo 客户端共用；没有成本模型的接口如实
+    返回 ``ec_lo=ec_hi=None``（绝不编造数字）。
+    """
+    out: dict[str, Any] = {"name": name, "requests": 1,
+                           "ec_lo": None, "ec_hi": None, "model": "", "note": ""}
+    p = params or {}
+    limit = p.get("limit") or p.get("n") or p.get("lim")
+    rows = None
+    try:
+        rows = int(limit) if limit is not None else None
+    except (TypeError, ValueError):
+        rows = None
+    if name.startswith(("kline.query_bars", "moneyflow.query_bars",
+                        "bonus.query_list", "cbond.query")):
+        n = rows if (rows and rows > 0) else (120 if "query_bars" in name else 20)
+        out.update(ec_lo=n * EC_PER_ROW[0], ec_hi=n * EC_PER_ROW[1],
+                   model="rows", note=f"按 {n} 行 × {EC_PER_ROW} EC/行估算")
+    elif name == "kline.snapshot" or name == "kline.snapshot_batch":
+        codes = p.get("sym") or p.get("codes") or []
+        n = len(codes) if isinstance(codes, (list, tuple)) else 1
+        if n >= int(native_batch_min or 3):
+            if n >= NATIVE_FULL_MARKET_MIN:
+                out.update(ec_lo=110_000, ec_hi=150_000,
+                           model="full_market_shortcut",
+                           note=f"{n} 票达准全市场阈值 {NATIVE_FULL_MARKET_MIN}，"
+                                "走空参捷径（服务端全市场投影）；停牌/ETF 索引外标的"
+                                "静默缺席，需完整名单请分批到阈值以下")
+            else:
+                out.update(ec_lo=n * 55, ec_hi=n * 65, model="batch_per_symbol",
+                           note=f"批量原生路由 ≈58 EC/票 × {n} 票；"
+                                "单票首触另计均线回看 ≈10,250 EC")
+        else:
+            out.update(ec_lo=10_000, ec_hi=11_000, model="first_touch",
+                       note="单票首算含均线回看（≈10,250 EC）；同标的当日复跑 ≈26 EC")
+    elif name == "screener.query" or (name.startswith("kline.") and "where" in p):
+        codes = " ".join([str(p.get("where") or ""), str(p.get("order") or ""),
+                          *map(str, p.get("fields") or [])])
+        if any(tok in codes for tok in EC_HEAVY_SCREENER_TOKENS):
+            out.update(ec_lo=EC_SCREENER_HEAVY[0], ec_hi=EC_SCREENER_HEAVY[1],
+                       model="screener_heavy", note=EC_SCREENER_COLD_NOTE)
+        else:
+            out.update(ec_lo=EC_SCREENER_BASE[0], ec_hi=EC_SCREENER_BASE[1],
+                       model="screener_base",
+                       note="轻列 70~1,000 EC；重列物化另计（count-only 更低）")
+    elif name.startswith("backtest.run") or name == "backtest.run":
+        begin, end = p.get("begin"), p.get("end")
+        if begin and end:
+            days = abs(_days_between(begin, end))
+            n = min(10000, max(int(days * 0.8) + 40, 22))
+            out.update(ec_lo=n * EC_PER_ROW[0], ec_hi=n * EC_PER_ROW[1],
+                       model="rows", note=f"按区间 {n} 根日 K 估算；不给区间拉全历史 ≈40 万 EC")
+        else:
+            out.update(ec_lo=380_000, ec_hi=420_000, model="full_history",
+                       note="全历史 1 万根 ≈40 万 EC；传 begin/end 可降 1~2 个数量级")
+    elif name.startswith(("valuation.hist_stats", "indices.trend")):
+        out.update(ec_lo=100_000, ec_hi=180_000, model="cached_eval",
+                   note="trend 走预热缓存近似免费（按键），缓存冷时现算 ≈15.7 万 EC；"
+                        "hist_stats 序列走缓存实测整次 ≈4 EC")
+    elif name in ("margin.universe", "margin.market_summary"):
+        # 实测（2026-11-17 live）：市场级两融按行物化 ≈100~115 EC/行
+        is_univ = name.endswith("universe")
+        per = 112 if is_univ else 101
+        n = rows if (rows and rows > 0) else (4010 if is_univ else 60)
+        out.update(ec_lo=int(n * per * 0.9), ec_hi=int(n * per * 1.1),
+                   model="rows_per_symbol",
+                   note=(f"≈{per} EC/行 × {n} 行（市场级逐行物化）；"
+                         + ("全量名单 ≈4,010 行 ≈45 万 EC，按需传 limit 可线性降低"
+                            if is_univ else
+                            "默认 60 行 ≈6 千 EC；跨交易所同日并存，每行一个 (日期,交易所)")))
+    else:
+        out["note"] = ("暂无该接口的成本模型；多数读接口在数百 EC 量级。"
+                       "可用 cli.last_ec_cost 观测实际消耗后反馈补模型。")
+    return out
+
+
 def _to_dataframe(result: Any) -> Any:
     try:
         import pandas as pd
@@ -1248,15 +1347,13 @@ class Client:
             out.ec_cost += part.ec_cost
         return out
 
-    # ---- EC 成本预估（2.0：计费透明度前置）----
-    # 系数来自仓库内记录的 live 实测（GUIDE §配额实测 / CHANGELOG 1.22.0 / examples/17），
-    # 是「区间估算」不是承诺——实际消耗以 meta.metering 回传为准。
-    _EC_PER_ROW = (60, 75)          # 行数驱动类接口（K 线/资金流/分红列表）每行 EC
-    _EC_SCREENER_BASE = (70, 1_000)         # 轻列条件选股
-    _EC_SCREENER_HEAVY = (40_000, 60_000)   # 重列（TTM 同比/年化族）
-    _EC_SCREENER_COLD_NOTE = ("fields 引用未物化重列时有一次全市场物化成本，"
-                              "实测可达 60 万 EC——先用轻列跑通，重列二次查询")
-    _EC_HEAVY_SCREENER_TOKENS = ("NPTS_TTM_YOY", "NPTS_AR_", "TR_AR_", "DPPR_TTM_YOY")
+    # ---- EC 成本预估（2.0：计费透明度前置；模型本体在模块级 estimate_cost）----
+    # 保留类属性别名，避免既有第三方代码按 Client._EC_PER_ROW 取值时断掉。
+    _EC_PER_ROW = EC_PER_ROW
+    _EC_SCREENER_BASE = EC_SCREENER_BASE
+    _EC_SCREENER_HEAVY = EC_SCREENER_HEAVY
+    _EC_SCREENER_COLD_NOTE = EC_SCREENER_COLD_NOTE
+    _EC_HEAVY_SCREENER_TOKENS = EC_HEAVY_SCREENER_TOKENS
 
     def cost_estimate(self, name: str, /, **params: Any) -> dict:
         """预估一次调用的 EC 消耗区间（按请求行数/列物化的经验模型）。
@@ -1264,95 +1361,14 @@ class Client:
         返回 ``{"name", "requests", "ec_lo", "ec_hi", "model", "note"}``；
         没有成本模型的接口如实返回 ``ec_lo=ec_hi=None``（绝不编造数字）。
         估算不含预热缓存的复跑折扣（如 ``kline.snapshot`` 复跑 ≈26 EC）。
+        模型本体是模块级 ``estimate_cost``（demo 客户端共用同一套）。
         """
         try:
             self._resolve_function(name)  # 目录函数：合同存在性校验
         except CatalogError:
             pass  # 组合接口（backtest.run/screener.query/valuation.hist_stats 等）不在目录
-        out: dict[str, Any] = {"name": name, "requests": 1,
-                               "ec_lo": None, "ec_hi": None, "model": "", "note": ""}
-        p = params or {}
-        limit = p.get("limit") or p.get("n") or p.get("lim")
-        rows = None
-        try:
-            rows = int(limit) if limit is not None else None
-        except (TypeError, ValueError):
-            rows = None
-        if name.startswith(("kline.query_bars", "moneyflow.query_bars",
-                            "bonus.query_list", "cbond.query")):
-            n = rows if (rows and rows > 0) else (120 if "query_bars" in name else 20)
-            out.update(ec_lo=n * self._EC_PER_ROW[0], ec_hi=n * self._EC_PER_ROW[1],
-                       model="rows", note=f"按 {n} 行 × {self._EC_PER_ROW} EC/行估算")
-        elif name == "kline.snapshot" or name == "kline.snapshot_batch":
-            codes = p.get("sym") or p.get("codes") or []
-            n = len(codes) if isinstance(codes, (list, tuple)) else 1
-            # 阈值读真实属性（native_batch_min，默认 3）；getattr 兜底演示客户端
-            if n >= int(getattr(self, "native_batch_min", 3) or 3):
-                if n >= NATIVE_FULL_MARKET_MIN:
-                    # 准全市场走空参捷径：服务端全市场一次投影 + 客户端过滤，
-                    # 省掉数千元素数组字面量的求值计费（实测 ≈11~15 万 EC）。
-                    out.update(ec_lo=110_000, ec_hi=150_000,
-                               model="full_market_shortcut",
-                               note=f"{n} 票达准全市场阈值 {NATIVE_FULL_MARKET_MIN}，"
-                                    "走空参捷径（服务端全市场投影）；停牌/ETF 索引外标的"
-                                    "静默缺席，需完整名单请分批到阈值以下")
-                else:
-                    out.update(ec_lo=n * 55, ec_hi=n * 65, model="batch_per_symbol",
-                               note=f"批量原生路由 ≈58 EC/票 × {n} 票；"
-                                    "单票首触另计均线回看 ≈10,250 EC")
-            else:
-                out.update(ec_lo=10_000, ec_hi=11_000, model="first_touch",
-                           note="单票首算含均线回看（≈10,250 EC）；同标的当日复跑 ≈26 EC")
-        elif name == "screener.query" or (name.startswith("kline.") and "where" in p):
-            codes = " ".join([str(p.get("where") or ""), str(p.get("order") or ""),
-                              *map(str, p.get("fields") or [])])
-            if any(tok in codes for tok in self._EC_HEAVY_SCREENER_TOKENS):
-                out.update(ec_lo=self._EC_SCREENER_HEAVY[0],
-                           ec_hi=self._EC_SCREENER_HEAVY[1], model="screener_heavy",
-                           note=self._EC_SCREENER_COLD_NOTE)
-            else:
-                out.update(ec_lo=self._EC_SCREENER_BASE[0],
-                           ec_hi=self._EC_SCREENER_BASE[1], model="screener_base",
-                           note="轻列 70~1,000 EC；重列物化另计（count-only 更低）")
-        elif name.startswith("backtest.run") or name == "backtest.run":
-            begin, end = p.get("begin"), p.get("end")
-            if begin and end:
-                days = abs(self._days_between(begin, end))
-                n = min(10000, max(int(days * 0.8) + 40, 22))
-                out.update(ec_lo=n * self._EC_PER_ROW[0], ec_hi=n * self._EC_PER_ROW[1],
-                           model="rows", note=f"按区间 {n} 根日 K 估算；不给区间拉全历史 ≈40 万 EC")
-            else:
-                out.update(ec_lo=380_000, ec_hi=420_000, model="full_history",
-                           note="全历史 1 万根 ≈40 万 EC；传 begin/end 可降 1~2 个数量级")
-        elif name.startswith(("valuation.hist_stats", "indices.trend")):
-            out.update(ec_lo=100_000, ec_hi=180_000, model="cached_eval",
-                       note="trend 走预热缓存近似免费（按键），缓存冷时现算 ≈15.7 万 EC；"
-                            "hist_stats 序列走缓存实测整次 ≈4 EC")
-        elif name in ("margin.universe", "margin.market_summary"):
-            # 实测（2026-11-17 live）：两融市场面按行物化 ≈100~115 EC/行
-            # （服务端 fmt_* 逐行构 MAP）。universe 不传 limit = 全量 ≈4,010 行。
-            is_univ = name.endswith("universe")
-            per = 112 if is_univ else 101
-            n = rows if (rows and rows > 0) else (4010 if is_univ else 60)
-            out.update(ec_lo=int(n * per * 0.9), ec_hi=int(n * per * 1.1),
-                       model="rows_per_symbol",
-                       note=(f"≈{per} EC/行 × {n} 行（市场级逐行物化）；"
-                             + ("全量名单 ≈4,010 行 ≈45 万 EC，按需传 limit 可线性降低"
-                                if is_univ else
-                                "默认 60 行 ≈6 千 EC；跨交易所同日并存，每行一个 (日期,交易所)")))
-        else:
-            out["note"] = ("暂无该接口的成本模型；多数读接口在数百 EC 量级。"
-                           "可用 cli.last_ec_cost 观测实际消耗后反馈补模型。")
-        return out
-
-    @staticmethod
-    def _days_between(begin: Any, end: Any) -> int:
-        try:
-            b = _dt.date.fromisoformat(str(begin)[:10])
-            e = _dt.date.fromisoformat(str(end)[:10])
-            return (e - b).days
-        except ValueError:
-            return 365
+        return estimate_cost(name, params,
+                             native_batch_min=getattr(self, "native_batch_min", 3) or 3)
 
     def notice_poller(self, *, group: str, consumer: str, on_events: Any = None,
                       **kw: Any) -> "NoticePoller":

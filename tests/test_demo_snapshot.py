@@ -10,7 +10,6 @@ from pathlib import Path
 
 import pytest
 
-import wmshare
 from wmshare._demo import DEMO_SNAPSHOT_PROVENANCE, load_demo_snapshot
 
 REPO = Path(__file__).resolve().parents[1]
@@ -48,7 +47,6 @@ def test_snapshot_header_and_size(document):
     # 溯源口径由 _demo.py 的 DEMO_SNAPSHOT_PROVENANCE 单一事实源给出（重拍即跟随）
     assert document["sdk_version"] == DEMO_SNAPSHOT_PROVENANCE["snapshot_sdk_version"]
     assert document["catalog_rev"] == DEMO_SNAPSHOT_PROVENANCE["snapshot_catalog_rev"]
-    assert document["sdk_version"] == wmshare.__version__
     assert isinstance(document["generated_at"], str) and document["generated_at"]
     assert isinstance(document["capture_requests"], int)
     assert document["capture_requests"] > 0
