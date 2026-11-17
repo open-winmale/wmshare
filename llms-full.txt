@@ -5908,8 +5908,10 @@ A 股交易日历——区间交易日、是否开市、之后 N 个交易日。
 数据来源：交易所披露、平台数据服务。
 单位口径：money=元（融资买入额/偿还额/余额）；shares=股（融券卖出量/偿还量/余量）。
 - 可用性：仅 A 股（沪深交易所两融披露口径，无港美形态）
-- 1.1.0 起含市场级面：market_summary（沪深两融汇总日表，BSE 无公开口径缺席） 与 universe（标的名单快照+调整史）——采集腿 airflow tasks/cn_margin_summary.py 与 tasks/cn_margin_universe.py；此前「上游无独立数据集」声明就此移除
+- 1.1.0 起含市场级面：market_summary（沪深两融汇总日表，BSE 无公开口径缺席） 与 universe（当前可两融标的 ≈4,010 行；源为沪深保证金比例表，不含调入调出 日期故 in_date/out_date 为空）——采集腿 airflow tasks/cn_margin_summary.py 与 tasks/cn_margin_universe.py；此前「上游无独立数据集」声明就此移除
 - latest(sym) 返回最新一日单行
+- 市场级 EC（2026-11-17 live 实测）：逐行物化 ≈100~115 EC/行—— market_summary 默认 60 行 ≈6 千 EC；universe 不传 limit = 全量 ≈4,010 行 ≈45 万 EC，按需传 limit 线性降低（cli.cost_estimate 可先估）
+- market_summary 源无 融资偿还额/融券偿还量 两列（交易所未披露），对应字段 返回 null，不造假填充
 
 | 函数 | 中文 | 性质 | 层 | 参数 | 返回 | 单位与守护 |
 |---|---|---|---|---|---|---|

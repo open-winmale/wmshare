@@ -573,6 +573,9 @@ class MarginApi(_Api):
         当前生效；源不提供调入调出日期，故 ``in_date/out_date`` 为空（字段保留）。
 
         :param limit: 条数；默认 ``None`` = 全量快照（服务端上限 5,000）
+            成本：逐行物化 ≈112 EC/行——全量 ≈45 万 EC（超默认告警阈值会被提示），
+            只看部分标的可传 ``limit=500``（≈5.6 万 EC）；先估用
+            ``cli.cost_estimate("margin.universe", limit=…)``
         """
         kw: dict[str, Any] = {} if limit is None else {"limit": limit}
         return _out(_sort_rows_by_date(

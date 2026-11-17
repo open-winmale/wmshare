@@ -1810,7 +1810,7 @@
       "post": {
         "operationId": "margin_universe",
         "summary": "两融标的名单（DataFrame：security_code/security_name/exchange/in_date/out_date/…）。",
-        "description": "当前可两融标的（沪深保证金比例表口径 ≈4,000 行）。``out_date`` 为空 =、当前生效；源不提供调入调出日期，故 ``in_date/out_date`` 为空（字段保留）。、底层目录函数 `margin.universe`。SDK 调用：`cli.margin.universe(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "description": "当前可两融标的（沪深保证金比例表口径 ≈4,000 行）。``out_date`` 为空 =、当前生效；源不提供调入调出日期，故 ``in_date/out_date`` 为空（字段保留）。、成本：逐行物化 ≈112 EC/行——全量 ≈45 万 EC（超默认告警阈值会被提示），、只看部分标的可传 ``limit=500``（≈5.6 万 EC）；先估用、``cli.cost_estimate(\"margin.universe\", limit=…)``、底层目录函数 `margin.universe`。SDK 调用：`cli.margin.universe(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "市场行情"
         ],

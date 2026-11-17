@@ -1328,6 +1328,18 @@ class Client:
             out.update(ec_lo=100_000, ec_hi=180_000, model="cached_eval",
                        note="trend 走预热缓存近似免费（按键），缓存冷时现算 ≈15.7 万 EC；"
                             "hist_stats 序列走缓存实测整次 ≈4 EC")
+        elif name in ("margin.universe", "margin.market_summary"):
+            # 实测（2026-11-17 live）：两融市场面按行物化 ≈100~115 EC/行
+            # （服务端 fmt_* 逐行构 MAP）。universe 不传 limit = 全量 ≈4,010 行。
+            is_univ = name.endswith("universe")
+            per = 112 if is_univ else 101
+            n = rows if (rows and rows > 0) else (4010 if is_univ else 60)
+            out.update(ec_lo=int(n * per * 0.9), ec_hi=int(n * per * 1.1),
+                       model="rows_per_symbol",
+                       note=(f"≈{per} EC/行 × {n} 行（市场级逐行物化）；"
+                             + ("全量名单 ≈4,010 行 ≈45 万 EC，按需传 limit 可线性降低"
+                                if is_univ else
+                                "默认 60 行 ≈6 千 EC；跨交易所同日并存，每行一个 (日期,交易所)")))
         else:
             out["note"] = ("暂无该接口的成本模型；多数读接口在数百 EC 量级。"
                            "可用 cli.last_ec_cost 观测实际消耗后反馈补模型。")
