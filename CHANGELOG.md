@@ -10,6 +10,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.22.2] - 2026-11-17
+### Changed
+- **准全市场清单（≥4000 票）走空参捷径**：批量原生调用改传空数组（服务端
+  非停牌全市场投影）+ 客户端过滤，避免数千元素数组字面量按 AST 逐元素计费
+  （实测 5,693 票省 ≈11 万 EC，全市场一轮 256K → ≈15 万 EC）。捷径语义下
+  停牌/ETF/无效票在 `results` 中静默缺席。
+### Fixed
+- GitHub 的 v1.22.1 tag 固定于 6525db8（不含本补丁，功能完整可用）；
+  1.22.2 为其即时性能修订。
 ## [1.22.1] - 2026-11-17
 ### Added
 - **`kline.snapshot(list)` 自动路由批量原生**（`BATCH_NATIVE_ROUTES`）：传代码列表
