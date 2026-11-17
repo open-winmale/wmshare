@@ -23,12 +23,35 @@ CAT = load()
 
 
 def test_ledger_covers_volume_family_as_lot():
-    """指标层成交量是「手」——4 个码必须登记，否则用户会与 kline 的「股」相除。"""
+    """指标层成交量是「手」——4 个码必须登记（2.0 起登记即默认换算为股）。"""
     for code in ("$VOLUME", "$VOLUME_DAY", "$VOLUME_LAST", "$VOLUME_NR_DAY"):
         entry = LEDGER["overrides"][code]
         assert entry["native_unit"] == "lot", f"{code} 应登记为 lot"
         assert entry["base_unit"] == "shares"
         assert "手" in entry["note"]
+
+
+def test_finish_metric_converts_ledger_codes_to_base():
+    """2.0 单位标准化：台账登记码经 finish_metric 默认换算到基础单位。"""
+    from wmshare.units import finish_metric
+    # 成交量：手 → 股（×100）；range 按原生口径标注（手），同步缩放后校验
+    meta = CAT.metric_meta("$VOLUME_LAST")
+    assert meta is not None and meta["unit"] is None
+    assert finish_metric(38330, meta, code="$VOLUME_LAST") == 3833000.0
+    # 台账兜底码（非精选）：百分数 → 小数
+    assert finish_metric(1.76, None, code="$ROC_TTM") == pytest.approx(0.0176)
+    # native=True 逃生口：原值透传
+    assert finish_metric(38330, meta, code="$VOLUME_LAST", native=True) == 38330
+    assert finish_metric(1.76, None, code="$ROC_TTM", native=True) == 1.76
+
+
+def test_ledger_convert_macro_codes():
+    """宏观房地产 4 码亿元→元；台账外的码（$CPI 点）原样透传。"""
+    from wmshare.units import ledger_convert
+    assert ledger_convert("$RE_INVEST", 1234.5) == pytest.approx(1.2345e11)
+    assert ledger_convert("re_value", 999.9) == pytest.approx(9.999e10)  # 大小写/$ 前缀可省
+    assert ledger_convert("$CPI", 101.5) == 101.5  # 未登记码不换算
+    assert ledger_convert("$RE_INVEST", None) is None
 
 
 def test_volume_codes_classified_as_shares():

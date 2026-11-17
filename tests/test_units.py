@@ -283,9 +283,9 @@ SEG_ROW = {"name": "茅台酒", "tr": 77724437925.48, "tr_text": "",
 
 def test_segments_rows_pass_through_with_guards():
     c, _ = make([dict(SEG_ROW)])
-    out = c.segments.business("600519")
-    assert out[0]["tr"] == 77724437925.48                        # 元，原样
-    assert out[0]["margin"] == pytest.approx(0.922792825668891)  # 小数，原样
+    out = c.segments.business("600519")           # 2.0：门面默认 DataFrame
+    assert float(out.loc[0, "tr"]) == 77724437925.48                        # 元，原样
+    assert float(out.loc[0, "margin"]) == pytest.approx(0.922792825668891)  # 小数，原样
 
     c2, _ = make([dict(SEG_ROW, margin=92.28)])  # 百分数口径混入 → 超界
     with pytest.raises(DataError, match="margin"):
@@ -377,16 +377,22 @@ HIST = {"avg": 3.027, "current": 3.334, "median": 3.032, "min": 2.473,
 
 
 def test_valuation_hist_stats_passthrough_and_validation():
+    """2.0：hist_stats 返回统一信封；series 为 DataFrame（date ISO 升序）。"""
     c, _ = make(dict(HIST))
     out = c.valuation.hist_stats("600900", metric="pb", window="3y")
-    assert out["avg"] == 3.027 and out["pct"] == 0.889  # 引擎结果原样透传
+    assert out["ok"] is True
+    assert out["data"]["avg"] == 3.027 and out["data"]["pct"] == 0.889
+    ser = out["data"]["series"]
+    assert list(ser["date"]) == ["2023-10-24", "2026-10-23"]  # unix+8h → ISO 升序
+    assert list(ser["value"]) == [2.55, 3.33]
+    assert out["meta"] == {"metric": "pb", "window": "3y"}
 
     with pytest.raises(Exception, match="metric"):
         c.valuation.hist_stats("600900", metric="roe")
     with pytest.raises(Exception, match="window"):
         c.valuation.hist_stats("600900", window="5y")  # 上限 3 年
     out6 = c.valuation.hist_stats("600900", metric="pb", window="6m")  # 半年窗口
-    assert out6["current"] == 3.334  # 引擎结果原样透传
+    assert out6["data"]["current"] == 3.334
 
 
 def test_normalized_query_shapes_cover_guards():
