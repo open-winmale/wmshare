@@ -10,6 +10,76 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-11-17
+
+> **标准化大版本**：接口形态全面对齐行业标准（对标主流金融数据 SDK 的可用性基线），
+> 项目无兼容负担，全部破坏性变更集中在本次，不做渐进弃用。
+
+### 迁移指南（1.x → 2.0）
+
+1. **返回类型**：门面（`cli.ns.method`）查询/序列类默认返回 **pandas DataFrame**
+   （date 列 ISO、**升序**=旧→新）；单行取数仍为 dict；面板/时序组合面（index.trend、
+   valuation.hist_stats、etf 九视图、macro.query、workout.board、screener.query）
+   返回统一信封 `{ok, as_of, data, meta}`——原平铺键迁入 `data`。
+   `_df` 参数**移除**（默认即 DF）；`_raw=True` 仍取上游原始行。
+   底层 `cli.call` / `cli.call_batch` 保持规范化行数组（`BatchResult.to_df()` 出长表）。
+   pandas 升级为硬依赖（原 `wmshare[dataframe]` extra 移除）。
+2. **序列方向**：全库翻转为**升序**（旧→新）——1.x 透传上游「新→旧」是全局 footgun。
+   最新点从 `rows[0]` 改为 `rows.iloc[-1]`；index.trend 的 `points`/`med` 同步翻转。
+3. **单位**：率=小数、额=元、量=股**全库强制**。units.yaml 台账升级为运行时换算源：
+   指标层成交量（手→股）、宏观房地产（亿元→元）、`$ROC_TTM` 族（百分数→小数）默认换算；
+   逃生口 `indicator.get/metrics(native=True)`、`cli.call(_units="native")`。
+   ETF 九视图同理（占比/涨幅/折溢价 %→小数、规模亿元→元、份额亿份→份）。
+   screener 宽度 `*_pct` 百分数反例移除（统一小数）。
+4. **命名空间净化**：55 个 `internal: true` 目录辅助（fmt_* 等）退出友好/类型化
+   门面属性直达——确需请 `cli.call("ns.fmt_x", ...)`。
+5. **日期**：入参统一 `YYYY-MM-DD`（`wmshare.normalize_date` 归一辅助公开）；
+   cbond.article/figures 接受 ISO；statements 季次键 `2026:Q1` → `2026-Q1`。
+6. **期货**：新增 `cli.futures.get/snapshot`（锚定封装，不再传 A 股 symbol hack）；
+   量=手、金额=万元为期货原生口径（显式豁免基础单位）。
+7. **kline.bars**：指数 `freq` 非 D 显式报错（1.x 静默返回空序列）。
+
+### Added
+- **交易日历**（P1 数据面）：`cli.calendar.days/is_open/next`（20 号域 market.calendar；
+  采集腿 airflow `tasks/cn_trade_calendar.py`，读侧 `sys/calendar`）。
+- **市场级两融**（P1 数据面）：`cli.margin.market_summary/universe`（1.x「上游无数据集」
+  声明移除；采集腿 `tasks/cn_margin_summary.py` / `cn_margin_universe.py`）。
+- **期货门面**：`cli.futures.get/snapshot`（82 品种，内部 cn 锚定封装）。
+- **EC 成本预估**：`cli.cost_estimate(name, **params)` 返回 EC 区间 + 模型说明；
+  MCP `wmshare_call(mode="cost")` 同步暴露（无模型接口如实返回 None，不编造）。
+- **info.profile 扩列**：5 → 10 字段（full_name/name_en/industry_l1/listing_board/
+  business_scope），缺码自动剔除重试一次并实例级记忆。
+- **批量原生路由**（并入 1.22.1/1.22.2 主线特性）：`kline.snapshot` 收代码列表 ≥3 票
+  自动改走 `kline.snapshot_batch`——单次 eval、EC 按量（60~90 EC/票）而非 N×逐票首算
+  （10,250 EC/票）；≥4,000 票的准全市场清单走空参捷径（服务端一次投影 + 客户端过滤，
+  约 11~15 万 EC，停牌/索引外标的静默缺席）；`batch_all` 对路由接口不再分批；
+  非路由接口 ≥200 票拼接会显式告警 EC 放大。`Client(native_batch=False)` 或
+  `native_batch_min=N` 可回到逐票拼接语义；沿用 1.x 的逐票拼接口径不受影响。
+- `units.yaml` 台账/facades 升级为运行时换算声明；`market.fund` 域注册（19/20 号域）。
+
+### Changed
+- **kline.bars/moneyflow.bars/margin.query/dividend.history/cbond.bars/statements 等全部
+  门面**：默认 DataFrame + 升序（见迁移指南 1/2）；begin/end 过滤路径同样升序。
+- **index.trend**：统一信封；`data.points` 为 DataFrame 升序；预热缓存未命中
+  `ok=False + meta.cache="miss"`（不再返回全 None 平铺结构）。
+- **screener**：query 返回信封（data.count/rows DF）；宽度接口默认 DF；
+  `$INDUSTRY_CUR_1` 等返回列与 indicator/macro 同一台账换算管线。
+- **macro.query/asof/spots**：台账换算 + series 升序 + 信封。
+- **etf 九视图**：统一信封 + units.yaml facades 换算（原「禁二次换算」的本地护栏
+  迁入目录声明层）。
+- **命名空间**：friendly 25 个 / core 137 / 底层 298（calendar 域 + futures/margin 新面）；
+  `market.fund`/`market.calendar` 域注册；inventory 300 函数（calendar 4 + margin 2 新增）。
+- **demo 快照**：与 live 同形（DataFrame/升序/信封）；2.0 新面（futures/calendar/
+  margin 市场面/screener.query）显式 `demo_unsupported`，不伪造数据。
+
+### Removed
+- `_df` 参数（全门面）；`wmshare[dataframe]` extra；
+- fmt_* 内部函数的属性直达（改 `cli.call`）；
+- 指数 freq=W/M 的静默空序列。
+
+>>>>>>> 5d9ccdf (chore(release): 2.0.0 版本六处对齐 + 安全策略表修正)
+
+<<<<<<< HEAD
 ## [1.22.2] - 2026-11-17
 ### Changed
 - **准全市场清单（≥4000 票）走空参捷径**：批量原生调用改传空数组（服务端
@@ -40,6 +110,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   1.19.0 拼接路径 2 分钟烧 6,300 万 EC（12 笔 ≥500 万单次告警）。本版配合平台
   双路径把它压到 ≈15 万 EC/轮（约 430 倍）。老版本（≤1.21）用户请升级后改用
   `cli.kline.snapshot(codes)`；服务端双路径对旧版本的拼接路径无回旋（首触照旧计价）。
+=======
 
 ## [1.22.0] - 2026-11-16
 ### Added
