@@ -2702,7 +2702,9 @@ class FuturesApi(_Api):
     ``freq``：``d``（默认，日频 11 字段）/ ``w``（周频 8 字段）/ ``m``（月频 8 字段）。
     """
 
-    _CN_FUT_RE = re.compile(r"^cn\.[A-Z]{1,3}\.(SHF|CZCE|DCE|GFEX|INE)$")
+    # CFX=中金所（IF/IH/IC/IM/T/TF/TS/TL 八个金融品种）——漏了它 8 个金融品种
+    # 全不可寻址（2026-11-17 live 实测：cn.IF.CFX 在指标层可取值，但门面白名单拒）
+    _CN_FUT_RE = re.compile(r"^cn\.[A-Z]{1,3}\.(SHF|CZCE|DCE|GFEX|INE|CFX)$")
     _GLOBAL_FUT_RE = re.compile(r"^global\.[A-Z]{1,4}$")
     _FREQ_CODES: dict[str, dict[str, str]] = {
         "d": {"$FUT_OPEN": "open", "$FUT_HIGH": "high", "$FUT_LOW": "low",
@@ -2732,7 +2734,7 @@ class FuturesApi(_Api):
                 f"fut_code={fut_code!r} 缺少交易所/市场段；国内形如 \"RB.SHF\"/"
                 f"\"cn.RB.SHF\"，外盘形如 \"global.CL\"", code="params")
         # 裸「品种.交易所」补 cn. 前缀（RB.SHF → cn.RB.SHF）
-        if re.fullmatch(r"[A-Z]{1,3}\.(SHF|CZCE|DCE|GFEX|INE)", s):
+        if re.fullmatch(r"[A-Z]{1,3}\.(SHF|CZCE|DCE|GFEX|INE|CFX)", s):
             s = f"cn.{s}"
         if s.startswith(("CN.", "GLOBAL.")):
             s = s[:3].lower() + s[3:]  # 前缀小写约定（cn./global.），品种段大写

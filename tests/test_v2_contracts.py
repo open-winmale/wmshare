@@ -346,3 +346,19 @@ def test_demo_list_snapshot_same_shape_as_live():
     assert type(out).__name__ == "BatchResult"
     assert out.requests == 1 and set(out.results) == {"600519", "000858", "601088"}
     assert isinstance(out.results["600519"], dict)
+
+
+def test_futures_cffex_codes_addressable(cli):
+    """中金所 8 个金融品种（IF/IH/IC/IM/T/TF/TS/TL）必须可寻址。
+
+    回归靶子：_CN_FUT_RE 只列 SHF/CZCE/DCE/GFEX/INE，CFX 被白名单拒，
+    8 个金融品种全不可用（2026-11-17 live 实测 cn.IF.CFX 指标层可取值）。
+    """
+    norm = cli.futures._normalize_fut
+    assert norm("IF.CFX") == "cn.IF.CFX"
+    assert norm("cn.T.CFX") == "cn.T.CFX"
+    assert norm("IM.CFX") == "cn.IM.CFX"
+    with pytest.raises(UsageError):
+        norm("RB.XXX")          # 未知交易所
+    with pytest.raises(UsageError):
+        norm("RB")              # 缺市场段
