@@ -51,6 +51,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 单位台账补登记 `$VOLUME_AR_DAY`（手）与 `$ROC_TTM_LAST`（百分数）。
 
 ### Fixed
+- **`cli.margin.universe()` 复跑 46 万 EC**：规范化（`margin.fmt_universe_maps` 的
+  `CONOF` 逐行求值）此前每次调用都重算，按 AST 节点计费 —— 4,133 行 ≈462,976 EC，
+  占整条链路 99.99%。现按同一数据版本键缓存规范化结果，复跑实测 **105 EC**
+  （降 99.98%）；首次物化成本不变，数据日更后键自动失效。
 - `estimate_cost("kline.snapshot", symbol=[...])` 曾按单票估算（门面参数名与目录
   参数名不同的历史坑），现三种写法（`sym`/`codes`/`symbol`）都按票数估算。
 - 4 个接口返回说明为空、10 个参数说明为 `—`、组合接口参数兜底缺失。
