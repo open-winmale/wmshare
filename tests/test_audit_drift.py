@@ -56,8 +56,9 @@ def test_drift_default_is_green_and_machine_readable(capsys):
     assert result["warnings"] == []
     assert result["strict"] is False
     info = result["info"]
-    assert info["guard_declared"] == 58
-    assert info["functions"] == 298
+    # 59/299 = 58/298 + valuation.daily_basic（每日估值宽表域 fund.valuation，2026-11-17）
+    assert info["guard_declared"] == 59
+    assert info["functions"] == 299
     assert info["markets"]["total"] == 2752
     assert info["markets"]["declared"] == 569
     assert info["markets"]["undeclared"] == 2183

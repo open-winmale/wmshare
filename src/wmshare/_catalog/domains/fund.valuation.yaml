@@ -1,0 +1,49 @@
+id: fund.valuation
+version: 1.0.0
+cn: 每日估值
+kind: computed
+category: fundamentals
+priority: P0
+description: 个股每日估值宽表（服务端物化 alt.valuation_daily，airflow
+  pipeline.cn.valuation_daily 每日 16:25 物化、SLA 当日 17:00）。每股每交易日一行，
+  8 字段全部服务端现成口径直出（HIST_STATS 序列 + metric 层同式），消费端零换算。
+  方案：docs/upstream-daily-basic-plan.md v3（2026-11-17 定稿）。
+data_origin: [服务端物化（kline × 财报 × 股本事件 × 分红事件，公式同平台现算核）]
+units:
+  pe_ttm: 倍（MV ÷ NPTS_TTM，公告日 TTM）
+  pb: 倍（MV ÷ 净资产，公告日时点前向填充）
+  ps: 倍（MV ÷ TR_TTM）
+  pr: 倍（PE_TTM ÷ ROE_TTM ÷ 100，市赚率）
+  total_mv: 元（不复权收盘 × 总股份，变更日含当日生效）
+  circ_mv: 元（不复权收盘 × 流通股份）
+  turnover_rate: 小数（0.012 = 1.2%）
+  dv_ttm: 小数（0.03 = 3%，DPS_TTM ÷ CLOSE）
+requires: {path: sys/valuation/init.xs, preloaded: true}
+notes:
+  - 可用性：仅 A 股（CN 专用表；HK/US 无流通股份源，诚实缺列不建表）
+  - 数据自物化日起可用；历史回填由样本 DAG 提供（pe/pb/ps/pr ≤3y，引擎窗口硬顶；
+    mv 族回走窗口见方案 §5/§9），更早区间诚实缺行
+  - 行内缺失字段诚实缺列（不零填充）；亏损期 pe_ttm 缺行与平台现算口径一致
+functions:
+  - name: valuation.daily_basic
+    cn: 个股每日估值序列
+    kind: computed
+    layer: L0
+    params:
+      - {name: sym, type: string, required: true, desc: 6 位裸码}
+      - {name: begin, type: string, required: false, desc: 'ISO 起日（含），""=开区间'}
+      - {name: end, type: string, required: false, desc: 'ISO 止日（含），""=开区间'}
+      - {name: fields, type: array, required: false, desc: '字段子集 ARR，nil/空=全部 8 个'}
+    returns: {desc: 'MAP 信封 {ok, as_of, data, meta}；data=长表 [{date, symbol, field, value}] 升序'}
+    ranges:
+      pe_ttm: [0, 3000]
+      pb: [0, 200]
+      ps: [0, 500]
+      pr: [0, 2000]
+      total_mv: [0, 5.0e+13]
+      circ_mv: [0, 5.0e+13]
+      turnover_rate: [0, 1]
+      dv_ttm: [0, 0.5]
+    example: 'valuation.daily_basic("600519", "2025-01-01", "", ARR{"pe_ttm", "total_mv"})'
+    notes: [as_of = 表内最新行日期（与 begin/end 过滤无关，供调用方判新鲜度）；
+      未知字段名在 meta.requested_unknown 里如实回报，不静默丢弃]

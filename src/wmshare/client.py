@@ -317,10 +317,11 @@ def estimate_cost(name: str, params: dict[str, Any] | None = None, *,
         else:
             out.update(ec_lo=380_000, ec_hi=420_000, model="full_history",
                        note="全历史 1 万根 ≈40 万 EC；传 begin/end 可降 1~2 个数量级")
-    elif name.startswith(("valuation.hist_stats", "indices.trend")):
+    elif name.startswith(("valuation.hist_stats", "valuation.daily_basic", "indices.trend")):
         out.update(ec_lo=100_000, ec_hi=180_000, model="cached_eval",
                    note="trend 走预热缓存近似免费（按键），缓存冷时现算 ≈15.7 万 EC；"
-                        "hist_stats 序列走缓存实测整次 ≈4 EC")
+                        "hist_stats 序列走缓存实测整次 ≈4 EC；"
+                        "daily_basic 物化表走 cached_eval 同档（首日回补另计）")
     elif name in ("margin.universe", "margin.market_summary"):
         # 实测（2026-11-17 live）：市场级两融按行物化 ≈100~115 EC/行
         is_univ = name.endswith("universe")

@@ -57,6 +57,10 @@ INCLUDED_NS = frozenset({
     "macro",
     # 2.0：交易日历域（P1 数据面：回测/窗口计算的前置面）
     "calendar",
+    # 2.x：每日估值宽表域（alt.valuation_daily 物化表的读面）。
+    # inventory.json 已随 fund.valuation 域手工同步该函数（2026-11-17，
+    # 与 _catalog/domains/valuation.yaml 同源）；下次对上游重跑提取时本白名单保证不被丢弃。
+    "valuation",
 })
 # rptdom 只保留三表透视族（年报 PDF 提取类 rows/notes/note_index 不发布）
 RPTDOM_KEEP = frozenset({"statement", "statement_years", "statement_compare", "statement_tree", "statement_audit"})

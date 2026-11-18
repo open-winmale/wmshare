@@ -92,6 +92,10 @@
   "workout": {
    "entry": "sys/workout/init.xs",
    "exports": []
+  },
+  "valuation": {
+   "entry": "sys/valuation/init.xs",
+   "exports": []
   }
  },
  "preloaded_libs": [
@@ -106,9 +110,10 @@
   "margin",
   "moneyflow",
   "notice",
-  "segments"
+  "segments",
+  "valuation"
  ],
- "function_count": 304,
+ "function_count": 305,
  "functions": [
   {
    "name": "bonus.dps_rpt",
@@ -9306,6 +9311,32 @@
    "returns_shape": null,
    "min_args": 0,
    "params": []
+  },
+  {
+   "name": "valuation.daily_basic",
+   "cn": "个股每日估值序列",
+   "example": "valuation.daily_basic(\"600519\", \"2025-01-01\", \"\", ARR{\"pe_ttm\", \"total_mv\"})",
+   "returns": "MAP · 估值信封",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "sym",
+     "type": "string"
+    },
+    {
+     "name": "begin",
+     "type": "string"
+    },
+    {
+     "name": "end",
+     "type": "string"
+    },
+    {
+     "name": "fields",
+     "type": "array"
+    }
+   ]
   },
   {
    "name": "workout.board",

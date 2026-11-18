@@ -448,7 +448,8 @@ class DemoClient:
             index_top_movers=self._top_movers,
             query=self._screen_query,
         )
-        self.valuation = SimpleNamespace(hist_stats=self._valuation_hist_stats)
+        self.valuation = SimpleNamespace(hist_stats=self._valuation_hist_stats,
+                                         daily_basic=self._valuation_daily_basic)
         self.index = self._index_ns()
         # 2.0 新面：快照已覆盖（calendar/margin 市场面/futures），逐面回放。
         # 快照是真实 API 固定日拍摄，方向/形态与 live 同构。
@@ -876,6 +877,18 @@ class DemoClient:
         data["series"] = self._df_asc([dict(r) for r in snap.get("series") or []], "date")
         return {"ok": True, "as_of": _AS_OF, "data": data,
                 "meta": {"metric": metric, "window": window}}
+
+    def _valuation_daily_basic(self, symbol: str, begin: str = "",
+                               end: str = "", fields: str = "") -> dict[str, Any]:
+        """demo 未收录该物化表——显式不支持（2.0 demo 纪律：不伪造）。
+
+        罐头样本待服务端 pipeline.cn.valuation_daily 样本组首跑后重拍快照；
+        live 模式（valuation.daily_basic 物化表就绪后）不受影响。
+        """
+        self._require_symbol(symbol)
+        raise UsageError(
+            "demo 快照未收录 valuation.daily_basic（服务端物化表尚未投产，"
+            "无真实罐头值可回放）；live 模式可用。", code="demo_unsupported")
 
     # ---- generic and batch surfaces ----
     def _notice_poller(self, *, group: str, consumer: str,

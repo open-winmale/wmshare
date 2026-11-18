@@ -1753,6 +1753,28 @@ class StocksNS(_Ns):
         """行业成分股"""
         return _out(self._client.call("stocks.industry_members", ind=ind, _raw=_raw), _raw)
 
+class ValuationNS(_Ns):
+    """每日估值（fund.valuation）"""
+
+    def daily_basic(self, sym: str, begin: str | None = None, end: str | None = None, fields: list | None = None, _raw: bool = False) -> Any:
+        """个股每日估值序列
+
+:param sym: 6 位裸码
+:param begin: ISO 起日（含），""=开区间
+:param end: ISO 止日（含），""=开区间
+:param fields: 字段子集 ARR，nil/空=全部 8 个
+
+:returns: MAP 信封 {ok, as_of, data, meta}；data=长表 [{date, symbol, field, value}] 升序
+        """
+        kw: dict[str, Any] = {"sym": sym}
+        if begin is not None:
+            kw["begin"] = begin
+        if end is not None:
+            kw["end"] = end
+        if fields is not None:
+            kw["fields"] = fields
+        return _out(self._client.call("valuation.daily_basic", **kw, _raw=_raw), _raw)
+
 class WorkoutNS(_Ns):
     """契约套利（disc.workout）"""
 
@@ -1782,5 +1804,6 @@ NAMESPACES: dict[str, type[_Ns]] = {
     "rptdom": RptdomNS,
     "segments": SegmentsNS,
     "stocks": StocksNS,
+    "valuation": ValuationNS,
     "workout": WorkoutNS,
 }

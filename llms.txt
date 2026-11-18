@@ -1,6 +1,6 @@
 # wmshare
 
-> 覆盖 A 股、港股、美股的 Python 财经数据 SDK：20 个数据域、298 个底层函数、2752 个指标码、137 个核心接口 + 17 个组合接口（共 154 个 friendly API）。BSD-3-Clause 开源；取数需开放平台凭证（环境变量 WMSHARE_CLIENT_ID / WMSHARE_CLIENT_SECRET，见 README）。
+> 覆盖 A 股、港股、美股的 Python 财经数据 SDK：21 个数据域、299 个底层函数、2752 个指标码、138 个核心接口 + 17 个组合接口（共 155 个 friendly API）。BSD-3-Clause 开源；取数需开放平台凭证（环境变量 WMSHARE_CLIENT_ID / WMSHARE_CLIENT_SECRET，见 README）。
 
 ## Docs
 
@@ -9,7 +9,7 @@
 - [使用指南 GUIDE](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/GUIDE.md)：单票菜谱、批量取数、多市场、pandas、故障排查
 - [指标库 INDICATORS](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/INDICATORS.md)：全量指标码按族导航——命名语法、11 组精选口径、死码清单与场景速查（先查码，禁止自算已有指标）
 - [AI 用法](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/AI.md)：MCP server、skill、文档上下文与报错驱动的 Agent 接入路径
-- [API 参考](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/API.md)：137 个核心接口 + 17 个组合接口的参数 / 返回 / 单位口径
+- [API 参考](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/API.md)：138 个核心接口 + 17 个组合接口的参数 / 返回 / 单位口径
 - [Agent Skill](https://raw.githubusercontent.com/open-winmale/wmshare/main/src/wmshare/skills/wmshare/SKILL.md)：随包分发的 agent 用法合同（目录先行、单位铁律、决策树、坑位）
 - [可运行示例](https://raw.githubusercontent.com/open-winmale/wmshare/main/examples/README.md)：18 个编号示例（全部支持演示客户端离线试跑），CI 端到端覆盖
 - [CHANGELOG](https://raw.githubusercontent.com/open-winmale/wmshare/main/CHANGELOG.md)：版本历史
@@ -36,6 +36,7 @@
 - `fund.indicators`（指标层）：平台公式计算的派生指标——数值不存在于任何披露文件中，由平台以行情/报表/股本/ 分红等原始数据计算得出
 - `fund.segments`（经营分部）：主营构成的多维分解——分产品 / 分业务 / 分区域（境内外）/ 主营标签占比， 外加合并快照与披露覆盖度
 - `fund.statements`（财务报表）：三大报表科目原值（资产负债 / 利润 / 现金流）多期透视、合并 vs 母公司比较、 报表目录树与审计意见——本域目录函数族服务平台内部页面（…
+- `fund.valuation`（每日估值）：个股每日估值宽表（服务端物化 alt.valuation_daily，airflow pipeline.cn.valuation_daily…
 - `market.calendar`（交易日历）（cli.calendar）：A 股交易日历——区间交易日、是否开市、之后 N 个交易日
 - `market.cbond`（可转债）（cli.cbond）：可转债合约快照、条款事件（下修/回售/赎回等）、正股关联、强赎触发计数、 独立日 K 与盘中 1 分钟
 - `market.fund`（场内基金（ETF））：场内交易基金（ETF）的产品档案、净值、份额、分红、持仓、资产配置、折溢价与 榜单九视图
@@ -78,7 +79,7 @@
 
 ## 单位与守护声明（机器可读）
 
-> 共 57 个函数带 units / ranges / checks 声明；每行 `` `函数名`: JSON ``，键为 units（换算）/ ranges（量级界）/ checks（不变量）。SDK 在返回前按声明换算并校验，违例抛 DataError；原生口径用 `_units="native"`。内部命名空间的函数声明见 openapi.json 的 `x-wmshare-guards`（按友好接口）。
+> 共 58 个函数带 units / ranges / checks 声明；每行 `` `函数名`: JSON ``，键为 units（换算）/ ranges（量级界）/ checks（不变量）。SDK 在返回前按声明换算并校验，违例抛 DataError；原生口径用 `_units="native"`。内部命名空间的函数声明见 openapi.json 的 `x-wmshare-guards`（按友好接口）。
 
 - `bonus.query_list`: {"ranges": {"dps": [0, 500], "net_profit": [0, 1000000000000.0], "payout_ratio": [0, 20], "total": [0, 2000000000000.0]}}
 - `bonus.snapshot`: {"ranges": {"bonus_npts_rate": [0, 1], "bonus_total": [0, 2000000000000.0], "bonus_ttm": [0, 1000000000000.0], "dps_ttm": [0, 200], "mv": [0, 5000000000000.0], "payout_ttm": [0, 5], "pct_yield_3y": [0, 1], "pe_ttm": [-500, 5000], "yield_3y_avg": [0, 0.5], "yield_3y_min": [0, 0.5], "yield_lyr": [0, 0.5], "yield_ttm": [0, 0.5]}}
@@ -137,6 +138,7 @@
 - `segments.query_products`: {"ranges": {"cost": [0, 10000000000000.0], "margin": [-5, 1], "ratio": [0, 1], "tr": [-10000000000000.0, 10000000000000.0]}}
 - `segments.query_region`: {"ranges": {"margin": [-5, 1], "pct": [0, 1], "tr": [-10000000000000.0, 10000000000000.0], "yoy": [-1, 100]}}
 - `segments.snapshot`: {"ranges": {"cost": [0, 10000000000000.0], "margin": [-5, 1], "pct": [0, 1], "ratio": [0, 1], "tr": [-10000000000000.0, 10000000000000.0], "yoy": [-1, 100]}}
+- `valuation.daily_basic`: {"ranges": {"circ_mv": [0, 50000000000000.0], "dv_ttm": [0, 0.5], "pb": [0, 200], "pe_ttm": [0, 3000], "pr": [0, 2000], "ps": [0, 500], "total_mv": [0, 50000000000000.0], "turnover_rate": [0, 1]}}
 
 ## Optional
 

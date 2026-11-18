@@ -10,7 +10,7 @@
     ``_raw=True`` 取上游原始行（list[dict]，跳过规范化与换算）——诊断逃生口；
   - 本层是目录合同的薄翻译：高频方法显式包装；目录内其余非内部函数经 ``__getattr__``
     属性直达（如 ``cli.kline.screen_above_ma20``）；目录标 ``internal: true`` 的
-    规范化辅助（fmt_* 等）不再直达，请走 ``cli.call``——298 个底层函数零遮蔽；
+    规范化辅助（fmt_* 等）不再直达，请走 ``cli.call``——299 个底层函数零遮蔽；
   - 选股能力集中在 ``cli.screener``：单票筛选器（bool）、全市场宽度/涨跌榜与
     全市场条件选股 ``query()``（服务端索引直出）显式包装，kline 目录的其余筛选
     函数经属性直达。
@@ -1648,6 +1648,10 @@ class ValuationApi(_Api):
     _METRICS = {"pe": "pe", "pb": "pb", "ps": "ps", "pr": "pr_base"}
     # 引擎支持 <数字><单位> 通用窗口（实测 6m 起可用）；上限 3 年
     _WINDOWS = ("6m", "1y", "2y", "3y")
+    # 每日估值宽表字段（服务端物化 alt.valuation_daily；2.0 基础单位，
+    # 与 _catalog/domains/valuation.yaml units 一致）
+    _DAILY_FIELDS = ("pe_ttm", "pb", "ps", "pr", "total_mv", "circ_mv",
+                     "turnover_rate", "dv_ttm")
 
     def hist_stats(self, symbol: str, metric: str = "pe", window: str = "3y") -> dict:
         """估值指标的历史统计与每日序列（PE=TTM 口径；pr=市赚率 pr_base）。
@@ -1680,6 +1684,49 @@ class ValuationApi(_Api):
         data = {k: v for k, v in raw.items() if k != "series"}
         data["series"] = _out(rows)
         return _envelope(True, data, metric=metric, window=window)
+
+    def daily_basic(
+        self, symbol: str, begin: str | None = None, end: str | None = None,
+        fields: Any = None,
+    ) -> dict:
+        """个股每日估值序列（服务端物化宽表 ``valuation_daily``，仅 CN）。
+
+        每股每交易日一行（airflow pipeline.cn.valuation_daily 当日 16:25 物化、
+        SLA 17:00），8 字段全部服务端现成口径直出、2.0 基础单位（率=小数、
+        额=元）：``pe_ttm/pb/ps/pr``（HIST_STATS 同核，公告日 PIT）、
+        ``total_mv/circ_mv/turnover_rate/dv_ttm``（metric 层同式）。数据自
+        物化日起可用；历史回填深度见域目录 notes（诚实缺行，不伪造）。
+
+        :param begin: ISO 起日（含），``None``/``""`` = 开区间
+        :param end: ISO 止日（含），``None``/``""`` = 开区间
+        :param fields: list[str] / 逗号字符串 / ``None``（全部 8 个）
+        :returns: 统一信封 ``{ok, as_of, data, meta}``；``data`` 为长表
+            ``[{date, symbol, field, value}...]`` 升序；``as_of`` 为表内最新
+            行日期（与过滤区间无关，供调用方判新鲜度）。
+        """
+        if isinstance(fields, str):
+            req = [f.strip().lower() for f in fields.split(",") if f.strip()]
+        elif fields is None:
+            req = list(self._DAILY_FIELDS)
+        elif isinstance(fields, (list, tuple)):
+            req = [str(f).strip().lower() for f in fields]
+        else:
+            raise UsageError(
+                "fields 只接受 list[str] / 逗号字符串 / None", code="params")
+        unknown = [f for f in req if f not in self._DAILY_FIELDS]
+        if unknown:
+            raise UsageError(
+                f"fields 含未知字段 {unknown}；只支持 {list(self._DAILY_FIELDS)}",
+                code="params")
+        req = list(dict.fromkeys(req))  # 去重保序
+        raw = self._c.call(
+            "valuation.daily_basic", sym=symbol,
+            begin=_normalize_date(begin) if begin else "",
+            end=_normalize_date(end) if end else "",
+            fields=req)
+        if not isinstance(raw, dict):
+            return _envelope(False, {}, note="上游返回非 MAP")
+        return raw
 
 
 class EstimatesApi(_Api):
@@ -2904,6 +2951,8 @@ FRIENDLY_INDEX: list[tuple[str, str, str, str, str]] = [
     ("fundamentals", "segments", "coverage", "分部披露覆盖度", "segments.coverage"),
     ("fundamentals", "segments", "periods", "分部可用报告期", "segments.list_sas"),
     ("fundamentals", "valuation", "hist_stats", "估值历史统计", "组合接口（宿主 HIST_STATS）"),
+    ("fundamentals", "valuation", "daily_basic", "个股每日估值序列",
+     "valuation.daily_basic（服务端物化 alt.valuation_daily）"),
     ("fundamentals", "estimates", "query_forecast", "机构盈利预测", "estimates.query_forecast"),
     ("fundamentals", "estimates", "query_forecast_detail", "盈利预测明细",
      "estimates.query_forecast_detail"),

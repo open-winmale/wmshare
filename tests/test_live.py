@@ -616,6 +616,19 @@ def test_valuation_hist_stats_live(cli):
     assert dates == sorted(dates), "估值序列应按时间升序"
 
 
+# ---------------------------------------------------------------- 每日估值宽表
+def test_valuation_daily_basic_live(cli):
+    """600519 近 60 日：信封形 + 长表字段合法 + as_of 新鲜（服务端物化表就绪后转真）。"""
+    r = _call_or_xfail(
+        lambda: cli.valuation.daily_basic("600519", begin="2026-09-01", end="2026-11-16",
+                                          fields=["pe_ttm", "total_mv"]))
+    assert r.get("ok") is True and isinstance(r.get("data"), list)
+    assert r.get("as_of"), "缺 as_of（表内最新行日期）"
+    for row in r["data"]:
+        assert row["symbol"] == "600519" and row["field"] in ("pe_ttm", "total_mv")
+        assert isinstance(row["value"], (int, float))
+
+
 
 # ------------------------------------------------- v1.5.0 七域冒烟（2026-10-27 起上游已部署，转真）
 
