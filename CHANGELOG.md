@@ -10,6 +10,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-11-18
+
+### Added
+- `cli.valuation.daily_basic(symbol, begin, end, fields)`：个股每日估值序列——
+  服务端物化宽表（`alt.valuation_daily`，仅 CN，airflow
+  `pipeline.cn.valuation_daily` 每日 16:25 物化、SLA 当日 17:00）。8 字段
+  （pe_ttm/pb/ps/pr/total_mv/circ_mv/turnover_rate/dv_ttm）全部服务端现成
+  口径直出、2.0 基础单位；长表信封 `{ok, as_of, data, meta}`，`as_of` 为
+  表内最新行日期供调用方判新鲜度。数据自物化日起可用，历史回填深度见
+  域目录 notes（诚实缺行，不伪造）。
+- `estimate_cost`：`valuation.daily_basic` 归入 cached_eval 档（物化表近似
+  免费读；首日回补另计）。
+- demo 模式对该面显式 `demo_unsupported`（物化表未投产，无罐头不伪造）。
+
+### Changed
+- 目录扩容：`fund.valuation` 域（+1 函数 = 299 个底层函数 / 21 个数据域 /
+  138 个核心接口）；inventory.json 手工同步该条目（extractor 白名单已加
+  `valuation`，下次上游重跑提取不丢失）。
+
 ## [2.0.1] - 2026-11-17
 
 ### Fixed
