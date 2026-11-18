@@ -371,9 +371,21 @@ def estimate_cost(name: str, params: dict[str, Any] | None = None, *,
                    note="走预热缓存（实测命中 ≈4 EC）；缓存冷的回填成本未物化，"
                         "勿按本估算做回填预算")
     elif name.startswith("valuation.daily_basic"):
-        out.update(ec_lo=4, ec_hi=200, model="cache_hit",
-                   note="服务端物化表直读（每日 16:25 物化、SLA 17:00）；"
-                        "首日历史回补另计")
+        # 实测（2026-11-18 生产）：**不是缓存**——按扫描行计费，字段几乎免费。
+        #   1 日 × 1 字段 = 1,707 EC；1 日 × 8 字段 = 1,851；
+        #   13 交易日 × 2 字段 = 2,038；全史 726 docs × 8 字段 = 18,317。
+        # 模型 = 地板 + ≈23 EC/doc（端点拟合）；仍以 metering.ec_cost 为准。
+        b, e = p.get("begin"), p.get("end")
+        if b and e:
+            span = max(1, abs(_days_between(b, e)) + 1)
+            out.update(ec_lo=1_707, ec_hi=int(1_707 + 23 * span),
+                       model="measured")
+        else:
+            out.update(ec_lo=1_707, ec_hi=18_317, model="measured")
+        out["note"] = (
+            "按扫描行计费（非缓存）：单日地板 ≈1,707 EC，全史 ≈18,317 EC；"
+            "传 begin/end 收窄窗口可线性降低，字段数几乎不加价"
+        )
     elif name.startswith("indices.trend"):
         out.update(ec_lo=1, ec_hi=50, model="cache_hit",
                    note="只读预热缓存；未命中返回 ok=False（不现算、不产生 EC）")

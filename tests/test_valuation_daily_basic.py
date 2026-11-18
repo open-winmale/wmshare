@@ -95,12 +95,21 @@ def test_daily_basic_fields_forms_and_dedup():
         c.valuation.daily_basic("600519", fields=123)
 
 
-# ---- estimate_cost：物化表直读（cache_hit 档，2026-11-18 校准拆分） ----
+# ---- estimate_cost：实测档（2026-11-18 生产 probe，非缓存） ----
 
-def test_daily_basic_estimate_cost_cache_hit():
+def test_daily_basic_estimate_cost_measured():
     est = estimate_cost("valuation.daily_basic")
-    assert est["model"] == "cache_hit"
-    assert est["ec_lo"] == 4 and est["ec_hi"] == 200  # 物化表命中近似免费，不再按冷算 10~18 万
+    assert est["model"] == "measured"
+    # 单日地板 1,707 / 全史 18,317（实测端点）
+    assert est["ec_lo"] == 1_707 and est["ec_hi"] == 18_317
+    assert "非缓存" in est["note"]
+
+    # 传窗口：地板 + ≈23 EC/自然日
+    est2 = estimate_cost("valuation.daily_basic",
+                         {"begin": "2026-11-01", "end": "2026-11-17"})
+    assert est2["model"] == "measured"
+    assert est2["ec_lo"] == 1_707
+    assert est2["ec_hi"] == 1_707 + 23 * 17
 
 
 # ---- demo：显式 demo_unsupported（诚实契约，无罐头不伪造） ----

@@ -8,6 +8,14 @@
     <lastBuildDate>Wed, 18 Nov 2026 00:00:00 +0800</lastBuildDate>
     <atom:link href="https://github.com/open-winmale/wmshare/raw/main/docs/changelog.xml" rel="self" type="application/rss+xml"/>
     <item>
+      <title>wmshare 2.2.1 (2026-11-18)</title>
+      <link>https://github.com/open-winmale/wmshare/releases/tag/v2.2.1</link>
+      <guid isPermaLink="false">wmshare:2.2.1</guid>
+      <pubDate>Wed, 18 Nov 2026 00:00:00 +0800</pubDate>
+      <description>Fixed
+- **`estimate_cost(&quot;valuation.daily_basic&quot;)` 档位纠偏**：此前标 `cache_hit` 4~200 EC，实测（2026-11-18 生产 probe）**不是缓存**——按扫描行计费： 1 日 × 1 字段 = 1,707 EC，1 日 × 8 字段 = 1,851，13 交易日 × 2 字段 = 2,038， 全史 726 docs × 8 字段 = 18,317。现模型 `measured`：无窗口 → 1,707~18,317； 传 begin/end → 地板 + ≈23 EC/自然日。以 `metering.ec_cost` 为准不变。</description>
+    </item>
+    <item>
       <title>wmshare 2.2.0 (2026-11-18)</title>
       <link>https://github.com/open-winmale/wmshare/releases/tag/v2.2.0</link>
       <guid isPermaLink="false">wmshare:2.2.0</guid>
@@ -279,14 +287,6 @@ Fixed
       <description>Added
 - 缺凭证 `AuthError` 文案附零凭证离线演示入口：报错即引导 `wmshare.demo_client()`（随包固定快照、不联网、非实时数据）， 与 README「零凭证先试」同口径——用户在申请到凭证前就能跑通调用姿势。
 - PyPI 检索面增补：keywords 加 `a-share` / `convertible-bond` / `mcp` / `model-context-protocol`，classifiers 加 `Topic :: Scientific/Engineering :: Information Analysis`。</description>
-    </item>
-    <item>
-      <title>wmshare 1.19.0 (2026-11-12)</title>
-      <link>https://github.com/open-winmale/wmshare/releases/tag/v1.19.0</link>
-      <guid isPermaLink="false">wmshare:1.19.0</guid>
-      <pubDate>Thu, 12 Nov 2026 00:00:00 +0800</pubDate>
-      <description>Removed
-- pip-audit 的 3.10 困境包豁免表（pillow 12.x / filelock 4.1.x）随 3.10 出矩阵一并删除， 审计恢复为「发现已知漏洞即失败」的零豁免形态。</description>
     </item>
   </channel>
 </rss>

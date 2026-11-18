@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.1] - 2026-11-18
+
+### Fixed
+- **`estimate_cost("valuation.daily_basic")` 档位纠偏**：此前标 `cache_hit`
+  4~200 EC，实测（2026-11-18 生产 probe）**不是缓存**——按扫描行计费：
+  1 日 × 1 字段 = 1,707 EC，1 日 × 8 字段 = 1,851，13 交易日 × 2 字段 = 2,038，
+  全史 726 docs × 8 字段 = 18,317。现模型 `measured`：无窗口 → 1,707~18,317；
+  传 begin/end → 地板 + ≈23 EC/自然日。以 `metering.ec_cost` 为准不变。
+
+
 ## [2.2.0] - 2026-11-18
 
 ### Added
