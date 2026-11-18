@@ -5,10 +5,61 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-> 兼容政策：2.0 前 minor 版本可能携带行为变更，均在对应版本段以「行为变更」标注；
-> 升级前请扫一眼 Removed / Changed 段。
+> 兼容政策：见 [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md)——破坏性变更只能在
+> MAJOR；弃用至少保留 1 个 MINOR，并在 `Deprecated` 段登记替代写法与移除版本。
+> 升级前请扫一眼 Removed / Changed / Deprecated 段。
 
 ## [Unreleased]
+
+## [2.2.0] - 2026-11-18
+
+### Added
+- **区间取数自动分页**：`cli.kline.bars(begin=, end=)`（日 K）与
+  `cli.moneyflow.bars(begin=, end=)` 不传 `n` 时按「锚点切片」自动补齐——
+  每片走服务端锚点窗口（`kline.query_at_anchor(_adj)`、`moneyflow.query_bars_anchor`），
+  只物化 `≤ end` 的行、覆盖 `begin` 即停，跨片去重后升序返回。**任意长度区间一次
+  拿全量、不静默截断**，计费 ≈ 区间实际行数（服务端窗口读取，客户端不砍量）。
+  显式传 `n=` 保持「区间内最近 n 根」单次语义。
+- 目录新增 `moneyflow.query_bars_anchor`（+= 300 个底层函数）；`kline.query_at_anchor`
+  / `_adj` 补齐 `normalize_with`+`units`+`ranges`+`checks` 声明（锚点入口与正排查询
+  **行合同逐字一致**，守护函数 59 → 61）。
+- `_fields=` 列投影（`cli.call`/`call_batch`/`batch_all` 与 kline/moneyflow/cbond/
+  margin 门面）：换算/排序之后只保留指定字段，按请求顺序输出；未知字段报
+  `UsageError(code="params")`。**不降 EC**（EC 按服务端物化行计），只收窄返回体。
+- `BatchResult.truncated`：准全市场捷径下结果是否为请求集子集（停牌/索引外标的
+  缺席时显式披露，便于用小清单补拉）。
+- 文档资产：`docs/COMPATIBILITY.md`（MAJOR/MINOR/PATCH 语义 + 弃用流程）、
+  `docs/LIMITS.md`（硬限制与配方）、`docs/ERRORS.md`（错误码全集，源码扫描生成）、
+  `docs/DATA_CALENDAR.md`（数据生产日历，兄弟仓缺失时 SKIP）、`docs/changelog.xml`
+  （RSS）、`docs/fields.json`（236 个公开函数的字段/单位/范围）、
+  `docs/indicators/`（2,753 个指标单页）。API.md 输出字段表新增「单位/换算」与
+  「守护范围」两列。
+
+### Changed
+- **`kline.snapshot` 批量捷径阈值 4,000 → 2,000**：与服务端 `snapshot_batch` 对齐
+  （去重 ≥2,000 的清单上游本来就按全市场扫描计费，空参捷径另享按日缓存）。
+  大清单中停牌标的会进 `truncated`，用小清单（<2,000，逐票按量路径含停牌行）补拉。
+- `estimate_cost` 校准：区间查询改 `range_rows` 模型（按区间交易日密度）、
+  `kline.snapshot` 认 `symbol=` 批量参数并区分空参捷径、缓存类接口拆出 `cache_hit`
+  档（hist_stats/daily_basic/indices.trend 分别≈4~200/4~200/1~50 EC）。
+- demo 与 live 门面**签名逐字对齐**（58 对方法零漂移）：补齐 `_fields`/`freq`/
+  `_raw`/`fut_symbol`/`native`/`min_ratio`/`idx` 等形参，`kline.last` 由「返回 23
+  字段快照」修正为「返回 9 字段 bar」（与 live 一致）；未回放的能力一律
+  `UsageError(code="demo_unsupported")`，不再以缺少形参抛 `TypeError` 或吞掉参数。
+- `_validate_snapshot` 扩展数据质量校验：calendar（升序/唯一/≤as_of）、margin
+  （沪深成对、余额>0、universe 去重≤500）、futures（价格>0）。
+- 单位台账补登记 `$VOLUME_AR_DAY`（手）与 `$ROC_TTM_LAST`（百分数）。
+
+### Fixed
+- `estimate_cost("kline.snapshot", symbol=[...])` 曾按单票估算（门面参数名与目录
+  参数名不同的历史坑），现三种写法（`sym`/`codes`/`symbol`）都按票数估算。
+- 4 个接口返回说明为空、10 个参数说明为 `—`、组合接口参数兜底缺失。
+- `test_live.py` 中与 2.0 升序契约相反的降序断言（含 `index.trend` 新信封）。
+
+### Removed
+- `docs/COST_MATRIX.md` 与 `tools/gen_cost_matrix.py`：成本信息不对用户暴露，
+  对外只保留运行时 `cli.cost_estimate` 与 `docs/LIMITS.md` 的硬限制；实测成本
+  审计进维护者内部工具 `tools/audit_ec.py`（写 `.internal/`，不进 CI/文档）。
 
 ## [2.1.0] - 2026-11-18
 

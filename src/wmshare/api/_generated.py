@@ -1294,7 +1294,7 @@ class MarginNS(_Ns):
             kw["limit"] = limit
         return _out(self._client.call("margin.market_summary", **kw, _raw=_raw), _raw)
 
-    def universe(self, limit: int | None = None, _raw: bool = False) -> Any:
+    def universe(self, limit: Any | None = None, _raw: bool = False) -> Any:
         """两融标的名单"""
         kw: dict[str, Any] = {}
         if limit is not None:
@@ -1316,6 +1316,16 @@ class MoneyflowNS(_Ns):
         if limit is not None:
             kw["limit"] = limit
         return _out(self._client.call("moneyflow.query_bars", **kw, _raw=_raw), _raw)
+
+    def query_bars_anchor(self, sym: str, limit: int, anchor_date: str | None = None, _raw: bool = False) -> Any:
+        """锚点前资金流
+
+:returns: ARR · 资金流行（字段与 query_bars 一致）
+        """
+        kw: dict[str, Any] = {"sym": sym, "limit": limit}
+        if anchor_date is not None:
+            kw["anchor_date"] = anchor_date
+        return _out(self._client.call("moneyflow.query_bars_anchor", **kw, _raw=_raw), _raw)
 
     def query_last(self, sym: str, _raw: bool = False) -> Any:
         """最新资金流向

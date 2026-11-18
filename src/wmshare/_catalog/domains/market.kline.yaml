@@ -303,8 +303,26 @@ functions:
   - {name: kline.query_last_adj, cn: 最新一根 K 线（复权）, kind: raw, layer: L1, units: {volume: lot, percent: percent}, ranges: {percent: [-1, 30], volume: [0, 1.0e+12]}, notes: [单行 MAP 无 normalize_with；上游 volume 为手、percent 为百分数，按 query_last 同款单位声明换算；量级界同 query_last；复权价不套 volume_amount 不变量]}
   - {name: kline.query_valid, cn: 有效 K 线序列（过滤停牌空bar）, kind: raw, layer: L1}
   - {name: kline.query_valid_adj, cn: 有效 K 线（复权）, kind: raw, layer: L1}
-  - {name: kline.query_at_anchor, cn: 锚点日前 K 线, kind: raw, layer: L1}
-  - {name: kline.query_at_anchor_adj, cn: 锚点日前 K 线（复权）, kind: raw, layer: L1}
+  - name: kline.query_at_anchor
+    cn: 锚点日前 K 线
+    kind: raw
+    layer: L1
+    normalize_with: kline.fmt_maps
+    units: {volume: lot}
+    ranges: {percent: [-1, 30], volume: [0, 1.0e+12]}
+    checks: [volume_amount]
+    notes: [输出字段与行合同和 query_bars 完全一致（date/open/high/low/close/volume/amount/percent），
+      只是窗口右端锚在 anchor_date（读 ≤ 锚点的最近 limit 根）；
+      kline.bars 区间查询的锚点分页切片入口——只物化 ≤end 的行、覆盖 begin 即停，
+      计费 ≈ 区间实际根数]
+  - name: kline.query_at_anchor_adj
+    cn: 锚点日前 K 线（复权）
+    kind: raw
+    layer: L1
+    normalize_with: kline.fmt_maps
+    units: {volume: lot}
+    notes: [输出字段与行合同和 query_at_anchor 一致；close 为复权价，
+      volume×close 与 amount 不再可比，故不套 volume_amount 不变量]
   - {name: kline.snapshot_close, cn: 最新收盘价, kind: raw, layer: L1}
   # ---- L1：单值衍生（computed）----
   - {name: kline.snapshot_percent, cn: 最新涨跌幅, kind: computed, layer: L1}

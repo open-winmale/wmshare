@@ -53,6 +53,12 @@ jobs:
         run: python tools/gen_llms.py --check
       - name: Indicators nav drift gate
         run: python tools/gen_indicators.py --check
+      - name: Error code docs drift gate
+        run: python tools/gen_errors.py --check
+      - name: Data calendar drift gate (skips without sibling airflow repo)
+        run: python tools/gen_data_calendar.py --check
+      - name: Changelog feed drift gate
+        run: python tools/gen_changelog_feed.py --check
       - name: server.json drift gate (generated from __version__)
         run: python tools/gen_server.py --check
       - name: Type check

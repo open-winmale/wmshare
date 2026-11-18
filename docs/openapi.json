@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "wmshare 数据 API",
-    "version": "2.1.0",
+    "version": "2.2.0",
     "description": "覆盖 A 股、港股、美股的财经数据核心接口（Python SDK，`pip install wmshare`；`import wmshare`）。凭证必填：在开放平台（open.winmale.com）获取 client_id/api-key；遇到 401/403/429 错误消息即完整的申请与配置指引。覆盖行情 K 线（不复权/前复权/后复权、盘中、分时、ETF、指数）、三大报表（多期、合并 vs 母公司、树视图、新旧会计准则归一）、分红（历史/DPS/窗口/TTM 率）、公告与业绩披露、资金流与指标层。平台指标经 /indicator/get、/indicator/metrics 按指标代码寻址，全量 2752 个指标代码随包内置目录分发（分组清单见 docs/API.md）。",
     "license": {
       "name": "BSD-3-Clause",
@@ -54,7 +54,7 @@
       "post": {
         "operationId": "kline_bars",
         "summary": "K 线序列（日/周/月）→ DataFrame：date/open/high/low/close/volume/amount/percent。",
-        "description": "日 K 覆盖自上市首日起的全部交易日（最早 1991 年）；周/月 K 为服务端预派生、（由日线先复权再聚合，date 为周期末交易日）。、2.0 契约：按 ``date`` **升序**（旧→新）返回；``_raw=True`` 返回上游原始行、（诊断逃生口，不支持 begin/end）。指数只有日频：``freq`` 非 D 显式报错、（1.x 静默返回空序列的坑已移除）。、底层目录函数 `kline.query_bars[_adj]`。SDK 调用：`cli.kline.bars(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "description": "日 K 覆盖自上市首日起的全部交易日（最早 1991 年）；周/月 K 为服务端预派生、（由日线先复权再聚合，date 为周期末交易日）。、2.0 契约：按 ``date`` **升序**（旧→新）返回；``_raw=True`` 返回上游原始行、（诊断逃生口，不支持 begin/end）。指数只有日频：``freq`` 非 D 显式报错、（1.x 静默返回空序列的坑已移除）。、最近 n 根（不补页）；不传 n=自动锚点切片补齐（见下），每片 ≤ max_limit、区间完整性（日 K，不传 n）：按「锚点切片」自动分页——每片走、``kline.query_at_anchor(_adj)``（窗口右端锚在已取最早一根），只物化、≤ end 的行、覆盖 begin 即停；任意区间一次拿到全量、不静默截断，、计费 ≈ 区间实际根数（服务端窗口读取，不在客户端砍量）。、周/月 K 与显式 n 为单次请求，超出单次上限显式报错（不静默截断）。、底层目录函数 `kline.query_bars[_adj]`。SDK 调用：`cli.kline.bars(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "市场行情"
         ],
@@ -70,7 +70,7 @@
                   },
                   "n": {
                     "type": "integer",
-                    "description": "根数（按所选周期计），默认 120；区间查询时默认取 max_limit（上限 10000）"
+                    "description": "根数（按所选周期计），默认 120。区间查询：显式传 n=只取区间内"
                   },
                   "adj": {
                     "type": "string",
@@ -631,7 +631,7 @@
       "post": {
         "operationId": "moneyflow_bars",
         "summary": "资金流历史（DataFrame：date/net_mf/elg_net/lg_net/md_net/sm_net，date 升序）。",
-        "description": "底层目录函数 `moneyflow.query_bars`。SDK 调用：`cli.moneyflow.bars(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "description": "不传 n=自动锚点切片补齐（每片 ≤ max_limit，覆盖 begin 即停）、区间完整性（不传 n）：与 ``kline.bars`` 同款锚点切片——每片走、``moneyflow.query_bars_anchor``（窗口右端锚在已取最早一根），只物化、≤ end 的行、覆盖 begin 即停；任意区间完整返回、计费 ≈ 区间实际行数。、显式传 n 为单次请求，超出单次上限显式报错（不静默截断）。、底层目录函数 `moneyflow.query_bars`。SDK 调用：`cli.moneyflow.bars(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "市场行情"
         ],
@@ -647,7 +647,7 @@
                   },
                   "n": {
                     "type": "integer",
-                    "description": "条数，默认 20；区间查询时默认取 max_limit（上限 10000）"
+                    "description": "条数，默认 20。区间查询：显式传 n=只取区间内最近 n 根（不补页）；"
                   },
                   "begin": {
                     "type": "string",
@@ -1946,7 +1946,8 @@
                 "type": "object",
                 "properties": {
                   "date": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "日期（YYYY-MM-DD；也接受 YYYYMMDD 与 date/datetime）"
                   }
                 },
                 "required": [
@@ -1986,10 +1987,12 @@
                 "type": "object",
                 "properties": {
                   "date": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "起算日期（YYYY-MM-DD；也接受 YYYYMMDD 与 date/datetime）"
                   },
                   "n": {
-                    "type": "integer"
+                    "type": "integer",
+                    "description": "取之后 N 个交易日（默认 1）"
                   }
                 },
                 "required": [
@@ -3246,7 +3249,7 @@
         },
         "responses": {
           "200": {
-            "description": "调用成功",
+            "description": "标量 · 连续合约单字段当前值（价=元、量=手、额=万元；`$码` 透传上游口径）",
             "content": {
               "application/json": {
                 "schema": {
@@ -3291,7 +3294,7 @@
         },
         "responses": {
           "200": {
-            "description": "调用成功",
+            "description": "MAP · {字段: 值}（一次指标批量求值；字段集同 ``cli.futures.get`` 可选集）",
             "content": {
               "application/json": {
                 "schema": {
@@ -3362,13 +3365,16 @@
                     "type": "string"
                   },
                   "code": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "指标码（``$`` 开头，如 ``\"$PE_TTM_LAST\"``；用 ``cat.search`` 查）"
                   },
                   "fut_symbol": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "期货连续合约键（``$FUT_*`` 需要，如 ``\"cn.RB.SHF\"``）"
                   },
                   "native": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "description": "True=保留上游原生单位（默认换算基础单位）"
                   }
                 },
                 "required": [
@@ -3412,13 +3418,16 @@
                     "type": "string"
                   },
                   "codes": {
-                    "type": "array"
+                    "type": "array",
+                    "description": "指标码列表（``$`` 开头；用 ``cat.search`` 查）"
                   },
                   "fut_symbol": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "期货连续合约键（``$FUT_*`` 需要）"
                   },
                   "native": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "description": "True=保留上游原生单位（默认换算基础单位）"
                   }
                 },
                 "required": [
@@ -4198,7 +4207,7 @@
         },
         "responses": {
           "200": {
-            "description": "调用成功",
+            "description": "MAP · {ok, as_of, data: [{date, symbol, field, value}], meta}（8 字段长表，date 升序；as_of=表内最新行日期）",
             "content": {
               "application/json": {
                 "schema": {
@@ -5350,7 +5359,8 @@
                 "type": "object",
                 "properties": {
                   "category": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "公告类别（如 ``\"回购\"``/``\"减持\"``；上游类别词表）"
                   },
                   "window": {
                     "type": "string"
@@ -5545,7 +5555,8 @@
                 "type": "object",
                 "properties": {
                   "date": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "日期（YYYY-MM-DD）"
                   },
                   "keyword": {
                     "type": "string"
@@ -5827,7 +5838,8 @@
                     "type": "string"
                   },
                   "kind": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "报告类型：``all | annual | semi | quarter``"
                   },
                   "limit": {
                     "type": "integer"
@@ -5898,7 +5910,8 @@
                     "type": "string"
                   },
                   "kind": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "报告类型：``all | annual | semi | quarter``"
                   }
                 },
                 "required": [
@@ -6830,7 +6843,7 @@
         },
         "responses": {
           "200": {
-            "description": "调用成功",
+            "description": "MAP · {dps: 每股股利合计(元/股), total: 总分红(元), count: 次数}（按除权日计、截至今天）",
             "content": {
               "application/json": {
                 "schema": {
@@ -6993,7 +7006,8 @@
                     "type": "string"
                   },
                   "min_yield": {
-                    "type": "number"
+                    "type": "number",
+                    "description": "股息率门槛（小数；缺省=目录默认阈值）"
                   }
                 },
                 "required": [
@@ -7036,10 +7050,12 @@
                     "type": "string"
                   },
                   "min_yield": {
-                    "type": "number"
+                    "type": "number",
+                    "description": "股息率门槛（小数；缺省=目录默认阈值）"
                   },
                   "min_pct": {
-                    "type": "number"
+                    "type": "number",
+                    "description": "估值分位门槛（0~1 小数，如 0.3=只看分位后 30%）"
                   }
                 },
                 "required": [

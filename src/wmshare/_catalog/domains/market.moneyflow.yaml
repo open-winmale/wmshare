@@ -29,6 +29,20 @@ functions:
     returns: {desc: ARR · 资金流行（date/net_mf/elg_net/lg_net/md_net/sm_net）, shape_ref: inventory}
     example: 'moneyflow.query_bars("600519", 20)'
     normalize_with: moneyflow.fmt_maps
+  - name: moneyflow.query_bars_anchor
+    cn: 锚点前资金流
+    kind: raw
+    layer: L1
+    returns: {desc: ARR · 资金流行（字段与 query_bars 一致）, shape_ref: inventory}
+    example: 'moneyflow.query_bars_anchor("600519", 20, anchor.date())'
+    normalize_with: moneyflow.fmt_maps
+    notes:
+      - 行合同与 query_bars 完全一致，只是窗口右端锚在 anchor_date（store.query
+        anchorTs 能力，与 kline.store_window_anchor 同款 opts）；参数取 inventory
+        合同 [sym, limit, anchor_date]
+      - moneyflow.bars 区间查询的锚点分页切片入口——只物化 ≤end 的行、覆盖 begin
+        即停，计费 ≈ 区间实际行数
+      - 守护声明随 query_bars（金额=元已为基础单位；range 界须实测分布，不猜界）
   - name: moneyflow.query_last
     cn: 最新资金流向
     kind: raw

@@ -77,6 +77,15 @@ PARAM_DOCS: dict[str, str] = {
     "years": "最近 N 个报告期",
     "idx": "宽度索引（None=服务端解析全市场）",
     "points": "采样点数",
+    "mode": "返回模式（\"latest\"=最新一条 / \"series\"=序列；ETF 九视图共用）",
+    "kind": "报告类型（all | annual | semi | quarter）",
+    "date": "日期 YYYY-MM-DD（也接受 YYYYMMDD 与 date/datetime）",
+    "category": "公告类别（如 \"回购\"/\"减持\"）",
+    "min_yield": "股息率门槛（小数，0.04=4%）",
+    "min_pct": "估值分位门槛（0~1 小数）",
+    "fut_symbol": "期货连续合约键（如 \"cn.RB.SHF\"；$FUT_* 需要）",
+    "native": "True=保留上游原生单位（默认换算基础单位）",
+    "codes": "指标码列表（$ 开头）",
 }
 
 # 按 ns 覆写兜底表：仅 A 股数据的门面，symbol 不得宣传港美（真多市场门面
@@ -301,6 +310,27 @@ def _param_desc(ns: str, method: str, p, fn: dict) -> str:
     return PARAM_DOCS.get(p.name, "—")
 
 
+# 单位 token → 中文口径（与 units.yaml CONVERSIONS 词表一致；新增 token 由
+# validate_units 在前置门禁拦截，本表只负责渲染）。
+UNIT_CN: dict[str, str] = {
+    "percent": "百分数→小数",
+    "yi_yuan": "亿元→元",
+    "lot": "手→股",
+}
+
+
+def _field_unit(fn: dict, name: str) -> str:
+    tok = (fn.get("units") or {}).get(name)
+    return UNIT_CN.get(tok, esc(tok)) if tok else "—"
+
+
+def _field_range(fn: dict, name: str) -> str:
+    rng = (fn.get("ranges") or {}).get(name)
+    if not isinstance(rng, (list, tuple)) or len(rng) != 2:
+        return "—"
+    return f"[{rng[0]:g}, {rng[1]:g}]"
+
+
 def interface_block(ns: str, method: str, cn: str, underlying: str,
                     merged: dict[str, dict]) -> list[str]:
     """单接口小节：标题 + 一句话说明 + 输入参数表 + 输出 + 示例代码块。
@@ -340,13 +370,24 @@ def interface_block(ns: str, method: str, cn: str, underlying: str,
     if shape:
         fields = (shape.get("items") or shape).get("fields") or []
     if fields and (ns, method) not in RETURNS_OVERRIDES:
-        out += ["**输出字段**", "",
-                "| 字段 | 类型 | 说明 |", "|---|---|---|"]
+        guarded = bool(fn.get("units") or fn.get("ranges"))
+        if guarded:
+            out += ["**输出字段**", "",
+                    "| 字段 | 类型 | 单位/换算 | 守护范围 | 说明 |",
+                    "|---|---|---|---|---|"]
+        else:
+            out += ["**输出字段**", "",
+                    "| 字段 | 类型 | 说明 |", "|---|---|---|"]
         for f in fields:
             t = TYPE_SHORT.get(f.get("type", "any"), f.get("type", "any"))
             if f.get("optional"):
                 t += "?"
-            out.append(f"| `{f['name']}` | {t} | {esc(field_cn(f)) or '—'} |")
+            if guarded:
+                out.append(f"| `{f['name']}` | {t} | {_field_unit(fn, f['name'])} "
+                           f"| {_field_range(fn, f['name'])} "
+                           f"| {esc(field_cn(f)) or '—'} |")
+            else:
+                out.append(f"| `{f['name']}` | {t} | {esc(field_cn(f)) or '—'} |")
         out.append("")
     else:
         out += [f"**输出**：{ret}", ""]
@@ -415,8 +456,10 @@ def composite_section(ns: str) -> list[str]:
             out += ["| 参数 | 类型 | 必填 | 默认 | 说明 |", "|---|---|---|---|---|"]
             for p in params:
                 dflt = f"`{p.default}`" if p.default is not None else "—"
+                # 组合接口同样不许参数说明落 `—`（PARAM_DOCS 兜底与核心接口一致）
+                desc = esc(p.desc) or PARAM_DOCS.get(p.name, "—")
                 out.append(f"| `{p.name}` | {p.json_type} | "
-                           f"{'是' if p.required else '否'} | {dflt} | {esc(p.desc) or '—'} |")
+                           f"{'是' if p.required else '否'} | {dflt} | {desc} |")
             out.append("")
     examples = COMPOSITE_EXAMPLES.get(ns) or []
     if examples:
@@ -674,6 +717,7 @@ def build() -> str:
         "- **字段表口径**：输出字段说明中的量/市值一律按 SDK 换算后口径（量=股、市值=元）；"
         "上游原生口径只在 `_units=\"native\"` / `_raw=True` 下可见。"
         "逐函数声明见函数合同的「单位与守护声明」列，机器可读版见 "
+        "[fields.json](fields.json)（字段/类型/单位/守护范围）与 "
         "[openapi.json](openapi.json) 的 `x-wmshare-guards`。",
         "- **指标码中文名**：指标清单里的「期货持仓量(手)」等是上游原生口径的**命名**，"
         "不代表 SDK 返回值单位；返回值一律以上述基础单位与逐函数声明为准。",
@@ -798,19 +842,107 @@ def build() -> str:
     return "\n".join(out).rstrip() + "\n"
 
 
+FIELDS_OUT = REPO / "docs" / "fields.json"
+
+
+def _shape_fields(name: str) -> list[dict]:
+    """inventory returns_shape → 字段字典行（无 shape 返回空表）。"""
+    sh = (INV.get(name) or {}).get("returns_shape") or {}
+    items = sh.get("items") if isinstance(sh.get("items"), dict) else sh
+    out: list[dict] = []
+    for f in (items or {}).get("fields") or []:
+        if not f.get("name"):
+            continue
+        out.append({
+            "name": f["name"],
+            "type": f.get("type", "any"),
+            "optional": bool(f.get("optional")),
+            "desc": field_cn(f) or "",
+        })
+    return out
+
+
+def build_fields_json() -> str:
+    """机器可读字段字典：**公开**目录函数 × 返回字段/单位/守护范围。
+
+    内部函数（``internal: true``，如 fmt_*/rptdom.*）不收录——它们不是对外合同，
+    且 ``tests/test_internal_ns_visibility`` 会拦截内部命名空间出现在 docs/。
+    数据全部来自离线目录（domains/*.yaml + generated/inventory.json），
+    与 API.md 的输出字段表同源；供 MCP resource / 文档站点消费。
+    """
+    docs = [yaml.safe_load(p.read_text(encoding="utf-8"))
+            for p in sorted(DOMAINS.glob("*.yaml"))]
+    domains: list[dict] = []
+    total = 0
+    for d in docs:
+        fns: list[dict] = []
+        for fn in d.get("functions") or []:
+            name = fn.get("name")
+            if not name:
+                continue
+            if fn.get("internal") or is_internal_catalog_name(name):
+                # 内部函数/内部命名空间（rptdom 等）不得出现在对外资产里：
+                # tests/test_internal_ns_visibility 会扫 docs/ 全部文件。
+                continue
+            units = fn.get("units") or {}
+            ranges = fn.get("ranges") or {}
+            fields = _shape_fields(name)
+            for f in fields:
+                if f["name"] in units:
+                    tok = units[f["name"]]
+                    f["unit"] = UNIT_CN.get(tok, tok)
+                if f["name"] in ranges:
+                    rng = ranges[f["name"]]
+                    if isinstance(rng, (list, tuple)) and len(rng) == 2:
+                        f["range"] = [rng[0], rng[1]]
+            fns.append({
+                "name": name,
+                "cn": fn.get("cn") or "",
+                "layer": fn.get("layer") or "",
+                "internal": bool(fn.get("internal")),
+                "units": units,
+                "ranges": ranges,
+                "checks": fn.get("checks") or [],
+                "fields": fields,
+            })
+            total += 1
+        domains.append({
+            "id": d.get("id"),
+            "kind": d.get("kind"),
+            "data_origin": d.get("data_origin") or [],
+            "functions": fns,
+        })
+    payload = {
+        "schema_version": 1,
+        "generated_by": "tools/gen_api_docs.py",
+        "count": total,
+        "domains": domains,
+    }
+    return json.dumps(payload, ensure_ascii=False, indent=2) + "\n"
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true")
     args = ap.parse_args()
     body = build()
+    fields_body = build_fields_json()
     if args.check:
+        bad = False
         if not OUT.is_file() or OUT.read_text(encoding="utf-8") != body:
             print("gen_api_docs drift: docs/API.md", file=sys.stderr)
+            bad = True
+        if not FIELDS_OUT.is_file() or FIELDS_OUT.read_text(encoding="utf-8") != fields_body:
+            print("gen_api_docs drift: docs/fields.json", file=sys.stderr)
+            bad = True
+        if bad:
             return 1
         print("gen_api_docs ok")
         return 0
     OUT.write_text(body, encoding="utf-8")
-    print(f"wrote {OUT.relative_to(REPO)} ({len(body)} bytes)")
+    FIELDS_OUT.write_text(fields_body, encoding="utf-8")
+    print(f"wrote {OUT.relative_to(REPO)} ({len(body)} bytes) + "
+          f"{FIELDS_OUT.relative_to(REPO)} ({len(fields_body)} bytes)")
     return 0
 
 

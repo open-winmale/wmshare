@@ -157,6 +157,16 @@ FALLBACK_RETURNS = {
         "MAP · {pe_ttm, pb, turnover_rate, total_mv}（最新 TTM 估值；市值=元）",
     ("indicator", "financials"):
         "MAP · {roe_ttm, roe_avg, eps_ttm}（roe_avg=近3年平均；eps_ttm=归母）",
+    ("futures", "get"):
+        "标量 · 连续合约单字段当前值（价=元、量=手、额=万元；`$码` 透传上游口径）",
+    ("futures", "snapshot"):
+        "MAP · {字段: 值}（一次指标批量求值；字段集同 ``cli.futures.get`` 可选集）",
+    ("valuation", "daily_basic"):
+        "MAP · {ok, as_of, data: [{date, symbol, field, value}], meta}"
+        "（8 字段长表，date 升序；as_of=表内最新行日期）",
+    ("dividend", "window_stats"):
+        "MAP · {dps: 每股股利合计(元/股), total: 总分红(元), count: 次数}"
+        "（按除权日计、截至今天）",
     ("cbond", "bars"):
         "ARR · 行 date/open/high/low/close/volume/amount（列式转行；量=张，价/额=元）",
     ("info", "profile"): "MAP · 档案（name/industry/style_industry/org_type/listing_date）",

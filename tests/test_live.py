@@ -62,29 +62,29 @@ def _is_num(v):
 # ---------------------------------------------------------------- 行情 market
 @pytest.mark.parametrize("symbol", SYMBOLS)
 def test_kline_bars_multi_symbol(cli, symbol):
-    bars = cli.kline.bars(symbol, n=5)
-    assert isinstance(bars, list) and len(bars) == 5
-    for bar in bars:
-        assert {"date", "close", "open", "high", "low"} <= set(bar)
+    bars = cli.kline.bars(symbol, n=5)  # 2.0：门面默认 DataFrame
+    assert len(bars) == 5
+    for _, bar in bars.iterrows():
+        assert {"date", "close", "open", "high", "low"} <= set(bars.columns)
         assert _is_num(bar["close"]) and bar["close"] > 0
         assert bar["low"] <= bar["high"]
-    dates = [b["date"] for b in bars]
-    assert dates == sorted(dates, reverse=True), "日 K 应按日期降序"
+    dates = [str(d) for d in bars["date"]]
+    assert dates == sorted(dates), "日 K 应按日期升序（2.0：旧→新）"
 
 
 def test_kline_bars_adj_variants(cli):
     nr = cli.kline.bars(MAIN, n=3)
     qfq = cli.kline.bars(MAIN, n=3, adj="qfq")
-    assert [b["date"] for b in nr] == [b["date"] for b in qfq]
-    assert all(_is_num(b["close"]) and b["close"] > 0 for b in qfq)
+    assert list(nr["date"]) == list(qfq["date"])
+    assert all(_is_num(v) and v > 0 for v in qfq["close"])
 
 
 def test_kline_bars_date_range(cli):
     rows = cli.kline.bars(MAIN, begin="2026-09-01", end="2026-09-30")
-    assert isinstance(rows, list) and rows
-    assert all("2026-09-01" <= b["date"] <= "2026-09-30" for b in rows)
+    assert rows is not None and len(rows) > 0
+    assert all("2026-09-01" <= str(d) <= "2026-09-30" for d in rows["date"])
     money = cli.moneyflow.bars(MAIN, begin="2026-09-01", end="2026-09-30")
-    assert all("2026-09-01" <= r["date"] <= "2026-09-30" for r in money)
+    assert all("2026-09-01" <= str(d) <= "2026-09-30" for d in money["date"])
 
 
 def test_kline_last(cli):
@@ -165,12 +165,11 @@ def test_kline_batch_live(cli):
 
 def test_moneyflow_bars(cli):
     rows = cli.moneyflow.bars(MAIN, n=5)
-    assert isinstance(rows, list) and len(rows) == 5
-    for r in rows:
-        assert {"date", "net_mf"} <= set(r)
-        assert _is_num(r["net_mf"])
-    dates = [r["date"] for r in rows]
-    assert dates == sorted(dates, reverse=True)
+    assert len(rows) == 5
+    assert {"date", "net_mf"} <= set(rows.columns)
+    assert all(_is_num(v) for v in rows["net_mf"])
+    dates = [str(d) for d in rows["date"]]
+    assert dates == sorted(dates), "资金流应按日期升序（2.0：旧→新）"
 
 
 def test_moneyflow_last_and_live(cli):
@@ -701,14 +700,14 @@ def test_cbond_domain_smoke(cli):
 
 
 def test_cbond_bars_row_shape(cli):
-    """转债日线表：列转行后字段齐全、日期降序、OHLC 关系成立、无缺失结构。"""
+    """转债日线表：列转行后字段齐全、日期升序（2.0）、OHLC 关系成立、无缺失结构。"""
     rows = _call_or_xfail(cli.cbond.bars, "113050", n=5)
-    if not rows:
+    if rows is None or len(rows) == 0:
         pytest.xfail("样本转债该窗口无数据")
-    assert all({"date", "open", "high", "low", "close"} <= set(r) for r in rows)
-    dates = [r["date"] for r in rows]
-    assert dates == sorted(dates, reverse=True), "转债日线应按日期降序"
-    for r in rows:
+    assert {"date", "open", "high", "low", "close"} <= set(rows.columns)
+    dates = [str(d) for d in rows["date"]]
+    assert dates == sorted(dates), "转债日线应按日期升序（2.0：旧→新）"
+    for _, r in rows.iterrows():
         if all(_is_num(r.get(k)) for k in ("open", "high", "low", "close")):
             assert r["low"] <= min(r["open"], r["close"])
             assert r["high"] >= max(r["open"], r["close"])
@@ -738,14 +737,15 @@ def test_index_trend_long_history_and_industries(cli):
     # ① 宽基：序列应覆盖 10 年以上（周频约 700+ 点）；分位必须按窗口取档
     t3 = _call_or_xfail(lambda: cli.index.trend("index.hs300", "3y"))
     assert isinstance(t3, dict) and t3.get("ok") is True, "hs300 应有预热缓存"
-    assert t3["n"] >= 500, f"宽基估值序列应覆盖 10 年（周频），实际 {t3['n']} 点"
-    dates = [p["date"] for p in t3["points"]]
-    assert dates == sorted(dates, reverse=True), "points 必须新→旧"
-    node = t3["pct"]["pe"]
-    assert t3["pe_pct"] == pytest.approx(node["p3"]), \
+    points = t3["data"]["points"]
+    assert len(points) >= 500, f"宽基估值序列应覆盖 10 年（周频），实际 {len(points)} 点"
+    dates = [str(d) for d in points["date"]]
+    assert dates == sorted(dates), "points 必须升序（2.0：旧→新）"
+    node = t3["data"]["pct"]["pe"]
+    assert t3["data"]["pe_pct"] == pytest.approx(node["p3"]), \
         "3y 分位必须取 p3（服务端 p 恒为 5y，读 p 会静默错值）"
     t5 = _call_or_xfail(lambda: cli.index.trend("index.hs300", "5y"))
-    assert t5["pe_pct"] == pytest.approx(t5["pct"]["pe"]["p5"])
+    assert t5["data"]["pe_pct"] == pytest.approx(t5["data"]["pct"]["pe"]["p5"])
     assert t3["pe_pct"] != pytest.approx(t5["pe_pct"]), \
         "3y 与 5y 分位不应相同（相同说明没按窗口取档）"
 
@@ -847,17 +847,17 @@ def test_us_kline_daily_bars():
     """美股日 K（上游 us_kline_daily 管线已落库）：合同级断言。
 
     调度已转正（2026-11-09 daily DAG 启用 + us_dayk_eod 翻闸）：
-    新鲜度门禁收紧为末根 ≥ 今天-5 自然日（容忍长周末），另锁结构与降序。
+    新鲜度门禁收紧为末根 ≥ 今天-5 自然日（容忍长周末），另锁结构与升序（2.0）。
     """
     us = Client.from_env(market="us")
     bars = _call_or_xfail(lambda: us.kline.bars("AAPL", n=5))
-    assert isinstance(bars, list) and len(bars) == 5
-    assert {"date", "close", "volume"} <= set(bars[0].keys())
-    dates = [b["date"] for b in bars]
-    assert dates == sorted(dates, reverse=True), "bars 应按日期降序（最新在前）"
-    last = datetime.date.fromisoformat(dates[0])
+    assert len(bars) == 5
+    assert {"date", "close", "volume"} <= set(bars.columns)
+    dates = [str(d) for d in bars["date"]]
+    assert dates == sorted(dates), "bars 应按日期升序（2.0：旧→新）"
+    last = datetime.date.fromisoformat(dates[-1])
     assert last >= datetime.date.today() - datetime.timedelta(days=5), (
-        f"美股日K末根 {dates[0]} 落后超过 5 个自然日（调度已转正）"
+        f"美股日K末根 {dates[-1]} 落后超过 5 个自然日（调度已转正）"
     )
 
 
@@ -870,26 +870,26 @@ def test_us_kline_week_month_bars():
     us = Client.from_env(market="us")
     weekly = _call_or_xfail(lambda: us.kline.bars("AAPL", n=5, freq="W"))
     monthly = _call_or_xfail(lambda: us.kline.bars("AAPL", n=3, freq="M"))
-    assert isinstance(weekly, list) and len(weekly) == 5
-    assert isinstance(monthly, list) and len(monthly) == 3
+    assert len(weekly) == 5
+    assert len(monthly) == 3
     for bars, span in ((weekly, 12), (monthly, 45)):
-        dates = [b["date"] for b in bars]
-        assert dates == sorted(dates, reverse=True), "周期 K 应按日期降序（最新在前）"
-        for b in bars:
-            assert {"date", "open", "high", "low", "close", "volume"} <= set(b)
-            assert b["low"] <= min(b["open"], b["close"]) and b["high"] >= max(
-                b["open"], b["close"]), "OHLC 关系违例"
-        last = datetime.date.fromisoformat(dates[0])
+        dates = [str(d) for d in bars["date"]]
+        assert dates == sorted(dates), "周期 K 应按日期升序（2.0：旧→新）"
+        assert {"date", "open", "high", "low", "close", "volume"} <= set(bars.columns)
+        assert all(bars["low"] <= bars[["open", "close"]].min(axis=1))
+        assert all(bars["high"] >= bars[["open", "close"]].max(axis=1))
+        last = datetime.date.fromisoformat(dates[-1])
         assert last >= datetime.date.today() - datetime.timedelta(days=span), (
-            f"美股周期K末根 {dates[0]} 落后超过 {span} 天（派生链未跑或滞后）"
+            f"美股周期K末根 {dates[-1]} 落后超过 {span} 天（派生链未跑或滞后）"
         )
     # 同日一致性：周期末日的 close == 当日日 K 的 close（聚合规则 close=末日收）
     daily = _call_or_xfail(lambda: us.kline.bars("AAPL", n=60))
-    close_by_date = {b["date"]: b["close"] for b in daily}
-    for w in weekly:
-        if w["date"] in close_by_date:
-            assert abs(w["close"] - close_by_date[w["date"]]) < 1e-6, (
-                f"周K {w['date']} 收盘 {w['close']} ≠ 日K {close_by_date[w['date']]}")
+    close_by_date = dict(zip(daily["date"], daily["close"]))
+    for _, w in weekly.iterrows():
+        wdate = str(w["date"])
+        if wdate in close_by_date:
+            assert abs(float(w["close"]) - float(close_by_date[wdate])) < 1e-6, (
+                f"周K {wdate} 收盘 {w['close']} ≠ 日K {close_by_date[wdate]}")
 
 
 def test_kline_week_month_cn_hk():

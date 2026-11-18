@@ -7,8 +7,8 @@ def test_load_and_stats():
     cat = load()
     s = cat.stats()
     assert s["domains"] == 21, s
-    assert s["functions"] == 299, s
-    assert s["raw"] == 216 and s["computed"] == 83, s  # 2.0：calendar 年表 + margin 市场面（raw+8）+ valuation.daily_basic（computed）
+    assert s["functions"] == 300, s
+    assert s["raw"] == 217 and s["computed"] == 83, s  # raw+9：+moneyflow.query_bars_anchor（锚点切片入口，2026-11-18）
     assert s["metric_catalog_total"] == 2752, s
     assert s["upstream_rev"], "inventory 应锚定 upstream rev"
 

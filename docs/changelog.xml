@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>wmshare releases</title>
+    <link>https://github.com/open-winmale/wmshare</link>
+    <description>wmshare 版本变更与接口弃用公告（由 CHANGELOG.md 生成）</description>
+    <language>zh-CN</language>
+    <lastBuildDate>Wed, 18 Nov 2026 00:00:00 +0800</lastBuildDate>
+    <atom:link href="https://github.com/open-winmale/wmshare/raw/main/docs/changelog.xml" rel="self" type="application/rss+xml"/>
+    <item>
+      <title>wmshare 2.2.0 (2026-11-18)</title>
+      <link>https://github.com/open-winmale/wmshare/releases/tag/v2.2.0</link>
+      <guid isPermaLink="false">wmshare:2.2.0</guid>
+      <pubDate>Wed, 18 Nov 2026 00:00:00 +0800</pubDate>
+      <description>Added
+- **区间取数自动分页**：`cli.kline.bars(begin=, end=)`（日 K）与 `cli.moneyflow.bars(begin=, end=)` 不传 `n` 时按「锚点切片」自动补齐—— 每片走服务端锚点窗口（`kline.query_at_anchor(_adj)`、`moneyflow.query_bars_anchor`）， 只物化 `≤ end` 的行、覆盖 `begin` 即停，跨片去重后升序返回。**任意长度区间一次 拿全量、不静默截断**，计费 ≈ 区间实际行数（服务端窗口读取，客户端不砍量）。 显式传 `n=` 保持「区间内最近 n 根」单次语义。
+- 目录新增 `moneyflow.query_bars_anchor`（+= 300 个底层函数）；`kline.query_at_anchor` / `_adj` 补齐 `normalize_with`+`units`+`ranges`+`checks` 声明（锚点入口与正排查询 **行合同逐字一致**，守护函数 59 → 61）。
+- `_fields=` 列投影（`cli.call`/`call_batch`/`batch_all` 与 kline/moneyflow/cbond/ margin 门面）：换算/排序之后只保留指定字段，按请求顺序输出；未知字段报 `UsageError(code=&quot;params&quot;)`。**不降 EC**（EC 按服务端物化行计），只收窄返回体。
+- `BatchResult.truncated`：准全市场捷径下结果是否为请求集子集（停牌/索引外标的 缺席时显式披露，便于用小清单补拉）。
+- 文档资产：`docs/COMPATIBILITY.md`（MAJOR/MINOR/PATCH 语义 + 弃用流程）、 `docs/LIMITS.md`（硬限制与配方）、`docs/ERRORS.md`（错误码全集，源码扫描生成）、 `docs/DATA_CALENDAR.md`（数据生产日历，兄弟仓缺失时 SKIP）、`docs/changelog.xml` （RSS）、`docs/fields.json`（236 个公开函数的字段/单位/范围）、 `docs/indicators/`（2,753 个指标单页）。API.md 输出字段表新增「单位/换算」与 「守护范围」两列。
+
+Changed
+- **`kline.snapshot` 批量捷径阈值 4,000 → 2,000**：与服务端 `snapshot_batch` 对齐 （去重 ≥2,000 的清单上游本来就按全市场扫描计费，空参捷径另享按日缓存）。 大清单中停牌标的会进 `truncated`，用小清单（&lt;2,000，逐票按量路径含停牌行）补拉。
+- `estimate_cost` 校准：区间查询改 `range_rows` 模型（按区间交易日密度）、 `kline.snapshot` 认 `symbol=` 批量参数并区分空参捷径、缓存类接口拆出 `cache_hit` 档（hist_stats/daily_basic/indices.trend 分别≈4~200/4~200/1~50 EC）。
+- demo 与 live 门面**签名逐字对齐**（58 对方法零漂移）：补齐 `_fields`/`freq`/ `_raw`/`fut_symbol`/`native`/`min_ratio`/`idx` 等形参，`kline.last` 由「返回 23 字段快照」修正为「返回 9 字段 bar」（与 live 一致）；未回放的能力一律 `UsageError(code=&quot;demo_unsupported&quot;)`，不再以缺少形参抛 `TypeError` 或吞掉参数。
+- `_validate_snapshot` 扩展数据质量校验：calendar（升序/唯一/≤as_of）、margin （沪深成对、余额&gt;0、universe 去重≤500）、futures（价格&gt;0）。
+- 单位台账补登记 `$VOLUME_AR_DAY`（手）与 `$ROC_TTM_LAST`（百分数）。
+
+Removed
+- `docs/COST_MATRIX.md` 与 `tools/gen_cost_matrix.py`：成本信息不对用户暴露， 对外只保留运行时 `cli.cost_estimate` 与 `docs/LIMITS.md` 的硬限制；实测成本 审计进维护者内部工具 `tools/audit_ec.py`（写 `.internal/`，不进 CI/文档）。
+
+Fixed
+- `estimate_cost(&quot;kline.snapshot&quot;, symbol=[...])` 曾按单票估算（门面参数名与目录 参数名不同的历史坑），现三种写法（`sym`/`codes`/`symbol`）都按票数估算。
+- 4 个接口返回说明为空、10 个参数说明为 `—`、组合接口参数兜底缺失。
+- `test_live.py` 中与 2.0 升序契约相反的降序断言（含 `index.trend` 新信封）。</description>
+    </item>
+    <item>
+      <title>wmshare 2.1.0 (2026-11-18)</title>
+      <link>https://github.com/open-winmale/wmshare/releases/tag/v2.1.0</link>
+      <guid isPermaLink="false">wmshare:2.1.0</guid>
+      <pubDate>Wed, 18 Nov 2026 00:00:00 +0800</pubDate>
+      <description>Added
+- `cli.valuation.daily_basic(symbol, begin, end, fields)`：个股每日估值序列—— 服务端物化宽表（`alt.valuation_daily`，仅 CN，airflow `pipeline.cn.valuation_daily` 每日 16:25 物化、SLA 当日 17:00）。8 字段 （pe_ttm/pb/ps/pr/total_mv/circ_mv/turnover_rate/dv_ttm）全部服务端现成 口径直出、2.0 基础单位；长表信封 `{ok, as_of, data, meta}`，`as_of` 为 表内最新行日期供调用方判新鲜度。数据自物化日起可用，历史回填深度见 域目录 notes（诚实缺行，不伪造）。
+- `estimate_cost`：`valuation.daily_basic` 归入 cached_eval 档（物化表近似 免费读；首日回补另计）。
+- demo 模式对该面显式 `demo_unsupported`（物化表未投产，无罐头不伪造）。
+
+Changed
+- 目录扩容：`fund.valuation` 域（+1 函数 = 299 个底层函数 / 21 个数据域 / 138 个核心接口）；inventory.json 手工同步该条目（extractor 白名单已加 `valuation`，下次上游重跑提取不丢失）。</description>
+    </item>
+    <item>
+      <title>wmshare 2.0.1 (2026-11-17)</title>
+      <link>https://github.com/open-winmale/wmshare/releases/tag/v2.0.1</link>
+      <guid isPermaLink="false">wmshare:2.0.1</guid>
+      <pubDate>Tue, 17 Nov 2026 00:00:00 +0800</pubDate>
+      <description>Changed
+- 无行为变更；`Client._EC_*` 类属性保留为模块常量的别名（既有取值不破）。
+
+Fixed
+- `demo_client().cost_estimate(...)` 缺失（GUIDE 推荐的先估后取在演示模式直接 AttributeError）：EC 预估模型上提为模块级 `estimate_cost`，真实客户端与 demo 共用同一套函数，纯离线零请求。</description>
+    </item>
+    <item>
+      <title>wmshare 2.0.0 (2026-11-17)</title>
+      <link>https://github.com/open-winmale/wmshare/releases/tag/v2.0.0</link>
+      <guid isPermaLink="false">wmshare:2.0.0</guid>
+      <pubDate>Tue, 17 Nov 2026 00:00:00 +0800</pubDate>
+      <description>Added
+- **交易日历**（P1 数据面）：`cli.calendar.days/is_open/next`（20 号域 market.calendar； 采集腿 airflow `tasks/cn_trade_calendar.py`，读侧 `sys/calendar`）。
+- **市场级两融**（P1 数据面）：`cli.margin.market_summary/universe`（1.x「上游无数据集」 声明移除；采集腿 `tasks/cn_margin_summary.py` / `cn_margin_universe.py`）。
+- **期货门面**：`cli.futures.get/snapshot`（82 品种，内部 cn 锚定封装）。
+- **EC 成本预估**：`cli.cost_estimate(name, **params)` 返回 EC 区间 + 模型说明； MCP `wmshare_call(mode=&quot;cost&quot;)` 同步暴露（无模型接口如实返回 None，不编造）。
+- **info.profile 扩列**：5 → 10 字段（full_name/name_en/industry_l1/listing_board/ business_scope），缺码自动剔除重试一次并实例级记忆。
+- **批量原生路由**（并入 1.22.1/1.22.2 主线特性）：`kline.snapshot` 收代码列表 ≥3 票 自动改走 `kline.snapshot_batch`——单次 eval、EC 按量（60~90 EC/票）而非 N×逐票首算 （10,250 EC/票）；≥4,000 票的准全市场清单走空参捷径（服务端一次投影 + 客户端过滤， 约 11~15 万 EC，停牌/索引外标的静默缺席）；`batch_all` 对路由接口不再分批； 非路由接口 ≥200 票拼接会显式告警 EC 放大。`Client(native_batch=False)` 或 `native_batch_min=N` 可回到逐票拼接语义；沿用 1.x 的逐票拼接口径不受影响。
+- `units.yaml` 台账/facades 升级为运行时换算声明；`market.fund` 域注册（19/20 号域）。
+
+Changed
+- **kline.bars/moneyflow.bars/margin.query/dividend.history/cbond.bars/statements 等全部 门面**：默认 DataFrame + 升序（见迁移指南 1/2）；begin/end 过滤路径同样升序。
+- **index.trend**：统一信封；`data.points` 为 DataFrame 升序；预热缓存未命中 `ok=False + meta.cache=&quot;miss&quot;`（不再返回全 None 平铺结构）。
+- **screener**：query 返回信封（data.count/rows DF）；宽度接口默认 DF； `$INDUSTRY_CUR_1` 等返回列与 indicator/macro 同一台账换算管线。
+- **macro.query/asof/spots**：台账换算 + series 升序 + 信封。
+- **etf 九视图**：统一信封 + units.yaml facades 换算（原「禁二次换算」的本地护栏 迁入目录声明层）。
+- **命名空间**：friendly 25 个 / core 137 / 底层 298（calendar 域 + futures/margin 新面）； `market.fund`/`market.calendar` 域注册；inventory 300 函数（calendar 4 + margin 2 新增）。
+- **demo 快照**：与 live 同形（DataFrame/升序/信封）；2.0 新面（futures/calendar/ margin 市场面/screener.query）显式 `demo_unsupported`，不伪造数据。
+
+Removed
+- `_df` 参数（全门面）；`wmshare[dataframe]` extra；
+- fmt_* 内部函数的属性直达（改 `cli.call`）；
+- 指数 freq=W/M 的静默空序列。</description>
+    </item>
+    <item>
+      <title>wmshare 1.22.2 (2026-11-17)</title>
+      <link>https://github.com/open-winmale/wmshare/releases/tag/v1.22.2</link>
+      <guid isPermaLink="false">wmshare:1.22.2</guid>
+      <pubDate>Tue, 17 Nov 2026 00:00:00 +0800</pubDate>
+      <description>Changed
+- **准全市场清单（≥4000 票）走空参捷径**：批量原生调用改传空数组（服务端 非停牌全市场投影）+ 客户端过滤，避免数千元素数组字面量按 AST 逐元素计费 （实测 5,693 票省 ≈11 万 EC，全市场一轮 256K → ≈15 万 EC）。捷径语义下 停牌/ETF/无效票在 `results` 中静默缺席。
+
+Fixed
+- GitHub 的 v1.22.1 tag 固定于 6525db8（不含本补丁，功能完整可用）； 1.22.2 为其即时性能修订。</description>
+    </item>
+    <item>
+      <title>wmshare 1.22.1 (2026-11-17)</title>
+      <link>https://github.com/open-winmale/wmshare/releases/tag/v1.22.1</link>
+      <guid isPermaLink="false">wmshare:1.22.1</guid>
+      <pubDate>Tue, 17 Nov 2026 00:00:00 +0800</pubDate>
+      <description>Added
+- **`kline.snapshot(list)` 自动路由批量原生**（`BATCH_NATIVE_ROUTES`）：传代码列表 （≥ `Client(native_batch_min=3)` 票）不再拼 N 次单票调用，而是单次 eval 调 `kline.snapshot_batch` 并适配回逐票合同——返回 `BatchResult`，`results` 为 `{代码: 23 字段 MAP}`（`kline_date/kline_sas` 因索引未物化为 None；ETF/新上市 等索引外标的自动回退逐票快照，数值一致）。EC 从 N×均线首算 10,250 EC/票 降为按量 60~90 EC/票：500 票从 ≈550 万 → 3.3~4.4 万（约 150 倍）。
+- `Client(native_batch=True/False)`、`Client(native_batch_min=N)`：批量原生路由开关 与阈值；`batch_all`/`call_batch`（raise 模式）同样命中路由且不分批。
+- 拼接护栏：非路由接口 ≥200 票拼进单次 eval 时发出 EC 线性放大提示（不阻断）。
+
+Changed
+- **（平台侧，script 仓 57eb307f）`kline.snapshot_batch` 双路径计费**：codes 1~1999 逐票点查 + 一次批量投影（60~90 EC/票，2026-11-17 实测 500 票纯 A 股 3.3~4.4 万 EC）； ≥2000 全市场无过滤扫描（含停牌，~14.8 万 EC）；空参仍为非停牌全市场投影 + 按日缓存。
+- 索引未收录代码（ETF/新上市/无效码）回退 `kline.snapshot`（memo 化；无效码返回 全零，与逐票拼接语义一致），回退行 `row=-1`。
+- 背景：某 pro 用户以 `batch_all(&quot;kline.snapshot&quot;, 全市场清单)` 日扫一轮， 1.19.0 拼接路径 2 分钟烧 6,300 万 EC（12 笔 ≥500 万单次告警）。本版配合平台 双路径把它压到 ≈15 万 EC/轮（约 430 倍）。老版本（≤1.21）用户请升级后改用 `cli.kline.snapshot(codes)`；服务端双路径对旧版本的拼接路径无回旋（首触照旧计价）。</description>
+    </item>
+    <item>
+      <title>wmshare 1.22.0 (2026-11-16)</title>
+      <link>https://github.com/open-winmale/wmshare/releases/tag/v1.22.0</link>
+      <guid isPermaLink="false">wmshare:1.22.0</guid>
+      <pubDate>Mon, 16 Nov 2026 00:00:00 +0800</pubDate>
+      <description>Added
+- **`kline.snapshot_batch(codes)` 多标的行情快照**：走当日全市场索引批量投影， 全市场 5,686 票约 142,260 EC（25 EC/行），按自然日缓存后重复调用约 28 EC。 替代「把上百个代码拼成一个 MAP 逐票调 `snapshot`」的写法——后者每票要付均线 首算费约 10,250 EC，150 票即 156 万 EC。返回索引原始 `[{row, values}]` 结构 （`values` 内为 `$指标`→值）；逐行扁平化会额外烧约 107 万 EC，故不做。 均线/价格字段与逐票 `snapshot` 逐值一致；价格类为索引快照值（非实时 tick）。 目录 288 → 289 函数。
+
+Changed
+- `kline.snapshot` 加按「标的+自然日」缓存：首个新标的仍约 10,250 EC（均线需 回看 K 线序列），重复调用降到约 26 EC。notes 补成本模型与 `snapshot_batch` 指引。</description>
+    </item>
+    <item>
+      <title>wmshare 1.21.2 (2026-11-16)</title>
+      <link>https://github.com/open-winmale/wmshare/releases/tag/v1.21.2</link>
+      <guid isPermaLink="false">wmshare:1.21.2</guid>
+      <pubDate>Mon, 16 Nov 2026 00:00:00 +0800</pubDate>
+      <description>Fixed
+- **清除随 1.21.0/1.21.1 发布到公开文档的数据商名称**：`statements` 门面类 docstring 中的第三方数据商来源点名已改为中性口径表述；`docs/API.md` 与 `llms-full.txt` 由生成器同步。此前该词经语句传播进入生成物，触发内容规范门禁失败。</description>
+    </item>
+    <item>
+      <title>wmshare 1.21.1 (2026-11-16)</title>
+      <link>https://github.com/open-winmale/wmshare/releases/tag/v1.21.1</link>
+      <guid isPermaLink="false">wmshare:1.21.1</guid>
+      <pubDate>Mon, 16 Nov 2026 00:00:00 +0800</pubDate>
+      <description>Fixed
+- **修正 PyPI 1.21.0 门面指向已下线的底层函数**：1.21.0 的 statements 门面 委托一个目录函数（内部命名空间，现已随后续上游回归移除）——从 PyPI 安装 1.21.0 的用户调用 `cli.statements.income()` 会报「未知函数」。本版改为 SDK 内置读取脚本实现（三加一 × cn/hk/us，读 fin_* 宽表），含 `indicators()`（主要指标）。
+- 1.21.0 的 rest 行为（`period` 二档、`quarters`、`compare/tree/years` 下线）保持不变；本次仅修正底层取数实现与文档。</description>
+    </item>
+    <item>
+      <title>wmshare 1.21.0 (2026-11-16)</title>
+      <link>https://github.com/open-winmale/wmshare/releases/tag/v1.21.0</link>
+      <guid isPermaLink="false">wmshare:1.21.0</guid>
+      <pubDate>Mon, 16 Nov 2026 00:00:00 +0800</pubDate>
+      <description>Fixed
+- 文档机制保持：组合接口按 composite 渲染路径出参数表与示例； 手写计数（README/GUIDE/AI/INDICATORS/SKILL/docs）与运行时真值一致 （288 函数 / 129 核心 / 137 friendly / 8 组合）。
+- raw-eval 读取不经过目录合同的单位换算与量级守护层（与专业版页面同级）； 列映射由消费侧负责。上游 script 仓同步回归原状（statement 家族保留给 内部页面/附注），本版本与上游部署同窗口发布。</description>
+    </item>
+    <item>
+      <title>wmshare 1.20.7 (2026-11-16)</title>
+      <link>https://github.com/open-winmale/wmshare/releases/tag/v1.20.7</link>
+      <guid isPermaLink="false">wmshare:1.20.7</guid>
+      <pubDate>Mon, 16 Nov 2026 00:00:00 +0800</pubDate>
+      <description>Fixed
+- **`cbond.card` 合同与实现对齐**：上游 `xs:catalog` 注释声明八键、实现与实测 均为九键（漏 `concepts`）——上游 `../script` 注释已补（upstream_rev `3829a93e`），SDK 随包目录同步重抽取。
+- **`cbond.card` 文档去掉误导性&quot;懒加载&quot;表述**：函数一次同步全量返回九键 （&quot;懒加载&quot;只描述前端列表/详情页分工，不应出现在接口合同里）。 新 cn 同时写明退市/停牌债分支行为（quote 空对象、counts 为 nil， 其余按债键照常返回）。
+- **`cbond.card` 补 `returns.shape`**：顶层九键 + terms 15 键 / counts 9 键 嵌套结构化（live 实测 127119 取证；quote 76 键声明为 object 并指向 `cbond.one_quote` 结构）。
+- live 对账：`cbond.card(&quot;127119&quot;)` 声明 9 键 ↔ 运行时 9 键，零幻影零漏列。
+- 验收：drift `--strict` exit 0、check_version 六源一致、5 个生成器 `--check` rc=0、taxonomy sidecar 同步、mypy 零问题、check_leak 绿、 全量 **1967 passed / 94 skipped / 0 failed**。
+- 域版本：`market.cbond` 1.4.0 → 1.4.1。API 行为无变化（合同/文档修正）。</description>
+    </item>
+    <item>
+      <title>wmshare 1.20.6 (2026-11-16)</title>
+      <link>https://github.com/open-winmale/wmshare/releases/tag/v1.20.6</link>
+      <guid isPermaLink="false">wmshare:1.20.6</guid>
+      <pubDate>Mon, 16 Nov 2026 00:00:00 +0800</pubDate>
+      <description>Added
+- **`tests/test_normalized_query_shapes_cover_guards`**：13 个改动函数的守护字段 ⊆ returns_shape 回归锚。
+- `tests/test_audit_drift.py` +2 嵌套用例、2 处断言随 WARN 清零更新（默认档断 `[]`， strict 升级语义用注入 WARN 验证）。
+- `tests/test_units.py` +2 回归：segments/forecast 嵌套换算与量级守护 （负例须取&quot;percent 换算后仍超界&quot;的值）。
+- **字段面取证三层**：XS row 函数字面量（服务端写死的输出键）+ fixtures 并集 + **live 对账 23 接口双向核验**（声明的字段运行时都在、运行时的字段声明都覆盖、 守护换算生效）。4 个接口（national_team/pledge_detail/release/query_reports） 上游暂无数据，以 XS 字面量为据。
+- 验收：drift `--strict` exit 0、16 项静态门禁绿、mypy 零问题、 5 个生成器 `--check` rc=0、全量 **1967 passed / 94 skipped / 0 failed**、 分支覆盖率 **88% ≥ 85%**。
+- 域版本：`corp.equity` 2.1.1、`fund.estimates` 1.1.1、`market.intl` 1.2.1、 `fund.segments` 1.0.3、`disc.events` 1.1.2。API 行为无变化（纯合同/文档修正）。
+
+Changed
+- **`drift --strict` 纳入门禁**（AGENTS.md 门禁清单 + CI 同款）：shape/units/ranges 声明漂移 ERROR/WARN 均拦截，防合同回归。
+- **llms-full.txt 预算 320K → 350K 字节**：shape 合同化带来约 20KB 正当合同增长； 预算防的是&quot;内联 205KB INDICATORS.md&quot;反模式（真内联约 540K），守护语义不变。
+
+Fixed
+- **returns_shape 声明滞后清零（drift WARN 29 → 0）**：units/ranges 守护声明引用的 字段未出现在 `returns_shape` 合同里，机器读 openapi/llms.txt 会以为返回行没有这些 字段——文档比实际&quot;少说了字段&quot;，用户按文档取数会拿漏。三批治理： - **T1（segments）**：`query_region` 的 `domestic`/`overseas` 从 `cn` 文本升级为 结构化嵌套 fields；`snapshot` 补全七键结构（含 `overview` 嵌套 `max_name/max_ratio/product_tags/profile`、`coverage` 结构化）。 **修正一处 desc 笔误**：快照顶层键是 `products`（复数），desc 误写单数。 - **T2（forecast）**：`yjyg_rows`/`yjkb_rows` 补 SDK 侧 `returns.shape` 覆盖 （字段集 = 上游 shape ∪ fixtures，补齐被守护的 `rev_amp_*`/`np_yoy`/`roe` 等）； `snapshot` 的 `yjyg`/`yjkb`/`next_disclosure` 结构化嵌套。 - **T3（normalize_with 错位，18 条）**：9 个 fmt 行规范化函数的 `returns.shape` 按 XS row 函数字面量重写，13 个 query 函数经目录优先级链自动继承修正 （`fmt_maps` 一处修正顺带修好 5 个 estimates/intl 函数的文档合同）。 **`equity.query_hgt` 文档曾只列 3 字段、实际返回 7**，此类失真全部消除。
+- **`_shape_fields` 递归化**：`tools/audit_units.py` 现在递归收集嵌套 fields， 与运行时 `walk` 下探嵌套容器的语义对齐。</description>
+    </item>
+    <item>
+      <title>wmshare 1.20.5 (2026-11-14)</title>
+      <link>https://github.com/open-winmale/wmshare/releases/tag/v1.20.5</link>
+      <guid isPermaLink="false">wmshare:1.20.5</guid>
+      <pubDate>Sat, 14 Nov 2026 00:00:00 +0800</pubDate>
+      <description>Added
+- **`tests/test_extract_exposure.py`**（4 用例）：extract 同步的暴露面防回归门禁， 用抽取器自身的 `in_scope()` / 白名单做聚合计数校验（不逐条列未审批 name）， 钉住三份生成物 `upstream_rev` 一致、随包目录与确定性渲染一致。
+- **`tests/test_internal_ns_visibility.py`**（5 用例）：断言内部命名空间零泄漏到 全部对外资产、友好门面 7 个方法仍在且每个都能回溯到目录契约、 目录中的内部函数数量受控、`doc_hidden()` 规则覆盖该命名空间。
+- 验收：16 项静态门禁 + `check_leak`（205 文件）+ mypy 28 文件零问题、 6 个生成器 `--check` rc=0、全量 **1869 passed / 94 skipped / 0 failed**、 `--cov-branch` **88.31% ≥ 85%**。
+
+Changed
+- **内部目录命名空间不再出现在对外清单**：底层函数名仍留在随包目录 （`cli.statements.*` 友好门面的目录感知委托依赖 `cat.function()`），但 `docs/API.md` 附录函数表、`docs/openapi.json` description、`llms*.txt` 的单位声明段、以及 README / GUIDE / INDICATORS / swagger / examples / 技能文档 一律不再回显内部命名空间，用户侧只见 `cli.statements.balance/income/...`。 生成器通过共享的 `INTERNAL_CATALOG_NS` 统一判定；**运行时调用与 API 行为不变**， `cli.call(...)` 对底层名仍可用。历史版本段两处旧口径同步改写为友好接口名。
+- 与上述可见性策略对齐 P1 的两个门禁（`test_docs` / `test_unit_visibility`）， 并新增反向约束，未削弱防线。
+
+Fixed
+- **随包目录与上游抽取结果的漂移消除**：用官方 `tools/extract_from_scripts.py` 从上游重生成 `generated/inventory.json` / `metrics.json`（生成物禁止手改）， `upstream_rev` 锚定 `9d6bfd25`；`cbond.card.returns` 描述补齐 `projects / share / holders / institution`。连带重跑 `extract_metric_taxonomy.py` 与 6 个生成器，`test_extractor_check_no_drift` 恢复绿色。
+- **撤回未走暴露审批的目录扩容**：并发会话曾把 3 个上游**尚未部署、未 live 验证**的财报目录函数收进发布白名单（inventory 294 → 297、域版本升到 1.5.0）。 本版恢复白名单为 5 项、域回 `v1.3.0`、inventory 回到 **294 函数 / 2752 指标**， 并同步恢复受影响的 7 处手写计数（288 函数口径）。上游 A1/A2 仍待部署， 如需收录须在部署并 live 验证后单独走暴露审批。</description>
+    </item>
+    <item>
+      <title>wmshare 1.20.4 (2026-11-14)</title>
+      <link>https://github.com/open-winmale/wmshare/releases/tag/v1.20.4</link>
+      <guid isPermaLink="false">wmshare:1.20.4</guid>
+      <pubDate>Sat, 14 Nov 2026 00:00:00 +0800</pubDate>
+      <description>Fixed
+- **CI 三版本矩阵全红的测试环境假设**：`test_audit_drift.py` 曾断言 `matrix_sections &gt;= 1`，而 `.internal/UNIT_AUDIT.md` 是本机联网 matrix 产物、 不进 git 跟踪面，CI 里不存在时该值为 0。改为「非负 + 报告存在时才 &gt;= 1」， 并新增 `test_drift_is_green_when_audit_report_missing`，用 monkeypatch 永久复现 CI 无报告的场景。纯测试修复，运行时与生成物行为不变。
+- 1.20.3 的 Release / PyPI 产物本身正常（release 与 CodeQL 工作流 success、 whl + sdist 齐全），仅 ci 工作流因上述断言失败；PyPI 不允许同名版本重传， 故以 patch 版本重跑发布链路。</description>
+    </item>
+    <item>
+      <title>wmshare 1.20.3 (2026-11-14)</title>
+      <link>https://github.com/open-winmale/wmshare/releases/tag/v1.20.3</link>
+      <guid isPermaLink="false">wmshare:1.20.3</guid>
+      <pubDate>Sat, 14 Nov 2026 00:00:00 +0800</pubDate>
+      <description>Added
+- **`Catalog.guard_manifest()`**：一次给出全部 50 个带 `units` / `ranges` / `checks` 声明的函数（按键排序、可 JSON 序列化），作为 SDK 侧机器可读出口； `inventory.json` 是上游抽取的 SoT，其 functions 不带域级声明，故不改生成物。
+- **`docs/openapi.json` 的 `x-wmshare-guards`**：136 个 path 中 40 个带声明的 operation 显式带出单位换算 / 量级界 / 不变量，Agent 可在调用前解析； `llms.txt` / `llms-full.txt` 新增「单位与守护声明（机器可读）」段（50 条 JSON）。
+- **`tools/audit_units.py drift`**：离线静态漂移模式，比对 returns_shape 字段集 / 指标 markets 可用性 / checks 适用性；不联网、不需要凭证，`--json` 机器可读， `--strict` 把 shape 声明滞后 WARN 升级为失败。实测 ERROR 0 / WARN 29， markets 569/2752（20.68%）、matrix 已覆盖 22 节。
+
+Changed
+- **文档单位口径归一**：`docs/API.md` 输出字段表与 `openapi.json` schema 描述中的 「量(手)」「市值亿」统一为 SDK 换算后口径「量(股)」「市值(元)」，与顶部基础单位表一致； 指标码中文名属上游原生口径命名，另在文档显式说明不代表 SDK 返回值单位。
+- **返回形态与指数键路由显式标注**：`market.kline` / `market.moneyflow` / `market.index` 三个域的 notes 写明单 MAP 触发 `NotSupportedType:record` 属上游形态、 错误指数键上游返回 500、`query_bars_live` 冷缓存空数组不是「无数据」且不得当 0、 指数键须显式选 `query_index_*_live` 四个入口（SDK 不自动改写路由）。
+- 新增 21 个契约用例：`test_unit_visibility.py`(6) / `test_audit_drift.py`(6) / `test_guard_baseline.py`(3) / `test_shape_notes.py`(6)，覆盖单位声明机器可见性、 drift 正负例与离线分流、覆盖率与发现项防回归基线、显式标注进目录与对外文档。
+- 全量 1953 用例：1858 passed / 94 skipped / 1 failed（既存 extractor 真漂移， CI 无上游时 skip）；`--cov-branch` 88.31%。</description>
+    </item>
+    <item>
+      <title>wmshare 1.20.2 (2026-11-14)</title>
+      <link>https://github.com/open-winmale/wmshare/releases/tag/v1.20.2</link>
+      <guid isPermaLink="false">wmshare:1.20.2</guid>
+      <pubDate>Sat, 14 Nov 2026 00:00:00 +0800</pubDate>
+      <description>Fixed
+- 美股 `cli.info.profile(&quot;AAPL&quot;)` 不再因一个不可用指标码打挂整包请求； 港股 `$STYLE_INDUSTRY` 返回 `None` 属正常缺值，仍保持五码。
+- `cli.kline.snapshot` 的 SDK docstring 不再只写 4 个字段；`percent`/`chg_*` 小数、`volume` 股、金额元、`ma60_up`/`is_st`/`is_suspend` 布尔均写入文档。
+- `profile` 对非 MAP 返回按无数据处理，保持 `-&gt; dict` 契约，不再把非字典值 透传给调用方。
+- 新增 `tests/test_profile_snapshot_contract.py`：三市场 XS 字符串与键集合稳定、 单次 eval、排除表最小性、23 字段声明与 live 返回一致、单位声明不悬空； 离线 11 passed / 4 skipped，联网 15 passed / 0 skipped。</description>
+    </item>
+    <item>
+      <title>wmshare 1.20.1 (2026-11-14)</title>
+      <link>https://github.com/open-winmale/wmshare/releases/tag/v1.20.1</link>
+      <guid isPermaLink="false">wmshare:1.20.1</guid>
+      <pubDate>Sat, 14 Nov 2026 00:00:00 +0800</pubDate>
+      <description>Fixed
+- **同日同标的五个 K 线入口 `volume` 口径统一**：`query_last` / `query_last_live_many` / `snapshot` / `query_min1_live` / `query_last_adj` 补齐 `units: {volume: lot}` 声明； `percent` 统一为小数，当日分时 bar 的手→股换算恢复正确。
+- `forecast.yjyg_rows` 默认调用不再抛 `DataError`；域 YAML notes 中方括号被 flow sequence 误解析的问题同步修正。
+- `kline.query_last_adj.percent` 与 `cbond.quote_list` 两个字段补 `ranges` 量级守护 （照抄同域实测界，不凭空猜界），单位元规则测试恢复全绿。
+- 新增 `tests/test_index_unit_contract.py`：指数键识别边界、单位守护「只做减法」 四项断言、10 个成交量函数参数化、`validate=False` 静默错值回归、混合批容器、 高层入口与可选联网冒烟；离线 51 passed / 12 skipped，联网 63 passed / 0 skipped。
+- 新增 `tests/test_unit_contract.py`：契约声明、range 下界、带契约函数默认调用零 `DataError`、同日同标的五入口 `volume` 一致。
+- 静态门禁 13 项 + mypy 全绿；`--cov-branch` 88.27%（`units.py` 96%）。
+- 发版元数据：六处版本声明与 SECURITY.md `as_of` 同步到 1.20.1； `[Unreleased]` 保持为空。</description>
+    </item>
+    <item>
+      <title>wmshare 1.20.0 (2026-11-13)</title>
+      <link>https://github.com/open-winmale/wmshare/releases/tag/v1.20.0</link>
+      <guid isPermaLink="false">wmshare:1.20.0</guid>
+      <pubDate>Fri, 13 Nov 2026 00:00:00 +0800</pubDate>
+      <description>Added
+- **转债日线 `cli.cbond.bars`**：列式窗口按位转行（date/open/high/low/close/volume/amount）， 不复权；量=张、价/额=元，live 实测 `amount/close ≈ volume`。
+- **指标截面 `cli.indicator.basic` / `cli.indicator.financials`**：最新 TTM 估值 （pe_ttm/pb/turnover_rate/total_mv）与财务截面（roe_ttm/roe_avg/eps_ttm）； 字段绑定按 live 实测修正，禁用聚合别名，curated 74→78。
+- **指标分类 sidecar + 可选适配层**：`generated/metric_taxonomy.json` 给 2,752 个指标码补 scope/topic/period/window/caliber/unit_kind/status 七字段；`IndicatorAdapter` 仅在 unit/period/window/caliber/market 同口径时组合，不注册进友好层与 MCP 工具面。 配套 `validate_metric_taxonomy.py` 与原始单位台账门禁。
+- `tests/test_kline_last_300058.py`：300058 日 K 取数完整回归（离线 mock + 可选联网冒烟）。
+- **`cli.kline.last()` 改走 `kline.query_last`（`store.latest`）**：收盘后可取到当日已入库 日 K，不再被回测锚点窗口截断。需要「锚点内最新一根」仍用 `bars(n=1)[0]`， 两者日期可能相差一个交易日；返回字段口径不变（9 字段、涨跌幅为小数、成交量为股）。
+
+Fixed
+- **`kline.query_last` 默认调用不再抛 `DataError`**：目录补 `units.percent` 声明， store 原始行的百分数不再撞 `ranges.percent` 量级守护。
+- `last()` 单行按上游 `format.xs` 同款映射收口（`date` 由 `samplingTs` 固定 +08 派生、 `sas` 由 annual+sampling 拼接），数值不重算，单位换算仍由守护统一完成。
+- 台账注释去除数据商字面量，发布面禁词门禁恢复全绿。
+- 目录站认领（维护者声明 / Dockerfile / Add Server 审核）、渠道矩阵状态回写； `server.json` 描述压到 registry 100 字符上限内。
+- 发版元数据：六处版本声明与 SECURITY.md 当前 minor 线同步到 1.20.0。</description>
+    </item>
+    <item>
+      <title>wmshare 1.19.1 (2026-11-13)</title>
+      <link>https://github.com/open-winmale/wmshare/releases/tag/v1.19.1</link>
+      <guid isPermaLink="false">wmshare:1.19.1</guid>
+      <pubDate>Fri, 13 Nov 2026 00:00:00 +0800</pubDate>
+      <description>Added
+- 缺凭证 `AuthError` 文案附零凭证离线演示入口：报错即引导 `wmshare.demo_client()`（随包固定快照、不联网、非实时数据）， 与 README「零凭证先试」同口径——用户在申请到凭证前就能跑通调用姿势。
+- PyPI 检索面增补：keywords 加 `a-share` / `convertible-bond` / `mcp` / `model-context-protocol`，classifiers 加 `Topic :: Scientific/Engineering :: Information Analysis`。</description>
+    </item>
+    <item>
+      <title>wmshare 1.19.0 (2026-11-12)</title>
+      <link>https://github.com/open-winmale/wmshare/releases/tag/v1.19.0</link>
+      <guid isPermaLink="false">wmshare:1.19.0</guid>
+      <pubDate>Thu, 12 Nov 2026 00:00:00 +0800</pubDate>
+      <description>Removed
+- pip-audit 的 3.10 困境包豁免表（pillow 12.x / filelock 4.1.x）随 3.10 出矩阵一并删除， 审计恢复为「发现已知漏洞即失败」的零豁免形态。</description>
+    </item>
+  </channel>
+</rss>

@@ -1,0 +1,243 @@
+"""数据质量契约：方向/新鲜度/空值语义/跨接口一致性 + demo 快照新三面校验。
+
+数据质量的两层防线：
+1. 运行时守护（units.yaml ranges/checks）——覆盖换算与量级，见 tests/test_units.py；
+2. 本文件——**契约测试**：乱序输入必须升序输出、日期不得未来、None/0 语义稳定、
+   同一事实在不同接口的读数必须一致、demo 新三面（calendar/margin/futures）快照
+   必须过结构校验（此前完全不校验）。
+"""
+from __future__ import annotations
+
+import math
+from datetime import date
+from typing import Any
+
+import pytest
+
+from wmshare._demo import _validate_snapshot
+from wmshare.catalog import load
+from wmshare.client import Client
+from wmshare.errors import WmshareError
+
+# ---------------------------------------------------------------- fixtures
+
+
+class RoutedSession:
+    """按 xs_lines 中出现的函数名/指标码路由 canned 结果（不联网）。"""
+
+    def __init__(self, results: dict[str, Any]):
+        self.results = results
+        self.eval_lines: list[str] = []
+
+    def post(self, url, json=None, data=None, headers=None, timeout=None):
+        cls = self
+
+        class R:
+            status_code = 200
+            text = "{}"
+
+            def raise_for_status(self):
+                pass
+
+            def json(self):
+                if url.endswith("/v1/oauth/token"):
+                    return {"data": {"access_token": "tok", "expires_in": 3600}}
+                lines = "\n".join((json or {}).get("xs_lines") or [])
+                cls.eval_lines.append(lines)
+                for key, payload in cls.results.items():
+                    if key in lines:
+                        return {"success": True, "data": {"result": payload}}
+                return {"success": True, "data": {"result": {"ok": True}}}
+
+        R._cls = cls
+        return R()
+
+
+def make_client(results: dict[str, Any]) -> Client:
+    return Client(base_url="https://t.example", client_id="i", client_secret="s",
+                  catalog=load(), session=RoutedSession(results))
+
+
+def _unsorted_bars() -> list[dict[str, Any]]:
+    # 罐头是上游原生口径：volume=手（SDK 换算为股），amount=元
+    # （换算后 volume(股)×close ≈ amount，满足 volume_amount 不变量）
+    return [
+        {"date": "2026-11-17", "close": 10.0, "volume": 100.0, "amount": 100000.0,
+         "percent": 0.01},
+        {"date": "2026-11-15", "close": 9.8, "volume": 90.0, "amount": 88200.0,
+         "percent": -0.01},
+        {"date": "2026-11-16", "close": 9.9, "volume": 95.0, "amount": 94050.0,
+         "percent": 0.01},
+    ]
+
+
+# ---------------------------------------------------- 序列方向 / 日期不未来
+
+
+def test_series_faces_output_ascending():
+    cli = make_client({"kline.query_bars": _unsorted_bars(),
+                       "moneyflow.query_bars": [
+                           {"date": "2026-11-17", "net_mf": 3},
+                           {"date": "2026-11-10", "net_mf": 1}],
+                       "margin.market_summary": [
+                           {"trade_date": "2026-11-17", "exchange": "SSE",
+                            "fin_balance": 1.0},
+                           {"trade_date": "2026-11-10", "exchange": "SSE",
+                            "fin_balance": 2.0}],
+                       })
+    k = cli.kline.bars("600519")
+    assert list(k["date"]) == sorted(k["date"])
+    m = cli.moneyflow.bars("600519")
+    assert list(m["date"]) == sorted(m["date"])
+    s = cli.margin.market_summary(limit=6)
+    assert list(s["trade_date"]) == sorted(s["trade_date"])
+
+
+def test_series_dates_not_in_future():
+    today = date.today().isoformat()
+    rows = [{"date": today, "close": 10.0, "volume": 100.0, "amount": 100000.0}]
+    cli = make_client({"kline.query_bars": rows})
+    df = cli.kline.bars("600519")
+    assert all(d <= today for d in df["date"])
+
+
+# ---------------------------------------------------- None / 0 语义
+
+
+def test_null_and_zero_semantics_preserved():
+    rows = [{"date": "2026-11-17", "close": None, "percent": 0.0,
+             "volume": 1000.0, "amount": 10000.0}]
+    cli = make_client({"kline.query_bars": rows})
+    df = cli.kline.bars("600519")
+    # None 原样保留（缺失 ≠ 0）；0 是真实读数，不得被清洗掉
+    assert df.iloc[0]["close"] is None or math.isnan(df.iloc[0]["close"])
+    assert float(df.iloc[0]["percent"]) == 0.0
+
+
+def test_none_passthrough_in_indicator_and_ledger():
+    from wmshare.units import finish_metric, ledger_convert
+
+    assert finish_metric(None, None, code="$X") is None
+    assert ledger_convert("$RE_INVEST", None) is None
+    assert ledger_convert("$RE_INVEST", 0) == 0  # 0 是真实读数
+
+
+# ---------------------------------------------------- as_of 契约
+
+
+def test_envelope_as_of_iso_and_not_future():
+    today = date.today().isoformat()
+    cli = make_client({
+        "valuation.daily_basic": {
+            "ok": True, "as_of": today,
+            "data": [{"date": today, "symbol": "600519", "field": "pe_ttm",
+                      "value": 12.5}],
+            "meta": {},
+        },
+        "indices.trend": {
+            "ok": True, "as_of": today, "data": {"points": [{"d": today, "pe": 12.0}]},
+            "meta": {},
+        },
+    })
+    for call in (
+        cli.valuation.daily_basic("600519"),
+        cli.index.trend("index.hs300", "5y"),
+    ):
+        assert call["ok"] is True
+        as_of = call["as_of"]
+        if as_of:
+            assert len(as_of) == 10 and as_of <= today, f"as_of 非法或未来：{as_of}"
+
+
+def test_demo_envelope_as_of_matches_snapshot():
+    import wmshare
+
+    demo = wmshare.demo_client()
+    as_of = demo.snapshot_as_of() if hasattr(demo, "snapshot_as_of") else None
+    trend = demo.index.trend("index.hs300", "5y")
+    if as_of:
+        assert trend["as_of"] == as_of  # demo 组合面 as_of 与快照拍摄日一致
+
+
+# ---------------------------------------------------- 跨接口一致性
+
+
+def test_snapshot_close_matches_bars_close():
+    """同一事实的两条读数路径必须一致：快照 close ≈ 日 K 最新 close。"""
+    cli = make_client({
+        "kline.snapshot": {"symbol": "600519", "close": 10.0, "percent": 0.01,
+                           "volume": 1000.0, "amount": 10000.0},
+        "kline.query_bars": _unsorted_bars(),
+    })
+    snap = cli.kline.snapshot("600519")
+    bars = cli.kline.bars("600519")
+    latest = float(bars.iloc[-1]["close"])
+    assert math.isclose(float(snap["close"]), latest, rel_tol=0.25)
+
+
+def test_dividend_yield_matches_indicator():
+    """分红面 yield_ttm 与指标 $BONUS_RATE_TTM_LAST 是同一口径。"""
+    cli = make_client({
+        "bonus.snapshot_yield_ttm": 0.045,
+        "$BONUS_RATE_TTM_LAST": 0.045,
+    })
+    via_face = cli.dividend.yield_ttm("600519")
+    via_metric = cli.indicator.get("600519", "$BONUS_RATE_TTM_LAST")
+    assert via_face is not None and via_metric is not None
+    assert math.isclose(float(via_face), float(via_metric), rel_tol=0.02)
+
+
+def test_daily_basic_pe_matches_indicator():
+    """valuation.daily_basic 的 pe_ttm 与指标 $PE_TTM_LAST 同口径（物化表 vs 现算）。"""
+    today = date.today().isoformat()
+    cli = make_client({
+        "valuation.daily_basic": {
+            "ok": True, "as_of": today,
+            "data": [
+                {"date": today, "symbol": "600519", "field": "pe_ttm", "value": 21.3},
+                {"date": today, "symbol": "600519", "field": "pb", "value": 8.1},
+            ],
+            "meta": {},
+        },
+        "$PE_TTM_LAST": 21.3,
+    })
+    env = cli.valuation.daily_basic("600519", fields="pe_ttm")
+    rows = [r for r in env["data"] if r["field"] == "pe_ttm"]
+    assert rows and math.isclose(float(rows[0]["value"]),
+                                 float(cli.indicator.get("600519", "$PE_TTM_LAST")),
+                                 rel_tol=0.02)
+
+
+# ---------------------------------------- demo 快照新三面结构校验（含负例）
+
+
+def _load_document() -> dict[str, Any]:
+    import json
+
+    from wmshare._demo import _DATA_PATH
+
+    return json.loads(_DATA_PATH.read_bytes())
+
+
+def test_demo_snapshot_new_faces_pass_validator():
+    _validate_snapshot(_load_document())  # 不抛 = 通过
+
+
+@pytest.mark.parametrize("mutate", [
+    pytest.param(lambda d: d["data"]["calendar"]["days"].reverse(),
+                 id="calendar-desc"),
+    pytest.param(lambda d: d["data"]["calendar"]["days"].append(
+        dict(d["data"]["calendar"]["days"][-1])), id="calendar-dup"),
+    pytest.param(lambda d: d["data"]["margin"]["market_summary"].pop(0),
+                 id="margin-unpaired"),
+    pytest.param(lambda d: d["data"]["margin"]["universe"].append(
+        dict(d["data"]["margin"]["universe"][0])), id="margin-universe-dup"),
+    pytest.param(lambda d: d["data"]["futures"].popitem(), id="futures-missing"),
+    pytest.param(lambda d: d["data"]["futures"]["RB.SHF"].update(settle=-1.0),
+                 id="futures-negative-settle"),
+])
+def test_demo_snapshot_new_faces_negative_cases(mutate):
+    doc = _load_document()
+    mutate(doc)
+    with pytest.raises((ValueError, WmshareError)):
+        _validate_snapshot(doc)

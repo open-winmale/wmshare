@@ -1,6 +1,6 @@
 # wmshare
 
-> 覆盖 A 股、港股、美股的 Python 财经数据 SDK：21 个数据域、299 个底层函数、2752 个指标码、138 个核心接口 + 17 个组合接口（共 155 个 friendly API）。BSD-3-Clause 开源；取数需开放平台凭证（环境变量 WMSHARE_CLIENT_ID / WMSHARE_CLIENT_SECRET，见 README）。
+> 覆盖 A 股、港股、美股的 Python 财经数据 SDK：21 个数据域、300 个底层函数、2752 个指标码、138 个核心接口 + 17 个组合接口（共 155 个 friendly API）。BSD-3-Clause 开源；取数需开放平台凭证（环境变量 WMSHARE_CLIENT_ID / WMSHARE_CLIENT_SECRET，见 README）。
 
 ## Docs
 
@@ -8,8 +8,12 @@
 - [English Quickstart](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/QUICKSTART_EN.md)：英文快速上手（offline demo / live 首调 / 批量与单位契约）
 - [使用指南 GUIDE](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/GUIDE.md)：单票菜谱、批量取数、多市场、pandas、故障排查
 - [指标库 INDICATORS](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/INDICATORS.md)：全量指标码按族导航——命名语法、11 组精选口径、死码清单与场景速查（先查码，禁止自算已有指标）
+- [指标单页索引](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/indicators/README.md)：逐码一页（类型/市场/单位/取数示例），长尾检索与 AI 引用入口
 - [AI 用法](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/AI.md)：MCP server、skill、文档上下文与报错驱动的 Agent 接入路径
-- [API 参考](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/API.md)：138 个核心接口 + 17 个组合接口的参数 / 返回 / 单位口径
+- [API 参考](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/API.md)：138 个核心接口 + 17 个组合接口的参数 / 返回 / 单位口径（字段字典 [fields.json](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/fields.json)）
+- [限制与配额](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/LIMITS.md)：单次/批量/限流/重试硬限制、先估后取（`cli.cost_estimate`）与取数配方
+- [错误码](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/ERRORS.md)：异常层级 + 全部 `code`（含义/可重试/处理）
+- [数据日历](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/DATA_CALENDAR.md)：各数据集更新频率与过期阈值；[兼容政策](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/COMPATIBILITY.md)：弃用窗口与迁移表
 - [Agent Skill](https://raw.githubusercontent.com/open-winmale/wmshare/main/src/wmshare/skills/wmshare/SKILL.md)：随包分发的 agent 用法合同（目录先行、单位铁律、决策树、坑位）
 - [可运行示例](https://raw.githubusercontent.com/open-winmale/wmshare/main/examples/README.md)：18 个编号示例（全部支持演示客户端离线试跑），CI 端到端覆盖
 - [CHANGELOG](https://raw.githubusercontent.com/open-winmale/wmshare/main/CHANGELOG.md)：版本历史
@@ -79,7 +83,7 @@
 
 ## 单位与守护声明（机器可读）
 
-> 共 58 个函数带 units / ranges / checks 声明；每行 `` `函数名`: JSON ``，键为 units（换算）/ ranges（量级界）/ checks（不变量）。SDK 在返回前按声明换算并校验，违例抛 DataError；原生口径用 `_units="native"`。内部命名空间的函数声明见 openapi.json 的 `x-wmshare-guards`（按友好接口）。
+> 共 60 个函数带 units / ranges / checks 声明；每行 `` `函数名`: JSON ``，键为 units（换算）/ ranges（量级界）/ checks（不变量）。SDK 在返回前按声明换算并校验，违例抛 DataError；原生口径用 `_units="native"`。内部命名空间的函数声明见 openapi.json 的 `x-wmshare-guards`（按友好接口）。
 
 - `bonus.query_list`: {"ranges": {"dps": [0, 500], "net_profit": [0, 1000000000000.0], "payout_ratio": [0, 20], "total": [0, 2000000000000.0]}}
 - `bonus.snapshot`: {"ranges": {"bonus_npts_rate": [0, 1], "bonus_total": [0, 2000000000000.0], "bonus_ttm": [0, 1000000000000.0], "dps_ttm": [0, 200], "mv": [0, 5000000000000.0], "payout_ttm": [0, 5], "pct_yield_3y": [0, 1], "pe_ttm": [-500, 5000], "yield_3y_avg": [0, 0.5], "yield_3y_min": [0, 0.5], "yield_lyr": [0, 0.5], "yield_ttm": [0, 0.5]}}
@@ -120,6 +124,8 @@
 - `indices.weights`: {"ranges": {"weight": [0, 1]}}
 - `intl.query_ccass`: {"ranges": {"pct_of_issued": [0, 1]}, "units": {"pct_of_issued": "percent"}}
 - `intl.query_shareholders`: {"ranges": {"total_shares_ratio": [0, 1]}}
+- `kline.query_at_anchor`: {"checks": ["volume_amount"], "ranges": {"percent": [-1, 30], "volume": [0, 1000000000000.0]}, "units": {"volume": "lot"}}
+- `kline.query_at_anchor_adj`: {"units": {"volume": "lot"}}
 - `kline.query_bars`: {"checks": ["volume_amount"], "ranges": {"percent": [-1, 30], "volume": [0, 1000000000000.0]}, "units": {"volume": "lot"}}
 - `kline.query_bars_adj`: {"units": {"volume": "lot"}}
 - `kline.query_bars_period`: {"ranges": {"percent": [-1, 30], "volume": [0, 1000000000000.0]}, "units": {"volume": "lot"}}

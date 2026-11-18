@@ -104,7 +104,7 @@ def test_kline_bars_period_dispatch(cli):
                                 'return kline.fmt_maps(__r)']
     with pytest.raises(WmshareError):
         cli.kline.bars("600519", n=5, freq="Q")
-    # 区间 + 周频：limit 取 max_limit（夹具默认 10000）
+    # 区间 + 周频：单次请求 limit=max_limit（W/M 无锚点变体，覆盖守护兜底）
     cli.session.eval_result = [{"date": "2026-11-06", "close": 342.37}]
     bars = cli.kline.bars("AAPL", freq="W", begin="2026-01-01", end="2026-11-30")
     assert last_xs(cli) == ['__r := kline.query_bars_period("AAPL", 500, "W")',
@@ -420,3 +420,92 @@ def test_screener_bins_label_prefix_stripped(cli):
     cli.session.eval_result = [{"label": "涨停"}, {"x": 1}]
     rows = cli.screener.index_breadth_bins()
     assert rows.iloc[0]["label"] == "涨停" and rows.iloc[1]["x"] == 1
+
+
+# ---------------------------------------------------------------------------
+# 2.x：_fields 列投影（客户端选项；在换算/排序之后收窄返回体，不降 EC）
+# ---------------------------------------------------------------------------
+
+
+def test_call_fields_projects_rows_in_request_order(cli):
+    cli.session.eval_result = [
+        {"date": "2026-11-17", "close": 10.0, "extra": 1},
+        {"date": "2026-11-16", "close": 9.8, "extra": 2},
+    ]
+    rows = cli.call("kline.query_bars", sym="600519", limit=2,
+                    _fields=["close", "date"])
+    assert rows == [{"close": 10.0, "date": "2026-11-17"},
+                    {"close": 9.8, "date": "2026-11-16"}]
+    # 逗号串等价
+    rows = cli.call("kline.query_bars", sym="600519", limit=2, _fields="date")
+    assert rows == [{"date": "2026-11-17"}, {"date": "2026-11-16"}]
+
+
+def test_call_fields_projects_mapping(cli):
+    cli.session.eval_result = {"symbol": "600519", "close": 10.0, "ma20": 9.9}
+    assert cli.call("kline.snapshot", sym="600519", _fields=["ma20"]) == {"ma20": 9.9}
+
+
+def test_call_fields_unknown_field_raises(cli):
+    cli.session.eval_result = [{"date": "2026-11-17", "close": 10.0}]
+    with pytest.raises(UsageError) as ei:
+        cli.call("kline.query_bars", sym="600519", _fields=["nope"])
+    assert ei.value.code == "params"
+    assert "可用字段" in str(ei.value)
+
+
+def test_call_fields_rejects_scalar_result(cli):
+    cli.session.eval_result = 3.14
+    with pytest.raises(UsageError) as ei:
+        cli.call("kline.query_bars", sym="600519", _fields=["close"])
+    assert ei.value.code == "params"
+
+
+def test_call_fields_empty_rows_returns_empty(cli):
+    cli.session.eval_result = []
+    assert cli.call("kline.query_bars", sym="600519", _fields=["date"]) == []
+
+
+def test_call_fields_invalid_type_raises_before_request(cli):
+    with pytest.raises(UsageError) as ei:
+        cli.call("kline.query_bars", sym="600519", _fields={"date": 1})
+    assert ei.value.code == "params"
+    assert not cli.session.calls  # 早失败：未发请求
+
+
+def test_call_batch_fields_projects_each_symbol(cli):
+    cli.session.eval_result = {
+        "600519": [{"date": "2026-11-17", "close": 10.0, "volume": 1}],
+        "000001": [{"date": "2026-11-17", "close": 8.0, "volume": 2}],
+    }
+    res = cli.call_batch("kline.query_bars", ["600519", "000001"],
+                         _fields=["date", "close"])
+    assert res.results == {
+        "600519": [{"date": "2026-11-17", "close": 10.0}],
+        "000001": [{"date": "2026-11-17", "close": 8.0}],
+    }
+    assert res.truncated is False
+
+
+def test_batch_all_aggregates_truncated(cli, monkeypatch):
+    from wmshare.client import BatchResult
+
+    def fake_iter(*_a, **_k):
+        yield BatchResult(results={"600519": {"close": 10.0}}, requested=2,
+                          truncated=False)
+        yield BatchResult(results={"000001": {"close": 8.0}}, requested=2,
+                          truncated=True)
+
+    monkeypatch.setattr(cli, "batch_iter", fake_iter)
+    out = cli.batch_all("kline.query_bars", ["600519", "000001"])
+    assert out.truncated is True
+    assert set(out.results) == {"600519", "000001"}
+
+
+def test_cost_estimate_accepts_facade_symbol_list():
+    """门面参数名 `symbol=[...]` 也要被批量模型识别（否则按单票 1 万 EC 低估）。"""
+    from wmshare.client import estimate_cost
+
+    est = estimate_cost("kline.snapshot", {"symbol": ["600519", "000001", "510300"]})
+    assert est["model"] == "batch_per_symbol"
+    assert est["ec_hi"] < 1_000

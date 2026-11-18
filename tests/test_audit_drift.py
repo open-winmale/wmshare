@@ -56,9 +56,10 @@ def test_drift_default_is_green_and_machine_readable(capsys):
     assert result["warnings"] == []
     assert result["strict"] is False
     info = result["info"]
-    # 59/299 = 58/298 + valuation.daily_basic（每日估值宽表域 fund.valuation，2026-11-17）
-    assert info["guard_declared"] == 59
-    assert info["functions"] == 299
+    # guarded 61 = 59 + query_at_anchor(_adj)（2026-11-18）；functions 300 含
+    # moneyflow.query_bars_anchor（锚点切片入口，守护随 query_bars，2026-11-18）
+    assert info["guard_declared"] == 61
+    assert info["functions"] == 300
     assert info["markets"]["total"] == 2752
     assert info["markets"]["declared"] == 569
     assert info["markets"]["undeclared"] == 2183

@@ -128,9 +128,17 @@ def build_llms_txt() -> str:
         f"- [使用指南 GUIDE]({RAW}/docs/GUIDE.md)：单票菜谱、批量取数、多市场、pandas、故障排查",
         f"- [指标库 INDICATORS]({RAW}/docs/INDICATORS.md)：全量指标码按族导航——命名语法、"
         "11 组精选口径、死码清单与场景速查（先查码，禁止自算已有指标）",
+        f"- [指标单页索引]({RAW}/docs/indicators/README.md)：逐码一页（类型/市场/单位/"
+        "取数示例），长尾检索与 AI 引用入口",
         f"- [AI 用法]({RAW}/docs/AI.md)：MCP server、skill、文档上下文与报错驱动的 Agent 接入路径",
         f"- [API 参考]({RAW}/docs/API.md)：{len(FRIENDLY_INDEX)} 个核心接口 + "
-        f"{composite_total} 个组合接口的参数 / 返回 / 单位口径",
+        f"{composite_total} 个组合接口的参数 / 返回 / 单位口径（字段字典 "
+        f"[fields.json]({RAW}/docs/fields.json)）",
+        f"- [限制与配额]({RAW}/docs/LIMITS.md)：单次/批量/限流/重试硬限制、"
+        "先估后取（`cli.cost_estimate`）与取数配方",
+        f"- [错误码]({RAW}/docs/ERRORS.md)：异常层级 + 全部 `code`（含义/可重试/处理）",
+        f"- [数据日历]({RAW}/docs/DATA_CALENDAR.md)：各数据集更新频率与过期阈值；"
+        f"[兼容政策]({RAW}/docs/COMPATIBILITY.md)：弃用窗口与迁移表",
         f"- [Agent Skill]({RAW}/src/wmshare/skills/wmshare/SKILL.md)：随包分发的 agent 用法合同"
         "（目录先行、单位铁律、决策树、坑位）",
         f"- [可运行示例]({RAW}/examples/README.md)：{n_examples} 个编号示例"

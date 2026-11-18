@@ -26,11 +26,14 @@ python3 tools/validate_metric_taxonomy.py         # sidecar 与 metrics.json 1:1
 python3 tools/validate_units.py                   # 单位台账（手/亿元/百分数）
 python3 tools/check_version.py --check  # 六处版本声明互校（含 SECURITY.md 表头）
 python3 tools/guard_coverage.py --min 0.156  # 守护声明覆盖率下限（防回退）
-python3 tools/gen_api_docs.py       # 重生成 docs/API.md（改了目录必须重跑）
+python3 tools/gen_api_docs.py       # 重生成 docs/API.md + docs/fields.json（改了目录必须重跑）
 python3 tools/gen_typed_api.py      # 重生成类型化门面 docs 同源
 python3 tools/gen_openapi.py        # 重生成 docs/openapi.json + swagger.html
 python3 tools/gen_llms.py           # 重生成 llms.txt / llms-full.txt（AI 分发面）
-python3 tools/gen_indicators.py     # 重生成 docs/INDICATORS.md（指标码导航）
+python3 tools/gen_indicators.py     # 重生成 docs/INDICATORS.md + docs/indicators/（逐码单页）
+python3 tools/gen_errors.py         # 重生成 docs/ERRORS.md（错误码字典）
+python3 tools/gen_data_calendar.py  # 重生成 docs/DATA_CALENDAR.md（需兄弟仓 airflow）
+python3 tools/gen_changelog_feed.py # 重生成 docs/changelog.xml（RSS 变更公告）
 pytest --cov=wmshare --cov-branch --cov-fail-under=85   # 全部测试（不联网）+ 行/分支覆盖率门禁
 python3 -m mypy                     # 类型检查
 ```
@@ -101,6 +104,25 @@ python examples/08_pandas_analysis.py  # DataFrame 分析（需凭证 + pandas�
 
 - 整项目采用 **BSD-3-Clause**（见 LICENSE）：贡献即同意以该许可发布。
 - 不得引入与 BSD-3-Clause 不兼容的第三方代码。
+
+## 兼容与弃用
+
+公开面（门面签名、返回字段、单位、信封、异常 `code`）的变更按
+[docs/COMPATIBILITY.md](docs/COMPATIBILITY.md) 执行：破坏性变更只能在 MAJOR；
+弃用至少保留 1 个 MINOR，并在 CHANGELOG 的 `Deprecated` 段登记替代写法与移除版本。
+
+## 接口质量标准
+
+新增/修改接口必须过 `tests/test_interface_quality.py` 与 `tests/test_data_contract.py`
+（ratchet：存量债务只许减少，新增缺口即红）：
+
+- **规范性**：一句话 summary + 可绑定示例（无省略号占位）；参数说明/返回说明不得为
+  `—`；有标的语义的参数必须叫 `symbol` 且排第一（禁 `sym/stk`）；错误码必须登记
+  `docs/ERRORS.md`（双向一致）。
+- **易用性**：MCP description 不得退化为兜底文案、示例不得含 `<REQUIRED>`；
+  文档相对链接不悬空；示例数在 README/docs/README/仓库保持一致。
+- **可理解性**：字段级返回表只增不减（`FIELD_TABLE_MIN`）；方法级 `:param` 债务
+  ratchet（`PARAM_DOC_DEBT`）；单位/守护范围随目录声明进字段表。
 
 ## 提交信息
 

@@ -23,8 +23,9 @@ CAT = load()
 
 
 def test_ledger_covers_volume_family_as_lot():
-    """指标层成交量是「手」——4 个码必须登记（2.0 起登记即默认换算为股）。"""
-    for code in ("$VOLUME", "$VOLUME_DAY", "$VOLUME_LAST", "$VOLUME_NR_DAY"):
+    """指标层成交量是「手」——5 个码必须登记（2.0 起登记即默认换算为股）。"""
+    for code in ("$VOLUME", "$VOLUME_DAY", "$VOLUME_LAST", "$VOLUME_NR_DAY",
+                 "$VOLUME_AR_DAY"):  # 2026-11-18 补漏：后复权量同口径
         entry = LEDGER["overrides"][code]
         assert entry["native_unit"] == "lot", f"{code} 应登记为 lot"
         assert entry["base_unit"] == "shares"
@@ -77,7 +78,8 @@ def test_macro_real_estate_is_yi_yuan():
 
 
 def test_unnormalized_percent_codes_are_registered():
-    for code in ("$ROC_TTM", "$BONUS_FUNDS_TOTAL_RATE"):
+    for code in ("$ROC_TTM", "$ROC_TTM_LAST",  # 2026-11-18 补漏：_LAST 变体同口径
+                 "$BONUS_FUNDS_TOTAL_RATE"):
         assert LEDGER["overrides"][code]["native_unit"] == "percent", code
 
 

@@ -95,12 +95,12 @@ def test_daily_basic_fields_forms_and_dedup():
         c.valuation.daily_basic("600519", fields=123)
 
 
-# ---- estimate_cost：cached_eval 档 ----
+# ---- estimate_cost：物化表直读（cache_hit 档，2026-11-18 校准拆分） ----
 
-def test_daily_basic_estimate_cost_cached_eval():
+def test_daily_basic_estimate_cost_cache_hit():
     est = estimate_cost("valuation.daily_basic")
-    assert est["model"] == "cached_eval"
-    assert est["ec_lo"] == 100_000 and est["ec_hi"] == 180_000
+    assert est["model"] == "cache_hit"
+    assert est["ec_lo"] == 4 and est["ec_hi"] == 200  # 物化表命中近似免费，不再按冷算 10~18 万
 
 
 # ---- demo：显式 demo_unsupported（诚实契约，无罐头不伪造） ----

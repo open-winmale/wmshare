@@ -17,12 +17,14 @@ GUARD_TOOL = REPO / "tools" / "guard_coverage.py"
 AUDIT_TOOL = REPO / "tools" / "audit_units.py"
 AUDIT_REPORT = REPO / ".internal" / "UNIT_AUDIT.md"
 
-# 实测（2026-11-14）：8 个有函数但 guarded=0 的域；fund.indicators 为 0 函数域，不计。
+# 实测（2026-11-18 收紧）：5 个有函数但 guarded=0 的域；fund.indicators 为 0 函数域，不计。
+# 此前基线含 disc.bonus/market.margin/market.moneyflow——三者已补 ranges，从基线移除，
+# 回退为零守护即红（2026-11-18 数据质量收紧）。
 ZERO_GUARD_BASELINE = {
-    "disc.bonus", "disc.filings", "disc.notice", "disc.workout",
-    "market.macro", "market.margin", "market.moneyflow", "market.stocks",
+    "disc.filings", "disc.notice", "disc.workout",
+    "market.macro", "market.stocks",
 }
-DRIFT_WARN_BASELINE = 29
+DRIFT_WARN_BASELINE = 0
 
 
 def _load(path: Path, name: str):
@@ -36,9 +38,9 @@ def _load(path: Path, name: str):
 def test_guard_coverage_cannot_regress():
     mod = _load(GUARD_TOOL, "guard_coverage_baseline")
     result = mod.collect(mod.DEFAULT_DOMAINS)
-    assert result["functions"] == 299
-    assert result["guarded"] >= 50
-    assert result["ratio"] >= 0.173611
+    assert result["functions"] == 300
+    assert result["guarded"] >= 61
+    assert result["ratio"] >= 0.203333  # 61/300：+moneyflow.query_bars_anchor（守护随 query_bars）
     zero = {name for name, stat in result["per_domain"].items()
             if stat["functions"] > 0 and stat["guarded"] == 0}
     assert zero <= ZERO_GUARD_BASELINE, f"新增零守护域：{sorted(zero - ZERO_GUARD_BASELINE)}"

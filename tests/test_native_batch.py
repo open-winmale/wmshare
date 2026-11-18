@@ -9,7 +9,7 @@ import warnings
 import pytest
 
 from wmshare.catalog import load
-from wmshare.client import Client
+from wmshare.client import NATIVE_FULL_MARKET_MIN, Client
 from wmshare.errors import ApiError
 
 
@@ -207,3 +207,34 @@ def test_batch_all_non_native_still_chunks():
     codes = [f"{i:06d}" for i in range(5691)]
     res = c.batch_all("kline.query_bars", codes)
     assert c.session.eval_calls == 12
+
+
+def test_full_market_shortcut_marks_truncated():
+    """准全市场捷径下停牌/索引外标的静默缺席 → truncated=True 显式披露。"""
+    c = make_client()
+    # 阈值与服务端对齐为 2000：上游 snapshot_batch 对去重 ≥2000 的清单本来就
+    # 走全市场扫描（与空参捷径冷启动同价），捷径另享按日 memo（复跑 ≈28 EC）
+    codes = [f"{i:06d}" for i in range(NATIVE_FULL_MARKET_MIN)]
+    assert NATIVE_FULL_MARKET_MIN == 2000
+    assert "000003" in codes  # _MISSING：索引无行
+    res = c.kline.snapshot(codes)
+    assert res.truncated is True
+    assert "000003" not in res.results
+    assert res.requested == NATIVE_FULL_MARKET_MIN
+    # 阈值下 1 票仍走数组路径：缺票按 batch_missing 显式报错（捷径才给 truncated）
+    with pytest.raises(ApiError, match="000003"):
+        c.kline.snapshot([f"{i:06d}" for i in range(NATIVE_FULL_MARKET_MIN - 1)])
+    # 正常规模（<阈值）缺票走 batch_missing（见下条测试），不是 truncated
+    small = c.kline.snapshot(["600519", "000001", "000002"])
+    assert small.truncated is False
+
+
+def test_native_batch_fields_projection():
+    """_fields 在批量原生路径逐标的投影（顺序=请求顺序）。"""
+    c = make_client()
+    res = c.kline.snapshot(["600519", "000001", "000002"],
+                           _fields=["symbol", "close"])
+    assert set(res.results) == {"600519", "000001", "000002"}
+    assert res.results["600519"] == {"symbol": "600519", "close": 10.0}
+    assert list(res.results["000001"]) == ["symbol", "close"]
+    assert res.truncated is False

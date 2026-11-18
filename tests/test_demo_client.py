@@ -175,3 +175,16 @@ def test_moneyflow_board_is_sorted_desc_and_covers_universe(snapshot, cli):
     row = rows.iloc[0].to_dict()  # Series 直接 set 会迭代值；转 dict 取键
     assert {"symbol", "name", "net_mf", "net_mv_ratio", "lg_net", "elg_net",
             "md_net", "sm_net", "industry"} <= set(row)
+
+
+def test_kline_last_is_bar_not_snapshot(cli):
+    """live `kline.last` 返回单根 bar（9 字段），不是 23 字段快照。
+
+    demo 曾把 `last` 直接指向 `_kline_snapshot`，示例里 `last()["date"]` 能过、
+    但字段集与 live 不同（多出 ma/mv/is_st 等），教出错误的用法。
+    """
+    bar = cli.kline.last("600519")
+    assert sorted(bar) == ["amount", "close", "date", "high", "low", "open",
+                           "percent", "sas", "volume"]
+    assert bar["close"] == float(cli.kline.bars("600519", n=1).iloc[-1]["close"])
+    assert len(cli.kline.snapshot("600519")) > len(bar)

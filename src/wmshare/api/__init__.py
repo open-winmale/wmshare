@@ -10,7 +10,7 @@
     ``_raw=True`` 取上游原始行（list[dict]，跳过规范化与换算）——诊断逃生口；
   - 本层是目录合同的薄翻译：高频方法显式包装；目录内其余非内部函数经 ``__getattr__``
     属性直达（如 ``cli.kline.screen_above_ma20``）；目录标 ``internal: true`` 的
-    规范化辅助（fmt_* 等）不再直达，请走 ``cli.call``——299 个底层函数零遮蔽；
+    规范化辅助（fmt_* 等）不再直达，请走 ``cli.call``——300 个底层函数零遮蔽；
   - 选股能力集中在 ``cli.screener``：单票筛选器（bool）、全市场宽度/涨跌榜与
     全市场条件选股 ``query()``（服务端索引直出）显式包装，kline 目录的其余筛选
     函数经属性直达。
@@ -106,6 +106,11 @@ def _kline_period_tag(freq: str | None) -> str:
             code="freq") from None
 
 
+# 区间锚点切片的片数上限：100 片 × max_limit 行，覆盖任何现实区间；
+# 超限仍未覆盖到 begin 属调用方配置问题（max_limit 过小），显式报错不静默截断。
+_MAX_RANGE_SLICES = 100
+
+
 def _filter_by_date(rows: Any, begin: str, end: str, key: str, limit: int) -> Any:
     """按日期列过滤（含端点）；行数已触顶且最早日期仍晚于 begin 时，说明区间未被覆盖。"""
     if not isinstance(rows, list):
@@ -142,12 +147,27 @@ def _window_days(window: str | int) -> int:
     return days
 
 
-def _out(result: Any, raw: bool = False) -> Any:
+def _out(result: Any, raw: bool = False, _fields: Any = None) -> Any:
     """2.0 门面返回收口：行数组默认转 DataFrame；``_raw=True`` 原样透传。
 
     dict（MAP/信封）、标量、None、BatchResult 容器由 ``to_output_frame``
     决定去留（容器仅把 results 里的行数组逐标的转 DF）。
+
+    ``_fields`` 为客户端列投影（``list[str]`` 或逗号串）：在排序/过滤之后
+    只保留指定字段、按请求顺序输出；未知字段抛 ``UsageError``。统一信封
+    （``{ok, as_of, data, meta}``）不参与投影——那是协议字段，数据字段在
+    ``data`` 内，需要字段级裁剪请用底层 ``cli.call``。
     """
+    if _fields is not None:
+        from wmshare.client import BatchResult, project_fields
+        if isinstance(result, BatchResult):
+            for key, item in list(result.results.items()):
+                if isinstance(item, (dict, list)):
+                    result.results[key] = project_fields(item, _fields)
+        elif isinstance(result, list):
+            result = project_fields(result, _fields)
+        elif isinstance(result, dict) and not {"ok", "data"} <= set(result):
+            result = project_fields(result, _fields)
     if raw:
         return result
     from wmshare.client import to_output_frame
@@ -360,7 +380,7 @@ class KlineApi(_Api):
     def bars(self, symbol: str, n: int | None = None, adj: str | None = None,
              begin: str | None = None, end: str | None = None,
              freq: str | None = None,
-             _raw: bool = False) -> Any:
+             _raw: bool = False, _fields: Any = None) -> Any:
         """K 线序列（日/周/月）→ DataFrame：date/open/high/low/close/volume/amount/percent。
 
         日 K 覆盖自上市首日起的全部交易日（最早 1991 年）；周/月 K 为服务端预派生
@@ -369,12 +389,20 @@ class KlineApi(_Api):
         （诊断逃生口，不支持 begin/end）。指数只有日频：``freq`` 非 D 显式报错
         （1.x 静默返回空序列的坑已移除）。
 
-        :param n: 根数（按所选周期计），默认 120；区间查询时默认取 max_limit（上限 10000）
+        :param n: 根数（按所选周期计），默认 120。区间查询：显式传 n=只取区间内
+            最近 n 根（不补页）；不传 n=自动锚点切片补齐（见下），每片 ≤ max_limit
         :param adj: None=不复权；"qfq"=前复权；"hfq"=后复权
         :param begin: 起始日期（含，YYYY-MM-DD），须与 end 同时提供；区间上限 5 年
         :param end: 结束日期（含）
         :param freq: None/"D"=日 K（默认）；"W"=周 K；"M"=月 K（指数仅 D）
         :param _raw: True=上游原始行（跳过规范化/单位换算）
+        :param _fields: 列投影（list/逗号串），在排序过滤后执行；不降 EC
+
+        区间完整性（日 K，不传 n）：按「锚点切片」自动分页——每片走
+        ``kline.query_at_anchor(_adj)``（窗口右端锚在已取最早一根），只物化
+        ≤ end 的行、覆盖 begin 即停；任意区间一次拿到全量、不静默截断，
+        计费 ≈ 区间实际根数（服务端窗口读取，不在客户端砍量）。
+        周/月 K 与显式 n 为单次请求，超出单次上限显式报错（不静默截断）。
         """
         period = _kline_period_tag(freq)
         if period != "D" and is_index_symbol(str(symbol)):
@@ -388,7 +416,47 @@ class KlineApi(_Api):
             if _raw:
                 raise UsageError("_raw=True 时不支持 begin/end（原始行无扁平日期字段）",
                                  code="range")
+            begin_iso = _normalize_date(begin)
             limit = min(int(n) if n is not None else (self._c.max_limit or 10000), 10000)
+            if n is None and isinstance(symbol, str) and period == "D":
+                # 锚点切片（能力对标：任意区间完整返回）。不估算根数——覆盖由
+                # 结构保证：每片 ≤ limit 行且右端锚在 marker，最早一根 ≤ begin
+                # 或取不满一片即停；切片超限仍未覆盖才显式报错。
+                fn = ("kline.query_at_anchor_adj" if adj is not None
+                      else "kline.query_at_anchor")
+                merged: dict[str, dict] = {}
+                anchor = _normalize_date(end)
+                prev_anchor: str | None = None
+                for _ in range(_MAX_RANGE_SLICES):
+                    anchor_kw: dict[str, Any] = {"sym": symbol, "limit": limit,
+                                                 "anchor_date": anchor}
+                    if adj is not None:
+                        anchor_kw["adj"] = adj
+                    chunk = self._c.call(fn, **anchor_kw)
+                    if not isinstance(chunk, list) or not chunk:
+                        break
+                    dates: list[str] = []
+                    for r in chunk:
+                        d = str(r.get("date") or "")[:10] if isinstance(r, dict) else ""
+                        if d:
+                            dates.append(d)
+                            merged.setdefault(d, r)
+                    if not dates or len(chunk) < limit or min(dates) <= begin_iso:
+                        break
+                    prev_anchor, anchor = anchor, min(dates)
+                    if anchor == prev_anchor:
+                        # 服务端未按锚点收窄（返回原样一片）：再切只会重复烧 EC，立刻停
+                        raise LimitError(
+                            f"kline.bars: 锚点未前移（anchor={anchor}）——服务端未按 "
+                            f"anchor_date 收窄窗口；请改传 n= 或缩小区间", code="range")
+                else:
+                    raise LimitError(
+                        f"kline.bars: 区间 {begin}~{end} 切了 {_MAX_RANGE_SLICES} 片"
+                        f"（每片 ≤{limit} 行）仍未覆盖到 begin；请调大 "
+                        "Client(max_limit=...) 或缩小区间", code="range")
+                rows = [merged[d] for d in sorted(merged)]
+                return _out(_filter_by_date(rows, begin, end, "date", 0),
+                            raw=_raw, _fields=_fields)
             if adj is None:
                 fn = "kline.query_bars_period" if period_args else "kline.query_bars"
             else:
@@ -401,7 +469,7 @@ class KlineApi(_Api):
             rows = self._c.call(fn, **kwargs)
             out = _per_symbol(rows, lambda r: _sort_rows_by_date(
                 _filter_by_date(r, begin, end, "date", limit)))
-            return _out(out, raw=_raw)
+            return _out(out, raw=_raw, _fields=_fields)
         limit = 120 if n is None else n
         if adj is None:
             fn = "kline.query_bars_period" if period_args else "kline.query_bars"
@@ -413,7 +481,7 @@ class KlineApi(_Api):
             kwargs["adj"] = adj
         kwargs.update(period_args)
         out = _per_symbol(self._c.call(fn, **kwargs), _sort_rows_by_date)
-        return _out(out, raw=_raw)
+        return _out(out, raw=_raw, _fields=_fields)
 
     def last(self, symbol: str, _raw: bool = False) -> Any:
         """最新一根日 K（dict：date/open/high/low/close/volume/amount/percent），无数据返回 None。
@@ -455,7 +523,7 @@ class KlineApi(_Api):
         """
         return self._c.call("kline.query_min1_live", sym=symbol)
 
-    def snapshot(self, symbol: str | list[str]) -> Any:
+    def snapshot(self, symbol: str | list[str], _fields: Any = None) -> Any:
         """行情快照（23 字段：价量、涨跌、均线、市值、标识）。
 
         传单个代码返回该票快照 MAP；传代码列表（≥3 票）自动路由批量原生实现
@@ -471,8 +539,10 @@ class KlineApi(_Api):
         标识与日期：symbol、name、industry、is_st、is_suspend、kline_date、kline_sas。
         percent 与 chg_* 为小数，volume=股，amount 与市值=元；布尔字段为 ma60_up、is_st、is_suspend。
         目录 returns_shape 由本仓精修条目给出完整字段表，不依赖上游注释。
+
+        :param _fields: 列投影（list/逗号串）：只保留指定字段；批量时逐标的投影
         """
-        return _out(self._c.call("kline.snapshot", sym=symbol))
+        return _out(self._c.call("kline.snapshot", sym=symbol), _fields=_fields)
 
     def is_etf(self, symbol: str) -> bool:
         """是否场内 ETF。"""
@@ -484,13 +554,20 @@ class MoneyflowApi(_Api):
 
     def bars(self, symbol: str, n: int | None = None,
              begin: str | None = None, end: str | None = None,
-             _raw: bool = False) -> Any:
+             _raw: bool = False, _fields: Any = None) -> Any:
         """资金流历史（DataFrame：date/net_mf/elg_net/lg_net/md_net/sm_net，date 升序）。
 
-        :param n: 条数，默认 20；区间查询时默认取 max_limit（上限 10000）
+        :param n: 条数，默认 20。区间查询：显式传 n=只取区间内最近 n 根（不补页）；
+            不传 n=自动锚点切片补齐（每片 ≤ max_limit，覆盖 begin 即停）
         :param begin: 起始日期（含，YYYY-MM-DD），须与 end 同时提供；区间上限 5 年
         :param end: 结束日期（含）
         :param _raw: True=上游原始行（跳过规范化/换算）
+        :param _fields: 列投影（list/逗号串），在排序过滤后执行；不降 EC
+
+        区间完整性（不传 n）：与 ``kline.bars`` 同款锚点切片——每片走
+        ``moneyflow.query_bars_anchor``（窗口右端锚在已取最早一根），只物化
+        ≤ end 的行、覆盖 begin 即停；任意区间完整返回、计费 ≈ 区间实际行数。
+        显式传 n 为单次请求，超出单次上限显式报错（不静默截断）。
         """
         _warn_large_moneyflow_list(symbol)
         if begin is not None or end is not None:
@@ -499,15 +576,47 @@ class MoneyflowApi(_Api):
             if _raw:
                 raise UsageError("_raw=True 时不支持 begin/end（原始行无扁平日期字段）",
                                  code="range")
+            begin_iso = _normalize_date(begin)
             limit = min(int(n) if n is not None else (self._c.max_limit or 10000), 10000)
+            if n is None and isinstance(symbol, str):
+                # 锚点切片（与 kline.bars 同口径）：覆盖由结构保证，不估算根数
+                merged: dict[str, dict] = {}
+                anchor = _normalize_date(end)
+                prev_anchor: str | None = None
+                for _ in range(_MAX_RANGE_SLICES):
+                    chunk = self._c.call("moneyflow.query_bars_anchor", sym=symbol,
+                                         limit=limit, anchor_date=anchor)
+                    if not isinstance(chunk, list) or not chunk:
+                        break
+                    dates: list[str] = []
+                    for r in chunk:
+                        d = str(r.get("date") or "")[:10] if isinstance(r, dict) else ""
+                        if d:
+                            dates.append(d)
+                            merged.setdefault(d, r)
+                    if not dates or len(chunk) < limit or min(dates) <= begin_iso:
+                        break
+                    prev_anchor, anchor = anchor, min(dates)
+                    if anchor == prev_anchor:
+                        raise LimitError(
+                            f"moneyflow.bars: 锚点未前移（anchor={anchor}）——服务端未按 "
+                            f"anchor_date 收窄窗口；请改传 n= 或缩小区间", code="range")
+                else:
+                    raise LimitError(
+                        f"moneyflow.bars: 区间 {begin}~{end} 切了 {_MAX_RANGE_SLICES} 片"
+                        f"（每片 ≤{limit} 行）仍未覆盖到 begin；请调大 "
+                        "Client(max_limit=...) 或缩小区间", code="range")
+                rows = [merged[d] for d in sorted(merged)]
+                return _out(_filter_by_date(rows, begin, end, "date", 0),
+                            raw=_raw, _fields=_fields)
             rows = self._c.call("moneyflow.query_bars", sym=symbol, limit=limit, _raw=_raw)
             out = _per_symbol(rows, lambda r: _sort_rows_by_date(
                 _filter_by_date(r, begin, end, "date", limit)))
-            return _out(out, raw=_raw)
+            return _out(out, raw=_raw, _fields=_fields)
         limit = 20 if n is None else n
         out = _per_symbol(self._c.call("moneyflow.query_bars", sym=symbol,
                                        limit=limit, _raw=_raw), _sort_rows_by_date)
-        return _out(out, raw=_raw)
+        return _out(out, raw=_raw, _fields=_fields)
 
     def last(self, symbol: str, _raw: bool = False) -> Any:
         """最新一行资金流（date/net_mf/elg_net/lg_net/md_net/sm_net），无数据返回 None。
@@ -541,19 +650,21 @@ class MarginApi(_Api):
     （BSE 无公开口径缺席）；``universe`` 为标的名单快照+调整史（out_date 空=生效）。
     """
 
-    def query(self, symbol: str, limit: int = 20) -> Any:
+    def query(self, symbol: str, limit: int = 20, _fields: Any = None) -> Any:
         """个股两融历史（DataFrame：trade_date/fin_buy_amt/fin_repay_amt/fin_balance/…，升序）。
 
         :param limit: 条数，默认 20
+        :param _fields: 列投影（list/逗号串），在排序后执行；不降 EC
         """
         return _out(_sort_rows_by_date(
-            self._c.call("margin.query", sym=symbol, limit=limit), key="trade_date"))
+            self._c.call("margin.query", sym=symbol, limit=limit), key="trade_date"),
+            _fields=_fields)
 
     def latest(self, symbol: str) -> Any:
         """最新一日两融单行，字段同 ``query()``。"""
         return self._c.call("margin.latest", sym=symbol)
 
-    def market_summary(self, limit: int = 60) -> Any:
+    def market_summary(self, limit: int = 60, _fields: Any = None) -> Any:
         """市场级两融汇总（DataFrame：trade_date/exchange/fin_buy_amt/…，升序）。
 
         沪深交易所汇总日表（金额=元、量=股）；BSE 无公开汇总口径，缺席属源边界。
@@ -562,11 +673,13 @@ class MarginApi(_Api):
 
         :param limit: 条数，默认 60（每交易所日一行；跨交易所同日并存）；
             长历史（如 3 年 ≈1,500 行）需 ``Client(max_limit=None)`` 或分批
+        :param _fields: 列投影（list/逗号串），在排序后执行；不降 EC
         """
         return _out(_sort_rows_by_date(
-            self._c.call("margin.market_summary", limit=limit), key="trade_date"))
+            self._c.call("margin.market_summary", limit=limit), key="trade_date"),
+            _fields=_fields)
 
-    def universe(self, limit: int | None = None) -> Any:
+    def universe(self, limit: int | None = None, _fields: Any = None) -> Any:
         """两融标的名单（DataFrame：security_code/security_name/exchange/in_date/out_date/…）。
 
         当前可两融标的（沪深保证金比例表口径 ≈4,000 行）。``out_date`` 为空 =
@@ -576,10 +689,12 @@ class MarginApi(_Api):
             成本：逐行物化 ≈112 EC/行——全量 ≈45 万 EC（超默认告警阈值会被提示），
             只看部分标的可传 ``limit=500``（≈5.6 万 EC）；先估用
             ``cli.cost_estimate("margin.universe", limit=…)``
+        :param _fields: 列投影（list/逗号串），在排序后执行；不降 EC
         """
         kw: dict[str, Any] = {} if limit is None else {"limit": limit}
         return _out(_sort_rows_by_date(
-            self._c.call("margin.universe", **kw), key="security_code"))
+            self._c.call("margin.universe", **kw), key="security_code"),
+            _fields=_fields)
 
 
 class CalendarApi(_Api):
@@ -603,11 +718,18 @@ class CalendarApi(_Api):
             self._c.call("calendar.days", begin=begin, end=end, limit=limit)))
 
     def is_open(self, date: str) -> bool:
-        """某日是否交易日（缺行=非交易日，含周末与节假日）。"""
+        """某日是否交易日（缺行=非交易日，含周末与节假日）。
+
+        :param date: 日期（YYYY-MM-DD；也接受 YYYYMMDD 与 date/datetime）
+        """
         return bool(self._c.call("calendar.is_open", date=_normalize_date(date)))
 
     def next(self, date: str, n: int = 1) -> Any:
-        """某日之后 N 个交易日（DataFrame：date 升序；不足 N 个如实返回）。"""
+        """某日之后 N 个交易日（DataFrame：date 升序；不足 N 个如实返回）。
+
+        :param date: 起算日期（YYYY-MM-DD；也接受 YYYYMMDD 与 date/datetime）
+        :param n: 取之后 N 个交易日（默认 1）
+        """
         return _out(_sort_rows_by_date(
             self._c.call("calendar.next", date=_normalize_date(date), n=int(n))))
 
@@ -665,7 +787,7 @@ class CbondApi(_Api):
         """
         return self._c.call("cbond.kline_window", code=symbol, n=n)
 
-    def bars(self, symbol: str, n: int = 120) -> Any:
+    def bars(self, symbol: str, n: int = 120, _fields: Any = None) -> Any:
         """转债日线表 → DataFrame：date/open/high/low/close/volume/amount（date 升序）。
 
         列式窗口转每根一行（``date`` 取上游采样名前 10 位）；某列缺失时补 ``None``。
@@ -675,13 +797,14 @@ class CbondApi(_Api):
 
         :param symbol: 转债代码（6 位裸码）
         :param n: 窗口根数，默认 120
+        :param _fields: 列投影（list/逗号串）：只保留指定字段
         """
         raw = self._c.call("cbond.kline_window", code=symbol, n=n)
         if not isinstance(raw, dict):
             # 异常形态原值透传（dict 行数组仍走 DF 收口）；空窗口给空 DataFrame
             if isinstance(raw, list) and raw and isinstance(raw[0], dict):
-                return _out(_sort_rows_by_date(raw))
-            return raw if raw is not None else _out([])
+                return _out(_sort_rows_by_date(raw), _fields=_fields)
+            return raw if raw is not None else _out([], _fields=_fields)
         names = raw.get("samplingName") or []
         columns = ("open", "high", "low", "close", "volume", "amount")
         series = {c: raw.get(c) or [] for c in columns}
@@ -692,7 +815,7 @@ class CbondApi(_Api):
                 col = series[col_name]
                 row[col_name] = col[i] if i < len(col) else None
             rows.append(row)
-        return _out(_sort_rows_by_date(rows))
+        return _out(_sort_rows_by_date(rows), _fields=_fields)
 
     def universe_codes(self, _raw: bool = False) -> Any:
         """转债代码全集（与快照口径一致）。"""
@@ -1817,6 +1940,10 @@ class IndicatorApi(_Api):
 
         期货码传 fut_symbol（如 "global.CL"），symbol 传任意 A 股代码。
         台账登记码默认换算到基础单位；``native=True`` 返回上游原值。
+
+        :param code: 指标码（``$`` 开头，如 ``"$PE_TTM_LAST"``；用 ``cat.search`` 查）
+        :param fut_symbol: 期货连续合约键（``$FUT_*`` 需要，如 ``"cn.RB.SHF"``）
+        :param native: True=保留上游原生单位（默认换算基础单位）
         """
         meta = self._c.catalog.metric_meta(code)
         if meta is None and self._c.catalog.metric(code) is None:
@@ -1833,6 +1960,10 @@ class IndicatorApi(_Api):
 
         期货码传 fut_symbol（如 "cn.SR.ZCE"），symbol 传任意 A 股代码。
         ``native=True`` 返回上游原值。
+
+        :param codes: 指标码列表（``$`` 开头；用 ``cat.search`` 查）
+        :param fut_symbol: 期货连续合约键（``$FUT_*`` 需要）
+        :param native: True=保留上游原生单位（默认换算基础单位）
         """
         missing = [c for c in codes if self._c.catalog.metric(c) is None]
         if missing:
@@ -1943,6 +2074,7 @@ class NoticeApi(_Api):
                     market: str = "", _raw: bool = False) -> Any:
         """按类别查公告（DataFrame，date 升序；如 "回购"；cn/hk）。
 
+        :param category: 公告类别（如 ``"回购"``/``"减持"``；上游类别词表）
         :param market: 公告市场，缺省自动（=cn）；港股显式传 "hk"
         :param _raw: True=上游原始行
         """
@@ -1974,6 +2106,7 @@ class NoticeApi(_Api):
                 market: str = "", _raw: bool = False) -> Any:
         """指定日期的全市场公告（DataFrame；date 格式 YYYY-MM-DD；cn/hk）。
 
+        :param date: 日期（YYYY-MM-DD）
         :param market: 公告市场，缺省自动（=cn）；港股显式传 "hk"
         :param _raw: True=上游原始行
         """
@@ -2012,11 +2145,17 @@ class FilingsApi(_Api):
     """定期报告清单。kind = all | annual | semi | quarter。"""
 
     def list(self, symbol: str, kind: str = "all", limit: int = 10) -> Any:
-        """定期报告列表（报告期/标题/PDF 链接）。"""
+        """定期报告列表（报告期/标题/PDF 链接）。
+
+        :param kind: 报告类型：``all | annual | semi | quarter``
+        """
         return _out(self._c.call("filings.query", sym=symbol, type_key=kind, limit=limit))
 
     def latest(self, symbol: str, kind: str = "all") -> Any:
-        """最新一条定期报告。"""
+        """最新一条定期报告。
+
+        :param kind: 报告类型：``all | annual | semi | quarter``
+        """
         return self._c.call("filings.latest", sym=symbol, type_key=kind)
 
 
@@ -2104,7 +2243,10 @@ class DividendApi(_Api):
 
     def screen_high_yield(self, symbol: str, min_yield: float | None = None,
                           _raw: bool = False) -> Any:
-        """高股息（min_yield 为小数，如 0.04 = 4%）。"""
+        """高股息（min_yield 为小数，如 0.04 = 4%）。
+
+        :param min_yield: 股息率门槛（小数；缺省=目录默认阈值）
+        """
         kw: dict[str, Any] = {"sym": symbol}
         if min_yield is not None:
             kw["min_yield"] = min_yield
@@ -2112,7 +2254,11 @@ class DividendApi(_Api):
 
     def screen_undervalued_yield(self, symbol: str, min_yield: float | None = None,
                                  min_pct: float | None = None, _raw: bool = False) -> Any:
-        """低估 + 高股息（min_yield 为小数；min_pct 为低估值百分位门槛）。"""
+        """低估 + 高股息（min_yield 为小数；min_pct 为低估值百分位门槛）。
+
+        :param min_yield: 股息率门槛（小数；缺省=目录默认阈值）
+        :param min_pct: 估值分位门槛（0~1 小数，如 0.3=只看分位后 30%）
+        """
         kw: dict[str, Any] = {"sym": symbol}
         if min_yield is not None:
             kw["min_yield"] = min_yield

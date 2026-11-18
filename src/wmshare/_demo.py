@@ -274,6 +274,61 @@ def _validate_snapshot(document: Any) -> dict[str, Any]:
         raise ValueError("notice_event 必须有 URL")
     NoticeStreamEvent.from_dict(event)
 
+    # ---- 2.0 新三面：calendar / margin / futures（2026-11-18 前完全不校验） ----
+    calendar = _require_mapping(data.get("calendar"), "calendar")
+    seen_cal: list[str] = []
+    for i, row in enumerate(_require_rows(calendar.get("days"), "calendar.days")):
+        d = str(row.get("date") or "")
+        _check_date_not_after(d, f"calendar.days[{i}].date")
+        if d in seen_cal:
+            raise ValueError(f"calendar.days[{i}] 日期重复：{d}")
+        seen_cal.append(d)
+    if seen_cal != sorted(seen_cal):
+        raise ValueError("calendar.days 必须按日期升序")
+    for d, flag in _require_mapping(calendar.get("is_open"), "calendar.is_open").items():
+        if not isinstance(flag, bool):
+            raise ValueError(f"calendar.is_open[{d}] 必须是 bool")
+    for i, row in enumerate(_require_rows(calendar.get("next"), "calendar.next")):
+        # next 的日期可以晚于 as_of（未来交易日），只查格式不做 as_of 门控
+        d = str(row.get("date") or "")
+        if len(d) != 10:
+            raise ValueError(f"calendar.next[{i}].date 非法：{d!r}")
+
+    margin = _require_mapping(data.get("margin"), "margin")
+    pairs: dict[str, set[str]] = {}
+    for i, row in enumerate(_require_rows(margin.get("market_summary"),
+                                          "margin.market_summary")):
+        d = str(row.get("trade_date") or "")
+        ex = str(row.get("exchange") or "")
+        _check_date_not_after(d, f"margin.market_summary[{i}].trade_date")
+        if ex not in ("SSE", "SZSE"):
+            raise ValueError(f"margin.market_summary[{i}].exchange 非法：{ex}")
+        if row.get("fin_balance") is not None:
+            _check_finite(row.get("fin_balance"),
+                          f"margin.market_summary[{i}].fin_balance")
+            if float(row["fin_balance"]) <= 0:
+                raise ValueError(f"margin.market_summary[{i}].fin_balance 必须为正")
+        pairs.setdefault(d, set()).add(ex)
+    for d, exs in pairs.items():
+        if len(exs) != 2:
+            raise ValueError(f"margin.market_summary {d} 沪深不成对：{sorted(exs)}")
+    universe_rows = _require_rows(margin.get("universe"), "margin.universe")
+    uni_codes = [str(r.get("security_code") or "") for r in universe_rows]
+    if len(uni_codes) != len(set(uni_codes)):
+        raise ValueError("margin.universe 标的代码重复")
+    if not universe_rows or len(universe_rows) > 500:
+        raise ValueError("margin.universe 行数不在 [1, 500]")
+
+    futures_book = _require_mapping(data.get("futures"), "futures")
+    if not futures_book:
+        raise ValueError("futures 快照缺失")
+    for fut, snap in futures_book.items():
+        row = _require_mapping(snap, f"futures[{fut}]")
+        for field in ("close", "settle", "pre_settle"):
+            _check_finite(row.get(field), f"futures[{fut}].{field}")
+            if float(row[field]) <= 0:
+                raise ValueError(f"futures[{fut}].{field} 必须为正")
+
     return doc
 
 
@@ -377,7 +432,7 @@ class DemoClient:
             bars=self._kline_bars,
             snapshot=self._kline_snapshot,
             live=self._kline_snapshot,
-            last=self._kline_snapshot,
+            last=self._kline_last,
             batch_live=self._kline_batch_live,
         )
         self.moneyflow = SimpleNamespace(
@@ -437,12 +492,15 @@ class DemoClient:
             industry_members=self._industry_members,
         )
         self.screener = SimpleNamespace(
-            screen_limit_up=lambda sym: self._screen(sym, "limit_up"),
-            screen_above_ma20=lambda sym: self._screen(sym, "above_ma20"),
-            screen_volume_spike=lambda sym: self._screen(sym, "volume_spike"),
-            screen_up_today=lambda sym: self._screen(sym, "up_today"),
-            index_breadth_summary=lambda: dict(self._data["screener"]["breadth_summary"]),
-            index_breadth_bins=lambda: (lambda rows: (
+            screen_limit_up=lambda symbol: self._screen(symbol, "limit_up"),
+            screen_above_ma20=lambda symbol: self._screen(symbol, "above_ma20"),
+            screen_volume_spike=(
+                lambda symbol, min_ratio=None: self._screen(symbol, "volume_spike",
+                                                           min_ratio=min_ratio)),
+            screen_up_today=lambda symbol: self._screen(symbol, "up_today"),
+            index_breadth_summary=(
+                lambda idx=None: dict(self._data["screener"]["breadth_summary"])),
+            index_breadth_bins=lambda idx=None: (lambda rows: (
                 __import__("wmshare.client", fromlist=["to_output_frame"]).to_output_frame(rows)))(
                 [dict(row) for row in self._data["screener"]["breadth_bins"]]),
             index_top_movers=self._top_movers,
@@ -463,7 +521,9 @@ class DemoClient:
             next=self._calendar_next,
         )
         self.margin = SimpleNamespace(
-            query=lambda *a, **kw: (_ for _ in ()).throw(
+            # 形参与 live 逐字对齐（symbol/limit/_fields）：未回放要报 demo_unsupported，
+            # 不能靠 *a/**kw 让 TypeError/静默吞参数。
+            query=lambda symbol, limit=20, _fields=None: (_ for _ in ()).throw(
                 _unsupported("margin.query", "底层函数")),
             market_summary=self._margin_market_summary,
             universe=self._margin_universe,
@@ -508,10 +568,12 @@ class DemoClient:
 
     def _kline_bars(self, symbol: str, n: int | None = None, adj: str | None = None,
                     begin: str | None = None, end: str | None = None,
-                    _raw: bool = False) -> Any:
-        if adj is not None or begin is not None or end is not None or _raw:
+                    freq: str | None = None, _raw: bool = False,
+                    _fields: Any = None) -> Any:
+        # 签名与 live 门面逐字对齐：未回放的能力报 demo_unsupported（不是 TypeError）。
+        if adj is not None or begin is not None or end is not None or _raw or freq:
             raise UsageError(
-                "demo 快照只覆盖不复权、不带日期区间的 kline.bars(n<=120)",
+                "demo 快照只覆盖复权/周月频/日期区间之外的 kline.bars(n<=120)",
                 code="demo_unsupported",
             )
         count = 120 if n is None else int(n)
@@ -524,9 +586,13 @@ class DemoClient:
         sym = self._require_symbol(symbol)
         # 快照升序存储（2.0 口径）；n = 最近 n 根 → 取尾部，与 live 语义一致
         rows = [dict(row) for row in self._data["kline_bars"][sym][-count:]]
+        if _fields is not None:
+            from wmshare.client import project_fields
+            rows = project_fields(rows, _fields, fname="kline.bars")
         return self._df_asc(rows)
 
-    def _kline_snapshot(self, symbol: Any) -> Any:
+    def _kline_snapshot(self, symbol: Any, _raw: bool = False,
+                        _fields: Any = None) -> Any:
         """单票 MAP；传列表（≥3 票）与 live 同形——一次请求的 BatchResult。
 
         1.22.1 起 live 的列表入参自动路由批量原生实现（单次 eval、EC 按量），
@@ -543,9 +609,25 @@ class DemoClient:
                          for s in syms},
                 requests=len(syms), requested=len(syms))
         sym = self._require_snapshot_symbol(symbol)
-        return dict(self._data["kline_snapshot"][sym])
+        row = dict(self._data["kline_snapshot"][sym])
+        if _raw:
+            raise UsageError("demo 快照不提供 kline.snapshot 的 _raw 原始口径",
+                             code="demo_unsupported")
+        if _fields is not None:
+            from wmshare.client import project_fields
+            row = project_fields(row, _fields, fname="kline.snapshot")
+        return row
 
-    def _kline_batch_live(self, symbols: list[str]) -> dict[str, dict[str, Any]]:
+    def _kline_last(self, symbol: str, _raw: bool = False) -> Any:
+        """最新一根日 K（与 live `kline.last` 同形：date/open/high/low/close/...）。"""
+        if _raw:
+            raise UsageError("demo 快照不提供 kline.last 的 _raw 原始口径",
+                             code="demo_unsupported")
+        sym = self._require_symbol(symbol)
+        rows = self._data["kline_bars"][sym]
+        return dict(rows[-1]) if rows else None
+
+    def _kline_batch_live(self, symbols: list[str], _raw: bool = False) -> dict[str, dict[str, Any]]:
         return {self._require_snapshot_symbol(s): dict(self._data["kline_snapshot"][s])
                 for s in symbols}
 
@@ -580,18 +662,24 @@ class DemoClient:
         cap = int(n or 1)
         return self._df_asc(rows[:cap], "date")
 
-    def _margin_market_summary(self, limit: int | None = None) -> Any:
+    def _margin_market_summary(self, limit: int | None = None, _fields: Any = None) -> Any:
         rows = [dict(r) for r in self._data["margin"]["market_summary"]]
         rows.sort(key=lambda r: str(r.get("trade_date")))      # 2.0 升序
         if limit:
             rows = rows[-int(limit):]                          # 取最近 N 行
+        if _fields is not None:
+            from wmshare.client import project_fields
+            rows = project_fields(rows, _fields, fname="margin.market_summary")
         return self._df_asc(rows, "trade_date")
 
-    def _margin_universe(self, limit: int | None = None) -> Any:
+    def _margin_universe(self, limit: int | None = None, _fields: Any = None) -> Any:
         rows = [dict(r) for r in self._data["margin"]["universe"]]
         rows.sort(key=lambda r: str(r.get("security_code")))
         if limit:
             rows = rows[: int(limit)]
+        if _fields is not None:
+            from wmshare.client import project_fields
+            rows = project_fields(rows, _fields, fname="margin.universe")
         return self._df_asc(rows, "security_code")
 
     def _futures_snapshot(self, fut_code: str, freq: str = "d") -> dict[str, Any]:
@@ -629,10 +717,17 @@ class DemoClient:
         value = self._data["moneyflow_last"][sym]
         return dict(value) if isinstance(value, dict) else value
 
-    def _moneyflow_bars(self, symbol: str, n: int = 20, _raw: bool = False) -> Any:
-        if _raw:
-            raise UsageError("demo 快照不提供 _raw 原始口径", code="demo_unsupported")
-        count = int(n)
+    def _moneyflow_bars(self, symbol: str, n: int | None = None,
+                        begin: str | None = None, end: str | None = None,
+                        _raw: bool = False, _fields: Any = None) -> Any:
+        # 签名与 live 门面逐字对齐（含区间参数）：未回放的能力报 demo_unsupported，
+        # 不能靠「参数不存在」抛 TypeError 让调用方以为是自己写错了。
+        if begin is not None or end is not None or _raw:
+            raise UsageError(
+                "demo 快照只覆盖不带日期区间的 moneyflow.bars(n<=60)",
+                code="demo_unsupported",
+            )
+        count = 20 if n is None else int(n)
         if count <= 0 or count > _MAX_MONEYFLOW_BARS:
             raise UsageError(
                 f"demo 快照最多保存 {_MAX_MONEYFLOW_BARS} 根资金流，收到 {count}",
@@ -640,6 +735,9 @@ class DemoClient:
             )
         sym = self._require_symbol(symbol)
         rows = [dict(row) for row in self._data["moneyflow_bars"][sym][-count:]]
+        if _fields is not None:
+            from wmshare.client import project_fields
+            rows = project_fields(rows, _fields, fname="moneyflow.bars")
         return self._df_asc(rows)
 
     def _moneyflow_board(self) -> Any:
@@ -684,7 +782,8 @@ class DemoClient:
         self._require_symbol(symbol)
         return dict(self._data["statements"]["audit"])
 
-    def _indicator_get(self, symbol: str, code: str, **kw: Any) -> Any:
+    def _indicator_get(self, symbol: str, code: str, fut_symbol: str | None = None,
+                       native: bool = False, **kw: Any) -> Any:
         if code in _FUT_CANS:  # 期货主力连续（合约键仅透传，罐头不随合约变化）
             return _FUT_CANS[code]
         self._require_symbol(symbol)
@@ -696,8 +795,11 @@ class DemoClient:
                 code="demo_unsupported",
             ) from None
 
-    def _indicator_metrics(self, symbol: str, codes: list[str], **kw: Any) -> dict[str, Any]:
-        return {code: self._indicator_get(symbol, code, **kw) for code in codes}
+    def _indicator_metrics(self, symbol: str, codes: list[str],
+                           fut_symbol: str | None = None, native: bool = False,
+                           **kw: Any) -> dict[str, Any]:
+        return {code: self._indicator_get(symbol, code, fut_symbol=fut_symbol,
+                                          native=native, **kw) for code in codes}
 
     # ---- disclosure ----
     def _notice_list(self, symbol: str, window: str = "3m", keyword: str = "",
@@ -782,9 +884,17 @@ class DemoClient:
         return to_output_frame(rows)
 
     # ---- screener ----
-    def _screen(self, symbol: str, key: str) -> bool:
+    def _screen(self, symbol: str, key: str, *, min_ratio: float | None = None) -> bool:
         sym = self._require_symbol(symbol)
-        return bool(self._data["screener"]["screens"][sym][key])
+        ok = bool(self._data["screener"]["screens"][sym][key])
+        if min_ratio is not None and key == "volume_spike":
+            # 快照只存布尔判定（拍摄时的默认阈值），自定义阈值无法回溯——
+            # 报 demo_unsupported 而不是忽略参数返回一个不同的「真值」。
+            raise UsageError(
+                f"demo 快照只回放默认阈值的 volume_spike 判定，不支持 min_ratio={min_ratio}",
+                code="demo_unsupported",
+            )
+        return ok
 
     def _backtest_run(self, symbol: str, rule: str = "ma_cross", fast: int = 5,
                       slow: int = 20, buy: float | None = None, sell: float | None = None,

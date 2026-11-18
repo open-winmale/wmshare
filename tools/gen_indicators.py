@@ -17,12 +17,16 @@ import re
 import sys
 from pathlib import Path
 
+import yaml
+
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
 import wmshare  # noqa: E402
 
 OUT = REPO / "docs" / "INDICATORS.md"
+PAGES_DIR = REPO / "docs" / "indicators"
+UNITS_YAML = REPO / "src" / "wmshare" / "_catalog" / "units.yaml"
 
 UNIT_CN = {"percent": "百分数→小数", "yi_yuan": "亿元→元", "lot": "手→股"}
 
@@ -503,21 +507,123 @@ def build() -> str:
     return "\n".join(out).rstrip() + "\n"
 
 
+FAMILIES: list[tuple[str, str]] = [
+    ("$CUR_IND_", "当前三级行业内相对值 / 分位"),
+    ("$INDEX_", "指数层行情与估值"),
+    ("$IDW_", "指数加权口径（等权 / 市值加权）"),
+    ("$ID_", "行业均值 / 行业聚合"),
+    ("$PCT_", "个股指标历史分位（0=最低 1=最高）"),
+    ("$FUT_", "期货主力连续（fut_symbol 指定合约）"),
+    ("$MF_", "个股资金流（超大/大/中/小单）"),
+    ("$BOND_", "可转债工具属性（条款/发行/转股）"),
+    ("$c_", "筛选器条件码"),
+    ("$x_", "筛选器展示码"),
+]
+
+
+def _family_label(code: str) -> str:
+    for prefix, meaning in FAMILIES:
+        if code.startswith(prefix):
+            return f"`{prefix}*`（{meaning}）"
+    return "—"
+
+
+def _unit_line(code: str, overrides: dict) -> str:
+    row = overrides.get(code) or {}
+    if not row:
+        return "—（默认基础单位：率=小数 / 额=元 / 量=股）"
+    label = f"`{row.get('native_unit')}` → `{row.get('base_unit')}`"
+    note = row.get("note")
+    return f"{label}（{note}）" if note else label
+
+
+def build_pages() -> dict[Path, str]:
+    """逐指标单页（长尾入口）：code/cn/类型/市场/单位/族前缀/取数示例。
+
+    页面内容全部来自离线目录（metrics.json + units.yaml），确定性生成；
+    索引页 README.md 按数据类型分组列出全部码。
+    """
+    cat = wmshare.load()
+    metrics = sorted(cat.metrics["metrics"], key=lambda m: m["code"])
+    overrides = (yaml.safe_load(UNITS_YAML.read_text(encoding="utf-8")) or {}).get(
+        "overrides") or {}
+    pages: dict[Path, str] = {}
+    by_chapter: dict[str, list[dict]] = {k: [] for k in CHAPTER_TITLES}
+    for m in metrics:
+        code = m["code"]
+        chapter = classify(code)
+        by_chapter[chapter].append(m)
+        markets = ", ".join(m.get("markets") or []) or "未声明（以 `cat.search` 为准）"
+        gated = ("\n> 受权限/额度门控（`gated=True`），调用前确认账号权限。\n") \
+            if m.get("gated") else ""
+        pages[PAGES_DIR / f"{code.lstrip('$')}.md"] = f"""# `{code}` — {m.get('cn') or '（无中文名）'}
+
+**类型/市场**：{CHAPTER_TITLES[chapter]} · {markets}
+**单位/换算**：{_unit_line(code, overrides)}
+**族前缀**：{_family_label(code)}
+{gated}
+取数：`cli.indicator.get("600519", "{code}")` · 多码 `cli.indicator.metrics("600519", ["{code}"])`
+
+检索与批量见 [GUIDE](../GUIDE.md)；全量码表 [INDICATORS.md](../INDICATORS.md)；
+目录核实用 `cat.search("{code}")` / `cat.function("indicator.get")`。
+"""
+
+    lines = [
+        "# 指标码单页索引",
+        "",
+        f"共 **{len(metrics)}** 个预置指标码（按数据类型分组、逐码一页；由 "
+        "`tools/gen_indicators.py` 生成，禁止手改）。",
+        "",
+        "全量表格见 [INDICATORS.md](../INDICATORS.md)；接口合同见 [API.md](../API.md)。",
+        "",
+    ]
+    for chapter, title in CHAPTER_TITLES.items():
+        rows = by_chapter[chapter]
+        if not rows:
+            continue
+        lines += [f"## {title}（{len(rows)}）", ""]
+        for m in rows:
+            lines.append(f"- [`{m['code']}`]({m['code'].lstrip('$')}.md) — "
+                         f"{m.get('cn') or '—'}")
+        lines.append("")
+    pages[PAGES_DIR / "README.md"] = "\n".join(lines).rstrip() + "\n"
+    return pages
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--check", action="store_true", help="漂移检查：不一致则退出码 1")
     args = ap.parse_args()
 
     body = build()
+    pages = build_pages()
     if args.check:
+        bad = False
         current = OUT.read_text(encoding="utf-8") if OUT.exists() else ""
         if current != body:
             print(f"indicators drift: {OUT.name}（重跑 python3 tools/gen_indicators.py 更新）")
+            bad = True
+        for path, text in pages.items():
+            if not path.is_file() or path.read_text(encoding="utf-8") != text:
+                print(f"indicators drift: {path.relative_to(REPO)}")
+                bad = True
+                break
+        stale = set(PAGES_DIR.glob("*.md")) - set(pages) if PAGES_DIR.is_dir() else set()
+        if stale:
+            names = ", ".join(sorted(p.name for p in stale)[:5])
+            print(f"indicators stale pages: {len(stale)} 个（如 {names}）")
+            bad = True
+        if bad:
             return 1
-        print(f"indicators ok: {OUT.name}")
+        print(f"indicators ok: {OUT.name} + {len(pages)} pages")
         return 0
     OUT.write_text(body, encoding="utf-8")
-    print(f"wrote {OUT.name}（{len(body)} bytes）")
+    PAGES_DIR.mkdir(parents=True, exist_ok=True)
+    for path, text in pages.items():
+        path.write_text(text, encoding="utf-8")
+    for old in set(PAGES_DIR.glob("*.md")) - set(pages):
+        old.unlink()
+    print(f"wrote {OUT.name}（{len(body)} bytes）+ {len(pages)} 个指标单页")
     return 0
 
 

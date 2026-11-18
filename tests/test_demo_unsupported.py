@@ -56,3 +56,13 @@ def test_same_direction_as_real_catalog_validation(cli):
     with pytest.raises(UsageError) as err:
         cli.call("kline.no_such_fn")
     assert err.value.code == "demo_unsupported"
+
+
+def test_moneyflow_range_is_explicitly_unsupported(cli):
+    """demo 与 live 签名对齐：区间能力未回放时给 demo_unsupported，不是 TypeError。"""
+    with pytest.raises(UsageError) as err:
+        cli.moneyflow.bars("600519", begin="2026-01-01", end="2026-03-01")
+    assert err.value.code == "demo_unsupported"
+    assert "区间" in str(err.value)
+    # 无区间调用照常回放（签名改动不得影响既有路径）
+    assert not cli.moneyflow.bars("600519").empty

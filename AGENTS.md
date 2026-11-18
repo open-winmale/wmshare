@@ -14,11 +14,14 @@ python tools/validate_units.py                   # 单位台账（手/亿元/百
 python tools/check_version.py --check  # 六处版本声明互校（含 SECURITY.md 表头）
 python tools/guard_coverage.py --min 0.156  # 守护声明覆盖率下限
 python -m tools.audit_units drift --strict  # shape/units/ranges 声明漂移（ERROR/WARN 均拦）
-python tools/gen_api_docs.py --check  # 以下五个是生成物漂移门禁
+python tools/gen_api_docs.py --check  # 以下为生成物漂移门禁
 python tools/gen_typed_api.py --check
 python tools/gen_openapi.py --check
 python tools/gen_llms.py --check
-python tools/gen_indicators.py --check
+python tools/gen_indicators.py --check   # INDICATORS.md + indicators/ 逐码页
+python tools/gen_errors.py --check       # docs/ERRORS.md（错误码全集来自源码扫描）
+python tools/gen_data_calendar.py --check  # 兄弟仓缺失时 SKIP
+python tools/gen_changelog_feed.py --check # docs/changelog.xml
 python -m mypy
 pytest -q --cov-branch                # 离线全量（行/分支覆盖率 ≥85%，CI 同款）
 ```
@@ -34,9 +37,13 @@ pytest -q --cov-branch                # 离线全量（行/分支覆盖率 ≥85
   `cat.search / cat.function` 确认，禁止凭记忆编造；
 - **公开文档零竞品名、零导流话术**（CTA 禁词表见 `tests/test_docs.py::test_docs_no_ad_diversion_cta`，
   Gitee 内容风控会拦截导流类措辞，故全库执行）；
-- **生成物不手改**：docs/API.md、docs/openapi.json、docs/swagger.html、llms.txt、
-  llms-full.txt、docs/INDICATORS.md 由 `tools/gen_*.py` 生成——改源头后重新生成，
-  漂移门禁会拦截手改；
+- **生成物不手改**：docs/API.md、docs/fields.json、docs/openapi.json、
+  docs/swagger.html、llms.txt、llms-full.txt、docs/INDICATORS.md、docs/indicators/、
+  docs/ERRORS.md、docs/DATA_CALENDAR.md、docs/changelog.xml
+  由 `tools/gen_*.py` 生成——改源头后重新生成，漂移门禁会拦截手改；
+- **公开面变更走兼容政策**：接口签名、返回字段、单位、信封、异常 `code` 的破坏性
+  变更只能在 MAJOR；弃用窗口 ≥1 个 MINOR，按 `docs/COMPATIBILITY.md` 登记
+  `Deprecated`（替代写法 + 移除版本），不得静默删除；
 - **README ≤330 行**（`test_readme_is_lean`）：长内容下沉 docs/，先删后提限；
 - **新增示例**：`NN_主题.py` 编号进 examples/ 课程表，docstring 四行元信息
   （前提/运行/学到/文档），`main(cli=None)` 可注入，tests 端到端覆盖，并加进 examples/README.md 索引；

@@ -1,6 +1,6 @@
 {
  "schema_version": 2,
- "upstream_rev": "490f5f18",
+ "upstream_rev": "4f8252a3",
  "domains": {
   "bonus": {
    "entry": "sys/bonus/init.xs",
@@ -89,12 +89,12 @@
    "entry": "sys/stocks/init.xs",
    "exports": []
   },
-  "workout": {
-   "entry": "sys/workout/init.xs",
-   "exports": []
-  },
   "valuation": {
    "entry": "sys/valuation/init.xs",
+   "exports": []
+  },
+  "workout": {
+   "entry": "sys/workout/init.xs",
    "exports": []
   }
  },
@@ -113,7 +113,7 @@
   "segments",
   "valuation"
  ],
- "function_count": 305,
+ "function_count": 306,
  "functions": [
   {
    "name": "bonus.dps_rpt",
@@ -7239,7 +7239,7 @@
    "params": [
     {
      "name": "limit",
-     "type": "int"
+     "type": "any"
     }
    ]
   },
@@ -7491,6 +7491,79 @@
     {
      "name": "limit",
      "type": "int"
+    }
+   ]
+  },
+  {
+   "name": "moneyflow.query_bars_anchor",
+   "cn": "锚点前资金流",
+   "example": "moneyflow.query_bars_anchor(\"600519\", 20, anchor.date())",
+   "returns": "ARR · 资金流行",
+   "returns_shape": {
+    "kind": "array",
+    "items": {
+     "kind": "object",
+     "cn": "资金流行",
+     "fields": [
+      {
+       "name": "sas",
+       "type": "string",
+       "cn": "SAS",
+       "optional": true
+      },
+      {
+       "name": "date",
+       "type": "string",
+       "cn": "日期",
+       "optional": true
+      },
+      {
+       "name": "net_mf",
+       "type": "float64",
+       "cn": "主力净流入",
+       "optional": true
+      },
+      {
+       "name": "elg_net",
+       "type": "float64",
+       "cn": "超大单净流入",
+       "optional": true
+      },
+      {
+       "name": "lg_net",
+       "type": "float64",
+       "cn": "大单净流入",
+       "optional": true
+      },
+      {
+       "name": "md_net",
+       "type": "float64",
+       "cn": "中单净流入",
+       "optional": true
+      },
+      {
+       "name": "sm_net",
+       "type": "float64",
+       "cn": "小单净流入",
+       "optional": true
+      }
+     ],
+     "name": ""
+    }
+   },
+   "min_args": 2,
+   "params": [
+    {
+     "name": "sym",
+     "type": "string"
+    },
+    {
+     "name": "limit",
+     "type": "int"
+    },
+    {
+     "name": "anchor_date",
+     "type": "string"
     }
    ]
   },

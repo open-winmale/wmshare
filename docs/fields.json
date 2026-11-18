@@ -1,0 +1,6253 @@
+{
+  "schema_version": 1,
+  "generated_by": "tools/gen_api_docs.py",
+  "count": 237,
+  "domains": [
+    {
+      "id": "corp.equity",
+      "kind": "raw",
+      "data_origin": [
+        "交易所披露",
+        "平台数据服务"
+      ],
+      "functions": [
+        {
+          "name": "equity.query_holder10",
+          "cn": "最新一期十大股东",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "hold_num_ratio": [
+              0,
+              1
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "equity.query_holdernum",
+          "cn": "最新股东户数",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "hold_ratio_total": [
+              0,
+              1
+            ],
+            "freehold_ratio_total": [
+              0,
+              1
+            ],
+            "total_num_ratio": [
+              -1,
+              1
+            ],
+            "avg_freeshares_ratio": [
+              -1,
+              1
+            ],
+            "avg_hold_amt": [
+              0,
+              1000000000.0
+            ],
+            "avg_free_shares": [
+              0,
+              10000000000.0
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "equity.query_pledge_detail",
+          "cn": "主要股东质押明细",
+          "layer": "L0",
+          "internal": false,
+          "units": {
+            "accum_pledge_tsr": "percent",
+            "pf_hold_ratio": "percent",
+            "pf_tsr": "percent"
+          },
+          "ranges": {
+            "accum_pledge_tsr": [
+              0,
+              1
+            ],
+            "pf_hold_ratio": [
+              0,
+              1
+            ],
+            "pf_tsr": [
+              0,
+              1
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "equity.query_pledge_summary",
+          "cn": "公司质押比例",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "pledge_ratio": [
+              0,
+              1
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "equity.query_pledge_market",
+          "cn": "市场整体质押",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "pledge_ratio_total": [
+              0,
+              1
+            ],
+            "csi300_chg": [
+              -1,
+              1
+            ],
+            "pledge_market_value": [
+              0,
+              100000000000000.0
+            ],
+            "total_pledged_shares": [
+              0,
+              10000000000000.0
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "equity.query_pledge_industry",
+          "cn": "行业质押比例",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "avg_pledge_ratio": [
+              0,
+              1
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "equity.query_pledge_org",
+          "cn": "质押机构分布",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "equity.query_institution_detail",
+          "cn": "机构持股明细",
+          "layer": "L0",
+          "internal": false,
+          "units": {
+            "total_shares_ratio": "percent",
+            "free_shares_ratio": "percent"
+          },
+          "ranges": {
+            "total_shares_ratio": [
+              0,
+              1
+            ],
+            "free_shares_ratio": [
+              0,
+              1
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "equity.query_institution_summary",
+          "cn": "机构持仓占比",
+          "layer": "L0",
+          "internal": false,
+          "units": {
+            "all_shares_ratio": "percent"
+          },
+          "ranges": {
+            "all_shares_ratio": [
+              0,
+              1
+            ],
+            "total_shares_ratio": [
+              0,
+              1
+            ],
+            "change_ratio": [
+              -1,
+              1
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "equity.query_hgt",
+          "cn": "沪港通持股",
+          "layer": "L0",
+          "internal": false,
+          "units": {
+            "add_shares_pct": "percent"
+          },
+          "ranges": {
+            "add_shares_pct": [
+              -1,
+              50
+            ],
+            "free_shares_ratio": [
+              0,
+              20
+            ],
+            "total_shares_ratio": [
+              0,
+              20
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "equity.query_national_team",
+          "cn": "国家队持股",
+          "layer": "L0",
+          "internal": false,
+          "units": {
+            "shares_ratio": "percent",
+            "shares_ratio_change": "percent"
+          },
+          "ranges": {
+            "shares_ratio": [
+              0,
+              1
+            ],
+            "shares_ratio_change": [
+              -1,
+              1
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "equity.query_release",
+          "cn": "限售解禁日程",
+          "layer": "L0",
+          "internal": false,
+          "units": {
+            "total_shares_ratio": "percent",
+            "unlimited_ratio": "percent"
+          },
+          "ranges": {
+            "total_shares_ratio": [
+              0,
+              1
+            ],
+            "unlimited_ratio": [
+              0,
+              1
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "equity.query_buyback_plan",
+          "cn": "回购方案全览",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "equity.query_buyback_detail",
+          "cn": "回购执行明细",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "equity.query_reorg",
+          "cn": "并购重组",
+          "layer": "L0",
+          "internal": false,
+          "units": {
+            "transfer_ratio": "percent"
+          },
+          "ranges": {
+            "transfer_ratio": [
+              0,
+              1
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "equity.query_related_trade",
+          "cn": "关联交易",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "equity.query_concert",
+          "cn": "一致行动人",
+          "layer": "L0",
+          "internal": false,
+          "units": {
+            "hold_ratio": "percent"
+          },
+          "ranges": {
+            "hold_ratio": [
+              0,
+              1
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "equity.query_guarantee",
+          "cn": "对外担保",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "equity.query_litigation",
+          "cn": "诉讼记录",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "equity.query_violation",
+          "cn": "违规处罚",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "punish_amt": [
+              0,
+              100000000000.0
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "equity.query_executives",
+          "cn": "高管名册",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "salary": [
+              0,
+              100000000.0
+            ],
+            "hold_num": [
+              0,
+              10000000000.0
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "equity.query_exec_change",
+          "cn": "高管增减持最新",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "equity.query_exec_change_at",
+          "cn": "指定报告期增减持",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "equity.query_capital_change",
+          "cn": "股本结构最新",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "total_shares": [
+              0,
+              10000000000000.0
+            ],
+            "free_shares": [
+              0,
+              10000000000000.0
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "equity.query_capital_change_at",
+          "cn": "指定报告期股本",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        }
+      ]
+    },
+    {
+      "id": "disc.bonus",
+      "kind": "raw",
+      "data_origin": [
+        "公司公告披露"
+      ],
+      "functions": [
+        {
+          "name": "bonus.query_list",
+          "cn": "分红历史明细",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "dps": [
+              0,
+              500
+            ],
+            "payout_ratio": [
+              0,
+              20
+            ],
+            "total": [
+              0,
+              2000000000000.0
+            ],
+            "net_profit": [
+              0,
+              1000000000000.0
+            ]
+          },
+          "checks": [],
+          "fields": [
+            {
+              "name": "sas",
+              "type": "string",
+              "optional": true,
+              "desc": "SAS"
+            },
+            {
+              "name": "dps",
+              "type": "float64",
+              "optional": true,
+              "desc": "每股股利",
+              "range": [
+                0,
+                500
+              ]
+            },
+            {
+              "name": "total",
+              "type": "float64",
+              "optional": true,
+              "desc": "总分红",
+              "range": [
+                0,
+                2000000000000.0
+              ]
+            },
+            {
+              "name": "announce_date",
+              "type": "string",
+              "optional": true,
+              "desc": "公告日"
+            },
+            {
+              "name": "ex_div_date",
+              "type": "string",
+              "optional": true,
+              "desc": "除权日"
+            },
+            {
+              "name": "pay_date",
+              "type": "string",
+              "optional": true,
+              "desc": "派息日"
+            },
+            {
+              "name": "content",
+              "type": "string",
+              "optional": true,
+              "desc": "方案摘要"
+            },
+            {
+              "name": "payout_ratio",
+              "type": "float64",
+              "optional": true,
+              "desc": "派息率",
+              "range": [
+                0,
+                20
+              ]
+            }
+          ]
+        },
+        {
+          "name": "bonus.query_last",
+          "cn": "最近一次分红",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "sas",
+              "type": "string",
+              "optional": true,
+              "desc": "SAS"
+            },
+            {
+              "name": "dps",
+              "type": "float64",
+              "optional": true,
+              "desc": "每股股利"
+            },
+            {
+              "name": "total",
+              "type": "float64",
+              "optional": true,
+              "desc": "总分红"
+            },
+            {
+              "name": "announce_date",
+              "type": "string",
+              "optional": true,
+              "desc": "公告日"
+            },
+            {
+              "name": "ex_div_date",
+              "type": "string",
+              "optional": true,
+              "desc": "除权日"
+            },
+            {
+              "name": "pay_date",
+              "type": "string",
+              "optional": true,
+              "desc": "派息日"
+            },
+            {
+              "name": "content",
+              "type": "string",
+              "optional": true,
+              "desc": "方案摘要"
+            },
+            {
+              "name": "payout_ratio",
+              "type": "float64",
+              "optional": true,
+              "desc": "派息率"
+            }
+          ]
+        },
+        {
+          "name": "bonus.query_at_sas",
+          "cn": "指定报告期分红",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "sas",
+              "type": "string",
+              "optional": true,
+              "desc": "SAS"
+            },
+            {
+              "name": "dps",
+              "type": "float64",
+              "optional": true,
+              "desc": "每股股利"
+            },
+            {
+              "name": "total",
+              "type": "float64",
+              "optional": true,
+              "desc": "总分红"
+            },
+            {
+              "name": "announce_date",
+              "type": "string",
+              "optional": true,
+              "desc": "公告日"
+            },
+            {
+              "name": "ex_div_date",
+              "type": "string",
+              "optional": true,
+              "desc": "除权日"
+            },
+            {
+              "name": "pay_date",
+              "type": "string",
+              "optional": true,
+              "desc": "派息日"
+            },
+            {
+              "name": "content",
+              "type": "string",
+              "optional": true,
+              "desc": "方案摘要"
+            },
+            {
+              "name": "payout_ratio",
+              "type": "float64",
+              "optional": true,
+              "desc": "派息率"
+            }
+          ]
+        },
+        {
+          "name": "bonus.dps_rpt",
+          "cn": "财报期每股分红",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "bonus.dps_rpt_asof",
+          "cn": "财报期每股分红（截至日）",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "bonus.query_dps_window",
+          "cn": "窗口内每股股利合计",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "bonus.query_total_window",
+          "cn": "窗口内总分红",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "bonus.query_count_window",
+          "cn": "窗口内分红次数",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "bonus.query_valid",
+          "cn": "有效分红序列（过滤无效行）",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "sas",
+              "type": "string",
+              "optional": true,
+              "desc": "SAS"
+            },
+            {
+              "name": "dps",
+              "type": "float64",
+              "optional": true,
+              "desc": "每股股利"
+            },
+            {
+              "name": "total",
+              "type": "float64",
+              "optional": true,
+              "desc": "总分红"
+            },
+            {
+              "name": "announce_date",
+              "type": "string",
+              "optional": true,
+              "desc": "公告日"
+            },
+            {
+              "name": "ex_div_date",
+              "type": "string",
+              "optional": true,
+              "desc": "除权日"
+            },
+            {
+              "name": "pay_date",
+              "type": "string",
+              "optional": true,
+              "desc": "派息日"
+            },
+            {
+              "name": "content",
+              "type": "string",
+              "optional": true,
+              "desc": "方案摘要"
+            },
+            {
+              "name": "payout_ratio",
+              "type": "float64",
+              "optional": true,
+              "desc": "派息率"
+            }
+          ]
+        },
+        {
+          "name": "bonus.snapshot",
+          "cn": "股息快照（比率均为小数：yield_ttm=0.036 即 3.6%）",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "yield_ttm": [
+              0,
+              0.5
+            ],
+            "yield_lyr": [
+              0,
+              0.5
+            ],
+            "yield_3y_avg": [
+              0,
+              0.5
+            ],
+            "yield_3y_min": [
+              0,
+              0.5
+            ],
+            "payout_ttm": [
+              0,
+              5
+            ],
+            "pct_yield_3y": [
+              0,
+              1
+            ],
+            "bonus_npts_rate": [
+              0,
+              1
+            ],
+            "dps_ttm": [
+              0,
+              200
+            ],
+            "pe_ttm": [
+              -500,
+              5000
+            ],
+            "mv": [
+              0,
+              5000000000000.0
+            ],
+            "bonus_ttm": [
+              0,
+              1000000000000.0
+            ],
+            "bonus_total": [
+              0,
+              2000000000000.0
+            ]
+          },
+          "checks": [],
+          "fields": [
+            {
+              "name": "yield_ttm",
+              "type": "float64",
+              "optional": true,
+              "desc": "LTM 股息率",
+              "range": [
+                0,
+                0.5
+              ]
+            },
+            {
+              "name": "payout_ttm",
+              "type": "float64",
+              "optional": true,
+              "desc": "TTM 派息率",
+              "range": [
+                0,
+                5
+              ]
+            }
+          ]
+        },
+        {
+          "name": "bonus.snapshot_yield_ttm",
+          "cn": "LTM 股息率",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "bonus.snapshot_payout_ttm",
+          "cn": "TTM 派息率",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "bonus.screen_active",
+          "cn": "近年有分红",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "bonus.screen_has_dividend",
+          "cn": "有分红记录",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "bonus.screen_high_yield",
+          "cn": "高股息",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "bonus.screen_ample_payout",
+          "cn": "慷慨派息",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "bonus.screen_danger_payout",
+          "cn": "派息不可持续",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "bonus.screen_quality",
+          "cn": "分红质量优",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "bonus.screen_stable_yield",
+          "cn": "股息稳定",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "bonus.screen_improving_yield",
+          "cn": "股息改善",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "bonus.screen_trend_ok",
+          "cn": "分红趋势健康",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "bonus.screen_declining_yield",
+          "cn": "股息下滑",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "bonus.screen_undervalued_yield",
+          "cn": "低估+高股息",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "bonus.index_where_active",
+          "cn": "where·有分红",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "bonus.index_where_no_dividend",
+          "cn": "where·无分红",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "bonus.index_where_has_dividend",
+          "cn": "where·有记录",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "bonus.index_where_high_yield",
+          "cn": "where·高股息",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "bonus.index_where_high_yield_5",
+          "cn": "where·连续5年高股息",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "bonus.index_where_ample_payout",
+          "cn": "where·慷慨派息",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "bonus.index_where_danger_payout",
+          "cn": "where·派息危险",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "bonus.index_where_quality",
+          "cn": "where·质量",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "bonus.index_where_stable",
+          "cn": "where·稳定",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "bonus.index_where_improving",
+          "cn": "where·改善",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "bonus.index_where_declining",
+          "cn": "where·下滑",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "bonus.index_where_trend_up",
+          "cn": "where·趋势向上",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "bonus.index_where_undervalued",
+          "cn": "where·低估",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "bonus.index_yield_bin_expr",
+          "cn": "股息率分桶 where 表达式",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "bonus.index_field_load",
+          "cn": "分红索引字段预加载",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "idx",
+              "type": "any",
+              "optional": true,
+              "desc": "索引"
+            }
+          ]
+        },
+        {
+          "name": "bonus.index_field_load_analysis",
+          "cn": "分红分析字段预加载",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "idx",
+              "type": "any",
+              "optional": true,
+              "desc": "索引"
+            }
+          ]
+        },
+        {
+          "name": "bonus.index_fields_basic",
+          "cn": "分红基础字段列表",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "bonus.index_fields_analysis",
+          "cn": "分红分析字段列表",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        }
+      ]
+    },
+    {
+      "id": "disc.events",
+      "kind": "raw",
+      "data_origin": [
+        "交易所披露"
+      ],
+      "functions": [
+        {
+          "name": "forecast.yjyg_rows",
+          "cn": "业绩预告历史",
+          "layer": "L0",
+          "internal": false,
+          "units": {
+            "np_amp_lower": "percent",
+            "np_amp_upper": "percent",
+            "rev_amp_lower": "percent",
+            "rev_amp_upper": "percent"
+          },
+          "ranges": {
+            "np_amp_lower": [
+              -100,
+              1000
+            ],
+            "np_amp_upper": [
+              -100,
+              1000
+            ],
+            "rev_amp_lower": [
+              -100,
+              1000
+            ],
+            "rev_amp_upper": [
+              -100,
+              1000
+            ]
+          },
+          "checks": [],
+          "fields": [
+            {
+              "name": "report_date",
+              "type": "string",
+              "optional": false,
+              "desc": "报告期"
+            },
+            {
+              "name": "predict_type",
+              "type": "string",
+              "optional": true,
+              "desc": "预告类型"
+            },
+            {
+              "name": "np_lower",
+              "type": "float64",
+              "optional": true,
+              "desc": "净利润下限(元)"
+            },
+            {
+              "name": "np_upper",
+              "type": "float64",
+              "optional": true,
+              "desc": "净利润上限(元)"
+            },
+            {
+              "name": "np_amp_lower",
+              "type": "float64",
+              "optional": true,
+              "desc": "同比变动下限(%)",
+              "unit": "百分数→小数",
+              "range": [
+                -100,
+                1000
+              ]
+            },
+            {
+              "name": "np_amp_upper",
+              "type": "float64",
+              "optional": true,
+              "desc": "同比变动上限(%)",
+              "unit": "百分数→小数",
+              "range": [
+                -100,
+                1000
+              ]
+            },
+            {
+              "name": "ann_date",
+              "type": "string",
+              "optional": true,
+              "desc": "公告日"
+            },
+            {
+              "name": "content",
+              "type": "string",
+              "optional": true,
+              "desc": "预告原文"
+            }
+          ]
+        },
+        {
+          "name": "forecast.yjyg_latest",
+          "cn": "最新业绩预告",
+          "layer": "L0",
+          "internal": false,
+          "units": {
+            "np_amp_lower": "percent",
+            "np_amp_upper": "percent",
+            "rev_amp_lower": "percent",
+            "rev_amp_upper": "percent"
+          },
+          "ranges": {
+            "np_amp_lower": [
+              -100,
+              1000
+            ],
+            "np_amp_upper": [
+              -100,
+              1000
+            ],
+            "rev_amp_lower": [
+              -100,
+              1000
+            ],
+            "rev_amp_upper": [
+              -100,
+              1000
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "forecast.yjkb_rows",
+          "cn": "业绩快报历史",
+          "layer": "L0",
+          "internal": false,
+          "units": {
+            "np_yoy": "percent",
+            "rev_yoy": "percent",
+            "roe": "percent"
+          },
+          "ranges": {
+            "np_yoy": [
+              -100,
+              1000
+            ],
+            "rev_yoy": [
+              -100,
+              1000
+            ],
+            "roe": [
+              -2,
+              5
+            ]
+          },
+          "checks": [],
+          "fields": [
+            {
+              "name": "report_date",
+              "type": "string",
+              "optional": false,
+              "desc": "报告期"
+            },
+            {
+              "name": "revenue",
+              "type": "float64",
+              "optional": true,
+              "desc": "营业收入(元)"
+            },
+            {
+              "name": "netprofit",
+              "type": "float64",
+              "optional": true,
+              "desc": "净利润(元)"
+            },
+            {
+              "name": "basic_eps",
+              "type": "float64",
+              "optional": true,
+              "desc": "每股收益(元)"
+            },
+            {
+              "name": "ann_date",
+              "type": "string",
+              "optional": true,
+              "desc": "公告日"
+            }
+          ]
+        },
+        {
+          "name": "forecast.yjkb_latest",
+          "cn": "最新业绩快报",
+          "layer": "L0",
+          "internal": false,
+          "units": {
+            "np_yoy": "percent",
+            "rev_yoy": "percent",
+            "roe": "percent"
+          },
+          "ranges": {
+            "np_yoy": [
+              -100,
+              1000
+            ],
+            "rev_yoy": [
+              -100,
+              1000
+            ],
+            "roe": [
+              -2,
+              5
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "forecast.disclosure_rows",
+          "cn": "财报预约披露历史",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "report_date",
+              "type": "string",
+              "optional": false,
+              "desc": "报告期"
+            },
+            {
+              "name": "latest_appoint_date",
+              "type": "string",
+              "optional": true,
+              "desc": "最新预约日"
+            },
+            {
+              "name": "actual_publish_date",
+              "type": "string",
+              "optional": true,
+              "desc": "实际披露日"
+            },
+            {
+              "name": "change_count",
+              "type": "int",
+              "optional": true,
+              "desc": "变更次数"
+            }
+          ]
+        },
+        {
+          "name": "forecast.disclosure_next",
+          "cn": "下次财报披露",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "forecast.snapshot",
+          "cn": "业绩披露快照（预告+快报+日历合并视图）",
+          "layer": "L0",
+          "internal": false,
+          "units": {
+            "np_amp_lower": "percent",
+            "np_amp_upper": "percent",
+            "rev_amp_lower": "percent",
+            "rev_amp_upper": "percent",
+            "np_yoy": "percent",
+            "rev_yoy": "percent",
+            "roe": "percent"
+          },
+          "ranges": {
+            "np_amp_lower": [
+              -100,
+              1000
+            ],
+            "np_amp_upper": [
+              -100,
+              1000
+            ],
+            "rev_amp_lower": [
+              -100,
+              1000
+            ],
+            "rev_amp_upper": [
+              -100,
+              1000
+            ],
+            "np_yoy": [
+              -100,
+              1000
+            ],
+            "rev_yoy": [
+              -100,
+              1000
+            ],
+            "roe": [
+              -2,
+              5
+            ]
+          },
+          "checks": [],
+          "fields": [
+            {
+              "name": "symbol",
+              "type": "string",
+              "optional": false,
+              "desc": "股票代码"
+            },
+            {
+              "name": "yjyg",
+              "type": "object",
+              "optional": true,
+              "desc": "最新业绩预告"
+            },
+            {
+              "name": "yjkb",
+              "type": "object",
+              "optional": true,
+              "desc": "最新业绩快报"
+            },
+            {
+              "name": "next_disclosure",
+              "type": "object",
+              "optional": true,
+              "desc": "下次财报披露"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "disc.filings",
+      "kind": "raw",
+      "data_origin": [
+        "交易所披露"
+      ],
+      "functions": [
+        {
+          "name": "filings.query",
+          "cn": "定期报告列表",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "title",
+              "type": "string",
+              "optional": true,
+              "desc": "标题"
+            },
+            {
+              "name": "type",
+              "type": "string",
+              "optional": true,
+              "desc": "报告类型中文"
+            },
+            {
+              "name": "notice_date",
+              "type": "string",
+              "optional": false,
+              "desc": "公告日"
+            },
+            {
+              "name": "report_date",
+              "type": "string",
+              "optional": false,
+              "desc": "报告期"
+            },
+            {
+              "name": "url",
+              "type": "string",
+              "optional": true,
+              "desc": "链接"
+            }
+          ]
+        },
+        {
+          "name": "filings.latest",
+          "cn": "最新一条定期报告",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "title",
+              "type": "string",
+              "optional": true,
+              "desc": "标题"
+            },
+            {
+              "name": "type",
+              "type": "string",
+              "optional": true,
+              "desc": "报告类型中文"
+            },
+            {
+              "name": "notice_date",
+              "type": "string",
+              "optional": false,
+              "desc": "公告日"
+            },
+            {
+              "name": "report_date",
+              "type": "string",
+              "optional": false,
+              "desc": "报告期"
+            },
+            {
+              "name": "url",
+              "type": "string",
+              "optional": true,
+              "desc": "链接"
+            }
+          ]
+        },
+        {
+          "name": "filings.type_zh",
+          "cn": "type_key 转中文",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        }
+      ]
+    },
+    {
+      "id": "disc.notice",
+      "kind": "raw",
+      "data_origin": [
+        "披露公告库(含港股)"
+      ],
+      "functions": [
+        {
+          "name": "notice.query_by_symbol",
+          "cn": "单票公告列表",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "notice.query_recent",
+          "cn": "近期公告（全市场）",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "notice.query_by_category",
+          "cn": "按类别查公告",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "notice.query_on_date",
+          "cn": "指定日期公告",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "notice.query_find",
+          "cn": "按日期区间查公告",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "notice.signal_has_buyback",
+          "cn": "窗口内是否有回购公告",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "notice.signal_has_reduction",
+          "cn": "窗口内是否有减持公告",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "notice.signal_has_insider_buy",
+          "cn": "窗口内是否有增持公告",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "notice.signal_has_equity_incentive",
+          "cn": "窗口内是否有股权激励公告",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "notice.signal_evidence_rows",
+          "cn": "信号证据（原始公告行）",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "notice.signal_evidence_buyback",
+          "cn": "回购证据（规范化行）",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "date",
+              "type": "string",
+              "optional": false,
+              "desc": "公告日"
+            },
+            {
+              "name": "announce_date",
+              "type": "string",
+              "optional": false,
+              "desc": "公告日（同 date）"
+            },
+            {
+              "name": "code",
+              "type": "string",
+              "optional": false,
+              "desc": "证券代码"
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "optional": false,
+              "desc": "证券简称"
+            },
+            {
+              "name": "type",
+              "type": "string",
+              "optional": false,
+              "desc": "公告类型"
+            },
+            {
+              "name": "title",
+              "type": "string",
+              "optional": false,
+              "desc": "标题"
+            },
+            {
+              "name": "url",
+              "type": "string",
+              "optional": true,
+              "desc": "网页链接"
+            },
+            {
+              "name": "pdf_url",
+              "type": "string",
+              "optional": true,
+              "desc": "PDF 链接"
+            }
+          ]
+        },
+        {
+          "name": "notice.signal_evidence_reduction",
+          "cn": "减持证据（规范化行）",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "date",
+              "type": "string",
+              "optional": false,
+              "desc": "公告日"
+            },
+            {
+              "name": "announce_date",
+              "type": "string",
+              "optional": false,
+              "desc": "公告日（同 date）"
+            },
+            {
+              "name": "code",
+              "type": "string",
+              "optional": false,
+              "desc": "证券代码"
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "optional": false,
+              "desc": "证券简称"
+            },
+            {
+              "name": "type",
+              "type": "string",
+              "optional": false,
+              "desc": "公告类型"
+            },
+            {
+              "name": "title",
+              "type": "string",
+              "optional": false,
+              "desc": "标题"
+            },
+            {
+              "name": "url",
+              "type": "string",
+              "optional": true,
+              "desc": "网页链接"
+            },
+            {
+              "name": "pdf_url",
+              "type": "string",
+              "optional": true,
+              "desc": "PDF 链接"
+            }
+          ]
+        },
+        {
+          "name": "notice.signal_has",
+          "cn": "窗口内是否匹配类型正则",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "notice.signal_has_category",
+          "cn": "窗口内是否有指定类别",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "notice.signal_no_reduction",
+          "cn": "窗口内是否无减持",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "notice.signal_evidence",
+          "cn": "信号证据（规范化）",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "date",
+              "type": "string",
+              "optional": false,
+              "desc": "公告日"
+            },
+            {
+              "name": "announce_date",
+              "type": "string",
+              "optional": false,
+              "desc": "公告日（同 date）"
+            },
+            {
+              "name": "code",
+              "type": "string",
+              "optional": false,
+              "desc": "证券代码"
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "optional": false,
+              "desc": "证券简称"
+            },
+            {
+              "name": "type",
+              "type": "string",
+              "optional": false,
+              "desc": "公告类型"
+            },
+            {
+              "name": "title",
+              "type": "string",
+              "optional": false,
+              "desc": "标题"
+            },
+            {
+              "name": "url",
+              "type": "string",
+              "optional": true,
+              "desc": "网页链接"
+            },
+            {
+              "name": "pdf_url",
+              "type": "string",
+              "optional": true,
+              "desc": "PDF 链接"
+            }
+          ]
+        },
+        {
+          "name": "notice.query_symbols_on_date",
+          "cn": "指定日期出现公告的代码列表",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "notice.query_stats_recent",
+          "cn": "近期公告类别计数",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "reduction",
+              "type": "int",
+              "optional": false,
+              "desc": "减持"
+            },
+            {
+              "name": "insider_buy",
+              "type": "int",
+              "optional": false,
+              "desc": "增持"
+            },
+            {
+              "name": "buyback",
+              "type": "int",
+              "optional": false,
+              "desc": "回购"
+            },
+            {
+              "name": "equity_incentive",
+              "type": "int",
+              "optional": false,
+              "desc": "股权激励"
+            },
+            {
+              "name": "forecast",
+              "type": "int",
+              "optional": false,
+              "desc": "业绩预告"
+            },
+            {
+              "name": "dividend",
+              "type": "int",
+              "optional": false,
+              "desc": "分红"
+            }
+          ]
+        },
+        {
+          "name": "notice.query_build",
+          "cn": "构建公告 Mongo filter",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "NOTICE_DATE",
+              "type": "map[string]any",
+              "optional": true,
+              "desc": "日期条件"
+            },
+            {
+              "name": "NOTICE_TYPE",
+              "type": "map[string]any",
+              "optional": true,
+              "desc": "类型正则"
+            },
+            {
+              "name": "stock_code",
+              "type": "string",
+              "optional": true,
+              "desc": "代码"
+            }
+          ]
+        },
+        {
+          "name": "notice.query_build_visible",
+          "cn": "构建可见日公告 filter",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "notice.query_date_range",
+          "cn": "日期区间条件",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "$gte",
+              "type": "string",
+              "optional": false,
+              "desc": "起"
+            },
+            {
+              "name": "$lte",
+              "type": "string",
+              "optional": false,
+              "desc": "止"
+            }
+          ]
+        },
+        {
+          "name": "notice.query_ts_range",
+          "cn": "入库时间区间条件",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "$gte",
+              "type": "int",
+              "optional": false,
+              "desc": "起"
+            },
+            {
+              "name": "$lt",
+              "type": "int",
+              "optional": false,
+              "desc": "止（开区间）"
+            }
+          ]
+        },
+        {
+          "name": "notice.read_text",
+          "cn": "公告正文读取（纯读，未就绪不入队）",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "ok",
+              "type": "bool",
+              "optional": false,
+              "desc": "是否取到正文"
+            },
+            {
+              "name": "status",
+              "type": "string",
+              "optional": false,
+              "desc": "文档状态"
+            },
+            {
+              "name": "text",
+              "type": "string",
+              "optional": false,
+              "desc": "正文"
+            },
+            {
+              "name": "text_chars",
+              "type": "int",
+              "optional": false,
+              "desc": "实际字符数"
+            },
+            {
+              "name": "text_truncated",
+              "type": "bool",
+              "optional": false,
+              "desc": "是否截断"
+            },
+            {
+              "name": "file_key",
+              "type": "string",
+              "optional": false,
+              "desc": "文档键"
+            },
+            {
+              "name": "source_url",
+              "type": "string",
+              "optional": false,
+              "desc": "PDF链接"
+            },
+            {
+              "name": "announce_date",
+              "type": "string",
+              "optional": false,
+              "desc": "披露日"
+            },
+            {
+              "name": "title",
+              "type": "string",
+              "optional": false,
+              "desc": "标题"
+            },
+            {
+              "name": "error",
+              "type": "string",
+              "optional": false,
+              "desc": "错误码"
+            },
+            {
+              "name": "note",
+              "type": "string",
+              "optional": false,
+              "desc": "说明"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "disc.workout",
+      "kind": "raw",
+      "data_origin": [
+        "披露原文提取",
+        "平台数据服务"
+      ],
+      "functions": [
+        {
+          "name": "workout.board",
+          "cn": "进行中契约套利看板",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "workout.query",
+          "cn": "单票契约套利条款",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        }
+      ]
+    },
+    {
+      "id": "fund.estimates",
+      "kind": "raw",
+      "data_origin": [
+        "券商研究披露",
+        "平台数据服务"
+      ],
+      "functions": [
+        {
+          "name": "estimates.query_forecast",
+          "cn": "机构盈利预测",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "eps1": [
+              0,
+              10000.0
+            ],
+            "eps2": [
+              0,
+              10000.0
+            ],
+            "eps3": [
+              0,
+              10000.0
+            ],
+            "eps4": [
+              0,
+              10000.0
+            ],
+            "pe1": [
+              0,
+              10000.0
+            ],
+            "pe2": [
+              0,
+              10000.0
+            ],
+            "pe3": [
+              0,
+              10000.0
+            ],
+            "pe4": [
+              0,
+              10000.0
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "estimates.query_forecast_detail",
+          "cn": "盈利预测明细",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "eps1": [
+              0,
+              10000.0
+            ],
+            "eps2": [
+              0,
+              10000.0
+            ],
+            "eps3": [
+              0,
+              10000.0
+            ],
+            "eps4": [
+              0,
+              10000.0
+            ],
+            "pe1": [
+              0,
+              10000.0
+            ],
+            "pe2": [
+              0,
+              10000.0
+            ],
+            "pe3": [
+              0,
+              10000.0
+            ],
+            "pe4": [
+              0,
+              10000.0
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "estimates.query_rating",
+          "cn": "评级统计",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "estimates.query_reports",
+          "cn": "个股研报",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        }
+      ]
+    },
+    {
+      "id": "fund.indicators",
+      "kind": "computed",
+      "data_origin": [
+        "平台计算"
+      ],
+      "functions": []
+    },
+    {
+      "id": "fund.segments",
+      "kind": "raw",
+      "data_origin": [
+        "定期报告披露",
+        "平台清洗归一"
+      ],
+      "functions": [
+        {
+          "name": "segments.query_products",
+          "cn": "产品/商品分部",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "tr": [
+              -10000000000000.0,
+              10000000000000.0
+            ],
+            "cost": [
+              0,
+              10000000000000.0
+            ],
+            "margin": [
+              -5,
+              1
+            ],
+            "ratio": [
+              0,
+              1
+            ]
+          },
+          "checks": [],
+          "fields": [
+            {
+              "name": "name",
+              "type": "string",
+              "optional": true,
+              "desc": "名称"
+            },
+            {
+              "name": "value",
+              "type": "float64",
+              "optional": true,
+              "desc": "数值"
+            },
+            {
+              "name": "ratio",
+              "type": "float64",
+              "optional": true,
+              "desc": "占比",
+              "range": [
+                0,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "name": "segments.query_business",
+          "cn": "业务线分部",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "tr": [
+              -10000000000000.0,
+              10000000000000.0
+            ],
+            "cost": [
+              0,
+              10000000000000.0
+            ],
+            "margin": [
+              -5,
+              1
+            ],
+            "ratio": [
+              0,
+              1
+            ]
+          },
+          "checks": [],
+          "fields": [
+            {
+              "name": "name",
+              "type": "string",
+              "optional": true,
+              "desc": "名称"
+            },
+            {
+              "name": "value",
+              "type": "float64",
+              "optional": true,
+              "desc": "数值"
+            },
+            {
+              "name": "ratio",
+              "type": "float64",
+              "optional": true,
+              "desc": "占比",
+              "range": [
+                0,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "name": "segments.query_income",
+          "cn": "主营标签占比",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "ratio": [
+              0,
+              1
+            ]
+          },
+          "checks": [],
+          "fields": [
+            {
+              "name": "name",
+              "type": "string",
+              "optional": true,
+              "desc": "名称"
+            },
+            {
+              "name": "value",
+              "type": "float64",
+              "optional": true,
+              "desc": "数值"
+            },
+            {
+              "name": "ratio",
+              "type": "float64",
+              "optional": true,
+              "desc": "占比",
+              "range": [
+                0,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "name": "segments.query_region",
+          "cn": "地区/境内外分部",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "tr": [
+              -10000000000000.0,
+              10000000000000.0
+            ],
+            "pct": [
+              0,
+              1
+            ],
+            "margin": [
+              -5,
+              1
+            ],
+            "yoy": [
+              -1,
+              100
+            ]
+          },
+          "checks": [],
+          "fields": [
+            {
+              "name": "name",
+              "type": "string",
+              "optional": true,
+              "desc": "名称"
+            },
+            {
+              "name": "value",
+              "type": "float64",
+              "optional": true,
+              "desc": "数值"
+            },
+            {
+              "name": "ratio",
+              "type": "float64",
+              "optional": true,
+              "desc": "占比"
+            }
+          ]
+        },
+        {
+          "name": "segments.snapshot",
+          "cn": "经营分部截面快照",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "tr": [
+              -10000000000000.0,
+              10000000000000.0
+            ],
+            "cost": [
+              0,
+              10000000000000.0
+            ],
+            "margin": [
+              -5,
+              1
+            ],
+            "ratio": [
+              0,
+              1
+            ],
+            "pct": [
+              0,
+              1
+            ],
+            "yoy": [
+              -1,
+              100
+            ]
+          },
+          "checks": [],
+          "fields": [
+            {
+              "name": "overview",
+              "type": "map[string]any",
+              "optional": true,
+              "desc": "概览"
+            },
+            {
+              "name": "income",
+              "type": "[]any",
+              "optional": true,
+              "desc": "主营标签"
+            },
+            {
+              "name": "region",
+              "type": "[]any",
+              "optional": true,
+              "desc": "地区"
+            },
+            {
+              "name": "product",
+              "type": "[]any",
+              "optional": true,
+              "desc": "产品"
+            },
+            {
+              "name": "business",
+              "type": "[]any",
+              "optional": true,
+              "desc": "业务线"
+            }
+          ]
+        },
+        {
+          "name": "segments.coverage",
+          "cn": "分部披露覆盖度",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "income",
+              "type": "bool",
+              "optional": true,
+              "desc": "主营"
+            },
+            {
+              "name": "region",
+              "type": "bool",
+              "optional": true,
+              "desc": "地区"
+            },
+            {
+              "name": "product",
+              "type": "bool",
+              "optional": true,
+              "desc": "产品"
+            },
+            {
+              "name": "business",
+              "type": "bool",
+              "optional": true,
+              "desc": "业务"
+            }
+          ]
+        },
+        {
+          "name": "segments.list_sas",
+          "cn": "可用报告期",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "income",
+              "type": "string",
+              "optional": true,
+              "desc": ""
+            },
+            {
+              "name": "region",
+              "type": "string",
+              "optional": true,
+              "desc": ""
+            },
+            {
+              "name": "product",
+              "type": "string",
+              "optional": true,
+              "desc": ""
+            },
+            {
+              "name": "business",
+              "type": "string",
+              "optional": true,
+              "desc": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fund.statements",
+      "kind": "raw",
+      "data_origin": [
+        "定期报告披露原值",
+        "外部数据服务(主要指标)"
+      ],
+      "functions": []
+    },
+    {
+      "id": "fund.valuation",
+      "kind": "computed",
+      "data_origin": [
+        "服务端物化（kline × 财报 × 股本事件 × 分红事件，公式同平台现算核）"
+      ],
+      "functions": [
+        {
+          "name": "valuation.daily_basic",
+          "cn": "个股每日估值序列",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "pe_ttm": [
+              0,
+              3000
+            ],
+            "pb": [
+              0,
+              200
+            ],
+            "ps": [
+              0,
+              500
+            ],
+            "pr": [
+              0,
+              2000
+            ],
+            "total_mv": [
+              0,
+              50000000000000.0
+            ],
+            "circ_mv": [
+              0,
+              50000000000000.0
+            ],
+            "turnover_rate": [
+              0,
+              1
+            ],
+            "dv_ttm": [
+              0,
+              0.5
+            ]
+          },
+          "checks": [],
+          "fields": []
+        }
+      ]
+    },
+    {
+      "id": "market.calendar",
+      "kind": "raw",
+      "data_origin": [
+        "交易所年历",
+        "平台采集"
+      ],
+      "functions": [
+        {
+          "name": "calendar.days",
+          "cn": "交易日历区间",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [
+            "date_iso"
+          ],
+          "fields": [
+            {
+              "name": "date",
+              "type": "string",
+              "optional": false,
+              "desc": "交易日期"
+            },
+            {
+              "name": "is_open",
+              "type": "bool",
+              "optional": false,
+              "desc": "是否开市"
+            }
+          ]
+        },
+        {
+          "name": "calendar.is_open",
+          "cn": "是否交易日",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "calendar.next",
+          "cn": "之后 N 个交易日",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [
+            "date_iso"
+          ],
+          "fields": []
+        }
+      ]
+    },
+    {
+      "id": "market.cbond",
+      "kind": "raw",
+      "data_origin": [
+        "发行条款披露",
+        "平台数据服务"
+      ],
+      "functions": [
+        {
+          "name": "cbond.board",
+          "cn": "转债全市场面板（快照+最新事件+盘中价+callHits+下修地板价）",
+          "layer": "L0",
+          "internal": false,
+          "units": {
+            "premiumRatio": "percent",
+            "couponIr": "percent"
+          },
+          "ranges": {
+            "premiumRatio": [
+              -100,
+              1000
+            ],
+            "couponIr": [
+              0,
+              0.15
+            ]
+          },
+          "checks": [],
+          "fields": [
+            {
+              "name": "bondCode",
+              "type": "string",
+              "optional": false,
+              "desc": "转债代码"
+            },
+            {
+              "name": "bondName",
+              "type": "string",
+              "optional": false,
+              "desc": "转债简称"
+            },
+            {
+              "name": "stockCode",
+              "type": "string",
+              "optional": false,
+              "desc": "正股代码"
+            },
+            {
+              "name": "stockName",
+              "type": "string",
+              "optional": false,
+              "desc": "正股简称"
+            },
+            {
+              "name": "convertPrice",
+              "type": "float64",
+              "optional": true,
+              "desc": "当期转股价"
+            },
+            {
+              "name": "convertPriceInitial",
+              "type": "float64",
+              "optional": true,
+              "desc": "初始转股价"
+            },
+            {
+              "name": "bondPrice",
+              "type": "float64",
+              "optional": true,
+              "desc": "转债价（元，面值 100）"
+            },
+            {
+              "name": "stockPrice",
+              "type": "float64",
+              "optional": true,
+              "desc": "正股现价"
+            },
+            {
+              "name": "transferValue",
+              "type": "float64",
+              "optional": true,
+              "desc": "转股价值"
+            },
+            {
+              "name": "premiumRatio",
+              "type": "float64",
+              "optional": true,
+              "desc": "转股溢价率（百分比数值 4.87 = +4.87%，可为负）",
+              "unit": "百分数→小数",
+              "range": [
+                -100,
+                1000
+              ]
+            },
+            {
+              "name": "remainSize",
+              "type": "float64",
+              "optional": true,
+              "desc": "未转股余额（元）"
+            },
+            {
+              "name": "issueScale",
+              "type": "float64",
+              "optional": true,
+              "desc": "发行规模（元）"
+            },
+            {
+              "name": "couponExplain",
+              "type": "string",
+              "optional": true,
+              "desc": "票面利率说明（含分年票息表）"
+            },
+            {
+              "name": "couponIr",
+              "type": "float64",
+              "optional": true,
+              "desc": "当年票息（百分比数值，随剩余年限变化，非恒定）",
+              "unit": "百分数→小数",
+              "range": [
+                0,
+                0.15
+              ]
+            },
+            {
+              "name": "bondExpire",
+              "type": "float64",
+              "optional": true,
+              "desc": "债券年限（年，不是价格）"
+            },
+            {
+              "name": "redeemValue",
+              "type": "float64",
+              "optional": true,
+              "desc": "到期赎回价（元，面值的百分比数值）"
+            },
+            {
+              "name": "valueDate",
+              "type": "string",
+              "optional": true,
+              "desc": "转股价值基准日"
+            },
+            {
+              "name": "redeemTrig",
+              "type": "float64",
+              "optional": true,
+              "desc": "强赎触发价（正股口径）"
+            },
+            {
+              "name": "resaleTrig",
+              "type": "float64",
+              "optional": true,
+              "desc": "回售触发价（正股口径）"
+            },
+            {
+              "name": "transferStart",
+              "type": "string",
+              "optional": true,
+              "desc": "转股起始日"
+            },
+            {
+              "name": "expireDate",
+              "type": "string",
+              "optional": true,
+              "desc": "到期日 YYYY-MM-DD"
+            },
+            {
+              "name": "listDate",
+              "type": "string",
+              "optional": true,
+              "desc": "上市日"
+            },
+            {
+              "name": "asOf",
+              "type": "string",
+              "optional": true,
+              "desc": "快照日 YYYY-MM-DD"
+            },
+            {
+              "name": "quoteUrl",
+              "type": "string",
+              "optional": true,
+              "desc": "行情页链接"
+            },
+            {
+              "name": "detailUrl",
+              "type": "string",
+              "optional": true,
+              "desc": "详情页链接"
+            },
+            {
+              "name": "event",
+              "type": "object",
+              "optional": true,
+              "desc": "最新一条条款事件（不分类型，可能是与下修无关的回售/转股结果）"
+            },
+            {
+              "name": "resetEvent",
+              "type": "object",
+              "optional": true,
+              "desc": "尚未被实施下修/不修正关掉的提议事件"
+            },
+            {
+              "name": "outstanding",
+              "type": "bool",
+              "optional": true,
+              "desc": "在市（remainSize>0 且未到期）"
+            },
+            {
+              "name": "bondPercent",
+              "type": "float64",
+              "optional": true,
+              "desc": "转债当日涨跌幅（仅盘中 live 命中时返回）"
+            },
+            {
+              "name": "callHits",
+              "type": "int",
+              "optional": true,
+              "desc": "近 30 个交易日正股收盘 ≥ 触发价天数（仅股价已跨线时返回；优先快照 DAG 计数）"
+            },
+            {
+              "name": "callWindow",
+              "type": "int",
+              "optional": true,
+              "desc": "计数窗口长度（30）"
+            },
+            {
+              "name": "resetFloor",
+              "type": "float64",
+              "optional": true,
+              "desc": "下修地板价"
+            },
+            {
+              "name": "resetP1",
+              "type": "float64",
+              "optional": true,
+              "desc": "前 1 日均价"
+            },
+            {
+              "name": "resetP20",
+              "type": "float64",
+              "optional": true,
+              "desc": "前 20 日均价"
+            },
+            {
+              "name": "resetBps",
+              "type": "float64",
+              "optional": true,
+              "desc": "最近一期审计每股净资产"
+            },
+            {
+              "name": "resetBpsYear",
+              "type": "string",
+              "optional": true,
+              "desc": "净资产所属报告期"
+            },
+            {
+              "name": "resetEstimate",
+              "type": "bool",
+              "optional": true,
+              "desc": "地板价为估算值"
+            },
+            {
+              "name": "resetWaive",
+              "type": "bool",
+              "optional": true,
+              "desc": "按条款可豁免"
+            },
+            {
+              "name": "resetMeeting",
+              "type": "string",
+              "optional": true,
+              "desc": "股东会日期"
+            },
+            {
+              "name": "resetFamily",
+              "type": "string",
+              "optional": true,
+              "desc": "地板口径族 a/b"
+            },
+            {
+              "name": "resetHasPar",
+              "type": "bool",
+              "optional": true,
+              "desc": "条款含面值下限"
+            },
+            {
+              "name": "resetBase",
+              "type": "float64",
+              "optional": true,
+              "desc": "条款基准价"
+            },
+            {
+              "name": "resetBaseFrom",
+              "type": "string",
+              "optional": true,
+              "desc": "基准价来源"
+            },
+            {
+              "name": "resetClause",
+              "type": "string",
+              "optional": true,
+              "desc": "下修条款原文"
+            },
+            {
+              "name": "stockMv",
+              "type": "float64",
+              "optional": true,
+              "desc": "正股市值"
+            },
+            {
+              "name": "stockPb",
+              "type": "float64",
+              "optional": true,
+              "desc": "正股市净率"
+            },
+            {
+              "name": "stockPe",
+              "type": "float64",
+              "optional": true,
+              "desc": "正股市盈率"
+            },
+            {
+              "name": "stockDiv",
+              "type": "float64",
+              "optional": true,
+              "desc": "正股股息率"
+            }
+          ]
+        },
+        {
+          "name": "cbond.quote_list",
+          "cn": "转债合约快照全表",
+          "layer": "L0",
+          "internal": false,
+          "units": {
+            "premium_ratio": "percent",
+            "coupon_ir": "percent"
+          },
+          "ranges": {
+            "premium_ratio": [
+              -100,
+              1000
+            ],
+            "coupon_ir": [
+              0,
+              0.15
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "cbond.latest_quotes",
+          "cn": "转债最新快照",
+          "layer": "L0",
+          "internal": false,
+          "units": {
+            "premiumRatio": "percent",
+            "couponIr": "percent"
+          },
+          "ranges": {
+            "premiumRatio": [
+              -100,
+              1000
+            ],
+            "couponIr": [
+              0,
+              0.15
+            ]
+          },
+          "checks": [],
+          "fields": [
+            {
+              "name": "bondCode",
+              "type": "string",
+              "optional": false,
+              "desc": "转债代码"
+            },
+            {
+              "name": "bondName",
+              "type": "string",
+              "optional": false,
+              "desc": "转债简称"
+            },
+            {
+              "name": "stockCode",
+              "type": "string",
+              "optional": false,
+              "desc": "正股代码"
+            },
+            {
+              "name": "stockName",
+              "type": "string",
+              "optional": false,
+              "desc": "正股简称"
+            },
+            {
+              "name": "convertPrice",
+              "type": "float64",
+              "optional": true,
+              "desc": "当期转股价"
+            },
+            {
+              "name": "convertPriceInitial",
+              "type": "float64",
+              "optional": true,
+              "desc": "初始转股价"
+            },
+            {
+              "name": "bondPrice",
+              "type": "float64",
+              "optional": true,
+              "desc": "转债价（元，面值 100）"
+            },
+            {
+              "name": "stockPrice",
+              "type": "float64",
+              "optional": true,
+              "desc": "正股现价"
+            },
+            {
+              "name": "transferValue",
+              "type": "float64",
+              "optional": true,
+              "desc": "转股价值"
+            },
+            {
+              "name": "premiumRatio",
+              "type": "float64",
+              "optional": true,
+              "desc": "转股溢价率（百分比数值 4.87 = +4.87%，可为负）",
+              "unit": "百分数→小数",
+              "range": [
+                -100,
+                1000
+              ]
+            },
+            {
+              "name": "remainSize",
+              "type": "float64",
+              "optional": true,
+              "desc": "未转股余额（元）"
+            },
+            {
+              "name": "issueScale",
+              "type": "float64",
+              "optional": true,
+              "desc": "发行规模（元）"
+            },
+            {
+              "name": "couponExplain",
+              "type": "string",
+              "optional": true,
+              "desc": "票面利率说明（含分年票息表）"
+            },
+            {
+              "name": "couponIr",
+              "type": "float64",
+              "optional": true,
+              "desc": "当年票息（百分比数值，随剩余年限变化，非恒定）",
+              "unit": "百分数→小数",
+              "range": [
+                0,
+                0.15
+              ]
+            },
+            {
+              "name": "bondExpire",
+              "type": "float64",
+              "optional": true,
+              "desc": "债券年限（年，不是价格）"
+            },
+            {
+              "name": "redeemValue",
+              "type": "float64",
+              "optional": true,
+              "desc": "到期赎回价（元，面值的百分比数值）"
+            },
+            {
+              "name": "valueDate",
+              "type": "string",
+              "optional": true,
+              "desc": "转股价值基准日"
+            },
+            {
+              "name": "redeemTrig",
+              "type": "float64",
+              "optional": true,
+              "desc": "强赎触发价（正股口径）"
+            },
+            {
+              "name": "resaleTrig",
+              "type": "float64",
+              "optional": true,
+              "desc": "回售触发价（正股口径）"
+            },
+            {
+              "name": "transferStart",
+              "type": "string",
+              "optional": true,
+              "desc": "转股起始日"
+            },
+            {
+              "name": "expireDate",
+              "type": "string",
+              "optional": true,
+              "desc": "到期日 YYYY-MM-DD"
+            },
+            {
+              "name": "listDate",
+              "type": "string",
+              "optional": true,
+              "desc": "上市日"
+            },
+            {
+              "name": "asOf",
+              "type": "string",
+              "optional": true,
+              "desc": "快照日 YYYY-MM-DD"
+            },
+            {
+              "name": "quoteUrl",
+              "type": "string",
+              "optional": true,
+              "desc": "行情页链接"
+            },
+            {
+              "name": "detailUrl",
+              "type": "string",
+              "optional": true,
+              "desc": "详情页链接"
+            },
+            {
+              "name": "outstanding",
+              "type": "bool",
+              "optional": false,
+              "desc": "在市（未转股余额>0 且未到期）"
+            }
+          ]
+        },
+        {
+          "name": "cbond.of_stock",
+          "cn": "正股关联转债",
+          "layer": "L0",
+          "internal": false,
+          "units": {
+            "premiumRatio": "percent",
+            "couponIr": "percent"
+          },
+          "ranges": {
+            "premiumRatio": [
+              -100,
+              1000
+            ],
+            "couponIr": [
+              0,
+              0.15
+            ]
+          },
+          "checks": [],
+          "fields": [
+            {
+              "name": "bondCode",
+              "type": "string",
+              "optional": false,
+              "desc": "转债代码"
+            },
+            {
+              "name": "bondName",
+              "type": "string",
+              "optional": false,
+              "desc": "转债简称"
+            },
+            {
+              "name": "stockCode",
+              "type": "string",
+              "optional": false,
+              "desc": "正股代码"
+            },
+            {
+              "name": "stockName",
+              "type": "string",
+              "optional": false,
+              "desc": "正股简称"
+            },
+            {
+              "name": "convertPrice",
+              "type": "float64",
+              "optional": true,
+              "desc": "当期转股价"
+            },
+            {
+              "name": "convertPriceInitial",
+              "type": "float64",
+              "optional": true,
+              "desc": "初始转股价"
+            },
+            {
+              "name": "bondPrice",
+              "type": "float64",
+              "optional": true,
+              "desc": "转债价（元，面值 100）"
+            },
+            {
+              "name": "stockPrice",
+              "type": "float64",
+              "optional": true,
+              "desc": "正股现价"
+            },
+            {
+              "name": "transferValue",
+              "type": "float64",
+              "optional": true,
+              "desc": "转股价值"
+            },
+            {
+              "name": "premiumRatio",
+              "type": "float64",
+              "optional": true,
+              "desc": "转股溢价率（百分比数值 4.87 = +4.87%，可为负）",
+              "unit": "百分数→小数",
+              "range": [
+                -100,
+                1000
+              ]
+            },
+            {
+              "name": "remainSize",
+              "type": "float64",
+              "optional": true,
+              "desc": "未转股余额（元）"
+            },
+            {
+              "name": "issueScale",
+              "type": "float64",
+              "optional": true,
+              "desc": "发行规模（元）"
+            },
+            {
+              "name": "couponExplain",
+              "type": "string",
+              "optional": true,
+              "desc": "票面利率说明（含分年票息表）"
+            },
+            {
+              "name": "couponIr",
+              "type": "float64",
+              "optional": true,
+              "desc": "当年票息（百分比数值，随剩余年限变化，非恒定）",
+              "unit": "百分数→小数",
+              "range": [
+                0,
+                0.15
+              ]
+            },
+            {
+              "name": "bondExpire",
+              "type": "float64",
+              "optional": true,
+              "desc": "债券年限（年，不是价格）"
+            },
+            {
+              "name": "redeemValue",
+              "type": "float64",
+              "optional": true,
+              "desc": "到期赎回价（元，面值的百分比数值）"
+            },
+            {
+              "name": "valueDate",
+              "type": "string",
+              "optional": true,
+              "desc": "转股价值基准日"
+            },
+            {
+              "name": "redeemTrig",
+              "type": "float64",
+              "optional": true,
+              "desc": "强赎触发价（正股口径）"
+            },
+            {
+              "name": "resaleTrig",
+              "type": "float64",
+              "optional": true,
+              "desc": "回售触发价（正股口径）"
+            },
+            {
+              "name": "transferStart",
+              "type": "string",
+              "optional": true,
+              "desc": "转股起始日"
+            },
+            {
+              "name": "expireDate",
+              "type": "string",
+              "optional": true,
+              "desc": "到期日 YYYY-MM-DD"
+            },
+            {
+              "name": "listDate",
+              "type": "string",
+              "optional": true,
+              "desc": "上市日"
+            },
+            {
+              "name": "asOf",
+              "type": "string",
+              "optional": true,
+              "desc": "快照日 YYYY-MM-DD"
+            },
+            {
+              "name": "quoteUrl",
+              "type": "string",
+              "optional": true,
+              "desc": "行情页链接"
+            },
+            {
+              "name": "detailUrl",
+              "type": "string",
+              "optional": true,
+              "desc": "详情页链接"
+            },
+            {
+              "name": "outstanding",
+              "type": "bool",
+              "optional": false,
+              "desc": "在市（未转股余额>0 且未到期）"
+            }
+          ]
+        },
+        {
+          "name": "cbond.event_list",
+          "cn": "转债条款事件列表",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "cbond.event_rows_of",
+          "cn": "单标的条款事件",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "cbond.query",
+          "cn": "按标的查条款事件",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "cbond.call_hits",
+          "cn": "强赎触发计数",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "cbond.kline_window",
+          "cn": "转债日K窗口",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "cbond.min1_live",
+          "cn": "转债盘中1分钟",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "cbond.min1_meta",
+          "cn": "转债盘中元信息",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "cbond.universe_codes",
+          "cn": "转债代码全集",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "cbond.card",
+          "cn": "转债个券详情（一次全量返回九键；退市/停牌债 quote 为空、counts 为 nil，其余按债键照常返回）",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "cbond.one_quote",
+          "cn": "单债最新快照（只 fmt 命中行）",
+          "layer": "L0",
+          "internal": false,
+          "units": {
+            "premiumRatio": "percent",
+            "couponIr": "percent"
+          },
+          "ranges": {
+            "premiumRatio": [
+              -100,
+              1000
+            ],
+            "couponIr": [
+              0,
+              0.15
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "cbond.terms",
+          "cn": "转债条款档案（条款原文/评级/担保）",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "cbond.terms_list",
+          "cn": "转债条款档案全表（terms DAG 未跑返回空）",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "cbond.counts",
+          "cn": "强赎/下修/回售三项计数与窗口",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "callHits": [
+              0,
+              30
+            ],
+            "resetHits": [
+              0,
+              30
+            ],
+            "putHits": [
+              0,
+              30
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "cbond.count_hits",
+          "cn": "正股收盘≥触发价天数（按交易日窗）",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "cbond.count_below",
+          "cn": "正股收盘<触发价天数（下修/回售用）",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "cbond.history",
+          "cn": "转债近 N 日历史（快照+债 K；快照上线前区间自动补齐）",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "convertedRatio": [
+              0,
+              1
+            ],
+            "remainingYears": [
+              0,
+              100
+            ],
+            "close": [
+              0,
+              2000
+            ],
+            "transferValue": [
+              0,
+              2000
+            ],
+            "convertPrice": [
+              0,
+              2000
+            ],
+            "stockPrice": [
+              0,
+              5000
+            ],
+            "remainSize": [
+              0,
+              100000000000.0
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "cbond.notices",
+          "cn": "正股近 5 年转债相关公告（上限 200）",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "cbond.market",
+          "cn": "转债市场截面（价格/溢价中位数与折价只数）",
+          "layer": "L0",
+          "internal": false,
+          "units": {
+            "premiumMedian": "percent"
+          },
+          "ranges": {
+            "premiumMedian": [
+              -100,
+              1000
+            ],
+            "discountN": [
+              0,
+              2000
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "cbond.concepts_of",
+          "cn": "正股概念标签（精确题材匹配前 12）",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "cbond.holders",
+          "cn": "十大持有人最新报告",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "cbond.holders_list",
+          "cn": "十大持有人报告序列",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "cbond.institution",
+          "cn": "机构持仓（基金数与持仓市值下限）",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "cbond.fund_hold_of",
+          "cn": "机构持仓聚合（底层读取）",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "cbond.latest_share",
+          "cn": "最新转股结果（剩余规模与已转股比例）",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "convertedRatio": [
+              0,
+              1
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "cbond.share_list",
+          "cn": "转股结果公告序列（约 24 份覆盖 6 年）",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "cbond.projects",
+          "cn": "转债募集资金投向",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "cbond.project_of",
+          "cn": "募集资金投向档案（底层读取）",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        }
+      ]
+    },
+    {
+      "id": "market.fund",
+      "kind": "computed",
+      "data_origin": [
+        "平台采集"
+      ],
+      "functions": []
+    },
+    {
+      "id": "market.index",
+      "kind": "computed",
+      "data_origin": [
+        "平台数据服务"
+      ],
+      "functions": [
+        {
+          "name": "indices.keys",
+          "cn": "指数键列表",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "indices.members",
+          "cn": "指数成分",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "indices.weights",
+          "cn": "指数权重股",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "weight": [
+              0,
+              1
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "indices.valuation",
+          "cn": "指数估值时序（key 为指数键，如 index.hs300；可用键由 indices.universe_keys 枚举）",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "indices.trend",
+          "cn": "指数估值趋势(周频整体法)",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "indices.universe_keys",
+          "cn": "指数域可用键",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        }
+      ]
+    },
+    {
+      "id": "market.intl",
+      "kind": "raw",
+      "data_origin": [
+        "交易所披露",
+        "平台数据服务"
+      ],
+      "functions": [
+        {
+          "name": "intl.query_ccass",
+          "cn": "港股CCASS持仓",
+          "layer": "L0",
+          "internal": false,
+          "units": {
+            "pct_of_issued": "percent"
+          },
+          "ranges": {
+            "pct_of_issued": [
+              0,
+              1
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "intl.query_shareholders",
+          "cn": "港股主要股东",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "total_shares_ratio": [
+              0,
+              1
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "intl.query_org_rating",
+          "cn": "港股机构评级",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "intl.query_profit_forecast",
+          "cn": "港股盈利预测",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "intl.query_sellshort",
+          "cn": "港美沽空",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "intl.issue_info",
+          "cn": "美股发行信息",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        }
+      ]
+    },
+    {
+      "id": "market.kline",
+      "kind": "raw",
+      "data_origin": [
+        "交易所行情",
+        "外部行情源(盘中/live)"
+      ],
+      "functions": [
+        {
+          "name": "kline.query_bars",
+          "cn": "历史 K 线",
+          "layer": "L0",
+          "internal": false,
+          "units": {
+            "volume": "lot"
+          },
+          "ranges": {
+            "percent": [
+              -1,
+              30
+            ],
+            "volume": [
+              0,
+              1000000000000.0
+            ]
+          },
+          "checks": [
+            "volume_amount"
+          ],
+          "fields": [
+            {
+              "name": "sas",
+              "type": "string",
+              "optional": true,
+              "desc": "SAS"
+            },
+            {
+              "name": "date",
+              "type": "string",
+              "optional": true,
+              "desc": "日期"
+            },
+            {
+              "name": "open",
+              "type": "float64",
+              "optional": true,
+              "desc": "开"
+            },
+            {
+              "name": "high",
+              "type": "float64",
+              "optional": true,
+              "desc": "高"
+            },
+            {
+              "name": "low",
+              "type": "float64",
+              "optional": true,
+              "desc": "低"
+            },
+            {
+              "name": "close",
+              "type": "float64",
+              "optional": true,
+              "desc": "收"
+            },
+            {
+              "name": "volume",
+              "type": "float64",
+              "optional": true,
+              "desc": "量",
+              "unit": "手→股",
+              "range": [
+                0,
+                1000000000000.0
+              ]
+            },
+            {
+              "name": "amount",
+              "type": "float64",
+              "optional": true,
+              "desc": "额"
+            },
+            {
+              "name": "percent",
+              "type": "float64",
+              "optional": true,
+              "desc": "涨跌幅",
+              "range": [
+                -1,
+                30
+              ]
+            }
+          ]
+        },
+        {
+          "name": "kline.query_bars_period",
+          "cn": "历史 K 线（周/月周期）",
+          "layer": "L0",
+          "internal": false,
+          "units": {
+            "volume": "lot"
+          },
+          "ranges": {
+            "percent": [
+              -1,
+              30
+            ],
+            "volume": [
+              0,
+              1000000000000.0
+            ]
+          },
+          "checks": [],
+          "fields": [
+            {
+              "name": "sas",
+              "type": "string",
+              "optional": true,
+              "desc": "SAS"
+            },
+            {
+              "name": "date",
+              "type": "string",
+              "optional": true,
+              "desc": "日期"
+            },
+            {
+              "name": "open",
+              "type": "float64",
+              "optional": true,
+              "desc": "开"
+            },
+            {
+              "name": "high",
+              "type": "float64",
+              "optional": true,
+              "desc": "高"
+            },
+            {
+              "name": "low",
+              "type": "float64",
+              "optional": true,
+              "desc": "低"
+            },
+            {
+              "name": "close",
+              "type": "float64",
+              "optional": true,
+              "desc": "收"
+            },
+            {
+              "name": "volume",
+              "type": "float64",
+              "optional": true,
+              "desc": "量",
+              "unit": "手→股",
+              "range": [
+                0,
+                1000000000000.0
+              ]
+            },
+            {
+              "name": "amount",
+              "type": "float64",
+              "optional": true,
+              "desc": "额"
+            },
+            {
+              "name": "percent",
+              "type": "float64",
+              "optional": true,
+              "desc": "涨跌幅",
+              "range": [
+                -1,
+                30
+              ]
+            }
+          ]
+        },
+        {
+          "name": "kline.query_bars_period_adj",
+          "cn": "历史 K 线（周/月周期·复权）",
+          "layer": "L1",
+          "internal": false,
+          "units": {
+            "volume": "lot"
+          },
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "sas",
+              "type": "string",
+              "optional": true,
+              "desc": "SAS"
+            },
+            {
+              "name": "date",
+              "type": "string",
+              "optional": true,
+              "desc": "日期"
+            },
+            {
+              "name": "open",
+              "type": "float64",
+              "optional": true,
+              "desc": "开"
+            },
+            {
+              "name": "high",
+              "type": "float64",
+              "optional": true,
+              "desc": "高"
+            },
+            {
+              "name": "low",
+              "type": "float64",
+              "optional": true,
+              "desc": "低"
+            },
+            {
+              "name": "close",
+              "type": "float64",
+              "optional": true,
+              "desc": "收"
+            },
+            {
+              "name": "volume",
+              "type": "float64",
+              "optional": true,
+              "desc": "量",
+              "unit": "手→股"
+            },
+            {
+              "name": "amount",
+              "type": "float64",
+              "optional": true,
+              "desc": "额"
+            },
+            {
+              "name": "percent",
+              "type": "float64",
+              "optional": true,
+              "desc": "涨跌幅"
+            }
+          ]
+        },
+        {
+          "name": "kline.query_last",
+          "cn": "最新一根 K 线",
+          "layer": "L0",
+          "internal": false,
+          "units": {
+            "volume": "lot",
+            "percent": "percent"
+          },
+          "ranges": {
+            "percent": [
+              -1,
+              30
+            ],
+            "volume": [
+              0,
+              1000000000000.0
+            ]
+          },
+          "checks": [
+            "volume_amount"
+          ],
+          "fields": [
+            {
+              "name": "sas",
+              "type": "string",
+              "optional": true,
+              "desc": "SAS"
+            },
+            {
+              "name": "date",
+              "type": "string",
+              "optional": true,
+              "desc": "日期"
+            },
+            {
+              "name": "open",
+              "type": "float64",
+              "optional": true,
+              "desc": "开"
+            },
+            {
+              "name": "high",
+              "type": "float64",
+              "optional": true,
+              "desc": "高"
+            },
+            {
+              "name": "low",
+              "type": "float64",
+              "optional": true,
+              "desc": "低"
+            },
+            {
+              "name": "close",
+              "type": "float64",
+              "optional": true,
+              "desc": "收"
+            },
+            {
+              "name": "volume",
+              "type": "float64",
+              "optional": true,
+              "desc": "量",
+              "unit": "手→股",
+              "range": [
+                0,
+                1000000000000.0
+              ]
+            },
+            {
+              "name": "amount",
+              "type": "float64",
+              "optional": true,
+              "desc": "额"
+            },
+            {
+              "name": "percent",
+              "type": "float64",
+              "optional": true,
+              "desc": "涨跌幅",
+              "unit": "百分数→小数",
+              "range": [
+                -1,
+                30
+              ]
+            }
+          ]
+        },
+        {
+          "name": "kline.is_etf",
+          "cn": "是否场内 ETF",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "kline.query_last_live",
+          "cn": "盘中日K快照",
+          "layer": "L0",
+          "internal": false,
+          "units": {
+            "volume": "lot"
+          },
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "date",
+              "type": "string",
+              "optional": true,
+              "desc": "日期"
+            },
+            {
+              "name": "open",
+              "type": "float64",
+              "optional": true,
+              "desc": "开"
+            },
+            {
+              "name": "high",
+              "type": "float64",
+              "optional": true,
+              "desc": "高"
+            },
+            {
+              "name": "low",
+              "type": "float64",
+              "optional": true,
+              "desc": "低"
+            },
+            {
+              "name": "close",
+              "type": "float64",
+              "optional": true,
+              "desc": "收/现价"
+            },
+            {
+              "name": "volume",
+              "type": "float64",
+              "optional": true,
+              "desc": "量(股)",
+              "unit": "手→股"
+            },
+            {
+              "name": "amount",
+              "type": "float64",
+              "optional": true,
+              "desc": "额(元)"
+            },
+            {
+              "name": "percent",
+              "type": "float64",
+              "optional": true,
+              "desc": "涨跌幅(小数)"
+            },
+            {
+              "name": "mv",
+              "type": "float64",
+              "optional": true,
+              "desc": "市值(元)"
+            },
+            {
+              "name": "source",
+              "type": "string",
+              "optional": true,
+              "desc": "multi_source|multi_source_rt|source_a|source_b|source_c|source_d"
+            }
+          ]
+        },
+        {
+          "name": "kline.query_last_live_many",
+          "cn": "盘中日K批量快照",
+          "layer": "L0",
+          "internal": false,
+          "units": {
+            "volume": "lot"
+          },
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "kline.query_bars_live",
+          "cn": "盘中拉最近 n 根日K（外部行情源 HTTP，≠分时）",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "date",
+              "type": "string",
+              "optional": true,
+              "desc": "日期"
+            },
+            {
+              "name": "close",
+              "type": "float64",
+              "optional": true,
+              "desc": "收"
+            }
+          ]
+        },
+        {
+          "name": "kline.query_min1_live",
+          "cn": "当日 1 分钟分时（有损滚桶）",
+          "layer": "L0",
+          "internal": false,
+          "units": {
+            "volume": "lot"
+          },
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "kline.query_min1_live_meta",
+          "cn": "分时头（无 bars）",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "kline.snapshot",
+          "cn": "行情快照（单票 MAP；列表 ≥3 票自动路由批量）",
+          "layer": "L0",
+          "internal": false,
+          "units": {
+            "volume": "lot"
+          },
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "symbol",
+              "type": "string",
+              "optional": true,
+              "desc": "代码"
+            },
+            {
+              "name": "close",
+              "type": "float64",
+              "optional": true,
+              "desc": "最新价"
+            },
+            {
+              "name": "percent",
+              "type": "float64",
+              "optional": true,
+              "desc": "涨跌幅"
+            },
+            {
+              "name": "chg_20d",
+              "type": "float64",
+              "optional": true,
+              "desc": "20 日涨跌"
+            }
+          ]
+        },
+        {
+          "name": "kline.snapshot_batch",
+          "cn": "多标的行情快照（索引按量投影，60~90 EC/票）",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "row",
+              "type": "int",
+              "optional": false,
+              "desc": "行号（索引行≥0；ETF/新上市回退行=-1）"
+            },
+            {
+              "name": "values",
+              "type": "object",
+              "optional": false,
+              "desc": "指标值映射（键为 $SYMBOL/$CLOSE_LAST 等）"
+            }
+          ]
+        },
+        {
+          "name": "kline.screen_above_ma20",
+          "cn": "收盘价在 MA20 之上",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "kline.screen_momentum_20d",
+          "cn": "近 20 日涨幅达标",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "kline.index_breadth_summary",
+          "cn": "全市场涨跌全景",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "up",
+              "type": "int",
+              "optional": true,
+              "desc": "上涨家数"
+            },
+            {
+              "name": "down",
+              "type": "int",
+              "optional": true,
+              "desc": "下跌家数"
+            },
+            {
+              "name": "flat",
+              "type": "int",
+              "optional": true,
+              "desc": "平盘家数"
+            },
+            {
+              "name": "limit_up",
+              "type": "int",
+              "optional": true,
+              "desc": "涨停"
+            },
+            {
+              "name": "limit_down",
+              "type": "int",
+              "optional": true,
+              "desc": "跌停"
+            }
+          ]
+        },
+        {
+          "name": "kline.index_top_movers",
+          "cn": "涨跌榜",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "symbol",
+              "type": "string",
+              "optional": false,
+              "desc": "标的代码"
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "optional": false,
+              "desc": "证券简称"
+            },
+            {
+              "name": "percent",
+              "type": "float",
+              "optional": false,
+              "desc": "当日涨跌幅（小数）"
+            }
+          ]
+        },
+        {
+          "name": "kline.index_pct_bin_expr",
+          "cn": "涨跌幅分桶 where 表达式",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "kline.query_bars_adj",
+          "cn": "历史 K 线（复权）",
+          "layer": "L1",
+          "internal": false,
+          "units": {
+            "volume": "lot"
+          },
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "sas",
+              "type": "string",
+              "optional": true,
+              "desc": "SAS"
+            },
+            {
+              "name": "date",
+              "type": "string",
+              "optional": true,
+              "desc": "日期"
+            },
+            {
+              "name": "open",
+              "type": "float64",
+              "optional": true,
+              "desc": "开"
+            },
+            {
+              "name": "high",
+              "type": "float64",
+              "optional": true,
+              "desc": "高"
+            },
+            {
+              "name": "low",
+              "type": "float64",
+              "optional": true,
+              "desc": "低"
+            },
+            {
+              "name": "close",
+              "type": "float64",
+              "optional": true,
+              "desc": "收"
+            },
+            {
+              "name": "volume",
+              "type": "float64",
+              "optional": true,
+              "desc": "量",
+              "unit": "手→股"
+            },
+            {
+              "name": "amount",
+              "type": "float64",
+              "optional": true,
+              "desc": "额"
+            },
+            {
+              "name": "percent",
+              "type": "float64",
+              "optional": true,
+              "desc": "涨跌幅"
+            }
+          ]
+        },
+        {
+          "name": "kline.query_bars_props",
+          "cn": "历史 K 线（指定字段）",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "sas",
+              "type": "string",
+              "optional": true,
+              "desc": "SAS"
+            },
+            {
+              "name": "date",
+              "type": "string",
+              "optional": true,
+              "desc": "日期"
+            },
+            {
+              "name": "open",
+              "type": "float64",
+              "optional": true,
+              "desc": "开"
+            },
+            {
+              "name": "high",
+              "type": "float64",
+              "optional": true,
+              "desc": "高"
+            },
+            {
+              "name": "low",
+              "type": "float64",
+              "optional": true,
+              "desc": "低"
+            },
+            {
+              "name": "close",
+              "type": "float64",
+              "optional": true,
+              "desc": "收"
+            },
+            {
+              "name": "volume",
+              "type": "float64",
+              "optional": true,
+              "desc": "量"
+            },
+            {
+              "name": "amount",
+              "type": "float64",
+              "optional": true,
+              "desc": "额"
+            },
+            {
+              "name": "percent",
+              "type": "float64",
+              "optional": true,
+              "desc": "涨跌幅"
+            }
+          ]
+        },
+        {
+          "name": "kline.query_bars_props_adj",
+          "cn": "历史 K 线（字段+复权）",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "sas",
+              "type": "string",
+              "optional": true,
+              "desc": "SAS"
+            },
+            {
+              "name": "date",
+              "type": "string",
+              "optional": true,
+              "desc": "日期"
+            },
+            {
+              "name": "open",
+              "type": "float64",
+              "optional": true,
+              "desc": "开"
+            },
+            {
+              "name": "high",
+              "type": "float64",
+              "optional": true,
+              "desc": "高"
+            },
+            {
+              "name": "low",
+              "type": "float64",
+              "optional": true,
+              "desc": "低"
+            },
+            {
+              "name": "close",
+              "type": "float64",
+              "optional": true,
+              "desc": "收"
+            },
+            {
+              "name": "volume",
+              "type": "float64",
+              "optional": true,
+              "desc": "量"
+            },
+            {
+              "name": "amount",
+              "type": "float64",
+              "optional": true,
+              "desc": "额"
+            },
+            {
+              "name": "percent",
+              "type": "float64",
+              "optional": true,
+              "desc": "涨跌幅"
+            }
+          ]
+        },
+        {
+          "name": "kline.query_last_adj",
+          "cn": "最新一根 K 线（复权）",
+          "layer": "L1",
+          "internal": false,
+          "units": {
+            "volume": "lot",
+            "percent": "percent"
+          },
+          "ranges": {
+            "percent": [
+              -1,
+              30
+            ],
+            "volume": [
+              0,
+              1000000000000.0
+            ]
+          },
+          "checks": [],
+          "fields": [
+            {
+              "name": "sas",
+              "type": "string",
+              "optional": true,
+              "desc": "SAS"
+            },
+            {
+              "name": "date",
+              "type": "string",
+              "optional": true,
+              "desc": "日期"
+            },
+            {
+              "name": "open",
+              "type": "float64",
+              "optional": true,
+              "desc": "开"
+            },
+            {
+              "name": "high",
+              "type": "float64",
+              "optional": true,
+              "desc": "高"
+            },
+            {
+              "name": "low",
+              "type": "float64",
+              "optional": true,
+              "desc": "低"
+            },
+            {
+              "name": "close",
+              "type": "float64",
+              "optional": true,
+              "desc": "收"
+            },
+            {
+              "name": "volume",
+              "type": "float64",
+              "optional": true,
+              "desc": "量",
+              "unit": "手→股",
+              "range": [
+                0,
+                1000000000000.0
+              ]
+            },
+            {
+              "name": "amount",
+              "type": "float64",
+              "optional": true,
+              "desc": "额"
+            },
+            {
+              "name": "percent",
+              "type": "float64",
+              "optional": true,
+              "desc": "涨跌幅",
+              "unit": "百分数→小数",
+              "range": [
+                -1,
+                30
+              ]
+            }
+          ]
+        },
+        {
+          "name": "kline.query_valid",
+          "cn": "有效 K 线序列（过滤停牌空bar）",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "sas",
+              "type": "string",
+              "optional": true,
+              "desc": "SAS"
+            },
+            {
+              "name": "date",
+              "type": "string",
+              "optional": true,
+              "desc": "日期"
+            },
+            {
+              "name": "open",
+              "type": "float64",
+              "optional": true,
+              "desc": "开"
+            },
+            {
+              "name": "high",
+              "type": "float64",
+              "optional": true,
+              "desc": "高"
+            },
+            {
+              "name": "low",
+              "type": "float64",
+              "optional": true,
+              "desc": "低"
+            },
+            {
+              "name": "close",
+              "type": "float64",
+              "optional": true,
+              "desc": "收"
+            },
+            {
+              "name": "volume",
+              "type": "float64",
+              "optional": true,
+              "desc": "量"
+            },
+            {
+              "name": "amount",
+              "type": "float64",
+              "optional": true,
+              "desc": "额"
+            },
+            {
+              "name": "percent",
+              "type": "float64",
+              "optional": true,
+              "desc": "涨跌幅"
+            }
+          ]
+        },
+        {
+          "name": "kline.query_valid_adj",
+          "cn": "有效 K 线（复权）",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "sas",
+              "type": "string",
+              "optional": true,
+              "desc": "SAS"
+            },
+            {
+              "name": "date",
+              "type": "string",
+              "optional": true,
+              "desc": "日期"
+            },
+            {
+              "name": "open",
+              "type": "float64",
+              "optional": true,
+              "desc": "开"
+            },
+            {
+              "name": "high",
+              "type": "float64",
+              "optional": true,
+              "desc": "高"
+            },
+            {
+              "name": "low",
+              "type": "float64",
+              "optional": true,
+              "desc": "低"
+            },
+            {
+              "name": "close",
+              "type": "float64",
+              "optional": true,
+              "desc": "收"
+            },
+            {
+              "name": "volume",
+              "type": "float64",
+              "optional": true,
+              "desc": "量"
+            },
+            {
+              "name": "amount",
+              "type": "float64",
+              "optional": true,
+              "desc": "额"
+            },
+            {
+              "name": "percent",
+              "type": "float64",
+              "optional": true,
+              "desc": "涨跌幅"
+            }
+          ]
+        },
+        {
+          "name": "kline.query_at_anchor",
+          "cn": "锚点日前 K 线",
+          "layer": "L1",
+          "internal": false,
+          "units": {
+            "volume": "lot"
+          },
+          "ranges": {
+            "percent": [
+              -1,
+              30
+            ],
+            "volume": [
+              0,
+              1000000000000.0
+            ]
+          },
+          "checks": [
+            "volume_amount"
+          ],
+          "fields": [
+            {
+              "name": "sas",
+              "type": "string",
+              "optional": true,
+              "desc": "SAS"
+            },
+            {
+              "name": "date",
+              "type": "string",
+              "optional": true,
+              "desc": "日期"
+            },
+            {
+              "name": "open",
+              "type": "float64",
+              "optional": true,
+              "desc": "开"
+            },
+            {
+              "name": "high",
+              "type": "float64",
+              "optional": true,
+              "desc": "高"
+            },
+            {
+              "name": "low",
+              "type": "float64",
+              "optional": true,
+              "desc": "低"
+            },
+            {
+              "name": "close",
+              "type": "float64",
+              "optional": true,
+              "desc": "收"
+            },
+            {
+              "name": "volume",
+              "type": "float64",
+              "optional": true,
+              "desc": "量",
+              "unit": "手→股",
+              "range": [
+                0,
+                1000000000000.0
+              ]
+            },
+            {
+              "name": "amount",
+              "type": "float64",
+              "optional": true,
+              "desc": "额"
+            },
+            {
+              "name": "percent",
+              "type": "float64",
+              "optional": true,
+              "desc": "涨跌幅",
+              "range": [
+                -1,
+                30
+              ]
+            }
+          ]
+        },
+        {
+          "name": "kline.query_at_anchor_adj",
+          "cn": "锚点日前 K 线（复权）",
+          "layer": "L1",
+          "internal": false,
+          "units": {
+            "volume": "lot"
+          },
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "sas",
+              "type": "string",
+              "optional": true,
+              "desc": "SAS"
+            },
+            {
+              "name": "date",
+              "type": "string",
+              "optional": true,
+              "desc": "日期"
+            },
+            {
+              "name": "open",
+              "type": "float64",
+              "optional": true,
+              "desc": "开"
+            },
+            {
+              "name": "high",
+              "type": "float64",
+              "optional": true,
+              "desc": "高"
+            },
+            {
+              "name": "low",
+              "type": "float64",
+              "optional": true,
+              "desc": "低"
+            },
+            {
+              "name": "close",
+              "type": "float64",
+              "optional": true,
+              "desc": "收"
+            },
+            {
+              "name": "volume",
+              "type": "float64",
+              "optional": true,
+              "desc": "量",
+              "unit": "手→股"
+            },
+            {
+              "name": "amount",
+              "type": "float64",
+              "optional": true,
+              "desc": "额"
+            },
+            {
+              "name": "percent",
+              "type": "float64",
+              "optional": true,
+              "desc": "涨跌幅"
+            }
+          ]
+        },
+        {
+          "name": "kline.snapshot_close",
+          "cn": "最新收盘价",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "kline.snapshot_percent",
+          "cn": "最新涨跌幅",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "kline.snapshot_chg_20d",
+          "cn": "近 20 日涨跌幅",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "kline.screen_above_ma60",
+          "cn": "收盘价在 MA60 之上",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "kline.screen_above_ma120",
+          "cn": "收盘价在 MA120 之上",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "kline.screen_breakout_ma20",
+          "cn": "突破 MA20",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "kline.screen_ma60_up",
+          "cn": "MA60 上行",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "kline.screen_active",
+          "cn": "当日有成交",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "kline.screen_up_today",
+          "cn": "今日上涨",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "kline.screen_down_today",
+          "cn": "今日下跌",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "kline.screen_flat_today",
+          "cn": "今日平盘",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "kline.screen_limit_up",
+          "cn": "涨停",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "kline.screen_limit_down",
+          "cn": "跌停",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "kline.screen_pullback_20d",
+          "cn": "近 20 日回撤可控",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "kline.screen_volume_spike",
+          "cn": "放量",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "kline.query_index_last_live",
+          "cn": "指数盘中点位",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "kline.query_index_last_live_many",
+          "cn": "指数盘中点位批量",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "kline.query_index_min1_live",
+          "cn": "指数盘中 1 分钟分时",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "kline.query_index_min1_live_meta",
+          "cn": "指数分时头",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "kline.index_breadth_bins",
+          "cn": "涨跌幅分桶结果",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "kline.index_breadth_bin_industries",
+          "cn": "分桶行业分布",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "kline.index_field_load",
+          "cn": "索引字段预加载",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "idx",
+              "type": "any",
+              "optional": true,
+              "desc": "索引"
+            }
+          ]
+        },
+        {
+          "name": "kline.index_field_load_analysis",
+          "cn": "分析字段预加载",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "idx",
+              "type": "any",
+              "optional": true,
+              "desc": "索引"
+            }
+          ]
+        },
+        {
+          "name": "kline.index_field_load_breadth",
+          "cn": "涨跌全景字段预加载",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "idx",
+              "type": "any",
+              "optional": true,
+              "desc": "索引"
+            }
+          ]
+        },
+        {
+          "name": "kline.index_fields_basic",
+          "cn": "基础字段列表",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "kline.index_fields_analysis",
+          "cn": "分析字段列表",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "kline.index_fields_breadth",
+          "cn": "涨跌全景字段列表",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        }
+      ]
+    },
+    {
+      "id": "market.macro",
+      "kind": "raw",
+      "data_origin": [
+        "平台数据服务"
+      ],
+      "functions": [
+        {
+          "name": "macro.query",
+          "cn": "宏观时序",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "macro.asof",
+          "cn": "宏观 as-of 单点",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "macro.spots",
+          "cn": "宏观原生点列",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "macro.sampling_of",
+          "cn": "宏观指标原生采样频率",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "macro.bond_curve",
+          "cn": "中债收益率按曲线名+期限",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "macro.nev_monthly",
+          "cn": "新势力月交付",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "macro.nev_weekly",
+          "cn": "新势力周销量",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "macro.avc_monthly",
+          "cn": "奥维家电品类月度",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "macro.chinaiol_monthly",
+          "cn": "家电产销月度",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "macro.cpca_top",
+          "cn": "乘联会厂商排行",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "macro.phone_share",
+          "cn": "手机品牌周份额",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        }
+      ]
+    },
+    {
+      "id": "market.margin",
+      "kind": "raw",
+      "data_origin": [
+        "交易所披露",
+        "平台数据服务"
+      ],
+      "functions": [
+        {
+          "name": "margin.query",
+          "cn": "个股融资融券",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "margin.latest",
+          "cn": "最新两融",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "margin.market_summary",
+          "cn": "市场级两融汇总",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "fin_balance": [
+              0,
+              10000000000000.0
+            ],
+            "loan_balance": [
+              0,
+              100000000000.0
+            ],
+            "fin_buy_amt": [
+              0,
+              1000000000000.0
+            ],
+            "loan_sell_vol": [
+              0,
+              100000000000.0
+            ]
+          },
+          "checks": [],
+          "fields": [
+            {
+              "name": "trade_date",
+              "type": "string",
+              "optional": false,
+              "desc": "交易日期"
+            },
+            {
+              "name": "exchange",
+              "type": "string",
+              "optional": false,
+              "desc": "交易所(SSE/SZSE/BSE)"
+            },
+            {
+              "name": "fin_buy_amt",
+              "type": "float64",
+              "optional": true,
+              "desc": "融资买入额(元)",
+              "range": [
+                0,
+                1000000000000.0
+              ]
+            },
+            {
+              "name": "fin_repay_amt",
+              "type": "float64",
+              "optional": true,
+              "desc": "融资偿还额(元)"
+            },
+            {
+              "name": "fin_balance",
+              "type": "float64",
+              "optional": true,
+              "desc": "融资余额(元)",
+              "range": [
+                0,
+                10000000000000.0
+              ]
+            },
+            {
+              "name": "loan_sell_vol",
+              "type": "float64",
+              "optional": true,
+              "desc": "融券卖出量(股)",
+              "range": [
+                0,
+                100000000000.0
+              ]
+            },
+            {
+              "name": "loan_repay_vol",
+              "type": "float64",
+              "optional": true,
+              "desc": "融券偿还量(股)"
+            },
+            {
+              "name": "loan_balance",
+              "type": "float64",
+              "optional": true,
+              "desc": "融券余量(股)",
+              "range": [
+                0,
+                100000000000.0
+              ]
+            }
+          ]
+        },
+        {
+          "name": "margin.universe",
+          "cn": "两融标的名单",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "security_code",
+              "type": "string",
+              "optional": false,
+              "desc": "标的代码"
+            },
+            {
+              "name": "security_name",
+              "type": "string",
+              "optional": false,
+              "desc": "标的简称"
+            },
+            {
+              "name": "exchange",
+              "type": "string",
+              "optional": false,
+              "desc": "交易所(SSE/SZSE/BSE)"
+            },
+            {
+              "name": "in_date",
+              "type": "string",
+              "optional": true,
+              "desc": "纳入日期"
+            },
+            {
+              "name": "out_date",
+              "type": "string",
+              "optional": true,
+              "desc": "调出日期"
+            },
+            {
+              "name": "effective_date",
+              "type": "string",
+              "optional": true,
+              "desc": "名单生效日"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "market.moneyflow",
+      "kind": "raw",
+      "data_origin": [
+        "外部行情源"
+      ],
+      "functions": [
+        {
+          "name": "moneyflow.query_bars",
+          "cn": "资金流向历史",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "sas",
+              "type": "string",
+              "optional": true,
+              "desc": "SAS"
+            },
+            {
+              "name": "date",
+              "type": "string",
+              "optional": true,
+              "desc": "日期"
+            },
+            {
+              "name": "net_mf",
+              "type": "float64",
+              "optional": true,
+              "desc": "主力净流入"
+            },
+            {
+              "name": "elg_net",
+              "type": "float64",
+              "optional": true,
+              "desc": "超大单净流入"
+            },
+            {
+              "name": "lg_net",
+              "type": "float64",
+              "optional": true,
+              "desc": "大单净流入"
+            },
+            {
+              "name": "md_net",
+              "type": "float64",
+              "optional": true,
+              "desc": "中单净流入"
+            },
+            {
+              "name": "sm_net",
+              "type": "float64",
+              "optional": true,
+              "desc": "小单净流入"
+            }
+          ]
+        },
+        {
+          "name": "moneyflow.query_bars_anchor",
+          "cn": "锚点前资金流",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "sas",
+              "type": "string",
+              "optional": true,
+              "desc": "SAS"
+            },
+            {
+              "name": "date",
+              "type": "string",
+              "optional": true,
+              "desc": "日期"
+            },
+            {
+              "name": "net_mf",
+              "type": "float64",
+              "optional": true,
+              "desc": "主力净流入"
+            },
+            {
+              "name": "elg_net",
+              "type": "float64",
+              "optional": true,
+              "desc": "超大单净流入"
+            },
+            {
+              "name": "lg_net",
+              "type": "float64",
+              "optional": true,
+              "desc": "大单净流入"
+            },
+            {
+              "name": "md_net",
+              "type": "float64",
+              "optional": true,
+              "desc": "中单净流入"
+            },
+            {
+              "name": "sm_net",
+              "type": "float64",
+              "optional": true,
+              "desc": "小单净流入"
+            }
+          ]
+        },
+        {
+          "name": "moneyflow.query_last",
+          "cn": "最新资金流向",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "sas",
+              "type": "string",
+              "optional": true,
+              "desc": "SAS"
+            },
+            {
+              "name": "date",
+              "type": "string",
+              "optional": true,
+              "desc": "日期"
+            },
+            {
+              "name": "net_mf",
+              "type": "float64",
+              "optional": true,
+              "desc": "主力净流入"
+            },
+            {
+              "name": "elg_net",
+              "type": "float64",
+              "optional": true,
+              "desc": "超大单净流入"
+            },
+            {
+              "name": "lg_net",
+              "type": "float64",
+              "optional": true,
+              "desc": "大单净流入"
+            },
+            {
+              "name": "md_net",
+              "type": "float64",
+              "optional": true,
+              "desc": "中单净流入"
+            },
+            {
+              "name": "sm_net",
+              "type": "float64",
+              "optional": true,
+              "desc": "小单净流入"
+            }
+          ]
+        },
+        {
+          "name": "moneyflow.query_valid",
+          "cn": "有效资金流向（过滤空行）",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "sas",
+              "type": "string",
+              "optional": true,
+              "desc": "SAS"
+            },
+            {
+              "name": "net_mf",
+              "type": "float64",
+              "optional": true,
+              "desc": "主力净流入"
+            }
+          ]
+        },
+        {
+          "name": "moneyflow.query_last_live",
+          "cn": "资金流当日读数（外部源）",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "date",
+              "type": "string",
+              "optional": true,
+              "desc": "日期"
+            },
+            {
+              "name": "net_mf",
+              "type": "float64",
+              "optional": true,
+              "desc": "主力净流入"
+            },
+            {
+              "name": "elg_net",
+              "type": "float64",
+              "optional": true,
+              "desc": "超大单"
+            },
+            {
+              "name": "lg_net",
+              "type": "float64",
+              "optional": true,
+              "desc": "大单"
+            },
+            {
+              "name": "md_net",
+              "type": "float64",
+              "optional": true,
+              "desc": "中单"
+            },
+            {
+              "name": "sm_net",
+              "type": "float64",
+              "optional": true,
+              "desc": "小单"
+            },
+            {
+              "name": "source",
+              "type": "string",
+              "optional": true,
+              "desc": "live"
+            }
+          ]
+        },
+        {
+          "name": "moneyflow.snapshot",
+          "cn": "资金流向快照（金额均为元；net_mv_ratio 为小数）",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "net_mv_ratio": [
+              -0.5,
+              0.5
+            ],
+            "net_mf": [
+              -100000000000.0,
+              100000000000.0
+            ],
+            "net_5d": [
+              -200000000000.0,
+              200000000000.0
+            ],
+            "net_10d": [
+              -300000000000.0,
+              300000000000.0
+            ],
+            "net_20d": [
+              -500000000000.0,
+              500000000000.0
+            ],
+            "elg_net": [
+              -100000000000.0,
+              100000000000.0
+            ],
+            "lg_net": [
+              -100000000000.0,
+              100000000000.0
+            ],
+            "md_net": [
+              -100000000000.0,
+              100000000000.0
+            ],
+            "sm_net": [
+              -100000000000.0,
+              100000000000.0
+            ]
+          },
+          "checks": [],
+          "fields": [
+            {
+              "name": "net_mf",
+              "type": "float64",
+              "optional": true,
+              "desc": "主力净流入",
+              "range": [
+                -100000000000.0,
+                100000000000.0
+              ]
+            },
+            {
+              "name": "lg_net",
+              "type": "float64",
+              "optional": true,
+              "desc": "大单净流入",
+              "range": [
+                -100000000000.0,
+                100000000000.0
+              ]
+            },
+            {
+              "name": "elg_net",
+              "type": "float64",
+              "optional": true,
+              "desc": "超大单净流入",
+              "range": [
+                -100000000000.0,
+                100000000000.0
+              ]
+            }
+          ]
+        },
+        {
+          "name": "moneyflow.snapshot_net_mf",
+          "cn": "最新主力净流入",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "moneyflow.board",
+          "cn": "全市场资金流快照（金额均为元；net_mv_ratio 为小数）",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "net_mv_ratio": [
+              -0.5,
+              0.5
+            ],
+            "net_mf": [
+              -100000000000.0,
+              100000000000.0
+            ],
+            "elg_net": [
+              -100000000000.0,
+              100000000000.0
+            ],
+            "lg_net": [
+              -100000000000.0,
+              100000000000.0
+            ],
+            "md_net": [
+              -100000000000.0,
+              100000000000.0
+            ],
+            "sm_net": [
+              -100000000000.0,
+              100000000000.0
+            ]
+          },
+          "checks": [],
+          "fields": [
+            {
+              "name": "symbol",
+              "type": "string",
+              "optional": false,
+              "desc": "标的代码"
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "optional": false,
+              "desc": "证券简称"
+            },
+            {
+              "name": "net_mf",
+              "type": "float64",
+              "optional": true,
+              "desc": "主力净流入（元）",
+              "range": [
+                -100000000000.0,
+                100000000000.0
+              ]
+            },
+            {
+              "name": "net_mv_ratio",
+              "type": "float64",
+              "optional": true,
+              "desc": "主力净流入占流通市值比（小数）",
+              "range": [
+                -0.5,
+                0.5
+              ]
+            },
+            {
+              "name": "lg_net",
+              "type": "float64",
+              "optional": true,
+              "desc": "大单净流入（元）",
+              "range": [
+                -100000000000.0,
+                100000000000.0
+              ]
+            },
+            {
+              "name": "elg_net",
+              "type": "float64",
+              "optional": true,
+              "desc": "超大单净流入（元）",
+              "range": [
+                -100000000000.0,
+                100000000000.0
+              ]
+            },
+            {
+              "name": "md_net",
+              "type": "float64",
+              "optional": true,
+              "desc": "中单净流入（元）",
+              "range": [
+                -100000000000.0,
+                100000000000.0
+              ]
+            },
+            {
+              "name": "sm_net",
+              "type": "float64",
+              "optional": true,
+              "desc": "小单净流入（元）",
+              "range": [
+                -100000000000.0,
+                100000000000.0
+              ]
+            },
+            {
+              "name": "industry",
+              "type": "string",
+              "optional": true,
+              "desc": "一级行业"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "market.stocks",
+      "kind": "computed",
+      "data_origin": [
+        "平台数据服务"
+      ],
+      "functions": [
+        {
+          "name": "stocks.query_list",
+          "cn": "全市场证券列表",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "stocks.industry_list",
+          "cn": "行业目录",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "stocks.industry_members",
+          "cn": "行业成分股",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        }
+      ]
+    }
+  ]
+}
