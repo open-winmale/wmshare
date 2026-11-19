@@ -11,6 +11,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-11-19
+
+### Added
+- **`valuation.daily_basic` 读窗口可见化与自动翻页**：信封 `meta` 新增
+  `window` 段（`scan_days` / `scan_limit` / `oldest_scanned` / `truncated` /
+  `requested_begin`）。此前超过服务端读窗口（1,500 日文档）更早的日期**静默
+  缺席**，调用方无从判断；现在 `truncated=True` 明示区间左端可能缺行，SDK 按
+  `oldest_scanned` 自动向前翻页（上限 10 片 ≈15,000 交易日）拼成完整升序序列，
+  回 `meta.pages`。live 实测 600519 自 2015 起 → 2 片 724 行（此前只能拿到
+  最近 ~200~727 日且不知被截断）。
+- **`cli.valuation.daily_basic_coverage(symbol, begin, end)`**：可用范围发现。
+  不拉序列，只取一个日窗口的 `window` 元数据，返回
+  `{as_of, oldest_scanned, scan_days, scan_limit, truncated, pages}`——先探
+  「这段区间有没有数据 / 表能回溯到多早」再决定要不要拉整段。
+- **多票每日估值序列**：服务端 `valuation.daily_basic_multi(syms, begin, end,
+  fields)`（一次 eval 内循环多票）与 SDK `cli.valuation.daily_basic_multi
+  (symbols, ...)`。行合同与单票完全一致（`{date, symbol, field, value}` 升序，
+  可直接 concat 分组），`meta.per_symbol` 给每票的 `count` /
+  `oldest_scanned` / `truncated`。**EC 仍按票计价**——批量只省请求调度，不省
+  算力；≥200 票时 SDK 告警成本量级。
+- 2.3.0 新面补齐 `estimate_cost` 成本模型（全部 live 实测，无 `cache_hit`
+  拍脑袋档）：`buyback.snapshot` 170~750、`notice.type_keys/type_regex`
+  5~20、`toplist.by_date` 170~13,000（冷/热差）、`toplist.by_symbol`
+  185~1,600、`futures.mapping` 160~5,000（note 提示全历史 ≈21.4 万）、
+  `pdf_doc.search` 按行 150~200/行。
+- **demo 快照重拍 2026-11-19**：2.3.0 的三批新面此前在 demo 侧一律
+  `demo_unsupported`，现在全部真实回放——`equity.buyback_snapshot`（演示宇宙
+  10 票）、`toplist.by_date/by_symbol`（整日榜单 95 行 + 单票历史）、
+  `futures.mapping`（RB.SHF/IF.CFX 各 121 行）、`notice.categories/
+  category_regex`（14 类目改为从快照回放）、`pdf_doc.search/read_text/
+  read_markdown/status/find_by_*`。榜单盘后 T+1 落库，生成器向前回退最多 5 天
+  取最近有数据日并记 `toplist.date`。
+
+### Changed
+- 计数：24 域 / **317** 底层函数 / 2983 指标码 / **152** 核心接口 /
+  **169** friendly API；guard 66/317 = 20.82%。
+- `docs/BACKLOG.md`：daily_basic 四项候选闭环（分页+truncated、coverage、
+  多票批量、成本再校准）；`begin/end` ts 下推保留为**上游依赖**（需 kernel
+  日文档级过滤）；卫生窗 `limit≤0` 排查完成。
+
+### Fixed
+- **fmt_maps 跨标的缓存串号（13 域，严重）**：缓存键只有「行数:首:末日期」
+  不含标的，两只票同交易日区间、同窗口长度必然撞键——`kline.query_bars` 对
+  任意标的都返回首调标的的 K 线（实测 600519/000858/601318/688981 全同）。
+  各域新增 `rows_owner` 探测标的字段并拼进指纹，缓存键 v1→v2 避开线上旧档。
+- **`pdf_doc.search` 恒返回空数组**（自 2026-11-09）：循环里裸 `APPEND(out, v)`
+  不改 `out`，静默 0 行；连带 `read_markdown` 的 `stock_code` 回退与
+  `find_ready` 全废。改 `out = out.append(v)`。
+- **`toplist.by_symbol` 复跑无折扣**：取数仅 37 EC，成本全在逐 doc 扫全市场
+  行；按数据版本键（store 最新 `trade_date`）缓存 + 凑满 limit 即停，
+  冷 2,349 → 热 185 EC。
+- **`limit≤0` 语义不一致**：`kline.query_bars(..., 0)` 返 0 行、
+  `moneyflow.query_bars(..., 0)` 返 200 行（kernel 默认而非域默认）。三域
+  包装层统一归一（`kline.store_window_limit` / `moneyflow.store_limit` /
+  `bonus.store_query`）。
+
 ## [2.3.1] - 2026-11-19
 
 ### Docs
