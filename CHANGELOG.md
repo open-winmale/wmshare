@@ -12,14 +12,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned（服务端候选，未排期）
-- **【读面回归 2026-11-19】`valuation.daily_basic` 窗口收紧至最新 ~200 交易日**：
-  kernel/analysis `v2FindArgsFromOpts` 对 `limit≤0` 取 200 默认，XS
-  `valuation.store_query(s, 0)` 显式传 0（`DEFAULT(0, 1500)` 不替换）→
-  200 日前历史读不到（窗口读回 `ok=false/count=0`；全量读仅回 2026-01-21 起，
-  600519/000001 双票实测）。**store 内数据完好**（3y 回补审计通过），纯读面问题。
-  11-18 全量读实测 726 日 / 18,317 EC，11-19 实测 200 日——当日服务端发布波收紧。
-  候选修复（一行）：`query.xs` 改调 `store_query(s, valuation.DEFAULT_LIMIT)`；
-  或 kernel 对物化日频表放宽默认上限。与分页/ts 下推候选正交。
+- **【读面回归 2026-11-19，✅ 已修复当日】`valuation.daily_basic` 窗口一度收紧至
+  最新 ~200 交易日**：kernel/analysis `v2FindArgsFromOpts` 对 `limit≤0` 取 200
+  默认，XS `valuation.store_query(s, 0)` 显式传 0（`DEFAULT(0, 1500)` 不替换）→
+  200 日前历史读不到（store 内数据始终完好）。11-18 全量读实测 726 日 /
+  18,317 EC，11-19 午间实测 200 日（min=2026-01-21）——当日服务端发布波收紧。
+  **修复**：script `sys/valuation/store.xs` 包装层把 `limit≤0` 归一到
+  `DEFAULT_LIMIT`（commit `015032f2`，pipeline-5982 当日部署）；修复后实测
+  600519/000001 全量各回 727 日（2023-11-20 起）。kernel 侧 `≤0→200` 默认对
+  其他 catalog 的影响未逐一排查，待卫生窗评估。与分页/ts 下推候选正交。
 - `valuation.daily_basic` 服务端增强候选（2026-11-19 消费端盘点登记，均不改
   现有合同）：分页 + `truncated` 标志（当前 >1,500 日文档静默缺席，见
   docs/LIMITS.md §1）；`begin/end` ts 下推（当前 XS 端拉全窗后过滤，EC 随
