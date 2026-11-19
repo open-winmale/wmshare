@@ -10,11 +10,11 @@
 
 | 项目 | 状态 | 证据 |
 |---|---|---|
-| 版本一致性（GitHub / PyPI / CHANGELOG） | ✅ 已闭合 | PyPI = 1.19.0（2026-11-12 上传，`>=3.11`），与 tag / CHANGELOG 一致；release CI 自动发版 |
+| 版本一致性（GitHub / PyPI / CHANGELOG） | ✅ 已闭合 | PyPI = 2.2.1（2026-11-18 上传，`>=3.11`），与 tag / CHANGELOG 一致；release CI 自动发版 |
 | 品牌拼写（仓库内） | ✅ 已干净 | 全仓无 `washare` 误拼；外部误拼仅存于站外旧文（不在本仓，需作者改） |
-| MCP 官方 Registry | ✅ 已收录 1.19.0 | registry.modelcontextprotocol.io 搜 `wmshare` 最新 1.19.0（2026-11-12） |
-| README 承接漏斗 | ✅ 完整 | 零凭证 `demo_client()` → 凭证配置 → `Client.from_env()`；口径数字一致（18 域 / 288 函数 / 2752 指标码 / 132 接口） |
-| server.json | ✅ 当前 1.19.0 | 描述已含关键词（Python SDK / 2752 metrics / A-share HK US / AI agents） |
+| MCP 官方 Registry | ✅ 已收录 1.19.0 | registry.modelcontextprotocol.io 搜 `wmshare` 最新（以 `servers[].server.version` + isLatest 为准，随发版 publish） |
+| README 承接漏斗 | ✅ 完整 | 零凭证 `demo_client()` → 凭证配置 → `Client.from_env()`；口径数字一致（22 域 / 311 函数 / 2983 指标码 / 147 核心接口 / 164 friendly） |
+| server.json | ✅ 当前 2.2.1 | 描述已含关键词（Python SDK / 2752 metrics / A-share HK US / AI agents）；版本随 PyPI 发版同步 publish 到 MCP registry |
 
 **北极星指标**：注册 → 取凭证 → 首次真实调用 → 7 日复用。`star` 只是信任信号，不追。
 
@@ -37,7 +37,7 @@
 | awesome-quant（GitHub 量化导航库） | wilsonfreitas/awesome-quant PR | Market Data & Data Sources 段首加一行 | `- [wmshare](url) - \`Python\` \`MCP\` - desc.` | ✅ PR 已发 wilsonfreitas#1014（2026-11-13，待合并） |
 
 > 统一提交话术（描述字段直接复用 server.json 新描述）：
-> "Python SDK wmshare local MCP server: offline catalog discovery, 2,752 server-precomputed A-share/HK/US metrics, and market-data tools for AI agents."
+> "Python SDK wmshare local MCP server: offline catalog discovery, 2,983 server-precomputed A-share/HK/US metrics, and market-data tools for AI agents."
 
 ### 1.2 AI 助手技能市场（随包 skill 分发）
 
@@ -80,7 +80,7 @@
 ## 2. 五个可复用内容钩子（零合规风险）
 
 1. **「5,375 次请求 → 11 次」**——纯工程，适合 V2EX / 知乎 / 技术社区。
-2. **「2,752 个指标码 vs 自己算十年分位」**——带真实耗时 / 请求数 / EC 的 benchmark。
+2. **「2,983 个指标码 vs 自己算十年分位」**——带真实耗时 / 请求数 / EC 的 benchmark。
 3. **「0.25 变 25 会抛 `DataError`」**——静默错值叙事，生产用户最买账。
 4. **「AI 写量化脚本为什么总编造函数名」**——离线目录 + `llms.txt` + MCP，蹭 Agent 热点。
 5. **「可转债 / 要约套利一条链路出图文」**——集思录对口，纯方法论。
@@ -125,4 +125,4 @@
 - **合规判定 = "是否触及具体标的的买卖时点或仓位建议"**，不靠免责声明兜底。内容一律只讲工具 / 口径 / 方法论。
 - **别讲成"免费无限"**：免费档 500 次/小时、5,000 次/日，且"批量省请求不省 EC"必须写清。
 - 别追 star；别多平台原样复制同一篇（拼写错误就是这么扩散的）；版本名先对齐再投。
-- 外部文章发布前核对：仓库内数字（18 域 / 288 函数 / 2752 指标码 / 132 接口 / 5375→11 请求）与 README 一致。
+- 外部文章发布前核对：仓库内数字（22 域 / 311 函数 / 2983 指标码 / 147 核心接口 / 5375→11 请求）与 README 一致。

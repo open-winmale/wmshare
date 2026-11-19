@@ -60,10 +60,10 @@ def test_drift_default_is_green_and_machine_readable(capsys):
     # （批次1 暴露层 2026-11-19）；functions 311 = 300 + 11（buyback 1 / notice 类目 2 / pdf_doc 8）
     assert info["guard_declared"] == 63
     assert info["functions"] == 311
-    assert info["markets"]["total"] == 2752
-    assert info["markets"]["declared"] == 569
-    assert info["markets"]["undeclared"] == 2183
-    assert info["markets"]["by_market"] == {"cn": 498, "hk": 25, "us": 46}
+    assert info["markets"]["total"] == 2983
+    assert info["markets"]["declared"] == 728
+    assert info["markets"]["undeclared"] == 2255
+    assert info["markets"]["by_market"] == {"cn": 658, "hk": 26, "us": 44}
     # .internal/UNIT_AUDIT.md 是本机联网 matrix 产物，不进 git 跟踪面；
     # CI 里不存在时 sections 为 0，只能要求非负，不能假设报告一定在。
     assert isinstance(info["matrix_sections"], int)

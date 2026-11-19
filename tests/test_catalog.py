@@ -9,7 +9,7 @@ def test_load_and_stats():
     assert s["domains"] == 22, s  # +disc.pdf_doc（批次1 暴露层，2026-11-19）
     assert s["functions"] == 311, s
     assert s["raw"] == 228 and s["computed"] == 83, s  # raw+11：批次1 暴露层（buyback.snapshot / notice 类目 2 / pdf_doc 8，2026-11-19）
-    assert s["metric_catalog_total"] == 2752, s
+    assert s["metric_catalog_total"] == 2983, s
     assert s["upstream_rev"], "inventory 应锚定 upstream rev"
 
 

@@ -1,4 +1,4 @@
-# `$ORG_INDUSTRY_INDEX` — + $ORG_INDUSTRIES[-1].Symbol
+# `$ORG_INDUSTRY_INDEX` — + m_ref_info.industry_l3_symbol
 
 **类型/市场**：股票指标码 · 未声明（以 `cat.search` 为准）
 **单位/换算**：—（默认基础单位：率=小数 / 额=元 / 量=股）

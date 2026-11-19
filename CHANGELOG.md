@@ -1127,7 +1127,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **SKILL.md 撤下过期拦截断言**：`kline.live`/`min1` 自 1.5.0 根因修复并部署，意图决策树
   不再提示「被服务端策略拦截」；凭证文件说明补 KEY 名示例。
 - docs/API.md 补两条已知边界（域 notes 数据驱动）：fund.statements 港美三大报表合同已
-  预留、数据未上线（调用返回空）；bonus.query_count_window 上游 count 聚合缺陷恒 0
+  预留、数据未上线（调用返回空；2026-11 注：已随 v2.0 全量上线）；bonus.query_count_window 上游 count 聚合缺陷恒 0
   （SDK window_stats 已绕开，直调该函数得 0）。
 
 ### Added
@@ -1218,7 +1218,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   配置方法本就内置于 401/403/429 错误消息与 AI skill，README 不再重复；快速上手仅留
   一行指针）；腾出的篇幅换成 cn/hk/us 市场覆盖矩阵——逐能力标注三市场支持度，并如实
   注记实测边界（美股日 K 停更于 2026-03-13：上游美股价量为 live-only 策略，最新价量走
-  `cli.kline.live / snapshot`；港美股三大报表合同已预留、数据未上线）。联动：
+  `cli.kline.live / snapshot`；港美股三大报表合同已预留、数据未上线；2026-11 注：三大报表已随 v2.0 全量上线）。联动：
   `gen_api_docs.py` 能力总览措辞改为"错误消息即完整指引"并重生成 `docs/API.md`；
   `CONTRIBUTING.md` 同步去 README 章节引用。
 

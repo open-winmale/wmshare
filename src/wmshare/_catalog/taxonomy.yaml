@@ -161,8 +161,8 @@ code_overrides:
   "$PMI": {period: monthly, unit_kind: index_point}
   "$MV_LAST": {caliber: [total], unit_kind: money}
   "$MV_FREE_LAST": {caliber: [free_float], unit_kind: money}
-  "$BONUS_RATE_TTM_LAST": {period: ttm, unit_kind: ratio}
-  "$DPS_TTM_LAST": {period: ttm, unit_kind: per_share}
+  "$BONUS_RATE_TTM_LAST": {period: latest_report, unit_kind: ratio}  # 上游 2026-11 报告期 LTM 口径
+  "$DPS_TTM_LAST": {period: latest_report, unit_kind: per_share}  # 上游 2026-11 报告期口径
   "$PE_TTM_LAST": {period: ttm, unit_kind: multiple}
   # 上游定义（base_catalog.json 已核对）：$MV_LAST / AT(isaslast, $SE_NOGW) /
   # $CR_CM_LAST，$SE_NOGW = $SE - $GW，$SE 是「归属于母公司股东权益」→ 归母口径。

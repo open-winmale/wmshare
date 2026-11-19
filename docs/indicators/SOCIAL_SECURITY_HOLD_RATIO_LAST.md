@@ -1,4 +1,4 @@
-# `$SOCIAL_SECURITY_HOLD_RATIO_LAST` — 最新社保持仓占股本比例
+# `$SOCIAL_SECURITY_HOLD_RATIO_LAST` — 最新社保持仓占流通股本比例
 
 **类型/市场**：股票指标码 · 未声明（以 `cat.search` 为准）
 **单位/换算**：—（默认基础单位：率=小数 / 额=元 / 量=股）

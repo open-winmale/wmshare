@@ -4,7 +4,7 @@
 
 > **English TL;DR** — `wmshare` is a BSD-3-Clause Python SDK for China A-share / Hong Kong / US
 > market data: k-line, intraday, money flow, statements, screener, whole-market batch, and
-> **2,752 server-precomputed metrics** (percentile ranks, multi-window averages, industry-relative
+> **2,983 server-precomputed metrics** (percentile ranks, multi-window averages, industry-relative
 > ranks — no DIY computation). Ships an offline catalog, data guards and AI skill. **Credentials
 > required** on open.winmale.com; try offline first with `wmshare.demo_client()` (frozen snapshot;
 > not live). **Install**: `pip install wmshare`. **Full English quickstart**: [docs/QUICKSTART_EN.md](docs/QUICKSTART_EN.md).
@@ -89,7 +89,7 @@ for r in res["rows"][:5]:
 
 ## 基本功能
 
-随包离线目录：**22 个数据域 · 311 个底层函数 · 2752 个指标代码**；友好层 **147 个核心接口**，
+随包离线目录：**22 个数据域 · 311 个底层函数 · 2983 个指标代码**；友好层 **147 个核心接口**，
 按使用视角组织为（11 个指标组、78 个精选常用指标代码，`cat.search("中文")` 可编程检索）：
 
 | 门面 | 核心能力 | 单位口径 |
@@ -121,7 +121,7 @@ for r in res["rows"][:5]:
 
 **服务端预计算，先查目录再写代码**——目录里有的码不要自己算（eval 按标的数逐票计费 EC）：
 
-- **预置指标库（2,752 个指标码，11 组精选 78 码带量级守护）**：历史分位（`$PCT_PE_TTM_10Y_LAST`
+- **预置指标库（2,983 个指标码，11 组精选 78 码带量级守护）**：历史分位（`$PCT_PE_TTM_10Y_LAST`
   = PE 十年分位）、多窗口均值/最低/趋势（`$BONUS_RATE_3Y_AVG_LAST` = 近3年股息率TTM均值）、
   行业内分位（`$CUR_IND_ROE_PCT_LAST`，1=行业最高）、行业均值（`$ID_ROE_TTM`）、指数加权股息率
   （`$IDW_BONUS_RATE_HM`）、期货主力连续（`$FUT_CLOSE`）、宏观时序（`$CPI`）。命名语法
@@ -131,7 +131,7 @@ for r in res["rows"][:5]:
 - **全市场批量**：`cli.batch_all(name, codes)` 把 A 股 5,375 家压成 **11 次请求**绕开限流。
 - **全市场筛选服务端直出**：`cli.screener.query("$ROE_TTM_LAST > 0.15")` 一条表达式扫全市场索引
   （`count`=真实命中数）；涨跌全景/分桶/行业分布/涨跌榜同走服务端预计算索引，毫秒级。
-- **离线目录防编造**：311 个底层函数、147 个核心接口、2,752 个指标码离线可查
+- **离线目录防编造**：311 个底层函数、147 个核心接口、2,983 个指标码离线可查
   （`cat.search("中文")`），目录之外的名字显式报错。
 - **零凭证离线试跑**：`wmshare.demo_client()`（同签名、不联网，2026-10-30 固定快照；非实时数据）。
 - **数据守护**：全库单位统一（比率=小数、金额=元、量=股），返回前量级/不变量校验，违例抛 `DataError`。
@@ -175,7 +175,7 @@ for r in res["rows"][:5]:
 | 数据能力 | A股 cn | 港股 hk | 美股 us |
 |---|---|---|---|
 | 日 K 三种复权 / 周 K·月 K（服务端派生）/ 1 分钟分时 / 盘中快照 | ✅ 全量 | ✅ | 日 K 日更 + 周/月 K 派生；快照/盘中新鲜（注记见下） |
-| 指标库（2,752 码：估值/盈利/成长/分红/分位/振幅/技术面） | ✅ | ✅ | ✅（用裸代码 `AAPL`；`AAPL.O` 由 SDK 归一） |
+| 指标库（2,983 码：估值/盈利/成长/分红/分位/振幅/技术面） | ✅ | ✅ | ✅（用裸代码 `AAPL`；`AAPL.O` 由 SDK 归一） |
 | 分红：历史、TTM 股息率/派息率、质量筛选 | ✅ | ✅ | ✅（窗口口径固定） |
 | 公告与披露信号 | ✅ | ✅ | — |
 | 财报清单与最新披露 | ✅ | ✅ | — |

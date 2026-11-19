@@ -2,9 +2,9 @@
 
 # 指标库导航（按数据类型分类）
 
-> 服务端已把 **2752** 个指标码算好直出：历史分位、多窗口均值/最低/趋势、行业均值与行业内分位、指数加权、期货主力连续、宏观时序……**取数前先在本页或 `cat.search` 找码——目录里有的码不要自己算**（eval 按标的数逐票计费 EC）。单位铁律：比率/涨跌幅/分位一律小数（0.0396 = 3.96%），金额=元、量=股。精选 78 码带口径与量级守护（违例抛 `DataError`）；其余码不做换算与守护，口径以返回值/cn 注释为准。分类为启发式，最终以 `cat.search` 为准。
+> 服务端已把 **2983** 个指标码算好直出：历史分位、多窗口均值/最低/趋势、行业均值与行业内分位、指数加权、期货主力连续、宏观时序……**取数前先在本页或 `cat.search` 找码——目录里有的码不要自己算**（eval 按标的数逐票计费 EC）。单位铁律：比率/涨跌幅/分位一律小数（0.0396 = 3.96%），金额=元、量=股。精选 78 码带口径与量级守护（违例抛 `DataError`）；其余码不做换算与守护，口径以返回值/cn 注释为准。分类为启发式，最终以 `cat.search` 为准。
 
-全库：22 个数据域 · 147 个核心接口 · 311 个底层函数 · **2752 个指标码**（精选 78 · 死码 20）。
+全库：22 个数据域 · 147 个核心接口 · 311 个底层函数 · **2983 个指标码**（精选 78 · 死码 20）。
 
 ## 目录
 
@@ -26,16 +26,16 @@
 | 数据类型 | raw 入口 / 门面 | 指标码族 | 码数 | 详见 |
 |---|---|---|---|---|
 | 概览与检索（本节） | `wmshare.load()` + `cat.*`（见下） | — | — |
-| 股票行情与筛选 | `cli.kline` / `cli.screener` / `cli.moneyflow` / `cli.margin` | `$MF_*` `$VOL_*` `$MA_*` `$CHG_*` `$AMPLITUDE_*` `$c_*` `$x_*` + market_quote 组 | [182](#3-股票行情与筛选) |
-| 股票指标码 | `cli.indicator` / `cli.valuation` / `cli.dividend` | `$PCT_*` + 其余主题组 + 10 组精选 | [1694](#4-股票指标码) |
-| 行业数据 | `cli.stocks.industries` / `cli.stocks.industry_members` | `$ID_*` `$CUR_IND_*` | [525](#5-行业数据) |
+| 股票行情与筛选 | `cli.kline` / `cli.screener` / `cli.moneyflow` / `cli.margin` | `$MF_*` `$VOL_*` `$MA_*` `$CHG_*` `$AMPLITUDE_*` `$c_*` `$x_*` + market_quote 组 | [187](#3-股票行情与筛选) |
+| 股票指标码 | `cli.indicator` / `cli.valuation` / `cli.dividend` | `$PCT_*` + 其余主题组 + 10 组精选 | [1917](#4-股票指标码) |
+| 行业数据 | `cli.stocks.industries` / `cli.stocks.industry_members` | `$ID_*` `$CUR_IND_*` | [526](#5-行业数据) |
 | 指数及 ETF | `cli.index`；ETF 日 K 走 `cli.kline.bars` | `$INDEX_*` `$IDW_*` | [125](#6-指数及-etf) |
-| 宏观数据 | `cli.macro` | `$CPI_*` `$GDP_*` `$M1_*` `$M2_*` `$PPI_*` `$PMI_*` `$ELEC_*` `$POPULATION_*` `$HOUSE_*` `$CPCA_*` `$CR_*` | [155](#7-宏观数据) |
+| 宏观数据 | `cli.macro` | `$CPI_*` `$GDP_*` `$M1_*` `$M2_*` `$PPI_*` `$PMI_*` `$ELEC_*` `$POPULATION_*` `$HOUSE_*` `$CPCA_*` `$CR_*` | [157](#7-宏观数据) |
 | 期货 | `cli.indicator.get` + `fut_symbol` | `$FUT_*` | [27](#8-期货) |
 | 可转债 | `cli.cbond` | `$BOND_*` | [44](#9-可转债) |
 | 财务与预测（指路） | `cli.statement` / `cli.segments` / `cli.estimates` | 码在股票指标码章主题组 | — |
 | 披露与治理（指路） | `cli.notice` / `cli.dividend` / `cli.equity` / `cli.filings` / `cli.workout` | 码在股票指标码章主题组（如 `$BONUS_*`） | — |
-| 港股与美股（视图） | `cli.intl` | markets 限制码 | [71](#10-港股与美股市场限制视图) |
+| 港股与美股（视图） | `cli.intl` | markets 限制码 | [70](#10-港股与美股市场限制视图) |
 | 上游死码（勿用） | — | `$*_LIVE` 残片 | [20](#死码警示) |
 
 ### 目录检索索引
@@ -60,23 +60,23 @@ python3 -c "import wmshare; print(wmshare.load().search('股息'))"
 
 | 片段 | 含义 | 码数 |
 |---|---|---|
-| `_LAST` | 最新截面值（不带 = 随最新财报期取值） | 601 |
-| `_3Y` / `_5Y` / `_10Y` / `_3Q` | 回看窗口（年 / 季） | 509 |
-| `_TTM` | 滚动十二个月口径 | 202 |
-| `_YOY` | 同比 | 131 |
-| `_AVG` / `_MIN` / `_TREND` | 窗口内均值 / 最低 / 趋势 | 485 |
+| `_LAST` | 最新截面值（不带 = 随最新财报期取值） | 642 |
+| `_3Y` / `_5Y` / `_10Y` / `_3Q` | 回看窗口（年 / 季） | 526 |
+| `_TTM` | 滚动十二个月口径 | 204 |
+| `_YOY` | 同比 | 165 |
+| `_AVG` / `_MIN` / `_TREND` | 窗口内均值 / 最低 / 趋势 | 487 |
 
 族前缀速查：
 
 | 族前缀 | 含义 | 码数 | 示例 |
 |---|---|---|---|
-| `$PCT_*` | 个股指标历史分位（0=最低 1=最高） | 18 | `$PCT_PE_TTM_10Y_LAST` |
-| `$ID_*` | 行业均值 / 行业聚合 | 317 | `$ID_ROE_TTM` |
+| `$PCT_*` | 个股指标历史分位（0=最低 1=最高） | 34 | `$PCT_PE_TTM_10Y_LAST` |
+| `$ID_*` | 行业均值 / 行业聚合 | 318 | `$ID_ROE_TTM` |
 | `$CUR_IND_*` | 当前三级行业内相对值 / 分位 | 208 | `$CUR_IND_ROE_PCT_LAST` |
 | `$INDEX_*` | 指数层行情与估值 | 71 | `$INDEX_AMOUNT_DAY` |
 | `$IDW_*` | 指数加权口径（等权 / 市值加权） | 54 | `$IDW_BONUS_RATE_HM` |
 | `$FUT_*` | 期货主力连续（fut_symbol 指定合约） | 27 | `$FUT_CLOSE` |
-| `$MF_*` | 个股资金流（超大/大/中/小单） | 33 | `$MF_ELG_NET` |
+| `$MF_*` | 个股资金流（超大/大/中/小单） | 37 | `$MF_ELG_NET` |
 | `$BOND_*` | 可转债工具属性（条款/发行/转股） | 44 | `$BOND_ISSUE_COUPON_IR` |
 | `$c_*` / `$x_*` | 筛选器条件与展示码 | 0 | `$c_accel` |
 
@@ -100,10 +100,12 @@ raw 入口：日 K（三种复权）/ 周月 K / 1 分钟分时 / 盘中快照�
 | `$VOLUME_LAST` | 最新成交量 | 范围 0…100000000000000.0 |
 | `$VOLUME_DAY` | 当日成交量 | 范围 0…100000000000000.0 |
 
-#### `$MF_*` 资金流（33 码）
+#### `$MF_*` 资金流（37 码）
 
 | 指标代码 | 中文 | 市场 |
 |---|---|---|
+| `$MF_DAY_PACK` | 日资金流向整包(SAS MAP) | — |
+| `$MF_DAY_PACK_LAST` | 日资金流向整包-最新 | — |
 | `$MF_ELG_NET` | 特大单净流入额(元) | — |
 | `$MF_ELG_NET_20D` | 20日特大单净流入(元) | — |
 | `$MF_ELG_NET_20D_LAST` | 20日特大单净流入(元)-最新 | — |
@@ -137,6 +139,8 @@ raw 入口：日 K（三种复权）/ 周月 K / 1 分钟分时 / 盘中快照�
 | `$MF_NET_MV_RATIO_LAST` | 最新主力净流入/流通市值 | — |
 | `$MF_SM_NET` | 小单净流入额(元) | — |
 | `$MF_SM_NET_LAST` | 最新小单净流入额(元) | — |
+| `$MF_WIN20_PACK` | 20日资金流向整包(SAS MAP) | — |
+| `$MF_WIN20_PACK_LAST` | 20日资金流向整包-最新 | — |
 
 #### `$VOL_*` 量能（18 码）
 
@@ -161,7 +165,7 @@ raw 入口：日 K（三种复权）/ 周月 K / 1 分钟分时 / 盘中快照�
 | `$VOL_UPTREND_10D` | 成交量逐步放大(近5日均量>前5日均量) | — |
 | `$VOL_UPTREND_10D_LAST` | 成交量逐步放大 | — |
 
-#### `$MA_*` 均线（16 码）
+#### `$MA_*` 均线（17 码）
 
 | 指标代码 | 中文 | 市场 |
 |---|---|---|
@@ -173,6 +177,7 @@ raw 入口：日 K（三种复权）/ 周月 K / 1 分钟分时 / 盘中快照�
 | `$MA_CLOSE_20` | 20日收盘价均线(前复权) | — |
 | `$MA_CLOSE_20_LAST` | 20日收盘价均线-最新 | — |
 | `$MA_CLOSE_240` | 240日收盘价均线(前复权) | — |
+| `$MA_CLOSE_240_LAST` | 240日收盘价均线-最新 | — |
 | `$MA_CLOSE_26` | 26日收盘价均线(前复权) | — |
 | `$MA_CLOSE_30` | 30日收盘价均线(前复权) | — |
 | `$MA_CLOSE_30_LAST` | 30日收盘价均线-最新 | — |
@@ -186,21 +191,21 @@ raw 入口：日 K（三种复权）/ 周月 K / 1 分钟分时 / 盘中快照�
 
 | 指标代码 | 中文 | 市场 |
 |---|---|---|
-| `$CHG_10D` | / m_kline20["close"][9] | — |
+| `$CHG_10D` | 10日涨跌幅 | — |
 | `$CHG_10D_LAST` | 10日涨跌幅-最新 | — |
-| `$CHG_1D` | / m_kline20["close"][1] | — |
+| `$CHG_1D` | 日K1日涨跌(EOD) | — |
 | `$CHG_1D_LAST` | 日K1日涨跌(EOD截面) | — |
-| `$CHG_20D` | / m_kline20["close"][19] | — |
+| `$CHG_20D` | 20日涨跌幅 | — |
 | `$CHG_20D_LAST` | 20日涨跌幅-最新 | — |
-| `$CHG_30D` | / m_kline60["close"][29] | — |
+| `$CHG_30D` | 30日涨跌幅 | — |
 | `$CHG_30D_LAST` | 30日涨跌幅-最新 | — |
-| `$CHG_3D` | / m_kline20["close"][2] | — |
+| `$CHG_3D` | 3日涨跌幅 | — |
 | `$CHG_3D_LAST` | 3日涨跌幅-最新 | — |
-| `$CHG_5D` | / m_kline20["close"][4] | — |
+| `$CHG_5D` | 5日涨跌幅 | — |
 | `$CHG_5D_LAST` | 5日涨跌幅-最新 | — |
-| `$CHG_60D` | / m_kline60["close"][59] | — |
+| `$CHG_60D` | 60日涨跌幅 | — |
 | `$CHG_60D_LAST` | 60日涨跌幅-最新 | — |
-| `$CHG_90D` | / m_kline150["close"][89] | — |
+| `$CHG_90D` | 90日涨跌幅 | — |
 | `$CHG_90D_LAST` | 90日涨跌幅-最新 | — |
 | `$CHG_YTD` | 年初至今涨跌幅 | — |
 | `$CHG_YTD_LAST` | 年初至今涨跌幅-最新 | — |
@@ -455,7 +460,7 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | `$OP_TR_AREA_DOMESTIC_MARGIN_LAST` | 国内毛利率 | 范围 -1…1 |
 | `$OP_TR_AREA_FOREIGN_MARGIN_LAST` | 国外毛利率 | 范围 -1…1 |
 
-#### `$PCT_*` 历史分位（18 码）
+#### `$PCT_*` 历史分位（34 码）
 
 | 指标代码 | 中文 | 市场 |
 |---|---|---|
@@ -465,6 +470,18 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | `$PCT_BONUS_RATE_TTM_3Y_LAST` | 股息率(TTM) 3年分位 | — |
 | `$PCT_BONUS_RATE_TTM_5Y` | 股息率(TTM) 5年分位 | — |
 | `$PCT_BONUS_RATE_TTM_5Y_LAST` | 股息率(TTM) 5年分位 | — |
+| `$PCT_HOLDERNUM_10Y` | 股东户数 10年分位 | — |
+| `$PCT_HOLDERNUM_10Y_LAST` | 股东户数 10年分位 | — |
+| `$PCT_HOLDERNUM_3Y` | 股东户数 3年分位 | — |
+| `$PCT_HOLDERNUM_3Y_LAST` | 股东户数 3年分位 | — |
+| `$PCT_HOLDERNUM_5Y` | 股东户数 5年分位 | — |
+| `$PCT_HOLDERNUM_5Y_LAST` | 股东户数 5年分位 | — |
+| `$PCT_INST_HOLD_10Y` | 机构持仓 10年分位 | — |
+| `$PCT_INST_HOLD_10Y_LAST` | 机构持仓 10年分位 | — |
+| `$PCT_INST_HOLD_3Y` | 机构持仓 3年分位 | — |
+| `$PCT_INST_HOLD_3Y_LAST` | 机构持仓 3年分位 | — |
+| `$PCT_INST_HOLD_5Y` | 机构持仓 5年分位 | — |
+| `$PCT_INST_HOLD_5Y_LAST` | 机构持仓 5年分位 | — |
 | `$PCT_PB_TTM_10Y` | PB(TTM) 10年分位 | — |
 | `$PCT_PB_TTM_10Y_LAST` | PB(TTM) 10年分位 | — |
 | `$PCT_PB_TTM_3Y` | PB(TTM) 3年分位 | — |
@@ -477,8 +494,12 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | `$PCT_PE_TTM_3Y_LAST` | PE(TTM) 3年分位 | — |
 | `$PCT_PE_TTM_5Y` | PE(TTM) 5年分位 | — |
 | `$PCT_PE_TTM_5Y_LAST` | PE(TTM) 5年分位 | — |
+| `$PCT_PR_BASE_3Y` | 市赚率 3年分位 | — |
+| `$PCT_PR_BASE_3Y_LAST` | 市赚率 3年分位 | — |
+| `$PCT_PS_TTM_3Y` | 市销率(TTM) 3年分位 | — |
+| `$PCT_PS_TTM_3Y_LAST` | 市销率(TTM) 3年分位 | — |
 
-#### 其余通用码（1676 码，按主题前缀）
+#### 其余通用码（1883 码，按主题前缀）
 
 ##### `$*`（2 码）
 
@@ -491,7 +512,7 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 
 | 指标代码 | 中文 | 市场 |
 |---|---|---|
-| `$ACC` | 合同款以及预收款 | cn |
+| `$ACC` | 预收/合同负债及合同资产 | cn |
 
 ##### `$ACCOUNT*`（1 码）
 
@@ -506,17 +527,39 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | `$ADP_DAYS` | 预付账款周转天数(D) | — |
 | `$ADP_DAYS_TTM` | TTM预付账款周转天数(D) | — |
 
+##### `$ADV*`（1 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$ADV` | 预收款项及合同负债(最新准则口径) | cn |
+
 ##### `$AEEX*`（1 码）
 
 | 指标代码 | 中文 | 市场 |
 |---|---|---|
 | `$AEEX` | 行政开支 | cn |
 
+##### `$AH*`（1 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$AH_PX_AGENCY` | 安徽电网代购价(元/MWh) | cn |
+
 ##### `$ALPHA*`（1 码）
 
 | 指标代码 | 中文 | 市场 |
 |---|---|---|
 | `$ALPHA_HS300` | 相对沪深300 Alpha(日频) | — |
+
+##### `$AMAC*`（5 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$AMAC_NAV_BOND` | 债券型基金净值(元) | cn |
+| `$AMAC_NAV_EQUITY` | 股票型基金净值(元) | cn |
+| `$AMAC_NAV_HYBRID` | 混合型基金净值(元) | cn |
+| `$AMAC_NAV_MONEY` | 货币基金净值(元) | cn |
+| `$AMAC_NAV_TOTAL` | 公募基金净值合计(元) | cn |
 
 ##### `$AMOUNT*`（6 码）
 
@@ -535,7 +578,7 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 |---|---|---|
 | `$AMPLITUDE` | / $CLOSE_DAY | — |
 
-##### `$ANALYST*`（9 码）
+##### `$ANALYST*`（11 码）
 
 | 指标代码 | 中文 | 市场 |
 |---|---|---|
@@ -543,6 +586,8 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | `$ANALYST_ADD_NUM_LAST` | 最新增持评级家数 | — |
 | `$ANALYST_BUY_NUM` | 买入评级家数 | — |
 | `$ANALYST_BUY_NUM_LAST` | 最新买入评级家数 | — |
+| `$ANALYST_PACK` | 分析师评级整包(SAS MAP) | — |
+| `$ANALYST_PACK_LAST` | 分析师评级整包-最新 | — |
 | `$ANALYST_RATING` | 综合评级(买入/增持/中性/减持/卖出) | — |
 | `$ANALYST_RATING_SCORE` | 评级系数(5=买入 4=增持 3=中性 2=减持 1=卖出) | — |
 | `$ANALYST_RATING_SCORE_LAST` | 最新评级系数 | — |
@@ -583,6 +628,12 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 |---|---|---|
 | `$ASSET_INVEST` | 城镇固定资产投资(亿) | cn |
 
+##### `$AVC*`（1 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$AVC_CAT_VOLUME` | 奥维家电品类零售量-消费级摄像头(台) | cn |
+
 ##### `$AVG*`（11 码）
 
 | 指标代码 | 中文 | 市场 |
@@ -599,11 +650,29 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | `$AVG_DAY_60` | 60日均价(前复权) | — |
 | `$AVG_NR_DAY` | / 2 | — |
 
+##### `$BAIJIU*`（4 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$BAIJIU_MONTH` | 规上白酒产量-当月(万千升) | cn |
+| `$BAIJIU_MONTH_YOY` | 规上白酒产量-当月同比 | cn |
+| `$BAIJIU_YTD` | 规上白酒产量-累计(万千升) | cn |
+| `$BAIJIU_YTD_YOY` | 规上白酒产量-累计同比 | cn |
+
 ##### `$BE*`（1 码）
 
 | 指标代码 | 中文 | 市场 |
 |---|---|---|
 | `$BE_RATE` | 股息分配比例(%) | cn |
+
+##### `$BEER*`（4 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$BEER_MONTH` | 啤酒产量-当月(升) | cn |
+| `$BEER_MONTH_YOY` | 啤酒产量-当月同比 | cn |
+| `$BEER_YTD` | 啤酒产量-累计(升) | cn |
+| `$BEER_YTD_YOY` | 啤酒产量-累计同比 | cn |
 
 ##### `$BENCH*`（3 码）
 
@@ -647,6 +716,15 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 |---|---|---|
 | `$BIZT` | 运营数据商品累计值 | cn |
 
+##### `$BJ*`（4 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$BJ_FT_CASE` | 飞天原箱批价(元/瓶) | cn |
+| `$BJ_FT_LOOSE` | 飞天散瓶批价(元/瓶) | cn |
+| `$BJ_GJ1573` | 国窖1573批价(元/瓶) | cn |
+| `$BJ_WLY8` | 普五批价(元/瓶) | cn |
+
 ##### `$BLGAINIAN*`（1 码）
 
 | 指标代码 | 中文 | 市场 |
@@ -665,10 +743,10 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | `$BOLL_POSITION_20_LAST` | BOLL通道位置-最新 | — |
 | `$BOLL_UPPER_20` | BOLL上轨(20日,2σ) | — |
 | `$BOLL_UPPER_20_LAST` | BOLL上轨-最新(20日,2σ) | — |
-| `$BOLL_WIDTH_20` | / $BOLL_MID_20 | — |
+| `$BOLL_WIDTH_20` | BOLL带宽(20日) | — |
 | `$BOLL_WIDTH_20_LAST` | BOLL带宽-最新(20日) | — |
 
-##### `$BONUS*`（60 码）
+##### `$BONUS*`（69 码）
 
 | 指标代码 | 中文 | 市场 |
 |---|---|---|
@@ -689,6 +767,8 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | `$BONUS_5Y_AVG_LAST` | 近5年分红(TTM)均值 | — |
 | `$BONUS_5Y_MIN` | 近5年分红(TTM)最低 | — |
 | `$BONUS_5Y_MIN_LAST` | 近5年分红(TTM)最低 | — |
+| `$BONUS_CASH` | 现金窗口分红总额(亿) | — |
+| `$BONUS_CASH_LAST` | 现金窗口分红总额(亿) | — |
 | `$BONUS_CR` | 股息货币转换为报价货币 | — |
 | `$BONUS_CR_BACKUP` | 一条分红数据的货币(兜底) | — |
 | `$BONUS_CR_BACKUP_LAST` | 最后一条分红数据的货币(兜底) | — |
@@ -719,17 +799,24 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | `$BONUS_RATE_5Y_AVG_LAST` | 近5年股息率(TTM)均值 | — |
 | `$BONUS_RATE_5Y_MIN` | 近5年股息率(TTM)最低 | — |
 | `$BONUS_RATE_5Y_MIN_LAST` | 近5年股息率(TTM)最低 | — |
-| `$BONUS_RATE_LYR` | 静态股息率(%) | — |
-| `$BONUS_RATE_LYR_LAST` | 静态股息率(%) | — |
+| `$BONUS_RATE_CASH` | 现金窗口股息率(%) | — |
+| `$BONUS_RATE_CASH_LAST` | 现金窗口股息率(%) | — |
+| `$BONUS_RATE_FC_LAST` | 前瞻股息率 | cn |
+| `$BONUS_RATE_LYR` | 静态股息率(LYR·报告期)(%) | — |
+| `$BONUS_RATE_LYR_LAST` | 静态股息率(LYR·报告期)(%) | — |
 | `$BONUS_RATE_LYR_LIVE` | drop stub | ⚠️ 死码 |
-| `$BONUS_RATE_TTM` | 股息率(%) | — |
-| `$BONUS_RATE_TTM_LAST` | 分红股息率TTM(%) | — |
-| `$BONUS_RATE_TTM_LAST_REAL` | 最新分红股息率TTM(%) | — |
+| `$BONUS_RATE_RPT` | 财报期股息率(%) | — |
+| `$BONUS_RATE_RPT_LAST` | 财报期股息率(%) | — |
+| `$BONUS_RATE_TTM` | 股息率(LTM·报告期)(%) | — |
+| `$BONUS_RATE_TTM_LAST` | 股息率(LTM·报告期)(%) | — |
+| `$BONUS_RATE_TTM_LAST_REAL` | 股息率(LTM)(%) | — |
 | `$BONUS_RATE_TTM_LIVE` | drop stub | ⚠️ 死码 |
+| `$BONUS_RPT` | 财报期分红总额(亿) | — |
+| `$BONUS_RPT_LAST` | 财报期分红总额(亿) | — |
 | `$BONUS_TOTAL` | 累计分红总金额(亿) | — |
-| `$BONUS_TTM` | 分红股息TTM(亿) | — |
-| `$BONUS_TTM_LAST` | 最近一年预测的分红股息TTM(亿) | — |
-| `$BONUS_TTM_LAST_REAL` | 最近一年的分红股息TTM(亿) | — |
+| `$BONUS_TTM` | 分红总额(LTM·报告期)(亿) | — |
+| `$BONUS_TTM_LAST` | 分红总额(LTM·报告期)(亿) | — |
+| `$BONUS_TTM_LAST_REAL` | 分红总额(LTM)(亿) | — |
 | `$BONUS_TTM_RATE` | 股利支付率(%) | — |
 | `$BONUS_TTM_RATE_LAST` | 股利支付率(%) | — |
 
@@ -759,6 +846,19 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 |---|---|---|
 | `$BRPA` | 拆入资金及卖出回购金融资产款净增加额 | — |
 
+##### `$BUYBACK*`（8 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$BUYBACK_AMT_EXEC_1Y_LAST` | 近1年回购金额(已实施) | — |
+| `$BUYBACK_AMT_EXEC_TOTAL_LAST` | 累计回购金额(已实施) | — |
+| `$BUYBACK_AMT_PLAN_1Y_CANCEL_LAST` | 近1年注销式回购金额(公告上限) | — |
+| `$BUYBACK_AMT_PLAN_1Y_LAST` | 近1年回购金额(公告上限) | — |
+| `$BUYBACK_AMT_PLAN_TOTAL_CANCEL_LAST` | 累计注销式回购金额(公告上限) | — |
+| `$BUYBACK_AMT_PLAN_TOTAL_LAST` | 累计回购金额(公告上限) | — |
+| `$BUYBACK_EXEC_1Y_MV_PCT_LAST` | 近1年回购总额占市值比 | — |
+| `$BUYBACK_EXEC_TOTAL_MV_PCT_LAST` | 累计回购总额占市值比 | — |
+
 ##### `$CAIBAO*`（4 码）
 
 | 指标代码 | 中文 | 市场 |
@@ -772,13 +872,13 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 
 | 指标代码 | 中文 | 市场 |
 |---|---|---|
-| `$CAP_SOLAR` | 太阳能发电装机容量(亿千瓦) | cn |
+| `$CAP_SOLAR` | 太阳能发电装机容量(千瓦) | cn |
 | `$CAP_SOLAR_YOY` | 太阳能发电装机容量-同比 | cn |
-| `$CAP_TOTAL` | 全国发电装机容量(亿千瓦) | cn |
+| `$CAP_TOTAL` | 全国发电装机容量(千瓦) | cn |
 | `$CAP_TOTAL_YOY` | 全国发电装机容量-同比 | cn |
 | `$CAP_UTIL_DELTA` | 发电设备利用小时-比上年同期(小时) | cn |
 | `$CAP_UTIL_HOURS` | 发电设备利用小时-年初累计(小时) | cn |
-| `$CAP_WIND` | 风电装机容量(亿千瓦) | cn |
+| `$CAP_WIND` | 风电装机容量(千瓦) | cn |
 | `$CAP_WIND_YOY` | 风电装机容量-同比 | cn |
 
 ##### `$CAPITAL*`（5 码）
@@ -822,12 +922,13 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | `$CCI_20` | CCI商品通道指标(20日) | — |
 | `$CCI_20_LAST` | CCI-最新(20日) | — |
 
-##### `$CCY*`（5 码）
+##### `$CCY*`（6 码）
 
 | 指标代码 | 中文 | 市场 |
 |---|---|---|
 | `$CCY` | 货币单位 | — |
 | `$CCY_AFTER` | 公司财报的货币单位 | — |
+| `$CCY_FIN` | 财报计量货币 | hk |
 | `$CCY_LASTQ4` | 最新年度财报的货币单位 | — |
 | `$CCY_MARKET` | 市场货币 | — |
 | `$CCY_QUOTE` | 报价货币 | — |
@@ -876,6 +977,17 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | `$CF_NP_RATIO_LAST` | 最新经营现金流/净利润比率(TTM) | — |
 | `$CF_TCL_RATIO` | 经营现金流/流动负债 | — |
 | `$CF_TCL_RATIO_LAST` | 最新经营现金流/流动负债 | — |
+
+##### `$CIOL*`（6 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$CIOL_CAC_VALUE` | 商用空调内销额(亿元) | cn |
+| `$CIOL_HAAC_VOLUME` | 家用空调内销量(万台) | cn |
+| `$CIOL_HAAC_YOY` | 家用空调内销量同比 | cn |
+| `$CIOL_TV_VOLUME` | 电视内销量(万台) | cn |
+| `$CIOL_WASH_VOLUME` | 洗衣机内销量(万台) | cn |
+| `$CIOL_WASH_YOY` | 洗衣机内销量同比 | cn |
 
 ##### `$CLB*`（2 码）
 
@@ -932,6 +1044,12 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 |---|---|---|
 | `$CODEH` | H股代码 | — |
 
+##### `$CODEU*`（1 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$CODEU` | 美股代码 | — |
+
 ##### `$COG*`（2 码）
 
 | 指标代码 | 中文 | 市场 |
@@ -984,6 +1102,12 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | `$COST_TOTAL` | 四项费用(亿) | — |
 | `$COST_TOTAL_RATE` | 四项费用率(%) | — |
 | `$COST_TOTAL_RATE_LAST` | 四项费用率(%) | — |
+
+##### `$CQ*`（1 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$CQ_PX_AGENCY` | 重庆电网代购价(元/MWh) | cn |
 
 ##### `$CSRC*`（2 码）
 
@@ -1047,10 +1171,10 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 
 | 指标代码 | 中文 | 市场 |
 |---|---|---|
-| `$CUSTOMS_EXPORT` | 出口额-月(亿)(美元) | cn |
-| `$CUSTOMS_EXPORT_ACCUMULATE` | 出口额-累计(亿)(美元) | cn |
-| `$CUSTOMS_IMPORT` | 进口额-月(亿)(美元) | cn |
-| `$CUSTOMS_IMPORT_ACCUMULATE` | 进口额-累计(亿)(美元) | cn |
+| `$CUSTOMS_EXPORT` | 出口额-月(美元) | cn |
+| `$CUSTOMS_EXPORT_ACCUMULATE` | 出口额-累计(美元) | cn |
+| `$CUSTOMS_IMPORT` | 进口额-月(美元) | cn |
+| `$CUSTOMS_IMPORT_ACCUMULATE` | 进口额-累计(美元) | cn |
 
 ##### `$CYCLICAL*`（2 码）
 
@@ -1140,14 +1264,18 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | `$DPPR_YOY_3Q_TREND_LAST` | 最新近3季扣非净利润同比趋势 | — |
 | `$DPPR_YOY_LAST` | 最新扣非净利润同比增长率 | — |
 
-##### `$DPS*`（4 码）
+##### `$DPS*`（8 码）
 
 | 指标代码 | 中文 | 市场 |
 |---|---|---|
 | `$DPS` | 季度每股分红总额(元) | — |
-| `$DPS_TTM` | 年度每股分红总额(元) | — |
-| `$DPS_TTM_LAST` | 最近一年预测的每股分红总额(元) | — |
-| `$DPS_TTM_LAST_REAL` | 最近一年的每股分红总额(元) | — |
+| `$DPS_CASH` | 现金窗口每股分红(元) | — |
+| `$DPS_CASH_LAST` | 现金窗口每股分红(元) | — |
+| `$DPS_RPT` | 财报期每股分红(元) | — |
+| `$DPS_RPT_LAST` | 财报期每股分红(元) | — |
+| `$DPS_TTM` | 每股分红(LTM·报告期)(元) | — |
+| `$DPS_TTM_LAST` | 每股分红(LTM·报告期)(元) | — |
+| `$DPS_TTM_LAST_REAL` | 每股分红(LTM)(元) | — |
 
 ##### `$DPSS*`（1 码）
 
@@ -1203,10 +1331,11 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | `$EMP_NUM_Tech` | 技术人员数(D) | — |
 | `$EMP_NUM_WEIGHTED` | 加权员工数 | — |
 
-##### `$EOD*`（1 码）
+##### `$EOD*`（2 码）
 
 | 指标代码 | 中文 | 市场 |
 |---|---|---|
+| `$EOD_LEFTOVER` | EOD leftover PCT包(MAP) | — |
 | `$EOD_TECH_TIP` | EOD技术面复合tip包(MAP) | — |
 
 ##### `$EPMR*`（1 码）
@@ -1238,15 +1367,15 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 |---|---|---|
 | `$EQUITY_B_FREE_SHARE` | B股自由流通股(亿) | — |
 | `$EQUITY_CHANGE_REASON` | 变动原因 | — |
-| `$EQUITY_FREE_SHARES` | 自由流通股(亿) | us |
+| `$EQUITY_FREE_SHARES` | 自由流通股(亿) | — |
 | `$EQUITY_FREE_SHARES_LAST` | 最新自由流通股(亿) | — |
 | `$EQUITY_H_FREE_SHARE` | H股自由流通股(亿) | — |
-| `$EQUITY_LISTED_A_SHARES` | 上市A股(亿) | us |
-| `$EQUITY_NON_FREE_SHARES` | 非自由流通股(亿) | us |
+| `$EQUITY_LISTED_A_SHARES` | 上市A股(亿) | — |
+| `$EQUITY_NON_FREE_SHARES` | 非自由流通股(亿) | — |
 | `$EQUITY_NUM_DAY` | 总股本 | — |
 | `$EQUITY_TAGS_SYNCED_AT` | equity-tags平台同步时间 | — |
 | `$EQUITY_TOTAL_SHARES` | 总股本ADS(亿) | us |
-| `$EQUITY_TOTAL_SHARES_LAST` | 总股本ADS(亿) | — |
+| `$EQUITY_TOTAL_SHARES_LAST` | 总股本ADS(亿) | us |
 
 ##### `$EQUITYPLEDGE*`（10 码）
 
@@ -1272,6 +1401,12 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | `$EV_EBITDA` | EV/EBITDA(倍) | cn |
 | `$EV_EBITDA_LAST` | 最新EV/EBITDA | — |
 | `$EV_EBIT_LAST` | 最新EV/EBIT | — |
+
+##### `$EXCHANGE*`（1 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$EXCHANGE_NAME` | 交易所 | — |
 
 ##### `$EXCHANGEHOLD*`（11 码）
 
@@ -1325,12 +1460,13 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | `$EXPENSE_BANK` | 银行业务成本(亿) | cn |
 | `$EXPENSE_RATE_BANK` | 成本收入比(%) | cn |
 
-##### `$FC*`（14 码）
+##### `$FC*`（15 码）
 
 | 指标代码 | 中文 | 市场 |
 |---|---|---|
 | `$FC_EPS_1` | 一致预期EPS-已实现年（近六月平均） | cn |
 | `$FC_EPS_2` | 一致预期EPS-预测年（近六月平均） | cn |
+| `$FC_NP_CAGR3` | 未来3年归母净利润复合增长率(预测中位数) | cn |
 | `$FC_NP_COUNT` | 预测覆盖机构数（<5家代表样本不足，预测信度低） | cn |
 | `$FC_NP_DISPERSION` | 预测分歧度=(乐观-悲观)/中位数（>0.3代表机构意见严重不一致，预测噪声大） | cn |
 | `$FC_NP_MEDIAN` | 预测归母净利润-中位数（次年预测年，多机构共识，推荐用于选股） | cn |
@@ -1366,6 +1502,29 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | `$FISCAL_INCOME` | 财政收入-月(万亿) | cn |
 | `$FISCAL_INCOME_ACCUMULATE` | 财政收入-累计(万亿) | cn |
 | `$FISCAL_TAX` | 税收-累计(万亿) | cn |
+
+##### `$FJ*`（1 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$FJ_PX_AGENCY` | 福建电网代购价(元/MWh) | cn |
+
+##### `$FLOOR*`（12 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$FLOOR_EY_RAW` | 保底率·扣非盈利收益率(小数,微利门过滤) | cn |
+| `$FLOOR_EY_RAW_LAST` | 保底率·扣非盈利收益率(小数) | cn |
+| `$FLOOR_PE_GATE` | 保底率·PE分位门系数 | cn |
+| `$FLOOR_PE_GATE_LAST` | 保底率·PE分位门系数 | cn |
+| `$FLOOR_PROFIT_GATE` | 保底率·盈利持续门(0/1,行业类三档) | cn |
+| `$FLOOR_PROFIT_GATE_LAST` | 保底率·盈利持续门(0/1) | cn |
+| `$FLOOR_YIELD` | 静态保底收益率(小数) | cn |
+| `$FLOOR_YIELD_DY` | 保底率·可持续股息腿(小数) | cn |
+| `$FLOOR_YIELD_DY_LAST` | 保底率·可持续股息腿(小数) | cn |
+| `$FLOOR_YIELD_EY` | 保底率·扣非盈利收益腿(小数) | cn |
+| `$FLOOR_YIELD_EY_LAST` | 保底率·扣非盈利收益腿(小数) | cn |
+| `$FLOOR_YIELD_LAST` | 静态保底收益率(小数) | cn |
 
 ##### `$FREE*`（15 码）
 
@@ -1406,7 +1565,7 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 
 | 指标代码 | 中文 | 市场 |
 |---|---|---|
-| `$FY` | 财年截止日 | — |
+| `$FY` | 财年截止日 | cn |
 | `$FY_LAST` | 最新财年截止日 | — |
 
 ##### `$GANGGUTONGBIAODIHU*`（1 码）
@@ -1420,6 +1579,14 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | 指标代码 | 中文 | 市场 |
 |---|---|---|
 | `$GANGGUTONGBIAODISHEN` | 港股通标的深 | — |
+
+##### `$GD*`（3 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$GD_PX_AGENCY` | 广东电网代购价(元/MWh) | cn |
+| `$GD_PX_BID` | 广东月竞综合价(元/MWh) | cn |
+| `$GD_PX_MIDLONG` | 广东中长期综合价(元/MWh) | cn |
 
 ##### `$GM*`（2 码）
 
@@ -1448,7 +1615,7 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | `$GMR_5Y_AVG_LAST` | 近5年毛利率(TTM)均值 | — |
 | `$GMR_5Y_MIN` | 近5年毛利率(TTM)最低 | — |
 | `$GMR_5Y_MIN_LAST` | 近5年毛利率(TTM)最低 | — |
-| `$GMR_GEOMEAN1` | 近1年毛利率几何增速 | — |
+| `$GMR_GEOMEAN1` | 近1年毛利率几何增速(同比口径) | — |
 | `$GMR_GEOMEAN1_LAST` | 近1年毛利率几何增速-最新 | — |
 | `$GMR_GEOMEAN3` | 近3年毛利率几何增速 | — |
 | `$GMR_GEOMEAN3_LAST` | 近3年毛利率几何增速-最新 | — |
@@ -1516,6 +1683,12 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | `$HAS_INSIDER_BUYING_3M` | 近3月有增持 | — |
 | `$HAS_INSIDER_BUYING_6M` | 近6月有增持 | — |
 | `$HAS_RENAMED` | 是否有曾用名(1是0否) | — |
+
+##### `$HE*`（1 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$HE_PX_AGENCY` | 河北电网代购价(元/MWh) | cn |
 
 ##### `$HEAVY*`（1 码）
 
@@ -1609,6 +1782,18 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 |---|---|---|
 | `$IGDL` | 清算扣除资产(亿) | — |
 
+##### `$IMPA*`（1 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$IMPA` | 资产减值损失(最新准则口径,正数=损失) | cn |
+
+##### `$IMPC*`（1 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$IMPC` | 信用减值损失(最新准则口径,正数=损失) | cn |
+
 ##### `$INCOME*`（6 码）
 
 | 指标代码 | 中文 | 市场 |
@@ -1644,6 +1829,15 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | `$INDUSTRY_SUB` | 细分行业 | — |
 | `$INDUSTRY_TAGS` | 申万行业标签数组(各级) | — |
 
+##### `$INS*`（4 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$INS_LIFE` | 人身险保费(元) | cn |
+| `$INS_PREMIUM_TOTAL` | 原保险保费收入(元) | cn |
+| `$INS_PREMIUM_YOY` | 原保险保费-同比 | cn |
+| `$INS_PROPERTY` | 财产险保费(元) | cn |
+
 ##### `$INSIDER*`（1 码）
 
 | 指标代码 | 中文 | 市场 |
@@ -1662,8 +1856,8 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 
 | 指标代码 | 中文 | 市场 |
 |---|---|---|
-| `$INSURANCE_HOLD_RATIO` | 保险持仓占股本比例 | — |
-| `$INSURANCE_HOLD_RATIO_LAST` | 最新保险持仓占股本比例 | — |
+| `$INSURANCE_HOLD_RATIO` | 保险持仓占流通股本比例 | — |
+| `$INSURANCE_HOLD_RATIO_LAST` | 最新保险持仓占流通股本比例 | — |
 
 ##### `$IO*`（5 码）
 
@@ -1741,12 +1935,25 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | `$ISSUE_SECURITY_TYPE` | 证券类型(美股) | us |
 | `$ISSUE_TRADE_MARKET` | 交易市场(美股) | us |
 
+##### `$JGCG*`（2 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$JGCG_PACK` | 机构持仓整包(SAS MAP) | — |
+| `$JGCG_PACK_LAST` | 机构持仓整包-最新 | — |
+
 ##### `$JOB*`（2 码）
 
 | 指标代码 | 中文 | 市场 |
 |---|---|---|
 | `$JOB_ADD` | 非农就业人数变化(万) | us |
 | `$JOB_LESS` | 失业率(月)(%) | hk |
+
+##### `$JX*`（1 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$JX_PX_AGENCY` | 江西电网代购价(元/MWh) | cn |
 
 ##### `$KDJ*`（10 码）
 
@@ -1769,7 +1976,7 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 |---|---|---|
 | `$KLINE_DATE` | 日K线采样日期 | — |
 | `$KLINE_DATE_LAST` | 最新采样点日期 | — |
-| `$KLINE_DAY` | 日K线(F) | — |
+| `$KLINE_DAY` | + STRING($DATE_SAS) + "\n市值:" + STRING($MV_DAY) + "\n收盘价:" + STRING($CLOSE_DAY) +   "\n采样日:" + STRING($SAMPLING_DAY) +   "\n陆股通持股比例:" + STRING($HOLD_RATIO_DAY) + "\n陆股通持股数量:" + STRING($HOLD_VOL_DAY) | — |
 | `$KLINE_HAS` | 日K线是否存在 | — |
 | `$KLINE_LAST_DATE` | 最新采样点日期 | — |
 | `$KLINE_SAS` | 日K线采样点 | — |
@@ -1778,6 +1985,19 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | `$KLINE_TIP_REFRESHED_AT` | 最新行情 tip 刷新时刻 | — |
 | `$KLINE_WIN150` | 150日K线OHLC窗口(Map,随游标) | — |
 | `$KLINE_WIN150_LAST` | 150日K线OHLC窗口-最新(索引/CONFT) | — |
+
+##### `$KLINE150*`（1 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$KLINE150_TECH` | K线150技术面整包(SAS MAP) | — |
+
+##### `$KLINE20*`（2 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$KLINE20_TECH` | K线20技术面整包(SAS MAP) | — |
+| `$KLINE20_TECH_LAST` | K线20技术面整包-最新 | — |
 
 ##### `$LA*`（1 码）
 
@@ -1847,6 +2067,12 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | `$LITIGATION_SI_JUDGMENT_CONTENT` | 二审判决内容 | — |
 | `$LITIGATION_SI_JUDGMENT_DATE` | 二审判决日期 | — |
 
+##### `$LN*`（1 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$LN_PX_AGENCY` | 辽宁电网代购价(元/MWh) | cn |
+
 ##### `$LOW*`（5 码）
 
 | 指标代码 | 中文 | 市场 |
@@ -1869,6 +2095,13 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | 指标代码 | 中文 | 市场 |
 |---|---|---|
 | `$LPCA` | 向中央银行借款净增加额 | — |
+
+##### `$LPR*`（2 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$LPR_1Y` | 1年期LPR(小数) | cn |
+| `$LPR_5Y` | 5年期LPR(小数) | cn |
 
 ##### `$LV*`（3 码）
 
@@ -1987,7 +2220,7 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | `$MAJORALL_NOTICE_DATE` | 公告日期 | — |
 | `$MAJORALL_SPECIFIC_EVENTTYPE` | 具体事件类型 | — |
 
-##### `$MARGIN*`（6 码）
+##### `$MARGIN*`（8 码）
 
 | 指标代码 | 中文 | 市场 |
 |---|---|---|
@@ -1997,6 +2230,8 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | `$MARGIN_BALANCE_RATIO_LAST` | 最新融资余额占市值比 | — |
 | `$MARGIN_NET_BUY` | 融资净买入 | — |
 | `$MARGIN_NET_BUY_LAST` | 最新融资净买入 | — |
+| `$MARGIN_PACK` | 融资融券整包(SAS MAP) | — |
+| `$MARGIN_PACK_LAST` | 融资融券整包-最新 | — |
 
 ##### `$MAX*`（11 码）
 
@@ -2034,12 +2269,13 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 |---|---|---|
 | `$MFNS_TCL` | 货币资金占流动负债比率(%) | — |
 
-##### `$MIN*`（12 码）
+##### `$MIN*`（13 码）
 
 | 指标代码 | 中文 | 市场 |
 |---|---|---|
 | `$MIN_DAY_10` | 10日最低价(前复权) | — |
 | `$MIN_DAY_120` | 120日最低价(前复权) | — |
+| `$MIN_DAY_120_LAST` | 120日最低价-最新 | — |
 | `$MIN_DAY_14` | 14日最低价(前复权) | — |
 | `$MIN_DAY_20` | 20日最低价(前复权) | — |
 | `$MIN_DAY_240` | 240日最低价(前复权) | — |
@@ -2075,7 +2311,7 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 
 | 指标代码 | 中文 | 市场 |
 |---|---|---|
-| `$N_DY_D` | 股息率修正系数(D) | — |
+| `$N_DY_D` | 股利支付率修正系数(D) | — |
 
 ##### `$NA*`（3 码）
 
@@ -2122,20 +2358,44 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | `$NATIONAL_TEAM_HOLD_RATIO` | 国家队持股比例 | — |
 | `$NATIONAL_TEAM_HOLD_RATIO_LAST` | 最新国家队持股比例 | — |
 
-##### `$NBS*`（10 码）
+##### `$NBS*`（25 码）
 
 | 指标代码 | 中文 | 市场 |
 |---|---|---|
-| `$NBS_BEV` | 限额以上饮料类-当月(亿元) | cn |
+| `$NBS_BEV` | 限额以上饮料类-当月(元) | cn |
 | `$NBS_BEV_YOY` | 限额以上饮料类-当月同比 | cn |
-| `$NBS_FOOD` | 限额以上粮油食品类-当月(亿元) | cn |
+| `$NBS_COAL_YOY` | 原煤产量同比(%) | cn |
+| `$NBS_COKE_YOY` | 焦炭产量同比(%) | cn |
+| `$NBS_CRUDE_YOY` | 原油产量同比(%) | cn |
+| `$NBS_DIESEL_YOY` | 柴油产量同比(%) | cn |
+| `$NBS_FOOD` | 限额以上粮油食品类-当月(元) | cn |
 | `$NBS_FOOD_YOY` | 限额以上粮油食品类-当月同比 | cn |
-| `$NBS_RETAIL` | 社零总额-当月(亿元) | cn |
+| `$NBS_GASO_YOY` | 汽油产量同比(%) | cn |
+| `$NBS_GAS_YOY` | 天然气产量同比(%) | cn |
+| `$NBS_LNG_YOY` | 液化天然气产量同比(%) | cn |
+| `$NBS_LPG_YOY` | 液化石油气产量同比(%) | cn |
+| `$NBS_PG_ABS` | 发电量-当月(千瓦时) | cn |
+| `$NBS_PG_HY_YOY` | 水电同比(%) | cn |
+| `$NBS_PG_NU_YOY` | 核电同比(%) | cn |
+| `$NBS_PG_SO_YOY` | 太阳能发电同比(%) | cn |
+| `$NBS_PG_TH_YOY` | 火电同比(%) | cn |
+| `$NBS_PG_WI_YOY` | 风电同比(%) | cn |
+| `$NBS_PG_YOY` | 发电量同比(%) | cn |
+| `$NBS_RETAIL` | 社零总额-当月(元) | cn |
 | `$NBS_RETAIL_YOY` | 社零总额-当月同比 | cn |
-| `$NBS_RETAIL_YTD` | 社零总额-年初累计(亿元) | cn |
+| `$NBS_RETAIL_YTD` | 社零总额-年初累计(元) | cn |
 | `$NBS_RETAIL_YTD_YOY` | 社零总额-累计同比 | cn |
-| `$NBS_TOBACCO` | 限额以上烟酒类-当月(亿元) | cn |
+| `$NBS_TOBACCO` | 限额以上烟酒类-当月(元) | cn |
 | `$NBS_TOBACCO_YOY` | 限额以上烟酒类-当月同比 | cn |
+
+##### `$NBSFOOD*`（4 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$NBSFOOD_BEV_MONTH` | 软饮料产量-当月(吨) | cn |
+| `$NBSFOOD_BEV_YTD` | 软饮料产量-累计(吨) | cn |
+| `$NBSFOOD_DAIRY_MONTH` | 乳制品产量-当月(吨) | cn |
+| `$NBSFOOD_DAIRY_YTD` | 乳制品产量-累计(吨) | cn |
 
 ##### `$NCB*`（3 码）
 
@@ -2191,6 +2451,44 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | 指标代码 | 中文 | 市场 |
 |---|---|---|
 | `$NES` | 营业外净收入 | hk |
+
+##### `$NEVM*`（6 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$NEVM_HARMONY` | 鸿蒙智行新势力月交付(辆) | cn |
+| `$NEVM_IDEAL` | 理想新势力月交付(辆) | cn |
+| `$NEVM_LEAPMOTOR` | 零跑新势力月交付(辆) | cn |
+| `$NEVM_NIO` | 蔚来新势力月交付(辆) | cn |
+| `$NEVM_XIAOMI` | 小米新势力月交付(辆) | cn |
+| `$NEVM_XPENG` | 小鹏新势力月交付(辆) | cn |
+
+##### `$NEVW*`（6 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$NEVW_AITO` | 问界新势力周销量(辆) | cn |
+| `$NEVW_IDEAL` | 理想新势力周销量(辆) | cn |
+| `$NEVW_LEAPMOTOR` | 零跑新势力周销量(辆) | cn |
+| `$NEVW_NIO` | 蔚来新势力周销量(辆) | cn |
+| `$NEVW_XIAOMI` | 小米新势力周销量(辆) | cn |
+| `$NEVW_XPENG` | 小鹏新势力周销量(辆) | cn |
+
+##### `$NF*`（11 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$NF_ABS` | 十种有色产量-当月(吨) | cn |
+| `$NF_ALPROD_YOY` | 铝材产量同比(%) | cn |
+| `$NF_ALUMINA_YOY` | 氧化铝产量同比(%) | cn |
+| `$NF_AL_YOY` | 原铝产量同比(%) | cn |
+| `$NF_CUPROD_YOY` | 铜材产量同比(%) | cn |
+| `$NF_CU_YOY` | 精炼铜产量同比(%) | cn |
+| `$NF_INV_MIN_YOY` | 有色矿采选固投累计增长(%) | cn |
+| `$NF_INV_YOY` | 有色冶炼固投累计增长(%) | cn |
+| `$NF_MINING_PPI` | 有色矿采选PPI(上年同月=100) | cn |
+| `$NF_SMELT_PPI` | 有色冶炼压延PPI(上年同月=100) | cn |
+| `$NF_YOY` | 十种有色产量同比(%) | cn |
 
 ##### `$NIBD*`（3 码）
 
@@ -2574,7 +2872,7 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | `$OPEN_LIVE` | drop stub | ⚠️ 死码 |
 | `$OPEN_NR_DAY` | 开盘价(无复权) | — |
 
-##### `$ORG*`（40 码）
+##### `$ORG*`（42 码）
 
 | 指标代码 | 中文 | 市场 |
 |---|---|---|
@@ -2593,10 +2891,11 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | `$ORG_INDUSTRYSTANDARD` | 行业标准 | — |
 | `$ORG_INDUSTRY_CODE` | 所属行业代码 | — |
 | `$ORG_INDUSTRY_COMPANY` | 所属行业企业 | — |
-| `$ORG_INDUSTRY_INDEX` | + $ORG_INDUSTRIES[-1].Symbol | — |
+| `$ORG_INDUSTRY_INDEX` | + m_ref_info.industry_l3_symbol | — |
 | `$ORG_INDUSTRY_INDEX_SYMS` | 所属行业指数 | — |
 | `$ORG_INDUSTRY_NAME` | 所属行业 | — |
 | `$ORG_INDUSTRY_TAGS` | 所属行业标签 | — |
+| `$ORG_IR_WEB` | 投资者关系网 | — |
 | `$ORG_ISSUEPRICE` | 发行价格 | — |
 | `$ORG_LISTINGDATE` | 上市日期 | — |
 | `$ORG_LISTINGYEAR` | 上市年份 | — |
@@ -2605,6 +2904,7 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | `$ORG_ORGCODE` | 组织机构代码 | — |
 | `$ORG_ORGNAME` | 组织机构名称 | — |
 | `$ORG_ORGTYPE` | 组织类型 | — |
+| `$ORG_PAR_VALUE` | 每股面值 | — |
 | `$ORG_PROFILE` | 简介 | — |
 | `$ORG_REGADDRESS` | 注册地址 | — |
 | `$ORG_REGCAPITAL` | 注册资本 | — |
@@ -2632,6 +2932,12 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | `$ORGType` | 公司分类 一般企业(1), 银行(2), 保险(3), 证券(4) | — |
 | `$ORGType_RAW_TAG` | 公司分类标签 | — |
 
+##### `$ORNET*`（1 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$ORNET` | 其他应收款(最新准则口径,不含利息股利) | cn |
+
 ##### `$ORTR*`（1 码）
 
 | 指标代码 | 中文 | 市场 |
@@ -2644,11 +2950,19 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 |---|---|---|
 | `$OTOI` | 营业总收入其他项目 | us |
 
-##### `$PB*`（7 码）
+##### `$OWID*`（2 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$OWID_FERT_HA_CN` | 化肥用量-中国(千克/公顷) | — |
+| `$OWID_FERT_HA_WRL` | 化肥用量-世界(千克/公顷) | — |
+
+##### `$PB*`（8 码）
 
 | 指标代码 | 中文 | 市场 |
 |---|---|---|
 | `$PB` | 市净率 | — |
+| `$PB_LAST` | PB | — |
 | `$PB_LIVE` | drop stub | ⚠️ 死码 |
 | `$PB_NOGW` | 不含商誉市净率(D) | — |
 | `$PB_NOGW_LAST` | 最新不含商誉市净率(D) | — |
@@ -2663,11 +2977,12 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | `$PCF_TTM` | 滚动市现率TTM(D) | — |
 | `$PCF_TTM_LAST` | 滚动市现率TTM(D) | — |
 
-##### `$PE*`（6 码）
+##### `$PE*`（7 码）
 
 | 指标代码 | 中文 | 市场 |
 |---|---|---|
 | `$PE` | PE | — |
+| `$PE_FC_LAST` | 前瞻市盈率 | cn |
 | `$PE_TTM` | PE | — |
 | `$PE_TTM_DPPR` | 扣非市盈率TTM(D) | — |
 | `$PE_TTM_DPPR_LAST` | 扣非市盈率TTM(D) | — |
@@ -2696,6 +3011,63 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | `$PERCENT_DAY` | 涨跌幅(%) | — |
 | `$PERCENT_LAST` | 当日涨跌幅(实时) | — |
 | `$PERCENT_LIVE` | drop stub | ⚠️ 死码 |
+
+##### `$PHONE*`（6 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$PHONE_SH_APPLE` | 苹果手机周份额(%) | cn |
+| `$PHONE_SH_HONOR` | 荣耀手机周份额(%) | cn |
+| `$PHONE_SH_HUAWEI` | 华为手机周份额(%) | cn |
+| `$PHONE_SH_OPPO` | OPPO手机周份额(%) | cn |
+| `$PHONE_SH_VIVO` | vivo手机周份额(%) | cn |
+| `$PHONE_SH_XIAOMI` | 小米手机周份额(%) | cn |
+
+##### `$PIC*`（1 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$PIC` | 股本(元) | — |
+
+##### `$PIC0*`（1 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$PIC0` | 股本-期初(元) | — |
+
+##### `$POSTAL*`（29 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$POSTAL_DE_KEP` | 德国KEP市场收入(亿欧,年) | cn |
+| `$POSTAL_DE_KEP_EXPRESS` | 德国KEP收入-Express(亿欧,年) | cn |
+| `$POSTAL_DE_KEP_KURIER` | 德国KEP收入-Kurier(亿欧,年) | cn |
+| `$POSTAL_DE_KEP_PAKET` | 德国KEP收入-Paket(亿欧,年) | cn |
+| `$POSTAL_DE_PARCEL` | 德国包裹件量(亿件,年,全市场) | cn |
+| `$POSTAL_DE_PARCEL_AUSLAND` | 德国包裹件量-国际(亿件,年) | cn |
+| `$POSTAL_DE_PARCEL_INLAND` | 德国包裹件量-国内(亿件,年) | cn |
+| `$POSTAL_DE_PEX` | 德国Paket+Express件量(亿件,年) | cn |
+| `$POSTAL_DE_REVENUE` | 德国包裹市场收入(亿欧,年) | cn |
+| `$POSTAL_FR_DOM` | 法国包裹量-国内投递(亿件,年,全市场) | cn |
+| `$POSTAL_FR_EXP` | 法国包裹量-出口(亿件,年) | cn |
+| `$POSTAL_FR_REV` | / 100 | cn |
+| `$POSTAL_JPA_MAIL` | 日本メール便取扱数(亿件,财年) | cn |
+| `$POSTAL_JPA_TOTAL` | 日本宅配便取扱個数(亿件,财年4-3,全市场) | cn |
+| `$POSTAL_JPA_TRUCK` | 日本宅配便-トラック(亿件,财年) | cn |
+| `$POSTAL_JPA_YAMATO` | 日本宅急便(ヤマト)取扱個数(亿件,财年) | cn |
+| `$POSTAL_JP_PARCEL` | 日本宅配便取扱個数(亿件,月,大手3社) | cn |
+| `$POSTAL_JP_PARCEL_YOY` | 日本宅配便取扱個数-同比 | cn |
+| `$POSTAL_KR_PARCEL` | 韩国택배件量(亿件,月,全市场) | cn |
+| `$POSTAL_UK_LETTERS` | 英国信件量(亿件,财年4-3,Letters+Large letters) | cn |
+| `$POSTAL_UK_LETTERS_REV` | 英国信件收入(亿英镑,财年) | cn |
+| `$POSTAL_UK_PARCELS` | 英国包裹量(亿件,财年4-3,持证运营商口径) | cn |
+| `$POSTAL_UK_PARCELS_REV` | 英国包裹市场收入(亿英镑,财年) | cn |
+| `$POSTAL_US_CMP_REVENUE` | 美国Competitive Mail收入(亿美元,季) | cn |
+| `$POSTAL_US_COMPETITIVE` | 美国Competitive Mail件量(亿件,季) | cn |
+| `$POSTAL_US_FC_REVENUE` | 美国First-Class Mail收入(亿美元,季) | cn |
+| `$POSTAL_US_FIRST_CLASS` | 美国First-Class Mail件量(亿件,季) | cn |
+| `$POSTAL_US_MD` | 美国Market Dominant件量(亿件,季,财年10-9) | cn |
+| `$POSTAL_US_MD_REVENUE` | 美国Market Dominant收入(亿美元,季) | cn |
 
 ##### `$PPE*`（8 码）
 
@@ -2831,6 +3203,14 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 |---|---|---|
 | `$PTR` | 税后净利率 | — |
 
+##### `$PV*`（3 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$PV_CENTRAL_NEW` | 集中式光伏新增(千瓦) | cn |
+| `$PV_DIST_NEW` | 分布式光伏新增(千瓦) | cn |
+| `$PV_NEW_INSTALL` | 光伏新增并网-纯光伏(千瓦) | cn |
+
 ##### `$QFII*`（2 码）
 
 | 指标代码 | 中文 | 市场 |
@@ -2866,6 +3246,14 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | `$RATE_LOAN` | 贷款基准利率(%)(年化) | cn |
 | `$RATE_RESERVE_LARGE` | 存款准备金率-大型金融机构(%) | cn |
 | `$RATE_RESERVE_SMALL` | 存款准备金率-小型金融机构(%) | cn |
+
+##### `$RAWMILK*`（3 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$RAWMILK_PRICE` | 主产省生鲜乳均价(元/公斤) | cn |
+| `$RAWMILK_WOW` | 生鲜乳均价-环比 | cn |
+| `$RAWMILK_YOY` | 生鲜乳均价-同比 | cn |
 
 ##### `$RD*`（2 码）
 
@@ -2911,7 +3299,7 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 
 | 指标代码 | 中文 | 市场 |
 |---|---|---|
-| `$REG_CAPITAL` | 注册资本(万元) | — |
+| `$REG_CAPITAL` | 注册资本 | — |
 
 ##### `$REGIONBK*`（1 码）
 
@@ -3104,6 +3492,12 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | `$SAS` | 当前财报采样点 | — |
 | `$SAS_LAST` | 最新财报披露季 | — |
 
+##### `$SC*`（1 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$SC_PX_AGENCY` | 四川电网代购价(元/MWh) | cn |
+
 ##### `$SD*`（1 码）
 
 | 指标代码 | 中文 | 市场 |
@@ -3157,6 +3551,12 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | `$SEXE_RATE` | 销售费用率(%) | — |
 | `$SEXE_RATE_LAST` | 销售费用率(%) | — |
 
+##### `$SHARE*`（1 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$SHARE_PAR` | 每股面值(元) | — |
+
 ##### `$SHIP*`（4 码）
 
 | 指标代码 | 中文 | 市场 |
@@ -3166,12 +3566,24 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | `$SHIP_BDI` | BDI 波罗的海干散货指数(点) | cn |
 | `$SHIP_BDI_CHG` | BDI-日环比 | cn |
 
+##### `$SNX*`（1 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$SNX_PX_AGENCY` | 陕西电网代购价(元/MWh) | cn |
+
 ##### `$SOCIAL*`（2 码）
 
 | 指标代码 | 中文 | 市场 |
 |---|---|---|
-| `$SOCIAL_SECURITY_HOLD_RATIO` | 社保持仓占股本比例 | — |
-| `$SOCIAL_SECURITY_HOLD_RATIO_LAST` | 最新社保持仓占股本比例 | — |
+| `$SOCIAL_SECURITY_HOLD_RATIO` | 社保持仓占流通股本比例 | — |
+| `$SOCIAL_SECURITY_HOLD_RATIO_LAST` | 最新社保持仓占流通股本比例 | — |
+
+##### `$SOLAR*`（1 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$SOLAR_NEW_INSTALL` | 太阳能发电新增并网-含光热(千瓦) | cn |
 
 ##### `$SSE*`（2 码）
 
@@ -3199,7 +3611,7 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 |---|---|---|
 | `$STM` | 总资产 | — |
 
-##### `$STOCK*`（12 码）
+##### `$STOCK*`（15 码）
 
 | 指标代码 | 中文 | 市场 |
 |---|---|---|
@@ -3215,6 +3627,9 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | `$STOCK_SZ_MARKET` | 深证总市值(万亿) | cn |
 | `$STOCK_SZ_SHARES` | 深证总股本(万亿)(股) | cn |
 | `$STOCK_SZ_VOLUME` | 深证成交量(万亿)(股) | cn |
+| `$STOCK_TURNOVER_SH` | 上海成交金额(元) | cn |
+| `$STOCK_TURNOVER_SZ` | 深圳成交金额(元) | cn |
+| `$STOCK_TURNOVER_TOTAL` | 沪深成交金额合计(元) | cn |
 
 ##### `$STYLE*`（9 码）
 
@@ -3240,18 +3655,25 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | `$SUSPEND_START_DATE` | 停牌开始日期 | — |
 | `$SUSPEND_TYPE` | 停牌类型 | — |
 
+##### `$SX*`（1 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$SX_PX_AGENCY` | 山西电网代购价(元/MWh) | cn |
+
 ##### `$SYM*`（1 码）
 
 | 指标代码 | 中文 | 市场 |
 |---|---|---|
 | `$SYM` | 符号 | — |
 
-##### `$SYMBOL*`（3 码）
+##### `$SYMBOL*`（4 码）
 
 | 指标代码 | 中文 | 市场 |
 |---|---|---|
 | `$SYMBOL` | 符号 | — |
 | `$SYMBOL_B` | B股代码 | — |
+| `$SYMBOL_CANON` | 归一符号(换码后) | — |
 | `$SYMBOL_H` | H股代码 | — |
 
 ##### `$SYMS*`（2 码）
@@ -3338,6 +3760,12 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 |---|---|---|
 | `$TETL` | 总权益及总负债 | cn |
 
+##### `$TFA*`（1 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$TFA` | 交易性金融资产(最新准则口径) | cn |
+
 ##### `$TFAS*`（3 码）
 
 | 指标代码 | 中文 | 市场 |
@@ -3346,11 +3774,23 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | `$TFAS_C` | 交易性金融资产(流动) | us |
 | `$TFAS_N` | 交易性金融资产(非流动) | us |
 
+##### `$TFLX*`（1 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$TFLX` | 交易性金融负债(最新准则口径) | cn |
+
 ##### `$TIP*`（1 码）
 
 | 指标代码 | 中文 | 市场 |
 |---|---|---|
 | `$TIP` | 提示 | — |
+
+##### `$TJ*`（1 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$TJ_PX_AGENCY` | 天津电网代购价(元/MWh) | cn |
 
 ##### `$TL*`（20 码）
 
@@ -3377,7 +3817,7 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | `$TL_RATE_YOY` | 资产负债率同比变化 | — |
 | `$TL_RATE_YOY_LAST` | 最新资产负债率同比变化 | — |
 
-##### `$TOPTEN*`（12 码）
+##### `$TOPTEN*`（16 码）
 
 | 指标代码 | 中文 | 市场 |
 |---|---|---|
@@ -3393,6 +3833,10 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | `$TOPTEN_NORTHBOUND_RATIO_LAST` | 最新十大流通-北向持股比例 | — |
 | `$TOPTEN_OTHER_INST_RATIO` | 十大流通-其他机构持股比例 | — |
 | `$TOPTEN_OTHER_INST_RATIO_LAST` | 最新十大流通-其他机构持股比例 | — |
+| `$TOPTEN_PACK` | 十大流通分类整包(SAS MAP) | — |
+| `$TOPTEN_PACK_LAST` | 十大流通分类整包-最新 | — |
+| `$TOPTEN_SOCIAL_SECURITY_RATIO` | 十大流通-社保养老持股比例 | — |
+| `$TOPTEN_SOCIAL_SECURITY_RATIO_LAST` | 最新十大流通-社保养老持股比例 | — |
 
 ##### `$TOTAL*`（1 码）
 
@@ -3443,7 +3887,7 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | `$TR_AR_5Y_MIN` | 近5年营收(TTM)年化增长最低 | — |
 | `$TR_AR_5Y_MIN_LAST` | 近5年营收(TTM)年化增长最低 | — |
 | `$TR_EMP_AVG` | 人均营业总收入(万) | — |
-| `$TR_GEOMEAN1` | 近1年营收几何增速 | — |
+| `$TR_GEOMEAN1` | 近1年营收几何增速(同比口径) | — |
 | `$TR_GEOMEAN1_LAST` | 近1年营收几何增速-最新 | — |
 | `$TR_GEOMEAN3` | 近3年营收几何增速 | — |
 | `$TR_GEOMEAN3_LAST` | 近3年营收几何增速-最新 | — |
@@ -3508,6 +3952,16 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 |---|---|---|
 | `$TRUST_HOLD_RATIO` | 信托持仓占股本比例 | — |
 | `$TRUST_HOLD_RATIO_LAST` | 最新信托持仓占股本比例 | — |
+
+##### `$TSF*`（5 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$TSF_CORP_BOND` | 社融-企业债券余额(元) | cn |
+| `$TSF_EQUITY` | 社融-非金融企业境内股票余额(元) | cn |
+| `$TSF_GOV_BOND` | 社融-政府债券余额(元) | cn |
+| `$TSF_STOCK` | 社会融资规模存量(元) | cn |
+| `$TSF_STOCK_YOY` | 社融存量-同比 | cn |
 
 ##### `$TT*`（1 码）
 
@@ -3881,7 +4335,7 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 
 | 指标代码 | 中文 | 市场 |
 |---|---|---|
-| `$hTORE` | 其他应收款合计 | cn |
+| `$hTORE` | 应收利息及应收股利 | cn |
 
 ##### `$hTP*`（1 码）
 
@@ -3900,6 +4354,15 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位：元�
 | 指标代码 | 中文 | 市场 |
 |---|---|---|
 | `$hURR` | 保险类应收款 | cn |
+
+##### `$holdings13f*`（4 码）
+
+| 指标代码 | 中文 | 市场 |
+|---|---|---|
+| `$holdings13f_book` | 13F单季账本 | — |
+| `$holdings13f_holders` | 13F按股票找人 | — |
+| `$holdings13f_roster` | 13F名单 | — |
+| `$holdings13f_track` | 13F持仓轨迹 | — |
 
 ##### `$rNT*`（1 码）
 
@@ -3932,7 +4395,7 @@ raw 入口：`cli.stocks.industries()` 行业目录（申万 sw2021、恒生 hsi
 
 **行业估值的「历史序列」不走指标码，走 `cli.index.trend`**：`keys = cli.index.universe_keys("industry")` 拿到 31 个申万一级键（`industry.S11` …），再 `cli.index.trend(key, "5y")` 取周频整体法 PE/PB（约 14 年、新→旧）与 3/5/10 年分位。申万二级/L2 未预热（返回 `ok=False`），中信行业无该数据。注意：`$PCT_PE_TTM_*` 一类分位码按个股 `$SYMBOL` 求值，**不随指数/行业键切换**，给行业算分位只能用 `index.trend`。
 
-#### `$ID_*` 行业均值 / 行业聚合（317 码）
+#### `$ID_*` 行业均值 / 行业聚合（318 码）
 
 | 指标代码 | 中文 | 市场 |
 |---|---|---|
@@ -4008,6 +4471,7 @@ raw 入口：`cli.stocks.industries()` 行业目录（申万 sw2021、恒生 hsi
 | `$ID_EPMR` | 已赚保费 | — |
 | `$ID_EPS_DPPR` | 归母每股扣非收益(元) | — |
 | `$ID_EPS_NPTS` | 归母每股收益(元) | — |
+| `$ID_EQUITY_TOTAL_SHARES` | 总股本 | — |
 | `$ID_EV` | 企业账面价值 | — |
 | `$ID_EV_EBIT` | EV/EBIT(D) | — |
 | `$ID_EV_EBITDA` | EV/EBITDA(D) | — |
@@ -4149,7 +4613,7 @@ raw 入口：`cli.stocks.industries()` 行业目录（申万 sw2021、恒生 hsi
 | `$ID_PE_TTM_TOTAL_LAST` | 整体市盈率(TTM-整体法)-最新 | — |
 | `$ID_PE_TTM_WEIGHTED` | 调和市值加权市盈率(TTM) | — |
 | `$ID_PE_TTM_WEIGHTED_EQUAL` | 等权调和市盈率(D) | — |
-| `$ID_PIC` | 股本 | — |
+| `$ID_PIC` | 股本(元) | — |
 | `$ID_PPE` | 固定资产 | cn |
 | `$ID_PPE_ALL` | 固定资产 | — |
 | `$ID_PPE_ALL_WEIGHTED` | 加权平均固定资产 | — |
@@ -4240,8 +4704,8 @@ raw 入口：`cli.stocks.industries()` 行业目录（申万 sw2021、恒生 hsi
 | `$ID_TE_DAYS` | 股东权益周转天数(D) | — |
 | `$ID_TE_DAYS_TTM` | TTM股东权益周转天数(D) | — |
 | `$ID_TE_WEIGHTED` | 加权总权益 | — |
-| `$ID_TFAN` | 交易性金融资产(非FVT) | cn |
-| `$ID_TFAS` | 交易性金融资产 | — |
+| `$ID_TFAN` | 交易性金融资产 | cn |
+| `$ID_TFAS` | 交易性金融资产 | cn |
 | `$ID_TL` | 总负债 | — |
 | `$ID_TL_RATE` | 资产负债率(%) | — |
 | `$ID_TNA` | 非流动资产合计 | — |
@@ -4681,12 +5145,14 @@ raw 入口：`cli.macro.query(...)` 检索与取数、`cli.macro.asof(...)` as-o
 | `$CPCA_TOP_SGMW_WHL` | 上汽通用五菱批发(万辆) | cn |
 | `$CPCA_TOP_TESLA_WHL` | 特斯拉中国批发(万辆) | cn |
 
-#### `$CPI*`（8 码）
+#### `$CPI*`（10 码）
 
 | 指标代码 | 中文 | 市场 |
 |---|---|---|
 | `$CPI` | 居民消费价格指数(D) | cn |
 | `$CPI_CITY` | 城市消费价格指数(D) | cn |
+| `$CPI_FOOD_YOY` | 食品烟酒-当月同比 | cn |
+| `$CPI_FOOD_YTD_YOY` | 食品烟酒-累计同比 | cn |
 | `$CPI_KEY_QOQ` | 核心消费者物价指数月率(%) | us |
 | `$CPI_KEY_YOY` | 核心消费者物价指数年率(%) | us |
 | `$CPI_QOQ` | 消费者物价指数月率(%) | us |
@@ -4718,27 +5184,27 @@ raw 入口：`cli.macro.query(...)` 检索与取数、`cli.macro.asof(...)` as-o
 
 | 指标代码 | 中文 | 市场 |
 |---|---|---|
-| `$ELEC_EV_CHARGE` | 充换电服务业用电量(亿千瓦时) | cn |
+| `$ELEC_EV_CHARGE` | 充换电服务业用电量(千瓦时) | cn |
 | `$ELEC_EV_CHARGE_YOY` | 充换电服务业用电量-同比 | cn |
-| `$ELEC_FEB_EST` | 2月用电量-模型估算(亿千瓦时) | cn |
-| `$ELEC_HI_TECH` | 高技术及装备制造业用电量(亿千瓦时) | cn |
+| `$ELEC_FEB_EST` | 2月用电量-模型估算(千瓦时) | cn |
+| `$ELEC_HI_TECH` | 高技术及装备制造业用电量(千瓦时) | cn |
 | `$ELEC_HI_TECH_YOY` | 高技术及装备制造业用电量-同比 | cn |
-| `$ELEC_IDC` | 互联网数据服务用电量(亿千瓦时) | cn |
+| `$ELEC_IDC` | 互联网数据服务用电量(千瓦时) | cn |
 | `$ELEC_IDC_YOY` | 互联网数据服务用电量-同比 | cn |
-| `$ELEC_INDUSTRY` | 工业用电量(亿千瓦时) | cn |
+| `$ELEC_INDUSTRY` | 工业用电量(千瓦时) | cn |
 | `$ELEC_INDUSTRY_YOY` | 工业用电量-同比 | cn |
-| `$ELEC_JAN_EST` | 1月用电量-模型估算(亿千瓦时) | cn |
-| `$ELEC_JAN_FEB` | 全社会用电量-1-2月合计(亿千瓦时) | cn |
+| `$ELEC_JAN_EST` | 1月用电量-模型估算(千瓦时) | cn |
+| `$ELEC_JAN_FEB` | 全社会用电量-1-2月合计(千瓦时) | cn |
 | `$ELEC_JAN_FEB_YOY` | 全社会用电量-1-2月合计同比 | cn |
-| `$ELEC_PRIMARY` | 第一产业用电量(亿千瓦时) | cn |
+| `$ELEC_PRIMARY` | 第一产业用电量(千瓦时) | cn |
 | `$ELEC_PRIMARY_YOY` | 第一产业用电量-同比 | cn |
-| `$ELEC_RESIDENTIAL` | 城乡居民生活用电量(亿千瓦时) | cn |
+| `$ELEC_RESIDENTIAL` | 城乡居民生活用电量(千瓦时) | cn |
 | `$ELEC_RESIDENTIAL_YOY` | 城乡居民生活用电量-同比 | cn |
-| `$ELEC_SECONDARY` | 第二产业用电量(亿千瓦时) | cn |
+| `$ELEC_SECONDARY` | 第二产业用电量(千瓦时) | cn |
 | `$ELEC_SECONDARY_YOY` | 第二产业用电量-同比 | cn |
-| `$ELEC_TERTIARY` | 第三产业用电量(亿千瓦时) | cn |
+| `$ELEC_TERTIARY` | 第三产业用电量(千瓦时) | cn |
 | `$ELEC_TERTIARY_YOY` | 第三产业用电量-同比 | cn |
-| `$ELEC_TOTAL` | 全社会用电量(亿千瓦时，2月合并期为估算) | cn |
+| `$ELEC_TOTAL` | 全社会用电量(千瓦时，2月合并期为估算) | cn |
 | `$ELEC_TOTAL_YOY` | 全社会用电量-同比 | cn |
 
 #### `$GDP*`（5 码）
@@ -4923,6 +5389,7 @@ raw 入口：`cli.cbond`（合约快照、条款事件、正股关联、强赎�
 |---|---|---|---|
 | `$APOR` | 其他应收款 | us | 股票指标码 |
 | `$BPS` | 每股净资产(元) | us | 股票指标码 |
+| `$CCY_FIN` | 财报计量货币 | hk | 股票指标码 |
 | `$CEPS` | 扣非每股收益(元) | us | 股票指标码 |
 | `$CONSUMERS_FAITH_BBF` | 咨商会消费者信心指数 | us | 股票指标码 |
 | `$CPI_KEY_QOQ` | 核心消费者物价指数月率(%) | us | 宏观数据 |
@@ -4934,10 +5401,8 @@ raw 入口：`cli.cbond`（合约快照、条款事件、正股关联、强赎�
 | `$DPPR` | 扣非归母净利润 | hk | 股票指标码 |
 | `$DR` | 预收款项 | hk | 股票指标码 |
 | `$EPMR` | 已赚保费 | hk | 股票指标码 |
-| `$EQUITY_FREE_SHARES` | 自由流通股(亿) | us | 股票指标码 |
-| `$EQUITY_LISTED_A_SHARES` | 上市A股(亿) | us | 股票指标码 |
-| `$EQUITY_NON_FREE_SHARES` | 非自由流通股(亿) | us | 股票指标码 |
 | `$EQUITY_TOTAL_SHARES` | 总股本ADS(亿) | us | 股票指标码 |
+| `$EQUITY_TOTAL_SHARES_LAST` | 总股本ADS(亿) | us | 股票指标码 |
 | `$FE` | 财务费用 | us | 股票指标码 |
 | `$GDP_RATE` | 生产总值(当季同比)(%) | hk | 宏观数据 |
 | `$GOODS_ORDER_DURABLE` | 耐用品订单月率(%) | us | 股票指标码 |

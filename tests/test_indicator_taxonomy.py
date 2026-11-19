@@ -25,8 +25,10 @@ EXPECTED = {
     "$ROE_AVG3": ("stock", "profitability", "annual", "3y", ["parent"], "ratio"),
     "$ROE_TTM_LAST": ("stock", "profitability", "ttm", "none", [], "ratio"),
     "$TR_TTM_YOY_LAST": ("stock", "growth", "ttm", "none", [], "ratio"),
-    "$BONUS_RATE_TTM_LAST": ("stock", "dividend", "ttm", "none", [], "ratio"),
-    "$DPS_TTM_LAST": ("stock", "dividend", "ttm", "none", [], "per_share"),
+    # 上游 2026-11 起 cn 分支为报告期 LTM 口径（引用 $BONUS_RATE_RPT_LAST；hk 分支现金窗口），
+    # 实测值仍为小数（茅台 3.57%→0.0357，与精选组 range [0,1] 兼容）
+    "$BONUS_RATE_TTM_LAST": ("stock", "dividend", "latest_report", "none", [], "ratio"),
+    "$DPS_TTM_LAST": ("stock", "dividend", "latest_report", "none", [], "per_share"),  # 同上：上游报告期口径
     "$MV_LAST": ("stock", "quote", "snapshot", "none", ["total"], "money"),
     "$MV_FREE_LAST": ("stock", "quote", "snapshot", "none", ["free_float"], "money"),
     "$ID_ROE_TTM": ("industry", "profitability", "ttm", "none", ["overall"], "ratio"),
@@ -51,7 +53,8 @@ def test_sidecar_is_one_to_one_with_metrics():
     rows = tax["metrics"]
     codes = [r["code"] for r in rows]
     assert tax["schema_version"] == 1
-    assert tax["stats"]["count"] == len(rows) == 2752
+    # 2752→2983：上游 catalog 2026-11-19 刷新（同 test_compat_contract）
+    assert tax["stats"]["count"] == len(rows) == 2983
     assert len(codes) == len(set(codes))
     assert set(codes) == metrics
 

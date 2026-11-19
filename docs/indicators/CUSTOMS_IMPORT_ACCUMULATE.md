@@ -1,4 +1,4 @@
-# `$CUSTOMS_IMPORT_ACCUMULATE` — 进口额-累计(亿)(美元)
+# `$CUSTOMS_IMPORT_ACCUMULATE` — 进口额-累计(美元)
 
 **类型/市场**：股票指标码 · cn
 **单位/换算**：—（默认基础单位：率=小数 / 额=元 / 量=股）
