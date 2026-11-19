@@ -21,6 +21,8 @@ _HAND_EXAMPLES: dict[str, str] = {
     "notice.category_regex": 'cli.notice.category_regex("buyback")',
     "pdf_doc.find_by_url": 'cli.pdf_doc.find_by_url("<公告行 url 字段>")',
     "pdf_doc.find_by_key": 'cli.pdf_doc.find_by_key("<search() 行 file_key 字段>")',
+    "toplist.by_date": 'cli.toplist.by_date("2026-11-18", limit=10)',
+    "toplist.by_symbol": 'cli.toplist.by_symbol("000530", limit=10)',
 }
 _SPECIAL_CATALOG: dict[tuple[str, str], str | None] = {
     ("valuation", "hist_stats"): None,

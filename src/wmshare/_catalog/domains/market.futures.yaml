@@ -1,0 +1,43 @@
+id: market.futures
+version: 1.0.0
+cn: 期货
+kind: raw
+category: market
+priority: P1
+description: 国内期货辅助读面。主力连续行情经 `$FUT_*` 指标码 + `fut_symbol`
+  （cli.futures.get / snapshot，2.0 起）；本域目录函数提供**换月映射**——
+  主力连续码 → 当日实际合约（换月追踪，随日线日更）。
+data_origin: [外部行情源]
+units:
+  date: YYYY-MM-DD
+requires: {path: sys/futures/init.xs, preloaded: true}
+notes:
+  - 主力连续码形如 "RB.SHF"（品种.交易所）；82 品种（74 商品 + 8 金融）见
+    cli.futures.snapshot 的品种寻址
+  - 映射行不可变（换月历史固定），fmt_maps 结果按行指纹缓存（36a5de20 范式）
+  - 无全合约标准日线表（仅主力连续）——合约级 K 线不在覆盖面
+functions:
+  - name: futures.mapping
+    cn: 主力换月映射
+    kind: raw
+    layer: L0
+    params:
+      - {name: sym, type: string, required: true, desc: 主力连续码（品种.交易所，如 RB.SHF）}
+      - {name: begin, type: string, required: false, desc: 开始日期 YYYY-MM-DD（可空=全历史）}
+      - {name: end, type: string, required: false, desc: 结束日期 YYYY-MM-DD（可空）}
+    returns:
+      desc: ARR · 映射行（date 升序；换月事件≈每年 4-6 次）
+      shape:
+        kind: array
+        cn: 换月映射行
+        items:
+          kind: object
+          cn: 映射行
+          fields:
+            - {name: date, type: string, cn: 交易日}
+            - {name: symbol, type: string, cn: 主力连续码（品种.交易所）}
+            - {name: mapping_symbol, type: string, cn: 当日实际合约}
+    example: 'futures.mapping("RB.SHF", "2026-11-01", "2026-11-18")'
+    normalize_with: futures.fmt_maps
+  # ---- L1：格式化 ----
+  - {name: futures.fmt_maps, cn: 映射行规范化, kind: raw, layer: L1, internal: true}

@@ -66,6 +66,10 @@ INCLUDED_NS = frozenset({
     # SDK 侧标 internal，写面不进公开门面）。
     "buyback",
     "pdf_doc",
+    # 2.3：龙虎榜（外部行情源 cn_top_list 直读，market.toplist 域）
+    "toplist",
+    # 2.3：期货换月映射（cn/futures_mapping 直读，随 cli.futures 门面暴露）
+    "futures",
 })
 # rptdom 只保留三表透视族（年报 PDF 提取类 rows/notes/note_index 不发布）
 RPTDOM_KEEP = frozenset({"statement", "statement_years", "statement_compare", "statement_tree", "statement_audit"})

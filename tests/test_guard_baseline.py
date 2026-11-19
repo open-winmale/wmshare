@@ -23,6 +23,9 @@ AUDIT_REPORT = REPO / ".internal" / "UNIT_AUDIT.md"
 ZERO_GUARD_BASELINE = {
     "disc.filings", "disc.notice", "disc.workout",
     "market.macro", "market.stocks",
+    # market.futures：mapping 行（date/symbol/mapping_symbol）全为字符串字段，
+    # 无数值 ranges 语义（批次3 2026-11-19）——加数值面时从基线移除
+    "market.futures",
 }
 DRIFT_WARN_BASELINE = 0
 
@@ -38,12 +41,13 @@ def _load(path: Path, name: str):
 def test_guard_coverage_cannot_regress():
     mod = _load(GUARD_TOOL, "guard_coverage_baseline")
     result = mod.collect(mod.DEFAULT_DOMAINS)
-    assert result["functions"] == 311
-    assert result["guarded"] >= 63
-    # 63/311：批次1（buyback.snapshot+notice 类目 2+pdf_doc 8）中 9 条为检索/工具函数，
-    # 无数值守护语义（audit_units 的函数级 units 仅接受换算词 lot/percent/yi_yuan），
-    # 覆盖率被结构性稀释 20.33%→20.26%；下批新增数值型接口时随批收紧。
-    assert result["ratio"] >= 0.2025
+    assert result["functions"] == 316
+    assert result["guarded"] >= 65
+    # 分子 65 = 63（批次1）+ toplist by_date/by_symbol（金额 ranges，批次3）。
+    # 分母 316 的稀释项均为无数值守护语义的检索/工具函数（批次1 9 条 + mapping/
+    # fmt_maps/notice 类目等——audit_units 的函数级 units 仅接受换算词
+    # lot/percent/yi_yuan，字符串返回值无 ranges 语义）。
+    assert result["ratio"] >= 0.2056  # 65/316 = 0.205696（浮点边界取整档）
     zero = {name for name, stat in result["per_domain"].items()
             if stat["functions"] > 0 and stat["guarded"] == 0}
     assert zero <= ZERO_GUARD_BASELINE, f"新增零守护域：{sorted(zero - ZERO_GUARD_BASELINE)}"

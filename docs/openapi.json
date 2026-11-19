@@ -3306,6 +3306,73 @@
         }
       }
     },
+    "/futures/mapping": {
+      "post": {
+        "operationId": "futures_mapping",
+        "summary": "主力换月映射（主力连续码 → 当日实际合约；date 升序）。",
+        "description": ":returns: DataFrame/行表 · date/symbol/mapping_symbol、（换月事件≈每年 4-6 次；映射历史不可变，复跑走指纹缓存）、底层目录函数 `futures.mapping`。SDK 调用：`cli.futures.mapping(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "市场行情"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "symbol": {
+                    "type": "string",
+                    "description": "主力连续码（品种.交易所，如 ``RB.SHF``）"
+                  },
+                  "begin": {
+                    "type": "string",
+                    "description": "开始日期 YYYY-MM-DD（可空=全历史）"
+                  },
+                  "end": {
+                    "type": "string",
+                    "description": "结束日期 YYYY-MM-DD"
+                  }
+                },
+                "required": [
+                  "symbol"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "换月映射行",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "date": {
+                        "type": "string",
+                        "description": "交易日"
+                      },
+                      "symbol": {
+                        "type": "string",
+                        "description": "主力连续码（品种.交易所）"
+                      },
+                      "mapping_symbol": {
+                        "type": "string",
+                        "description": "当日实际合约"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/statements/audit": {
       "post": {
         "operationId": "statements_audit",
@@ -6422,6 +6489,324 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/toplist/by_date": {
+      "post": {
+        "operationId": "toplist_by_date",
+        "summary": "指定交易日的全市场龙虎榜。",
+        "description": ":returns: DataFrame/行表 · date/symbol/name/close/pct_chg/、turnover_rate/amount/amount_ratio/float_mv/seat_buy/seat_sell/、seat_amount/net_amount/net_ratio/reason（date 升序）、底层目录函数 `toplist.by_date`。SDK 调用：`cli.toplist.by_date(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "市场行情"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "trade_date": {
+                    "type": "string",
+                    "description": "交易日 YYYY-MM-DD"
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "description": "条数上限（默认 100）"
+                  }
+                },
+                "required": [
+                  "trade_date"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "龙虎榜榜单行",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "date": {
+                        "type": "string",
+                        "description": "交易日"
+                      },
+                      "symbol": {
+                        "type": "string",
+                        "description": "6 位裸码"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "简称"
+                      },
+                      "close": {
+                        "type": "number",
+                        "description": "收盘价（元）"
+                      },
+                      "pct_chg": {
+                        "type": "number",
+                        "description": "涨跌幅（小数）"
+                      },
+                      "turnover_rate": {
+                        "type": "number",
+                        "description": "换手率（小数）"
+                      },
+                      "amount": {
+                        "type": "number",
+                        "description": "当日成交额（元）"
+                      },
+                      "amount_ratio": {
+                        "type": "number",
+                        "description": "成交额占流通比（小数）"
+                      },
+                      "float_mv": {
+                        "type": "number",
+                        "description": "流通市值（元）"
+                      },
+                      "seat_buy": {
+                        "type": "number",
+                        "description": "榜单席位买入额（元）"
+                      },
+                      "seat_sell": {
+                        "type": "number",
+                        "description": "榜单席位卖出额（元）"
+                      },
+                      "seat_amount": {
+                        "type": "number",
+                        "description": "榜单席位成交额（元）"
+                      },
+                      "net_amount": {
+                        "type": "number",
+                        "description": "席位净买入额（元）"
+                      },
+                      "net_ratio": {
+                        "type": "number",
+                        "description": "净买入额/流通市值（小数）"
+                      },
+                      "reason": {
+                        "type": "string",
+                        "description": "上榜原因"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "close": [
+              0,
+              10000.0
+            ],
+            "pct_chg": [
+              -1,
+              1
+            ],
+            "turnover_rate": [
+              0,
+              2
+            ],
+            "amount_ratio": [
+              0,
+              3
+            ],
+            "amount": [
+              0,
+              50000000000.0
+            ],
+            "float_mv": [
+              0,
+              10000000000000.0
+            ],
+            "seat_buy": [
+              0,
+              50000000000.0
+            ],
+            "seat_sell": [
+              0,
+              50000000000.0
+            ],
+            "seat_amount": [
+              0,
+              50000000000.0
+            ],
+            "net_amount": [
+              -10000000000.0,
+              10000000000.0
+            ],
+            "net_ratio": [
+              -1,
+              1
+            ]
+          }
+        }
+      }
+    },
+    "/toplist/by_symbol": {
+      "post": {
+        "operationId": "toplist_by_symbol",
+        "summary": "单票上榜历史（最近事件行，按日期升序）。",
+        "description": ":returns: DataFrame/行表 · 字段与 ``by_date`` 一致、底层目录函数 `toplist.by_symbol`。SDK 调用：`cli.toplist.by_symbol(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "市场行情"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "symbol": {
+                    "type": "string",
+                    "description": "6 位裸码（自动拼交易所后缀）"
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "description": "最近事件条数（默认 100）"
+                  }
+                },
+                "required": [
+                  "symbol"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "龙虎榜事件行",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "date": {
+                        "type": "string",
+                        "description": "交易日"
+                      },
+                      "symbol": {
+                        "type": "string",
+                        "description": "6 位裸码"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "简称"
+                      },
+                      "close": {
+                        "type": "number",
+                        "description": "收盘价（元）"
+                      },
+                      "pct_chg": {
+                        "type": "number",
+                        "description": "涨跌幅（小数）"
+                      },
+                      "turnover_rate": {
+                        "type": "number",
+                        "description": "换手率（小数）"
+                      },
+                      "amount": {
+                        "type": "number",
+                        "description": "当日成交额（元）"
+                      },
+                      "amount_ratio": {
+                        "type": "number",
+                        "description": "成交额占流通比（小数）"
+                      },
+                      "float_mv": {
+                        "type": "number",
+                        "description": "流通市值（元）"
+                      },
+                      "seat_buy": {
+                        "type": "number",
+                        "description": "榜单席位买入额（元）"
+                      },
+                      "seat_sell": {
+                        "type": "number",
+                        "description": "榜单席位卖出额（元）"
+                      },
+                      "seat_amount": {
+                        "type": "number",
+                        "description": "榜单席位成交额（元）"
+                      },
+                      "net_amount": {
+                        "type": "number",
+                        "description": "席位净买入额（元）"
+                      },
+                      "net_ratio": {
+                        "type": "number",
+                        "description": "净买入额/流通市值（小数）"
+                      },
+                      "reason": {
+                        "type": "string",
+                        "description": "上榜原因"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "close": [
+              0,
+              10000.0
+            ],
+            "pct_chg": [
+              -1,
+              1
+            ],
+            "turnover_rate": [
+              0,
+              2
+            ],
+            "amount_ratio": [
+              0,
+              3
+            ],
+            "amount": [
+              0,
+              50000000000.0
+            ],
+            "float_mv": [
+              0,
+              10000000000000.0
+            ],
+            "seat_buy": [
+              0,
+              50000000000.0
+            ],
+            "seat_sell": [
+              0,
+              50000000000.0
+            ],
+            "seat_amount": [
+              0,
+              50000000000.0
+            ],
+            "net_amount": [
+              -10000000000.0,
+              10000000000.0
+            ],
+            "net_ratio": [
+              -1,
+              1
+            ]
           }
         }
       }

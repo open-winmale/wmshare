@@ -481,8 +481,12 @@ class DemoClient:
             categories=self._notice_categories,
             category_regex=self._notice_category_regex,
         )
-        # 批次1 暴露层：equity/pdf_doc 快照未拍摄 → 显式 demo_unsupported（签名同形）
+        # 批次1/3 暴露层：equity/pdf_doc/toplist 快照未拍摄 → 显式 demo_unsupported（签名同形）
         self.equity = SimpleNamespace(buyback_snapshot=self._equity_buyback_snapshot)
+        self.toplist = SimpleNamespace(
+            by_date=self._toplist_by_date,
+            by_symbol=self._toplist_by_symbol,
+        )
         self.pdf_doc = SimpleNamespace(
             search=self._pdf_search,
             read_text=self._pdf_read_text,
@@ -528,6 +532,7 @@ class DemoClient:
         self.futures = SimpleNamespace(
             snapshot=self._futures_snapshot,
             get=self._futures_get,
+            mapping=self._futures_mapping,
         )
         self.calendar = SimpleNamespace(
             days=self._calendar_days,
@@ -605,6 +610,18 @@ class DemoClient:
 
     def _pdf_find_by_key(self, file_key: str) -> Any:
         raise _unsupported("pdf_doc.find_by_key", "底层函数")
+
+    def _toplist_by_date(self, trade_date: str, limit: int = 100,
+                         _raw: bool = False) -> Any:
+        raise _unsupported("toplist.by_date", "底层函数")
+
+    def _toplist_by_symbol(self, symbol: str, limit: int = 100,
+                           _raw: bool = False) -> Any:
+        raise _unsupported("toplist.by_symbol", "底层函数")
+
+    def _futures_mapping(self, symbol: str, begin: str = "", end: str = "",
+                         _raw: bool = False) -> Any:
+        raise _unsupported("futures.mapping", "底层函数")
 
     def _df_asc(self, rows: Any, key: str = "date") -> Any:
         """2.0 同形：demo 行列表也按升序 + DataFrame 输出（与 live 门面同形同向）。"""

@@ -1,6 +1,6 @@
 {
  "schema_version": 2,
- "upstream_rev": "3ec77f3d",
+ "upstream_rev": "e5b662cd",
  "domains": {
   "bonus": {
    "entry": "sys/bonus/init.xs",
@@ -32,6 +32,10 @@
   },
   "forecast": {
    "entry": "sys/forecast/init.xs",
+   "exports": []
+  },
+  "futures": {
+   "entry": "sys/futures/init.xs",
    "exports": []
   },
   "indices": {
@@ -97,6 +101,10 @@
    "entry": "sys/stocks/init.xs",
    "exports": []
   },
+  "toplist": {
+   "entry": "sys/toplist/init.xs",
+   "exports": []
+  },
   "valuation": {
    "entry": "sys/valuation/init.xs",
    "exports": []
@@ -112,6 +120,7 @@
   "equity",
   "estimates",
   "filings",
+  "futures",
   "indices",
   "intl",
   "kline",
@@ -121,9 +130,10 @@
   "notice",
   "pdf_doc",
   "segments",
+  "toplist",
   "valuation"
  ],
- "function_count": 317,
+ "function_count": 322,
  "functions": [
   {
    "name": "bonus.dps_rpt",
@@ -4474,6 +4484,67 @@
     {
      "name": "limit",
      "type": "int"
+    }
+   ]
+  },
+  {
+   "name": "futures.fmt_maps",
+   "cn": "映射行规范化",
+   "example": "futures.fmt_maps(futures.mapping(\"RB.SHF\", \"\", \"\"))",
+   "returns": "ARR · 规范化映射行",
+   "returns_shape": {
+    "kind": "array",
+    "cn": "映射行",
+    "items": {
+     "kind": "object",
+     "cn": "换月映射行",
+     "fields": [
+      {
+       "name": "date",
+       "type": "string",
+       "cn": "交易日"
+      },
+      {
+       "name": "symbol",
+       "type": "string",
+       "cn": "主力连续码(品种.交易所)"
+      },
+      {
+       "name": "mapping_symbol",
+       "type": "string",
+       "cn": "当日实际合约"
+      }
+     ],
+     "name": ""
+    }
+   },
+   "min_args": null,
+   "params": [
+    {
+     "name": "rows",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "futures.mapping",
+   "cn": "主力换月映射",
+   "example": "futures.mapping(\"RB.SHF\", \"\", \"\")",
+   "returns": "ARR · 映射行",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "sym",
+     "type": "string"
+    },
+    {
+     "name": "begin",
+     "type": "string"
+    },
+    {
+     "name": "end",
+     "type": "string"
     }
    ]
   },
@@ -9583,6 +9654,141 @@
    "returns_shape": null,
    "min_args": 0,
    "params": []
+  },
+  {
+   "name": "toplist.by_date",
+   "cn": "指定交易日龙虎榜",
+   "example": "toplist.by_date(\"2026-11-18\", 50)",
+   "returns": "ARR · 榜单行",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "trade_date",
+     "type": "string"
+    },
+    {
+     "name": "limit",
+     "type": "int"
+    }
+   ]
+  },
+  {
+   "name": "toplist.by_symbol",
+   "cn": "单票上榜历史",
+   "example": "toplist.by_symbol(\"000530\", 20)",
+   "returns": "ARR · 上榜事件行",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "sym",
+     "type": "string"
+    },
+    {
+     "name": "limit",
+     "type": "int"
+    }
+   ]
+  },
+  {
+   "name": "toplist.fmt_maps",
+   "cn": "龙虎榜行规范化",
+   "example": "toplist.fmt_maps(toplist.by_date(\"2026-11-18\", 10))",
+   "returns": "ARR · 规范化榜单行",
+   "returns_shape": {
+    "kind": "array",
+    "cn": "榜单行",
+    "items": {
+     "kind": "object",
+     "cn": "龙虎榜行",
+     "fields": [
+      {
+       "name": "date",
+       "type": "string",
+       "cn": "交易日"
+      },
+      {
+       "name": "symbol",
+       "type": "string",
+       "cn": "6位裸码"
+      },
+      {
+       "name": "name",
+       "type": "string",
+       "cn": "简称"
+      },
+      {
+       "name": "close",
+       "type": "float64",
+       "cn": "收盘价(元)"
+      },
+      {
+       "name": "pct_chg",
+       "type": "float64",
+       "cn": "涨跌幅(小数)"
+      },
+      {
+       "name": "turnover_rate",
+       "type": "float64",
+       "cn": "换手率(小数)"
+      },
+      {
+       "name": "amount",
+       "type": "float64",
+       "cn": "当日成交额(元)"
+      },
+      {
+       "name": "amount_ratio",
+       "type": "float64",
+       "cn": "成交额占流通比(小数)"
+      },
+      {
+       "name": "float_mv",
+       "type": "float64",
+       "cn": "流通市值(元)"
+      },
+      {
+       "name": "seat_buy",
+       "type": "float64",
+       "cn": "榜单席位买入额(元)"
+      },
+      {
+       "name": "seat_sell",
+       "type": "float64",
+       "cn": "榜单席位卖出额(元)"
+      },
+      {
+       "name": "seat_amount",
+       "type": "float64",
+       "cn": "榜单席位成交额(元)"
+      },
+      {
+       "name": "net_amount",
+       "type": "float64",
+       "cn": "席位净买入额(元)"
+      },
+      {
+       "name": "net_ratio",
+       "type": "float64",
+       "cn": "净买入额/流通市值(小数)"
+      },
+      {
+       "name": "reason",
+       "type": "string",
+       "cn": "上榜原因"
+      }
+     ],
+     "name": ""
+    }
+   },
+   "min_args": null,
+   "params": [
+    {
+     "name": "rows",
+     "type": "any"
+    }
+   ]
   },
   {
    "name": "valuation.daily_basic",

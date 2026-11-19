@@ -315,6 +315,31 @@ def test_pdf_doc_read_surfaces(cli):
     assert not cli.pdf_doc.find_by_url("https://")
 
 
+def test_toplist_by_date_and_symbol(cli):
+    """龙虎榜：单日榜单 + 单票事件（行合同与守护声明）"""
+    rows = _call_or_xfail(lambda: cli.toplist.by_date("2026-11-18", 10))
+    assert isinstance(rows, list) and rows
+    r0 = rows[0]
+    assert {"date", "symbol", "name", "close", "pct_chg", "net_amount",
+            "reason"} <= set(r0), "toplist 行合同 15 字段"
+    assert -1 <= r0["pct_chg"] <= 1, "涨跌幅应为小数"
+    hits = _call_or_xfail(lambda: cli.toplist.by_symbol("000530", 10))
+    assert isinstance(hits, list) and hits
+    assert all(h["symbol"] == "000530" for h in hits)
+
+
+def test_futures_mapping(cli):
+    """期货换月映射：RB.SHF 全历史行合同（date/symbol/mapping_symbol 升序）"""
+    rows = _call_or_xfail(lambda: cli.futures.mapping("RB.SHF"))
+    assert isinstance(rows, list) and rows
+    dates = [str(r["date"]) for r in rows]
+    assert dates == sorted(dates), "mapping 应为 date 升序"
+    assert all(r["symbol"] == "RB.SHF" and r["mapping_symbol"] for r in rows)
+    win = _call_or_xfail(
+        lambda: cli.futures.mapping("RB.SHF", "2026-11-01", "2026-11-18"))
+    assert len(win) <= len(rows), "窗口行数不超过全历史"
+
+
 def test_notice_read_text(cli):
     """公告正文读取：取一条有 PDF 的公告，预览路径应返回纯读 MAP。
 

@@ -10,7 +10,7 @@
     ``_raw=True`` 取上游原始行（list[dict]，跳过规范化与换算）——诊断逃生口；
   - 本层是目录合同的薄翻译：高频方法显式包装；目录内其余非内部函数经 ``__getattr__``
     属性直达（如 ``cli.kline.screen_above_ma20``）；目录标 ``internal: true`` 的
-    规范化辅助（fmt_* 等）不再直达，请走 ``cli.call``——311 个底层函数零遮蔽；
+    规范化辅助（fmt_* 等）不再直达，请走 ``cli.call``——316 个底层函数零遮蔽；
   - 选股能力集中在 ``cli.screener``：单票筛选器（bool）、全市场宽度/涨跌榜与
     全市场条件选股 ``query()``（服务端索引直出）显式包装，kline 目录的其余筛选
     函数经属性直达。
@@ -2997,7 +2997,55 @@ class EtfApi(_Api):
         return self._etf("rank", symbol, mode, limit)
 
 
+class ToplistApi(_Api):
+    """A 股龙虎榜（交易所披露口径，日频）。
+
+    同票多上榜原因各一行（榜单原值行合同）；率为小数、金额=元、日期=ISO。
+    席位/营业部明细（top_inst）上游无落库，不提供按席位查询。
+    """
+
+    def by_date(self, trade_date: str, limit: int = 100,
+                _raw: bool = False) -> Any:
+        """指定交易日的全市场龙虎榜。
+
+        :param trade_date: 交易日 YYYY-MM-DD
+        :param limit: 条数上限（默认 100）
+        :returns: DataFrame/行表 · date/symbol/name/close/pct_chg/
+            turnover_rate/amount/amount_ratio/float_mv/seat_buy/seat_sell/
+            seat_amount/net_amount/net_ratio/reason（date 升序）
+        """
+        rows = self._c.call("toplist.by_date", trade_date=trade_date,
+                            limit=limit, _raw=_raw)
+        return _out(_sort_rows_by_date(rows), raw=_raw)
+
+    def by_symbol(self, symbol: str, limit: int = 100,
+                  _raw: bool = False) -> Any:
+        """单票上榜历史（最近事件行，按日期升序）。
+
+        :param symbol: 6 位裸码（自动拼交易所后缀）
+        :param limit: 最近事件条数（默认 100）
+        :returns: DataFrame/行表 · 字段与 ``by_date`` 一致
+        """
+        rows = self._c.call("toplist.by_symbol", sym=symbol, limit=limit,
+                            _raw=_raw)
+        return _out(_sort_rows_by_date(rows), raw=_raw)
+
+
 class FuturesApi(_Api):
+    def mapping(self, symbol: str, begin: str = "", end: str = "",
+                _raw: bool = False) -> Any:
+        """主力换月映射（主力连续码 → 当日实际合约；date 升序）。
+
+        :param symbol: 主力连续码（品种.交易所，如 ``RB.SHF``）
+        :param begin: 开始日期 YYYY-MM-DD（可空=全历史）
+        :param end: 结束日期 YYYY-MM-DD
+        :returns: DataFrame/行表 · date/symbol/mapping_symbol
+            （换月事件≈每年 4-6 次；映射历史不可变，复跑走指纹缓存）
+        """
+        rows = self._c.call("futures.mapping", sym=symbol, begin=begin,
+                            end=end, _raw=_raw)
+        return _out(_sort_rows_by_date(rows), raw=_raw)
+
     """期货连续合约快照（27 个 ``$FUT_*`` 指标码 × 82 品种，eval 求值）。
 
     1.x 要「传任意 A 股代码做求值锚定 + fut_symbol 传参」的 hack 已封装：
@@ -3124,6 +3172,7 @@ FRIENDLY_NAMESPACES: dict[str, type[_Api]] = {
     "screener": ScreenerApi,
     "moneyflow": MoneyflowApi,
     "margin": MarginApi,
+    "toplist": ToplistApi,
     "cbond": CbondApi,
     "index": IndexApi,
     "stocks": StocksApi,
@@ -3202,6 +3251,7 @@ FRIENDLY_INDEX: list[tuple[str, str, str, str, str]] = [
     ("market", "stocks", "industry_members", "行业成分股", "stocks.industry_members"),
     ("market", "futures", "get", "期货连续合约单字段", "指标码 $FUT_*（fut_symbol 求值）"),
     ("market", "futures", "snapshot", "期货连续合约快照", "指标码 $FUT_*（fut_symbol 求值）"),
+    ("market", "futures", "mapping", "主力换月映射", "futures.mapping"),
     ("fundamentals", "statements", "audit", "审计意见", "rptdom.statement_audit"),
     ("fundamentals", "indicator", "get", "取单个指标", "指标代码直查"),
     ("fundamentals", "indicator", "metrics", "批量取指标", "指标代码批量直查"),
@@ -3240,6 +3290,8 @@ FRIENDLY_INDEX: list[tuple[str, str, str, str, str]] = [
     ("disclosure", "pdf_doc", "status", "PDF 文档状态", "pdf_doc.status"),
     ("disclosure", "pdf_doc", "find_by_url", "按原文链接定位文档", "pdf_doc.find_by_url"),
     ("disclosure", "pdf_doc", "find_by_key", "按文档键定位文档", "pdf_doc.find_by_key"),
+    ("market", "toplist", "by_date", "指定交易日龙虎榜", "toplist.by_date"),
+    ("market", "toplist", "by_symbol", "单票上榜历史", "toplist.by_symbol"),
     ("disclosure", "forecast", "yjyg", "业绩预告历史", "forecast.yjyg_rows"),
     ("disclosure", "forecast", "yjyg_latest", "最新业绩预告", "forecast.yjyg_latest"),
     ("disclosure", "forecast", "yjkb", "业绩快报历史", "forecast.yjkb_rows"),

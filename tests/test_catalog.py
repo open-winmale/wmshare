@@ -6,9 +6,9 @@ from wmshare.catalog import load
 def test_load_and_stats():
     cat = load()
     s = cat.stats()
-    assert s["domains"] == 22, s  # +disc.pdf_doc（批次1 暴露层，2026-11-19）
-    assert s["functions"] == 311, s
-    assert s["raw"] == 228 and s["computed"] == 83, s  # raw+11：批次1 暴露层（buyback.snapshot / notice 类目 2 / pdf_doc 8，2026-11-19）
+    assert s["domains"] == 24, s  # 批次1 pdf_doc / 批次3 toplist + futures，2026-11-19
+    assert s["functions"] == 316, s
+    assert s["raw"] == 233 and s["computed"] == 83, s  # raw+16：批次1 暴露层 11 + 批次3 toplist 3 + futures.mapping/fmt_maps
     assert s["metric_catalog_total"] == 2983, s
     assert s["upstream_rev"], "inventory 应锚定 upstream rev"
 
@@ -81,7 +81,7 @@ def test_namespaces_and_metrics():
             "bonus", "rptdom", "segments", "equity", "margin", "estimates",
             "cbond", "workout", "indices", "intl", "stocks", "macro",
             "valuation",
-            "calendar", "buyback"} == cat.namespaces()  # 2.3：pdf_doc 域 + buyback.snapshot（批次1）
+            "calendar", "buyback", "toplist", "futures"} == cat.namespaces()  # 2.3：批次1 + toplist/futures（批次3）
     m = cat.metric("$PE_TTM_LAST")
     assert m and m["cn"]
     assert cat.metric("$NOT_EXIST") is None
@@ -146,6 +146,6 @@ def test_catalog_shipped_inside_package():
     cdir = catmod.catalog_dir()
     assert cdir == pkg_root / "_catalog"
     assert (cdir / "schema" / "domain.schema.json").is_file()
-    assert len(list((cdir / "domains").glob("*.yaml"))) == 22  # +disc.pdf_doc
+    assert len(list((cdir / "domains").glob("*.yaml"))) == 24  # 批次1 pdf_doc / 批次3 toplist + futures
     for g in ("inventory.json", "metrics.json"):
         assert (cdir / "generated" / g).is_file()

@@ -13,7 +13,7 @@
 | 版本一致性（GitHub / PyPI / CHANGELOG） | ✅ 已闭合 | PyPI = 2.2.1（2026-11-18 上传，`>=3.11`），与 tag / CHANGELOG 一致；release CI 自动发版 |
 | 品牌拼写（仓库内） | ✅ 已干净 | 全仓无 `washare` 误拼；外部误拼仅存于站外旧文（不在本仓，需作者改） |
 | MCP 官方 Registry | ✅ 已收录 1.19.0 | registry.modelcontextprotocol.io 搜 `wmshare` 最新（以 `servers[].server.version` + isLatest 为准，随发版 publish） |
-| README 承接漏斗 | ✅ 完整 | 零凭证 `demo_client()` → 凭证配置 → `Client.from_env()`；口径数字一致（22 域 / 311 函数 / 2983 指标码 / 147 核心接口 / 164 friendly） |
+| README 承接漏斗 | ✅ 完整 | 零凭证 `demo_client()` → 凭证配置 → `Client.from_env()`；口径数字一致（24 域 / 316 函数 / 2983 指标码 / 150 核心接口 / 167 friendly） |
 | server.json | ✅ 当前 2.2.1 | 描述已含关键词（Python SDK / 2752 metrics / A-share HK US / AI agents）；版本随 PyPI 发版同步 publish 到 MCP registry |
 
 **北极星指标**：注册 → 取凭证 → 首次真实调用 → 7 日复用。`star` 只是信任信号，不追。
@@ -125,4 +125,4 @@
 - **合规判定 = "是否触及具体标的的买卖时点或仓位建议"**，不靠免责声明兜底。内容一律只讲工具 / 口径 / 方法论。
 - **别讲成"免费无限"**：免费档 500 次/小时、5,000 次/日，且"批量省请求不省 EC"必须写清。
 - 别追 star；别多平台原样复制同一篇（拼写错误就是这么扩散的）；版本名先对齐再投。
-- 外部文章发布前核对：仓库内数字（22 域 / 311 函数 / 2983 指标码 / 147 核心接口 / 5375→11 请求）与 README 一致。
+- 外部文章发布前核对：仓库内数字（24 域 / 316 函数 / 2983 指标码 / 150 核心接口 / 5375→11 请求）与 README 一致。

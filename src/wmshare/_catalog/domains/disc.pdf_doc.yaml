@@ -76,7 +76,7 @@ functions:
     example: 'pdf_doc.read_markdown("", "", "600519", "2024")'
     notes:
       - 优先返回经营评述（rpt_txt_mda，按 stock+period 命中）；全量 report.md 在
-        fin-extract 缓存，本接口返回挂接信息
+        财报抽取管线缓存，本接口返回挂接信息
   - name: pdf_doc.status
     cn: PDF 文档状态
     kind: raw

@@ -43,6 +43,7 @@ METHOD_EXAMPLE_VALUES = {
     ("futures", "get"): {"fut_code": '"RB.SHF"', "field": '"close"'},
     # 批次1 暴露层：类目键真实示例；PDF 定位参数指向取值来源
     ("notice", "category_regex"): {"key": '"buyback"'},
+    ("toplist", "by_date"): {"trade_date": '"2026-11-18"', "limit": "10"},
     ("pdf_doc", "find_by_url"): {"url": '"<公告行 url 字段>"'},
     ("pdf_doc", "find_by_key"): {"file_key": '"<search() 行 file_key 字段>"'},
     ("futures", "snapshot"): {"fut_code": '"RB.SHF"'},

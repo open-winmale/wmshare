@@ -729,6 +729,25 @@ class ForecastNS(_Ns):
         """
         return _out(self._client.call("forecast.snapshot", sym=sym, _raw=_raw), _raw)
 
+class FuturesNS(_Ns):
+    """期货（market.futures）"""
+
+    def mapping(self, sym: str, begin: str | None = None, end: str | None = None, _raw: bool = False) -> Any:
+        """主力换月映射
+
+:param sym: 主力连续码（品种.交易所，如 RB.SHF）
+:param begin: 开始日期 YYYY-MM-DD（可空=全历史）
+:param end: 结束日期 YYYY-MM-DD（可空）
+
+:returns: ARR · 映射行（date 升序；换月事件≈每年 4-6 次）
+        """
+        kw: dict[str, Any] = {"sym": sym}
+        if begin is not None:
+            kw["begin"] = begin
+        if end is not None:
+            kw["end"] = end
+        return _out(self._client.call("futures.mapping", **kw, _raw=_raw), _raw)
+
 class IndicesNS(_Ns):
     """指数（market.index）"""
 
@@ -1867,6 +1886,35 @@ class StocksNS(_Ns):
         """行业成分股"""
         return _out(self._client.call("stocks.industry_members", ind=ind, _raw=_raw), _raw)
 
+class ToplistNS(_Ns):
+    """龙虎榜（market.toplist）"""
+
+    def by_date(self, trade_date: str, limit: int = 100, _raw: bool = False) -> Any:
+        """指定交易日龙虎榜
+
+:param trade_date: 交易日（YYYY-MM-DD 或 YYYYMMDD）
+:param limit: 条数上限
+
+:returns: ARR · 榜单行（同票多上榜原因各一行）
+        """
+        kw: dict[str, Any] = {"trade_date": trade_date}
+        if limit is not None:
+            kw["limit"] = limit
+        return _out(self._client.call("toplist.by_date", **kw, _raw=_raw), _raw)
+
+    def by_symbol(self, sym: str, limit: int = 100, _raw: bool = False) -> Any:
+        """单票上榜历史
+
+:param sym: 6 位裸码（自动拼交易所后缀）
+:param limit: 最近事件条数
+
+:returns: ARR · 上榜事件行（字段与 by_date 一致；按日期升序返回）
+        """
+        kw: dict[str, Any] = {"sym": sym}
+        if limit is not None:
+            kw["limit"] = limit
+        return _out(self._client.call("toplist.by_symbol", **kw, _raw=_raw), _raw)
+
 class ValuationNS(_Ns):
     """每日估值（fund.valuation）"""
 
@@ -1909,6 +1957,7 @@ NAMESPACES: dict[str, type[_Ns]] = {
     "estimates": EstimatesNS,
     "filings": FilingsNS,
     "forecast": ForecastNS,
+    "futures": FuturesNS,
     "indices": IndicesNS,
     "intl": IntlNS,
     "kline": KlineNS,
@@ -1920,6 +1969,7 @@ NAMESPACES: dict[str, type[_Ns]] = {
     "rptdom": RptdomNS,
     "segments": SegmentsNS,
     "stocks": StocksNS,
+    "toplist": ToplistNS,
     "valuation": ValuationNS,
     "workout": WorkoutNS,
 }

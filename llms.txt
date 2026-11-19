@@ -1,6 +1,6 @@
 # wmshare
 
-> 覆盖 A 股、港股、美股的 Python 财经数据 SDK：22 个数据域、311 个底层函数、2983 个指标码、147 个核心接口 + 17 个组合接口（共 164 个 friendly API）。BSD-3-Clause 开源；取数需开放平台凭证（环境变量 WMSHARE_CLIENT_ID / WMSHARE_CLIENT_SECRET，见 README）。
+> 覆盖 A 股、港股、美股的 Python 财经数据 SDK：24 个数据域、316 个底层函数、2983 个指标码、150 个核心接口 + 17 个组合接口（共 167 个 friendly API）。BSD-3-Clause 开源；取数需开放平台凭证（环境变量 WMSHARE_CLIENT_ID / WMSHARE_CLIENT_SECRET，见 README）。
 
 ## Docs
 
@@ -10,7 +10,7 @@
 - [指标库 INDICATORS](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/INDICATORS.md)：全量指标码按族导航——命名语法、11 组精选口径、死码清单与场景速查（先查码，禁止自算已有指标）
 - [指标单页索引](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/indicators/README.md)：逐码一页（类型/市场/单位/取数示例），长尾检索与 AI 引用入口
 - [AI 用法](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/AI.md)：MCP server、skill、文档上下文与报错驱动的 Agent 接入路径
-- [API 参考](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/API.md)：147 个核心接口 + 17 个组合接口的参数 / 返回 / 单位口径（字段字典 [fields.json](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/fields.json)）
+- [API 参考](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/API.md)：150 个核心接口 + 17 个组合接口的参数 / 返回 / 单位口径（字段字典 [fields.json](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/fields.json)）
 - [限制与配额](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/LIMITS.md)：单次/批量/限流/重试硬限制、先估后取（`cli.cost_estimate`）与取数配方
 - [错误码](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/ERRORS.md)：异常层级 + 全部 `code`（含义/可重试/处理）
 - [数据日历](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/DATA_CALENDAR.md)：各数据集更新频率与过期阈值；[兼容政策](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/COMPATIBILITY.md)：弃用窗口与迁移表
@@ -45,6 +45,7 @@
 - `market.calendar`（交易日历）（cli.calendar）：A 股交易日历——区间交易日、是否开市、之后 N 个交易日
 - `market.cbond`（可转债）（cli.cbond）：可转债合约快照、条款事件（下修/回售/赎回等）、正股关联、强赎触发计数、 独立日 K 与盘中 1 分钟
 - `market.fund`（场内基金（ETF））：场内交易基金（ETF）的产品档案、净值、份额、分红、持仓、资产配置、折溢价与 榜单九视图
+- `market.futures`（期货）：国内期货辅助读面
 - `market.index`（指数）：指数维度数据——指数键列表、成分股（含市值/估值中枢，可按 mv/pe/pb/roe/ps 排序）、权重股（披露权重降序）、指数与行业估值趋势…
 - `market.intl`（港美股披露）（cli.intl）：港美股公司披露维度——港股 CCASS 经纪持仓、主要股东/董事权益、机构评级、 盈利预测（中文键披露原文），港美沽空 interest，美股…
 - `market.kline`（行情K线）（cli.kline / cli.screener）：个股日 K（不复权 / 前复权 / 后复权）、最新一根、盘中最新快照、分钟分时、 单股快照与均线类筛选、全市场涨跌宽度
@@ -52,6 +53,7 @@
 - `market.margin`（融资融券）（cli.margin）：个股融资融券日频——融资买入/偿还/余额，融券卖出/偿还/余量
 - `market.moneyflow`（资金流向）（cli.moneyflow）：个股日频资金流向（主力 / 超大单 / 大单 / 中单 / 小单净流入）、最新一行、 全市场快照一次取数（board）
 - `market.stocks`（证券与行业基础）（cli.stocks）：证券基础库——全市场证券列表（代码/名称/交易所/三级行业/上市日期/ST）、 行业目录（申万 sw2021、恒生 hsi）、行业成分股（支持…
+- `market.toplist`（龙虎榜）：A 股龙虎榜——指定交易日全市场榜单与单票上榜历史（交易所披露口径， 日频落库直读）
 
 ## Composite Interfaces
 
@@ -84,7 +86,7 @@
 
 ## 单位与守护声明（机器可读）
 
-> 共 62 个函数带 units / ranges / checks 声明；每行 `` `函数名`: JSON ``，键为 units（换算）/ ranges（量级界）/ checks（不变量）。SDK 在返回前按声明换算并校验，违例抛 DataError；原生口径用 `_units="native"`。内部命名空间的函数声明见 openapi.json 的 `x-wmshare-guards`（按友好接口）。
+> 共 64 个函数带 units / ranges / checks 声明；每行 `` `函数名`: JSON ``，键为 units（换算）/ ranges（量级界）/ checks（不变量）。SDK 在返回前按声明换算并校验，违例抛 DataError；原生口径用 `_units="native"`。内部命名空间的函数声明见 openapi.json 的 `x-wmshare-guards`（按友好接口）。
 
 - `bonus.query_list`: {"ranges": {"dps": [0, 500], "net_profit": [0, 1000000000000.0], "payout_ratio": [0, 20], "total": [0, 2000000000000.0]}}
 - `bonus.snapshot`: {"ranges": {"bonus_npts_rate": [0, 1], "bonus_total": [0, 2000000000000.0], "bonus_ttm": [0, 1000000000000.0], "dps_ttm": [0, 200], "mv": [0, 5000000000000.0], "payout_ttm": [0, 5], "pct_yield_3y": [0, 1], "pe_ttm": [-500, 5000], "yield_3y_avg": [0, 0.5], "yield_3y_min": [0, 0.5], "yield_lyr": [0, 0.5], "yield_ttm": [0, 0.5]}}
@@ -147,6 +149,8 @@
 - `segments.query_products`: {"ranges": {"cost": [0, 10000000000000.0], "margin": [-5, 1], "ratio": [0, 1], "tr": [-10000000000000.0, 10000000000000.0]}}
 - `segments.query_region`: {"ranges": {"margin": [-5, 1], "pct": [0, 1], "tr": [-10000000000000.0, 10000000000000.0], "yoy": [-1, 100]}}
 - `segments.snapshot`: {"ranges": {"cost": [0, 10000000000000.0], "margin": [-5, 1], "pct": [0, 1], "ratio": [0, 1], "tr": [-10000000000000.0, 10000000000000.0], "yoy": [-1, 100]}}
+- `toplist.by_date`: {"ranges": {"amount": [0, 50000000000.0], "amount_ratio": [0, 3], "close": [0, 10000.0], "float_mv": [0, 10000000000000.0], "net_amount": [-10000000000.0, 10000000000.0], "net_ratio": [-1, 1], "pct_chg": [-1, 1], "seat_amount": [0, 50000000000.0], "seat_buy": [0, 50000000000.0], "seat_sell": [0, 50000000000.0], "turnover_rate": [0, 2]}}
+- `toplist.by_symbol`: {"ranges": {"amount": [0, 50000000000.0], "amount_ratio": [0, 3], "close": [0, 10000.0], "float_mv": [0, 10000000000000.0], "net_amount": [-10000000000.0, 10000000000.0], "net_ratio": [-1, 1], "pct_chg": [-1, 1], "seat_amount": [0, 50000000000.0], "seat_buy": [0, 50000000000.0], "seat_sell": [0, 50000000000.0], "turnover_rate": [0, 2]}}
 - `valuation.daily_basic`: {"ranges": {"circ_mv": [0, 50000000000000.0], "dv_ttm": [0, 0.5], "pb": [0, 200], "pe_ttm": [0, 3000], "pr": [0, 2000], "ps": [0, 500], "total_mv": [0, 50000000000000.0], "turnover_rate": [0, 1]}}
 
 ## Optional

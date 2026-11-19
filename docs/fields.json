@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "generated_by": "tools/gen_api_docs.py",
-  "count": 246,
+  "count": 249,
   "domains": [
     {
       "id": "corp.equity",
@@ -3949,6 +3949,25 @@
       "functions": []
     },
     {
+      "id": "market.futures",
+      "kind": "raw",
+      "data_origin": [
+        "外部行情源"
+      ],
+      "functions": [
+        {
+          "name": "futures.mapping",
+          "cn": "主力换月映射",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        }
+      ]
+    },
+    {
       "id": "market.index",
       "kind": "computed",
       "data_origin": [
@@ -6373,6 +6392,125 @@
           "internal": false,
           "units": {},
           "ranges": {},
+          "checks": [],
+          "fields": []
+        }
+      ]
+    },
+    {
+      "id": "market.toplist",
+      "kind": "raw",
+      "data_origin": [
+        "交易所披露"
+      ],
+      "functions": [
+        {
+          "name": "toplist.by_date",
+          "cn": "指定交易日龙虎榜",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "close": [
+              0,
+              10000.0
+            ],
+            "pct_chg": [
+              -1,
+              1
+            ],
+            "turnover_rate": [
+              0,
+              2
+            ],
+            "amount_ratio": [
+              0,
+              3
+            ],
+            "amount": [
+              0,
+              50000000000.0
+            ],
+            "float_mv": [
+              0,
+              10000000000000.0
+            ],
+            "seat_buy": [
+              0,
+              50000000000.0
+            ],
+            "seat_sell": [
+              0,
+              50000000000.0
+            ],
+            "seat_amount": [
+              0,
+              50000000000.0
+            ],
+            "net_amount": [
+              -10000000000.0,
+              10000000000.0
+            ],
+            "net_ratio": [
+              -1,
+              1
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "toplist.by_symbol",
+          "cn": "单票上榜历史",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "close": [
+              0,
+              10000.0
+            ],
+            "pct_chg": [
+              -1,
+              1
+            ],
+            "turnover_rate": [
+              0,
+              2
+            ],
+            "amount_ratio": [
+              0,
+              3
+            ],
+            "amount": [
+              0,
+              50000000000.0
+            ],
+            "float_mv": [
+              0,
+              10000000000000.0
+            ],
+            "seat_buy": [
+              0,
+              50000000000.0
+            ],
+            "seat_sell": [
+              0,
+              50000000000.0
+            ],
+            "seat_amount": [
+              0,
+              50000000000.0
+            ],
+            "net_amount": [
+              -10000000000.0,
+              10000000000.0
+            ],
+            "net_ratio": [
+              -1,
+              1
+            ]
+          },
           "checks": [],
           "fields": []
         }
