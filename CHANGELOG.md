@@ -11,6 +11,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-11-19
+
+### Added
+- **龙虎榜域 `market.toplist`**：`cli.toplist.by_date(trade_date, limit)`（指定
+  交易日全市场榜单）与 `cli.toplist.by_symbol(symbol, limit)`（单票上榜事件
+  历史）。同票多上榜原因各一行（榜单原值行合同）；15 字段行：率为小数
+  （上游百分数 /100）、金额=元、日期=ISO，11 个金额/率量级守护（结构性宽界，
+  live 锚点单日 95 行、最大成交额 ≈8.5e9 元）。席位/营业部明细上游无落库，
+  不提供按席位查询（明示缺口）。
+- **期货换月映射 `cli.futures.mapping(symbol, begin, end)`**：主力连续码 →
+  当日实际合约（换月追踪，随日线日更；`RB.SHF` 全历史 date 升序，窗口可空）。
+  期货域首个目录函数（此前期货走 `$FUT_*` 指标码）。
+- **回购六口径快照 `cli.equity.buyback_snapshot(symbol)`**：exec/plan ×
+  近1年/累计 × 含/不含注销式（元/原币；无数据源字段为 None 不伪造 0；
+  A股 plan_*/cancel_* 齐全，港股仅 exec_*）。live 实测四标的量级
+  2.4e8~5.1e10。
+- **公告类目表 `cli.notice.categories()` / `cli.notice.category_regex(key)`**：
+  14 类目键列表与类目→匹配正则解析（未知键原样透传，可直接传自定义正则）。
+- **公告 PDF 全文域 `disc.pdf_doc`**：`cli.pdf_doc.search / read_text /
+  read_markdown / status / find_by_url / find_by_key` 六个纯读面
+  （pdftotext 预览正文 + 财报 markdown/经营评述挂接 + 转换状态）。
+  写面（submit/ensure 触发抓取任务）标 internal 不进公开门面。
+- 随包目录 24 域 / 316 底层函数 / 2983 指标码 / 150 核心接口 / 167 friendly；
+  friendly 层门面委托器支持跨命名空间域函数（corp.equity 域含
+  buyback.snapshot）。
+
+### Changed
+- **指标目录刷新 2752→2983**（上游 catalog 2026-11 重生成）：`$BUYBACK_AMT_*`
+  6 码等 231 个新码随包可查。语义跟随两码：`$BONUS_RATE_TTM_LAST` /
+  `$DPS_TTM_LAST` 上游改报告期 LTM 口径（taxonomy 锁定表同步；实测值仍为
+  小数，精选组 range [0,1] 兼容）。
+- 「基金净值未覆盖」口径修正（llms.txt / SKILL.md）：ETF 九视图自 2.0 已
+  覆盖，排除面=场外/LOF/货基（生产端明确排除，非欠账）。
+
+### Fixed
+- docs/PROMOTION.md 计数对齐当前真值；CHANGELOG 1.7.x 历史段「港美三大报表
+  数据未上线」加注记（已随 v2.0 全量上线）。
+- guard_coverage 门禁阈值与 tests 基线对齐（0.156→0.2026，CI 同步——
+  此前 CI 阈值过时会让回退漏拦）。
+
 ## [2.2.1] - 2026-11-18
 
 ### Fixed
