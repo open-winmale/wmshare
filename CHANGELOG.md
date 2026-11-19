@@ -11,6 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Planned（服务端候选，未排期）
+- `valuation.daily_basic` 服务端增强候选（2026-11-19 消费端盘点登记，均不改
+  现有合同）：分页 + `truncated` 标志（当前 >1,500 日文档静默缺席，见
+  docs/LIMITS.md §1）；`begin/end` ts 下推（当前 XS 端拉全窗后过滤，EC 随
+  扫描而非请求跨度）；coverage API（可用日期/符号发现，现仅 envelope
+  `as_of` 可探）；多票批量路由（现逐票各付 1,707 EC 地板）；`estimate_cost`
+  随表增长再校准（>3y 后 18,317 EC 档失真）。
+
 ## [2.3.0] - 2026-11-19
 
 ### Added
