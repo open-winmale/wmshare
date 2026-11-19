@@ -370,6 +370,49 @@ def estimate_cost(name: str, params: dict[str, Any] | None = None, *,
         out.update(ec_lo=4, ec_hi=200, model="cache_hit",
                    note="走预热缓存（实测命中 ≈4 EC）；缓存冷的回填成本未物化，"
                         "勿按本估算做回填预算")
+    elif name == "buyback.snapshot":
+        # 实测（2026-11-19 live，5 票）：171~709 EC，与是否有回购数据无关
+        # （无数据票 171，六口径齐全票 697~709）——成本在按票取数+组装，
+        # 不是按行；**不缓存**（复跑同价），单票一次。
+        out.update(ec_lo=170, ec_hi=750, model="measured",
+                   note="按票一次取数 ≈170~710 EC（2026-11-19 实测 5 票）；"
+                        "复跑同价（无结果缓存），无回购数据的票走地板 ≈170 EC")
+    elif name == "notice.type_keys":
+        out.update(ec_lo=5, ec_hi=15, model="measured",
+                   note="静态类目表（14 键），实测 ≈9 EC")
+    elif name == "notice.type_regex":
+        out.update(ec_lo=8, ec_hi=20, model="measured",
+                   note="单键正则解析，实测 ≈14 EC")
+    elif name.startswith("toplist."):
+        # 实测（2026-11-19 live，修复后）：
+        #   by_date 单日整榜 95 行 冷 12,858 → 热 175 EC（fmt_maps 指纹缓存）
+        #   by_symbol 单票 10 条   冷 1,567  → 热 185 EC
+        # 冷态成本在逐 doc 扫全市场行（不是取数：store.find 仅 37 EC）。
+        if name == "toplist.by_date":
+            out.update(ec_lo=170, ec_hi=13_000, model="measured",
+                       note="单日整榜 ≈95 行：冷态 ≈1.3 万 EC（逐行 CONOF 规范化）、"
+                            "复跑走指纹缓存 ≈175 EC；盘后当日榜单当日可查")
+        else:
+            out.update(ec_lo=185, ec_hi=1_600, model="measured",
+                       note="单票上榜历史：冷态 ≈1,600 EC（逐 doc 扫全市场行）、"
+                            "复跑走数据版本键缓存 ≈185 EC；limit 越小冷态越省")
+    elif name == "futures.mapping":
+        # 实测（2026-11-19 live）：窗口 13 行 冷 833 → 热 160 EC；
+        # 全历史 4,287 行 冷 214,514 EC（CONOF 逐行计费），必须传窗口。
+        out.update(ec_lo=160, ec_hi=5_000, model="measured",
+                   note="按窗口行数：13 行冷 ≈833 / 热 ≈160 EC；"
+                        "全历史 4,287 行冷 ≈21.4 万 EC——务必传 begin/end 收窄窗口")
+    elif name.startswith("pdf_doc."):
+        # 实测（2026-11-19 live）：search 5 行 ≈836 EC（含 fmt_one 组装，
+        # 无结果缓存，复跑同价）；find_by_key/status/read_* 单行点查数百 EC。
+        if name == "pdf_doc.search":
+            n = rows if (rows and rows > 0) else 20
+            out.update(ec_lo=int(n * 150), ec_hi=int(n * 200) + 200, model="measured",
+                       note=f"按命中行 ≈150~200 EC/行 × {n} 行（含元数据组装，"
+                            "无结果缓存，复跑同价）；正文不在 search 返回里")
+        else:
+            out.update(ec_lo=200, ec_hi=1_200, model="measured",
+                       note="单文档点查/正文预览 ≈200~1,200 EC（正文越长越高）")
     elif name.startswith("valuation.daily_basic"):
         # 实测（2026-11-18 生产）：**不是缓存**——按扫描行计费，字段几乎免费。
         #   1 日 × 1 字段 = 1,707 EC；1 日 × 8 字段 = 1,851；
