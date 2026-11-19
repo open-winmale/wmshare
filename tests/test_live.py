@@ -283,6 +283,38 @@ def test_notice_recent_and_on_date(cli):
     assert all({"date", "title"} <= set(r) for r in on)
 
 
+def test_notice_categories_and_regex(cli):
+    keys = cli.notice.categories()
+    assert isinstance(keys, list) and "buyback" in keys
+    assert "回购" in cli.notice.category_regex("buyback")
+    # 未知键原样透传（自定义正则入口）
+    assert cli.notice.category_regex("业绩说明") == "业绩说明"
+
+
+def test_equity_buyback_snapshot(cli):
+    snap = _call_or_xfail(lambda: cli.equity.buyback_snapshot("600519"))
+    assert isinstance(snap, dict)
+    assert {"exec_1y", "exec_total", "plan_1y", "plan_total",
+            "plan_1y_cancel", "plan_total_cancel"} <= set(snap)
+    exec_total = snap.get("exec_total")
+    assert exec_total is None or exec_total >= 0
+
+
+def test_pdf_doc_read_surfaces(cli):
+    """pdf_doc 纯读面：检索/状态/正文/markdown/定位（正文就绪与否不作断言）。"""
+    rows = _call_or_xfail(lambda: cli.pdf_doc.search(stock_code=MAIN, limit=3))
+    assert isinstance(rows, list)
+    file_key = rows[0].get("file_key") if rows and isinstance(rows[0], dict) else ""
+    st = _call_or_xfail(lambda: cli.pdf_doc.status(file_key or "no-such-key"))
+    assert isinstance(st, dict) and "status" in st
+    body = _call_or_xfail(lambda: cli.pdf_doc.read_text(file_key or "no-such-key"))
+    assert isinstance(body, dict) and "ok" in body
+    md = _call_or_xfail(lambda: cli.pdf_doc.read_markdown(stock_code=MAIN, period="2024"))
+    assert isinstance(md, dict)
+    assert not cli.pdf_doc.find_by_key("no-such-key")
+    assert not cli.pdf_doc.find_by_url("https://")
+
+
 def test_notice_read_text(cli):
     """公告正文读取：取一条有 PDF 的公告，预览路径应返回纯读 MAP。
 

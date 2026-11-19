@@ -15,6 +15,13 @@ from typing import Any, Callable
 from wmshare.api import FRIENDLY_NAMESPACES
 
 _SYMBOL_NAMES = {"symbol", "sym", "stk", "code"}
+
+# 必选参数无自然字面值的方法走手工示例（占位描述指向取值来源，禁 <REQUIRED>）。
+_HAND_EXAMPLES: dict[str, str] = {
+    "notice.category_regex": 'cli.notice.category_regex("buyback")',
+    "pdf_doc.find_by_url": 'cli.pdf_doc.find_by_url("<公告行 url 字段>")',
+    "pdf_doc.find_by_key": 'cli.pdf_doc.find_by_key("<search() 行 file_key 字段>")',
+}
 _SPECIAL_CATALOG: dict[tuple[str, str], str | None] = {
     ("valuation", "hist_stats"): None,
     ("screener", "index_top_movers"): "kline.index_top_movers",
@@ -117,6 +124,8 @@ def _recommended_tool(domain: str, method: str) -> str:
 
 
 def _example(target: str, params: list[inspect.Parameter]) -> str:
+    if target in _HAND_EXAMPLES:
+        return _HAND_EXAMPLES[target]
     parts: list[str] = []
     for param in params:
         if param.name in _SYMBOL_NAMES:

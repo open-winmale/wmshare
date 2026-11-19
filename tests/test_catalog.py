@@ -6,9 +6,9 @@ from wmshare.catalog import load
 def test_load_and_stats():
     cat = load()
     s = cat.stats()
-    assert s["domains"] == 21, s
-    assert s["functions"] == 300, s
-    assert s["raw"] == 217 and s["computed"] == 83, s  # raw+9：+moneyflow.query_bars_anchor（锚点切片入口，2026-11-18）
+    assert s["domains"] == 22, s  # +disc.pdf_doc（批次1 暴露层，2026-11-19）
+    assert s["functions"] == 311, s
+    assert s["raw"] == 228 and s["computed"] == 83, s  # raw+11：批次1 暴露层（buyback.snapshot / notice 类目 2 / pdf_doc 8，2026-11-19）
     assert s["metric_catalog_total"] == 2752, s
     assert s["upstream_rev"], "inventory 应锚定 upstream rev"
 
@@ -77,11 +77,11 @@ def test_normalized_function_shapes_follow_fmt_maps():
 
 def test_namespaces_and_metrics():
     cat = load()
-    assert {"kline", "moneyflow", "notice", "filings", "forecast",
+    assert {"kline", "moneyflow", "notice", "filings", "pdf_doc", "forecast",
             "bonus", "rptdom", "segments", "equity", "margin", "estimates",
             "cbond", "workout", "indices", "intl", "stocks", "macro",
             "valuation",
-            "calendar"} == cat.namespaces()  # 2.0：交易日历域
+            "calendar", "buyback"} == cat.namespaces()  # 2.3：pdf_doc 域 + buyback.snapshot（批次1）
     m = cat.metric("$PE_TTM_LAST")
     assert m and m["cn"]
     assert cat.metric("$NOT_EXIST") is None
@@ -96,7 +96,7 @@ def test_scope_and_categories():
     # 股本股东（v1.5 起具备函数面；requires 指向 sys/equity 预载链）
     assert cat.domain("corp.equity")["stores"] == ["biz.equity", "ref.info"]
     assert cat.domain("corp.equity")["requires"]["path"] == "sys/equity/init.xs"
-    assert len(cat.domain("corp.equity")["functions"]) == 49
+    assert len(cat.domain("corp.equity")["functions"]) == 50  # +buyback.snapshot
 
 
 def test_curated_metric_groups_exist():
@@ -146,6 +146,6 @@ def test_catalog_shipped_inside_package():
     cdir = catmod.catalog_dir()
     assert cdir == pkg_root / "_catalog"
     assert (cdir / "schema" / "domain.schema.json").is_file()
-    assert len(list((cdir / "domains").glob("*.yaml"))) == 21
+    assert len(list((cdir / "domains").glob("*.yaml"))) == 22  # +disc.pdf_doc
     for g in ("inventory.json", "metrics.json"):
         assert (cdir / "generated" / g).is_file()

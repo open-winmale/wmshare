@@ -61,6 +61,11 @@ INCLUDED_NS = frozenset({
     # inventory.json 已随 fund.valuation 域手工同步该函数（2026-11-17，
     # 与 _catalog/domains/valuation.yaml 同源）；下次对上游重跑提取时本白名单保证不被丢弃。
     "valuation",
+    # 2.3：回购六口径聚合（buyback.snapshot，随 corp.equity 域暴露）与
+    # 公告 PDF 全文库（pdf_doc 检索/读面，disc.pdf_doc 域；submit/ensure 在
+    # SDK 侧标 internal，写面不进公开门面）。
+    "buyback",
+    "pdf_doc",
 })
 # rptdom 只保留三表透视族（年报 PDF 提取类 rows/notes/note_index 不发布）
 RPTDOM_KEEP = frozenset({"statement", "statement_years", "statement_compare", "statement_tree", "statement_audit"})

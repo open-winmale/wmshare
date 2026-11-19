@@ -1,0 +1,120 @@
+id: disc.pdf_doc
+version: 1.0.0
+cn: 公告 PDF 全文
+kind: raw
+category: disclosure
+priority: P1
+description: 公告 PDF 正文库——按票/日期/标题/状态检索、按 file_key/原文链接定位、
+  读提取正文（pdftotext 预览）与财报 markdown/经营评述、查转换任务状态。
+  notice.read_text 是公告口径的薄封装，本域提供库级检索与多形态读面。
+data_origin: [披露公告原文(平台管道)]
+stores: [raw__pdf_doc/document, raw__wm_report_extract/rpt_txt_mda]
+units:
+  date: YYYY-MM-DD
+  text: 预览正文默认前 4000 字（TEXT_PREVIEW），截断时 text_truncated=true
+requires: {path: sys/pdf_doc/init.xs, preloaded: true}
+notes:
+  - 短文走 pdftotext 正文（read_text）；财报类走 report.md markdown 与经营评述
+    （read_markdown）；未就绪时 read_text 不入队（纯读）
+  - submit/ensure 为写面（触发抓取任务，需 ops:pipeline 能力），默认 internal 不进公开门面；
+    无能力时 submit 返回 submit_unavailable 软失败
+functions:
+  - name: pdf_doc.search
+    cn: PDF 文档检索
+    kind: raw
+    layer: L0
+    params:
+      - {name: opts, type: object, required: false, desc: '{stock_code/symbol, title, announce_date_from/to, status, kind, limit, skip}'}
+    ranges: {text_chars: [0, 1.0e+7]}
+    returns: {desc: ARR · 命中文档元数据行（file_key/status/text_chars/source_url/oss_url/stock_code/announce_date/title/kind/has_markdown，不含正文）}
+    example: 'pdf_doc.search({"stock_code": "600519", "limit": 10})'
+  - name: pdf_doc.read_text
+    cn: 读 PDF 提取正文
+    kind: raw
+    layer: L0
+    params:
+      - {name: file_key, type: string, required: true, desc: 文档键；与 source_url 至少给一个}
+      - {name: source_url, type: string, required: false, desc: 原文链接}
+    returns:
+      desc: MAP · 正文与状态
+      shape:
+        kind: object
+        cn: 正文读取结果
+        fields:
+          - {name: ok, type: bool, cn: 是否取到正文}
+          - {name: status, type: string, cn: 文档状态（ready/pending/fetched/failed/converting）}
+          - {name: file_key, type: string, cn: 文档键}
+          - {name: text, type: string, cn: 正文（前 4000 字预览）}
+          - {name: text_truncated, type: bool, cn: 是否截断}
+          - {name: source_url, type: string, cn: 原文链接}
+          - {name: error, type: string, cn: 错误码（未就绪时）}
+          - {name: note, type: string, cn: 说明（未就绪时引导 read_markdown）}
+    example: 'pdf_doc.read_text("xxx", "")'
+  - name: pdf_doc.read_markdown
+    cn: 读财报 markdown/经营评述
+    kind: raw
+    layer: L0
+    params:
+      - {name: file_key, type: string, required: false, desc: 文档键；与 source_url/stock_code 至少给一个}
+      - {name: source_url, type: string, required: false, desc: 原文链接}
+      - {name: stock_code, type: string, required: false, desc: 6 位裸码（定期报告定位用）}
+      - {name: period, type: string, required: false, desc: 报告期（如 2024）}
+    returns:
+      desc: MAP · markdown 挂接或经营评述正文
+      shape:
+        kind: object
+        cn: markdown 读取结果
+        fields:
+          - {name: ok, type: bool, cn: 是否命中}
+          - {name: file_key, type: string, cn: 文档键}
+          - {name: status, type: string, cn: 文档状态}
+          - {name: source_url, type: string, cn: 原文链接}
+          - {name: kind, type: string, cn: 文档类型}
+          - {name: error, type: string, cn: 错误码（markdown_not_linked 等）}
+          - {name: note, type: string, cn: 说明（命中经营评述/markdown 挂接状态）}
+          - {name: artifacts, type: object, cn: 产物挂接（pdf_oss/markdown cache_id）}
+    example: 'pdf_doc.read_markdown("", "", "600519", "2024")'
+    notes:
+      - 优先返回经营评述（rpt_txt_mda，按 stock+period 命中）；全量 report.md 在
+        fin-extract 缓存，本接口返回挂接信息
+  - name: pdf_doc.status
+    cn: PDF 文档状态
+    kind: raw
+    layer: L0
+    params:
+      - {name: file_key, type: string, required: true, desc: 文档键；与 source_url 至少给一个}
+      - {name: source_url, type: string, required: false, desc: 原文链接}
+    returns:
+      desc: MAP · 转换状态
+      shape:
+        kind: object
+        cn: 文档状态
+        fields:
+          - {name: file_key, type: string, cn: 文档键}
+          - {name: status, type: string, cn: 状态（ready/pending/fetched/failed/converting/missing）}
+          - {name: convert_policy, type: string, cn: 转换策略（text/bytes_only/link_markdown）}
+          - {name: kind, type: string, cn: 文档类型}
+          - {name: has_markdown, type: bool, cn: 是否已挂接 markdown}
+          - {name: task, type: object, cn: 转换任务信息}
+          - {name: source_url, type: string, cn: 原文链接}
+          - {name: oss_url, type: string, cn: PDF 存储链接}
+    example: 'pdf_doc.status("xxx", "")'
+  - name: pdf_doc.find_by_url
+    cn: 按原文链接定位文档
+    kind: raw
+    layer: L0
+    params:
+      - {name: url, type: string, required: true}
+    returns: {desc: MAP · 原始文档行或 nil}
+    example: 'pdf_doc.find_by_url("https://...")'
+  - name: pdf_doc.find_by_key
+    cn: 按文档键定位文档
+    kind: raw
+    layer: L0
+    params:
+      - {name: file_key, type: string, required: true}
+    returns: {desc: MAP · 原始文档行或 nil}
+    example: 'pdf_doc.find_by_key("xxx")'
+  # ---- 写面（internal：触发抓取任务，需 ops:pipeline 能力）----
+  - {name: pdf_doc.submit, cn: 提交 PDF 抓取任务, kind: raw, layer: L1, internal: true}
+  - {name: pdf_doc.ensure, cn: 确保正文就绪（查即提交）, kind: raw, layer: L1, internal: true}

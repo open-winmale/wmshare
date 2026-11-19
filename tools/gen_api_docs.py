@@ -55,7 +55,7 @@ CHAPTERS: list[tuple[str, list[str]]] = [
     ("期货", ["futures"]),  # 2.0：连续合约快照门面（$FUT_* 指标码求值封装）
     ("宏观", ["macro"]),
     ("财务基本面", ["statements", "segments", "valuation", "estimates", "indicator"]),
-    ("信息披露与公司行动", ["notice", "filings", "forecast", "dividend", "equity", "workout"]),
+    ("信息披露与公司行动", ["notice", "filings", "pdf_doc", "forecast", "dividend", "equity", "workout"]),
     ("港股与美股", ["intl"]),
     ("基金与 ETF", ["etf"]),  # 组合门面（无核心接口），读 skillhub etf_build 九视图
     ("参考数据", ["info"]),
@@ -86,6 +86,10 @@ PARAM_DOCS: dict[str, str] = {
     "fut_symbol": "期货连续合约键（如 \"cn.RB.SHF\"；$FUT_* 需要）",
     "native": "True=保留上游原生单位（默认换算基础单位）",
     "codes": "指标码列表（$ 开头）",
+    "skip": "翻页跳过条数",
+    "url": "公告 PDF 原文链接（与 file_key 至少给一个）",
+    "file_key": "文档键（search 返回行的 file_key 字段）",
+    "source_url": "原文链接（与 file_key 至少给一个）",
 }
 
 # 按 ns 覆写兜底表：仅 A 股数据的门面，symbol 不得宣传港美（真多市场门面

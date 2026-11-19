@@ -268,6 +268,18 @@ class BonusNS(_Ns):
         """分红分析字段列表"""
         return _out(self._client.call("bonus.index_fields_analysis", _raw=_raw), _raw)
 
+class BuybackNS(_Ns):
+    """股东与股本（corp.equity）"""
+
+    def snapshot(self, sym: str, _raw: bool = False) -> Any:
+        """回购六口径快照
+
+:param sym: 6 位裸码；港股 5 位需 market=hk 客户端（plan_* 为 nil，仅 exec_* 明细口径）
+
+:returns: MAP · 回购六口径（元/原币；无数据源字段 nil，不伪造 0）
+        """
+        return _out(self._client.call("buyback.snapshot", sym=sym, _raw=_raw), _raw)
+
 class CalendarNS(_Ns):
     """交易日历（market.calendar）"""
 
@@ -1570,6 +1582,22 @@ class NoticeNS(_Ns):
         """近期公告类别计数"""
         return _out(self._client.call("notice.query_stats_recent", window=window, _raw=_raw), _raw)
 
+    def type_keys(self, _raw: bool = False) -> Any:
+        """公告类目键列表
+
+:returns: ARR · 类目键列表（reduction/insider_buy/buyback/equity_incentive/forecast/dividend/risk/mna/contract/pledge/issue/report/suspend/correct）
+        """
+        return _out(self._client.call("notice.type_keys", _raw=_raw), _raw)
+
+    def type_regex(self, key: str, _raw: bool = False) -> Any:
+        """公告类目匹配正则
+
+:param key: 类目键；未知键原样透传（可直接传自定义正则）
+
+:returns: string · NOTICE_TYPE 匹配正则
+        """
+        return _out(self._client.call("notice.type_regex", key=key, _raw=_raw), _raw)
+
     def query_build(self, from_date: str, to_date: str, type_regex: str | None = None, stock_code: str | None = None, _raw: bool = False) -> Any:
         """构建公告 Mongo filter"""
         kw: dict[str, Any] = {"from_date": from_date, "to_date": to_date}
@@ -1612,6 +1640,82 @@ class NoticeNS(_Ns):
         if full is not None:
             kw["full"] = full
         return _out(self._client.call("notice.read_text", **kw, _raw=_raw), _raw)
+
+class Pdf_docNS(_Ns):
+    """公告 PDF 全文（disc.pdf_doc）"""
+
+    def search(self, opts: dict | None = None, _raw: bool = False) -> Any:
+        """PDF 文档检索
+
+:param opts: {stock_code/symbol, title, announce_date_from/to, status, kind, limit, skip}
+
+:returns: ARR · 命中文档元数据行（file_key/status/text_chars/source_url/oss_url/stock_code/announce_date/title/kind/has_markdown，不含正文）
+        """
+        kw: dict[str, Any] = {}
+        if opts is not None:
+            kw["opts"] = opts
+        return _out(self._client.call("pdf_doc.search", **kw, _raw=_raw), _raw)
+
+    def read_text(self, file_key: str, source_url: str | None = None, _raw: bool = False) -> Any:
+        """读 PDF 提取正文
+
+:param file_key: 文档键；与 source_url 至少给一个
+:param source_url: 原文链接
+
+:returns: MAP · 正文与状态
+        """
+        kw: dict[str, Any] = {"file_key": file_key}
+        if source_url is not None:
+            kw["source_url"] = source_url
+        return _out(self._client.call("pdf_doc.read_text", **kw, _raw=_raw), _raw)
+
+    def read_markdown(self, file_key: str | None = None, source_url: str | None = None, stock_code: str | None = None, period: str | None = None, _raw: bool = False) -> Any:
+        """读财报 markdown/经营评述
+
+:param file_key: 文档键；与 source_url/stock_code 至少给一个
+:param source_url: 原文链接
+:param stock_code: 6 位裸码（定期报告定位用）
+:param period: 报告期（如 2024）
+
+:returns: MAP · markdown 挂接或经营评述正文
+        """
+        kw: dict[str, Any] = {}
+        if file_key is not None:
+            kw["file_key"] = file_key
+        if source_url is not None:
+            kw["source_url"] = source_url
+        if stock_code is not None:
+            kw["stock_code"] = stock_code
+        if period is not None:
+            kw["period"] = period
+        return _out(self._client.call("pdf_doc.read_markdown", **kw, _raw=_raw), _raw)
+
+    def status(self, file_key: str, source_url: str | None = None, _raw: bool = False) -> Any:
+        """PDF 文档状态
+
+:param file_key: 文档键；与 source_url 至少给一个
+:param source_url: 原文链接
+
+:returns: MAP · 转换状态
+        """
+        kw: dict[str, Any] = {"file_key": file_key}
+        if source_url is not None:
+            kw["source_url"] = source_url
+        return _out(self._client.call("pdf_doc.status", **kw, _raw=_raw), _raw)
+
+    def find_by_url(self, url: str, _raw: bool = False) -> Any:
+        """按原文链接定位文档
+
+:returns: MAP · 原始文档行或 nil
+        """
+        return _out(self._client.call("pdf_doc.find_by_url", url=url, _raw=_raw), _raw)
+
+    def find_by_key(self, file_key: str, _raw: bool = False) -> Any:
+        """按文档键定位文档
+
+:returns: MAP · 原始文档行或 nil
+        """
+        return _out(self._client.call("pdf_doc.find_by_key", file_key=file_key, _raw=_raw), _raw)
 
 class RptdomNS(_Ns):
     """财务报表（fund.statements）"""
@@ -1798,6 +1902,7 @@ class WorkoutNS(_Ns):
 
 NAMESPACES: dict[str, type[_Ns]] = {
     "bonus": BonusNS,
+    "buyback": BuybackNS,
     "calendar": CalendarNS,
     "cbond": CbondNS,
     "equity": EquityNS,
@@ -1811,6 +1916,7 @@ NAMESPACES: dict[str, type[_Ns]] = {
     "margin": MarginNS,
     "moneyflow": MoneyflowNS,
     "notice": NoticeNS,
+    "pdf_doc": Pdf_docNS,
     "rptdom": RptdomNS,
     "segments": SegmentsNS,
     "stocks": StocksNS,

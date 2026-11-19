@@ -10,7 +10,7 @@
     ``_raw=True`` 取上游原始行（list[dict]，跳过规范化与换算）——诊断逃生口；
   - 本层是目录合同的薄翻译：高频方法显式包装；目录内其余非内部函数经 ``__getattr__``
     属性直达（如 ``cli.kline.screen_above_ma20``）；目录标 ``internal: true`` 的
-    规范化辅助（fmt_* 等）不再直达，请走 ``cli.call``——300 个底层函数零遮蔽；
+    规范化辅助（fmt_* 等）不再直达，请走 ``cli.call``——311 个底层函数零遮蔽；
   - 选股能力集中在 ``cli.screener``：单票筛选器（bool）、全市场宽度/涨跌榜与
     全市场条件选股 ``query()``（服务端索引直出）显式包装，kline 目录的其余筛选
     函数经属性直达。
@@ -340,9 +340,22 @@ class _Api:
         try:
             meta = client.catalog.function(qualified)
         except Exception:
+            meta = None
+        if meta is None:
+            # 跨 ns 域函数回退：域 id 与函数 ns 可能不同（corp.equity 域含
+            # buyback.snapshot，批次1 起）——在本 friendly ns 对应域（id 尾段=
+            # catalog ns）的函数集内找唯一 short 名匹配。
+            hits: list[str] = []
+            for did, fns in (client.catalog.functions_by_domain() or {}).items():
+                if did.split(".", 1)[-1] == catalog_ns:
+                    hits += [fn for fn in fns if fn.split(".", 1)[1] == name]
+            if len(hits) == 1:
+                qualified = hits[0]
+                meta = client.catalog.function(qualified)
+        if meta is None:
             raise AttributeError(
                 f"{type(self).__name__!s}.{name} 不存在；请查目录："
-                f"cat.search({name!r}) 或 docs/API.md") from None
+                f"cat.search({name!r}) 或 docs/API.md")
         # 2.0 命名空间净化：internal: true（fmt_* 规范化辅助）不再属性直达——
         # 这些是 SDK/文档管线的内部函数，不是用户接口；确需原始口径请走
         # ``cli.call("{qualified}")``（_raw/_units 逃生口都在）。
@@ -2140,6 +2153,20 @@ class NoticeApi(_Api):
         return bool(self._c.call("notice.signal_has_reduction", sym=symbol,
                                  window=str(_window_days(window))))
 
+    def categories(self) -> Any:
+        """公告类目键列表（14 类目，含简繁对照；配合 category_regex / type_regex 参数）。
+
+        返回注解用 Any：裸 ``list`` 在类体内会被同名方法 ``list`` 遮蔽。
+        """
+        return list(self._c.call("notice.type_keys"))
+
+    def category_regex(self, key: str) -> str:
+        """公告类目键 → 匹配正则（未知键原样透传，可直接传自定义正则）。
+
+        :param key: 类目键（见 ``categories()`` 返回），或任意自定义正则
+        """
+        return str(self._c.call("notice.type_regex", key=key))
+
 
 class FilingsApi(_Api):
     """定期报告清单。kind = all | annual | semi | quarter。"""
@@ -2157,6 +2184,87 @@ class FilingsApi(_Api):
         :param kind: 报告类型：``all | annual | semi | quarter``
         """
         return self._c.call("filings.latest", sym=symbol, type_key=kind)
+
+
+class PdfDocApi(_Api):
+    """公告 PDF 全文库（检索 / 正文 / 财报 markdown / 状态）。
+
+    写面（submit/ensure 触发抓取任务）未暴露——纯读面；公告口径的薄封装见
+    ``cli.notice.read_text``。短文走 pdftotext 预览，财报走 markdown/经营评述。
+    """
+
+    def search(self, stock_code: str = "", title: str = "",
+               announce_date_from: str = "", announce_date_to: str = "",
+               status: str = "", kind: str = "", limit: int = 20,
+               skip: int = 0, _raw: bool = False) -> Any:
+        """检索 PDF 文档元数据（不含正文；按更新时间降序）。
+
+        :param stock_code: 6 位裸码（可空=全库）
+        :param title: 标题子串
+        :param announce_date_from: 披露日起（YYYY-MM-DD）
+        :param announce_date_to: 披露日止（YYYY-MM-DD）
+        :param status: ``ready | pending | fetched | failed | converting``
+        :param kind: 文档类型
+        """
+        opts: dict = {"limit": limit, "skip": skip}
+        if stock_code:
+            opts["stock_code"] = stock_code
+        if title:
+            opts["title"] = title
+        if announce_date_from:
+            opts["announce_date_from"] = announce_date_from
+        if announce_date_to:
+            opts["announce_date_to"] = announce_date_to
+        if status:
+            opts["status"] = status
+        if kind:
+            opts["kind"] = kind
+        return _out(self._c.call("pdf_doc.search", opts=opts, _raw=_raw), raw=_raw)
+
+    def read_text(self, file_key: str = "", source_url: str = "") -> Any:
+        """读 PDF 提取正文（前 4000 字预览；纯读，未就绪不入队）。
+
+        :param file_key: 文档键；与 source_url 至少给一个
+        :returns: MAP · ok/status/text/text_truncated/file_key/source_url
+            （未就绪含 error/note，note 引导改走 read_markdown）
+        """
+        return self._c.call("pdf_doc.read_text", file_key=file_key,
+                            source_url=source_url)
+
+    def read_markdown(self, file_key: str = "", source_url: str = "",
+                      stock_code: str = "", period: str = "") -> Any:
+        """读财报 markdown 挂接 / 经营评述。
+
+        :param file_key: 文档键；与 source_url/stock_code 至少给一个
+        :param source_url: 原文链接
+        :param stock_code: 6 位裸码（定期报告传 stock_code+period 优先命中经营评述）
+        :param period: 报告期（如 ``2024``）
+        """
+        return self._c.call("pdf_doc.read_markdown", file_key=file_key,
+                            source_url=source_url, stock_code=stock_code,
+                            period=period)
+
+    def status(self, file_key: str = "", source_url: str = "") -> Any:
+        """文档转换状态（status/convert_policy/kind/has_markdown/task）。
+
+        :param file_key: 文档键；与 source_url 至少给一个
+        """
+        return self._c.call("pdf_doc.status", file_key=file_key,
+                            source_url=source_url)
+
+    def find_by_url(self, url: str) -> Any:
+        """按原文链接定位文档行（无则 None）。
+
+        :param url: 公告 PDF 原文链接
+        """
+        return self._c.call("pdf_doc.find_by_url", url=url)
+
+    def find_by_key(self, file_key: str) -> Any:
+        """按文档键定位文档行（无则 None）。
+
+        :param file_key: 文档键（``search`` 返回行的 file_key 字段）
+        """
+        return self._c.call("pdf_doc.find_by_key", file_key=file_key)
 
 
 class ForecastApi(_Api):
@@ -2509,6 +2617,15 @@ class EquityApi(_Api):
     def query_buyback_detail(self, symbol: str) -> Any:
         """回购执行明细单行（已回购股数/金额/公告日）。"""
         return self._c.call("equity.query_buyback_detail", sym=symbol)
+
+    def buyback_snapshot(self, symbol: str) -> Any:
+        """回购六口径快照（exec/plan × 近1年/累计 × 含/不含注销式）。
+
+        :param symbol: 6 位 A 股码 / 港股 5 位码
+        :returns: MAP · 元/原币；无数据源字段为 None（不伪造 0）；
+            A股 plan_*/cancel_* 齐全，港股仅 exec_*（明细逐日精确加总，原币直加不换汇率）
+        """
+        return self._c.call("buyback.snapshot", sym=symbol)
 
     def query_reorg(self, symbol: str, limit: int = 20) -> Any:
         """并购重组（进度/交易金额/公告日）。
@@ -3017,6 +3134,7 @@ FRIENDLY_NAMESPACES: dict[str, type[_Api]] = {
     "indicator": IndicatorApi,
     "notice": NoticeApi,
     "filings": FilingsApi,
+    "pdf_doc": PdfDocApi,
     "forecast": ForecastApi,
     "workout": WorkoutApi,
     "dividend": DividendApi,
@@ -3112,8 +3230,16 @@ FRIENDLY_INDEX: list[tuple[str, str, str, str, str]] = [
     ("disclosure", "notice", "read_text", "公告正文读取", "notice.read_text"),
     ("disclosure", "notice", "has_buyback", "窗口内有回购", "notice.signal_has_buyback"),
     ("disclosure", "notice", "has_reduction", "窗口内有减持", "notice.signal_has_reduction"),
+    ("disclosure", "notice", "categories", "公告类目键列表", "notice.type_keys"),
+    ("disclosure", "notice", "category_regex", "公告类目匹配正则", "notice.type_regex"),
     ("disclosure", "filings", "list", "定期报告列表", "filings.query"),
     ("disclosure", "filings", "latest", "最新定期报告", "filings.latest"),
+    ("disclosure", "pdf_doc", "search", "PDF 文档检索", "pdf_doc.search"),
+    ("disclosure", "pdf_doc", "read_text", "读 PDF 提取正文", "pdf_doc.read_text"),
+    ("disclosure", "pdf_doc", "read_markdown", "读财报 markdown/经营评述", "pdf_doc.read_markdown"),
+    ("disclosure", "pdf_doc", "status", "PDF 文档状态", "pdf_doc.status"),
+    ("disclosure", "pdf_doc", "find_by_url", "按原文链接定位文档", "pdf_doc.find_by_url"),
+    ("disclosure", "pdf_doc", "find_by_key", "按文档键定位文档", "pdf_doc.find_by_key"),
     ("disclosure", "forecast", "yjyg", "业绩预告历史", "forecast.yjyg_rows"),
     ("disclosure", "forecast", "yjyg_latest", "最新业绩预告", "forecast.yjyg_latest"),
     ("disclosure", "forecast", "yjkb", "业绩快报历史", "forecast.yjkb_rows"),
@@ -3155,6 +3281,7 @@ FRIENDLY_INDEX: list[tuple[str, str, str, str, str]] = [
     ("reference", "equity", "query_buyback_plan", "回购方案全览", "equity.query_buyback_plan"),
     ("reference", "equity", "query_buyback_detail", "回购执行明细",
      "equity.query_buyback_detail"),
+    ("reference", "equity", "buyback_snapshot", "回购六口径快照", "buyback.snapshot"),
     ("reference", "equity", "query_reorg", "并购重组", "equity.query_reorg"),
     ("reference", "equity", "query_related_trade", "关联交易", "equity.query_related_trade"),
     ("reference", "equity", "query_concert", "一致行动人", "equity.query_concert"),

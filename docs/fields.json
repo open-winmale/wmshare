@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "generated_by": "tools/gen_api_docs.py",
-  "count": 237,
+  "count": 246,
   "domains": [
     {
       "id": "corp.equity",
@@ -288,6 +288,41 @@
           "internal": false,
           "units": {},
           "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "buyback.snapshot",
+          "cn": "回购六口径快照",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "exec_1y": [
+              0,
+              1000000000000.0
+            ],
+            "exec_total": [
+              0,
+              1000000000000.0
+            ],
+            "plan_1y": [
+              0,
+              1000000000000.0
+            ],
+            "plan_total": [
+              0,
+              1000000000000.0
+            ],
+            "plan_1y_cancel": [
+              0,
+              1000000000000.0
+            ],
+            "plan_total_cancel": [
+              0,
+              1000000000000.0
+            ]
+          },
           "checks": [],
           "fields": []
         },
@@ -1975,6 +2010,26 @@
           ]
         },
         {
+          "name": "notice.type_keys",
+          "cn": "公告类目键列表",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "notice.type_regex",
+          "cn": "公告类目匹配正则",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
           "name": "notice.query_build",
           "cn": "构建公告 Mongo filter",
           "layer": "L1",
@@ -2135,6 +2190,80 @@
               "desc": "说明"
             }
           ]
+        }
+      ]
+    },
+    {
+      "id": "disc.pdf_doc",
+      "kind": "raw",
+      "data_origin": [
+        "披露公告原文(平台管道)"
+      ],
+      "functions": [
+        {
+          "name": "pdf_doc.search",
+          "cn": "PDF 文档检索",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "text_chars": [
+              0,
+              10000000.0
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "pdf_doc.read_text",
+          "cn": "读 PDF 提取正文",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "pdf_doc.read_markdown",
+          "cn": "读财报 markdown/经营评述",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "pdf_doc.status",
+          "cn": "PDF 文档状态",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "pdf_doc.find_by_url",
+          "cn": "按原文链接定位文档",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "pdf_doc.find_by_key",
+          "cn": "按文档键定位文档",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
         }
       ]
     },

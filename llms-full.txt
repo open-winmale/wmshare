@@ -20,10 +20,11 @@
 
 ## 单位与守护声明（机器可读）
 
-> 共 60 个函数带 units / ranges / checks 声明；每行 `` `函数名`: JSON ``，键为 units（换算）/ ranges（量级界）/ checks（不变量）。SDK 在返回前按声明换算并校验，违例抛 DataError；原生口径用 `_units="native"`。内部命名空间的函数声明见 openapi.json 的 `x-wmshare-guards`（按友好接口）。
+> 共 62 个函数带 units / ranges / checks 声明；每行 `` `函数名`: JSON ``，键为 units（换算）/ ranges（量级界）/ checks（不变量）。SDK 在返回前按声明换算并校验，违例抛 DataError；原生口径用 `_units="native"`。内部命名空间的函数声明见 openapi.json 的 `x-wmshare-guards`（按友好接口）。
 
 - `bonus.query_list`: {"ranges": {"dps": [0, 500], "net_profit": [0, 1000000000000.0], "payout_ratio": [0, 20], "total": [0, 2000000000000.0]}}
 - `bonus.snapshot`: {"ranges": {"bonus_npts_rate": [0, 1], "bonus_total": [0, 2000000000000.0], "bonus_ttm": [0, 1000000000000.0], "dps_ttm": [0, 200], "mv": [0, 5000000000000.0], "payout_ttm": [0, 5], "pct_yield_3y": [0, 1], "pe_ttm": [-500, 5000], "yield_3y_avg": [0, 0.5], "yield_3y_min": [0, 0.5], "yield_lyr": [0, 0.5], "yield_ttm": [0, 0.5]}}
+- `buyback.snapshot`: {"ranges": {"exec_1y": [0, 1000000000000.0], "exec_total": [0, 1000000000000.0], "plan_1y": [0, 1000000000000.0], "plan_1y_cancel": [0, 1000000000000.0], "plan_total": [0, 1000000000000.0], "plan_total_cancel": [0, 1000000000000.0]}}
 - `calendar.days`: {"checks": ["date_iso"]}
 - `calendar.next`: {"checks": ["date_iso"]}
 - `cbond.board`: {"ranges": {"couponIr": [0, 0.15], "premiumRatio": [-100, 1000]}, "units": {"couponIr": "percent", "premiumRatio": "percent"}}
@@ -76,6 +77,7 @@
 - `margin.market_summary`: {"ranges": {"fin_balance": [0, 10000000000000.0], "fin_buy_amt": [0, 1000000000000.0], "loan_balance": [0, 100000000000.0], "loan_sell_vol": [0, 100000000000.0]}}
 - `moneyflow.board`: {"ranges": {"elg_net": [-100000000000.0, 100000000000.0], "lg_net": [-100000000000.0, 100000000000.0], "md_net": [-100000000000.0, 100000000000.0], "net_mf": [-100000000000.0, 100000000000.0], "net_mv_ratio": [-0.5, 0.5], "sm_net": [-100000000000.0, 100000000000.0]}}
 - `moneyflow.snapshot`: {"ranges": {"elg_net": [-100000000000.0, 100000000000.0], "lg_net": [-100000000000.0, 100000000000.0], "md_net": [-100000000000.0, 100000000000.0], "net_10d": [-300000000000.0, 300000000000.0], "net_20d": [-500000000000.0, 500000000000.0], "net_5d": [-200000000000.0, 200000000000.0], "net_mf": [-100000000000.0, 100000000000.0], "net_mv_ratio": [-0.5, 0.5], "sm_net": [-100000000000.0, 100000000000.0]}}
+- `pdf_doc.search`: {"ranges": {"text_chars": [0, 10000000.0]}}
 - `segments.query_business`: {"ranges": {"cost": [0, 10000000000000.0], "margin": [-5, 1], "ratio": [0, 1], "tr": [-10000000000000.0, 10000000000000.0]}}
 - `segments.query_income`: {"ranges": {"ratio": [0, 1]}}
 - `segments.query_products`: {"ranges": {"cost": [0, 10000000000000.0], "margin": [-5, 1], "ratio": [0, 1], "tr": [-10000000000000.0, 10000000000000.0]}}
@@ -180,7 +182,7 @@ for r in res["rows"][:5]:
 
 ## 基本功能
 
-随包离线目录：**21 个数据域 · 300 个底层函数 · 2752 个指标代码**；友好层 **138 个核心接口**，
+随包离线目录：**22 个数据域 · 311 个底层函数 · 2752 个指标代码**；友好层 **147 个核心接口**，
 按使用视角组织为（11 个指标组、78 个精选常用指标代码，`cat.search("中文")` 可编程检索）：
 
 | 门面 | 核心能力 | 单位口径 |
@@ -222,7 +224,7 @@ for r in res["rows"][:5]:
 - **全市场批量**：`cli.batch_all(name, codes)` 把 A 股 5,375 家压成 **11 次请求**绕开限流。
 - **全市场筛选服务端直出**：`cli.screener.query("$ROE_TTM_LAST > 0.15")` 一条表达式扫全市场索引
   （`count`=真实命中数）；涨跌全景/分桶/行业分布/涨跌榜同走服务端预计算索引，毫秒级。
-- **离线目录防编造**：300 个底层函数、138 个核心接口、2,752 个指标码离线可查
+- **离线目录防编造**：311 个底层函数、147 个核心接口、2,752 个指标码离线可查
   （`cat.search("中文")`），目录之外的名字显式报错。
 - **零凭证离线试跑**：`wmshare.demo_client()`（同签名、不联网，2026-10-30 固定快照；非实时数据）。
 - **数据守护**：全库单位统一（比率=小数、金额=元、量=股），返回前量级/不变量校验，违例抛 `DataError`。
@@ -231,7 +233,7 @@ for r in res["rows"][:5]:
 
 - **先查目录再写代码**（一行验证）：
   `python3 -c "import wmshare; print(wmshare.load().search('股息'))"`
-- **本地 MCP server**：20 个 task tools；全部 155 个 friendly API——138 登记 + 17 个组合接口——均可用
+- **本地 MCP server**：20 个 task tools；全部 164 个 friendly API——147 登记 + 17 个组合接口——均可用
   `wmshare_call(target=..., mode="api")` 兜底，macro 域仅此路径。配置：`pip install "wmshare[mcp]"`
   → `wmshare-mcp setup --client-id <AppId> --client-secret-stdin --market cn`（提示后粘贴 API Key，
   `wmshare-mcp doctor` 体检）；客户端最小配置
@@ -407,7 +409,7 @@ t["data"]["pe_pct"], t["data"]["pe_pct_window"], t["data"]["pct"]["pe"]["p3"]  #
 ## 更多
 
 - **AI 原生**：随包 [SKILL.md](src/wmshare/skills/wmshare/SKILL.md)、[AI 用法](docs/AI.md)、本地 MCP server（skill 可复制进 .agents/.zcode/.claude 的 skills/）；生态工具 [big-winner](https://github.com/open-winmale/big-winner)。
-- **文档中心 [docs/](docs/README.md)**：使用指南 GUIDE（单票菜谱/批量/多市场/故障排查）· 指标库 [INDICATORS.md](docs/INDICATORS.md)（全量指标码按数据类型分章）· AI 用法 · llms.txt 索引 · [API 参考](docs/API.md)（按资产类别分章的 138 个核心接口 + 指标组）
+- **文档中心 [docs/](docs/README.md)**：使用指南 GUIDE（单票菜谱/批量/多市场/故障排查）· 指标库 [INDICATORS.md](docs/INDICATORS.md)（全量指标码按数据类型分章）· AI 用法 · llms.txt 索引 · [API 参考](docs/API.md)（按资产类别分章的 147 个核心接口 + 指标组）
 - **可转债日更管线**：`cli.cbond.daily()` → `article()` → `figures()` 一条命令出图文（三层口径 + 三道闸 + 状态机 + 事件日历，每个数字带 `sources` 与 `as_of`，缺条目抛错而非补猜测值）；实战 notebook 见 [docs/notebooks/cb_double_low.ipynb](docs/notebooks/cb_double_low.ipynb)（2026-11-07 真实数据）
 - **示例课程 [examples/](examples/README.md)**：18 个编号示例（入门→进阶→生产→AI），全部支持演示客户端离线试跑，CI 端到端覆盖
 - **问题反馈 / 交流**：QQ 群 `1127142074`（搜索「wmshare开源交流群」）——使用问题、数据口径、bug 反馈欢迎进群，也欢迎 [GitHub Issues](https://github.com/open-winmale/wmshare/issues)
@@ -438,7 +440,7 @@ disclosures/statement/segments/dividend/estimates/corporate/market/intl/notice �
 
 **它不是**：撮合级/组合级回测引擎（单股均线买卖点回测用 `cli.backtest.run`：次日开盘成交、
 T+1、整手、佣金/印花固定，不复现盘口排队与分红税）；数据库（数据经云端 API 运行时获取，
-不随包分发）；全品类数据超市（21 个数据域，覆盖 A 股个股常用研究数据、宏观时序与期货主力连续指标码，
+不随包分发）；全品类数据超市（22 个数据域，覆盖 A 股个股常用研究数据、宏观时序与期货主力连续指标码，
 基金净值/期权/债券未覆盖）。
 
 ## 1. 环境前置
@@ -540,7 +542,7 @@ cat.metrics_in_group("dividend")                         # 指标组内全部精
 | 行业目录 / 行业成分 | `cli.stocks.industries(1)`（申万/恒生；美股目录树暂缺）/ `cli.stocks.industry_members("银行")`（中文名或代码 S48） |
 | 少量标的单批（≤500） | `cli.call_batch("kline.snapshot", ["600519", "000001"])` 或任意单标的接口传 list：`cli.kline.last(["600519", "000001"])`；`to_df()` 出每标的一行长表 |
 
-完整 138 个核心接口 + 17 个组合接口（可转债 3 + 回测 1 + 报表 4 + ETF 9）与全部底层函数：仓库用户看 docs/GUIDE.md（上手）与
+完整 147 个核心接口 + 17 个组合接口（可转债 3 + 回测 1 + 报表 4 + ETF 9）与全部底层函数：仓库用户看 docs/GUIDE.md（上手）与
 docs/API.md（参考）；pip 用户用 `cat.search(...)` / `cat.function(...)` 查（同一份合同）。
 全量指标码（2752 个）按数据类型分章的导航、命名语法与死码清单见 docs/INDICATORS.md（生成物）。
 
@@ -649,7 +651,7 @@ cp -r "$(python3 -c 'import wmshare; print(wmshare.skill_dir())')" ~/.agents/ski
 
 本指南是 **how-to + 解释层**：会做什么 → 怎么做好。其他层各有其位——
 教程看 [README](../README.md) 与 [examples/](../examples/README.md)（可运行课程），
-接口参考看 [API.md](API.md)（按资产类别分章的 138 个核心接口，生成物），
+接口参考看 [API.md](API.md)（按资产类别分章的 147 个核心接口，生成物），
 AI 用法看 [AI.md](AI.md)。
 
 > 代码块里的输出注释都是**真实运行结果**（2026-10-29，cn 市场，免费档凭证），
@@ -688,9 +690,9 @@ export WMSHARE_CLIENT_ID=<AppId> WMSHARE_CLIENT_SECRET=<API Key>
 
 ### 2.1 双层 API：门面 + 目录
 
-- **门面层** `cli.<命名空间>.<方法>()`：25 个命名空间、138 个核心接口，方法名动宾化可猜
+- **门面层** `cli.<命名空间>.<方法>()`：26 个命名空间、147 个核心接口，方法名动宾化可猜
   （`kline.bars`、`dividend.yield_ttm`、`screener.screen_limit_up`）。
-- **目录层** `cli.call("<域>.<函数名>", ...)`：300 个底层函数按目录合同直调，
+- **目录层** `cli.call("<域>.<函数名>", ...)`：311 个底层函数按目录合同直调，
   参数名以 `cat.function(name)["params"]` 为准。门面未包装的函数经属性直达
   （如 `cli.dividend.index_where_high_yield_5()`）；目录之外的名字显式报错——
   门面不遮蔽目录公开函数（internal 辅助除外），292 个都能直达。
@@ -1267,7 +1269,7 @@ wmshare 取数代码**。优先用 MCP；没有 MCP 时用 skill 或文档上下
 - **目录先行**：指标码与函数可编程检索（`cat.search("中文")`），AI 不需要"背"接口，
   查一下再用；编造的码在发请求前就被 `CatalogError` 拦下。
 - **本地 MCP server**：20 个 task tools 覆盖发现、行情、财务、治理、披露、港美与批量；
-  全部 155 个 friendly API（138 登记 + 17 个组合接口）均可经 `wmshare_call(mode="api")` 兜底
+  全部 164 个 friendly API（147 登记 + 17 个组合接口）均可经 `wmshare_call(mode="api")` 兜底
   （macro 域 11 个接口仅此路径）。输出统一 units/rows/next_action。
 - **skill 随包分发**：单位铁律、意图→接口决策树、坑位清单、错误速查，装进 agent 即生效
   （`wmshare.skill_dir()`）。
@@ -1421,7 +1423,7 @@ python3 -c "import wmshare; print(wmshare.load().metric('\$PE_TTM_LAST'))"
 
 <!-- GENERATED by tools/gen_api_docs.py — do not hand-edit -->
 
-共 **21** 个数据域 · **138** 个核心接口 · **11** 个指标组（指标目录全量 2752 个指标代码）；全量 300 个底层函数见文末折叠附录。核心接口按资产类别分章，每接口一节（输入参数 / 输出字段 / 示例）。
+共 **22** 个数据域 · **147** 个核心接口 · **11** 个指标组（指标目录全量 2752 个指标代码）；全量 311 个底层函数见文末折叠附录。核心接口按资产类别分章，每接口一节（输入参数 / 输出字段 / 示例）。
 
 ## 能力总览
 
@@ -1452,6 +1454,7 @@ python3 -c "import wmshare; print(wmshare.load().metric('\$PE_TTM_LAST'))"
 | `disc.events`（业绩披露事件） | 业绩预告历史、最新业绩预告、业绩快报历史、最新业绩快报、财报预约披露历史… | money=元（预告/快报区间与单期金额）；yoy=小数（0.1467 = 14.67%；SDK 自动由脚本的百分数口径换算）；date=YYYY-MM-DD |
 | `disc.filings`（定期报告清单） | 定期报告列表、最新一条定期报告 | date=YYYY-MM-DD |
 | `disc.notice`（公告） | 单票公告列表、近期公告（全市场）、按类别查公告、指定日期公告、按日期区间查公告… | window=枚举 "7d"\|"1m"\|"3m"\|"6m"\|"1y"\|"3y"\|"5y" 或天数整数；date=YYYY-MM-DD |
+| `disc.pdf_doc`（公告 PDF 全文） | PDF 文档检索、读 PDF 提取正文、读财报 markdown/经营评述、PDF 文档状态、按原文链接定位文档… | date=YYYY-MM-DD；text=预览正文默认前 4000 字（TEXT_PREVIEW），截断时 text_truncated=true |
 | `disc.workout`（契约套利） | 进行中契约套利看板、单票契约套利条款 | price=元（公告对价/现价） |
 | `corp.equity`（股东与股本） | 最新一期十大股东、最新股东户数、主要股东质押明细、公司质押比例、市场整体质押… | ratio=小数（比例字段以各函数 units 声明为准：上游 fmt 部分接口已预换算小数、 部分仍为百分数——2026-10-28 全量审计逐函数核验，勿按字段名臆断）；money=元（持股市值/质押市值/回购金额等，披露源口径）；shares=股（持股数/解禁数量/质押数量）；price=元（交易均价/回购价） |
 | `market.intl`（港美股披露） | 港股CCASS持仓、港股主要股东、港股机构评级、港股盈利预测、港美沽空… | shares=股（持股数/沽空量）；ratio=小数（占比字段已由百分数换算）；price=披露币种（目标价/发行价随市场币种，不做汇率换算） |
@@ -1465,7 +1468,7 @@ python3 -c "import wmshare; print(wmshare.load().metric('\$PE_TTM_LAST'))"
 |---|---|
 | **市场行情** | `market.calendar`（交易日历）, `market.cbond`（可转债）, `market.fund`（场内基金（ETF））, `market.index`（指数）, `market.kline`（行情K线）, `market.margin`（融资融券）, `market.moneyflow`（资金流向）, `market.stocks`（证券与行业基础） |
 | **财务基本面** | `fund.estimates`（盈利预测与研报）, `fund.indicators`（指标层）, `fund.segments`（经营分部）, `fund.statements`（财务报表）, `fund.valuation`（每日估值） |
-| **信息披露** | `disc.bonus`（分红）, `disc.events`（业绩披露事件）, `disc.filings`（定期报告清单）, `disc.notice`（公告）, `disc.workout`（契约套利） |
+| **信息披露** | `disc.bonus`（分红）, `disc.events`（业绩披露事件）, `disc.filings`（定期报告清单）, `disc.notice`（公告）, `disc.pdf_doc`（公告 PDF 全文）, `disc.workout`（契约套利） |
 | **参考数据** | `corp.equity`（股东与股本）, `market.intl`（港美股披露）, `market.macro`（宏观） |
 
 ## 数据目录（离线）
@@ -1507,7 +1510,7 @@ cat.function("bonus.snapshot_yield_ttm")["params"]   # 函数合同：参数/返
 
 **三原则**：① 批次只能同一市场（跨市场混批 SDK 直接报错）；② 容错用批级`on_batch_error="skip"`（跳过失败批继续），**不要**用 `call_batch(on_error="skip")`——它是票级逐票请求，会放大请求数正好制造 429；③ 单批撞 `CALC_LIMIT_EXCEEDED`（算力超限）减小 `batch_size`，遇 429 停止并按消息里的 `codes[done:]` 续跑。
 
-**指标码不是批量 `name`**：`name` 必须是目录函数名（300 个，如 `kline.snapshot`），传 `indicator.get` 会报 CatalogError。一票多码用 `cli.indicator.metrics(sym, codes)`；全市场指标码没有批量入口，需逐票调用（指标取数是按 `(标的, 码)` 寻址，不是按标的切片）。
+**指标码不是批量 `name`**：`name` 必须是目录函数名（311 个，如 `kline.snapshot`），传 `indicator.get` 会报 CatalogError。一票多码用 `cli.indicator.metrics(sym, codes)`；全市场指标码没有批量入口，需逐票调用（指标取数是按 `(标的, 码)` 寻址，不是按标的切片）。
 
 ```python
 codes = [r["symbol"] for r in cli.stocks.list()]      # 全市场代码池（A 股 5,375 家）
@@ -4199,6 +4202,38 @@ cli.notice.has_buyback("600519", window="3m")
 cli.notice.has_reduction("600519", window="3m")
 ```
 
+#### `cli.notice.categories` — 公告类目键列表
+
+公告类目键列表（14 类目，含简繁对照；配合 category_regex / type_regex 参数）。
+
+**输入参数**：无。
+
+**输出**：ARR · 类目键列表（reduction/insider_buy/buyback/equity_incentive/forecast/dividend/risk/mna/contract/pledge/issue/report/suspend/correct）
+
+**示例**
+
+```python
+cli.notice.categories()
+```
+
+#### `cli.notice.category_regex` — 公告类目匹配正则
+
+公告类目键 → 匹配正则（未知键原样透传，可直接传自定义正则）。
+
+**输入参数**
+
+| 参数 | 类型 | 必填 | 默认 | 说明 |
+|---|---|---|---|---|
+| `key` | string | 是 | — | 类目键（见 ``categories()`` 返回），或任意自定义正则 |
+
+**输出**：string · NOTICE_TYPE 匹配正则
+
+**示例**
+
+```python
+cli.notice.category_regex(key="buyback")
+```
+
 ### 定期报告清单（`cli.filings`）
 
 #### `cli.filings.list` — 定期报告列表
@@ -4254,6 +4289,163 @@ cli.filings.list("600519", kind="annual", limit=10)
 
 ```python
 cli.filings.latest("600519", kind="annual")
+```
+
+### 公告 PDF 全文库（`cli.pdf_doc`）
+
+- 写面（submit/ensure 触发抓取任务）未暴露——纯读面；公告口径的薄封装见 `cli.notice.read_text`。短文走 pdftotext 预览，财报走 markdown/经营评述。
+
+#### `cli.pdf_doc.search` — PDF 文档检索
+
+检索 PDF 文档元数据（不含正文；按更新时间降序）。
+
+**输入参数**
+
+| 参数 | 类型 | 必填 | 默认 | 说明 |
+|---|---|---|---|---|
+| `stock_code` | string | 否 | `''` | 6 位裸码（可空=全库） |
+| `title` | string | 否 | `''` | 标题子串 |
+| `announce_date_from` | string | 否 | `''` | 披露日起（YYYY-MM-DD） |
+| `announce_date_to` | string | 否 | `''` | 披露日止（YYYY-MM-DD） |
+| `status` | string | 否 | `''` | ``ready \| pending \| fetched \| failed \| converting`` |
+| `kind` | string | 否 | `''` | 文档类型 |
+| `limit` | integer | 否 | `20` | 条数上限 |
+| `skip` | integer | 否 | `0` | 翻页跳过条数 |
+
+**输出**：ARR · 命中文档元数据行（file_key/status/text_chars/source_url/oss_url/stock_code/announce_date/title/kind/has_markdown，不含正文）
+
+**示例**
+
+```python
+cli.pdf_doc.search(kind="annual", limit=10)
+```
+
+#### `cli.pdf_doc.read_text` — 读 PDF 提取正文
+
+读 PDF 提取正文（前 4000 字预览；纯读，未就绪不入队）。
+
+**输入参数**
+
+| 参数 | 类型 | 必填 | 默认 | 说明 |
+|---|---|---|---|---|
+| `file_key` | string | 否 | `''` | 文档键；与 source_url 至少给一个 |
+| `source_url` | string | 否 | `''` | 原文链接 |
+
+**输出字段**
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `ok` | bool | 是否取到正文 |
+| `status` | string | 文档状态（ready/pending/fetched/failed/converting） |
+| `file_key` | string | 文档键 |
+| `text` | string | 正文（前 4000 字预览） |
+| `text_truncated` | bool | 是否截断 |
+| `source_url` | string | 原文链接 |
+| `error` | string | 错误码（未就绪时） |
+| `note` | string | 说明（未就绪时引导 read_markdown） |
+
+**示例**
+
+```python
+cli.pdf_doc.read_text()
+```
+
+#### `cli.pdf_doc.read_markdown` — 读财报 markdown/经营评述
+
+读财报 markdown 挂接 / 经营评述。
+
+**输入参数**
+
+| 参数 | 类型 | 必填 | 默认 | 说明 |
+|---|---|---|---|---|
+| `file_key` | string | 否 | `''` | 文档键；与 source_url/stock_code 至少给一个 |
+| `source_url` | string | 否 | `''` | 原文链接 |
+| `stock_code` | string | 否 | `''` | 6 位裸码（定期报告传 stock_code+period 优先命中经营评述） |
+| `period` | string | 否 | `''` | 报告期（如 ``2024``） |
+
+**输出字段**
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `ok` | bool | 是否命中 |
+| `file_key` | string | 文档键 |
+| `status` | string | 文档状态 |
+| `source_url` | string | 原文链接 |
+| `kind` | string | 文档类型 |
+| `error` | string | 错误码（markdown_not_linked 等） |
+| `note` | string | 说明（命中经营评述/markdown 挂接状态） |
+| `artifacts` | object | 产物挂接（pdf_oss/markdown cache_id） |
+
+**示例**
+
+```python
+cli.pdf_doc.read_markdown()
+```
+
+#### `cli.pdf_doc.status` — PDF 文档状态
+
+文档转换状态（status/convert_policy/kind/has_markdown/task）。
+
+**输入参数**
+
+| 参数 | 类型 | 必填 | 默认 | 说明 |
+|---|---|---|---|---|
+| `file_key` | string | 否 | `''` | 文档键；与 source_url 至少给一个 |
+| `source_url` | string | 否 | `''` | 原文链接 |
+
+**输出字段**
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `file_key` | string | 文档键 |
+| `status` | string | 状态（ready/pending/fetched/failed/converting/missing） |
+| `convert_policy` | string | 转换策略（text/bytes_only/link_markdown） |
+| `kind` | string | 文档类型 |
+| `has_markdown` | bool | 是否已挂接 markdown |
+| `task` | object | 转换任务信息 |
+| `source_url` | string | 原文链接 |
+| `oss_url` | string | PDF 存储链接 |
+
+**示例**
+
+```python
+cli.pdf_doc.status()
+```
+
+#### `cli.pdf_doc.find_by_url` — 按原文链接定位文档
+
+按原文链接定位文档行（无则 None）。
+
+**输入参数**
+
+| 参数 | 类型 | 必填 | 默认 | 说明 |
+|---|---|---|---|---|
+| `url` | string | 是 | — | 公告 PDF 原文链接 |
+
+**输出**：MAP · 原始文档行或 nil
+
+**示例**
+
+```python
+cli.pdf_doc.find_by_url(url="<公告行 url 字段>")
+```
+
+#### `cli.pdf_doc.find_by_key` — 按文档键定位文档
+
+按文档键定位文档行（无则 None）。
+
+**输入参数**
+
+| 参数 | 类型 | 必填 | 默认 | 说明 |
+|---|---|---|---|---|
+| `file_key` | string | 是 | — | 文档键（``search`` 返回行的 file_key 字段） |
+
+**输出**：MAP · 原始文档行或 nil
+
+**示例**
+
+```python
+cli.pdf_doc.find_by_key(file_key="<search() 行 file_key 字段>")
 ```
 
 ### 业绩预告 / 快报 / 披露日历（`cli.forecast`）
@@ -5010,6 +5202,33 @@ cli.equity.query_buyback_plan("600519", limit=10)
 
 ```python
 cli.equity.query_buyback_detail("600519")
+```
+
+#### `cli.equity.buyback_snapshot` — 回购六口径快照
+
+回购六口径快照（exec/plan × 近1年/累计 × 含/不含注销式）。
+
+**输入参数**
+
+| 参数 | 类型 | 必填 | 默认 | 说明 |
+|---|---|---|---|---|
+| `symbol` | string | 是 | — | 6 位 A 股码 / 港股 5 位码 |
+
+**输出字段**
+
+| 字段 | 类型 | 单位/换算 | 守护范围 | 说明 |
+|---|---|---|---|---|
+| `exec_1y` | float | — | [0, 1e+12] | 近1年已实施回购金额（元，滚动365天事件窗） |
+| `exec_total` | float | — | [0, 1e+12] | 累计已实施回购金额（元） |
+| `plan_1y` | float | — | [0, 1e+12] | 近1年公告回购计划金额上限（元） |
+| `plan_total` | float | — | [0, 1e+12] | 累计公告回购计划金额上限（元） |
+| `plan_1y_cancel` | float | — | [0, 1e+12] | 近1年注销式回购计划金额（元，仅A股） |
+| `plan_total_cancel` | float | — | [0, 1e+12] | 累计注销式回购计划金额（元，仅A股） |
+
+**示例**
+
+```python
+cli.equity.buyback_snapshot("600519")
 ```
 
 #### `cli.equity.query_reorg` — 并购重组
@@ -6163,7 +6382,7 @@ A 股交易日历——区间交易日、是否开市、之后 N 个交易日。
 
 #### 公告（`disc.notice`）
 
-**性质**：原始数据 · **版本**：1.1.1  
+**性质**：原始数据 · **版本**：1.2.0  
 公告检索（单票/日期/类别/区间）与公告信号（回购/减持/增持/股权激励证据行）。 公告标题与元数据为资讯源直采；signal_* 为窗口判定的薄计算（证据行仍为公告原值）。
 数据来源：披露公告库(含港股)。
 单位口径：window=枚举 "7d"\|"1m"\|"3m"\|"6m"\|"1y"\|"3y"\|"5y" 或天数整数；date=YYYY-MM-DD。
@@ -6189,6 +6408,8 @@ A 股交易日历——区间交易日、是否开市、之后 N 个交易日。
 | `notice.signal_evidence` | 信号证据（规范化） | 指标 | L1 | `sym:string` · `type_regex:string` · `window:string` · `lim:int`（签名） | ARR · 规范化公告 | — | 例：`cli.call("notice.signal_evidence", sym='600519', type_regex='减持', window='1m', lim=3)`
 | `notice.query_symbols_on_date` | 指定日期出现公告的代码列表 | 原始数据 | L1 | `date:string` · `type_regex:string`（签名） | ARR · 证券代码 | — | 例：`cli.call("notice.query_symbols_on_date", date='2026-07-01', type_regex='')`
 | `notice.query_stats_recent` | 近期公告类别计数 | 原始数据 | L1 | `window:string`（签名） | MAP · 类别→条数 | — | 例：`cli.call("notice.query_stats_recent", window='7d')`
+| `notice.type_keys` | 公告类目键列表 | 原始数据 | L1 | — | ARR · 类目键列表（reduction/insider_buy/buyback/equity_incentive/forecast/dividend/risk/mna/contract/pledge/issue/report/suspend/correct） | — | 例：`cli.call("notice.type_keys")`
+| `notice.type_regex` | 公告类目匹配正则 | 原始数据 | L1 | `key:string` — 类目键；未知键原样透传（可直接传自定义正则） | string · NOTICE_TYPE 匹配正则 | — | 例：`cli.call("notice.type_regex", key='buyback')`
 | `notice.read_text` | 公告正文读取（纯读，未就绪不入队） | 原始数据 | L1 | `sym:string` — 6 位裸码/港股 5 位 · `date:string` — YYYY-MM-DD；传 url 时可空串 · `url:string?` — PDF链接；空则由 sym+date 定位 · `full:bool?` — false=前4000字预览，true=全量 | MAP · 正文与状态 | — | 例：`cli.call("notice.read_text", sym='600519', date='2026-03-15', url='', full=False)`
 | `notice.fmt_maps` | 公告行规范化 | 原始数据 | L1 | `rows:array`（签名） | ARR · 规范化公告 | — |
 | `notice.fmt_lines` | 公告文本行 | 原始数据 | L1 | `rows:array`（签名） | ARR · 文本行 | — |
@@ -6196,6 +6417,26 @@ A 股交易日历——区间交易日、是否开市、之后 N 个交易日。
 | `notice.fmt_count_by_type` | 按类型计数 | 原始数据 | L1 | `rows:array`（签名） | MAP · 类型→条数 | — |
 
 > 另有 4 个索引/内部辅助函数未列入本文档，仍可经 `cli.call(...)` 调用。
+
+#### 公告 PDF 全文（`disc.pdf_doc`）
+
+**性质**：原始数据 · **版本**：1.0.0  
+公告 PDF 正文库——按票/日期/标题/状态检索、按 file_key/原文链接定位、 读提取正文（pdftotext 预览）与财报 markdown/经营评述、查转换任务状态。 notice.read_text 是公告口径的薄封装，本域提供库级检索与多形态读面。
+数据来源：披露公告原文(平台管道)。
+单位口径：date=YYYY-MM-DD；text=预览正文默认前 4000 字（TEXT_PREVIEW），截断时 text_truncated=true。
+- 短文走 pdftotext 正文（read_text）；财报类走 report.md markdown 与经营评述 （read_markdown）；未就绪时 read_text 不入队（纯读）
+- submit/ensure 为写面（触发抓取任务，需 ops:pipeline 能力），默认 internal 不进公开门面； 无能力时 submit 返回 submit_unavailable 软失败
+
+| 函数 | 中文 | 性质 | 层 | 参数 | 返回 | 单位与守护 |
+|---|---|---|---|---|---|---|
+| `pdf_doc.search` | PDF 文档检索 | 原始数据 | L0 | `opts:object?` — {stock_code/symbol, title, announce_date_from/to, status, kind, limit, skip} | ARR · 命中文档元数据行（file_key/status/text_chars/source_url/oss_url/stock_code/announce_date/title/kind/has_markdown，不含正文） | 量级界 `text_chars` | 例：`cli.call("pdf_doc.search", opts={'stock_code': '600519', 'limit': 10})`
+| `pdf_doc.read_text` | 读 PDF 提取正文 | 原始数据 | L0 | `file_key:string` — 文档键；与 source_url 至少给一个 · `source_url:string?` — 原文链接 | MAP · 正文与状态 | — | 例：`cli.call("pdf_doc.read_text", file_key='xxx', source_url='')`
+| `pdf_doc.read_markdown` | 读财报 markdown/经营评述 | 原始数据 | L0 | `file_key:string?` — 文档键；与 source_url/stock_code 至少给一个 · `source_url:string?` — 原文链接 · `stock_code:string?` — 6 位裸码（定期报告定位用） · `period:string?` — 报告期（如 2024） | MAP · markdown 挂接或经营评述正文 | — | 例：`cli.call("pdf_doc.read_markdown", file_key='', source_url='', stock_code='600519', period='2024')`
+| `pdf_doc.status` | PDF 文档状态 | 原始数据 | L0 | `file_key:string` — 文档键；与 source_url 至少给一个 · `source_url:string?` — 原文链接 | MAP · 转换状态 | — | 例：`cli.call("pdf_doc.status", file_key='xxx', source_url='')`
+| `pdf_doc.find_by_url` | 按原文链接定位文档 | 原始数据 | L0 | `url:string` | MAP · 原始文档行或 nil | — | 例：`cli.call("pdf_doc.find_by_url", url='https://...')`
+| `pdf_doc.find_by_key` | 按文档键定位文档 | 原始数据 | L0 | `file_key:string` | MAP · 原始文档行或 nil | — | 例：`cli.call("pdf_doc.find_by_key", file_key='xxx')`
+| `pdf_doc.submit` | 提交 PDF 抓取任务 | 原始数据 | L1 | `source_url:any` · `meta:any`（签名） | MAP · {ok, item, note/via}（需 ops:pipeline 能力） | — | 例：`cli.call("pdf_doc.submit", source_url='https://', meta={})`
+| `pdf_doc.ensure` | 确保正文就绪（查即提交） | 原始数据 | L1 | `stock_code:any` · `title:any` · `announce_date:any` · `source_url:any` · `meta:any`（签名） | MAP · 正文行（就绪即返回，未就绪挂任务） | — | 例：`cli.call("pdf_doc.ensure", stock_code='600519', title='年报', announce_date='', source_url='', meta={})`
 
 #### 契约套利（`disc.workout`）
 
@@ -6216,7 +6457,7 @@ A 股交易日历——区间交易日、是否开市、之后 N 个交易日。
 
 #### 股东与股本（`corp.equity`）
 
-**性质**：原始数据 · **版本**：2.1.1  
+**性质**：原始数据 · **版本**：2.2.0  
 股东治理与股本全景——十大股东、股东户数、股权质押（明细+比例+市场/行业/ 机构分布）、限售解禁、机构持股（明细/占比/沪港通/国家队）、高管名册与增减持、股本结构、 回购（方案+执行）、并购重组、关联交易、一致行动人、对外担保、诉讼处罚。披露原值直采， 比例字段统一换算为小数（0.0522 = 5.22%）。
 数据来源：交易所披露、平台数据服务。
 单位口径：ratio=小数（比例字段以各函数 units 声明为准：上游 fmt 部分接口已预换算小数、 部分仍为百分数——2026-10-28 全量审计逐函数核验，勿按字段名臆断）；money=元（持股市值/质押市值/回购金额等，披露源口径）；shares=股（持股数/解禁数量/质押数量）；price=元（交易均价/回购价）。
@@ -6242,6 +6483,7 @@ A 股交易日历——区间交易日、是否开市、之后 N 个交易日。
 | `equity.query_release` | 限售解禁日程 | 原始数据 | L0 | `sym:string` · `limit:int`（签名） | ARR · 解禁行；字段 secucode:string（证券代码） / lift_date:string（解禁日期） / lift_num:float?（解禁数量（股）） / total_shares_ratio:float?（解禁占总股本比（小数）） / unlimited_ratio:float?（解禁占无限售流通股比（小数）） / lift_type:string?（解禁类型） | `total_shares_ratio`:百分数→小数；`unlimited_ratio`:百分数→小数；量级界 `total_shares_ratio`、`unlimited_ratio` | 例：`cli.call("equity.query_release", sym='600900', limit=40)`
 | `equity.query_buyback_plan` | 回购方案全览 | 原始数据 | L0 | `sym:string` · `limit:int`（签名） | ARR · 回购方案行；字段 progress:string?（回购进度） / price_cap:float?（回购价格上限） / amount_limit:float?（回购金额上限） / start_date:string?（开始日期） | — | 例：`cli.call("equity.query_buyback_plan", sym='688496', limit=40)`
 | `equity.query_buyback_detail` | 回购执行明细 | 原始数据 | L0 | `sym:string`（签名） | MAP · 回购明细；字段 repurchase_shares:float?（回购数量） / repurchase_amount:float?（回购金额） / notice_date:string?（公告日期） | — | 例：`cli.call("equity.query_buyback_detail", sym='300347')`
+| `buyback.snapshot` | 回购六口径快照 | 原始数据 | L0 | `sym:string` — 6 位裸码；港股 5 位需 market=hk 客户端（plan_* 为 nil，仅 exec_* 明细口径） | MAP · 回购六口径（元/原币；无数据源字段 nil，不伪造 0） | 量级界 `exec_1y`、`exec_total`、`plan_1y`、`plan_total`、`plan_1y_cancel`、`plan_total_cancel` | 例：`cli.call("buyback.snapshot", sym='600519')`
 | `equity.query_reorg` | 并购重组 | 原始数据 | L0 | `sym:string` · `limit:int`（签名） | ARR · 重组行；字段 security_code:string（证券代码） / security_name:string（证券简称） / transferee:string?（受让方） / transferor:string?（转让方） / transfer_ratio:float?（转让比例（小数）） / object_type:string?（标的类型） / deal_amount:float?（交易金额（元）） / progress:string?（进度） / transfer_way:string?（转让方式） / list_notice_date:string?（权益变动披露日） / notice_date:string?（公告日） / ccy:string?（币种） | `transfer_ratio`:百分数→小数；量级界 `transfer_ratio` | 例：`cli.call("equity.query_reorg", sym='603363', limit=40)`
 | `equity.query_related_trade` | 关联交易 | 原始数据 | L0 | `sym:string` · `limit:int`（签名） | ARR · 关联交易行；字段 related_party:string（交易方） / trade_amt:float?（交易金额） / notice_date:string?（公告日期） | — | 例：`cli.call("equity.query_related_trade", sym='600900', limit=40)`
 | `equity.query_concert` | 一致行动人 | 原始数据 | L0 | `sym:string` · `limit:int`（签名） | ARR · 一致行动人行；字段 holder_names:string（股东名称(组)） / hold_ratio:float?（持股比例(百分数)） | `hold_ratio`:百分数→小数；量级界 `hold_ratio` | 例：`cli.call("equity.query_concert", sym='688211', limit=40)`

@@ -476,7 +476,21 @@ class DemoClient:
             cpca_top=lambda manufacturer, field: 45.5113,
             phone_share=lambda brand, field="share": 11,
         )
-        self.notice = SimpleNamespace(list=self._notice_list)
+        self.notice = SimpleNamespace(
+            list=self._notice_list,
+            categories=self._notice_categories,
+            category_regex=self._notice_category_regex,
+        )
+        # 批次1 暴露层：equity/pdf_doc 快照未拍摄 → 显式 demo_unsupported（签名同形）
+        self.equity = SimpleNamespace(buyback_snapshot=self._equity_buyback_snapshot)
+        self.pdf_doc = SimpleNamespace(
+            search=self._pdf_search,
+            read_text=self._pdf_read_text,
+            read_markdown=self._pdf_read_markdown,
+            status=self._pdf_status,
+            find_by_url=self._pdf_find_by_url,
+            find_by_key=self._pdf_find_by_key,
+        )
         self.dividend = SimpleNamespace(
             last=self._dividend_last,
             yield_ttm=self._dividend_yield,
@@ -541,6 +555,56 @@ class DemoClient:
         from wmshare.client import estimate_cost
 
         return estimate_cost(name, params)
+
+    # ---- 批次1 暴露层：公告类目罐头（静态事实表，与上游 notice.CATEGORIES 同源）----
+
+    _NOTICE_CATEGORY_REGEX = {
+        "reduction": "减持|減持",
+        "insider_buy": "增持|增持",
+        "buyback": "回购|購回",
+        "equity_incentive": "股权激励|股權激勵",
+        "forecast": "业绩预告|业绩快报|業績|中期業績|末期業績|季度業績",
+        "dividend": "分配|派息|股息",
+        "risk": "处罚|诉讼|风险|ST|退市|异常波动|问询|處罰|訴訟|風險",
+        "mna": "重组|并购|收购|要约|重組|併購|收購|要約",
+        "contract": "重大合同|重大合約",
+        "pledge": "质押|冻结|質押|凍結",
+        "issue": "增发|配售|供股",
+        "report": "报告全文|報告全文|年報|年报|季报|季報",
+        "suspend": "停牌|复牌|停牌|復牌",
+        "correct": "更正|延期披露|更正|延期披露",
+    }
+
+    def _notice_categories(self) -> list:
+        return list(self._NOTICE_CATEGORY_REGEX)
+
+    def _notice_category_regex(self, key: str) -> str:
+        return str(self._NOTICE_CATEGORY_REGEX.get(key, key))
+
+    def _equity_buyback_snapshot(self, symbol: str) -> Any:
+        raise _unsupported("equity.buyback_snapshot", "底层函数")
+
+    def _pdf_search(self, stock_code: str = "", title: str = "",
+                    announce_date_from: str = "", announce_date_to: str = "",
+                    status: str = "", kind: str = "", limit: int = 20,
+                    skip: int = 0, _raw: bool = False) -> Any:
+        raise _unsupported("pdf_doc.search", "底层函数")
+
+    def _pdf_read_text(self, file_key: str = "", source_url: str = "") -> Any:
+        raise _unsupported("pdf_doc.read_text", "底层函数")
+
+    def _pdf_read_markdown(self, file_key: str = "", source_url: str = "",
+                           stock_code: str = "", period: str = "") -> Any:
+        raise _unsupported("pdf_doc.read_markdown", "底层函数")
+
+    def _pdf_status(self, file_key: str = "", source_url: str = "") -> Any:
+        raise _unsupported("pdf_doc.status", "底层函数")
+
+    def _pdf_find_by_url(self, url: str) -> Any:
+        raise _unsupported("pdf_doc.find_by_url", "底层函数")
+
+    def _pdf_find_by_key(self, file_key: str) -> Any:
+        raise _unsupported("pdf_doc.find_by_key", "底层函数")
 
     def _df_asc(self, rows: Any, key: str = "date") -> Any:
         """2.0 同形：demo 行列表也按升序 + DataFrame 输出（与 live 门面同形同向）。"""

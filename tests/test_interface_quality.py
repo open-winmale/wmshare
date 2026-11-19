@@ -69,7 +69,7 @@ def _core_blocks() -> list[tuple[str, str, str]]:
     blocks = []
     for part in re.split(r"\n#### ", "\n" + text)[1:]:
         head = part.splitlines()[0]
-        m = re.match(r"`cli\.([a-z][a-z0-9]*)\.([a-z][a-z0-9_]*)`", head)
+        m = re.match(r"`cli\.([a-z][a-z0-9_]*)\.([a-z][a-z0-9_]*)`", head)  # ns 允许下划线（pdf_doc）
         if m:
             blocks.append((m.group(1), m.group(2), part))
     return blocks

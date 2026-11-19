@@ -5819,6 +5819,81 @@
         }
       }
     },
+    "/notice/categories": {
+      "post": {
+        "operationId": "notice_categories",
+        "summary": "公告类目键列表（14 类目，含简繁对照；配合 category_regex / type_regex 参数）。",
+        "description": "返回注解用 Any：裸 ``list`` 在类体内会被同名方法 ``list`` 遮蔽。、底层目录函数 `notice.type_keys`。SDK 调用：`cli.notice.categories(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "信息披露"
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notice/category_regex": {
+      "post": {
+        "operationId": "notice_category_regex",
+        "summary": "公告类目键 → 匹配正则（未知键原样透传，可直接传自定义正则）。",
+        "description": "底层目录函数 `notice.type_regex`。SDK 调用：`cli.notice.category_regex(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "信息披露"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "key": {
+                    "type": "string",
+                    "description": "类目键（见 ``categories()`` 返回），或任意自定义正则"
+                  }
+                },
+                "required": [
+                  "key"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/filings/list": {
       "post": {
         "operationId": "filings_list",
@@ -5951,6 +6026,399 @@
                       "description": "链接"
                     }
                   }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pdf_doc/search": {
+      "post": {
+        "operationId": "pdf_doc_search",
+        "summary": "检索 PDF 文档元数据（不含正文；按更新时间降序）。",
+        "description": "底层目录函数 `pdf_doc.search`。SDK 调用：`cli.pdf_doc.search(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "信息披露"
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "stock_code": {
+                    "type": "string",
+                    "description": "6 位裸码（可空=全库）"
+                  },
+                  "title": {
+                    "type": "string",
+                    "description": "标题子串"
+                  },
+                  "announce_date_from": {
+                    "type": "string",
+                    "description": "披露日起（YYYY-MM-DD）"
+                  },
+                  "announce_date_to": {
+                    "type": "string",
+                    "description": "披露日止（YYYY-MM-DD）"
+                  },
+                  "status": {
+                    "type": "string",
+                    "description": "``ready | pending | fetched | failed | converting``"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "description": "文档类型"
+                  },
+                  "limit": {
+                    "type": "integer"
+                  },
+                  "skip": {
+                    "type": "integer"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "text_chars": [
+              0,
+              10000000.0
+            ]
+          }
+        }
+      }
+    },
+    "/pdf_doc/read_text": {
+      "post": {
+        "operationId": "pdf_doc_read_text",
+        "summary": "读 PDF 提取正文（前 4000 字预览；纯读，未就绪不入队）。",
+        "description": ":returns: MAP · ok/status/text/text_truncated/file_key/source_url、（未就绪含 error/note，note 引导改走 read_markdown）、底层目录函数 `pdf_doc.read_text`。SDK 调用：`cli.pdf_doc.read_text(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "信息披露"
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file_key": {
+                    "type": "string",
+                    "description": "文档键；与 source_url 至少给一个"
+                  },
+                  "source_url": {
+                    "type": "string"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "正文读取结果",
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "description": "是否取到正文"
+                    },
+                    "status": {
+                      "type": "string",
+                      "description": "文档状态（ready/pending/fetched/failed/converting）"
+                    },
+                    "file_key": {
+                      "type": "string",
+                      "description": "文档键"
+                    },
+                    "text": {
+                      "type": "string",
+                      "description": "正文（前 4000 字预览）"
+                    },
+                    "text_truncated": {
+                      "type": "boolean",
+                      "description": "是否截断"
+                    },
+                    "source_url": {
+                      "type": "string",
+                      "description": "原文链接"
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "错误码（未就绪时）"
+                    },
+                    "note": {
+                      "type": "string",
+                      "description": "说明（未就绪时引导 read_markdown）"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pdf_doc/read_markdown": {
+      "post": {
+        "operationId": "pdf_doc_read_markdown",
+        "summary": "读财报 markdown 挂接 / 经营评述。",
+        "description": "底层目录函数 `pdf_doc.read_markdown`。SDK 调用：`cli.pdf_doc.read_markdown(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "信息披露"
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file_key": {
+                    "type": "string",
+                    "description": "文档键；与 source_url/stock_code 至少给一个"
+                  },
+                  "source_url": {
+                    "type": "string",
+                    "description": "原文链接"
+                  },
+                  "stock_code": {
+                    "type": "string",
+                    "description": "6 位裸码（定期报告传 stock_code+period 优先命中经营评述）"
+                  },
+                  "period": {
+                    "type": "string",
+                    "description": "报告期（如 ``2024``）"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "markdown 读取结果",
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "description": "是否命中"
+                    },
+                    "file_key": {
+                      "type": "string",
+                      "description": "文档键"
+                    },
+                    "status": {
+                      "type": "string",
+                      "description": "文档状态"
+                    },
+                    "source_url": {
+                      "type": "string",
+                      "description": "原文链接"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "description": "文档类型"
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "错误码（markdown_not_linked 等）"
+                    },
+                    "note": {
+                      "type": "string",
+                      "description": "说明（命中经营评述/markdown 挂接状态）"
+                    },
+                    "artifacts": {
+                      "description": "产物挂接（pdf_oss/markdown cache_id）"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pdf_doc/status": {
+      "post": {
+        "operationId": "pdf_doc_status",
+        "summary": "文档转换状态（status/convert_policy/kind/has_markdown/task）。",
+        "description": "底层目录函数 `pdf_doc.status`。SDK 调用：`cli.pdf_doc.status(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "信息披露"
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file_key": {
+                    "type": "string",
+                    "description": "文档键；与 source_url 至少给一个"
+                  },
+                  "source_url": {
+                    "type": "string"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "文档状态",
+                  "type": "object",
+                  "properties": {
+                    "file_key": {
+                      "type": "string",
+                      "description": "文档键"
+                    },
+                    "status": {
+                      "type": "string",
+                      "description": "状态（ready/pending/fetched/failed/converting/missing）"
+                    },
+                    "convert_policy": {
+                      "type": "string",
+                      "description": "转换策略（text/bytes_only/link_markdown）"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "description": "文档类型"
+                    },
+                    "has_markdown": {
+                      "type": "boolean",
+                      "description": "是否已挂接 markdown"
+                    },
+                    "task": {
+                      "description": "转换任务信息"
+                    },
+                    "source_url": {
+                      "type": "string",
+                      "description": "原文链接"
+                    },
+                    "oss_url": {
+                      "type": "string",
+                      "description": "PDF 存储链接"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pdf_doc/find_by_url": {
+      "post": {
+        "operationId": "pdf_doc_find_by_url",
+        "summary": "按原文链接定位文档行（无则 None）。",
+        "description": "底层目录函数 `pdf_doc.find_by_url`。SDK 调用：`cli.pdf_doc.find_by_url(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "信息披露"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "description": "公告 PDF 原文链接"
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pdf_doc/find_by_key": {
+      "post": {
+        "operationId": "pdf_doc_find_by_key",
+        "summary": "按文档键定位文档行（无则 None）。",
+        "description": "底层目录函数 `pdf_doc.find_by_key`。SDK 调用：`cli.pdf_doc.find_by_key(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "信息披露"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file_key": {
+                    "type": "string",
+                    "description": "文档键（``search`` 返回行的 file_key 字段）"
+                  }
+                },
+                "required": [
+                  "file_key"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
                 }
               }
             }
@@ -8295,6 +8763,102 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/equity/buyback_snapshot": {
+      "post": {
+        "operationId": "equity_buyback_snapshot",
+        "summary": "回购六口径快照（exec/plan × 近1年/累计 × 含/不含注销式）。",
+        "description": ":returns: MAP · 元/原币；无数据源字段为 None（不伪造 0）；、A股 plan_*/cancel_* 齐全，港股仅 exec_*（明细逐日精确加总，原币直加不换汇率）、底层目录函数 `buyback.snapshot`。SDK 调用：`cli.equity.buyback_snapshot(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "参考数据"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "symbol": {
+                    "type": "string",
+                    "description": "6 位 A 股码 / 港股 5 位码"
+                  }
+                },
+                "required": [
+                  "symbol"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "回购六口径快照",
+                  "type": "object",
+                  "properties": {
+                    "exec_1y": {
+                      "type": "number",
+                      "description": "近1年已实施回购金额（元，滚动365天事件窗）"
+                    },
+                    "exec_total": {
+                      "type": "number",
+                      "description": "累计已实施回购金额（元）"
+                    },
+                    "plan_1y": {
+                      "type": "number",
+                      "description": "近1年公告回购计划金额上限（元）"
+                    },
+                    "plan_total": {
+                      "type": "number",
+                      "description": "累计公告回购计划金额上限（元）"
+                    },
+                    "plan_1y_cancel": {
+                      "type": "number",
+                      "description": "近1年注销式回购计划金额（元，仅A股）"
+                    },
+                    "plan_total_cancel": {
+                      "type": "number",
+                      "description": "累计注销式回购计划金额（元，仅A股）"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "exec_1y": [
+              0,
+              1000000000000.0
+            ],
+            "exec_total": [
+              0,
+              1000000000000.0
+            ],
+            "plan_1y": [
+              0,
+              1000000000000.0
+            ],
+            "plan_total": [
+              0,
+              1000000000000.0
+            ],
+            "plan_1y_cancel": [
+              0,
+              1000000000000.0
+            ],
+            "plan_total_cancel": [
+              0,
+              1000000000000.0
+            ]
           }
         }
       }

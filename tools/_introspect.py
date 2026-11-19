@@ -41,6 +41,10 @@ EXAMPLE_VALUES = {
 METHOD_EXAMPLE_VALUES = {
     # 2.0 新面（fut_code 必填缺表会落 … 占位并打红示例执行测试）
     ("futures", "get"): {"fut_code": '"RB.SHF"', "field": '"close"'},
+    # 批次1 暴露层：类目键真实示例；PDF 定位参数指向取值来源
+    ("notice", "category_regex"): {"key": '"buyback"'},
+    ("pdf_doc", "find_by_url"): {"url": '"<公告行 url 字段>"'},
+    ("pdf_doc", "find_by_key"): {"file_key": '"<search() 行 file_key 字段>"'},
     ("futures", "snapshot"): {"fut_code": '"RB.SHF"'},
     ("calendar", "is_open"): {"date": '"2026-01-05"'},
     ("calendar", "next"): {"date": '"2026-01-30"', "n": "3"},

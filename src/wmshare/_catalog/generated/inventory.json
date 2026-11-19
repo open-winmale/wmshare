@@ -1,9 +1,13 @@
 {
  "schema_version": 2,
- "upstream_rev": "db8752ef",
+ "upstream_rev": "3ec77f3d",
  "domains": {
   "bonus": {
    "entry": "sys/bonus/init.xs",
+   "exports": []
+  },
+  "buyback": {
+   "entry": "sys/buyback/init.xs",
    "exports": []
   },
   "calendar": {
@@ -77,6 +81,10 @@
    "entry": "sys/notice/init.xs",
    "exports": []
   },
+  "pdf_doc": {
+   "entry": "sys/pdf_doc/init.xs",
+   "exports": []
+  },
   "rptdom": {
    "entry": "sys/rptdom/init.xs",
    "exports": []
@@ -100,6 +108,7 @@
  },
  "preloaded_libs": [
   "bonus",
+  "buyback",
   "equity",
   "estimates",
   "filings",
@@ -110,10 +119,11 @@
   "margin",
   "moneyflow",
   "notice",
+  "pdf_doc",
   "segments",
   "valuation"
  ],
- "function_count": 306,
+ "function_count": 317,
  "functions": [
   {
    "name": "bonus.dps_rpt",
@@ -1049,6 +1059,20 @@
    "returns": "float",
    "returns_shape": null,
    "min_args": null,
+   "params": [
+    {
+     "name": "sym",
+     "type": "string"
+    }
+   ]
+  },
+  {
+   "name": "buyback.snapshot",
+   "cn": "回购六口径快照",
+   "example": "buyback.snapshot(\"600519\")",
+   "returns": "MAP · 回购六口径（exec/plan × 近1年/累计 × 含/不含注销式，元）",
+   "returns_shape": null,
+   "min_args": 1,
    "params": [
     {
      "name": "sym",
@@ -8762,6 +8786,181 @@
     {
      "name": "window",
      "type": "string"
+    }
+   ]
+  },
+  {
+   "name": "notice.type_keys",
+   "cn": "公告类目键列表",
+   "example": "notice.type_keys()",
+   "returns": "ARR · 类目键列表",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": []
+  },
+  {
+   "name": "notice.type_regex",
+   "cn": "公告类目正则",
+   "example": "notice.type_regex(\"buyback\")",
+   "returns": "string · 类目匹配正则（未知键原样透传）",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "key",
+     "type": "string"
+    }
+   ]
+  },
+  {
+   "name": "pdf_doc.ensure",
+   "cn": "确保正文就绪（查即提交）",
+   "example": "pdf_doc.ensure(\"600519\", \"年报\", \"\", \"\", {})",
+   "returns": "MAP · 正文行（就绪即返回，未就绪挂任务）",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": [
+    {
+     "name": "stock_code",
+     "type": "any"
+    },
+    {
+     "name": "title",
+     "type": "any"
+    },
+    {
+     "name": "announce_date",
+     "type": "any"
+    },
+    {
+     "name": "source_url",
+     "type": "any"
+    },
+    {
+     "name": "meta",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "pdf_doc.find_by_key",
+   "cn": "按 file_key 找 PDF 文档",
+   "example": "pdf_doc.find_by_key(\"xxx\")",
+   "returns": "MAP · 文档行或 nil",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "file_key",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "pdf_doc.find_by_url",
+   "cn": "按原文链接找 PDF 文档",
+   "example": "pdf_doc.find_by_url(\"https://\")",
+   "returns": "MAP · 文档行或 nil",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "url",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "pdf_doc.read_markdown",
+   "cn": "读财报 markdown/经营评述",
+   "example": "pdf_doc.read_markdown(\"\", \"\", \"600519\", \"2024\")",
+   "returns": "MAP · markdown 正文或经营评述挂接",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": [
+    {
+     "name": "file_key",
+     "type": "any"
+    },
+    {
+     "name": "source_url",
+     "type": "any"
+    },
+    {
+     "name": "stock_code",
+     "type": "any"
+    },
+    {
+     "name": "period",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "pdf_doc.read_text",
+   "cn": "读 PDF 提取正文",
+   "example": "pdf_doc.read_text(\"xxx\", \"\")",
+   "returns": "MAP · {ok, status, file_key, text, text_truncated, source_url}",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "file_key",
+     "type": "any"
+    },
+    {
+     "name": "source_url",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "pdf_doc.search",
+   "cn": "PDF 文档检索",
+   "example": "pdf_doc.search({\"stock_code\":\"600519\",\"limit\":10})",
+   "returns": "ARR · 命中文档元数据行（不含正文）",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": [
+    {
+     "name": "opts",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "pdf_doc.status",
+   "cn": "PDF 文档状态",
+   "example": "pdf_doc.status(\"xxx\", \"\")",
+   "returns": "MAP · {status, kind, has_markdown, task}",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "file_key",
+     "type": "any"
+    },
+    {
+     "name": "source_url",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "pdf_doc.submit",
+   "cn": "提交 PDF 抓取任务",
+   "example": "pdf_doc.submit(\"https://\", {})",
+   "returns": "MAP · {ok, item, note/via}（需 ops:pipeline 能力）",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "source_url",
+     "type": "any"
+    },
+    {
+     "name": "meta",
+     "type": "any"
     }
    ]
   },

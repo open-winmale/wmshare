@@ -1,5 +1,5 @@
 id: corp.equity
-version: 2.1.1
+version: 2.2.0
 cn: 股东与股本
 kind: raw
 category: reference
@@ -49,6 +49,39 @@ functions:
   - {name: equity.query_release, cn: 限售解禁日程, layer: L0, normalize_with: equity.fmt_release, units: {total_shares_ratio: percent, unlimited_ratio: percent}, ranges: {total_shares_ratio: [0, 1], unlimited_ratio: [0, 1]}}
   - {name: equity.query_buyback_plan, cn: 回购方案全览, layer: L0, normalize_with: equity.fmt_buyback_plan}
   - {name: equity.query_buyback_detail, cn: 回购执行明细, layer: L0, normalize_with: equity.fmt_buyback_detail}
+  - name: buyback.snapshot
+    cn: 回购六口径快照
+    kind: raw
+    layer: L0
+    params:
+      - {name: sym, type: string, required: true, desc: 6 位裸码；港股 5 位需 market=hk 客户端（plan_* 为 nil，仅 exec_* 明细口径）}
+    ranges:
+      exec_1y: [0, 1.0e+12]
+      exec_total: [0, 1.0e+12]
+      plan_1y: [0, 1.0e+12]
+      plan_total: [0, 1.0e+12]
+      plan_1y_cancel: [0, 1.0e+12]
+      plan_total_cancel: [0, 1.0e+12]
+    returns:
+      desc: MAP · 回购六口径（元/原币；无数据源字段 nil，不伪造 0）
+      shape:
+        kind: object
+        cn: 回购六口径快照
+        fields:
+          - {name: exec_1y, type: float64, cn: 近1年已实施回购金额（元，滚动365天事件窗）}
+          - {name: exec_total, type: float64, cn: 累计已实施回购金额（元）}
+          - {name: plan_1y, type: float64, cn: 近1年公告回购计划金额上限（元）}
+          - {name: plan_total, type: float64, cn: 累计公告回购计划金额上限（元）}
+          - {name: plan_1y_cancel, type: float64, cn: 近1年注销式回购计划金额（元，仅A股）}
+          - {name: plan_total_cancel, type: float64, cn: 累计注销式回购计划金额（元，仅A股）}
+    example: 'buyback.snapshot("600519")'
+    notes:
+      - 金额 ranges 为结构性宽界（上界=万亿，拦 ×1e6 以上数量级错位；A股无单票累计回购破千亿），
+        待 live 分布实测后收紧
+      - CN 已实施口径=方案最新累计（近1年按更新日期近似）；HK 为明细逐日精确加总
+        （原币直加不换汇率）；注销式口径仅 CN（方案目的字段仅外部行情源提供）
+      - 依赖 sys/buyback 库（sys/init 预载）；窗口=滚动 365 天事件窗，命名 _1Y 对齐
+        HAS_BUYBACK_*M 惯例，TTM 保留给财报报告期口径
   - {name: equity.query_reorg, cn: 并购重组, layer: L0, normalize_with: equity.fmt_reorg, units: {transfer_ratio: percent}, ranges: {transfer_ratio: [0, 1]}}
   - {name: equity.query_related_trade, cn: 关联交易, layer: L0, normalize_with: equity.fmt_related_trade}
   - {name: equity.query_concert, cn: 一致行动人, layer: L0, normalize_with: equity.fmt_concert, units: {hold_ratio: percent}, ranges: {hold_ratio: [0, 1]}}
