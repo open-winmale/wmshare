@@ -11,6 +11,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.2] - 2026-11-19
+
+### Fixed
+- **英文 Quickstart 计费模型写反**（`docs/QUICKSTART_EN.md`）：原文「Requests are
+  billed **per request**, not per row — which is why batching matters」与 EC 的真实
+  计费口径相反——EC 按服务端物化行计，批量只省请求数与调度、**不省 EC**（见
+  `docs/LIMITS.md` §4）。英文用户照此跑全市场会严重超额。改为双计费口径说明
+  （限流按请求 / 计费按 EC 行），并补 `cli.cost_estimate` 先估后取入口。同文件
+  修正 2,752→2,983 指标码、132→152 核心接口、快照日期、示例输出值与示例数。
+- **`demo_client()` 的同签名承诺不成立**：DemoClient 缺 8 个命名空间
+  （`cbond`/`etf`/`intl`/`segments`/`filings`/`forecast`/`workout`/`estimates`）
+  与多个方法，README 推荐的 `cli.notice.has_buyback(...)` 在 demo 上直接
+  `AttributeError`——等于「假装没有这个能力」。新增 `_UnsupportedNamespace` 垫片：
+  属性存在且可调用，调用即抛 `UsageError(code="demo_unsupported")`，并按 live
+  门面挂真实 `__signature__`；dunder 名仍走 `AttributeError`。
+- **单位口径文档自相矛盾**：README/GUIDE 称「全库返回前做量级校验」，而
+  `docs/INDICATORS.md` 明说只有精选 78 码带守护（函数级 66/317 ≈ 20.8%）。
+  两处表述已对齐；同时把文档示例里 `up_pct` 的 80.3 / 9.5 改为小数
+  （0.803 / 0.095），与 2.0「`*_pct` 一律小数」契约一致——此前测试 FakeClient
+  直接返回百分数，把错误示例焊死成绿色。
+- **`docs/ERRORS.md` 处理范式示例无法运行**：`from wmshare import QuotaError`
+  报 `ImportError`（`QuotaError` 未从包根导出），而 `test_errors_doc_in_sync`
+  只比对「生成器输出 == 文档」，把错行硬编码进生成器后门禁永远绿。已导出
+  `QuotaError`（`LimitError` 子类，纯增量）、示例补 `import time`。
+- **`estimate_cost` 严重低估多票成本**：`valuation.daily_basic` 分支忽略
+  `syms` 票数，200 票时报的是单票价（低估一个数量级以上）。按 2026-11-19 live
+  实测 9 个点（1/5/10/30/50 票 × 跨度 1/18/90 自然日）拟合为
+  `150 + 票数 × (230 + 20 × 跨度)`，全部落点误差 <12%；`syms>1` 时 note
+  明示「EC 按票计价，批量不省算力」。
+- 对外计数与日期漂移：`server.json` 描述 2,752→2,983（MCP Registry 机器可读
+  描述）、`SKILL.md` 5,691→5,375 家与 12→11 次请求、`GUIDE.md` 空参捷径阈值
+  ≥4,000→≥2,000 票与 311→317 函数、README 12→11 次请求、examples 的
+  `wmshare[dataframe]` 死引用（2.0 起 pandas 为核心依赖）、README/examples 的
+  「18 个示例全部支持离线」实际为 3 纯离线 + 14 `--demo` + 1 需凭证。
+
+### Changed
+- **门禁扫描面扩围**：`test_docs_no_stale_counts` 纳入 `QUICKSTART_EN`、
+  `METRIC_ADAPTER`、`examples/README`、`server.json` 并补英文计数 pattern；
+  扩围后立刻抓出 3 处此前漏掉的真实漂移。
+  `test_demo_signatures_cover_live_facade_params` 不再对 demo 缺失方法
+  `continue` 静默跳过（缺失即失败），新增
+  `test_demo_unbacked_calls_raise_demo_unsupported`、
+  `test_quickstart_en_matches_runtime`、`test_pct_example_values_are_decimals`、
+  `test_errors_doc_snippet_imports_resolve` 四条防回归门禁。
+- `docs/PROMOTION.md` 迁出仓库（→ 工作区 `../promo/`）：推广执行手册属方案/流程
+  类文档，`CONTRIBUTING.md` 明确要求不入库。
+- **release 流水线新增前置质量门禁**（`.github/workflows/release.yml`）：
+  job 链改为 `gates → release → publish-pypi`，PyPI 上传前跑与 `ci.yml` 同款的
+  离线门禁（leak / catalog / taxonomy / units / 版本互校 / 许可证 / 守卫覆盖率 /
+  8 个生成物漂移 / mypy / pytest）。此前 release.yml 只做版本互校 + twine check，
+  1.21.0 因此把指向已下线底层函数的门面直接发上 PyPI，次日才出补丁；发布件不可
+  撤回，故门禁必须前置到流水线而非依赖人工记忆。
+
 ## [2.4.1] - 2026-11-19
 
 ### Fixed / Changed
