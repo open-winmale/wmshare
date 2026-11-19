@@ -24,14 +24,14 @@
 
 ## 零凭证先试
 
-装完就能跑，不用注册、不联网（随包内置 2026-10-30 固定快照，非实时数据）：
+装完就能跑，不用注册、不联网（随包内置 2026-11-19 固定快照，非实时数据）：
 
 ```python
 import wmshare
 
 cli = wmshare.demo_client()
-print(f"{cli.dividend.yield_ttm('600519'):.2%}")        # 3.57%
-print(cli.screener.index_breadth_summary()["total"])   # 5686
+print(f"{cli.dividend.yield_ttm('600519'):.2%}")        # 3.56%
+print(cli.screener.index_breadth_summary()["total"])   # 5687
 ```
 
 接真实行情只换一行：`cli = wmshare.Client.from_env()`（凭证配置见下节）。
@@ -133,7 +133,7 @@ for r in res["rows"][:5]:
   （`count`=真实命中数）；涨跌全景/分桶/行业分布/涨跌榜同走服务端预计算索引，毫秒级。
 - **离线目录防编造**：316 个底层函数、150 个核心接口、2,983 个指标码离线可查
   （`cat.search("中文")`），目录之外的名字显式报错。
-- **零凭证离线试跑**：`wmshare.demo_client()`（同签名、不联网，2026-10-30 固定快照；非实时数据）。
+- **零凭证离线试跑**：`wmshare.demo_client()`（同签名、不联网，2026-11-19 固定快照；非实时数据）。
 - **数据守护**：全库单位统一（比率=小数、金额=元、量=股），返回前量级/不变量校验，违例抛 `DataError`。
 
 ## 给 AI / Agent

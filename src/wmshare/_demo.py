@@ -29,9 +29,9 @@ from wmshare.notice_stream import NoticeStreamEvent
 
 _DATA_PATH = Path(__file__).with_name("_demo_data.json")
 _SNAPSHOT_SCHEMA_VERSION = 1
-_AS_OF = "2026-11-17"
-_CATALOG_REV = "490f5f18"
-_SDK_VERSION = "2.0.0"
+_AS_OF = "2026-11-19"
+_CATALOG_REV = "26692375"
+_SDK_VERSION = "2.3.1"
 
 # 对外溯源常量：显式 SNAPSHOT_ 前缀，避免把「拍快照时的 SDK 版本」误当成当前版本。
 # 保留上面的短名供模块内部快照校验使用（不重拍 _demo_data.json、不改哈希合同）。
@@ -329,6 +329,96 @@ def _validate_snapshot(document: Any) -> dict[str, Any]:
             if float(row[field]) <= 0:
                 raise ValueError(f"futures[{fut}].{field} 必须为正")
 
+    # ---- 2.3 新面：回购 / 龙虎榜 / 公告类目 / PDF / 期货映射 ----
+    buyback = _require_mapping(data.get("buyback"), "buyback")
+    if set(buyback) != set(_UNIVERSE):
+        raise ValueError("buyback 必须完整覆盖演示宇宙")
+    for sym, snap in buyback.items():
+        for field, value in _require_mapping(snap, f"buyback[{sym}]").items():
+            if value is None:
+                continue  # 无数据源字段如实为 None（不伪造 0）
+            _check_finite(value, f"buyback[{sym}].{field}")
+            if float(value) < 0:
+                raise ValueError(f"buyback[{sym}].{field} 不能为负")
+
+    toplist = _require_mapping(data.get("toplist"), "toplist")
+    toplist_date = str(toplist.get("date") or "")
+    if len(toplist_date) != 10:
+        raise ValueError("toplist.date 必须是 ISO 日期")
+    if toplist_date > _AS_OF:
+        raise ValueError(f"toplist.date 晚于快照日：{toplist_date}")
+    toplist_rows = _require_rows(toplist.get("by_date"), "toplist.by_date")
+    for i, row in enumerate(toplist_rows):
+        where = f"toplist.by_date[{i}]"
+        if str(row.get("date") or "")[:10] != toplist_date:
+            raise ValueError(f"{where}.date 与 toplist.date 不一致")
+        if len(str(row.get("symbol") or "")) != 6:
+            raise ValueError(f"{where}.symbol 必须是 6 位裸码")
+        for field in ("close", "pct_chg", "turnover_rate", "amount", "float_mv"):
+            _check_finite(row.get(field), f"{where}.{field}")
+        # 率高斯上界：amount_ratio 可 >1（小盘高换手）
+        for field in ("pct_chg", "turnover_rate", "net_ratio"):
+            if abs(float(row.get(field) or 0)) > 1:
+                raise ValueError(f"{where}.{field} 不是小数口径")
+    toplist_sym = str(toplist.get("symbol") or "")
+    if len(toplist_sym) != 6:
+        raise ValueError("toplist.symbol 必须是 6 位裸码")
+    hist_rows = _require_rows(toplist.get("by_symbol"), "toplist.by_symbol")
+    for i, row in enumerate(hist_rows):
+        where = f"toplist.by_symbol[{i}]"
+        if str(row.get("symbol") or "") != toplist_sym:
+            raise ValueError(f"{where}.symbol 不是 {toplist_sym}")
+        _check_date_not_after(row.get("date"), f"{where}.date")
+
+    cats = _require_mapping(data.get("notice_categories"), "notice_categories")
+    cat_keys = cats.get("keys")
+    cat_regex = _require_mapping(cats.get("regex"), "notice_categories.regex")
+    if not isinstance(cat_keys, list) or len(cat_keys) < 10:
+        raise ValueError("notice_categories.keys 至少 10 类目")
+    if set(cat_keys) != set(cat_regex):
+        raise ValueError("notice_categories.keys 与 regex 键不一致")
+    for key in cat_keys:
+        if not str(cat_regex.get(key) or "").strip():
+            raise ValueError(f"notice_categories.regex[{key}] 为空")
+
+    pdf = _require_mapping(data.get("pdf_doc"), "pdf_doc")
+    pdf_search = _require_rows(pdf.get("search"), "pdf_doc.search")
+    pdf_key = str(pdf.get("sample", {}).get("file_key") or "")
+    if not pdf_key:
+        raise ValueError("pdf_doc.sample.file_key 为空")
+    if not any(str(r.get("file_key")) == pdf_key for r in pdf_search):
+        raise ValueError("pdf_doc.sample 必须出现在 pdf_doc.search 里")
+    for section in ("find_by_key", "status", "read_text", "read_markdown"):
+        sec = pdf.get(section)
+        if section == "find_by_url" and sec is None:
+            continue
+        if not isinstance(sec, dict):
+            raise ValueError(f"pdf_doc.{section} 必须是 MAP")
+    if str(pdf["read_text"].get("file_key")) != pdf_key:
+        raise ValueError("pdf_doc.read_text 的 file_key 与 sample 不一致")
+    _check_url(pdf["read_text"].get("source_url"), "pdf_doc.read_text.source_url")
+    for i, row in enumerate(pdf_search):
+        _check_url(row.get("source_url"), f"pdf_doc.search[{i}].source_url")
+        _check_url(row.get("oss_url"), f"pdf_doc.search[{i}].oss_url")
+
+    fut_map = _require_mapping(data.get("futures_mapping"), "futures_mapping")
+    if not fut_map:
+        raise ValueError("futures_mapping 快照缺失")
+    for fut, rows in fut_map.items():
+        mr_rows = _require_rows(rows, f"futures_mapping[{fut}]")
+        dates = []
+        for i, row in enumerate(mr_rows):
+            where = f"futures_mapping[{fut}][{i}]"
+            if str(row.get("symbol") or "") != fut:
+                raise ValueError(f"{where}.symbol 不是 {fut}")
+            d = str(row.get("date") or "")[:10]
+            _check_date_not_after(d, f"{where}.date")
+            if not str(row.get("mapping_symbol") or ""):
+                raise ValueError(f"{where}.mapping_symbol 为空")
+            dates.append(d)
+        if dates != sorted(dates):
+            raise ValueError(f"futures_mapping[{fut}] 不是日期升序")
+
     return doc
 
 
@@ -340,8 +430,8 @@ def load_demo_snapshot() -> dict[str, Any]:
             raw = _DATA_PATH.read_bytes()
         except OSError as e:
             raise RuntimeError(f"demo 快照缺失或不可读：{_DATA_PATH.name}") from e
-        if len(raw) > 512 * 1024:
-            raise RuntimeError("demo 快照超过 512 KiB")
+        if len(raw) > 768 * 1024:
+            raise RuntimeError("demo 快照超过 768 KiB")
         try:
             document = json.loads(raw)
         except (json.JSONDecodeError, UnicodeDecodeError) as e:
@@ -561,7 +651,9 @@ class DemoClient:
 
         return estimate_cost(name, params)
 
-    # ---- 批次1 暴露层：公告类目罐头（静态事实表，与上游 notice.CATEGORIES 同源）----
+    # ---- 公告类目表：优先回放快照（与 live 同源），快照缺段时退回内置表 ----
+    # 内置表是 2.3.0 手抄的兜底（旧快照不含 notice_categories 段时仍可用），
+    # 快照重拍后以快照为准——类目/正则一旦上游变化，回放会自动跟随。
 
     _NOTICE_CATEGORY_REGEX = {
         "reduction": "减持|減持",
@@ -580,48 +672,168 @@ class DemoClient:
         "correct": "更正|延期披露|更正|延期披露",
     }
 
+    def _notice_category_table(self) -> dict[str, str]:
+        stored = self._data.get("notice_categories") or {}
+        keys = stored.get("keys") or []
+        regex = stored.get("regex") or {}
+        if keys and regex and len(regex) >= len(keys):
+            return {str(k): str(regex.get(k, k)) for k in keys}
+        return dict(self._NOTICE_CATEGORY_REGEX)
+
     def _notice_categories(self) -> list:
-        return list(self._NOTICE_CATEGORY_REGEX)
+        return list(self._notice_category_table())
 
     def _notice_category_regex(self, key: str) -> str:
-        return str(self._NOTICE_CATEGORY_REGEX.get(key, key))
+        table = self._notice_category_table()
+        return str(table.get(key, key))
 
     def _equity_buyback_snapshot(self, symbol: str) -> Any:
-        raise _unsupported("equity.buyback_snapshot", "底层函数")
+        """2.3：回购六口径快照（演示宇宙 10 票已拍；其余报 demo_symbol）。"""
+        sym = self._require_symbol(symbol)
+        return dict(self._data["buyback"][sym])
+
+    # ---- 2.3 pdf_doc：全库检索 / 点查 / 正文预览（快照含检索结果 + 一条正文）----
 
     def _pdf_search(self, stock_code: str = "", title: str = "",
                     announce_date_from: str = "", announce_date_to: str = "",
                     status: str = "", kind: str = "", limit: int = 20,
                     skip: int = 0, _raw: bool = False) -> Any:
-        raise _unsupported("pdf_doc.search", "底层函数")
+        """按快照里的检索结果做本地过滤（live 是服务端查询）。"""
+        rows = [dict(r) for r in self._data["pdf_doc"]["search"]]
+        if stock_code:
+            rows = [r for r in rows if str(r.get("stock_code")) == str(stock_code)]
+        if status:
+            rows = [r for r in rows if str(r.get("status")) == str(status)]
+        if kind:
+            rows = [r for r in rows if str(r.get("kind")) == str(kind)]
+        if title:
+            rows = [r for r in rows if str(title) in str(r.get("title") or "")]
+        if announce_date_from:
+            rows = [r for r in rows
+                    if str(r.get("announce_date") or "") >= announce_date_from]
+        if announce_date_to:
+            rows = [r for r in rows
+                    if str(r.get("announce_date") or "") <= announce_date_to]
+        rows = rows[int(skip):int(skip) + int(limit)]
+        if _raw:
+            return rows
+        return self._df_asc(rows, "updated_at")
+
+    def _pdf_row(self, file_key: str, source_url: str) -> dict[str, Any] | None:
+        """在快照的检索结果里找一行（live 是 store 点查）。"""
+        for row in self._data["pdf_doc"]["search"]:
+            if file_key and str(row.get("file_key")) == str(file_key):
+                return dict(row)
+            if source_url and str(row.get("source_url")) == str(source_url):
+                return dict(row)
+        return None
+
+    def _pdf_require_sampled(self, stored: dict[str, Any], file_key: str,
+                             source_url: str, what: str) -> None:
+        """快照只存一条正文样本；请求的不是它时明确报错（不返错数据）。"""
+        row = self._pdf_row(file_key, source_url)
+        if row is None or str(row.get("file_key")) != str(stored.get("file_key")):
+            raise UsageError(
+                f"demo 快照只回放一条 PDF {what}（pdf_doc.search() 的首条）；"
+                f"收到 file_key={file_key!r} source_url={source_url!r}",
+                code="demo_symbol",
+            )
 
     def _pdf_read_text(self, file_key: str = "", source_url: str = "") -> Any:
-        raise _unsupported("pdf_doc.read_text", "底层函数")
+        stored = self._data["pdf_doc"]["read_text"]
+        self._pdf_require_sampled(stored, file_key, source_url, "正文")
+        return dict(stored)
 
     def _pdf_read_markdown(self, file_key: str = "", source_url: str = "",
                            stock_code: str = "", period: str = "") -> Any:
-        raise _unsupported("pdf_doc.read_markdown", "底层函数")
+        stored = self._data["pdf_doc"]["read_markdown"]
+        if file_key or source_url:
+            self._pdf_require_sampled(stored, file_key, source_url, "markdown")
+        return dict(stored)
 
     def _pdf_status(self, file_key: str = "", source_url: str = "") -> Any:
-        raise _unsupported("pdf_doc.status", "底层函数")
+        stored = self._data["pdf_doc"]["status"]
+        self._pdf_require_sampled(stored, file_key, source_url, "状态")
+        return dict(stored)
 
     def _pdf_find_by_url(self, url: str) -> Any:
-        raise _unsupported("pdf_doc.find_by_url", "底层函数")
+        found = self._data["pdf_doc"].get("find_by_url")
+        row = self._pdf_row("", url)
+        if row is None:
+            return None
+        return dict(found) if found else row
 
     def _pdf_find_by_key(self, file_key: str) -> Any:
-        raise _unsupported("pdf_doc.find_by_key", "底层函数")
+        found = self._data["pdf_doc"].get("find_by_key")
+        row = self._pdf_row(file_key, "")
+        if row is None:
+            return None
+        return dict(found) if found else row
+
+    # ---- 2.3 toplist：指定日榜单 / 单票上榜历史 ----
 
     def _toplist_by_date(self, trade_date: str, limit: int = 100,
                          _raw: bool = False) -> Any:
-        raise _unsupported("toplist.by_date", "底层函数")
+        from wmshare.client import normalize_date
+
+        stored_date = str(self._data["toplist"]["date"])
+        if normalize_date(trade_date) != stored_date:
+            raise UsageError(
+                f"demo 快照只含 {stored_date} 的龙虎榜（榜单盘后 T+1 落库）；"
+                f"收到 {trade_date!r}", code="demo_symbol",
+            )
+        rows = [dict(r) for r in self._data["toplist"]["by_date"]]
+        rows = rows[:int(limit or len(rows))]
+        if _raw:
+            return rows
+        return self._df_asc(rows, "date")
 
     def _toplist_by_symbol(self, symbol: str, limit: int = 100,
                            _raw: bool = False) -> Any:
-        raise _unsupported("toplist.by_symbol", "底层函数")
+        stored_sym = str(self._data["toplist"]["symbol"])
+        code = str(symbol)
+        for prefix in ("cn.", "sh.", "sz.", "bj."):
+            if code.lower().startswith(prefix):
+                code = code[len(prefix):]
+        for suffix in (".SH", ".SZ", ".BJ"):
+            if code.upper().endswith(suffix):
+                code = code[:-len(suffix)]
+        if code != stored_sym:
+            raise UsageError(
+                f"demo 快照只含 {stored_sym} 的上榜历史；收到 {symbol!r}",
+                code="demo_symbol",
+            )
+        rows = [dict(r) for r in self._data["toplist"]["by_symbol"]]
+        # 快照按最新在前（与 live by_symbol 同序）
+        rows = rows[:int(limit or len(rows))]
+        if _raw:
+            return rows
+        return self._df_asc(rows, "date")
+
+    # ---- 2.3 futures.mapping：换月映射（窗口过滤）----
 
     def _futures_mapping(self, symbol: str, begin: str = "", end: str = "",
                          _raw: bool = False) -> Any:
-        raise _unsupported("futures.mapping", "底层函数")
+        from wmshare.client import normalize_date
+
+        code = str(symbol).upper().strip()
+        stored = self._data["futures_mapping"].get(code)
+        if stored is None:
+            raise UsageError(
+                f"demo 快照只含 {sorted(self._data['futures_mapping'])} 的换月映射；"
+                f"收到 {symbol!r}", code="demo_symbol",
+            )
+        rows = [dict(r) for r in stored]
+        if begin:
+            b = normalize_date(begin)
+            rows = [r for r in rows if str(r.get("date")) >= b]
+        if end:
+            e = normalize_date(end)
+            rows = [r for r in rows if str(r.get("date")) <= e]
+        if _raw:
+            return rows
+        # live 的 mapping 是 date 升序（store 层已 sort）
+        return self._df_asc(rows, "date")
 
     def _df_asc(self, rows: Any, key: str = "date") -> Any:
         """2.0 同形：demo 行列表也按升序 + DataFrame 输出（与 live 门面同形同向）。"""

@@ -38,7 +38,7 @@ def test_repr_shows_both_versions():
 # 永远相等（恒真），且 sdist/wheel 里没有 .git 会直接报错。用 sha256 锚定才能
 # 真正拦住「已提交的快照数据被改动」。
 SNAPSHOT_SHA256 = (
-    "cb1c1d15dd6f5c44b7de4df8572cd6f09a84148fe4d6d554fd17bd9f934bd389"
+    "e4b72dd7acb59e8d7bf9f4d376d280e6185b25fd3321b670029c4e78ae5ab3a6"
 )
 
 

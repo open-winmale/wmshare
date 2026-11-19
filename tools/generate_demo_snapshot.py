@@ -24,7 +24,7 @@ from wmshare.client import Client
 
 # 拍摄日：日 K / 资金流等结算面截至最近已收盘交易日，行情快照为拍摄日盘中最新价。
 # 发版时按当日重锚（盘中拍也可，快照的 kline_date 会等于 AS_OF）。
-AS_OF = date(2026, 11, 17)
+AS_OF = date(2026, 11, 19)
 UNIVERSE = (
     "600519", "000858", "601088", "600900", "601318",
     "000001", "600036", "000333", "300750", "688981",
@@ -41,7 +41,7 @@ QUALITY_VARIANTS = (
     {"min_yield": 0.02, "payout_max": 1.2},
     {"min_yield": 0.02, "payout_max": 1.5},
 )
-MAX_BYTES = 512 * 1024
+MAX_BYTES = 768 * 1024  # 2026-11-19 重拍：新面（龙虎榜整日 + PDF 正文预览）需更高上限
 
 
 class CountingSession(requests.Session):
@@ -435,6 +435,143 @@ def capture() -> tuple[dict[str, Any], int]:
                 "up_today": bool(cli.screener.screen_up_today(sym)),
             }
 
+        # ---- 2.3 新面：回购六口径 / 龙虎榜 / 公告类目 / PDF 全文 / 期货映射 ----
+        # 回购：演示宇宙逐票（无数据源字段为 None，如实保留不伪造 0）。
+        buyback: dict[str, Any] = {}
+        for sym in UNIVERSE:
+            snap = cli.equity.buyback_snapshot(sym)
+            if not isinstance(snap, dict):
+                raise ValueError(f"equity.buyback_snapshot({sym}) 返回非 MAP")
+            for field, value in snap.items():
+                if value is None:
+                    continue
+                if not isinstance(value, (int, float)) or isinstance(value, bool):
+                    raise ValueError(
+                        f"equity.buyback_snapshot({sym}).{field} 必须是数字或 None：{value!r}")
+                if float(value) < 0:
+                    raise ValueError(
+                        f"equity.buyback_snapshot({sym}).{field} 不能为负：{value!r}")
+            buyback[sym] = snap
+
+        # 龙虎榜：**最近已有数据的交易日**全市场榜单。
+        # 榜单盘后 T+1 落库——拍摄日当天的榜单通常还没生成（2026-11-19 实测
+        # 当天 0 行、前一日 95 行），故向前回退最多 5 天取最近一个有数据的日。
+        toplist_date = ""
+        toplist_rows: list[dict[str, Any]] = []
+        for back in range(0, 6):
+            day = (AS_OF - timedelta(days=back)).isoformat()
+            rows = cli.call("toplist.by_date", trade_date=day, limit=200)
+            if rows:
+                toplist_date, toplist_rows = day, _require_rows(
+                    rows, f"toplist.by_date({day})", min_len=1,
+                )
+                break
+        if not toplist_rows:
+            raise ValueError("toplist.by_date 近 6 日内无数据（榜单未落库）")
+        for i, row in enumerate(toplist_rows):
+            where = f"toplist.by_date[{i}]"
+            if str(row.get("date") or "")[:10] != toplist_date:
+                raise ValueError(f"{where}.date 不是榜单日 {toplist_date}：{row.get('date')!r}")
+            if len(str(row.get("symbol") or "")) != 6:
+                raise ValueError(f"{where}.symbol 不是 6 位裸码：{row.get('symbol')!r}")
+            for field in ("close", "pct_chg", "turnover_rate", "amount",
+                          "amount_ratio", "float_mv", "seat_buy", "seat_sell",
+                          "seat_amount", "net_amount", "net_ratio"):
+                _require_num(row.get(field), f"{where}.{field}")
+            # 口径校验：pct_chg / turnover_rate / net_ratio 是率（小数，|v|≤1）；
+            # amount_ratio = 成交额/流通市值，小盘股换手率高时可 >1（实测 1.16），
+            # 只校验量级上界（防上游忘了 /100 的万级量级）。
+            for field in ("pct_chg", "turnover_rate", "net_ratio"):
+                if abs(_require_num(row.get(field), f"{where}.{field}")) > 1:
+                    raise ValueError(f"{where}.{field} 不是小数口径：{row.get(field)!r}")
+            if not 0 <= _require_num(row.get("amount_ratio"),
+                                     f"{where}.amount_ratio") <= 50:
+                raise ValueError(
+                    f"{where}.amount_ratio 量级异常：{row.get('amount_ratio')!r}")
+        # 单票上榜历史：取演示日榜单里出现次数最多的一只（保证 demo 有料可回放）。
+        toplist_symbol = ""
+        if toplist_rows:
+            counts: dict[str, int] = {}
+            for row in toplist_rows:
+                code = str(row.get("symbol"))
+                counts[code] = counts.get(code, 0) + 1
+            toplist_symbol = max(counts, key=lambda c: (counts[c], c))
+        toplist_history = _require_rows(
+            cli.toplist.by_symbol(toplist_symbol, 10),
+            f"toplist.by_symbol({toplist_symbol})", min_len=1,
+        )
+        for i, row in enumerate(toplist_history):
+            where = f"toplist.by_symbol[{i}]"
+            if str(row.get("symbol") or "") != toplist_symbol:
+                raise ValueError(f"{where}.symbol 不是 {toplist_symbol}：{row.get('symbol')!r}")
+            d = _require_date(row.get("date"), f"{where}.date")
+            if d > AS_OF.isoformat():
+                raise ValueError(f"{where} 晚于快照日：{d}")
+            _require_num(row.get("pct_chg"), f"{where}.pct_chg")
+
+        # 公告类目表（静态事实表，与上游 notice.CATEGORIES 同源）。
+        notice_categories = list(cli.notice.categories())
+        if len(notice_categories) < 10:
+            raise ValueError(f"notice.categories 只有 {len(notice_categories)} 类目")
+        notice_regex = {
+            key: cli.notice.category_regex(key) for key in notice_categories
+        }
+        for key, pattern in notice_regex.items():
+            if not isinstance(pattern, str) or not pattern:
+                raise ValueError(f"notice.category_regex({key}) 为空")
+
+        # PDF 全文库：全库检索一条真实文档，回放 search/find/status/read_text。
+        # 优先取 status=ready 的文档：只有 ready 才带 pdftotext 正文，
+        # demo 才能演示 read_text 的正常分支（fetched=已下载未提取，返回 ok=false）。
+        pdf_rows = _require_rows(
+            cli.pdf_doc.search(status="ready", limit=10),
+            "pdf_doc.search(status=ready, 10)", min_len=1,
+        )
+        pdf_sample = dict(pdf_rows[0])
+        pdf_key = str(pdf_sample.get("file_key") or "")
+        if not pdf_key:
+            raise ValueError("pdf_doc.search 首行缺少 file_key")
+        pdf_by_key = cli.pdf_doc.find_by_key(pdf_key)
+        if not isinstance(pdf_by_key, dict):
+            raise ValueError(f"pdf_doc.find_by_key({pdf_key}) 返回非 MAP")
+        pdf_status = cli.pdf_doc.status(file_key=pdf_key)
+        if not isinstance(pdf_status, dict):
+            raise ValueError(f"pdf_doc.status({pdf_key}) 返回非 MAP")
+        pdf_text = cli.pdf_doc.read_text(file_key=pdf_key)
+        if not isinstance(pdf_text, dict):
+            raise ValueError(f"pdf_doc.read_text({pdf_key}) 返回非 MAP")
+        pdf_source_url = str(pdf_sample.get("source_url") or "")
+        pdf_by_url = cli.pdf_doc.find_by_url(pdf_source_url) if pdf_source_url else None
+        if pdf_source_url and not isinstance(pdf_by_url, dict):
+            raise ValueError(f"pdf_doc.find_by_url 未命中已存在的 source_url")
+        pdf_markdown = cli.pdf_doc.read_markdown(file_key=pdf_key)
+        if not isinstance(pdf_markdown, dict):
+            raise ValueError(f"pdf_doc.read_markdown({pdf_key}) 返回非 MAP")
+
+        # 期货换月映射：演示窗口（覆盖最近半年换月事件）。
+        FUT_MAPPING_BEGIN = (AS_OF - timedelta(days=180)).isoformat()
+        futures_mapping: dict[str, list[dict[str, Any]]] = {}
+        for fut in FUTURES:
+            rows = _require_rows(
+                cli.futures.mapping(fut, FUT_MAPPING_BEGIN, AS_OF.isoformat()),
+                f"futures.mapping({fut})", min_len=1,
+            )
+            dates: list[str] = []
+            for i, row in enumerate(rows):
+                where = f"futures.mapping({fut})[{i}]"
+                if str(row.get("symbol") or "") != fut:
+                    raise ValueError(f"{where}.symbol 不是 {fut}：{row.get('symbol')!r}")
+                d = _require_date(row.get("date"), f"{where}.date")
+                if d > AS_OF.isoformat():
+                    raise ValueError(f"{where} 晚于快照日：{d}")
+                if not str(row.get("mapping_symbol") or "").endswith(
+                        fut.split(".")[-1] if "." in fut else ""):
+                    raise ValueError(f"{where}.mapping_symbol 交易所后缀不符：{row.get('mapping_symbol')!r}")
+                dates.append(d)
+            if dates != sorted(dates):
+                raise ValueError(f"futures.mapping({fut}) 不是日期升序")
+            futures_mapping[fut] = rows
+
         data: dict[str, Any] = {
             "universe": list(UNIVERSE),
             "stocks_list": stocks_list,
@@ -480,6 +617,28 @@ def capture() -> tuple[dict[str, Any], int]:
                 "universe": margin_universe,
             },
             "futures": futures_snap,
+            # 2.3 新面（2026-11-19 起快照覆盖）
+            "buyback": buyback,
+            "toplist": {
+                "date": toplist_date,
+                "by_date": toplist_rows,
+                "symbol": toplist_symbol,
+                "by_symbol": toplist_history,
+            },
+            "notice_categories": {
+                "keys": notice_categories,
+                "regex": notice_regex,
+            },
+            "pdf_doc": {
+                "search": pdf_rows,
+                "sample": pdf_sample,
+                "find_by_key": pdf_by_key,
+                "find_by_url": pdf_by_url,
+                "status": pdf_status,
+                "read_text": pdf_text,
+                "read_markdown": pdf_markdown,
+            },
+            "futures_mapping": futures_mapping,
         }
         return data, session.request_count
     finally:

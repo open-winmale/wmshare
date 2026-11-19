@@ -40,7 +40,7 @@ def test_demo_data_does_not_trip_leak_gate():
 
 
 def test_snapshot_header_and_size(document):
-    assert DATA_PATH.stat().st_size <= 512 * 1024
+    assert DATA_PATH.stat().st_size <= 768 * 1024  # 2026-11-19 重拍：新面（整日榜单+PDF 正文）
     assert document["schema_version"] == 1
     assert document["as_of"] == AS_OF
     assert document["market"] == "cn"
