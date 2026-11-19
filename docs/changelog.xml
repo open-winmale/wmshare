@@ -8,6 +8,13 @@
     <lastBuildDate>Thu, 19 Nov 2026 00:00:00 +0800</lastBuildDate>
     <atom:link href="https://github.com/open-winmale/wmshare/raw/main/docs/changelog.xml" rel="self" type="application/rss+xml"/>
     <item>
+      <title>wmshare 2.4.1 (2026-11-19)</title>
+      <link>https://github.com/open-winmale/wmshare/releases/tag/v2.4.1</link>
+      <guid isPermaLink="false">wmshare:2.4.1</guid>
+      <pubDate>Thu, 19 Nov 2026 00:00:00 +0800</pubDate>
+      <description>—</description>
+    </item>
+    <item>
       <title>wmshare 2.4.0 (2026-11-19)</title>
       <link>https://github.com/open-winmale/wmshare/releases/tag/v2.4.0</link>
       <guid isPermaLink="false">wmshare:2.4.0</guid>
@@ -284,17 +291,6 @@ Changed
 - **返回形态与指数键路由显式标注**：`market.kline` / `market.moneyflow` / `market.index` 三个域的 notes 写明单 MAP 触发 `NotSupportedType:record` 属上游形态、 错误指数键上游返回 500、`query_bars_live` 冷缓存空数组不是「无数据」且不得当 0、 指数键须显式选 `query_index_*_live` 四个入口（SDK 不自动改写路由）。
 - 新增 21 个契约用例：`test_unit_visibility.py`(6) / `test_audit_drift.py`(6) / `test_guard_baseline.py`(3) / `test_shape_notes.py`(6)，覆盖单位声明机器可见性、 drift 正负例与离线分流、覆盖率与发现项防回归基线、显式标注进目录与对外文档。
 - 全量 1953 用例：1858 passed / 94 skipped / 1 failed（既存 extractor 真漂移， CI 无上游时 skip）；`--cov-branch` 88.31%。</description>
-    </item>
-    <item>
-      <title>wmshare 1.20.2 (2026-11-14)</title>
-      <link>https://github.com/open-winmale/wmshare/releases/tag/v1.20.2</link>
-      <guid isPermaLink="false">wmshare:1.20.2</guid>
-      <pubDate>Sat, 14 Nov 2026 00:00:00 +0800</pubDate>
-      <description>Fixed
-- 美股 `cli.info.profile(&quot;AAPL&quot;)` 不再因一个不可用指标码打挂整包请求； 港股 `$STYLE_INDUSTRY` 返回 `None` 属正常缺值，仍保持五码。
-- `cli.kline.snapshot` 的 SDK docstring 不再只写 4 个字段；`percent`/`chg_*` 小数、`volume` 股、金额元、`ma60_up`/`is_st`/`is_suspend` 布尔均写入文档。
-- `profile` 对非 MAP 返回按无数据处理，保持 `-&gt; dict` 契约，不再把非字典值 透传给调用方。
-- 新增 `tests/test_profile_snapshot_contract.py`：三市场 XS 字符串与键集合稳定、 单次 eval、排除表最小性、23 字段声明与 live 返回一致、单位声明不悬空； 离线 11 passed / 4 skipped，联网 15 passed / 0 skipped。</description>
     </item>
   </channel>
 </rss>

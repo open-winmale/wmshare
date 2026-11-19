@@ -11,6 +11,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.1] - 2026-11-19
+
+### Fixed / Changed
+- **`valuation.daily_basic` 读窗下推（EC 大幅下降）**：此前无论请求多窄的区间，
+  都会先读满 1,500 个日文档再由 XS 侧过滤——13 天窗口实测扫 727 个文档、
+  11,944 EC。现在 `begin/end` 通过 kernel `window` + `anchorTs` 锚点**下推到
+  读面**，只读窗口覆盖的日文档：13 天窗口 **249~962 EC**（降 92%）、单日
+  **578 EC**（原 1,707，降 66%）、1 年 **8,626 EC**（原 23,371，降 63%）；
+  不给 `begin/end` 时行为不变（全表扫 ≈23,414 EC）。
+  - `meta.window` 新增 `pushed_down` 标志；`scan_days`/`scan_limit` 反映本次
+    实际读窗（下推后按跨度算出，不是固定 1,500）。
+  - `as_of` 合同不变（窗口查询时单独点查表内最新，≈33 EC）。
+  - 正确性：6 个标的 × 6 种跨度（单日/两日/月内/半年/全年/跨年）与「全量读后
+    过滤」逐行完全一致。
+  - `estimate_cost("valuation.daily_basic")` 模型按新成本结构重写：有窗口时
+    ≈25~40 EC/日文档 + 地板，无窗口时 ≈2.0~2.6 万 EC。
+  - `docs/BACKLOG.md`：该项原记为「依赖上游 kernel 能力、未排期」，属**未实测
+    的误判**（kernel 锚点在 `alt.valuation_daily` 上完全可用）；已更正为落地。
+
 ## [2.4.0] - 2026-11-19
 
 ### Added

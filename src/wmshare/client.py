@@ -414,21 +414,29 @@ def estimate_cost(name: str, params: dict[str, Any] | None = None, *,
             out.update(ec_lo=200, ec_hi=1_200, model="measured",
                        note="单文档点查/正文预览 ≈200~1,200 EC（正文越长越高）")
     elif name.startswith("valuation.daily_basic"):
-        # 实测（2026-11-18 生产）：**不是缓存**——按扫描行计费，字段几乎免费。
-        #   1 日 × 1 字段 = 1,707 EC；1 日 × 8 字段 = 1,851；
-        #   13 交易日 × 2 字段 = 2,038；全史 726 docs × 8 字段 = 18,317。
-        # 模型 = 地板 + ≈23 EC/doc（端点拟合）；仍以 metering.ec_cost 为准。
+        # 实测（2026-11-19 下推后，生产 probe）——两个口径差异很大：
+        # **有 begin/end**：读窗已按 kernel window 锚下推，只扫窗口覆盖的日文档
+        #   1 日 = 578 EC（13 文档）；13 日 = 962（25 文档）；1 年 = 8,626（274 文档）
+        #   → 模型 ≈ 450 + ≈30 EC/日文档（置信区间放宽到 ±40%）
+        # **无 begin/end**：仍是一次读 DEFAULT_LIMIT(1,500) 个日文档后客户端过滤
+        #   全量 = 23,414 EC（727 文档）→ 模型 ≈ 23 EC/文档 + 地板
+        # 下推前（2.4.0 之前）任何窗口都是全表扫，单日也要 1,707 EC——现已不是。
         b, e = p.get("begin"), p.get("end")
-        if b and e:
-            span = max(1, abs(_days_between(b, e)) + 1)
-            out.update(ec_lo=1_707, ec_hi=int(1_707 + 23 * span),
+        span = max(1, abs(_days_between(b, e)) + 1) if (b and e) else 0
+        if b or e:
+            out.update(ec_lo=int(450 + 25 * span), ec_hi=int(600 + 40 * span),
                        model="measured")
+            out["note"] = (
+                f"读窗已下推（kernel window 锚）：按窗口自然日跨度 ≈{span} 天文档，"
+                "≈25~40 EC/日文档 + 地板；实测单日 578、13 日 962、1 年 8,626 EC。"
+                "**不给 begin/end 时仍是全表扫 ≈23,414 EC**（727 文档），区间查询务必传"
+            )
         else:
-            out.update(ec_lo=1_707, ec_hi=18_317, model="measured")
-        out["note"] = (
-            "按扫描行计费（非缓存）：单日地板 ≈1,707 EC，全史 ≈18,317 EC；"
-            "传 begin/end 收窄窗口可线性降低，字段数几乎不加价"
-        )
+            out.update(ec_lo=20_000, ec_hi=26_000, model="measured")
+            out["note"] = (
+                "不给 begin/end = 全表扫（1,500 日文档上限）≈23,414 EC（2026-11-19 实测）；"
+                "传 begin/end 会下推读窗、成本随窗口走（单日 ≈578、13 日 ≈962 EC）"
+            )
     elif name.startswith("indices.trend"):
         out.update(ec_lo=1, ec_hi=50, model="cache_hit",
                    note="只读预热缓存；未命中返回 ok=False（不现算、不产生 EC）")

@@ -95,21 +95,27 @@ def test_daily_basic_fields_forms_and_dedup():
         c.valuation.daily_basic("600519", fields=123)
 
 
-# ---- estimate_cost：实测档（2026-11-18 生产 probe，非缓存） ----
+# ---- estimate_cost：实测档（2026-11-19 下推后生产 probe） ----
+# 读窗下推（kernel window 锚）改变了成本结构：有 begin/end 时只扫窗口文档，
+# 无 begin/end 才全表扫。两个口径分开断言。
 
 def test_daily_basic_estimate_cost_measured():
     est = estimate_cost("valuation.daily_basic")
     assert est["model"] == "measured"
-    # 单日地板 1,707 / 全史 18,317（实测端点）
-    assert est["ec_lo"] == 1_707 and est["ec_hi"] == 18_317
-    assert "非缓存" in est["note"]
+    # 无窗口 = 全表扫（1,500 日文档上限）≈23,414 EC（2026-11-19 实测 727 文档）
+    assert 20_000 <= est["ec_lo"] < est["ec_hi"] <= 26_000
+    assert "全表扫" in est["note"] and "begin/end" in est["note"]
 
-    # 传窗口：地板 + ≈23 EC/自然日
+    # 传窗口：成本随窗口跨度走（下推后不再是全表地板）
     est2 = estimate_cost("valuation.daily_basic",
                          {"begin": "2026-11-01", "end": "2026-11-17"})
     assert est2["model"] == "measured"
-    assert est2["ec_lo"] == 1_707
-    assert est2["ec_hi"] == 1_707 + 23 * 17
+    assert est2["ec_hi"] < 2_000, est2       # 17 天窗口远低于全表 2 万量级
+    assert "下推" in est2["note"]
+    # 单日窗口比 17 天窗口更便宜（按跨度线性）
+    one = estimate_cost("valuation.daily_basic",
+                        {"begin": "2026-11-18", "end": "2026-11-18"})
+    assert one["ec_hi"] < est2["ec_hi"], (one, est2)
 
 
 # ---- demo：显式 demo_unsupported（诚实契约，无罐头不伪造） ----
