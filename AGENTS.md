@@ -12,7 +12,7 @@ python tools/extract_metric_taxonomy.py --check  # 指标适配层 sidecar 漂�
 python tools/validate_metric_taxonomy.py         # sidecar 与 metrics.json 1:1
 python tools/validate_units.py                   # 单位台账（手/亿元/百分数）
 python tools/check_version.py --check  # 六处版本声明互校（含 SECURITY.md 表头）
-python tools/guard_coverage.py --min 0.156  # 守护声明覆盖率下限
+python tools/guard_coverage.py --min 0.203333  # 守护声明覆盖率下限（防回退；不带 --min 只打印不判定。阈值以 tests/test_guard_baseline.py 基线为准，收紧时同步本行与 ci.yml）
 python -m tools.audit_units drift --strict  # shape/units/ranges 声明漂移（ERROR/WARN 均拦）
 python tools/gen_api_docs.py --check  # 以下为生成物漂移门禁
 python tools/gen_typed_api.py --check
@@ -64,7 +64,9 @@ pytest -q --cov-branch                # 离线全量（行/分支覆盖率 ≥85
   新增辅助函数默认标 internal。
 - **新接口验收模板**：目录 yaml（units/ranges/checks 非空声明）→ FRIENDLY_INDEX →
   六 gen 再生成 → INDICATORS 锚点 → examples 课程表条目 → demo 同形（DF/升序/信封，
-  未回放面显式 `demo_unsupported`）→ 计数级联（README/AI/GUIDE/SKILL/llms）。
+  未回放面显式 `demo_unsupported`）→ 计数级联（README/AI/GUIDE/SKILL/llms）→
+  测试基线级联（`test_catalog` / `test_guard_baseline` / `test_audit_drift` /
+  `test_mcp_apis`，数字以各测试内基线常量为准，不写进本文件）。
 
 ## 防坑清单（都踩过，别再踩）
 
@@ -78,3 +80,16 @@ pytest -q --cov-branch                # 离线全量（行/分支覆盖率 ≥85
    导致 1143 个测试全绿也没抓到分位错位。改 demo 后要断言方向。
 5. **预热缓存会冷**：`m_valtrend_series:v1:{key}` 依赖 cron。未命中的键必须优雅降级
    （显式标「缓存未命中」），不能当 0 或静默给错值。
+6. **EC 优化只走既有范式，评估必须端到端**：统一用「memo 取数缓存 + `fmt_maps` 结果
+   缓存（`rows_fingerprint` 指纹键带 `v1`，空集不缓存）」两件套（上游 `36a5de20`/`54a89b19`
+   范式）。memo 只覆盖取数——`CONOF` 逐行规范化是独立成本大头（实测放大 ×127~×293），
+   所以规范化结果也要按指纹缓存；不许自创方案（2026-11-18 自创 A/B/C/D 选项被用户否决）。
+7. **能力对标优先于客户端砍量**：区间/全量查询不得用「估算行数、砍请求量」换 EC
+   （2026-11-18 `estimate_interval_rows` 被用户否决为投机取巧）；缺页走服务端锚点窗口
+   分页（`query_at_anchor(_adj)` 模式），并配「锚点未前移即抛 `LimitError`」快速失败守卫。
+8. **demo 与 live 签名必须同形**：不只是方向同向——新增/改签名门面必须同步 `_demo.py`
+   （58 对由 `test_demo_signatures_cover_live_facade_params` 逐对比对强制）；未回放面
+   显式抛 `demo_unsupported`，不允许 `TypeError` 或静默吞参。
+9. **`estimate_cost` 档位必须 live 实测校准**：成本模型数字以生产 `metering.ec_cost`
+   probe 为准，禁止拍脑袋标 `cache_hit`（2.2.1 实证：daily_basic 标 4~200，实测按扫描行
+   计费 1,707~18,317 EC）。新增档位先 probe 再写模型，模型里注明实测日期。
