@@ -683,6 +683,40 @@ def test_valuation_daily_basic_live(cli):
     for row in r["data"]:
         assert row["symbol"] == "600519" and row["field"] in ("pe_ttm", "total_mv")
         assert isinstance(row["value"], (int, float))
+    # 2026-11-19 新增：meta.window 段暴露读窗口截断（BACKLOG 缺口闭环）
+    win = (r.get("meta") or {}).get("window") or {}
+    assert win.get("scan_limit"), "缺 meta.window.scan_limit"
+    assert isinstance(win.get("truncated"), bool), "缺 meta.window.truncated"
+
+
+def test_valuation_daily_basic_multi_live(cli):
+    """多票估值序列：一次 eval 两票，行合同与单票一致 + per_symbol 明细。"""
+    r = _call_or_xfail(
+        lambda: cli.valuation.daily_basic_multi(
+            ["600519", "000001"], begin="2026-10-01", end="2026-11-16",
+            fields=["pe_ttm"]))
+    assert r.get("ok") is True and isinstance(r.get("data"), list)
+    syms = {row["symbol"] for row in r["data"]}
+    assert syms == {"600519", "000001"}, syms
+    for row in r["data"]:
+        assert row["field"] == "pe_ttm"
+        assert isinstance(row["value"], (int, float))
+    per = (r.get("meta") or {}).get("per_symbol") or []
+    assert {p["symbol"] for p in per} == {"600519", "000001"}, per
+    for item in per:
+        assert isinstance(item.get("count"), int)
+        assert isinstance(item.get("truncated"), bool)
+
+
+def test_valuation_daily_basic_coverage_live(cli):
+    """可用范围发现：不拉序列，只回 window 元数据。"""
+    r = _call_or_xfail(lambda: cli.valuation.daily_basic_coverage(
+        "600519", begin="2023-01-01", end="2026-11-16"))
+    assert r.get("ok") is True
+    data = r.get("data") or {}
+    assert data.get("as_of"), "缺 as_of"
+    assert isinstance(data.get("truncated"), bool)
+    assert int(data.get("scan_limit") or 0) > 0
 
 
 

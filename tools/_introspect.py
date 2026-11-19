@@ -55,6 +55,10 @@ METHOD_EXAMPLE_VALUES = {
     ("statements", "tree"): {"kind": '"balance"'},
     ("statements", "years"): {"kind": '"income"'},
     ("valuation", "hist_stats"): {"metric": '"pe"', "window": '"3y"'},
+    # 多票估值序列：symbols 必须是 list/tuple（裸串会被拒）
+    ("valuation", "daily_basic_multi"): {
+        "symbols": '["600519", "000001"]', "begin": '"2026-11-01"',
+        "end": '"2026-11-18"', "fields": '["pe_ttm"]'},
     # 回撤筛选的示例取上游默认语义（近 20 日跌超 10%）
     ("screener", "screen_pullback_20d"): {"min_chg": "-0.10"},
     # 全市场条件选股：示例用真实可跑的「三年股息均值 > 3% 且 ROE > 15%」
@@ -168,7 +172,15 @@ FALLBACK_RETURNS = {
         "MAP · {字段: 值}（一次指标批量求值；字段集同 ``cli.futures.get`` 可选集）",
     ("valuation", "daily_basic"):
         "MAP · {ok, as_of, data: [{date, symbol, field, value}], meta}"
-        "（8 字段长表，date 升序；as_of=表内最新行日期）",
+        "（8 字段长表，date 升序；as_of=表内最新行日期；"
+        "meta.window.truncated 标读窗口截断）",
+    ("valuation", "daily_basic_multi"):
+        "MAP · {ok, as_of, data: [{date, symbol, field, value}], meta}"
+        "（多票长表，行合同与 daily_basic 一致；meta.per_symbol 给每票"
+        " count/oldest_scanned/truncated）",
+    ("valuation", "daily_basic_coverage"):
+        "MAP · {ok, as_of, data: {as_of, oldest_scanned, scan_days, scan_limit,"
+        " truncated, pages}}（不拉序列，只探可用范围）",
     ("dividend", "window_stats"):
         "MAP · {dps: 每股股利合计(元/股), total: 总分红(元), count: 次数}"
         "（按除权日计、截至今天）",

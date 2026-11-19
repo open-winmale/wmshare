@@ -10,7 +10,7 @@
     ``_raw=True`` 取上游原始行（list[dict]，跳过规范化与换算）——诊断逃生口；
   - 本层是目录合同的薄翻译：高频方法显式包装；目录内其余非内部函数经 ``__getattr__``
     属性直达（如 ``cli.kline.screen_above_ma20``）；目录标 ``internal: true`` 的
-    规范化辅助（fmt_* 等）不再直达，请走 ``cli.call``——316 个底层函数零遮蔽；
+    规范化辅助（fmt_* 等）不再直达，请走 ``cli.call``——317 个底层函数零遮蔽；
   - 选股能力集中在 ``cli.screener``：单票筛选器（bool）、全市场宽度/涨跌榜与
     全市场条件选股 ``query()``（服务端索引直出）显式包装，kline 目录的其余筛选
     函数经属性直达。
@@ -1821,6 +1821,25 @@ class ValuationApi(_Api):
         data["series"] = _out(rows)
         return _envelope(True, data, metric=metric, window=window)
 
+
+    def _daily_fields(self, fields: Any) -> list[str]:
+        """解析/校验每日估值字段（列表或逗号串；未知字段报 UsageError）。"""
+        if isinstance(fields, str):
+            req = [f.strip().lower() for f in fields.split(",") if f.strip()]
+        elif fields is None:
+            req = list(self._DAILY_FIELDS)
+        elif isinstance(fields, (list, tuple)):
+            req = [str(f).strip().lower() for f in fields]
+        else:
+            raise UsageError(
+                "fields 只接受 list[str] / 逗号字符串 / None", code="params")
+        unknown = [f for f in req if f not in self._DAILY_FIELDS]
+        if unknown:
+            raise UsageError(
+                f"fields 含未知字段 {unknown}；只支持 {list(self._DAILY_FIELDS)}",
+                code="params")
+        return list(dict.fromkeys(req))  # 去重保序
+
     def daily_basic(
         self, symbol: str, begin: str | None = None, end: str | None = None,
         fields: Any = None,
@@ -1840,29 +1859,121 @@ class ValuationApi(_Api):
             ``[{date, symbol, field, value}...]`` 升序；``as_of`` 为表内最新
             行日期（与过滤区间无关，供调用方判新鲜度）。
         """
-        if isinstance(fields, str):
-            req = [f.strip().lower() for f in fields.split(",") if f.strip()]
-        elif fields is None:
-            req = list(self._DAILY_FIELDS)
-        elif isinstance(fields, (list, tuple)):
-            req = [str(f).strip().lower() for f in fields]
-        else:
-            raise UsageError(
-                "fields 只接受 list[str] / 逗号字符串 / None", code="params")
-        unknown = [f for f in req if f not in self._DAILY_FIELDS]
-        if unknown:
-            raise UsageError(
-                f"fields 含未知字段 {unknown}；只支持 {list(self._DAILY_FIELDS)}",
-                code="params")
-        req = list(dict.fromkeys(req))  # 去重保序
+        req = self._daily_fields(fields)
+        b = _normalize_date(begin) if begin else ""
+        e = _normalize_date(end) if end else ""
         raw = self._c.call(
-            "valuation.daily_basic", sym=symbol,
+            "valuation.daily_basic", sym=symbol, begin=b, end=e, fields=req)
+        if not isinstance(raw, dict):
+            return _envelope(False, {}, note="上游返回非 MAP")
+        # 读窗口截断 → 按 oldest_scanned 向更早翻页补齐（每片一个服务端窗口）。
+        # 服务端一次最多扫 scan_limit(1,500) 个日文档，请求 begin 早于实际扫到的
+        # 最早日期时 meta.window.truncated=True（2026-11-19 新增）。这里按
+        # 「下一页 end = oldest_scanned 前一天」继续拉，直到不截断或没有更早数据。
+        # 上限 10 片（≈15,000 交易日，远超 A 股历史）防死循环。
+        pages = 1
+        meta = dict(raw.get("meta") or {})
+        win = meta.get("window") or {}
+        collected = list(raw.get("data") or [])
+        while win.get("truncated") and pages < 10:
+            oldest = str(win.get("oldest_scanned") or "")[:10]
+            if len(oldest) != 10:
+                break
+            import datetime as _d
+            try:
+                page_end = (_d.date.fromisoformat(oldest)
+                            - _d.timedelta(days=1)).isoformat()
+            except ValueError:
+                break
+            page = self._c.call(
+                "valuation.daily_basic", sym=symbol, begin=b, end=page_end,
+                fields=req)
+            pages += 1
+            if not isinstance(page, dict):
+                break
+            page_rows = list(page.get("data") or [])
+            if not page_rows:
+                break
+            collected = page_rows + collected      # 更早的在前 → 保持升序
+            page_win = (page.get("meta") or {}).get("window") or {}
+            win = page_win
+        if pages > 1:
+            meta["window"] = win
+            meta["pages"] = pages
+            meta["count"] = len(collected)
+            raw = dict(raw)
+            raw["data"] = collected
+            raw["meta"] = meta
+            raw["ok"] = bool(collected)
+        return raw
+
+    def daily_basic_multi(
+        self, symbols: Any, begin: str | None = None, end: str | None = None,
+        fields: Any = None,
+    ) -> dict:
+        """多票每日估值序列（一次 eval，行合同与 ``daily_basic`` 完全一致）。
+
+        物化表按 per-symbol key 落库、没有全市场入口，逐票调用要把固定开销乘 N；
+        本方法走服务端 ``valuation.daily_basic_multi``，一次求值内处理多票。
+        **EC 仍按票计价**（批量省请求次数不省算力），但省掉 N 次调度开销。
+
+        :param symbols: 标的清单（list/tuple；``>=200`` 票时提示成本量级）
+        :param begin: ISO 起日（含），``None``/``""`` = 开区间
+        :param end: ISO 止日（含），``None``/``""`` = 开区间
+        :param fields: list[str] / 逗号字符串 / ``None``（全部 8 个）
+        :returns: 统一信封；``data`` 为多票长表 ``[{date, symbol, field, value}]``，
+            ``meta.per_symbol`` 给出每票的 ``count/oldest_scanned/truncated``
+        """
+        if isinstance(symbols, (str, bytes)) or not isinstance(symbols, (list, tuple)):
+            raise UsageError("symbols 只接受 list/tuple", code="params")
+        syms = [str(s) for s in symbols if str(s).strip()]
+        if not syms:
+            raise UsageError("symbols 不能为空", code="params")
+        syms = list(dict.fromkeys(syms))
+        if len(syms) > 200 and self._c.ec_warn_threshold is not None:
+            import warnings
+            warnings.warn(
+                f"daily_basic_multi: {len(syms)} 票按票计价，总 EC ≈ 票数 × 单票地板"
+                f" ≈{len(syms) * 1700:,} EC 量级；大清单建议先抽样确认口径",
+                stacklevel=2)
+        req = self._daily_fields(fields)
+        raw = self._c.call(
+            "valuation.daily_basic_multi", syms=syms,
             begin=_normalize_date(begin) if begin else "",
             end=_normalize_date(end) if end else "",
             fields=req)
         if not isinstance(raw, dict):
             return _envelope(False, {}, note="上游返回非 MAP")
         return raw
+
+    def daily_basic_coverage(
+        self, symbol: str, begin: str | None = None, end: str | None = None,
+    ) -> dict:
+        """可用日期范围发现（不拉序列，只取一个日窗口的元数据）。
+
+        只请求 ``fields=["pe_ttm"]`` 并读取 ``meta.window``，因此成本与
+        ``daily_basic`` 同阶（按扫描行计费）但数据量最小——用于先探「这段区间
+        有没有数据 / 表能回溯到多早」，再决定要不要拉整段。
+
+        :param begin: 关心区间的起日；早于表内可读范围时 ``truncated`` 为真
+        :param end: 关心区间的止日；``None``/``""`` = 开区间
+        :returns: 统一信封；``data`` 为
+            ``{as_of, oldest_scanned, scan_days, scan_limit, truncated, pages}``
+        """
+        raw = self.daily_basic(symbol, begin, end, fields=["pe_ttm"])
+        if not isinstance(raw, dict):
+            return _envelope(False, {}, note="上游返回非 MAP")
+        meta = raw.get("meta") or {}
+        win = meta.get("window") or {}
+        data = {
+            "as_of": str(raw.get("as_of") or "")[:10],
+            "oldest_scanned": str(win.get("oldest_scanned") or "")[:10],
+            "scan_days": int(win.get("scan_days") or 0),
+            "scan_limit": int(win.get("scan_limit") or 0),
+            "truncated": bool(win.get("truncated")),
+            "pages": int(meta.get("pages") or 1),
+        }
+        return _envelope(True, data, symbol=str(symbol))
 
 
 class EstimatesApi(_Api):
@@ -3267,6 +3378,10 @@ FRIENDLY_INDEX: list[tuple[str, str, str, str, str]] = [
     ("fundamentals", "valuation", "hist_stats", "估值历史统计", "组合接口（宿主 HIST_STATS）"),
     ("fundamentals", "valuation", "daily_basic", "个股每日估值序列",
      "valuation.daily_basic（服务端物化 alt.valuation_daily）"),
+    ("fundamentals", "valuation", "daily_basic_multi", "多票每日估值序列",
+     "valuation.daily_basic_multi（一次 eval，EC 仍按票计价）"),
+    ("fundamentals", "valuation", "daily_basic_coverage", "估值序列可用范围",
+     "valuation.daily_basic（meta.window 段，只取单日窗口）"),
     ("fundamentals", "estimates", "query_forecast", "机构盈利预测", "estimates.query_forecast"),
     ("fundamentals", "estimates", "query_forecast_detail", "盈利预测明细",
      "estimates.query_forecast_detail"),

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "generated_by": "tools/gen_api_docs.py",
-  "count": 249,
+  "count": 250,
   "domains": [
     {
       "id": "corp.equity",
@@ -2770,6 +2770,49 @@
         {
           "name": "valuation.daily_basic",
           "cn": "个股每日估值序列",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "pe_ttm": [
+              0,
+              3000
+            ],
+            "pb": [
+              0,
+              200
+            ],
+            "ps": [
+              0,
+              500
+            ],
+            "pr": [
+              0,
+              2000
+            ],
+            "total_mv": [
+              0,
+              50000000000000.0
+            ],
+            "circ_mv": [
+              0,
+              50000000000000.0
+            ],
+            "turnover_rate": [
+              0,
+              1
+            ],
+            "dv_ttm": [
+              0,
+              0.5
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "valuation.daily_basic_multi",
+          "cn": "多票每日估值序列",
           "layer": "L0",
           "internal": false,
           "units": {},

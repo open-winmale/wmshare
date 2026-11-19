@@ -1937,6 +1937,25 @@ class ValuationNS(_Ns):
             kw["fields"] = fields
         return _out(self._client.call("valuation.daily_basic", **kw, _raw=_raw), _raw)
 
+    def daily_basic_multi(self, syms: list, begin: str | None = None, end: str | None = None, fields: list | None = None, _raw: bool = False) -> Any:
+        """多票每日估值序列
+
+:param syms: 标的清单 ARR（≥1）
+:param begin: ISO 起日（含），""=开区间
+:param end: ISO 止日（含），""=开区间
+:param fields: 字段子集 ARR，nil/空=全部 8 个
+
+:returns: MAP 信封 {ok, as_of, data, meta}；data=多票长表 [{date, symbol, field, value}] 升序，meta.per_symbol 给每票 count/oldest_scanned/truncated
+        """
+        kw: dict[str, Any] = {"syms": syms}
+        if begin is not None:
+            kw["begin"] = begin
+        if end is not None:
+            kw["end"] = end
+        if fields is not None:
+            kw["fields"] = fields
+        return _out(self._client.call("valuation.daily_basic_multi", **kw, _raw=_raw), _raw)
+
 class WorkoutNS(_Ns):
     """契约套利（disc.workout）"""
 

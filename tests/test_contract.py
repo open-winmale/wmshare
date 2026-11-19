@@ -29,6 +29,8 @@ SAMPLES = {
     "fut_code": "cn.RB.SHF", "fut_symbol": "cn.RB.SHF", "field": "close",
     "date": "2026-03-31", "n": 5, "curve_name": "中债国债收益率曲线",
     "tenor": "10年", "brand": "比亚迪", "manufacturer": "比亚迪", "category": "回购",
+    # daily_basic_multi（2026-11-19）显式要求 list/tuple，空数组会被拒
+    "symbols": ["600519"],
 }
 _BY_TYPE = {"string": "x", "int": 1, "float": 1.0, "bool": True, "array": [], "object": {}}
 

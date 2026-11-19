@@ -1,5 +1,5 @@
 id: fund.valuation
-version: 1.0.0
+version: 1.1.0
 cn: 每日估值
 kind: computed
 category: fundamentals
@@ -47,3 +47,26 @@ functions:
     example: 'valuation.daily_basic("600519", "2025-01-01", "", ARR{"pe_ttm", "total_mv"})'
     notes: [as_of = 表内最新行日期（与 begin/end 过滤无关，供调用方判新鲜度）；
       未知字段名在 meta.requested_unknown 里如实回报，不静默丢弃]
+  - name: valuation.daily_basic_multi
+    cn: 多票每日估值序列
+    kind: computed
+    layer: L0
+    params:
+      - {name: syms, type: array, required: true, desc: 标的清单 ARR（≥1）}
+      - {name: begin, type: string, required: false, desc: 'ISO 起日（含），""=开区间'}
+      - {name: end, type: string, required: false, desc: 'ISO 止日（含），""=开区间'}
+      - {name: fields, type: array, required: false, desc: '字段子集 ARR，nil/空=全部 8 个'}
+    returns: {desc: 'MAP 信封 {ok, as_of, data, meta}；data=多票长表 [{date, symbol, field, value}] 升序，meta.per_symbol 给每票 count/oldest_scanned/truncated'}
+    ranges:
+      pe_ttm: [0, 3000]
+      pb: [0, 200]
+      ps: [0, 500]
+      pr: [0, 2000]
+      total_mv: [0, 5.0e+13]
+      circ_mv: [0, 5.0e+13]
+      turnover_rate: [0, 1]
+      dv_ttm: [0, 0.5]
+    example: 'valuation.daily_basic_multi(ARR{"600519", "000001"}, "2026-11-01", "2026-11-18", ARR{"pe_ttm"})'
+    notes: [行合同与 valuation.daily_basic 完全一致，可 concat 后按 symbol 分组；
+      EC 仍按票计价（批量只省请求调度，不省算力），地板 ≈1,707 EC/票；
+      单票读窗口 1,500 日文档，meta.per_symbol 各项的 truncated 标出被截断的票]

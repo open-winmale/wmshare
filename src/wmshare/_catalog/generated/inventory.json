@@ -1,6 +1,6 @@
 {
  "schema_version": 2,
- "upstream_rev": "26692375",
+ "upstream_rev": "c17de72d",
  "domains": {
   "bonus": {
    "entry": "sys/bonus/init.xs",
@@ -133,7 +133,7 @@
   "toplist",
   "valuation"
  ],
- "function_count": 322,
+ "function_count": 323,
  "functions": [
   {
    "name": "bonus.dps_rpt",
@@ -9801,6 +9801,32 @@
     {
      "name": "sym",
      "type": "string"
+    },
+    {
+     "name": "begin",
+     "type": "string"
+    },
+    {
+     "name": "end",
+     "type": "string"
+    },
+    {
+     "name": "fields",
+     "type": "array"
+    }
+   ]
+  },
+  {
+   "name": "valuation.daily_basic_multi",
+   "cn": "多票每日估值序列",
+   "example": "valuation.daily_basic_multi(ARR{\"600519\", \"000001\"}, \"\", \"\", ARR{\"pe_ttm\"})",
+   "returns": "MAP · 估值信封（多票长表）",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "syms",
+     "type": "array"
     },
     {
      "name": "begin",

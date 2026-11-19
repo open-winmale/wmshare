@@ -4274,7 +4274,108 @@
         },
         "responses": {
           "200": {
-            "description": "MAP · {ok, as_of, data: [{date, symbol, field, value}], meta}（8 字段长表，date 升序；as_of=表内最新行日期）",
+            "description": "MAP · {ok, as_of, data: [{date, symbol, field, value}], meta}（8 字段长表，date 升序；as_of=表内最新行日期；meta.window.truncated 标读窗口截断）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/valuation/daily_basic_multi": {
+      "post": {
+        "operationId": "valuation_daily_basic_multi",
+        "summary": "多票每日估值序列（一次 eval，行合同与 ``daily_basic`` 完全一致）。",
+        "description": "物化表按 per-symbol key 落库、没有全市场入口，逐票调用要把固定开销乘 N；、本方法走服务端 ``valuation.daily_basic_multi``，一次求值内处理多票。、**EC 仍按票计价**（批量省请求次数不省算力），但省掉 N 次调度开销。、:returns: 统一信封；``data`` 为多票长表 ``[{date, symbol, field, value}]``，、``meta.per_symbol`` 给出每票的 ``count/oldest_scanned/truncated``、valuation.daily_basic_multi（一次 eval，EC 仍按票计价）。SDK 调用：`cli.valuation.daily_basic_multi(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "财务基本面"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "symbols": {
+                    "type": "object",
+                    "description": "标的清单（list/tuple；``>=200`` 票时提示成本量级）"
+                  },
+                  "begin": {
+                    "type": "string",
+                    "description": "ISO 起日（含），``None``/``\"\"`` = 开区间"
+                  },
+                  "end": {
+                    "type": "string",
+                    "description": "ISO 止日（含），``None``/``\"\"`` = 开区间"
+                  },
+                  "fields": {
+                    "type": "object",
+                    "description": "list[str] / 逗号字符串 / ``None``（全部 8 个）"
+                  }
+                },
+                "required": [
+                  "symbols"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "MAP · {ok, as_of, data: [{date, symbol, field, value}], meta}（多票长表，行合同与 daily_basic 一致；meta.per_symbol 给每票 count/oldest_scanned/truncated）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/valuation/daily_basic_coverage": {
+      "post": {
+        "operationId": "valuation_daily_basic_coverage",
+        "summary": "可用日期范围发现（不拉序列，只取一个日窗口的元数据）。",
+        "description": "只请求 ``fields=[\"pe_ttm\"]`` 并读取 ``meta.window``，因此成本与、``daily_basic`` 同阶（按扫描行计费）但数据量最小——用于先探「这段区间、有没有数据 / 表能回溯到多早」，再决定要不要拉整段。、:returns: 统一信封；``data`` 为、``{as_of, oldest_scanned, scan_days, scan_limit, truncated, pages}``、valuation.daily_basic（meta.window 段，只取单日窗口）。SDK 调用：`cli.valuation.daily_basic_coverage(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "财务基本面"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "symbol": {
+                    "type": "string"
+                  },
+                  "begin": {
+                    "type": "string",
+                    "description": "关心区间的起日；早于表内可读范围时 ``truncated`` 为真"
+                  },
+                  "end": {
+                    "type": "string",
+                    "description": "关心区间的止日；``None``/``\"\"`` = 开区间"
+                  }
+                },
+                "required": [
+                  "symbol"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "MAP · {ok, as_of, data: {as_of, oldest_scanned, scan_days, scan_limit, truncated, pages}}（不拉序列，只探可用范围）",
             "content": {
               "application/json": {
                 "schema": {

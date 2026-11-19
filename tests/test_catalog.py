@@ -7,8 +7,8 @@ def test_load_and_stats():
     cat = load()
     s = cat.stats()
     assert s["domains"] == 24, s  # 批次1 pdf_doc / 批次3 toplist + futures，2026-11-19
-    assert s["functions"] == 316, s
-    assert s["raw"] == 233 and s["computed"] == 83, s  # raw+16：批次1 暴露层 11 + 批次3 toplist 3 + futures.mapping/fmt_maps
+    assert s["functions"] == 317, s  # +1 valuation.daily_basic_multi（2026-11-19）
+    assert s["raw"] == 233 and s["computed"] == 84, s  # raw+16：批次1 暴露层 11 + 批次3 toplist 3 + futures.mapping/fmt_maps
     assert s["metric_catalog_total"] == 2983, s
     assert s["upstream_rev"], "inventory 应锚定 upstream rev"
 

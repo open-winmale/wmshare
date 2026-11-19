@@ -614,8 +614,11 @@ class DemoClient:
             index_top_movers=self._top_movers,
             query=self._screen_query,
         )
-        self.valuation = SimpleNamespace(hist_stats=self._valuation_hist_stats,
-                                         daily_basic=self._valuation_daily_basic)
+        self.valuation = SimpleNamespace(
+            hist_stats=self._valuation_hist_stats,
+            daily_basic=self._valuation_daily_basic,
+            daily_basic_multi=self._valuation_daily_basic_multi,
+            daily_basic_coverage=self._valuation_daily_basic_coverage)
         self.index = self._index_ns()
         # 2.0 新面：快照已覆盖（calendar/margin 市场面/futures），逐面回放。
         # 快照是真实 API 固定日拍摄，方向/形态与 live 同构。
@@ -1292,6 +1295,23 @@ class DemoClient:
         raise UsageError(
             "demo 快照未收录 valuation.daily_basic（服务端物化表尚未投产，"
             "无真实罐头值可回放）；live 模式可用。", code="demo_unsupported")
+
+    def _valuation_daily_basic_multi(self, symbols: Any, begin: str = "",
+                                     end: str = "", fields: Any = None) -> dict[str, Any]:
+        """与 live 同签名；物化表未入快照，显式 demo_unsupported。"""
+        if not isinstance(symbols, (list, tuple)) or not symbols:
+            raise UsageError("symbols 只接受非空 list/tuple", code="params")
+        raise UsageError(
+            "demo 快照未收录 valuation.daily_basic_multi；live 模式可用。",
+            code="demo_unsupported")
+
+    def _valuation_daily_basic_coverage(self, symbol: str, begin: str = "",
+                                        end: str = "") -> dict[str, Any]:
+        """与 live 同签名；物化表未入快照，显式 demo_unsupported（不伪造范围）。"""
+        self._require_symbol(symbol)
+        raise UsageError(
+            "demo 快照未收录 valuation.daily_basic 的 window 元数据；live 模式可用。",
+            code="demo_unsupported")
 
     # ---- generic and batch surfaces ----
     def _notice_poller(self, *, group: str, consumer: str,
