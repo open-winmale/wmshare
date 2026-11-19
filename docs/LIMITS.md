@@ -13,7 +13,7 @@
 | 单一批次拼接票数告警 | **200** | 非原生路由接口逐票拼接 ≥200 票发 `UserWarning`（EC 随票数放大） | 用批量原生接口或 `batch_all()` 分批 |
 | 批量原生「准全市场」捷径阈值 | **2,000** | ≥2,000 票改传空数组（与服务端全市场扫描阈值对齐：≥2000 的数组清单上游本来就按全市场扫描计费，空参捷径另享按日 memo，复跑 ≈28 EC）；停牌/索引外标的缺席 → `BatchResult.truncated=True` | 缺席标的用小清单补拉（<2,000 票走逐票按量路径，含停牌行，≈58 EC/票） |
 | `margin.universe` 服务端上限 | **5,000** 行 | 默认 `limit=None` = 全量（≈4,010 行） | 按需传 `limit` 降 EC |
-| `valuation.daily_basic` 返回窗口 | **1,500** 行（最新优先；XS 端 `DEFAULT_LIMIT`） | 2026-11-19 修复后实测：600519/000001 全量各回 **727 日**（2023-11-20 起，3y 全量可见）。背景：11-19 服务端发布波后 kernel 读面对 `limit≤0` 取 200 默认，曾使端点只回最新 ~200 交易日（11-19 午间发现，store 数据始终完好）；script `store_query` 包装层已把 ≤0 归一到 `DEFAULT_LIMIT`（commit `015032f2`，pipeline-5982）。计费按扫描行：floor ≈1,707 EC + ≈23 EC/日（估 `begin/end` 收窄，字段数几乎不加价） | 累积 >1,500 日（≈6 年）后更早区间将**静默缺席**（无 truncated 标志）；分页/`truncated` 候选见 CHANGELOG Unreleased |
+| `valuation.daily_basic` 返回窗口 | **1,500** 行（最新优先；XS 端 `DEFAULT_LIMIT`） | 2026-11-19 修复后实测：600519/000001 全量各回 **727 日**（2023-11-20 起，3y 全量可见）。背景：11-19 服务端发布波后 kernel 读面对 `limit≤0` 取 200 默认，曾使端点只回最新 ~200 交易日（11-19 午间发现，store 数据始终完好）；script `store_query` 包装层已把 ≤0 归一到 `DEFAULT_LIMIT`（commit `015032f2`，pipeline-5982）。计费按扫描行：floor ≈1,707 EC + ≈23 EC/日（估 `begin/end` 收窄，字段数几乎不加价） | 累积 >1,500 日（≈6 年）后更早区间将**静默缺席**（无 truncated 标志）；分页/`truncated` 候选见 [docs/BACKLOG.md](BACKLOG.md) |
 
 ## 2. 批量与全市场
 

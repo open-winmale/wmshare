@@ -11,22 +11,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Planned（服务端候选，未排期）
-- **【读面回归 2026-11-19，✅ 已修复当日】`valuation.daily_basic` 窗口一度收紧至
-  最新 ~200 交易日**：kernel/analysis `v2FindArgsFromOpts` 对 `limit≤0` 取 200
-  默认，XS `valuation.store_query(s, 0)` 显式传 0（`DEFAULT(0, 1500)` 不替换）→
-  200 日前历史读不到（store 内数据始终完好）。11-18 全量读实测 726 日 /
-  18,317 EC，11-19 午间实测 200 日（min=2026-01-21）——当日服务端发布波收紧。
-  **修复**：script `sys/valuation/store.xs` 包装层把 `limit≤0` 归一到
-  `DEFAULT_LIMIT`（commit `015032f2`，pipeline-5982 当日部署）；修复后实测
-  600519/000001 全量各回 727 日（2023-11-20 起）。kernel 侧 `≤0→200` 默认对
-  其他 catalog 的影响未逐一排查，待卫生窗评估。与分页/ts 下推候选正交。
-- `valuation.daily_basic` 服务端增强候选（2026-11-19 消费端盘点登记，均不改
-  现有合同）：分页 + `truncated` 标志（当前 >1,500 日文档静默缺席，见
-  docs/LIMITS.md §1）；`begin/end` ts 下推（当前 XS 端拉全窗后过滤，EC 随
-  扫描而非请求跨度）；coverage API（可用日期/符号发现，现仅 envelope
-  `as_of` 可探）；多票批量路由（现逐票各付 1,707 EC 地板）；`estimate_cost`
-  随表增长再校准（>3y 后 18,317 EC 档失真）。
+## [2.3.1] - 2026-11-19
+
+### Docs
+- **`valuation.daily_basic` 读窗事故登记与合同校准（SDK 代码无变更）**：
+  2026-11-19 午间发现端点只回最新 ~200 交易日——kernel/analysis 读面对
+  `limit≤0` 取 200 默认，XS `store_query(s, 0)` 显式传 0 不被 `DEFAULT` 替换
+  （11-18 实测曾为全量 726 日 / 18,317 EC，当日服务端发布波收紧；store 数据
+  始终完好）。服务端 script 侧当日修复：`store_query` 包装层把 ≤0 归一到
+  `DEFAULT_LIMIT`（015032f2 / pipeline-5982），修复后实测 600519/000001
+  全量各回 727 日（2023-11-20 起）、历史窗口 `ok=true`。LIMITS §1 窗口行按
+  修复后实测校准：合同窗口 1,500 行（XS `DEFAULT_LIMIT`），累积 >1,500 日
+  （≈6 年）后更早区间静默缺席（无 `truncated` 标志）。服务端候选清单移至
+  [docs/BACKLOG.md](docs/BACKLOG.md)（`[Unreleased]` 按仓纪律保持为空）。
 
 ## [2.3.0] - 2026-11-19
 
