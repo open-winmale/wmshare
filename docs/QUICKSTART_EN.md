@@ -10,7 +10,7 @@ Want the 10-year PE percentile of a stock? You download history, pick a percenti
 algorithm, handle corporate actions and calendar alignment — and everyone's number
 differs slightly.
 
-wmshare moves that computation **to the server**: 2,752 precomputed indicator codes
+wmshare moves that computation **to the server**: 2,983 precomputed indicator codes
 (percentile ranks, multi-window averages, industry-relative ranks, TTM yields, …),
 each with a documented definition, one call each. A "data guardian" layer validates
 plausibility and unit contracts before values reach your code — implausible values
@@ -27,15 +27,15 @@ pip install wmshare
 
 ## Try it offline — no sign-up, 3 lines
 
-The package ships a frozen snapshot (captured 2026-10-30, not live data). This runs
+The package ships a frozen snapshot (captured 2026-11-19, not live data). This runs
 fully offline and is pinned by tests:
 
 ```python
 import wmshare
 
 cli = wmshare.demo_client()
-print(f"{cli.dividend.yield_ttm('600519'):.2%}")        # 3.73%
-print(cli.screener.index_breadth_summary()["total"])    # 5686
+print(f"{cli.dividend.yield_ttm('600519'):.2%}")        # 3.56%
+print(cli.screener.index_breadth_summary()["total"])    # 5687
 ```
 
 Codes outside the demo universe raise an explicit error instead of returning
@@ -57,8 +57,12 @@ p = cli.indicator.get("600519", "$PCT_PE_TTM_10Y_LAST")
 print(p)   # 10-year PE percentile, e.g. 0.2115 = 21st percentile; moves daily
 ```
 
-The free tier allows 500 requests/hour and 5,000/day. Requests are billed
-**per request**, not per row — which is why batching matters:
+Two separate meters apply. **Rate limiting** counts requests (free tier: 500/hour,
+5,000/day) — that is what batching fixes. **Billing** is measured in EC by the server
+per materialized row, **not per request**: batching cuts request count and latency,
+but it does not cut EC. Estimate before you pull with
+`cli.cost_estimate(name, **params)` (offline, no request), and read the actual charge
+back from `cli.last_ec_cost` / `BatchResult.ec_cost`.
 
 ## Whole market in 11 requests
 
@@ -72,7 +76,7 @@ and the README section on batch fetching.
 - Browse the offline catalog: `cat.search("股息")` / `cat.metric(code)` after
   `cat = cli.catalog` — codes are verified before use (`cat.metric` raises on
   dead codes).
-- Full navigation: [docs/INDICATORS.md](INDICATORS.md) (Chinese) — all 2,752 codes
+- Full navigation: [docs/INDICATORS.md](INDICATORS.md) (Chinese) — all 2,983 codes
   grouped by data type, with naming grammar and a dead-code warning chapter.
 
 ## Unit contract
@@ -100,9 +104,9 @@ by default (`Client(max_limit=...)` to adjust).
 The in-depth documentation is in Chinese:
 [GUIDE.md](GUIDE.md) (task recipes, batching, troubleshooting) ·
 [INDICATORS.md](INDICATORS.md) (indicator catalog) ·
-[API.md](API.md) (132 core endpoints) ·
-[examples/](../examples/README.md) (15 runnable numbered examples, all with an
-offline `--demo` mode) · [AGENTS.md](../AGENTS.md) and
+[API.md](API.md) (152 core endpoints) ·
+[examples/](../examples/README.md) (18 runnable numbered examples: 3 fully offline,
+14 with an offline `--demo` mode, 1 requiring credentials) · [AGENTS.md](../AGENTS.md) and
 [SKILL.md](../src/wmshare/skills/wmshare/SKILL.md) for agent integration.
 
 ## Disclaimer & license

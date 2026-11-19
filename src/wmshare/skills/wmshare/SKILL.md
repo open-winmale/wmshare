@@ -28,7 +28,7 @@ python3 -c "import wmshare; print(wmshare.__version__)"   # 探测
 pip install -i https://pypi.tuna.tsinghua.edu.cn/simple wmshare
 ```
 
-零凭证语法试跑：`cli = wmshare.demo_client()`（2026-10-30 真实 API 固定快照；10 只演示宇宙 + 当日全市场 screener，**非实时数据**），调用面覆盖公开示例，用于无凭证时验证代码形态；真实取数必须配置下方凭证。
+零凭证语法试跑：`cli = wmshare.demo_client()`（2026-11-19 真实 API 固定快照；10 只演示宇宙 + 当日全市场 screener，**非实时数据**），调用面覆盖公开示例，用于无凭证时验证代码形态；真实取数必须配置下方凭证。
 
 MCP 安装与凭证写入：
 
@@ -93,7 +93,7 @@ cat.metrics_in_group("dividend")                         # 指标组内全部精
 | 某股最近 N 根日 K | `cli.kline.bars("600519", n=30)`（`adj="qfq"/"hfq"` 复权） |
 | 周 K / 月 K | `cli.kline.bars("600519", n=20, freq="W")`（`freq="M"` 月 K；服务端预派生） |
 | 某股日期区间 K 线 | `cli.kline.bars("600519", begin="2026-01-01", end="2026-06-30")` |
-| **全市场 / 上百只取数（避免 429）** | `cli.batch_all("kline.snapshot", [r["symbol"] for r in cli.stocks.list()])`——自动分批，A 股 5,691 家只发 **12 次请求**；**绝不要写 `for code in codes: cli.kline.bars(code)`（5,691 次请求必撞限流）** |
+| **全市场 / 上百只取数（避免 429）** | `cli.batch_all("kline.snapshot", [r["symbol"] for r in cli.stocks.list()])`——自动分批，A 股 5,375 家只发 **11 次请求**；**绝不要写 `for code in codes: cli.kline.bars(code)`（5,375 次请求必撞限流）** |
 | 最新价 / 盘中快照 | `cli.kline.last("600519")`；盘中实时用 `cli.kline.live("600519")` 或 `cli.kline.batch_live(["600519"])`；`cli.kline.snapshot(...)` 是行情摘要（收盘/涨跌幅），不是盘中 tip |
 | 当日 1 分钟分时 | `cli.kline.min1("600519")`（有损合成采样，非逐笔） |
 | 今日涨停了吗 / 全市场涨停梯队 | `cli.screener.screen_limit_up("600519")` |
@@ -165,7 +165,7 @@ print(cli.dividend.window_stats("600519", "3y"))   # {'dps': ..., 'total': ..., 
 - **限流按请求次数计**（免费档 500 次/小时、5,000 次/日），所以：
   ①大批量一律走 `batch_all`/`batch_iter`（N 家 = ⌈N/500⌉ 次请求），不要自己逐票循环；
   ②**容错用 `batch_all(on_batch_error="skip")`（批级），绝不能用 `call_batch(on_error="skip")`**
-  ——后者逐票发请求，12 批会放大成 5,691 次，正好制造 429；两个参数名不同是刻意的
+  ——后者逐票发请求，11 批会放大成 5,375 次，正好制造 429；两个参数名不同是刻意的
   （`on_batch_error` 跳过整批，`on_error` 逐票请求）；批量入口也无 `_df`，长表用 `to_df()`；
   ③遇 429 会停止并给 `codes[done:]` 续跑位置，按提示稍后续跑，不要无脑重试；
   ④单批撞 `CALC_LIMIT_EXCEEDED`（算力超限）时减小 `batch_size`。

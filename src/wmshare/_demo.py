@@ -1,14 +1,15 @@
 """离线演示客户端：真实 API 固定快照回放，零凭证、不联网。
 
-快照日为 2026-11-16，由维护者用 ``tools/generate_demo_snapshot.py`` 生成。
+快照日见 ``SNAPSHOT_AS_OF``，由维护者用 ``tools/generate_demo_snapshot.py`` 生成。
 数据覆盖 examples 的 demo 路径：10 只 A 股演示宇宙 + 当日真实全市场 screener。
-它不是实时行情，也不承诺覆盖全部 288 个目录函数；接真实数据用
+它不是实时行情，也不承诺覆盖全部目录函数；接真实数据用
 ``wmshare.Client.from_env()``。
 """
 from __future__ import annotations
 
 import datetime as _dt
 import hashlib
+import inspect
 import json
 import math
 from collections.abc import Mapping
@@ -57,6 +58,17 @@ _MAX_BANK_MEMBERS = 20
 # 期货/宏观罐头（v1.11 后新数据面）：期货已由 2026-11-17 快照覆盖
 # （data.futures）；宏观仍为 PROD 活体探针实证值，不在快照采集范围内。
 _FUT_CANS: dict[str, float] = {"$FUT_CLOSE": 5354.0, "$FUT_VOLUME": 302888.0}
+
+# demo 侧暴露的全部门面命名空间：已在 __init__ 挂具体实现的会被
+# _UnsupportedNamespace 包一层（保留已实现方法），未挂的整域兜底为
+# demo_unsupported。与 api.FRIENDLY_NAMESPACES 同集合，由
+# tests/test_interface_quality.py 的签名门禁逐项核对。
+_DEMO_NAMESPACE_NAMES = (
+    "kline", "screener", "moneyflow", "margin", "toplist", "cbond", "index",
+    "stocks", "statements", "segments", "valuation", "estimates", "indicator",
+    "notice", "filings", "pdf_doc", "forecast", "workout", "dividend", "info",
+    "equity", "intl", "macro", "backtest", "etf", "futures", "calendar",
+)
 
 
 def _unsupported(name: str, kind: str = "底层函数") -> UsageError:
@@ -510,6 +522,61 @@ class DemoPoller:
         return None
 
 
+def _live_facade(ns: str, method: str) -> Any:
+    """取真实门面方法（仅用于读取签名）；取不到返回 None。
+
+    延迟导入避免 _demo ↔ api 循环依赖：api 模块在 import 期会 import client，
+    而 client 侧不 import _demo。
+    """
+    try:
+        from wmshare.api import FRIENDLY_NAMESPACES
+    except Exception:  # pragma: no cover - 目录/门面损坏时不该让 demo 整体不可用
+        return None
+    cls = FRIENDLY_NAMESPACES.get(ns)
+    return getattr(cls, method, None) if cls is not None else None
+
+
+class _UnsupportedNamespace(SimpleNamespace):
+    """整域未回放的命名空间垫片：任意方法名都返回 demo_unsupported 抛错体。
+
+    README 承诺 ``demo_client()`` 与真实客户端**同签名**，但早期实现直接不给
+    未回放的命名空间，用户照抄 ``cli.notice.has_buyback(...)`` 会撞 ``AttributeError``
+    ——那是「假装没有这个方法」，与承诺相反，也让调用方无法区分「demo 没拍」和
+    「SDK 没这个能力」。垫片把两者分开：属性存在、可调用、调用即抛
+    ``UsageError(code="demo_unsupported")``，消息带命名空间/方法名与切换指引。
+
+    dunder 名（``__wrapped__``、``__deepcopy__`` 等）照常抛 ``AttributeError``，
+    否则 ``copy``/``inspect``/``repr`` 会拿到假的可调用对象而行为诡异。
+    """
+
+    def __init__(self, ns: str, backed: Any = None) -> None:
+        if backed is not None:
+            super().__init__(**backed.__dict__)
+        else:
+            super().__init__()
+        self._demo_ns = ns
+
+    def __getattr__(self, name: str) -> Any:
+        if name.startswith("__") and name.endswith("__"):
+            raise AttributeError(name)
+
+        def _unsupported_method(*args: Any, **kwargs: Any) -> Any:
+            raise _unsupported(f"{self._demo_ns}.{name}", "门面方法")
+
+        _unsupported_method.__name__ = name
+        _unsupported_method.__qualname__ = f"DemoClient.{self._demo_ns}.{name}"
+        live = _live_facade(self._demo_ns, name)
+        if live is not None:
+            try:
+                # 把 live 的形参表（去掉 self）挂上去，让同签名门禁与
+                # ``inspect.signature`` 看到真实签名而不是 (*args, **kwargs)。
+                _unsupported_method.__signature__ = inspect.signature(live).replace(  # type: ignore[attr-defined]
+                    parameters=list(inspect.signature(live).parameters.values())[1:])
+            except (TypeError, ValueError):  # 内建/签名不可读时退回泛参
+                pass
+        return _unsupported_method
+
+
 class DemoClient:
     """``wmshare.Client`` 的固定快照替身：覆盖 examples 和公开文档调用面。"""
 
@@ -646,6 +713,25 @@ class DemoClient:
         self.notice_poller = self._notice_poller
         self.call = self._call
         self.cost_estimate = self._cost_estimate
+        self._wrap_namespaces()
+
+    # ---- 同签名承诺的兜底：缺失方法/整域缺失都要报 demo_unsupported ----
+    # README 说 demo_client() 与真实客户端同签名。已实现的命名空间只挂了一部分
+    # 方法，未挂的（如 notice.has_buyback）曾经直接 AttributeError；整域未拍的
+    # （cbond/etf/...）连属性都没有。这里统一套上 _UnsupportedNamespace，把
+    # 「快照没拍」和「SDK 没这个能力」区分开。
+    _UNBACKED_NAMESPACES = (
+        "cbond", "segments", "filings", "forecast", "workout",
+        "estimates", "intl", "etf",
+    )
+
+    def _wrap_namespaces(self) -> None:
+        for name in _DEMO_NAMESPACE_NAMES:
+            current = self.__dict__.get(name)
+            if current is None:
+                setattr(self, name, _UnsupportedNamespace(name))
+            else:
+                setattr(self, name, _UnsupportedNamespace(name, backed=current))
 
 
     def _cost_estimate(self, name: str, /, **params: Any) -> dict:
@@ -1386,7 +1472,7 @@ class DemoClient:
 
 
     def _index_ns(self) -> SimpleNamespace:
-        """指数域罐头：universe_keys/keys/valuation/trend（冻结快照 2026-11-16 口径）。
+        """指数域罐头：universe_keys/keys/valuation/trend（冻结快照口径）。
 
         trend 覆盖与 live 同构的三组键：11 宽基 + 申万一级行业（此处取 6 个代表键，
         live 为全部 31 个）+ 2 个红利键——行业路径必须可离线验证，否则
@@ -1563,7 +1649,7 @@ class DemoClient:
 def demo_client() -> DemoClient:
     """创建零凭证、离线、固定快照的演示客户端。
 
-    快照来自真实 API 的 2026-11-16 固定日，包含 10 只演示宇宙与当日全市场 screener。
+    快照来自真实 API 的固定日，包含 10 只演示宇宙与当日全市场 screener。
     与真实 Client 不同处：数据不更新、只覆盖公开示例调用面、未知演示标的报错。
     """
     return DemoClient()

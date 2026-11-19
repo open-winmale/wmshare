@@ -66,3 +66,35 @@ def test_pdf_doc_search_scales_with_rows():
 def test_pdf_doc_single_doc_points(name):
     est = _est(name, {"file_key": "x"})
     assert est["ec_hi"] <= 1_500, est
+
+
+def test_daily_basic_multi_scales_with_symbol_count():
+    """多票按票计价：票数翻倍预估必须跟着翻倍。
+
+    2026-11-19 live 实测（18 天窗口，``metering.ec_cost``）：1→674、5→2,858、
+    10→5,588、30→16,521、50→26,625，即 ≈128 + 546×票数（边际 ≈550 EC/票）。
+    此前 ``estimate_cost`` 的 ``startswith("valuation.daily_basic")`` 分支只看
+    begin/end、完全忽略 ``syms``，多票预估算出来的是单票价（低估一个数量级以上）。
+    预估失真比没有预估更危险——用户会据此放心拉大清单。
+    """
+    params = {"begin": "2026-11-01", "end": "2026-11-18"}
+    one = _est("valuation.daily_basic_multi", {"syms": ["600519"], **params})
+    many = _est("valuation.daily_basic_multi",
+                {"syms": [f"60{i:04d}" for i in range(50)], **params})
+    assert many["ec_lo"] >= one["ec_lo"] * 40, (one, many)   # 按票线性
+    # 实测 50 票 = 26,625：上界必须覆盖实测值，下界不能低到离谱
+    assert many["ec_hi"] >= 26_625, many
+    assert many["ec_lo"] <= 26_625 <= many["ec_hi"], many
+    assert "按票计价" in many["note"] and "不省算力" in many["note"]
+
+
+def test_daily_basic_single_symbol_cost_unchanged():
+    """单票（无 syms/1 票）不得被多票逻辑放大——回归保护。"""
+    plain = _est("valuation.daily_basic", {"begin": "2026-11-01", "end": "2026-11-18"})
+    assert plain["ec_lo"] < 5_000, plain
+    assert "多票" not in plain["note"]
+    # 实测单日 578 / 13 日 962 必须落在区间内
+    one_day = _est("valuation.daily_basic", {"begin": "2026-11-18", "end": "2026-11-18"})
+    assert one_day["ec_lo"] <= 578 <= one_day["ec_hi"], one_day
+    thirteen = _est("valuation.daily_basic", {"begin": "2026-11-06", "end": "2026-11-18"})
+    assert thirteen["ec_lo"] <= 962 <= thirteen["ec_hi"], thirteen

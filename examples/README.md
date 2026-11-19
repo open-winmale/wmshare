@@ -2,8 +2,9 @@
 
 **编号即学习路径**：每个脚本独立可跑；输出里的数值都带单位注释——读输出就能学会
 「率/分位=小数（0.0396 = 3.96%）、金额=元、量=股」的基础口径。
-4 个离线示例在 CI 里以子进程真实执行，12 个凭证示例注入演示客户端（`main(cli=None)`；2.0 新面 18 在 demo 下显式降级）
-端到端跑过——可放心照抄。
+18 个示例全部在 CI 里以子进程真实执行：3 个纯离线（02/03/09）、14 个带 `--demo`
+注入演示客户端（`main(cli=None)`）、14 号可转债需凭证（演示快照不含 cbond 域）。
+可放心照抄。
 
 ## 运行
 
@@ -16,7 +17,7 @@ python examples/01_quickstart.py
 - **零凭证试跑**：凭证示例都支持 `--demo` 旗标，用随包演示客户端离线过一遍调用面（罐头快照、非真实行情）：
   `python examples/05_dividend_screener.py --demo`
 - **零凭证可跑**（不联网）：`02_catalog_tour`、`03_error_handling`、`09_ai_skill_setup`
-- **可选依赖**：`pip install "wmshare[dataframe]"`（pandas，`08_pandas_analysis` 需要）
+- **依赖**：pandas 自 2.0 起是核心依赖，无需额外 extra（`08_pandas_analysis` 直接用）
 
 ## 课程表
 

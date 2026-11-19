@@ -10,7 +10,7 @@
 > not live). **Install**: `pip install wmshare`. **Full English quickstart**: [docs/QUICKSTART_EN.md](docs/QUICKSTART_EN.md).
 
 给 Python 量化开发者的中文财经数据 SDK：一行接口拿到清洗好的 A股/港股/美股数据——
-估值分位、TTM 股息率等指标**服务端算好直出**，全市场批量 **12 次请求**绕开限流。
+估值分位、TTM 股息率等指标**服务端算好直出**，全市场批量 **11 次请求**绕开限流。
 凭证在开放平台（open.winmale.com）获取后即可取数；各市场逐能力明细见[「市场覆盖」](#市场覆盖)。
 
 ## 目录
@@ -20,7 +20,7 @@
 [指数与行业估值历史](#指数与行业估值历史) · [单位与数据守护](#单位与数据守护) ·
 [许可与数据服务](#许可与数据服务) · [更多](#更多)
 
-![notebook 实战：Jupyter 里 10 行代码筛出高股息 + PE 十年低位的股票（2026-10-30 真实数据）](docs/img/quickstart.png)
+![notebook 实战：Jupyter 里 10 行代码筛出高股息 + PE 十年低位的股票（2026-11-19 真实数据）](docs/img/quickstart.png)
 
 ## 零凭证先试
 
@@ -133,8 +133,8 @@ for r in res["rows"][:5]:
   （`count`=真实命中数）；涨跌全景/分桶/行业分布/涨跌榜同走服务端预计算索引，毫秒级。
 - **离线目录防编造**：317 个底层函数、152 个核心接口、2,983 个指标码离线可查
   （`cat.search("中文")`），目录之外的名字显式报错。
-- **零凭证离线试跑**：`wmshare.demo_client()`（同签名、不联网，2026-11-19 固定快照；非实时数据）。
-- **数据守护**：全库单位统一（比率=小数、金额=元、量=股），返回前量级/不变量校验，违例抛 `DataError`。
+- **零凭证离线试跑**：`wmshare.demo_client()`（**同签名**、不联网，2026-11-19 固定快照；非实时数据）。未回放的命名空间/方法照样能点出来，调用即抛 `UsageError(code="demo_unsupported")`——不会 `AttributeError` 装作没这个能力。
+- **数据守护**：全库统一单位（比率=小数、金额=元、量=股），返回前做单位换算与关键不变量校验；**精选 78 码另带口径与量级守护**（违例抛 `DataError`），其余码只保底不变量，口径以返回值/注释为准。
 
 ## 给 AI / Agent
 
@@ -239,9 +239,9 @@ print(cli.indicator.get("600519", "$PCT_PE_TTM_10Y_LAST"))   # 0.42
 # 行业定位：ROE 在同行业内的分位（1.0 = 行业最高；茅台 ROE 为行业之最）
 print(cli.indicator.get("600519", "$CUR_IND_ROE_PCT_LAST"))  # 1.0
 
-# 全市场涨跌全景：服务端索引直出，免本地扫描（*_pct 百分数、median_pct 小数）
+# 全市场涨跌全景：服务端索引直出，免本地扫描（*_pct 亦为小数，2.0 统一）
 print(cli.screener.index_breadth_summary())
-# {'total': 5685, 'up': 4567, 'down': 934, 'flat': 184, 'up_pct': 80.3, ...}
+# {'total': 5685, 'up': 4567, 'down': 934, 'flat': 184, 'up_pct': 0.803, ...}
 
 # 全市场列表 / 行业成分（中文名直达，也可传 "S48"）/ 批量：单标的接口传 list 即批量（≤500/批）
 rows = cli.stocks.list()                 # A 股 ≈5.7k 行：代码/名称/交易所/行业/上市日；港/美换 market
@@ -300,7 +300,9 @@ t["data"]["pe_pct"], t["data"]["pe_pct_window"], t["data"]["pct"]["pe"]["p3"]  #
 
 全库统一基础单位：**比率 / 涨跌幅 = 小数**（0.01 = 1%，ROE 0.332 = 33.2%）、
 **金额 / 价格 / 市值 = 元**（报表原币）、**成交量 = 股**；各接口单位口径见「基本功能」表。
-返回前做量级与关系不变量校验，违例抛 `DataError`——错误的量级到不了你的代码。
+返回前统一做单位换算与**关键不变量**校验（如成交量×价 与成交额一致），违例抛 `DataError`；
+**精选 78 码另带口径与量级守护**，其余码不做量级判定——需要更严格的口径请用
+[INDICATORS.md](docs/INDICATORS.md) 标注的精选码。
 需要脚本原始口径时：`_raw=True`（上游原始行）、`_units="native"`（保留上游原单位，如手/百分数）、`Client(validate=False)`（关校验留换算）。
 
 数据深度：个股/ETF 日 K 覆盖**自上市首日以来的全部交易日**（最早 1991 年）；单次区间上限 5 年、
@@ -318,7 +320,7 @@ t["data"]["pe_pct"], t["data"]["pe_pct_window"], t["data"]["pct"]["pe"]["p3"]  #
 - **AI 原生**：随包 [SKILL.md](src/wmshare/skills/wmshare/SKILL.md)、[AI 用法](docs/AI.md)、本地 MCP server（skill 可复制进 .agents/.zcode/.claude 的 skills/）；生态工具 [big-winner](https://github.com/open-winmale/big-winner)。
 - **文档中心 [docs/](docs/README.md)**：使用指南 GUIDE（单票菜谱/批量/多市场/故障排查）· 指标库 [INDICATORS.md](docs/INDICATORS.md)（全量指标码按数据类型分章）· AI 用法 · llms.txt 索引 · [API 参考](docs/API.md)（按资产类别分章的 152 个核心接口 + 指标组）
 - **可转债日更管线**：`cli.cbond.daily()` → `article()` → `figures()` 一条命令出图文（三层口径 + 三道闸 + 状态机 + 事件日历，每个数字带 `sources` 与 `as_of`，缺条目抛错而非补猜测值）；实战 notebook 见 [docs/notebooks/cb_double_low.ipynb](docs/notebooks/cb_double_low.ipynb)（2026-11-07 真实数据）
-- **示例课程 [examples/](examples/README.md)**：18 个编号示例（入门→进阶→生产→AI），全部支持演示客户端离线试跑，CI 端到端覆盖
+- **示例课程 [examples/](examples/README.md)**：18 个编号示例（入门→进阶→生产→AI）——3 个纯离线、14 个带 `--demo` 离线回放、1 个可转债需凭证；CI 端到端覆盖
 - **问题反馈 / 交流**：QQ 群 `1127142074`（搜索「wmshare开源交流群」）——使用问题、数据口径、bug 反馈欢迎进群，也欢迎 [GitHub Issues](https://github.com/open-winmale/wmshare/issues)
 - **维护者与治理**：[MAINTAINERS.md](MAINTAINERS.md)（响应承诺与发版流程）· [GOVERNANCE.md](GOVERNANCE.md) · [行为准则](CODE_OF_CONDUCT.md)
 

@@ -198,6 +198,8 @@ _SURFACE_FILES = (
     "docs/README.md",
     "docs/GUIDE.md",
     "docs/API.md",
+    "docs/QUICKSTART_EN.md",   # 英文首屏：2026-11-19 前不在扫描面，2,752 长期留存
+    "server.json",             # MCP Registry 机器可读描述，外部直接消费
     "llms.txt",
     "llms-full.txt",
     "src/wmshare/skills/wmshare/SKILL.md",
@@ -231,6 +233,9 @@ _COUNT_PATTERNS = (
     ("tools", r"([\d,]+)\s*个\s*task\s*tools", 2),
     ("domains", r"([\d,]+)\s*个\s*数据域", 2),
     ("friendly", r"([\d,]+)\s*个\s*(?:SDK\s*)?friendly API", 2),
+    # 英文面（QUICKSTART_EN / server.json）：英文计数不写「个」，需要独立 pattern
+    ("metrics", r"([\d,]+)\s+(?:server-)?precomputed\s+(?:indicator\s+)?(?:A-share|metrics|indicator)", 1),
+    ("metrics", r"all\s+([\d,]+)\s+codes", 1),
 )
 
 

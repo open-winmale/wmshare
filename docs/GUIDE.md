@@ -17,7 +17,7 @@ pip install wmshare                  # 基础安装
 python3 -c "import wmshare; print(wmshare.__version__)"   # 验证安装
 ```
 
-不配凭证先试：`cli = wmshare.demo_client()`——随包离线演示客户端（2026-10-30
+不配凭证先试：`cli = wmshare.demo_client()`——随包离线演示客户端（2026-11-19
 真实 API 固定快照；10 只演示宇宙 + 当日真实全市场 screener，
 **非实时数据**），调用面覆盖公开示例（例外：`screener.query` 依赖全市场索引列、
 `backtest` 的 pb/ps/pr 估值规则依赖对应序列，演示快照都没有，均显式报
@@ -77,8 +77,9 @@ cat.functions_by_domain()             # 按域列全部函数名（cli.call 的�
 | 股数 / 成交量 | 股 | — |
 
 无例外：宽度接口 `up_pct`/`down_pct`/`pct_of_total` 1.x 曾是百分数数值，2.0 起**统一小数**
-（80.3 = 80.3%），同返回的 `median_pct` 与涨跌幅仍是小数。
-每次返回前 SDK 做量级与关系不变量校验，违例抛 `DataError`——**数据在报警，不要吞掉**。
+（0.803 = 80.3%），同返回的 `median_pct` 与涨跌幅同样是小数。
+返回前 SDK 做单位换算与关键不变量校验，违例抛 `DataError`——**数据在报警，不要吞掉**。
+精选 78 码另带口径与量级守护；其余码不做量级判定，口径以返回值/注释为准。
 逃生口：`_raw=True`（返回上游原始行，字段名与规范化后不同）、`_units="native"`
 （保留上游原单位，如 volume=手、百分数不折算）、`Client(validate=False)`（关校验留换算）。
 
@@ -221,7 +222,7 @@ cli.screener.query("$ROE_TTM_LAST > 0.30", limit=0)   # 只要命中数（不拉
 
 # 全市场宽度（服务端索引直出；2.0：*_pct 与 median_pct 均为小数）
 cli.screener.index_breadth_summary()
-# {'total': 5685, 'up': 540, 'down': 5002, 'up_pct': 9.5, 'median_pct': -0.0154, ...}
+# {'total': 5685, 'up': 540, 'down': 5002, 'up_pct': 0.095, 'median_pct': -0.0154, ...}
 # total = 当日参与涨跌统计的家数（全市场列表是 5,375，含停牌等不参与统计的）
 cli.screener.index_top_movers(limit=10)     # 涨幅榜（desc=False 跌幅榜）
 
@@ -410,7 +411,7 @@ res.to_df()                       # 每标的一行长表（symbol 列在前）
 ```
 
 **`kline.snapshot` 传列表自动走批量原生（2.0 默认，推荐）**：单次请求、按量计费
-60~90 EC/票；≥4,000 票的准全市场清单自动走空参捷径（≈11~15 万 EC，对比逐票
+60~90 EC/票；≥2,000 票的准全市场清单自动走空参捷径（≈11~15 万 EC，对比逐票
 拼接首算的数千万 EC）：
 
 ```python
@@ -600,8 +601,8 @@ poller.start()               # 或切后台：daemon 线程定时轮询；退出
 
 - **和直接下交易所数据比，图什么？** 目录先行 + 单位统一 + 数据守护 + 批量限流治理——
   取数正确性的工程问题 SDK 替你管了。
-- **数据能离线吗？** 目录（311 个函数/2983 个指标码/代码表）随包离线；行情财报数据在云端，
+- **数据能离线吗？** 目录（317 个函数/2983 个指标码/代码表）随包离线；行情财报数据在云端，
   需凭证与额度。
-- **支持哪些 Python？** ≥3.11（3.10 已 EOL，1.19.0 起不再支持）；pandas 为可选依赖。
+- **支持哪些 Python？** ≥3.11（3.10 已 EOL，1.19.0 起不再支持）；pandas 自 2.0 起为核心依赖。
 - **怎么贡献/报漏洞？** 见 [CONTRIBUTING](../CONTRIBUTING.md) 与 [SECURITY](../SECURITY.md)；
   agent 贡献者另见 [AGENTS.md](../AGENTS.md)。

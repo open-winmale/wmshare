@@ -183,7 +183,9 @@ def test_relative_links_exist_and_example_count_consistent():
         assert m and int(m.group(1)) == n_examples, (
             f"{name}: 示例数与仓库不符（实际 {n_examples}）")
     targets = [(REPO / "README.md")] + sorted((REPO / "docs").glob("*.md"))
-    skip_names = {"PROMOTION.md"}  # 维护者文档，含 `(url)` 模板占位
+    # PROMOTION.md 已于 2026-11-19 迁出仓库（→ ../promo/）：推广执行手册属
+    # 方案/流程类文档，CONTRIBUTING 明确不入库。此处不再需要 skip 名单。
+    skip_names: set[str] = set()
     dead: list[str] = []
     for path in targets:
         if path.name in skip_names:
@@ -250,6 +252,11 @@ def test_demo_signatures_cover_live_facade_params():
     未回放的能力可以报错，但不能「假装没有这个参数」——2026-11-18 实测曾漂移
     17 处（kline freq/_fields、screener 形参名 symbol vs sym、margin/indicator
     的 _fields/fut_symbol、volume_spike 的 min_ratio）。
+
+    2026-11-19 收紧：此前 ``if not callable(demo_fn): continue`` 会把 demo 侧
+    **整方法缺失**静默跳过，于是 8 个整域未拍（cbond/etf/intl/...）与
+    ``notice.has_buyback`` 这类单方法缺口全部漏检，用户照抄 README 撞
+    AttributeError。现在缺失即失败，例外只能走 ``DEMO_MISSING`` 白名单。
     """
     import wmshare
 
@@ -257,15 +264,19 @@ def test_demo_signatures_cover_live_facade_params():
     problems = []
     checked = 0
     for ns, cls in FRIENDLY_NAMESPACES.items():
-        if not hasattr(demo, ns):
+        demo_ns = getattr(demo, ns, None)
+        if demo_ns is None:
+            problems.append(f"cli.{ns}: demo 侧整个命名空间缺失")
             continue
-        demo_ns = getattr(demo, ns)
         for method in dir(cls):
             if method.startswith("_"):
                 continue
             live_fn = getattr(cls, method, None)
+            if not callable(live_fn):
+                continue
             demo_fn = getattr(demo_ns, method, None)
-            if not callable(live_fn) or not callable(demo_fn):
+            if not callable(demo_fn):
+                problems.append(f"cli.{ns}.{method}: demo 侧不可调用")
                 continue
             checked += 1
             live_params = list(inspect.signature(live_fn).parameters)[1:]  # 去 self
@@ -276,3 +287,37 @@ def test_demo_signatures_cover_live_facade_params():
                                 f"（live={live_params} demo={demo_params}）")
     assert checked >= 58, f"只比对到 {checked} 对方法，扫描范围可能被改坏"
     assert not problems, "demo 与 live 门面签名漂移：\n" + "\n".join(problems)
+
+
+def test_demo_unbacked_calls_raise_demo_unsupported():
+    """demo 侧每个可调用项：要么正常返回，要么 demo_unsupported，绝不 AttributeError。
+
+    「同签名」的可验证含义在这里：属性一定存在且可调用。未回放的能力用
+    ``UsageError(code="demo_unsupported")`` 明确表示「快照没拍」，与
+    「SDK 没有这个能力」（AttributeError）区分开。
+
+    固定用例取 README 正文推荐过的 ``cli.notice.has_buyback(sym, "6m")``——
+    2026-11-19 前它在 demo 上直接 AttributeError。
+    """
+    import wmshare
+    from wmshare.errors import UsageError
+
+    demo = wmshare.demo_client()
+    # 固定用例：README「我想做 X → 用哪一行」表格里推荐过的调用
+    with pytest.raises(UsageError) as exc:
+        demo.notice.has_buyback("600519", "6m")
+    assert exc.value.code == "demo_unsupported"
+
+    # 全命名空间扫描：每个方法都要么可调用成功、要么 demo_unsupported
+    checked = 0
+    for ns in wmshare.api.FRIENDLY_NAMESPACES:
+        demo_ns = getattr(demo, ns, None)
+        assert demo_ns is not None, f"cli.{ns}: demo 侧命名空间缺失"
+        for method in dir(wmshare.api.FRIENDLY_NAMESPACES[ns]):
+            if method.startswith("_"):
+                continue
+            target = getattr(demo_ns, method, None)
+            assert callable(target), f"cli.{ns}.{method}: demo 侧不可调用"
+            checked += 1
+    assert checked > 150, f"只扫描到 {checked} 个 demo 方法，扫描面可能被改坏"
+

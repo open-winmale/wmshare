@@ -112,8 +112,10 @@
 ## 4. 处理范式
 
 ```python
-from wmshare import QuotaError, LimitError, DataError
-from wmshare.errors import TransportError, ServerError
+import time
+
+from wmshare import DataError, LimitError, QuotaError
+from wmshare.errors import ServerError, TransportError
 
 try:
     rows = cli.kline.bars("600519", n=120)

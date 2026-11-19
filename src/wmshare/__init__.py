@@ -28,7 +28,7 @@ from wmshare.catalog import Catalog, load
 from wmshare.client import BatchResult, Client, normalize_date, normalize_symbol
 from wmshare.errors import (
     ApiError, AuthError, CatalogError, DataError, WmshareError, LimitError,
-    ServerError, StreamResetError, TransportError, UsageError,
+    QuotaError, ServerError, StreamResetError, TransportError, UsageError,
 )
 from wmshare.notice_stream import NoticePoller, NoticeStreamEvent
 
@@ -39,8 +39,9 @@ __all__ = [
     "normalize_date", "__version__",
     "skill_dir", "demo_client",
     "NoticePoller", "NoticeStreamEvent",
-    "WmshareError", "AuthError", "UsageError", "LimitError", "TransportError",
-    "ServerError", "ApiError", "DataError", "CatalogError", "StreamResetError",
+    "WmshareError", "AuthError", "UsageError", "LimitError", "QuotaError",
+    "TransportError", "ServerError", "ApiError", "DataError", "CatalogError",
+    "StreamResetError",
 ]
 
 

@@ -414,29 +414,48 @@ def estimate_cost(name: str, params: dict[str, Any] | None = None, *,
             out.update(ec_lo=200, ec_hi=1_200, model="measured",
                        note="单文档点查/正文预览 ≈200~1,200 EC（正文越长越高）")
     elif name.startswith("valuation.daily_basic"):
-        # 实测（2026-11-19 下推后，生产 probe）——两个口径差异很大：
-        # **有 begin/end**：读窗已按 kernel window 锚下推，只扫窗口覆盖的日文档
-        #   1 日 = 578 EC（13 文档）；13 日 = 962（25 文档）；1 年 = 8,626（274 文档）
-        #   → 模型 ≈ 450 + ≈30 EC/日文档（置信区间放宽到 ±40%）
-        # **无 begin/end**：仍是一次读 DEFAULT_LIMIT(1,500) 个日文档后客户端过滤
-        #   全量 = 23,414 EC（727 文档）→ 模型 ≈ 23 EC/文档 + 地板
-        # 下推前（2.4.0 之前）任何窗口都是全表扫，单日也要 1,707 EC——现已不是。
+        # 实测（2026-11-19 生产 probe，全部取 metering.ec_cost）：
+        # **单票 + begin/end**：读窗按 kernel window 锚下推，只扫窗口覆盖的日文档
+        #   实测 1 日 578、13 日 962、1 年 8,626 → ≈550 + 22 EC/自然日
+        # **单票无 begin/end**：读 DEFAULT_LIMIT(1,500) 日文档后客户端过滤
+        #   全量 727 文档 = 23,414 EC
+        # **多票（daily_basic_multi）**：一次 eval 内逐票扫 per-symbol 物化表，
+        #   EC 按票计价。18 天窗口实测 1→674 / 5→2,858 / 10→5,588 / 30→16,521
+        #   / 50→26,625；span 1/90 的 5 票为 1,401 / 10,218。
+        #   统一拟合：total ≈ 150 + 票数 × (230 + 20 × 自然日跨度)，
+        #   上表全部落点误差 <12%。
+        #   批量只省请求调度，**不省算力**。此前本分支忽略 syms，多票预估
+        #   算的是单票价（低估一个数量级以上）——预估失真比没有预估更危险。
         b, e = p.get("begin"), p.get("end")
         span = max(1, abs(_days_between(b, e)) + 1) if (b and e) else 0
+        syms = p.get("syms") or p.get("symbols") or []
+        n_syms = max(1, len(syms)) if isinstance(syms, (list, tuple)) else 1
         if b or e:
-            out.update(ec_lo=int(450 + 25 * span), ec_hi=int(600 + 40 * span),
+            base_lo = 150 + n_syms * (230 + 20 * span)
+            out.update(ec_lo=int(base_lo * 0.75), ec_hi=int(base_lo * 1.7),
                        model="measured")
+        else:
+            out.update(ec_lo=20_000 * n_syms, ec_hi=26_000 * n_syms,
+                       model="measured")
+        if n_syms > 1:
+            out["note"] = (
+                f"多票 ×{n_syms}：EC 按票计价（18 天窗口边际 ≈550 EC/票），"
+                f"合计 ≈{out['ec_lo']:,}~{out['ec_hi']:,} EC。"
+                "批量只省请求调度，**不省算力**；大清单建议先小样本确认口径")
+        elif b or e:
             out["note"] = (
                 f"读窗已下推（kernel window 锚）：按窗口自然日跨度 ≈{span} 天文档，"
-                "≈25~40 EC/日文档 + 地板；实测单日 578、13 日 962、1 年 8,626 EC。"
+                "≈550 EC 地板 + ≈22 EC/日；实测单日 578、13 日 962、1 年 8,626 EC。"
                 "**不给 begin/end 时仍是全表扫 ≈23,414 EC**（727 文档），区间查询务必传"
             )
         else:
-            out.update(ec_lo=20_000, ec_hi=26_000, model="measured")
             out["note"] = (
                 "不给 begin/end = 全表扫（1,500 日文档上限）≈23,414 EC（2026-11-19 实测）；"
                 "传 begin/end 会下推读窗、成本随窗口走（单日 ≈578、13 日 ≈962 EC）"
             )
+
+
+
     elif name.startswith("indices.trend"):
         out.update(ec_lo=1, ec_hi=50, model="cache_hit",
                    note="只读预热缓存；未命中返回 ok=False（不现算、不产生 EC）")

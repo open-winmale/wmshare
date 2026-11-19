@@ -7,9 +7,13 @@
 """
 from __future__ import annotations
 
+import ast
+import builtins
+import importlib
 import importlib.util
 import inspect
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -55,6 +59,47 @@ def test_limits_doc_matches_code_defaults():
 def test_errors_doc_in_sync():
     tool = _load_tool("gen_errors")
     assert (DOCS / "ERRORS.md").read_text(encoding="utf-8") == tool.build()
+
+
+def test_errors_doc_snippet_imports_resolve():
+    """ERRORS.md 的异常处理范式必须真能 import。
+
+    2026-11-19 实测：示例第一行 ``from wmshare import QuotaError`` 直接
+    ImportError（``QuotaError`` 未从包根导出），而 ``test_errors_doc_in_sync``
+    只比较「生成器输出 == 文档」，生成器把错行硬编码进去了，门禁永远绿。
+    这里独立执行 import 语句并校验用到的模块都已导入。
+    """
+    import ast
+
+    text = (DOCS / "ERRORS.md").read_text(encoding="utf-8")
+    blocks = re.findall(r"```python\n(.*?)```", text, re.S)
+    assert blocks, "ERRORS.md 缺少 python 示例块"
+    checked = 0
+    for block in blocks:
+        tree = ast.parse(block)
+        imported: set[str] = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom):
+                module = importlib.import_module(node.module or "")
+                for alias in node.names:
+                    name = alias.name
+                    assert hasattr(module, name), \
+                        f"ERRORS.md 示例 `from {node.module} import {name}` 无法解析"
+                    imported.add(alias.asname or name)
+                    checked += 1
+            elif isinstance(node, ast.Import):
+                for alias in node.names:
+                    importlib.import_module(alias.name)
+                    imported.add((alias.asname or alias.name).split(".")[0])
+                    checked += 1
+        # 块内被调用/取属性的名字必须来自 import（防漏 import time 之类）
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load):
+                if node.id in ("cli", "rows", "e"):   # 上下文里已存在的对象
+                    continue
+                assert node.id in imported or node.id in dir(builtins), \
+                    f"ERRORS.md 示例使用了未导入的名字 {node.id!r}"
+    assert checked >= 5, f"只校验到 {checked} 条 import，扫描面可能被改坏"
 
 
 def test_fields_json_covers_catalog_and_units():

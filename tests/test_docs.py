@@ -163,18 +163,40 @@ def test_readme_counts_match_catalog():
 
 
 def test_docs_no_stale_counts():
-    """防回归：过时计数口径不得重现（127 曾滞后两个版本、2,639 滞后一个目录代际）。"""
+    """防回归：过时计数/日期口径不得重现（127 曾滞后两个版本、2,639 滞后一个目录代际）。
+
+    2026-11-19 扩围：扫描面此前只含 README/GUIDE/AI/docs-README，漏掉
+    QUICKSTART_EN、METRIC_ADAPTER、examples/README 与 server.json——而这三类
+    恰好是对外推广最先被引用的地方（server.json 是 MCP Registry 的机器可读描述）。
+    """
     stale = ("2,639", "2639", "2197", "263 个", "116 个核心接口",
-             "127 个 friendly", "12 个编号示例", "129 个核心接口")
+             "127 个 friendly", "12 个编号示例", "129 个核心接口",
+             "2,752", "2752", "316 个", "150 个核心接口", "167 个")
     docs = {
         "README.md": README,
         "docs/GUIDE.md": GUIDE_MD,
         "docs/AI.md": AI_MD,
         "docs/README.md": (REPO / "docs" / "README.md").read_text(encoding="utf-8"),
+        "docs/QUICKSTART_EN.md": (REPO / "docs" / "QUICKSTART_EN.md").read_text(
+            encoding="utf-8"),
+        "docs/METRIC_ADAPTER.md": (REPO / "docs" / "METRIC_ADAPTER.md").read_text(
+            encoding="utf-8"),
+        "examples/README.md": (REPO / "examples" / "README.md").read_text(encoding="utf-8"),
+        "server.json": (REPO / "server.json").read_text(encoding="utf-8"),
     }
     for name, text in docs.items():
         hit = [s for s in stale if s in text]
         assert not hit, f"{name} 残留过时计数：{hit}"
+
+    # 快照日期：只拦「当成当前快照发布日期」的写法。带日期的历史实测引用
+    #（如「实测（2026-10-30，免费档，当时全市场 5,691 家）」）是允许的——那类
+    # 记录的是当时的事实，抹掉日期反而更糟。
+    stale_snapshot = re.compile(
+        r"(?:快照[^。\n]{0,12}2026-10-30|captured 2026-10-30|"
+        r"2026-10-30[^。\n]{0,6}(?:固定快照|快照))")
+    for name, text in docs.items():
+        m = stale_snapshot.search(text)
+        assert m is None, f"{name} 仍把 2026-10-30 写成当前快照日：{m.group(0)!r}"
 
 
 def test_api_module_docstring_counts_match_catalog():
@@ -346,15 +368,16 @@ class ReadmeClient:
             screen_above_ma20=lambda *a, **k: True,
             screen_momentum_20d=lambda *a, **k: False,
             screen_volume_spike=lambda *a, **k: True,
-            # 数值取自 2026-10-24 真实 probe（A 股全市场截面）
+            # 数值取自 2026-10-24 真实 probe（A 股全市场截面），2.0 起 *_pct 统一小数：
+            # 上游 80.3% → 0.803。罐头必须与文档示例同口径，否则示例写错也能绿。
             index_breadth_summary=lambda *a, **k: {"total": 5685, "up": 4567, "down": 934,
-                                                   "flat": 184, "up_pct": 80.3,
-                                                   "down_pct": 16.4, "flat_pct": 3.2,
+                                                   "flat": 184, "up_pct": 0.803,
+                                                   "down_pct": 0.164, "flat_pct": 0.032,
                                                    "median_pct": 0.015363},
             index_breadth_bins=lambda *a, **k: [
-                {"label": "涨停", "count": 109, "pct_of_total": 1.9},
-                {"label": "+5%~10%", "count": 464, "pct_of_total": 8.2},
-                {"label": "+3%~5%", "count": 829, "pct_of_total": 14.6},
+                {"label": "涨停", "count": 109, "pct_of_total": 0.019},
+                {"label": "+5%~10%", "count": 464, "pct_of_total": 0.082},
+                {"label": "+3%~5%", "count": 829, "pct_of_total": 0.146},
             ],
             index_top_movers=lambda *a, **k: [
                 {"symbol": "600519", "name": "贵州茅台", "percent": 0.0052},
@@ -467,14 +490,75 @@ def test_readme_zero_credential_snippet_matches_snapshot():
 
     首屏是唯一给未注册用户的钩子：值一旦与 ``_demo_data.json`` 漂移，陌生人照抄就跑出
     不同数字。这里直接打真快照（不 patch），把注释与快照焊死。
+
+    QUICKSTART_EN 是同一钩子的英文面（2026-11-19 前长期写 3.73%/5686 与旧日期），
+    一并纳入，避免只守中文首屏。
     """
     import wmshare
 
     assert "wmshare.demo_client()" in README, "首屏缺少零凭证试跑入口"
     demo = wmshare.demo_client()
-    for label, value in (("yield", f"{demo.dividend.yield_ttm('600519'):.2%}"),
-                         ("total", str(demo.screener.index_breadth_summary()["total"]))):
-        assert value in README, f"首屏注释的 {label} 值 {value} 与快照回放不符"
+    surfaces = {"README.md": README,
+                "docs/QUICKSTART_EN.md": (REPO / "docs" / "QUICKSTART_EN.md").read_text(
+                    encoding="utf-8")}
+    for name, text in surfaces.items():
+        assert "wmshare.demo_client()" in text, f"{name} 缺少零凭证试跑入口"
+        for label, value in (("yield", f"{demo.dividend.yield_ttm('600519'):.2%}"),
+                             ("total", str(demo.screener.index_breadth_summary()["total"]))):
+            assert value in text, f"{name} 注释的 {label} 值 {value} 与快照回放不符"
+
+
+def test_quickstart_en_matches_runtime():
+    """英文 Quickstart 的计数、快照日期与计费口径必须与运行时/代码一致。
+
+    2026-11-19 实测的三类漂移：指标码写 2,752（实际 2,983）、快照日期写
+    2026-10-30（实际 ``SNAPSHOT_AS_OF``）、以及最危险的一处——把计费写成
+    「billed per request, not per row」，与 EC 按服务端物化行计费相反，
+    会直接诱导用户批量跑全市场后超额消耗 EC。
+    """
+    import wmshare
+    from wmshare._demo import SNAPSHOT_AS_OF
+
+    text = (REPO / "docs" / "QUICKSTART_EN.md").read_text(encoding="utf-8")
+    stats = wmshare.load().stats()
+    assert f"{stats['metric_catalog_total']:,} precomputed indicator codes" in text, \
+        "QUICKSTART_EN 的指标码计数与运行时目录不符"
+    assert f"all {stats['metric_catalog_total']:,} codes" in text, \
+        "QUICKSTART_EN 的指标码全量计数与运行时目录不符"
+    assert f"({len(FRIENDLY_INDEX)} core endpoints)" in text, \
+        "QUICKSTART_EN 的核心接口计数与 FRIENDLY_INDEX 不符"
+    assert SNAPSHOT_AS_OF in text, \
+        f"QUICKSTART_EN 的快照日期未写明当前 SNAPSHOT_AS_OF={SNAPSHOT_AS_OF}"
+
+    # 计费口径：不得再出现「按请求而非按行计费」的相反表述
+    flat = " ".join(text.split())
+    assert "billed **per request**, not per row" not in flat, \
+        "QUICKSTART_EN 仍写着「按请求计费」——EC 按服务端物化行计，批量不省 EC"
+    assert "cost_estimate" in text, "QUICKSTART_EN 缺少 cost_estimate 先估后取入口"
+    assert "does not cut EC" in flat or "not cut EC" in flat, \
+        "QUICKSTART_EN 必须写明批量省请求不省 EC"
+
+
+def test_pct_example_values_are_decimals():
+    """文档里 ``*_pct`` 的示例注释值必须是小数（2.0 契约：0.803 = 80.3%）。
+
+    2026-11-19 实测：README 与 GUIDE 曾把 ``up_pct`` 示例写成 80.3 / 9.5，与
+    "全库统一小数" 的 2.0 契约相反；更糟的是 ``test_readme_python_blocks_execute``
+    的 FakeClient 直接返回 80.3，把错误示例"焊死"成绿色。两处都要守，否则文档
+    会持续教出 100 倍误读。
+    """
+    pattern = re.compile(r"['\"]?([a-z_]*_pct)['\"]?\s*:\s*(-?[\d.]+)")
+    surfaces = {"README.md": README, "docs/GUIDE.md": GUIDE_MD}
+    violations = []
+    for name, text in surfaces.items():
+        for lineno, line in enumerate(text.splitlines(), 1):
+            for field, raw in pattern.findall(line):
+                value = float(raw)
+                if abs(value) > 1.0:
+                    violations.append(f"{name}:{lineno} {field}={raw}")
+    assert not violations, (
+        "文档示例把 *_pct 写成百分数（2.0 契约是小数，0.803 = 80.3%）：\n"
+        + "\n".join(violations))
 
 
 def test_readme_units_and_guards_documented():

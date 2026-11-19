@@ -66,7 +66,7 @@ def main(cli=None, demo: bool = False) -> None:
     # ---- 5) 行业维度聚合（单批 ≤500 也可直接用 call_batch） ----
     codes = [r["symbol"] for r in members[: min(500, len(members))]]
     one = cli.call_batch("kline.snapshot", codes)
-    df = one.to_df()  # 需要 pandas（pip install "wmshare[dataframe]"）
+    df = one.to_df()  # 需要 pandas（2.0 起为核心依赖）
     print(f"「{hint}」{len(df)} 行快照（symbol 列在前）：")
     print(df.head().to_string(index=False))
 

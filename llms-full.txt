@@ -106,7 +106,7 @@
 > not live). **Install**: `pip install wmshare`. **Full English quickstart**: [docs/QUICKSTART_EN.md](docs/QUICKSTART_EN.md).
 
 给 Python 量化开发者的中文财经数据 SDK：一行接口拿到清洗好的 A股/港股/美股数据——
-估值分位、TTM 股息率等指标**服务端算好直出**，全市场批量 **12 次请求**绕开限流。
+估值分位、TTM 股息率等指标**服务端算好直出**，全市场批量 **11 次请求**绕开限流。
 凭证在开放平台（open.winmale.com）获取后即可取数；各市场逐能力明细见[「市场覆盖」](#市场覆盖)。
 
 ## 目录
@@ -116,7 +116,7 @@
 [指数与行业估值历史](#指数与行业估值历史) · [单位与数据守护](#单位与数据守护) ·
 [许可与数据服务](#许可与数据服务) · [更多](#更多)
 
-![notebook 实战：Jupyter 里 10 行代码筛出高股息 + PE 十年低位的股票（2026-10-30 真实数据）](docs/img/quickstart.png)
+![notebook 实战：Jupyter 里 10 行代码筛出高股息 + PE 十年低位的股票（2026-11-19 真实数据）](docs/img/quickstart.png)
 
 ## 零凭证先试
 
@@ -229,8 +229,8 @@ for r in res["rows"][:5]:
   （`count`=真实命中数）；涨跌全景/分桶/行业分布/涨跌榜同走服务端预计算索引，毫秒级。
 - **离线目录防编造**：317 个底层函数、152 个核心接口、2,983 个指标码离线可查
   （`cat.search("中文")`），目录之外的名字显式报错。
-- **零凭证离线试跑**：`wmshare.demo_client()`（同签名、不联网，2026-11-19 固定快照；非实时数据）。
-- **数据守护**：全库单位统一（比率=小数、金额=元、量=股），返回前量级/不变量校验，违例抛 `DataError`。
+- **零凭证离线试跑**：`wmshare.demo_client()`（**同签名**、不联网，2026-11-19 固定快照；非实时数据）。未回放的命名空间/方法照样能点出来，调用即抛 `UsageError(code="demo_unsupported")`——不会 `AttributeError` 装作没这个能力。
+- **数据守护**：全库统一单位（比率=小数、金额=元、量=股），返回前做单位换算与关键不变量校验；**精选 78 码另带口径与量级守护**（违例抛 `DataError`），其余码只保底不变量，口径以返回值/注释为准。
 
 ## 给 AI / Agent
 
@@ -335,9 +335,9 @@ print(cli.indicator.get("600519", "$PCT_PE_TTM_10Y_LAST"))   # 0.42
 # 行业定位：ROE 在同行业内的分位（1.0 = 行业最高；茅台 ROE 为行业之最）
 print(cli.indicator.get("600519", "$CUR_IND_ROE_PCT_LAST"))  # 1.0
 
-# 全市场涨跌全景：服务端索引直出，免本地扫描（*_pct 百分数、median_pct 小数）
+# 全市场涨跌全景：服务端索引直出，免本地扫描（*_pct 亦为小数，2.0 统一）
 print(cli.screener.index_breadth_summary())
-# {'total': 5685, 'up': 4567, 'down': 934, 'flat': 184, 'up_pct': 80.3, ...}
+# {'total': 5685, 'up': 4567, 'down': 934, 'flat': 184, 'up_pct': 0.803, ...}
 
 # 全市场列表 / 行业成分（中文名直达，也可传 "S48"）/ 批量：单标的接口传 list 即批量（≤500/批）
 rows = cli.stocks.list()                 # A 股 ≈5.7k 行：代码/名称/交易所/行业/上市日；港/美换 market
@@ -396,7 +396,9 @@ t["data"]["pe_pct"], t["data"]["pe_pct_window"], t["data"]["pct"]["pe"]["p3"]  #
 
 全库统一基础单位：**比率 / 涨跌幅 = 小数**（0.01 = 1%，ROE 0.332 = 33.2%）、
 **金额 / 价格 / 市值 = 元**（报表原币）、**成交量 = 股**；各接口单位口径见「基本功能」表。
-返回前做量级与关系不变量校验，违例抛 `DataError`——错误的量级到不了你的代码。
+返回前统一做单位换算与**关键不变量**校验（如成交量×价 与成交额一致），违例抛 `DataError`；
+**精选 78 码另带口径与量级守护**，其余码不做量级判定——需要更严格的口径请用
+[INDICATORS.md](docs/INDICATORS.md) 标注的精选码。
 需要脚本原始口径时：`_raw=True`（上游原始行）、`_units="native"`（保留上游原单位，如手/百分数）、`Client(validate=False)`（关校验留换算）。
 
 数据深度：个股/ETF 日 K 覆盖**自上市首日以来的全部交易日**（最早 1991 年）；单次区间上限 5 年、
@@ -414,7 +416,7 @@ t["data"]["pe_pct"], t["data"]["pe_pct_window"], t["data"]["pct"]["pe"]["p3"]  #
 - **AI 原生**：随包 [SKILL.md](src/wmshare/skills/wmshare/SKILL.md)、[AI 用法](docs/AI.md)、本地 MCP server（skill 可复制进 .agents/.zcode/.claude 的 skills/）；生态工具 [big-winner](https://github.com/open-winmale/big-winner)。
 - **文档中心 [docs/](docs/README.md)**：使用指南 GUIDE（单票菜谱/批量/多市场/故障排查）· 指标库 [INDICATORS.md](docs/INDICATORS.md)（全量指标码按数据类型分章）· AI 用法 · llms.txt 索引 · [API 参考](docs/API.md)（按资产类别分章的 152 个核心接口 + 指标组）
 - **可转债日更管线**：`cli.cbond.daily()` → `article()` → `figures()` 一条命令出图文（三层口径 + 三道闸 + 状态机 + 事件日历，每个数字带 `sources` 与 `as_of`，缺条目抛错而非补猜测值）；实战 notebook 见 [docs/notebooks/cb_double_low.ipynb](docs/notebooks/cb_double_low.ipynb)（2026-11-07 真实数据）
-- **示例课程 [examples/](examples/README.md)**：18 个编号示例（入门→进阶→生产→AI），全部支持演示客户端离线试跑，CI 端到端覆盖
+- **示例课程 [examples/](examples/README.md)**：18 个编号示例（入门→进阶→生产→AI）——3 个纯离线、14 个带 `--demo` 离线回放、1 个可转债需凭证；CI 端到端覆盖
 - **问题反馈 / 交流**：QQ 群 `1127142074`（搜索「wmshare开源交流群」）——使用问题、数据口径、bug 反馈欢迎进群，也欢迎 [GitHub Issues](https://github.com/open-winmale/wmshare/issues)
 - **维护者与治理**：[MAINTAINERS.md](MAINTAINERS.md)（响应承诺与发版流程）· [GOVERNANCE.md](GOVERNANCE.md) · [行为准则](CODE_OF_CONDUCT.md)
 
@@ -454,7 +456,7 @@ python3 -c "import wmshare; print(wmshare.__version__)"   # 探测
 pip install -i https://pypi.tuna.tsinghua.edu.cn/simple wmshare
 ```
 
-零凭证语法试跑：`cli = wmshare.demo_client()`（2026-10-30 真实 API 固定快照；10 只演示宇宙 + 当日全市场 screener，**非实时数据**），调用面覆盖公开示例，用于无凭证时验证代码形态；真实取数必须配置下方凭证。
+零凭证语法试跑：`cli = wmshare.demo_client()`（2026-11-19 真实 API 固定快照；10 只演示宇宙 + 当日全市场 screener，**非实时数据**），调用面覆盖公开示例，用于无凭证时验证代码形态；真实取数必须配置下方凭证。
 
 MCP 安装与凭证写入：
 
@@ -519,7 +521,7 @@ cat.metrics_in_group("dividend")                         # 指标组内全部精
 | 某股最近 N 根日 K | `cli.kline.bars("600519", n=30)`（`adj="qfq"/"hfq"` 复权） |
 | 周 K / 月 K | `cli.kline.bars("600519", n=20, freq="W")`（`freq="M"` 月 K；服务端预派生） |
 | 某股日期区间 K 线 | `cli.kline.bars("600519", begin="2026-01-01", end="2026-06-30")` |
-| **全市场 / 上百只取数（避免 429）** | `cli.batch_all("kline.snapshot", [r["symbol"] for r in cli.stocks.list()])`——自动分批，A 股 5,691 家只发 **12 次请求**；**绝不要写 `for code in codes: cli.kline.bars(code)`（5,691 次请求必撞限流）** |
+| **全市场 / 上百只取数（避免 429）** | `cli.batch_all("kline.snapshot", [r["symbol"] for r in cli.stocks.list()])`——自动分批，A 股 5,375 家只发 **11 次请求**；**绝不要写 `for code in codes: cli.kline.bars(code)`（5,375 次请求必撞限流）** |
 | 最新价 / 盘中快照 | `cli.kline.last("600519")`；盘中实时用 `cli.kline.live("600519")` 或 `cli.kline.batch_live(["600519"])`；`cli.kline.snapshot(...)` 是行情摘要（收盘/涨跌幅），不是盘中 tip |
 | 当日 1 分钟分时 | `cli.kline.min1("600519")`（有损合成采样，非逐笔） |
 | 今日涨停了吗 / 全市场涨停梯队 | `cli.screener.screen_limit_up("600519")` |
@@ -591,7 +593,7 @@ print(cli.dividend.window_stats("600519", "3y"))   # {'dps': ..., 'total': ..., 
 - **限流按请求次数计**（免费档 500 次/小时、5,000 次/日），所以：
   ①大批量一律走 `batch_all`/`batch_iter`（N 家 = ⌈N/500⌉ 次请求），不要自己逐票循环；
   ②**容错用 `batch_all(on_batch_error="skip")`（批级），绝不能用 `call_batch(on_error="skip")`**
-  ——后者逐票发请求，12 批会放大成 5,691 次，正好制造 429；两个参数名不同是刻意的
+  ——后者逐票发请求，11 批会放大成 5,375 次，正好制造 429；两个参数名不同是刻意的
   （`on_batch_error` 跳过整批，`on_error` 逐票请求）；批量入口也无 `_df`，长表用 `to_df()`；
   ③遇 429 会停止并给 `codes[done:]` 续跑位置，按提示稍后续跑，不要无脑重试；
   ④单批撞 `CALC_LIMIT_EXCEEDED`（算力超限）时减小 `batch_size`。
@@ -669,7 +671,7 @@ pip install wmshare                  # 基础安装
 python3 -c "import wmshare; print(wmshare.__version__)"   # 验证安装
 ```
 
-不配凭证先试：`cli = wmshare.demo_client()`——随包离线演示客户端（2026-10-30
+不配凭证先试：`cli = wmshare.demo_client()`——随包离线演示客户端（2026-11-19
 真实 API 固定快照；10 只演示宇宙 + 当日真实全市场 screener，
 **非实时数据**），调用面覆盖公开示例（例外：`screener.query` 依赖全市场索引列、
 `backtest` 的 pb/ps/pr 估值规则依赖对应序列，演示快照都没有，均显式报
@@ -729,8 +731,9 @@ cat.functions_by_domain()             # 按域列全部函数名（cli.call 的�
 | 股数 / 成交量 | 股 | — |
 
 无例外：宽度接口 `up_pct`/`down_pct`/`pct_of_total` 1.x 曾是百分数数值，2.0 起**统一小数**
-（80.3 = 80.3%），同返回的 `median_pct` 与涨跌幅仍是小数。
-每次返回前 SDK 做量级与关系不变量校验，违例抛 `DataError`——**数据在报警，不要吞掉**。
+（0.803 = 80.3%），同返回的 `median_pct` 与涨跌幅同样是小数。
+返回前 SDK 做单位换算与关键不变量校验，违例抛 `DataError`——**数据在报警，不要吞掉**。
+精选 78 码另带口径与量级守护；其余码不做量级判定，口径以返回值/注释为准。
 逃生口：`_raw=True`（返回上游原始行，字段名与规范化后不同）、`_units="native"`
 （保留上游原单位，如 volume=手、百分数不折算）、`Client(validate=False)`（关校验留换算）。
 
@@ -873,7 +876,7 @@ cli.screener.query("$ROE_TTM_LAST > 0.30", limit=0)   # 只要命中数（不拉
 
 # 全市场宽度（服务端索引直出；2.0：*_pct 与 median_pct 均为小数）
 cli.screener.index_breadth_summary()
-# {'total': 5685, 'up': 540, 'down': 5002, 'up_pct': 9.5, 'median_pct': -0.0154, ...}
+# {'total': 5685, 'up': 540, 'down': 5002, 'up_pct': 0.095, 'median_pct': -0.0154, ...}
 # total = 当日参与涨跌统计的家数（全市场列表是 5,375，含停牌等不参与统计的）
 cli.screener.index_top_movers(limit=10)     # 涨幅榜（desc=False 跌幅榜）
 
@@ -1062,7 +1065,7 @@ res.to_df()                       # 每标的一行长表（symbol 列在前）
 ```
 
 **`kline.snapshot` 传列表自动走批量原生（2.0 默认，推荐）**：单次请求、按量计费
-60~90 EC/票；≥4,000 票的准全市场清单自动走空参捷径（≈11~15 万 EC，对比逐票
+60~90 EC/票；≥2,000 票的准全市场清单自动走空参捷径（≈11~15 万 EC，对比逐票
 拼接首算的数千万 EC）：
 
 ```python
@@ -1252,9 +1255,9 @@ poller.start()               # 或切后台：daemon 线程定时轮询；退出
 
 - **和直接下交易所数据比，图什么？** 目录先行 + 单位统一 + 数据守护 + 批量限流治理——
   取数正确性的工程问题 SDK 替你管了。
-- **数据能离线吗？** 目录（311 个函数/2983 个指标码/代码表）随包离线；行情财报数据在云端，
+- **数据能离线吗？** 目录（317 个函数/2983 个指标码/代码表）随包离线；行情财报数据在云端，
   需凭证与额度。
-- **支持哪些 Python？** ≥3.11（3.10 已 EOL，1.19.0 起不再支持）；pandas 为可选依赖。
+- **支持哪些 Python？** ≥3.11（3.10 已 EOL，1.19.0 起不再支持）；pandas 自 2.0 起为核心依赖。
 - **怎么贡献/报漏洞？** 见 [CONTRIBUTING](../CONTRIBUTING.md) 与 [SECURITY](../SECURITY.md)；
   agent 贡献者另见 [AGENTS.md](../AGENTS.md)。
 
