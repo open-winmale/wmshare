@@ -867,6 +867,47 @@ class IncomeNS(_Ns):
             kw["bond"] = bond
         return _out(self._client.call("income.score", **kw, _raw=_raw), _raw)
 
+    def score_explain(self, v: dict, bond: float | None = None, _raw: bool = False) -> Any:
+        """四维收息评分（含 parts 逐项加减分解释，诊断用）
+
+:param v: 指标字段行
+:param bond: 十年国债收益率（小数，利差腿参照）
+
+:returns: MAP · tot/gr/dims 同 income.score，另带 parts[4]（dim/score/max/items[{label,delta}]）
+        """
+        kw: dict[str, Any] = {"v": v}
+        if bond is not None:
+            kw["bond"] = bond
+        return _out(self._client.call("income.score_explain", **kw, _raw=_raw), _raw)
+
+    def rating_all(self, grade: str | None = None, industry: str | None = None, min_yield: float | None = None, gates: bool | None = None, _raw: bool = False) -> Any:
+        """全市场收息排行·全量（无 top_n 上限）
+
+:param grade: 档位过滤 strong/good/watch/avoid
+:param industry: 行业：industry.SXX / SXX / 申万一级中文名
+:param min_yield: TTM 股息率下限（小数 0.04=4%）
+:param gates: 资格门开关，默认 true
+
+:returns: MAP · 与 rating_rows 同结构，rows 为全量不截断；facets_industries/facets_grades 为全集计数
+        """
+        kw: dict[str, Any] = {}
+        if grade is not None:
+            kw["grade"] = grade
+        if industry is not None:
+            kw["industry"] = industry
+        if min_yield is not None:
+            kw["min_yield"] = min_yield
+        if gates is not None:
+            kw["gates"] = gates
+        return _out(self._client.call("income.rating_all", **kw, _raw=_raw), _raw)
+
+    def diag_fields(self, _raw: bool = False) -> Any:
+        """收息取数字段包（27 字段）
+
+:returns: ARR · 字段名数组（$FIELD 形态，供 INDEX_ROW_VALUES_MANY_SPEC）
+        """
+        return _out(self._client.call("income.diag_fields", _raw=_raw), _raw)
+
     def floor_explain(self, v: dict, _raw: bool = False) -> Any:
         """静态收益下限双腿复原（扣非盈利腿×PE 分位门 + 可持续股息腿×质量门）
 

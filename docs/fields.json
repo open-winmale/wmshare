@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "generated_by": "tools/gen_api_docs.py",
-  "count": 261,
+  "count": 264,
   "domains": [
     {
       "id": "corp.equity",
@@ -1807,6 +1807,36 @@
               "desc": "硬修正标记"
             }
           ]
+        },
+        {
+          "name": "income.score_explain",
+          "cn": "四维收息评分（含 parts 逐项加减分解释，诊断用）",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "income.rating_all",
+          "cn": "全市场收息排行·全量（无 top_n 上限）",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "income.diag_fields",
+          "cn": "收息取数字段包（27 字段）",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
         },
         {
           "name": "income.floor_explain",

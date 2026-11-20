@@ -1,6 +1,6 @@
 {
  "schema_version": 2,
- "upstream_rev": "593e429e",
+ "upstream_rev": "86e68303",
  "domains": {
   "bonus": {
    "entry": "sys/bonus/init.xs",
@@ -137,7 +137,7 @@
   "toplist",
   "valuation"
  ],
- "function_count": 334,
+ "function_count": 340,
  "functions": [
   {
    "name": "bonus.dps_rpt",
@@ -4611,6 +4611,15 @@
    ]
   },
   {
+   "name": "income.diag_fields",
+   "cn": "收息取数字段包（27 字段，评分/下限复原/榜单共用；字符串形态供 SPEC）",
+   "example": "income.diag_fields()",
+   "returns": "ARR · 字段名数组",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": []
+  },
+  {
    "name": "income.diagnose",
    "cn": "收息诊断（原生批量：四维评分逐项解释+静态下限复原+榜内位置；include_history 才带分红史/方案）",
    "example": "income.diagnose(ARR{\"600519\", \"600900\"}, false)",
@@ -4695,6 +4704,82 @@
    ]
   },
   {
+   "name": "income.materialize",
+   "cn": "收息榜 memo 物化统一入口（rt_slice=\"merge\" 合并，其余为片号；cron 用）",
+   "example": "income.materialize(0, 5)",
+   "returns": "MAP · 片/合并摘要",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": [
+    {
+     "name": "rt_slice",
+     "type": "any"
+    },
+    {
+     "name": "rt_slices",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "income.materialize_merge",
+   "cn": "收息榜 memo 合并（把 built_for=今日的片合并排序写 m_income_rating:v1:all；缺片且旧表健在时不覆盖）",
+   "example": "income.materialize_merge(5)",
+   "returns": "MAP · 合并摘要（mode=merge/merge_skipped/count）",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": [
+    {
+     "name": "rt_slices",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "income.materialize_slice",
+   "cn": "收息榜 memo 分片评分（cron 用；片 i 评分写 m_income_rating:v1:part:i）",
+   "example": "income.materialize_slice(0, 5)",
+   "returns": "MAP · 片摘要（mode=memo_slice/count）",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": [
+    {
+     "name": "rt_slice",
+     "type": "any"
+    },
+    {
+     "name": "rt_slices",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "income.rating_all",
+   "cn": "全市场收息排行·全量（无 top_n 上限，供 web 收息佬整表浏览；skill/SDK 用 rating_rows 限流）",
+   "example": "income.rating_all(\"\", \"\", nil, true)",
+   "returns": "MAP · 全量榜（rows 全量/facets/元数据）",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": [
+    {
+     "name": "grade",
+     "type": "string"
+    },
+    {
+     "name": "industry",
+     "type": "string"
+    },
+    {
+     "name": "min_yield",
+     "type": "any"
+    },
+    {
+     "name": "gates",
+     "type": "bool"
+    }
+   ]
+  },
+  {
    "name": "income.rating_rows",
    "cn": "全市场收息排行（memo 直读零冷算；四维评分+档位+股息分排序）",
    "example": "income.rating_rows(20, \"strong\", \"industry.S48\", 0.04, true)",
@@ -4756,6 +4841,24 @@
     ]
    },
    "min_args": null,
+   "params": [
+    {
+     "name": "v",
+     "type": "any"
+    },
+    {
+     "name": "bond",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "income.score_explain",
+   "cn": "四维收息评分（含 parts 逐项加减分解释，诊断用；tot/gr/dims 与 income.score 完全一致）",
+   "example": "income.score_explain(row.values, 0.018)",
+   "returns": "MAP · 评分+parts（dim/score/max/items）",
+   "returns_shape": null,
+   "min_args": 1,
    "params": [
     {
      "name": "v",

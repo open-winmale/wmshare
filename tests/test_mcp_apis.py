@@ -138,7 +138,7 @@ def test_catalog_contract_surface_is_complete() -> None:
         for domain in cat.domains.values()
         for function in domain.get("functions", [])
     }
-    assert len(names) == cat.stats()["functions"] == 328
+    assert len(names) == cat.stats()["functions"] == 331
     for name in names:
         assert cat.function(name)
     assert len(batchable_catalog_functions()) >= 100

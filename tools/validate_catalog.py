@@ -43,6 +43,11 @@ INTERNAL_HELPERS = {
     "segments.normalize_source",
     "segments.take_limit",
     "segments.ui_tab_to_dim",
+    # 收息榜 memo 物化编排（cron 专用）：写 memo、烧 EC、片/merge 异步纪律由 cron 保证，
+    # 不给 SDK 用户直调——故不进 disc.income 公开域，仅登记为内部函数防反向差集误报。
+    "income.materialize",
+    "income.materialize_merge",
+    "income.materialize_slice",
 }
 
 

@@ -131,6 +131,37 @@ functions:
       - {name: bond, type: float, required: false, desc: '十年国债收益率（小数，利差腿参照）'}
     returns: {desc: 'MAP · tot 0~100 / gr 档位 / dims[收益,持续,稳定,成长] / fl 硬修正'}
     example: 'income.score(row.values, 0.018)'
+  - name: income.score_explain
+    cn: 四维收息评分（含 parts 逐项加减分解释，诊断用）
+    kind: computed
+    layer: L0
+    params:
+      - {name: v, type: object, required: true, desc: 指标字段行}
+      - {name: bond, type: float, required: false, desc: '十年国债收益率（小数，利差腿参照）'}
+    returns: {desc: 'MAP · tot/gr/dims 同 income.score，另带 parts[4]（dim/score/max/items[{label,delta}]）'}
+    example: 'income.score_explain(row.values, 0.018)'
+    notes: ['tot 与 income.score 完全一致；parts 只加解释不改分（诊断页逐项展开用）']
+  - name: income.rating_all
+    cn: 全市场收息排行·全量（无 top_n 上限）
+    kind: computed
+    layer: L1
+    params:
+      - {name: grade, type: string, required: false, desc: '档位过滤 strong/good/watch/avoid'}
+      - {name: industry, type: string, required: false, desc: '行业：industry.SXX / SXX / 申万一级中文名'}
+      - {name: min_yield, type: float, required: false, desc: 'TTM 股息率下限（小数 0.04=4%）'}
+      - {name: gates, type: bool, required: false, desc: '资格门开关，默认 true'}
+    returns: {desc: 'MAP · 与 rating_rows 同结构，rows 为全量不截断；facets_industries/facets_grades 为全集计数'}
+    example: 'income.rating_all("", "", nil, true)'
+    notes: ['供整表浏览场景（web 收息佬）；SDK 常规取数请用 rating_rows 限流',
+            '全量 append 成本显著高于 rating_rows（后者够数即停），别在大批量循环里反复调']
+  - name: income.diag_fields
+    cn: 收息取数字段包（27 字段）
+    kind: raw
+    layer: L1
+    params: []
+    returns: {desc: 'ARR · 字段名数组（$FIELD 形态，供 INDEX_ROW_VALUES_MANY_SPEC）'}
+    example: 'income.diag_fields()'
+    notes: ['单一事实源：评分/下限复原/榜单取数共用同一字段清单，改字段只改这一处']
   - name: income.floor_explain
     cn: 静态收益下限双腿复原（扣非盈利腿×PE 分位门 + 可持续股息腿×质量门）
     kind: computed

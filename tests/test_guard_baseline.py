@@ -41,7 +41,7 @@ def _load(path: Path, name: str):
 def test_guard_coverage_cannot_regress():
     mod = _load(GUARD_TOOL, "guard_coverage_baseline")
     result = mod.collect(mod.DEFAULT_DOMAINS)
-    assert result["functions"] == 328
+    assert result["functions"] == 331
     assert result["guarded"] >= 65
     # 分子 65 = 63（批次1）+ toplist by_date/by_symbol（金额 ranges，批次3）。
     # 分母 316 的稀释项均为无数值守护语义的检索/工具函数（批次1 9 条 + mapping/
