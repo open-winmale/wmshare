@@ -18,13 +18,12 @@
 """
 from __future__ import annotations
 
-import json
 import os
 import stat
-import urllib.error
-import urllib.request
 from pathlib import Path
 from typing import Any
+
+import requests
 
 from wmshare._credentials import DEFAULT_CREDENTIAL_PATH
 from wmshare.errors import AuthError, TransportError
@@ -57,40 +56,48 @@ def request_anon_credentials(
     """
     base = (base_url or os.environ.get("WMSHARE_BASE_URL") or _DEFAULT_BASE_URL).rstrip("/")
     url = base + ANON_CREDENTIALS_PATH
-    req = urllib.request.Request(
-        url,
-        data=b"",
-        method="POST",
-        headers={"Accept": "application/json", "User-Agent": "wmshare-py/anon"},
-    )
+    # 与 SDK 其余请求一致走 requests（同一套代理/证书环境、同样的标识头），
+    # 不用裸 urllib —— 否则企业代理环境下只有这一步会绕过系统代理而失败。
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            payload = json.loads(resp.read().decode("utf-8"))
-    except urllib.error.HTTPError as exc:
+        resp = requests.post(
+            url,
+            headers={
+                "Accept": "application/json",
+                # 与 client.py 的会话头同口径：网关按 X-WM-Client 落 call_log 的来源标记。
+                "X-WM-Client": "wmshare-py/anon",
+            },
+            timeout=timeout,
+        )
+    except requests.RequestException as exc:
+        raise TransportError(f"匿名凭据申领网络失败：{exc}") from None
+
+    if resp.status_code == 404:
+        raise AuthError(
+            "该服务端未开放匿名试用；请到 https://open.winmale.com 注册免费账号"
+            "（免费档 500 次/小时、5,000 次/日）获取凭据",
+            code="anon_unavailable",
+        )
+    if resp.status_code == 429:
+        raise AuthError(
+            "匿名试用今日名额已满（或本网络领取次数已达上限）；"
+            "请到 https://open.winmale.com 注册免费账号继续",
+            code="anon_quota",
+        )
+    if resp.status_code >= 400:
         detail = ""
         try:
-            body = json.loads(exc.read().decode("utf-8"))
+            body = resp.json()
             detail = str(body.get("error", {}).get("message") or body.get("message") or "")
-        except Exception:  # 响应体不是 JSON 时忽略，用状态码兜底
+        except ValueError:  # 响应体不是 JSON 时忽略，用状态码兜底
             detail = ""
-        if exc.code == 404:
-            raise AuthError(
-                "该服务端未开放匿名试用；请到 https://open.winmale.com 注册免费账号"
-                "（免费档 500 次/小时、5,000 次/日）获取凭据",
-                code="anon_unavailable",
-            ) from None
-        if exc.code == 429:
-            raise AuthError(
-                "匿名试用今日名额已满（或本网络领取次数已达上限）；"
-                "请到 https://open.winmale.com 注册免费账号继续",
-                code="anon_quota",
-            ) from None
         raise AuthError(
-            f"匿名凭据申领失败（HTTP {exc.code}）{('：' + detail) if detail else ''}",
+            f"匿名凭据申领失败（HTTP {resp.status_code}）{('：' + detail) if detail else ''}",
             code="anon_failed",
-        ) from None
-    except (urllib.error.URLError, TimeoutError) as exc:
-        raise TransportError(f"匿名凭据申领网络失败：{exc}") from None
+        )
+    try:
+        payload = resp.json()
+    except ValueError:
+        raise AuthError("匿名凭据响应不是合法 JSON", code="anon_bad_response") from None
 
     # 服务端统一信封 {ok, as_of, data, meta}；也兼容直接返回裸对象。
     data = payload.get("data") if isinstance(payload, dict) and "data" in payload else payload

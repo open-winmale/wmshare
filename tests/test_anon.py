@@ -4,13 +4,12 @@
 """
 from __future__ import annotations
 
-import json
 import os
 import stat
-import urllib.error
 from pathlib import Path
 
 import pytest
+import requests
 
 from wmshare import _anon
 from wmshare.errors import AuthError, TransportError
@@ -88,42 +87,35 @@ def test_load_incomplete_returns_none(isolated_home):
 
 
 class _FakeResponse:
-    def __init__(self, payload: dict):
-        self._body = json.dumps(payload).encode()
+    """模拟 requests.Response 的最小接口。"""
 
-    def read(self):
-        return self._body
+    def __init__(self, payload, status_code: int = 200):
+        self._payload = payload
+        self.status_code = status_code
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *a):
-        return False
+    def json(self):
+        if isinstance(self._payload, Exception):
+            raise self._payload
+        return self._payload
 
 
 def test_request_unwraps_envelope(monkeypatch):
     payload = {"ok": True, "as_of": "2026-11-20", "data": {
         "client_id": "anon_open_z", "client_secret": "zz", "ec_balance": 500000}, "meta": {}}
-    monkeypatch.setattr("urllib.request.urlopen", lambda *a, **k: _FakeResponse(payload))
+    monkeypatch.setattr(requests, "post", lambda *a, **k: _FakeResponse(payload))
     creds = _anon.request_anon_credentials("https://example.invalid")
     assert creds["client_id"] == "anon_open_z"
 
 
 def test_request_404_maps_to_anon_unavailable(monkeypatch):
-    def _raise(*a, **k):
-        raise urllib.error.HTTPError(
-            "u", 404, "Not Found", {}, __import__("io").BytesIO(b"{}"))
-    monkeypatch.setattr("urllib.request.urlopen", _raise)
+    monkeypatch.setattr(requests, "post", lambda *a, **k: _FakeResponse({}, 404))
     with pytest.raises(AuthError) as ei:
         _anon.request_anon_credentials("https://example.invalid")
     assert ei.value.code == "anon_unavailable"
 
 
 def test_request_429_maps_to_anon_quota(monkeypatch):
-    def _raise(*a, **k):
-        raise urllib.error.HTTPError(
-            "u", 429, "Too Many", {}, __import__("io").BytesIO(b"{}"))
-    monkeypatch.setattr("urllib.request.urlopen", _raise)
+    monkeypatch.setattr(requests, "post", lambda *a, **k: _FakeResponse({}, 429))
     with pytest.raises(AuthError) as ei:
         _anon.request_anon_credentials("https://example.invalid")
     assert ei.value.code == "anon_quota"
@@ -131,8 +123,8 @@ def test_request_429_maps_to_anon_quota(monkeypatch):
 
 def test_request_network_error(monkeypatch):
     def _raise(*a, **k):
-        raise urllib.error.URLError("boom")
-    monkeypatch.setattr("urllib.request.urlopen", _raise)
+        raise requests.ConnectionError("boom")
+    monkeypatch.setattr(requests, "post", _raise)
     with pytest.raises(TransportError):
         _anon.request_anon_credentials("https://example.invalid")
 
@@ -147,7 +139,7 @@ def test_client_anonymous_reuses_saved(isolated_home, monkeypatch):
     def _no_network(*a, **k):
         raise AssertionError("已有本地凭据时不应发起申领请求")
 
-    monkeypatch.setattr("urllib.request.urlopen", _no_network)
+    monkeypatch.setattr(requests, "post", _no_network)
     cli = Client.anonymous()
     assert cli.client_id == "anon_open_saved"
     assert cli.client_secret == "sec"
@@ -158,7 +150,7 @@ def test_client_anonymous_fetches_when_absent(isolated_home, monkeypatch):
 
     payload = {"ok": True, "data": {
         "client_id": "anon_open_new", "client_secret": "newsec", "ec_balance": 500000}}
-    monkeypatch.setattr("urllib.request.urlopen", lambda *a, **k: _FakeResponse(payload))
+    monkeypatch.setattr(requests, "post", lambda *a, **k: _FakeResponse(payload))
     cli = Client.anonymous()
     assert cli.client_id == "anon_open_new"
     # 落到独立文件，且可被再次读取复用。
