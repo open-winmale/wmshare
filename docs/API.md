@@ -595,7 +595,7 @@ cli.screener.query(where="$BONUS_RATE_3Y_AVG_LAST > 0.03 && $ROE_TTM_LAST > 0.15
 
 **`cli.backtest.run`** — 跑一次单股买卖点回测，返回成交明细与净值汇总。
 
-两种规则（成交/费用/净值口径完全相同）： `rule="ma_cross"`（默认）用收盘价 SMA：`fast` 上穿 `slow` 买、下穿卖； `rule="pe"/"pb"/"ps"/"pr"` 用估值：当根估值 `<= buy` 买、`>= sell` 卖。 **估值序列只有 ≤3 年日频**（`cli.valuation.hist_stats`，公告日 TTM、PIT）， 所以估值回测区间自动限制在序列覆盖内，亏损期等无估值的日子不出信号。
+两种规则（成交/费用/净值口径完全相同）： `rule="ma_cross"`（默认）用收盘价 SMA：`fast` 上穿 `slow` 买、下穿卖； `rule="pe"/"pb"/"ps"/"pr"` 用估值：当根估值 `<= buy` 买、`>= sell` 卖。 **估值回测核默认取 3 年窗口**（`cli.valuation.hist_stats` 支持 6m~10y，公告日 TTM、PIT）， 所以估值回测区间自动限制在序列覆盖内，亏损期等无估值的日子不出信号。
 
 成交：信号当根收盘后确定、**次日开盘**成交（T+1）；100 股整手；现金不足一手 则放弃该次买入（见 `warnings`）。一字板（open==high==low==close）与零量 （停牌占位）顺延到下一根，次数见 `caliber.skipped`。期末未平仓按最后一根 收盘平仓（`reason="期末平仓"`）。
 
@@ -620,7 +620,7 @@ cli.screener.query(where="$BONUS_RATE_3Y_AVG_LAST > 0.03 && $ROE_TTM_LAST > 0.15
 
 ```python
 res = cli.backtest.run("600519", fast=5, slow=20)   # 均线金叉买 / 死叉卖
-res = cli.backtest.run("600519", rule="pe", buy=20, sell=40)  # 估值阈值（≤3 年）
+res = cli.backtest.run("600519", rule="pe", buy=20, sell=40)  # 估值阈值（回测核默认 3 年窗口）
 res["trades"][:2]                                    # 成交明细（买/卖各一行）
 res["summary"]["max_drawdown"]                      # 净值汇总（8 个数字）
 ```
@@ -2115,9 +2115,9 @@ cli.segments.periods("600519")
 |---|---|---|---|---|
 | `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
 | `metric` | string | 否 | `'pe'` | "pe" / "pb" / "ps" / "pr" |
-| `window` | string | 否 | `'3y'` | "6m" / "1y" / "2y" / "3y"（上限 3 年） |
+| `window` | string | 否 | `'3y'` | "6m" / "1y" / "2y" / "3y" / "5y" / "10y"（引擎按日历月回溯，深度受标的上市时长限制） |
 
-**输出**：MAP · {avg, current, median, min, max, pct, count, series:[unix秒,值]}（窗口上限 3 年）
+**输出**：MAP · {avg, current, median, min, max, pct, count, series:[unix秒,值]}
 
 **示例**
 

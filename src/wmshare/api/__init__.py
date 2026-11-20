@@ -1476,8 +1476,9 @@ class BacktestApi(_Api):
         两种规则（成交/费用/净值口径完全相同）：
         ``rule="ma_cross"``（默认）用收盘价 SMA：``fast`` 上穿 ``slow`` 买、下穿卖；
         ``rule="pe"/"pb"/"ps"/"pr"`` 用估值：当根估值 ``<= buy`` 买、``>= sell`` 卖。
-        **估值序列只有 ≤3 年日频**（``cli.valuation.hist_stats``，公告日 TTM、PIT），
-        所以估值回测区间自动限制在序列覆盖内，亏损期等无估值的日子不出信号。
+        **估值回测核默认取 3 年窗口**（``cli.valuation.hist_stats`` 支持
+        6m~10y，公告日 TTM、PIT），所以估值回测区间自动限制在序列覆盖内，
+        亏损期等无估值的日子不出信号。
 
         成交：信号当根收盘后确定、**次日开盘**成交（T+1）；100 股整手；现金不足一手
         则放弃该次买入（见 ``warnings``）。一字板（open==high==low==close）与零量
@@ -1597,7 +1598,7 @@ class BacktestApi(_Api):
             earlier = [r for r in rows if str(r.get("date") or "")[:10] < first]
             if earlier:
                 rows = rows[len(earlier):]
-                warnings.append(f"估值序列只从 {first} 起（上限 3 年），更早的 "
+                warnings.append(f"估值序列只从 {first} 起（对齐行情窗口），更早的 "
                                 f"{len(earlier)} 根已剔除")
             if not rows:
                 raise DataError(f"{symbol} 的行情与 {rule.upper()} 估值序列（{first} 起）"
@@ -1782,8 +1783,9 @@ class ValuationApi(_Api):
     """
 
     _METRICS = {"pe": "pe", "pb": "pb", "ps": "ps", "pr": "pr_base"}
-    # 引擎支持 <数字><单位> 通用窗口（实测 6m 起可用）；上限 3 年
-    _WINDOWS = ("6m", "1y", "2y", "3y")
+    # 引擎支持 <数字><单位> 通用窗口（vfunc parseWindow 无年限封顶，2.5 放开
+    # 5y/10y 白名单；此前误记「上限 3 年」——那是旧白名单，不是引擎限制）
+    _WINDOWS = ("6m", "1y", "2y", "3y", "5y", "10y")
     # 每日估值宽表字段（服务端物化 alt.valuation_daily；2.0 基础单位，
     # 与 _catalog/domains/valuation.yaml units 一致）
     _DAILY_FIELDS = ("pe_ttm", "pb", "ps", "pr", "total_mv", "circ_mv",
@@ -1793,7 +1795,9 @@ class ValuationApi(_Api):
         """估值指标的历史统计与每日序列（PE=TTM 口径；pr=市赚率 pr_base）。
 
         :param metric: "pe" / "pb" / "ps" / "pr"
-        :param window: "6m" / "1y" / "2y" / "3y"（上限 3 年）
+        :param window: "6m" / "1y" / "2y" / "3y" / "5y" / "10y"
+            （引擎按日历月回溯，深度受标的上市时长限制；实际可得序列长度
+            以返回 count/series 为准）
         """
         if metric not in self._METRICS:
             raise UsageError(
@@ -1801,7 +1805,7 @@ class ValuationApi(_Api):
                 "ps=市销率、pr=市赚率；金融/亏损股建议用 pb）", code="params")
         if window not in self._WINDOWS:
             raise UsageError(
-                f"window 只支持 {list(self._WINDOWS)}（上限 3 年）", code="params")
+                f"window 只支持 {list(self._WINDOWS)}", code="params")
         raw = self._c.eval_result(
             f'return HIST_STATS("{window}", "{self._METRICS[metric]}")', symbol=symbol)
         if not isinstance(raw, dict):
