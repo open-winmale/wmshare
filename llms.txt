@@ -1,6 +1,6 @@
 # wmshare
 
-> 覆盖 A 股、港股、美股的 Python 财经数据 SDK：24 个数据域、317 个底层函数、2983 个指标码、152 个核心接口 + 17 个组合接口（共 169 个 friendly API）。BSD-3-Clause 开源；取数需开放平台凭证（环境变量 WMSHARE_CLIENT_ID / WMSHARE_CLIENT_SECRET，见 README）。
+> 覆盖 A 股、港股、美股的 Python 财经数据 SDK：25 个数据域、328 个底层函数、2983 个指标码、156 个核心接口 + 18 个组合接口（共 174 个 friendly API）。BSD-3-Clause 开源；取数需开放平台凭证（环境变量 WMSHARE_CLIENT_ID / WMSHARE_CLIENT_SECRET，见 README）。
 
 ## Docs
 
@@ -10,12 +10,12 @@
 - [指标库 INDICATORS](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/INDICATORS.md)：全量指标码按族导航——命名语法、11 组精选口径、死码清单与场景速查（先查码，禁止自算已有指标）
 - [指标单页索引](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/indicators/README.md)：逐码一页（类型/市场/单位/取数示例），长尾检索与 AI 引用入口
 - [AI 用法](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/AI.md)：MCP server、skill、文档上下文与报错驱动的 Agent 接入路径
-- [API 参考](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/API.md)：152 个核心接口 + 17 个组合接口的参数 / 返回 / 单位口径（字段字典 [fields.json](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/fields.json)）
+- [API 参考](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/API.md)：156 个核心接口 + 18 个组合接口的参数 / 返回 / 单位口径（字段字典 [fields.json](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/fields.json)）
 - [限制与配额](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/LIMITS.md)：单次/批量/限流/重试硬限制、先估后取（`cli.cost_estimate`）与取数配方
 - [错误码](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/ERRORS.md)：异常层级 + 全部 `code`（含义/可重试/处理）
 - [数据日历](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/DATA_CALENDAR.md)：各数据集更新频率与过期阈值；[兼容政策](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/COMPATIBILITY.md)：弃用窗口与迁移表
 - [Agent Skill](https://raw.githubusercontent.com/open-winmale/wmshare/main/src/wmshare/skills/wmshare/SKILL.md)：随包分发的 agent 用法合同（目录先行、单位铁律、决策树、坑位）
-- [可运行示例](https://raw.githubusercontent.com/open-winmale/wmshare/main/examples/README.md)：18 个编号示例（全部支持演示客户端离线试跑），CI 端到端覆盖
+- [可运行示例](https://raw.githubusercontent.com/open-winmale/wmshare/main/examples/README.md)：19 个编号示例（全部支持演示客户端离线试跑），CI 端到端覆盖
 - [CHANGELOG](https://raw.githubusercontent.com/open-winmale/wmshare/main/CHANGELOG.md)：版本历史
 
 ## Key Concepts
@@ -34,6 +34,7 @@
 - `disc.bonus`（分红）（cli.dividend）：分红历史明细（预案/实施）、每股股利、窗口合计
 - `disc.events`（业绩披露事件）：业绩预告（yjyg：净利/扣非/营收区间+同比+修正轨迹）、业绩快报（yjkb）、 财报预约披露日历（disclosure）
 - `disc.filings`（定期报告清单）（cli.filings）：年报/半年报/季报清单（报告期、标题、PDF 链接）
+- `disc.income`（收息）：收息流投研闭环——全市场收息排行（四维评分+档位+股息分）、单票收息诊断 （评分逐项解释+静态下限双腿复原+榜内位置）、分红日历、N 年持有收…
 - `disc.notice`（公告）（cli.notice）：公告检索（单票/日期/类别/区间）与公告信号（回购/减持/增持/股权激励证据行）
 - `disc.pdf_doc`（公告 PDF 全文）：公告 PDF 正文库——按票/日期/标题/状态检索、按 file_key/原文链接定位、 读提取正文（pdftotext 预览）与财报 mar…
 - `disc.workout`（契约套利）（cli.workout）：契约套利条款事件——要约收购/换股吸收合并/现金选择权等（披露原文提取）， 提供进行中看板与单票条款查询
@@ -63,6 +64,7 @@
 - `cli.cbond.article(payload: 'dict[str, Any]', date: 'str | None' = None, campaign: 'str | None' = None, fig_dir: 'str' = 'figs') -> 'dict[str, str]'`：把事实包写成图文稿件：源稿 Markdown + 公众号适配稿 + 摘要。
 - `cli.cbond.daily(as_of: 'str | None' = None, top_n: 'int' = 20, budget: 'int' = 30) -> 'dict[str, Any]'`：跑一期可转债日更，返回事实包（三层口径 + 三道闸 + 状态机 + 事件日历）。
 - `cli.cbond.figures(payload: 'dict[str, Any]', out_dir: 'str', date: 'str | None' = None, klines: 'dict[str, Any] | None' = None) -> 'dict[str, str]'`：出当期图：双低榜表格、全市场价差散点、候选个券价格通道。
+- `cli.dividend.diagnose(symbols: 'str | list[str] | tuple[str, ...]', include_history: 'bool' = False, *, _raw: 'bool' = False) -> 'Any'`：收息诊断（原生批量）→ 信封 ``{ok, data.items, meta}``。
 - `cli.etf.asset(symbol: 'str', mode: 'str' = 'latest') -> 'Any'`：ETF 资产配置（信封：五类占净值比小数 + net_asset 元；→script view fund_asset）。
 - `cli.etf.card(symbol: 'str', mode: 'str' = 'latest') -> 'Any'`：ETF 档案卡（信封：合并档案/净值/份额/分红；mode=latest|series）。
 - `cli.etf.div(symbol: 'str', mode: 'str' = 'latest') -> 'Any'`：ETF 分红（信封：历史分红行；mode=latest|series）。
@@ -86,7 +88,7 @@
 
 ## 单位与守护声明（机器可读）
 
-> 共 65 个函数带 units / ranges / checks 声明；每行 `` `函数名`: JSON ``，键为 units（换算）/ ranges（量级界）/ checks（不变量）。SDK 在返回前按声明换算并校验，违例抛 DataError；原生口径用 `_units="native"`。内部命名空间的函数声明见 openapi.json 的 `x-wmshare-guards`（按友好接口）。
+> 共 68 个函数带 units / ranges / checks 声明；每行 `` `函数名`: JSON ``，键为 units（换算）/ ranges（量级界）/ checks（不变量）。SDK 在返回前按声明换算并校验，违例抛 DataError；原生口径用 `_units="native"`。内部命名空间的函数声明见 openapi.json 的 `x-wmshare-guards`（按友好接口）。
 
 - `bonus.query_list`: {"ranges": {"dps": [0, 500], "net_profit": [0, 1000000000000.0], "payout_ratio": [0, 20], "total": [0, 2000000000000.0]}}
 - `bonus.snapshot`: {"ranges": {"bonus_npts_rate": [0, 1], "bonus_total": [0, 2000000000000.0], "bonus_ttm": [0, 1000000000000.0], "dps_ttm": [0, 200], "mv": [0, 5000000000000.0], "payout_ttm": [0, 5], "pct_yield_3y": [0, 1], "pe_ttm": [-500, 5000], "yield_3y_avg": [0, 0.5], "yield_3y_min": [0, 0.5], "yield_lyr": [0, 0.5], "yield_ttm": [0, 0.5]}}
@@ -125,6 +127,9 @@
 - `forecast.yjkb_rows`: {"ranges": {"np_yoy": [-100, 1000], "rev_yoy": [-100, 1000], "roe": [-2, 5]}, "units": {"np_yoy": "percent", "rev_yoy": "percent", "roe": "percent"}}
 - `forecast.yjyg_latest`: {"ranges": {"np_amp_lower": [-100, 1000], "np_amp_upper": [-100, 1000], "rev_amp_lower": [-100, 1000], "rev_amp_upper": [-100, 1000]}, "units": {"np_amp_lower": "percent", "np_amp_upper": "percent", "rev_amp_lower": "percent", "rev_amp_upper": "percent"}}
 - `forecast.yjyg_rows`: {"ranges": {"np_amp_lower": [-100, 1000], "np_amp_upper": [-100, 1000], "rev_amp_lower": [-100, 1000], "rev_amp_upper": [-100, 1000]}, "units": {"np_amp_lower": "percent", "np_amp_upper": "percent", "rev_amp_lower": "percent", "rev_amp_upper": "percent"}}
+- `income.decomp`: {"ranges": {"items[].dividend_return": [-0.5, 10], "items[].total_return": [-1, 50]}}
+- `income.diagnose`: {"ranges": {"items[].bond_yield_10y": [0, 0.2], "items[].score.total": [0, 100]}}
+- `income.rating_rows`: {"ranges": {"rows[].dividend_score": [0, 0.5], "rows[].payout": [0, 20], "rows[].score.total": [0, 100], "rows[].yield_ttm": [0, 0.5], "universe": [0, 100000.0]}}
 - `indices.weights`: {"ranges": {"weight": [0, 1]}}
 - `intl.query_ccass`: {"ranges": {"pct_of_issued": [0, 1]}, "units": {"pct_of_issued": "percent"}}
 - `intl.query_shareholders`: {"ranges": {"total_shares_ratio": [0, 1]}}

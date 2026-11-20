@@ -1,5 +1,5 @@
 id: market.index
-version: 1.5.1
+version: 1.6.0
 cn: 指数
 kind: computed
 category: market
@@ -29,6 +29,15 @@ functions:
   - {name: indices.keys, cn: 指数键列表, layer: L0}
   - {name: indices.members, cn: 指数成分, layer: L0}
   - {name: indices.weights, cn: 指数权重股, layer: L0, ranges: {weight: [0, 1]}}
+  - name: indices.members_daily
+    cn: 指数成分日快照（前向 PIT：begin 时点的成分名单）
+    layer: L0
+    params:
+      - {name: key, type: string, required: true, desc: 指数键（如 index.hs300）}
+      - {name: begin, type: string, required: true, desc: '起始日 YYYY-MM-DD'}
+      - {name: end, type: string, required: false, desc: '截止日，缺省最新'}
+    returns: {desc: MAP · 成分快照信封}
+    example: 'indices.members_daily("index.hs300", "2026-11-01", "")'
   - name: indices.valuation
     cn: 指数估值时序（key 为指数键，如 index.hs300；可用键由 indices.universe_keys 枚举）
     layer: L0

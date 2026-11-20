@@ -1,6 +1,6 @@
 {
  "schema_version": 2,
- "upstream_rev": "7e2d760e",
+ "upstream_rev": "1a1c1476",
  "domains": {
   "bonus": {
    "entry": "sys/bonus/init.xs",
@@ -36,6 +36,10 @@
   },
   "futures": {
    "entry": "sys/futures/init.xs",
+   "exports": []
+  },
+  "income": {
+   "entry": "sys/income/init.xs",
    "exports": []
   },
   "indices": {
@@ -133,7 +137,7 @@
   "toplist",
   "valuation"
  ],
- "function_count": 323,
+ "function_count": 334,
  "functions": [
   {
    "name": "bonus.dps_rpt",
@@ -4549,6 +4553,221 @@
    ]
   },
   {
+   "name": "income.calendar_events",
+   "cn": "分红日历（日期窗口查全市场分红事件：公告/登记/除息/到账任一命中即返回）",
+   "example": "income.calendar_events(\"2026-11-01\", \"2026-11-30\", ARR{\"600900\"})",
+   "returns": "MAP · 日历（events/stocks enrich）",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": [
+    {
+     "name": "cal_from",
+     "type": "string"
+    },
+    {
+     "name": "cal_to",
+     "type": "string"
+    },
+    {
+     "name": "cal_codes",
+     "type": "array"
+    }
+   ]
+  },
+  {
+   "name": "income.decomp",
+   "cn": "多票N年持有收益拆解（≤10，一次eval逐票计价；总=价格+股息贡献）",
+   "example": "income.decomp(ARR{\"600900\", \"601088\"}, 10)",
+   "returns": "MAP · 批量拆解（items/count/mode）",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "symbols",
+     "type": "any"
+    },
+    {
+     "name": "years",
+     "type": "int"
+    }
+   ]
+  },
+  {
+   "name": "income.decomp_one",
+   "cn": "单票N年持有收益拆解（总=价格+股息贡献，月K hfq−nr 差值）",
+   "example": "income.decomp_one(\"600900\", 10)",
+   "returns": "MAP · 拆解包",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "sym",
+     "type": "any"
+    },
+    {
+     "name": "years",
+     "type": "int"
+    }
+   ]
+  },
+  {
+   "name": "income.diagnose",
+   "cn": "收息诊断（原生批量：四维评分逐项解释+静态下限复原+榜内位置；include_history 才带分红史/方案）",
+   "example": "income.diagnose(ARR{\"600519\", \"600900\"}, false)",
+   "returns": "MAP · 批量诊断（items[]）",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "symbols",
+     "type": "any"
+    },
+    {
+     "name": "include_history",
+     "type": "bool"
+    }
+   ]
+  },
+  {
+   "name": "income.dividend_score",
+   "cn": "股息分=0.6×TTM股息率+0.4×近3年最低（缺项重归一，双缺nil）",
+   "example": "income.dividend_score(row.values)",
+   "returns": "number|null",
+   "returns_shape": null,
+   "min_args": null,
+   "params": [
+    {
+     "name": "v",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "income.floor_explain",
+   "cn": "静态收益下限双腿复原（扣非盈利腿×PE分位门 + 可持续股息腿×质量门，残差如实）；入参兼容原始 $FIELD 行与 memo 紧凑行（dp/pd/q5/b5/r5/fy）",
+   "example": "income.floor_explain(row.values)",
+   "returns": "map",
+   "returns_shape": null,
+   "min_args": null,
+   "params": [
+    {
+     "name": "v",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "income.gate",
+   "cn": "股息分五资格门（连续分红/流动性/可交易/支付率/盈利连续）",
+   "example": "income.gate(row.values)",
+   "returns": "map",
+   "returns_shape": {
+    "kind": "object",
+    "cn": "各门布尔+pass",
+    "fields": [
+     {
+      "name": "pass",
+      "type": "bool",
+      "cn": "五门全过"
+     }
+    ]
+   },
+   "min_args": null,
+   "params": [
+    {
+     "name": "v",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "income.grade_of",
+   "cn": "总分→档位（≥75 strong/≥60 good/≥45 watch/else avoid）",
+   "example": "income.grade_of(78)",
+   "returns": "string",
+   "returns_shape": null,
+   "min_args": null,
+   "params": [
+    {
+     "name": "total",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "income.rating_rows",
+   "cn": "全市场收息排行（memo 直读零冷算；四维评分+档位+股息分排序）",
+   "example": "income.rating_rows(20, \"strong\", \"industry.S48\", 0.04, true)",
+   "returns": "MAP · 收息榜（rows/facets/元数据）",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": [
+    {
+     "name": "top_n",
+     "type": "int"
+    },
+    {
+     "name": "grade",
+     "type": "string"
+    },
+    {
+     "name": "industry",
+     "type": "string"
+    },
+    {
+     "name": "min_yield",
+     "type": "any"
+    },
+    {
+     "name": "gates",
+     "type": "bool"
+    }
+   ]
+  },
+  {
+   "name": "income.score",
+   "cn": "四维收息评分（紧凑）：tot/gr/dims[收益,持续,稳定,成长]/fl 硬修正标记",
+   "example": "income.score(row.values, 0.018)",
+   "returns": "map",
+   "returns_shape": {
+    "kind": "object",
+    "cn": "紧凑评分",
+    "fields": [
+     {
+      "name": "tot",
+      "type": "number",
+      "cn": "总分0~100"
+     },
+     {
+      "name": "gr",
+      "type": "string",
+      "cn": "档位 strong|good|watch|avoid"
+     },
+     {
+      "name": "dims",
+      "type": "ARR",
+      "cn": "四维分"
+     },
+     {
+      "name": "fl",
+      "type": "ARR",
+      "cn": "硬修正标记"
+     }
+    ]
+   },
+   "min_args": null,
+   "params": [
+    {
+     "name": "v",
+     "type": "any"
+    },
+    {
+     "name": "bond",
+     "type": "any"
+    }
+   ]
+  },
+  {
    "name": "indices.keys",
    "cn": "指数键列表",
    "example": "indices.keys()",
@@ -4576,6 +4795,28 @@
     {
      "name": "top_n",
      "type": "int"
+    }
+   ]
+  },
+  {
+   "name": "indices.members_daily",
+   "cn": "指数成分日快照（前向PIT）",
+   "example": "indices.members_daily(\"index.hs300\", \"2026-11-01\", \"\")",
+   "returns": "MAP · 成分快照信封",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "key",
+     "type": "string"
+    },
+    {
+     "name": "begin",
+     "type": "string"
+    },
+    {
+     "name": "end",
+     "type": "string"
     }
    ]
   },

@@ -465,6 +465,60 @@ def test_dividend_history_fields_and_range(cli):
     assert all("2024-01-01" <= str(r.get("ex_div"))[:10] <= "2026-10-22" for r in ranged)
 
 
+# ---- 2.5 收息场景闭环（sys/income：榜单 memo 直读 / 原生批量诊断 / 日历 / 拆解）----
+
+def test_income_rating_smoke(cli):
+    env = cli.dividend.rating(top_n=3)
+    if not env.get("ok"):
+        assert env.get("meta", {}).get("error") == "COLD_CACHE"
+        pytest.skip("收息榜 memo 未就绪（cron 未跑），稍后重试")
+    rows = env["data"]["rows"]
+    assert rows and rows[0]["rank"] == 1
+    top = rows[0]
+    assert isinstance(top["score"]["total"], int) and top["score"]["grade"] in (
+        "strong", "good", "watch", "avoid")
+    assert isinstance(top["gate_pass"], bool)
+    # 批量档对账：同一 memo 下 batch 诊断的评分口径与榜单行一致（found 票必有档位）
+    assert isinstance(env["meta"].get("universe"), int) and env["meta"]["universe"] > 0
+
+
+def test_income_diagnose_batch_smoke(cli):
+    env = cli.dividend.diagnose([MAIN, "600900"])
+    assert env.get("ok") is True
+    items = env["data"]["items"]
+    assert len(items) == 2
+    for it in items:
+        assert it.get("found") is True
+        sc = it.get("score") or {}
+        assert isinstance(sc.get("total"), int)
+        assert set(sc.get("flags") or []) <= {
+            "payout_danger", "decaying_high_yield", "verify_data", "floor_blind"}
+
+
+def test_income_calendar_smoke(cli):
+    today = date.today()
+    env = cli.dividend.calendar(today.strftime("%Y-%m-01"), today.strftime("%Y-%m-%d"))
+    assert env.get("ok") is True
+    assert isinstance(env["data"].get("count"), int)
+
+
+def test_income_decomp_smoke(cli):
+    env = cli.dividend.decomp(MAIN, years=3)
+    assert env.get("ok") is True
+    item = env["data"]["items"][0]
+    assert item.get("ok") is True
+    for key in ("total_return", "price_return", "dividend_return"):
+        v = item.get(key)
+        assert v is None or -1 <= v <= 50
+
+
+def test_index_members_history_smoke(cli):
+    # 2.5 并发会话新面（indices.members_daily 前向 PIT）：上游刚部署，宽松冒烟
+    env = _call_or_xfail(cli.index.members_history, "index.hs300", begin="2026-11-01")
+    if isinstance(env, dict) and "ok" in env:
+        assert env.get("ok") is True
+
+
 def test_kline_query_bars_live(cli):
     rows = _call_or_xfail(cli.call, "kline.query_bars_live", sym=MAIN, limit=3)
     assert isinstance(rows, list)

@@ -17,7 +17,7 @@ disclosures/statement/segments/dividend/estimates/corporate/market/intl/notice �
 
 **它不是**：撮合级/组合级回测引擎（单股均线买卖点回测用 `cli.backtest.run`：次日开盘成交、
 T+1、整手、佣金/印花固定，不复现盘口排队与分红税）；数据库（数据经云端 API 运行时获取，
-不随包分发）；全品类数据超市（24 个数据域，覆盖 A 股个股常用研究数据、宏观时序与期货主力连续指标码，
+不随包分发）；全品类数据超市（25 个数据域，覆盖 A 股个股常用研究数据、宏观时序与期货主力连续指标码，
 场外/LOF/货基基金（仅场内 ETF 九视图）、期权、债券（可转债除外）未覆盖）。
 
 ## 1. 环境前置
@@ -108,6 +108,10 @@ cat.metrics_in_group("dividend")                         # 指标组内全部精
 | 估值历史分位 | `cli.valuation.hist_stats(sym, metric="pe", window="3y")` |
 | TTM 股息率 / 分红历史 | `cli.dividend.yield_ttm(sym)` / `cli.dividend.history(sym)` |
 | 分红质量筛选 | `cli.dividend.screen_quality(sym)`（默认精品窗口：股息率>3% 且派息率 30%–70%；窗口不合适就显式传 min_yield/payout_min/payout_max） |
+| 哪些股票适合收息 / 高股息排行 / 帮我筛一批能拿息的 | `cli.dividend.rating(top_n=20, grade="strong")`（全市场一次取数：四维评分+档位+资格门，industry/min_yield 过滤；COLD_CACHE=榜单 cron 未就绪，如实告知勿重算） |
+| 这票股息可持续吗 / 一批票的分红体检（评分解释+榜内位置） | `cli.dividend.diagnose(["600900", "600519"])`——**原生批量一次调用，勿逐票循环**；include_history=True 才带分红史/方案（批量不要开） |
+| 最近/下个月谁分红 / 除息日历 | `cli.dividend.calendar("2026-11-01", "2026-11-30", codes=[...])`（窗口内任一日期命中即返回） |
+| 这票拿 N 年总收益多少 / 股息贡献 vs 价格贡献 | `cli.dividend.decomp(["600900"], years=10)`（≤10 票批量；差值口径 hfq−nr；**首次查某票有冷物化尖刺 ~20 万 EC，复查即热**） |
 | 公告 / 有无回购 | `cli.notice.list(sym, window="3m")` / `cli.notice.has_buyback(sym, "6m")` |
 | 业绩预告 | `cli.forecast.yjyg_latest(sym)` |
 | 公司档案 | `cli.info.profile(sym)` |
@@ -119,11 +123,14 @@ cat.metrics_in_group("dividend")                         # 指标组内全部精
 | 行业目录 / 行业成分 | `cli.stocks.industries(1)`（申万/恒生；美股目录树暂缺）/ `cli.stocks.industry_members("银行")`（中文名或代码 S48） |
 | 少量标的单批（≤500） | `cli.call_batch("kline.snapshot", ["600519", "000001"])` 或任意单标的接口传 list：`cli.kline.last(["600519", "000001"])`；`to_df()` 出每标的一行长表 |
 
-完整 152 个核心接口 + 17 个组合接口（可转债 3 + 回测 1 + 报表 4 + ETF 9）与全部底层函数：仓库用户看 docs/GUIDE.md（上手）与
+完整 156 个核心接口 + 18 个组合接口（可转债 3 + 回测 1 + 报表 4 + ETF 9 + 收息诊断 1）与全部底层函数：仓库用户看 docs/GUIDE.md（上手）与
 docs/API.md（参考）；pip 用户用 `cat.search(...)` / `cat.function(...)` 查（同一份合同）。
 全量指标码（2983 个）按数据类型分章的导航、命名语法与死码清单见 docs/INDICATORS.md（生成物）。
 
 ## 5. 工作流示例（返回长这样，从这些字段读）
+
+> 场景深流程按需读（渐进披露）：收息闭环全流程（发现→研判→跟踪→验证 + 口径红线 +
+> 成本速查）见 `scenes/income.md`——只有用户问题命中该场景才加载，平时不占上下文。
 
 ```python
 import wmshare

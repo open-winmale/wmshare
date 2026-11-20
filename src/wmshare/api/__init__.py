@@ -10,7 +10,7 @@
     ``_raw=True`` 取上游原始行（list[dict]，跳过规范化与换算）——诊断逃生口；
   - 本层是目录合同的薄翻译：高频方法显式包装；目录内其余非内部函数经 ``__getattr__``
     属性直达（如 ``cli.kline.screen_above_ma20``）；目录标 ``internal: true`` 的
-    规范化辅助（fmt_* 等）不再直达，请走 ``cli.call``——317 个底层函数零遮蔽；
+    规范化辅助（fmt_* 等）不再直达，请走 ``cli.call``——328 个底层函数零遮蔽；
   - 选股能力集中在 ``cli.screener``：单票筛选器（bool）、全市场宽度/涨跌榜与
     全市场条件选股 ``query()``（服务端索引直出）显式包装，kline 目录的其余筛选
     函数经属性直达。
@@ -2597,6 +2597,121 @@ class DividendApi(_Api):
         """TTM 派息率（小数，0.799 = 79.9%；= TTM 分红 / 归母净利 TTM）。"""
         return self._c.call("bonus.snapshot_payout_ttm", sym=symbol)
 
+    # ---- 收息场景闭环（sys/income，与 web 收息佬 / wm-income 技能共享评分 SoT）----
+
+    def rating(self, top_n: int = 20, grade: str | None = None,
+               industry: str | None = None, min_yield: float | None = None,
+               gates: bool = True, *, _raw: bool = False) -> Any:
+        """全市场收息排行 → 信封 ``{ok, as_of, data.rows, meta}``。
+
+        排序 = 股息分（0.6×TTM + 0.4×近3年最低，**复合排序分，不是股息率**）降序，
+        过资格门块在前、未过块沉底。每行含四维 ``score``（total/grade/dimensions/
+        flags）与 ``dividend_score``/``gate_pass``；``meta.facets_industries`` 是
+        全行业计数全集（改选行业过滤用）。
+
+        :param top_n: 返回条数（默认 20，上限 100）
+        :param grade: 档位过滤 ``strong``(≥75)/``good``(≥60)/``watch``(≥45)/``avoid``
+        :param industry: 行业过滤——``industry.S48`` / ``S48`` / 申万一级中文名（如 "银行"）
+        :param min_yield: TTM 股息率下限（小数，0.04 = 4%）
+        :param gates: 资格门开关（默认 True；False 连未过门行一起看）
+        """
+        kw: dict[str, Any] = {"top_n": int(top_n), "gates": bool(gates)}
+        if grade:
+            kw["grade"] = str(grade)
+        if industry:
+            kw["industry"] = str(industry)
+        if min_yield is not None:
+            kw["min_yield"] = float(min_yield)
+        res = self._c.call("income.rating_rows", **kw, _raw=True)
+        if not isinstance(res, dict):
+            return res if _raw else _out(res, raw=_raw)
+        if res.get("error") == "COLD_CACHE":
+            # 榜单 cron 未就绪：显式 miss，不静默给空榜（勿现场重算全市场评分）
+            return _envelope(False, {}, as_of=str(res.get("asof") or ""),
+                             cache="miss", error="COLD_CACHE",
+                             message=res.get("message"), note=res.get("note"))
+        return res if _raw else _envelope(
+            bool(res.get("ok")), res,
+            as_of=str(res.get("asof") or ""),
+            universe=res.get("universe"), after_filter=res.get("after_filter"),
+            missing_slices=res.get("missing_slices"),
+            floor_degraded=res.get("floor_degraded"),
+            filters=res.get("filters"), note=res.get("note"))
+
+    def diagnose(self, symbols: str | list[str] | tuple[str, ...],
+                 include_history: bool = False, *, _raw: bool = False) -> Any:
+        """收息诊断（原生批量）→ 信封 ``{ok, data.items, meta}``。
+
+        每票回四维评分逐项解释（``score.parts``）、静态下限双腿复原
+        （``floor_explain``，残差 ``gate_uncertain`` 如实标注）、榜内位置
+        （``rank``）与十年国债参照。``flags`` 硬修正必须透传不静默：
+        payout_danger / decaying_high_yield / verify_data / floor_blind。
+
+        :param symbols: 单码或代码数组——原生批量一次调用，勿逐票循环
+        :param include_history: True 才逐票带分红史+方案（deep 档；批量不要开，
+            逐票读贵）
+        """
+        syms = [symbols] if isinstance(symbols, str) else list(symbols)
+        canon = [self._c._canon_symbol(str(s)) for s in syms]
+        res = self._c.call("income.diagnose", symbols=canon,
+                           include_history=bool(include_history), _raw=True)
+        if not isinstance(res, dict):
+            return res if _raw else _out(res, raw=_raw)
+        return res if _raw else _envelope(
+            bool(res.get("ok")), res,
+            count=res.get("count"), include_history=res.get("include_history"),
+            note=res.get("note"))
+
+    def calendar(self, cal_from: str | None = None, cal_to: str | None = None,
+                 codes: list[str] | None = None, *, _raw: bool = False) -> Any:
+        """分红日历 → 信封 ``{ok, data.events, data.stocks, meta}``。
+
+        一个事件文档含公告/登记/除息/到账四个日期，窗口内任一命中即返回；
+        ``stocks`` 为名称/股息率/市值 enrich（股息率小数）。预告行（无确定
+        除息日）不入库。
+
+        :param cal_from: 起始日 YYYY-MM-DD（缺省当月 1 日）
+        :param cal_to: 截止日 YYYY-MM-DD（缺省当月末）
+        :param codes: 可选代码过滤
+        """
+        kw: dict[str, Any] = {}
+        if cal_from:
+            kw["cal_from"] = str(cal_from)
+        if cal_to:
+            kw["cal_to"] = str(cal_to)
+        if codes:
+            kw["cal_codes"] = [self._c._canon_symbol(str(s)) for s in codes]
+        res = self._c.call("income.calendar_events", **kw, _raw=True)
+        if not isinstance(res, dict):
+            return res if _raw else _out(res, raw=_raw)
+        return res if _raw else _envelope(
+            bool(res.get("ok")), res,
+            count=res.get("count"), schema=res.get("schema"), note=res.get("note"))
+
+    def decomp(self, symbols: str | list[str] | tuple[str, ...],
+               years: int = 10, *, _raw: bool = False) -> Any:
+        """N 年持有收益拆解（≤10 票批量）→ 信封 ``{ok, data.items, meta}``。
+
+        口径：总收益（hfq 后复权，含分红再投）− 价格收益（nr 不复权）= 股息
+        贡献（差值口径，含再投效应，非精确现金分红率）；全部小数。每票带
+        ``monthly`` 月末累计序列（close_nr/close_hfq/yield_ttm）与 ``yearly``
+        逐年表、EPS×PE 归因；``ok=false`` 为 K 线覆盖不足（次新股）如实呈现。
+
+        :param symbols: 单码或代码数组（≤10，超出截断并标 ``truncated``）
+        :param years: 持有年限 3/5/10（默认 10）
+        """
+        syms = [symbols] if isinstance(symbols, str) else list(symbols)
+        canon = [self._c._canon_symbol(str(s)) for s in syms]
+        res = self._c.call("income.decomp", symbols=canon, years=int(years),
+                           _raw=True)
+        if not isinstance(res, dict):
+            return res if _raw else _out(res, raw=_raw)
+        return res if _raw else _envelope(
+            bool(res.get("ok")), res,
+            years=res.get("years"), count=res.get("count"),
+            mode=res.get("mode"), truncated=res.get("truncated"),
+            note=res.get("note"))
+
 
 # ---------------------------------------------------------------- 参考 reference
 class InfoApi(_Api):
@@ -3309,6 +3424,9 @@ COMPOSITE_METHODS: dict[str, set[str]] = {
     "backtest": {"run"},
     "statements": {"balance", "income", "cashflow", "indicators"},
     "etf": {"card", "nav", "share", "div", "portfolio", "profile", "premium", "asset", "rank"},
+    # 2.5：收息诊断（索引读+四维评分+静态下限复原+榜内 rank 多源编排，真组合；
+    # rating/calendar/decomp 是 income.* 直通面，在 FRIENDLY_INDEX 登记）
+    "dividend": {"diagnose"},
 }
 
 FRIENDLY_NAMESPACES: dict[str, type[_Api]] = {
@@ -3460,6 +3578,10 @@ FRIENDLY_INDEX: list[tuple[str, str, str, str, str]] = [
     ("disclosure", "dividend", "screen_high_yield", "高股息筛选", "bonus.screen_high_yield"),
     ("disclosure", "dividend", "screen_undervalued_yield", "低估+高股息筛选",
      "bonus.screen_undervalued_yield"),
+    # ---- 收息场景闭环（sys/income，评分 SoT 与 web 收息佬 / wm-income 技能共享）----
+    ("disclosure", "dividend", "rating", "全市场收息排行", "income.rating_rows"),
+    ("disclosure", "dividend", "calendar", "分红日历", "income.calendar_events"),
+    ("disclosure", "dividend", "decomp", "持有收益拆解", "income.decomp"),
     ("reference", "info", "profile", "公司档案摘要", "档案指标（$NAME 等）"),
     # ---- equity：全部 query_*（fmt_* 规范化工具经属性直达）----
     ("reference", "equity", "query_holder10", "最新一期十大股东", "equity.query_holder10"),

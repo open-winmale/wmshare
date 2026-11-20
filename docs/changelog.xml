@@ -5,8 +5,25 @@
     <link>https://github.com/open-winmale/wmshare</link>
     <description>wmshare 版本变更与接口弃用公告（由 CHANGELOG.md 生成）</description>
     <language>zh-CN</language>
-    <lastBuildDate>Thu, 19 Nov 2026 00:00:00 +0800</lastBuildDate>
+    <lastBuildDate>Fri, 20 Nov 2026 00:00:00 +0800</lastBuildDate>
     <atom:link href="https://github.com/open-winmale/wmshare/raw/main/docs/changelog.xml" rel="self" type="application/rss+xml"/>
+    <item>
+      <title>wmshare 2.5.0 (2026-11-20)</title>
+      <link>https://github.com/open-winmale/wmshare/releases/tag/v2.5.0</link>
+      <guid isPermaLink="false">wmshare:2.5.0</guid>
+      <pubDate>Fri, 20 Nov 2026 00:00:00 +0800</pubDate>
+      <description>Added
+- **收息场景闭环（disc.income 域，4 个场景接口）**：与 web 应用台「收息佬」、开放平台 wm-income 技能共享同一评分 SoT（`sys/income/score.xs`，真值在服务端、SDK 不重算）。 - `cli.dividend.rating(top_n, grade, industry, min_yield, gates)`：全市场收息排行 （四维评分 + 档位 + 股息分排序 + 资格门）。memo 直读零冷算；**COLD_CACHE 显式 失败**（cron 未就绪），绝不现场重算全市场评分。实测 ≈15k~70k EC。 - `cli.dividend.diagnose(symbols, include_history)`：收息诊断**原生批量**（一次 eval 按票计价）——四维评分逐项解释 + 静态下限双腿复原 + 榜内位置 + 十年国债参照； deep 档才带分红史/方案。实测 ≈10k EC/票。 - `cli.dividend.calendar(cal_from, cal_to, codes)`：分红日历（公告/登记/除息/到账 四日期任一命中即返回；stocks enrich）。实测 ≈20k/月。 - `cli.dividend.decomp(symbols, years)`：N 年持有收益拆解（≤10 票批量；总收益 = 价格 + 股息贡献，hfq−nr 差值口径含再投效应）。热态 ≈10k/票； **AT 锚点指标序列首查有冷物化尖刺（单票可达 ~20 万 EC），复查即热**。
+
+Changed
+- 评分真值层从 `web_echo/v2income` 迁入 `sys/income`（catalog 化，10 函数进公开目录）； web 收息佬前端按 file_name 直调的 `decomp.xs`/`calendar.xs` 改薄壳（路径不变零改动）； skillhub `wm_income.xs` 编排改调 sys 函数。三面共享 SoT，消除双实现。
+- 收息榜直读 EC 优化：循环去 DEFAULT 链 + topn 截断早停——同语义 95 万 → **5.4 万 EC** （实测；老版 skill 同语义贴 fuel 顶）。
+- `indices.members_daily` 上游新函数（前向 PIT 成分快照）随 `cli.index.members_history` 门面公开（并发会话交付，随本版四源发布）。
+
+Fixed
+- `hist_stats` 窗口测试与 5b5f781 白名单放开（5y/10y）对齐。
+- llms-full 体积预算 412k → 424k（income 场景新节）。</description>
+    </item>
     <item>
       <title>wmshare 2.4.2 (2026-11-19)</title>
       <link>https://github.com/open-winmale/wmshare/releases/tag/v2.4.2</link>
@@ -284,15 +301,6 @@ Changed
 Fixed
 - **随包目录与上游抽取结果的漂移消除**：用官方 `tools/extract_from_scripts.py` 从上游重生成 `generated/inventory.json` / `metrics.json`（生成物禁止手改）， `upstream_rev` 锚定 `9d6bfd25`；`cbond.card.returns` 描述补齐 `projects / share / holders / institution`。连带重跑 `extract_metric_taxonomy.py` 与 6 个生成器，`test_extractor_check_no_drift` 恢复绿色。
 - **撤回未走暴露审批的目录扩容**：并发会话曾把 3 个上游**尚未部署、未 live 验证**的财报目录函数收进发布白名单（inventory 294 → 297、域版本升到 1.5.0）。 本版恢复白名单为 5 项、域回 `v1.3.0`、inventory 回到 **294 函数 / 2752 指标**， 并同步恢复受影响的 7 处手写计数（288 函数口径）。上游 A1/A2 仍待部署， 如需收录须在部署并 live 验证后单独走暴露审批。</description>
-    </item>
-    <item>
-      <title>wmshare 1.20.4 (2026-11-14)</title>
-      <link>https://github.com/open-winmale/wmshare/releases/tag/v1.20.4</link>
-      <guid isPermaLink="false">wmshare:1.20.4</guid>
-      <pubDate>Sat, 14 Nov 2026 00:00:00 +0800</pubDate>
-      <description>Fixed
-- **CI 三版本矩阵全红的测试环境假设**：`test_audit_drift.py` 曾断言 `matrix_sections &gt;= 1`，而 `.internal/UNIT_AUDIT.md` 是本机联网 matrix 产物、 不进 git 跟踪面，CI 里不存在时该值为 0。改为「非负 + 报告存在时才 &gt;= 1」， 并新增 `test_drift_is_green_when_audit_report_missing`，用 monkeypatch 永久复现 CI 无报告的场景。纯测试修复，运行时与生成物行为不变。
-- 1.20.3 的 Release / PyPI 产物本身正常（release 与 CodeQL 工作流 success、 whl + sdist 齐全），仅 ci 工作流因上述断言失败；PyPI 不允许同名版本重传， 故以 patch 版本重跑发布链路。</description>
     </item>
   </channel>
 </rss>

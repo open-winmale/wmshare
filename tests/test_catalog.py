@@ -6,9 +6,9 @@ from wmshare.catalog import load
 def test_load_and_stats():
     cat = load()
     s = cat.stats()
-    assert s["domains"] == 24, s  # 批次1 pdf_doc / 批次3 toplist + futures，2026-11-19
-    assert s["functions"] == 317, s  # +1 valuation.daily_basic_multi（2026-11-19）
-    assert s["raw"] == 233 and s["computed"] == 84, s  # raw+16：批次1 暴露层 11 + 批次3 toplist 3 + futures.mapping/fmt_maps
+    assert s["domains"] == 25, s  # +1 disc.income（2026-11-20 收息场景）
+    assert s["functions"] == 328, s  # +10 income +1 members_daily（2026-11-20）
+    assert s["raw"] == 234 and s["computed"] == 94, s  # +1 raw members_daily；+10 computed income（2026-11-20）
     assert s["metric_catalog_total"] == 2983, s
     assert s["upstream_rev"], "inventory 应锚定 upstream rev"
 
@@ -81,7 +81,8 @@ def test_namespaces_and_metrics():
             "bonus", "rptdom", "segments", "equity", "margin", "estimates",
             "cbond", "workout", "indices", "intl", "stocks", "macro",
             "valuation",
-            "calendar", "buyback", "toplist", "futures"} == cat.namespaces()  # 2.3：批次1 + toplist/futures（批次3）
+            "calendar", "buyback", "toplist", "futures",
+            "income"} == cat.namespaces()  # 2.3 批次 + 2.5 income（收息场景）
     m = cat.metric("$PE_TTM_LAST")
     assert m and m["cn"]
     assert cat.metric("$NOT_EXIST") is None
@@ -146,6 +147,6 @@ def test_catalog_shipped_inside_package():
     cdir = catmod.catalog_dir()
     assert cdir == pkg_root / "_catalog"
     assert (cdir / "schema" / "domain.schema.json").is_file()
-    assert len(list((cdir / "domains").glob("*.yaml"))) == 24  # 批次1 pdf_doc / 批次3 toplist + futures
+    assert len(list((cdir / "domains").glob("*.yaml"))) == 25  # 批次1 pdf_doc / 批次3 toplist+futures / 2.5 income
     for g in ("inventory.json", "metrics.json"):
         assert (cdir / "generated" / g).is_file()

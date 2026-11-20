@@ -658,6 +658,11 @@ class DemoClient:
             history=self._dividend_history,
             screen_quality=self._dividend_screen_quality,
             index_where_high_yield_5=self._dividend_expression,
+            # 收息场景闭环（sys/income）：快照未拍摄 → 显式 demo_unsupported（签名同形）
+            rating=self._dividend_rating,
+            diagnose=self._dividend_diagnose,
+            calendar=self._dividend_calendar,
+            decomp=self._dividend_decomp,
         )
         self.info = SimpleNamespace(profile=self._profile)
         self.backtest = SimpleNamespace(run=self._backtest_run)
@@ -1236,6 +1241,44 @@ class DemoClient:
 
     def _dividend_expression(self) -> str:
         return str(self._data["dividend"]["index_where_high_yield_5"])
+
+    # ---- 收息场景闭环（sys/income）：快照未拍摄，显式 demo_unsupported（签名同形）----
+    def _dividend_rating(self, top_n: int = 20, grade: str | None = None,
+                         industry: str | None = None,
+                         min_yield: float | None = None, gates: bool = True,
+                         *, _raw: bool = False) -> Any:
+        raise UsageError(
+            "demo 快照未拍摄收息榜（依赖 cron 物化 memo，离线快照不含）；"
+            "切换真实 Client 后调用 cli.dividend.rating(...)",
+            code="demo_unsupported",
+        )
+
+    def _dividend_diagnose(self, symbols: str | list[str] | tuple[str, ...],
+                           include_history: bool = False,
+                           *, _raw: bool = False) -> Any:
+        raise UsageError(
+            "demo 快照未拍摄收息诊断（依赖分红查询索引实时评分）；"
+            "切换真实 Client 后调用 cli.dividend.diagnose(...)",
+            code="demo_unsupported",
+        )
+
+    def _dividend_calendar(self, cal_from: str | None = None,
+                           cal_to: str | None = None,
+                           codes: list[str] | None = None,
+                           *, _raw: bool = False) -> Any:
+        raise UsageError(
+            "demo 快照未拍摄分红日历（cn/dividend_calendar 按窗口实时查询）；"
+            "切换真实 Client 后调用 cli.dividend.calendar(...)",
+            code="demo_unsupported",
+        )
+
+    def _dividend_decomp(self, symbols: str | list[str] | tuple[str, ...],
+                         years: int = 10, *, _raw: bool = False) -> Any:
+        raise UsageError(
+            "demo 快照未拍摄收益拆解（月 K hfq/nr 双序列实时计算）；"
+            "切换真实 Client 后调用 cli.dividend.decomp(...)",
+            code="demo_unsupported",
+        )
 
     # ---- reference ----
     def _profile(self, symbol: str) -> dict[str, Any]:

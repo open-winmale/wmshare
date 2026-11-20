@@ -11,6 +11,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.0] - 2026-11-20
+
+### Added
+
+- **收息场景闭环（disc.income 域，4 个场景接口）**：与 web 应用台「收息佬」、开放平台
+  wm-income 技能共享同一评分 SoT（`sys/income/score.xs`，真值在服务端、SDK 不重算）。
+  - `cli.dividend.rating(top_n, grade, industry, min_yield, gates)`：全市场收息排行
+    （四维评分 + 档位 + 股息分排序 + 资格门）。memo 直读零冷算；**COLD_CACHE 显式
+    失败**（cron 未就绪），绝不现场重算全市场评分。实测 ≈15k~70k EC。
+  - `cli.dividend.diagnose(symbols, include_history)`：收息诊断**原生批量**（一次
+    eval 按票计价）——四维评分逐项解释 + 静态下限双腿复原 + 榜内位置 + 十年国债参照；
+    deep 档才带分红史/方案。实测 ≈10k EC/票。
+  - `cli.dividend.calendar(cal_from, cal_to, codes)`：分红日历（公告/登记/除息/到账
+    四日期任一命中即返回；stocks enrich）。实测 ≈20k/月。
+  - `cli.dividend.decomp(symbols, years)`：N 年持有收益拆解（≤10 票批量；总收益 =
+    价格 + 股息贡献，hfq−nr 差值口径含再投效应）。热态 ≈10k/票；
+    **AT 锚点指标序列首查有冷物化尖刺（单票可达 ~20 万 EC），复查即热**。
+
+### Changed
+
+- 评分真值层从 `web_echo/v2income` 迁入 `sys/income`（catalog 化，10 函数进公开目录）；
+  web 收息佬前端按 file_name 直调的 `decomp.xs`/`calendar.xs` 改薄壳（路径不变零改动）；
+  skillhub `wm_income.xs` 编排改调 sys 函数。三面共享 SoT，消除双实现。
+- 收息榜直读 EC 优化：循环去 DEFAULT 链 + topn 截断早停——同语义 95 万 → **5.4 万 EC**
+  （实测；老版 skill 同语义贴 fuel 顶）。
+- `indices.members_daily` 上游新函数（前向 PIT 成分快照）随 `cli.index.members_history`
+  门面公开（并发会话交付，随本版四源发布）。
+
+### Fixed
+
+- `hist_stats` 窗口测试与 5b5f781 白名单放开（5y/10y）对齐。
+- llms-full 体积预算 412k → 424k（income 场景新节）。
+
 ## [2.4.2] - 2026-11-19
 
 ### Fixed

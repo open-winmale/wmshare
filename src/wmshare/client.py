@@ -470,6 +470,44 @@ def estimate_cost(name: str, params: dict[str, Any] | None = None, *,
                          + ("全量名单 ≈4,010 行 ≈45 万 EC，按需传 limit 可线性降低"
                             if is_univ else
                             "默认 60 行 ≈6 千 EC；跨交易所同日并存，每行一个 (日期,交易所)")))
+    elif name.startswith("dividend.rating") or name.startswith("income.rating_rows"):
+        # 实测（2026-11-20 live，循环去 DEFAULT 化后）：memo 直读 + 全表过滤遍历为主成本
+        #   top20 无行业过滤 54,277 / top100+grade 67,123 / 行业过滤早停 17,537
+        out.update(ec_lo=15_000, ec_hi=70_000, model="measured",
+                   note="memo 直读零冷算（全市场评分在 cron 物化侧分 5 片防 fuel 顶）"
+                        "≈15k~70k EC（2026-11-20 实测：top20 全量 54k、top100 67k、"
+                        "行业过滤早停 17k）。COLD_CACHE（cron 未就绪）显式失败。"
+                        "老口径现场重算全市场评分曾 95 万 EC/次——已由服务端直读替代，"
+                        "AI 勿自行重算榜单")
+    elif name.startswith("dividend.diagnose") or name.startswith("income.diagnose"):
+        # 实测（2026-11-20 live）：INDEX_ROW_VALUES_MANY_SPEC 原生批量 + 榜内 rank 映射
+        #   批量档 2 票 21,688（≈11k/票）；deep 档单票（含分红史/方案逐票读）28,462
+        n_syms = 1
+        s = p.get("symbols") or p.get("symbol")
+        if isinstance(s, (list, tuple)):
+            n_syms = max(1, len(s))
+        out.update(ec_lo=10_000 * n_syms, ec_hi=35_000 * n_syms, model="measured",
+                   note=(f"原生批量 ≈10k EC/票 + 榜内 rank 映射（2 票实测 21.7k）；"
+                         "deep 档 include_history=True 逐票加分红史/方案读 ≈28k/票。"
+                         "批量一次调用，勿逐票循环"))
+    elif name.startswith("dividend.calendar") or name.startswith("income.calendar_events"):
+        # 实测（2026-11-20 live）：当月窗口 19,535（147 事件 + 全票指标 enrich）
+        out.update(ec_lo=15_000, ec_hi=45_000, model="measured",
+                   note="store 窗口查 + 逐票指标 enrich ≈15k~45k EC（当月实测 19.5k /"
+                        " 147 事件）；窗口越宽事件越多，建议按月查询")
+    elif name.startswith("dividend.decomp") or name.startswith("income.decomp"):
+        # 实测（2026-11-20 live）：热态 ≈9.9k/票线性（月 K 双序列 + AT 锚点序列）。
+        # **冷首查尖刺**：AT 锚点指标序列（$PE_TTM/$BONUS_RATE_TTM 月频）首查物化，
+        #   单票可达 ~20 万 EC（600036 首查实测 217k，复查即热 9.9k），与票无关、间歇出现
+        n_syms = 1
+        s = p.get("symbols") or p.get("symbol")
+        if isinstance(s, (list, tuple)):
+            n_syms = max(1, len(s))
+        out.update(ec_lo=int(8_000 * n_syms),
+                   ec_hi=int(max(15_000, 200_000) * n_syms), model="measured",
+                   note=(f"热态 ≈10k EC/票 线性（≤10 票一次调用）；**AT 锚点指标序列"
+                         "首查有冷物化惩罚，单票尖刺可达 ~20 万 EC（复查即热 ≈10k）**，"
+                         "上界按尖刺留量。次新股 K 线覆盖不足 ok=false 如实呈现"))
     else:
         out["note"] = ("暂无该接口的成本模型；多数读接口在数百 EC 量级。"
                        "可用 cli.last_ec_cost 观测实际消耗后反馈补模型。")

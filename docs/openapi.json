@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "wmshare 数据 API",
-    "version": "2.4.2",
+    "version": "2.5.0",
     "description": "覆盖 A 股、港股、美股的财经数据核心接口（Python SDK，`pip install wmshare`；`import wmshare`）。凭证必填：在开放平台（open.winmale.com）获取 client_id/api-key；遇到 401/403/429 错误消息即完整的申请与配置指引。覆盖行情 K 线（不复权/前复权/后复权、盘中、分时、ETF、指数）、三大报表（多期、合并 vs 母公司、树视图、新旧会计准则归一）、分红（历史/DPS/窗口/TTM 率）、公告与业绩披露、资金流与指标层。平台指标经 /indicator/get、/indicator/metrics 按指标代码寻址，全量 2983 个指标代码随包内置目录分发（分组清单见 docs/API.md）。",
     "license": {
       "name": "BSD-3-Clause",
@@ -2899,6 +2899,55 @@
         }
       }
     },
+    "/index/members_history": {
+      "post": {
+        "operationId": "index_members_history",
+        "summary": "指数成分**日快照**长表（前向 PIT；信封 {ok, as_of, data, meta}）。",
+        "description": "数据源是物化表 ``alt.index_members_daily``（airflow、``pipeline.cn.index_members_daily`` 每日快照）：``data`` 为长表行、``{date, symbol, name, mv, weight}``（weight 可能缺失=诚实 nil），、meta.window 语义与 ``valuation.daily_basic`` 逐字段同形、（scan_days/scan_limit/pushed_down/oldest_scanned/truncated）。、**前向 PIT 合同**：只有表内真实快照日；更早的历史上游不存在、（``members`` 无日期参数、引擎成分绑当前时点），``count==0`` 表示、「尚无快照」而非「成分无变化」。典型用途：按日聚合成分 → 拼 Qlib、instruments episode 文件（wmshare-qlib ``write-universe --index``）。、组合接口（indices.members_daily，物化表 alt.index_members_daily）。SDK 调用：`cli.index.members_history(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "市场行情"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "key": {
+                    "type": "string",
+                    "description": "指数键（\"index.hs300\" / \"hs300\" 均可）"
+                  },
+                  "begin": {
+                    "type": "string",
+                    "description": "起始 ISO 日期（\"\" = 全量表）"
+                  },
+                  "end": {
+                    "type": "string",
+                    "description": "结束 ISO 日期（\"\" = 到最新）"
+                  }
+                },
+                "required": [
+                  "key"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "MAP · {ok, as_of, data: {key, begin, end, members: [{symbol, name, weight, …]}}}（begin 时点的成分名单快照）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/index/weights": {
       "post": {
         "operationId": "index_weights",
@@ -4190,7 +4239,7 @@
       "post": {
         "operationId": "valuation_hist_stats",
         "summary": "估值指标的历史统计与每日序列（PE=TTM 口径；pr=市赚率 pr_base）。",
-        "description": "组合接口（宿主 HIST_STATS）。SDK 调用：`cli.valuation.hist_stats(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "description": "（引擎按日历月回溯，深度受标的上市时长限制；实际可得序列长度、以返回 count/series 为准）、组合接口（宿主 HIST_STATS）。SDK 调用：`cli.valuation.hist_stats(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "财务基本面"
         ],
@@ -4210,7 +4259,7 @@
                   },
                   "window": {
                     "type": "string",
-                    "description": "\"6m\" / \"1y\" / \"2y\" / \"3y\"（上限 3 年）"
+                    "description": "\"6m\" / \"1y\" / \"2y\" / \"3y\" / \"5y\" / \"10y\""
                   }
                 },
                 "required": [
@@ -8029,6 +8078,189 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/dividend/rating": {
+      "post": {
+        "operationId": "dividend_rating",
+        "summary": "全市场收息排行 → 信封 ``{ok, as_of, data.rows, meta}``。",
+        "description": "排序 = 股息分（0.6×TTM + 0.4×近3年最低，**复合排序分，不是股息率**）降序，、过资格门块在前、未过块沉底。每行含四维 ``score``（total/grade/dimensions/、flags）与 ``dividend_score``/``gate_pass``；``meta.facets_industries`` 是、全行业计数全集（改选行业过滤用）。、底层目录函数 `income.rating_rows`。SDK 调用：`cli.dividend.rating(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "信息披露"
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "top_n": {
+                    "type": "integer",
+                    "description": "返回条数（默认 20，上限 100）"
+                  },
+                  "grade": {
+                    "type": "string",
+                    "description": "档位过滤 ``strong``(≥75)/``good``(≥60)/``watch``(≥45)/``avoid``"
+                  },
+                  "industry": {
+                    "type": "string",
+                    "description": "行业过滤——``industry.S48`` / ``S48`` / 申万一级中文名（如 \"银行\"）"
+                  },
+                  "min_yield": {
+                    "type": "number",
+                    "description": "TTM 股息率下限（小数，0.04 = 4%）"
+                  },
+                  "gates": {
+                    "type": "boolean",
+                    "description": "资格门开关（默认 True；False 连未过门行一起看）"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "MAP · {ok, as_of, data: {rows: [{rank, symbol, name, industry, yield_ttm, score: {total, grade, dimensions, flags}, dividend_score, gate_pass}], facets_industries}, meta}（股息分降序，过资格门块在前；COLD_CACHE 时 ok=false + meta.cache=miss）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "rows[].yield_ttm": [
+              0,
+              0.5
+            ],
+            "rows[].score.total": [
+              0,
+              100
+            ],
+            "rows[].dividend_score": [
+              0,
+              0.5
+            ],
+            "rows[].payout": [
+              0,
+              20
+            ],
+            "universe": [
+              0,
+              100000.0
+            ]
+          }
+        }
+      }
+    },
+    "/dividend/calendar": {
+      "post": {
+        "operationId": "dividend_calendar",
+        "summary": "分红日历 → 信封 ``{ok, data.events, data.stocks, meta}``。",
+        "description": "一个事件文档含公告/登记/除息/到账四个日期，窗口内任一命中即返回；、``stocks`` 为名称/股息率/市值 enrich（股息率小数）。预告行（无确定、除息日）不入库。、底层目录函数 `income.calendar_events`。SDK 调用：`cli.dividend.calendar(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "信息披露"
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "cal_from": {
+                    "type": "string",
+                    "description": "起始日 YYYY-MM-DD（缺省当月 1 日）"
+                  },
+                  "cal_to": {
+                    "type": "string",
+                    "description": "截止日 YYYY-MM-DD（缺省当月末）"
+                  },
+                  "codes": {
+                    "type": "array",
+                    "description": "可选代码过滤"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "MAP · {ok, data: {from, to, count, events: [分红事件（公告/登记/除息/到账 四日期）], stocks: {代码: {name, yield, mv}}}, meta}",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dividend/decomp": {
+      "post": {
+        "operationId": "dividend_decomp",
+        "summary": "N 年持有收益拆解（≤10 票批量）→ 信封 ``{ok, data.items, meta}``。",
+        "description": "口径：总收益（hfq 后复权，含分红再投）− 价格收益（nr 不复权）= 股息、贡献（差值口径，含再投效应，非精确现金分红率）；全部小数。每票带、``monthly`` 月末累计序列（close_nr/close_hfq/yield_ttm）与 ``yearly``、逐年表、EPS×PE 归因；``ok=false`` 为 K 线覆盖不足（次新股）如实呈现。、底层目录函数 `income.decomp`。SDK 调用：`cli.dividend.decomp(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "信息披露"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "symbols": {
+                    "type": "string",
+                    "description": "单码或代码数组（≤10，超出截断并标 ``truncated``）"
+                  },
+                  "years": {
+                    "type": "integer",
+                    "description": "持有年限 3/5/10（默认 10）"
+                  }
+                },
+                "required": [
+                  "symbols"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "MAP · {ok, data: {items: [{code, years, total_return, price_return, dividend_return, cagr_*, monthly: 月末累计序列, yearly: 逐年表, attribution}]}, meta}（差值口径：hfq−nr，含再投效应；≤10 票批量）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "items[].total_return": [
+              -1,
+              50
+            ],
+            "items[].dividend_return": [
+              -0.5,
+              10
+            ]
           }
         }
       }

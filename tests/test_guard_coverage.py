@@ -32,7 +32,7 @@ def test_empty_guard_declaration_does_not_count():
 def test_collect_is_self_consistent_and_floor_is_enforced():
     mod = _load()
     result = mod.collect(mod.DEFAULT_DOMAINS)
-    assert result["domains"] == 24  # 批次1 pdf_doc / 批次3 toplist + futures
+    assert result["domains"] == 25  # 批次1 pdf_doc / 批次3 toplist+futures / 2.5 income
     assert 0 < result["guarded"] <= result["functions"]
     assert result["ratio"] == round(result["guarded"] / result["functions"], 6)
     floor = str(result["ratio"])

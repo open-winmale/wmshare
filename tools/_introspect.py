@@ -221,6 +221,27 @@ FALLBACK_RETURNS = {
     ("etf", "rank"):
         "MAP · {ok, view, symbol, asof, chg_w1/m1/m3（涨幅%）, avg_amount, flow_20,"
         "premium_mean, net_asset（亿元；常缺回落 fund_nav）}",
+    # 2.5：收息场景闭环（sys/income 直通/组合面，合同在 disc.income.yaml）
+    ("dividend", "rating"):
+        "MAP · {ok, as_of, data: {rows: [{rank, symbol, name, industry, yield_ttm,"
+        " score: {total, grade, dimensions, flags}, dividend_score, gate_pass}],"
+        " facets_industries}, meta}（股息分降序，过资格门块在前；COLD_CACHE 时"
+        " ok=false + meta.cache=miss）",
+    ("dividend", "diagnose"):
+        "MAP · {ok, data: {items: [{symbol, found, score: {total, grade, dimensions,"
+        " flags, parts}, floor_explain, rank, bond_yield_10y}]}, meta}（原生批量；"
+        "include_history=True 另带 dividend_history/dps_rpt）",
+    ("dividend", "calendar"):
+        "MAP · {ok, data: {from, to, count, events: [分红事件（公告/登记/除息/到账"
+        " 四日期）], stocks: {代码: {name, yield, mv}}}, meta}",
+    ("dividend", "decomp"):
+        "MAP · {ok, data: {items: [{code, years, total_return, price_return,"
+        " dividend_return, cagr_*, monthly: 月末累计序列, yearly: 逐年表,"
+        " attribution}]}, meta}（差值口径：hfq−nr，含再投效应；≤10 票批量）",
+    # 2.5 并发会话：指数成分日快照（前向 PIT，同事 members_daily 门面）
+    ("index", "members_history"):
+        "MAP · {ok, as_of, data: {key, begin, end, members: [{symbol, name, weight,"
+        " …]}}}（begin 时点的成分名单快照）",
 }
 
 _PARAM_RE = re.compile(r"^:param (\w+):\s*(.*)$")

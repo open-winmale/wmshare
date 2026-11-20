@@ -74,6 +74,7 @@ wmshare = [
     "_catalog/generated/*.json",
     "_catalog/symbols/*.json",
     "skills/wmshare/*.md",
+    "skills/wmshare/scenes/*.md",
 ]
 
 [tool.mypy]

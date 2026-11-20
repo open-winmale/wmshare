@@ -105,6 +105,23 @@ def test_skill_inline_references_are_real():
             f"SKILL.md 行内引用了不存在的目录方法 cat.{meth}()"
 
 
+def test_skill_scene_files_calls_are_real():
+    """scenes/*.md（渐进披露的场景深流程）与 SKILL.md 同待遇：cli 调用必须真实存在。
+
+    场景文件只在 agent 命中对应意图时才读——所以允许更长，但臆造接口的
+    伤害一样大，故同规则校验（目录先行纪律同样适用于场景层）。
+    """
+    scene_re = re.compile(r"cli\.(\w+)\.(\w+)\(")
+    for path in sorted(SKILL_DIR.glob("scenes/*.md")):
+        text = path.read_text(encoding="utf-8")
+        for ns, method in scene_re.findall(text):
+            cls = FRIENDLY_NAMESPACES.get(ns) or GENERATED_NAMESPACES.get(ns)
+            assert cls is not None, f"{path.name} 引用了不存在的命名空间 {ns}"
+            assert hasattr(cls, method), f"{path.name} 引用了不存在的方法 {ns}.{method}"
+        for full in set(_FN_CALL_RE.findall(text)):
+            CAT.function(full)
+
+
 def test_skill_ships_in_wheel():
     """skill 随 wheel 分发：package-data 声明 + skill_dir() 指向真实文件。"""
     assert '"skills/wmshare/*.md"' in PYPROJECT, "pyproject 未声明 skills 数据"

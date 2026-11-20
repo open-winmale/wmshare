@@ -26,6 +26,12 @@ _HAND_EXAMPLES: dict[str, str] = {
     "valuation.daily_basic_multi":
         'cli.valuation.daily_basic_multi(["600519", "000001"], fields=["pe_ttm"])',
     "valuation.daily_basic_coverage": 'cli.valuation.daily_basic_coverage("600519")',
+    # 2.5：收息场景闭环（批量优先——symbols 一次调用，勿逐票循环）
+    "dividend.rating": 'cli.dividend.rating(top_n=20, grade="strong")',
+    "dividend.diagnose": 'cli.dividend.diagnose(["600900", "600519"])',
+    "dividend.calendar": 'cli.dividend.calendar("2026-11-01", "2026-11-30")',
+    "dividend.decomp": 'cli.dividend.decomp(["600900", "601088"], years=3)',
+    "index.members_history": 'cli.index.members_history("index.hs300", begin="2026-11-01")',
 }
 _SPECIAL_CATALOG: dict[tuple[str, str], str | None] = {
     ("valuation", "hist_stats"): None,

@@ -70,6 +70,9 @@ INCLUDED_NS = frozenset({
     "toplist",
     # 2.3：期货换月映射（cn/futures_mapping 直读，随 cli.futures 门面暴露）
     "futures",
+    # 2.5：收息库（四维评分/资格门/静态下限复原 + 收息榜/收息诊断/分红日历/收益拆解，
+    # disc.income 域；与 web 收息佬、skillhub wm-income 三面共享同一 SoT）
+    "income",
 })
 # rptdom 只保留三表透视族（年报 PDF 提取类 rows/notes/note_index 不发布）
 RPTDOM_KEEP = frozenset({"statement", "statement_years", "statement_compare", "statement_tree", "statement_audit"})

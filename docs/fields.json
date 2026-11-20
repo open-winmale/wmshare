@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "generated_by": "tools/gen_api_docs.py",
-  "count": 250,
+  "count": 261,
   "domains": [
     {
       "id": "corp.equity",
@@ -1629,6 +1629,188 @@
         {
           "name": "filings.type_zh",
           "cn": "type_key 转中文",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        }
+      ]
+    },
+    {
+      "id": "disc.income",
+      "kind": "computed",
+      "data_origin": [
+        "公司公告披露",
+        "指标层物化列",
+        "行情月K"
+      ],
+      "functions": [
+        {
+          "name": "income.rating_rows",
+          "cn": "全市场收息排行（四维评分+档位+股息分排序）",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "rows[].yield_ttm": [
+              0,
+              0.5
+            ],
+            "rows[].score.total": [
+              0,
+              100
+            ],
+            "rows[].dividend_score": [
+              0,
+              0.5
+            ],
+            "rows[].payout": [
+              0,
+              20
+            ],
+            "universe": [
+              0,
+              100000.0
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "income.diagnose",
+          "cn": "收息诊断（原生批量：评分逐项解释+静态下限复原+榜内位置）",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "items[].score.total": [
+              0,
+              100
+            ],
+            "items[].bond_yield_10y": [
+              0,
+              0.2
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "income.calendar_events",
+          "cn": "分红日历（窗口查全市场分红事件）",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "income.decomp",
+          "cn": "收益拆解（≤10 票批量：总收益=价格+股息贡献）",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "items[].total_return": [
+              -1,
+              50
+            ],
+            "items[].dividend_return": [
+              -0.5,
+              10
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "income.decomp_one",
+          "cn": "收益拆解（单票）",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "income.dividend_score",
+          "cn": "股息分 = 0.6×TTM 股息率 + 0.4×近 3 年最低（缺项重归一，双缺 nil）",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "income.gate",
+          "cn": "资格门五条（连续分红/流动性≥5000万/可交易/支付率(0,1]/近5年扣非ROE>0）",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "pass",
+              "type": "bool",
+              "optional": false,
+              "desc": "五门全过"
+            }
+          ]
+        },
+        {
+          "name": "income.grade_of",
+          "cn": "总分→档位",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "income.score",
+          "cn": "四维收息评分（紧凑：tot/gr/dims/fl 硬修正标记）",
+          "layer": "L1",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "tot",
+              "type": "number",
+              "optional": false,
+              "desc": "总分0~100"
+            },
+            {
+              "name": "gr",
+              "type": "string",
+              "optional": false,
+              "desc": "档位 strong|good|watch|avoid"
+            },
+            {
+              "name": "dims",
+              "type": "ARR",
+              "optional": false,
+              "desc": "四维分"
+            },
+            {
+              "name": "fl",
+              "type": "ARR",
+              "optional": false,
+              "desc": "硬修正标记"
+            }
+          ]
+        },
+        {
+          "name": "income.floor_explain",
+          "cn": "静态收益下限双腿复原（扣非盈利腿×PE 分位门 + 可持续股息腿×质量门）",
           "layer": "L1",
           "internal": false,
           "units": {},
@@ -4049,6 +4231,16 @@
               1
             ]
           },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "indices.members_daily",
+          "cn": "指数成分日快照（前向 PIT：begin 时点的成分名单）",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
           "checks": [],
           "fields": []
         },

@@ -748,6 +748,134 @@ class FuturesNS(_Ns):
             kw["end"] = end
         return _out(self._client.call("futures.mapping", **kw, _raw=_raw), _raw)
 
+class IncomeNS(_Ns):
+    """收息（disc.income）"""
+
+    def rating_rows(self, top_n: int | None = None, grade: str | None = None, industry: str | None = None, min_yield: float | None = None, gates: bool | None = None, _raw: bool = False) -> Any:
+        """全市场收息排行（四维评分+档位+股息分排序）
+
+:param top_n: 返回条数，默认 20，上限 100
+:param grade: 档位过滤 strong/good/watch/avoid
+:param industry: 行业：industry.SXX / SXX / 申万一级中文名
+:param min_yield: TTM 股息率下限（小数 0.04=4%）
+:param gates: 资格门开关，默认 true
+
+:returns: MAP · 收息榜（rows 含 rank/symbol/name/industry/四维 score/dividend_score/gate_pass，facets_industries 全集，asof/universe/missing_slices 元数据；COLD_CACHE 时 ok=false）
+        """
+        kw: dict[str, Any] = {}
+        if top_n is not None:
+            kw["top_n"] = top_n
+        if grade is not None:
+            kw["grade"] = grade
+        if industry is not None:
+            kw["industry"] = industry
+        if min_yield is not None:
+            kw["min_yield"] = min_yield
+        if gates is not None:
+            kw["gates"] = gates
+        return _out(self._client.call("income.rating_rows", **kw, _raw=_raw), _raw)
+
+    def diagnose(self, symbols: list, include_history: bool | None = None, _raw: bool = False) -> Any:
+        """收息诊断（原生批量：评分逐项解释+静态下限复原+榜内位置）
+
+:param symbols: A 股代码数组（原生批量，一次 eval 按票计价；也接受单码带后缀写法）
+:param include_history: 默认 false 只回评分/档位/flags/榜内 rank；true 才逐票带分红史+方案（批量不要开）
+
+:returns: MAP · items[]（symbol/found/score{total,grade,dimensions,max,flags,parts}/floor_explain/rank/bond_yield_10y；include_history 时另带 dividend_history/dps_rpt）
+        """
+        kw: dict[str, Any] = {"symbols": symbols}
+        if include_history is not None:
+            kw["include_history"] = include_history
+        return _out(self._client.call("income.diagnose", **kw, _raw=_raw), _raw)
+
+    def calendar_events(self, cal_from: str | None = None, cal_to: str | None = None, cal_codes: list | None = None, _raw: bool = False) -> Any:
+        """分红日历（窗口查全市场分红事件）
+
+:param cal_from: YYYY-MM-DD，缺省当月 1 日
+:param cal_to: YYYY-MM-DD，缺省当月末
+:param cal_codes: 可选代码过滤
+
+:returns: MAP · events（一个事件含公告/登记/除息/到账四日期，窗口内任一命中即返回；stocks 为名称/股息率/市值 enrich）
+        """
+        kw: dict[str, Any] = {}
+        if cal_from is not None:
+            kw["cal_from"] = cal_from
+        if cal_to is not None:
+            kw["cal_to"] = cal_to
+        if cal_codes is not None:
+            kw["cal_codes"] = cal_codes
+        return _out(self._client.call("income.calendar_events", **kw, _raw=_raw), _raw)
+
+    def decomp(self, symbols: list, years: int | None = None, _raw: bool = False) -> Any:
+        """收益拆解（≤10 票批量：总收益=价格+股息贡献）
+
+:param symbols: A 股代码数组，≤10（超出截断并标 truncated）
+:param years: 持有年限 3/5/10，默认 10
+
+:returns: MAP · items[]（total_return/price_return/dividend_return/cagr_*/monthly 月末累计序列/yearly 逐年表/attribution EPS×PE 归因；ok=false 为 K 线覆盖不足）
+        """
+        kw: dict[str, Any] = {"symbols": symbols}
+        if years is not None:
+            kw["years"] = years
+        return _out(self._client.call("income.decomp", **kw, _raw=_raw), _raw)
+
+    def decomp_one(self, sym: str, years: int | None = None, _raw: bool = False) -> Any:
+        """收益拆解（单票）
+
+:param years: 3/5/10，默认 10
+
+:returns: MAP · 单票拆解包（同 income.decomp items[] 元素）
+        """
+        kw: dict[str, Any] = {"sym": sym}
+        if years is not None:
+            kw["years"] = years
+        return _out(self._client.call("income.decomp_one", **kw, _raw=_raw), _raw)
+
+    def dividend_score(self, v: dict, _raw: bool = False) -> Any:
+        """股息分 = 0.6×TTM 股息率 + 0.4×近 3 年最低（缺项重归一，双缺 nil）
+
+:param v: 指标字段行（$FIELD 键或 memo 紧凑行）
+
+:returns: float · 小数排序分（非股息率，勿当收益率表述）
+        """
+        return _out(self._client.call("income.dividend_score", v=v, _raw=_raw), _raw)
+
+    def gate(self, v: dict, _raw: bool = False) -> Any:
+        """资格门五条（连续分红/流动性≥5000万/可交易/支付率(0,1]/近5年扣非ROE>0）
+
+:returns: MAP · 各门布尔 + pass（缺失不拦：缺数据 ≠ 危险）
+        """
+        return _out(self._client.call("income.gate", v=v, _raw=_raw), _raw)
+
+    def grade_of(self, total: int, _raw: bool = False) -> Any:
+        """总分→档位
+
+:returns: string · strong(≥75)/good(≥60)/watch(≥45)/avoid
+        """
+        return _out(self._client.call("income.grade_of", total=total, _raw=_raw), _raw)
+
+    def score(self, v: dict, bond: float | None = None, _raw: bool = False) -> Any:
+        """四维收息评分（紧凑：tot/gr/dims/fl 硬修正标记）
+
+:param v: 指标字段行
+:param bond: 十年国债收益率（小数，利差腿参照）
+
+:returns: MAP · tot 0~100 / gr 档位 / dims[收益,持续,稳定,成长] / fl 硬修正
+        """
+        kw: dict[str, Any] = {"v": v}
+        if bond is not None:
+            kw["bond"] = bond
+        return _out(self._client.call("income.score", **kw, _raw=_raw), _raw)
+
+    def floor_explain(self, v: dict, _raw: bool = False) -> Any:
+        """静态收益下限双腿复原（扣非盈利腿×PE 分位门 + 可持续股息腿×质量门）
+
+:param v: 兼容原始 $FIELD 行与 memo 紧凑行（dp/pd/q5/b5/r5/fy）
+
+:returns: MAP · ey_raw/pe_gate/ey_leg/dy_leg/composite/actual/residual/gate_uncertain
+        """
+        return _out(self._client.call("income.floor_explain", v=v, _raw=_raw), _raw)
+
 class IndicesNS(_Ns):
     """指数（market.index）"""
 
@@ -770,6 +898,20 @@ class IndicesNS(_Ns):
         if top_n is not None:
             kw["top_n"] = top_n
         return _out(self._client.call("indices.weights", **kw, _raw=_raw), _raw)
+
+    def members_daily(self, key: str, begin: str, end: str | None = None, _raw: bool = False) -> Any:
+        """指数成分日快照（前向 PIT：begin 时点的成分名单）
+
+:param key: 指数键（如 index.hs300）
+:param begin: 起始日 YYYY-MM-DD
+:param end: 截止日，缺省最新
+
+:returns: MAP · 成分快照信封
+        """
+        kw: dict[str, Any] = {"key": key, "begin": begin}
+        if end is not None:
+            kw["end"] = end
+        return _out(self._client.call("indices.members_daily", **kw, _raw=_raw), _raw)
 
     def valuation(self, key: str, points: int | None = None, _raw: bool = False) -> Any:
         """指数估值时序（key 为指数键，如 index.hs300；可用键由 indices.universe_keys 枚举）
@@ -1977,6 +2119,7 @@ NAMESPACES: dict[str, type[_Ns]] = {
     "filings": FilingsNS,
     "forecast": ForecastNS,
     "futures": FuturesNS,
+    "income": IncomeNS,
     "indices": IndicesNS,
     "intl": IntlNS,
     "kline": KlineNS,

@@ -41,6 +41,7 @@ python examples/01_quickstart.py
 | 16 | `16_metric_adapter.py` | 进阶 | 凭证 / **`--demo`** | 指标适配层：scope/topic 找码、combinable_groups 看组合边界、table 长表、many 小列表多标的 | docs/METRIC_ADAPTER.md |
 | 17 | `17_prr_dividend_screen.py` | 生产 | 凭证 / **`--demo`** | 三维红利排雷：硬卡点全压一条 where（count=真命中数）→ 本地剔金融、现金流覆盖、PRR 分位与 CHI 排名 | GUIDE·单票菜谱 |
 | 18 | `18_calendar_margin.py` | 2.0 新面 | 凭证（demo 未回放，显式降级） | 交易日历（回测窗口前置）+ 市场级两融汇总（杠杆水位）+ 标的名单资格判定 | API·market.calendar / market.margin |
+| 19 | `19_income_rating.py` | 2.5 收息场景 | 凭证（demo 未回放，显式降级） | 收息流闭环：全市场排行（四维评分）→ 批量诊断 → 分红日历 → N 年拿息拆解；COLD_CACHE 与批量纪律 | API·disc.income / dividend.rating·diagnose·calendar·decomp |
 
 ## 约定（新增示例请遵守）
 

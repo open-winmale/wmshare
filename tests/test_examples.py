@@ -225,7 +225,7 @@ def test_examples_index_covers_dir():
     """examples/README.md 课程表必须覆盖目录里每个脚本（防孤儿示例）。"""
     index = (EXAMPLES / "README.md").read_text(encoding="utf-8")
     scripts = sorted(p.name for p in EXAMPLES.glob("*.py"))
-    assert len(scripts) == 18, f"示例应恰为 18 个（编号课程），实际 {len(scripts)}：{scripts}"
+    assert len(scripts) == 19, f"示例应恰为 19 个（编号课程），实际 {len(scripts)}：{scripts}"
     for name in scripts:
         assert f"`{name}`" in index, f"examples/README.md 缺 {name} 的索引行"
 
@@ -236,6 +236,7 @@ def test_examples_index_covers_dir():
     "10_notice_monitor.py", "11_statements_tour.py", "15_backtest_ma.py",
     "16_metric_adapter.py", "17_prr_dividend_screen.py",
         "18_calendar_margin.py",
+        "19_income_rating.py",
 ])
 def test_credential_examples_run_with_demo_snapshot(name):
     if name in ("07_stocks_industry_batch.py", "08_pandas_analysis.py"):

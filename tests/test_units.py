@@ -389,8 +389,11 @@ def test_valuation_hist_stats_passthrough_and_validation():
 
     with pytest.raises(Exception, match="metric"):
         c.valuation.hist_stats("600900", metric="roe")
+    # 5b5f781 起白名单放开 5y/10y（引擎 parseWindow 本无年限封顶）；白名单外仍拦
+    out5 = c.valuation.hist_stats("600900", metric="pb", window="5y")
+    assert out5["ok"] is True and out5["meta"] == {"metric": "pb", "window": "5y"}
     with pytest.raises(Exception, match="window"):
-        c.valuation.hist_stats("600900", window="5y")  # 上限 3 年
+        c.valuation.hist_stats("600900", window="7y")
     out6 = c.valuation.hist_stats("600900", metric="pb", window="6m")  # 半年窗口
     assert out6["data"]["current"] == 3.334
 

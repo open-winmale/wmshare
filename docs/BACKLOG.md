@@ -52,3 +52,11 @@
   `moneyflow.store_limit`（≤0→20，含 anchor 变体）、`bonus.store_query` 内联；
   `forecast` 三个入口原已走 `clamp_limit`；`intl/estimates/margin/equity/
   filings` 用 `{"unwrap":"list"}` 无 limit 参数，不受影响。
+
+## 上游指标目录缺席（登记待办，SDK 侧不伪造）
+
+- `$BOND_YIELD_GOV_10Y`（十年国债收益率）：服务端指标层已在产（`AT(sym, $BOND_YIELD_GOV_10Y)`
+  live 实测 2026-11-20 返回 0.0168），但上游 `metric-memo-catalog.json` 未收录——wmshare
+  指标目录（2983 码）查不到该码。消费方：`income.diagnose`/`income.rating_rows` 的
+  bond_yield_10y 字段（服务端直出不受影响，仅 SDK 指标目录检索缺）。同 `$BUYBACK_AMT*`
+  缺席先例，登记上游待办，SDK 不伪造。
