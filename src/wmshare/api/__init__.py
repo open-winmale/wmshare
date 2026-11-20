@@ -949,6 +949,35 @@ class IndexApi(_Api):
             kw["top_n"] = top_n
         return _out(self._c.call("indices.weights", **kw))
 
+    def members_history(self, key: str, begin: str = "", end: str = "") -> Any:
+        """指数成分**日快照**长表（前向 PIT；信封 {ok, as_of, data, meta}）。
+
+        数据源是物化表 ``alt.index_members_daily``（airflow
+        ``pipeline.cn.index_members_daily`` 每日快照）：``data`` 为长表行
+        ``{date, symbol, name, mv, weight}``（weight 可能缺失=诚实 nil），
+        meta.window 语义与 ``valuation.daily_basic`` 逐字段同形
+        （scan_days/scan_limit/pushed_down/oldest_scanned/truncated）。
+
+        **前向 PIT 合同**：只有表内真实快照日；更早的历史上游不存在
+        （``members`` 无日期参数、引擎成分绑当前时点），``count==0`` 表示
+        「尚无快照」而非「成分无变化」。典型用途：按日聚合成分 → 拼 Qlib
+        instruments episode 文件（wmshare-qlib ``write-universe --index``）。
+
+        :param key: 指数键（"index.hs300" / "hs300" 均可）
+        :param begin: 起始 ISO 日期（"" = 全量表）
+        :param end: 结束 ISO 日期（"" = 到最新）
+        """
+        k = (key or "").strip()
+        if not k:
+            raise UsageError("key 只支持非空指数键（见 keys()）", code="params")
+        xs = (
+            f'return indices.members_daily("{k}", "{begin or ""}", "{end or ""}")'
+        )
+        res = self._c.eval_result(xs)
+        if not isinstance(res, dict):
+            return {"ok": False, "as_of": "", "data": [], "meta": {"note": "upstream non-map"}}
+        return res
+
     def valuation(self, key: str, points: int | None = None) -> Any:
         """宽基估值时序（信封：``data.series`` 为 DataFrame，d/pe/pb 按 d 升序）。
 
@@ -3357,6 +3386,8 @@ FRIENDLY_INDEX: list[tuple[str, str, str, str, str]] = [
     ("market", "cbond", "universe_codes", "转债代码全集", "cbond.universe_codes"),
     ("market", "index", "keys", "指数键列表", "indices.keys"),
     ("market", "index", "members", "指数成分", "indices.members"),
+    ("market", "index", "members_history", "指数成分日快照（前向PIT）",
+     "组合接口（indices.members_daily，物化表 alt.index_members_daily）"),
     ("market", "index", "weights", "指数权重股", "indices.weights"),
     ("market", "index", "valuation", "指数估值时序", "indices.valuation"),
     ("market", "index", "trend", "指数估值趋势(周频)", "indices.trend"),

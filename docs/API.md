@@ -1427,6 +1427,35 @@ cli.index.members(key="index.hs300", top_n=10)
 cli.index.weights(key="index.hs300", top_n=10)
 ```
 
+#### `cli.index.members_history` — 指数成分日快照（前向 PIT）
+
+指数成分**日快照**长表。数据源是物化表 `alt.index_members_daily`
+（airflow `pipeline.cn.index_members_daily` 每日快照）。
+
+**前向 PIT 合同**：只有表内真实快照日；更早的历史上游不存在
+（`indices.members` 无日期参数、引擎成分绑当前时点），`count==0` 表示
+「尚无快照」而非「成分无变化」。典型用途：按日聚合成分拼 Qlib instruments
+episode 文件（wmshare-qlib `write-universe --index`）。
+
+**输入参数**
+
+| 参数 | 类型 | 必填 | 默认 | 说明 |
+|---|---|---|---|---|
+| `key` | string | 是 | — | 指数键（"index.hs300" / "hs300" 均可） |
+| `begin` | string | 否 | `''` | 起始 ISO 日期（空 = 全量表） |
+| `end` | string | 否 | `''` | 结束 ISO 日期（空 = 到最新） |
+
+**输出**：MAP 信封 `{ok, as_of, data, meta}`——`data` 为长表行
+`{date, symbol, name, mv, weight}`（weight 可能缺失=诚实 nil）；`meta.window`
+语义与 `valuation.daily_basic` 逐字段同形
+（scan_days/scan_limit/pushed_down/oldest_scanned/truncated/requested_begin）。
+
+**示例**
+
+```python
+cli.index.members_history(key="index.hs300", begin="2026-11-01")
+```
+
 #### `cli.index.valuation` — 指数估值时序
 
 宽基估值时序（信封：``data.series`` 为 DataFrame，d/pe/pb 按 d 升序）。

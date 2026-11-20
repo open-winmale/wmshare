@@ -509,3 +509,28 @@ def test_cost_estimate_accepts_facade_symbol_list():
     est = estimate_cost("kline.snapshot", {"symbol": ["600519", "000001", "510300"]})
     assert est["model"] == "batch_per_symbol"
     assert est["ec_hi"] < 1_000
+
+
+def test_index_members_history_builds_members_daily_eval(cli):
+    """成分日快照（前向 PIT）：key/begin/end 直拼 indices.members_daily 求值。"""
+    cli.session.eval_result = {
+        "ok": True, "as_of": "2026-11-19", "data": [], "meta": {"key": "hs300"},
+    }
+    out = cli.index.members_history("index.hs300", begin="2026-11-01")
+    assert last_xs(cli) == ['return indices.members_daily("index.hs300", "2026-11-01", "")']
+    assert out["ok"] is True
+    # 裸键与全键等价（归一在服务端 members_key_normalize）
+    cli.index.members_history("hs300")
+    assert last_xs(cli) == ['return indices.members_daily("hs300", "", "")']
+
+
+def test_index_members_history_empty_key_raises(cli):
+    with pytest.raises(UsageError):
+        cli.index.members_history("")
+
+
+def test_index_members_history_non_map_upstream_degrades_loud(cli):
+    """上游返回非 MAP → 信封 ok=False（不抛、不冒充空表成功）。"""
+    cli.session.eval_result = ["not", "a", "map"]
+    out = cli.index.members_history("index.hs300")
+    assert out["ok"] is False and out["data"] == []
