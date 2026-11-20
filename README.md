@@ -254,8 +254,8 @@ df = cli.call_batch("kline.snapshot", ["600519", "000001"]).to_df()   # 带 symb
 
 ## 批量取数
 
-服务端按**请求次数**限流（免费档 500 次/小时、5,000 次/日）：逐票取 A 股 5,375 家 = 5,375 次请求
-必然撞 429，批量只需 **11 次**。三入口——一站式、逐批、单批：
+服务端按**请求次数**限流（免费档当前 500 次/小时、5,000 次/日，以平台为准）：逐票取 A 股 5,375 家
+= 5,375 次请求必然撞 429，批量只需 **11 次**。三入口——一站式、逐批、单批：
 
 ```python
 import wmshare
@@ -321,7 +321,7 @@ t["data"]["pe_pct"], t["data"]["pe_pct_window"], t["data"]["pct"]["pe"]["p3"]  #
 - **文档中心 [docs/](docs/README.md)**：使用指南 GUIDE（单票菜谱/批量/多市场/故障排查）· 指标库 [INDICATORS.md](docs/INDICATORS.md)（全量指标码按数据类型分章）· AI 用法 · llms.txt 索引 · [API 参考](docs/API.md)（按资产类别分章的 156 个核心接口 + 指标组）
 - **可转债日更管线**：`cli.cbond.daily()` → `article()` → `figures()` 一条命令出图文（三层口径 + 三道闸 + 状态机 + 事件日历，每个数字带 `sources` 与 `as_of`，缺条目抛错而非补猜测值）；实战 notebook 见 [docs/notebooks/cb_double_low.ipynb](docs/notebooks/cb_double_low.ipynb)（2026-11-07 真实数据）
 - **示例课程 [examples/](examples/README.md)**：19 个编号示例（入门→进阶→生产→AI）——3 个纯离线、15 个带 `--demo` 离线回放、1 个可转债需凭证；CI 端到端覆盖
-- **问题反馈 / 交流**：QQ 群 `1127142074`（搜索「wmshare开源交流群」）——使用问题、数据口径、bug 反馈欢迎进群，也欢迎 [GitHub Issues](https://github.com/open-winmale/wmshare/issues)
+- **问题反馈 / 交流**：使用提问、数据口径与指标码请求走 [Discussions](https://github.com/open-winmale/wmshare/discussions)；可复现的 bug 提 [GitHub Issues](https://github.com/open-winmale/wmshare/issues)；也欢迎加 QQ 群 `1127142074`（搜索「wmshare开源交流群」）
 - **维护者与治理**：[MAINTAINERS.md](MAINTAINERS.md)（响应承诺与发版流程）· [GOVERNANCE.md](GOVERNANCE.md) · [行为准则](CODE_OF_CONDUCT.md)
 
 ![wmshare开源交流群 QQ 群二维码（群号 1127142074，扫一扫加入）](docs/img/qq_group_qr.png)
