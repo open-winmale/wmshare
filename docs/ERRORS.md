@@ -62,6 +62,10 @@
 
 | `code` | 含义 | 可重试 | 处理建议 |
 |---|---|---|---|
+| `anon_bad_response` | 匿名凭据响应缺少 client_id/client_secret | 是 | 重试；持续失败反馈网关版本 |
+| `anon_failed` | 匿名凭据申领失败（其他 HTTP 错误） | 是 | 稍后重试；持续失败贴消息反馈 |
+| `anon_quota` | 匿名试用今日名额已满或本网络领取次数超限 | 是 | 次日再试；需要稳定额度请注册免费账号 |
+| `anon_unavailable` | 服务端未开放匿名试用（端点 404） | 否 | 到 open.winmale.com 注册免费账号获取凭据 |
 | `config` | 客户端构造参数或凭证配置错误 | 否 | 按消息修正配置 |
 | `credential_mode` | 凭证文件权限过宽且开启严格模式 | 否 | `chmod 600` 后重试 |
 | `endpoint_unavailable` | 端点不可达或非官方主机未放行 | 否 | 用官方端点；自定义主机需 `allow_custom_host=True` |

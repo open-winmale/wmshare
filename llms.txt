@@ -15,7 +15,7 @@
 - [错误码](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/ERRORS.md)：异常层级 + 全部 `code`（含义/可重试/处理）
 - [数据日历](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/DATA_CALENDAR.md)：各数据集更新频率与过期阈值；[兼容政策](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/COMPATIBILITY.md)：弃用窗口与迁移表
 - [Agent Skill](https://raw.githubusercontent.com/open-winmale/wmshare/main/src/wmshare/skills/wmshare/SKILL.md)：随包分发的 agent 用法合同（目录先行、单位铁律、决策树、坑位）
-- [可运行示例](https://raw.githubusercontent.com/open-winmale/wmshare/main/examples/README.md)：19 个编号示例（全部支持演示客户端离线试跑），CI 端到端覆盖
+- [可运行示例](https://raw.githubusercontent.com/open-winmale/wmshare/main/examples/README.md)：20 个编号示例（全部支持演示客户端离线试跑），CI 端到端覆盖
 - [CHANGELOG](https://raw.githubusercontent.com/open-winmale/wmshare/main/CHANGELOG.md)：版本历史
 
 ## Key Concepts

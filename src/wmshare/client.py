@@ -788,6 +788,44 @@ class Client:
             kw.setdefault("client_secret", sec)
         return cls(**kw)
 
+    @classmethod
+    def anonymous(cls, *, refresh: bool = False, **kw: Any) -> "Client":
+        """用匿名试用凭据构造客户端（免注册；一次性小配额）。
+
+        首次调用向服务端申领一份匿名凭据并写入 ``~/.wmshare/anon_credentials.env``
+        （**与付费凭据文件分离**，不会覆盖 ``credentials.env``）。之后直接复用本地
+        凭据，不再消耗申领名额。
+
+        匿名额度是「一次性 50 万 EC，用完即止」——服务端不会周补满。需要长期额度
+        请到 https://open.winmale.com 注册免费账号。
+
+        :param refresh: 忽略本地已存凭据，重新申领一份。
+        :raises AuthError: 服务端未开放匿名试用、今日名额已满，或本网络领取次数超限。
+        """
+        from wmshare._anon import (
+            anon_credentials_path,
+            load_anon_credentials,
+            request_anon_credentials,
+            save_anon_credentials,
+        )
+
+        if not refresh:
+            saved = load_anon_credentials()
+            if saved is not None:
+                kw.setdefault("client_id", saved["client_id"])
+                kw.setdefault("client_secret", saved["client_secret"])
+                return cls(**kw)
+
+        base = kw.get("base_url") or os.environ.get("WMSHARE_BASE_URL") or DEFAULT_BASE_URL
+        creds = request_anon_credentials(base)
+        path = save_anon_credentials(creds, anon_credentials_path())
+        kw.setdefault("client_id", creds["client_id"])
+        kw.setdefault("client_secret", creds["client_secret"])
+        client = cls(**kw)
+        # 便于调用方提示用户额度与凭据位置（不参与鉴权）。
+        client.anon_credentials_path = str(path)  # type: ignore[attr-defined]
+        return client
+
     # ---- 传输 ----
     RETRY_STATUS = frozenset({429, 500, 502, 503, 504})
 
