@@ -43,7 +43,10 @@ made-up values.
 
 ## First live call
 
-Get an AppId / API Key from [open.winmale.com](https://open.winmale.com), then:
+No registration needed: `Client.from_env()` automatically falls back to an
+anonymous trial (one-shot quota aligned with the free tier) when no credentials
+are configured. For a standing quota, get an AppId / API Key from
+[open.winmale.com](https://open.winmale.com), then:
 
 ```bash
 export WMSHARE_CLIENT_ID=<AppId> WMSHARE_CLIENT_SECRET=<API Key>

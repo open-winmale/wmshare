@@ -22,9 +22,11 @@ python3 -c "import wmshare; print(wmshare.__version__)"   # 验证安装
 **非实时数据**），调用面覆盖公开示例（例外：`screener.query` 依赖全市场索引列、
 `backtest` 的 pb/ps/pr 估值规则依赖对应序列，演示快照都没有，均显式报
 `demo_unsupported`；`backtest` 的均线与 pe 规则可用 120 根演示日 K 真跑）；
-examples/ 的凭证示例都支持 `--demo` 旗标零凭证试跑。看真实数据按下节配凭证。
+examples/ 的凭证示例都支持 `--demo` 旗标零凭证试跑。看真实数据零配置即可——
+`from_env()` 无凭据自动领匿名额度；要长期额度按下节配置凭证（可选）。
 
-凭证在开放平台（`https://open.winmale.com`）控制台的「我的 → 开放平台 → 我的应用」页获取，
+凭证在开放平台（`https://open.winmale.com`）控制台的
+「我的 → 开放平台 → 我的应用」页获取，
 `AppId（Client ID）` 与 `API Key（Client Secret）` **两个值缺一不可**。配置任选其一：
 
 ```bash

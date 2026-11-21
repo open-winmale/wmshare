@@ -39,7 +39,7 @@ FULL_PARTS = [
 # 2026-11-19 批次1：pdf_doc 域 + 回购快照/公告类目（+2 KB），预算 360K→399K；
 # 2026-11-19 批次3：market.toplist + market.futures 域（+3 KB），预算 399K→406K；
 # 真内联 INDICATORS 全文仍会到 ~540 KB，守护语义不变。
-FULL_SIZE_BUDGET = 424_000  # 2026-11-20：income 收息场景 4 直通 + diagnose 组合（328 函数）  # bytes（UTF-8），不是字符数；禁内联 INDICATORS 全文
+FULL_SIZE_BUDGET = 424_600  # 2026-11-21：from_env 匿名回落 + 额度对齐口径（2.8.0）  # bytes（UTF-8），不是字符数；禁内联 INDICATORS 全文
 
 
 def _indicators_brief(cat) -> str:

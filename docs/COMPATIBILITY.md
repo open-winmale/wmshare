@@ -44,6 +44,7 @@
 | `cli.call(..., _df=True)` | 门面默认 DataFrame；底层用 `_raw=True` 取原始行 | 2.0.0 | 已移除（调用即报 `UsageError`） |
 | `cli.kline.bars(..., _df=False)` | 同上（`_df` 参数已废除） | 2.0.0 | 已移除 |
 | `_units="native"` 之外的原生单位默认 | 默认基础单位（率=小数/额=元/量=股） | 2.0.0 | 已切换（逃生口 `_units="native"` / `native=True`） |
+| `Client.from_env()` 无凭据必报错 | 凭据双缺自动回落匿名试用（一次性额度） | 2.8.0 | 生效（逃生口 `WMSHARE_DISABLE_ANON=1`） |
 
 > 2.0.0 是无兼容负担的一次性大版本：全部破坏性变更集中在该版本，未做渐进弃用；
 > 自 2.0.1 起按本文流程执行。

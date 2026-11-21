@@ -132,8 +132,8 @@ print(f"{cli.dividend.yield_ttm('600519'):.2%}")        # 3.56%
 print(cli.screener.index_breadth_summary()["total"])   # 5687
 ```
 
-接真实行情只换一行：`cli = wmshare.Client.from_env()`（凭证见下节）；免注册先取真实数据用
-`cli = wmshare.Client.anonymous()`（一次性小配额，凭据独立存放，不覆盖付费凭据）。
+接真实行情也是这一行：`cli = wmshare.Client.from_env()`——没配凭证自动免注册领
+匿名试用额度（一次性，凭据独立存放）；配置凭证即用正式额度（见下节）。
 指标怎么选、每条能省哪些计算，见[我想做 X → 用哪一行](#我想做-x--用哪一行)。
 
 ## 快速上手
@@ -151,7 +151,7 @@ python3 -c "import wmshare; print(wmshare.__version__)"   # 验证安装
 ### 不写 Python：`wmshare` 命令行出成品
 
 装完即得 `wmshare` 命令：筛选 / 收息 / 指数分位 / 转债图文四个任务动词直出成品文件（`--out` 落 md/csv/xlsx），
-其余目录函数用 `call k=v` 透传；**无凭证时自动回退匿名试用**（一次性小配额），`--demo` 走离线快照：
+其余目录函数用 `call k=v` 透传；**无凭证时自动用匿名试用**（免注册一次性额度），`--demo` 走离线快照：
 
 ```bash
 wmshare screen --where "$ROE_TTM_LAST > 0.15" --order "$BONUS_RATE_3Y_AVG_LAST" --out roe.xlsx
@@ -161,9 +161,9 @@ wmshare cbond daily --out ./cb/                                        # 转债�
 wmshare call kline.query_bars sym=600519 limit=30 --json               # 其余 331 函数透传
 ```
 
-### 配置凭证
+### 配置凭证（可选）
 
-凭证在 [开放平台](https://open.winmale.com)「我的 → 开放平台 → 我的应用」页获取 `AppId（Client ID）` 与 `API Key（Client Secret）` 两个值（缺一不可），配置方式任选其一：
+凭证可选：不配置也能取数（自动匿名试用）。配置正式凭证在 [开放平台](https://open.winmale.com)「我的 → 开放平台 → 我的应用」页获取 `AppId（Client ID）` 与 `API Key（Client Secret）` 两个值（缺一不可），配置方式任选其一：
 
 ```bash
 export WMSHARE_CLIENT_ID=<AppId> WMSHARE_CLIENT_SECRET=<API Key>   # 方式一：环境变量
@@ -471,7 +471,7 @@ python3 -c "import wmshare; print(wmshare.__version__)"   # 探测
 pip install -i https://pypi.tuna.tsinghua.edu.cn/simple wmshare
 ```
 
-零凭证语法试跑：`cli = wmshare.demo_client()`（2026-11-19 真实 API 固定快照；10 只演示宇宙 + 当日全市场 screener，**非实时数据**），调用面覆盖公开示例，用于无凭证时验证代码形态；真实取数必须配置下方凭证。
+零凭证语法试跑：`cli = wmshare.demo_client()`（2026-11-19 真实 API 固定快照；10 只演示宇宙 + 当日全市场 screener，**非实时数据**），调用面覆盖公开示例，用于无凭证时验证代码形态。真实取数零配置也可用：`Client.from_env()` 无凭据自动领匿名额度（一次性）。
 
 MCP 安装与凭证写入：
 
@@ -481,9 +481,9 @@ wmshare-mcp setup --client-id ... --client-secret-stdin --market cn
 wmshare-mcp doctor
 ```
 
-凭证必填（SDK 不再内置体验 AppID）：在开放平台获取 client_id/api-key，
+凭证可选（无凭据自动匿名）：要长期额度在开放平台获取 client_id/api-key，
 配置其一（构造参数 / WMSHARE_CLIENT_ID+WMSHARE_CLIENT_SECRET 环境变量 /
-~/.wmshare/credentials.env 凭证文件）即可取数：
+~/.wmshare/credentials.env 凭证文件）：
 
 
 1. 打开 open.winmale.com，登录后在「我的 → 开放平台 → 我的应用」获取凭证；
@@ -698,9 +698,11 @@ python3 -c "import wmshare; print(wmshare.__version__)"   # 验证安装
 **非实时数据**），调用面覆盖公开示例（例外：`screener.query` 依赖全市场索引列、
 `backtest` 的 pb/ps/pr 估值规则依赖对应序列，演示快照都没有，均显式报
 `demo_unsupported`；`backtest` 的均线与 pe 规则可用 120 根演示日 K 真跑）；
-examples/ 的凭证示例都支持 `--demo` 旗标零凭证试跑。看真实数据按下节配凭证。
+examples/ 的凭证示例都支持 `--demo` 旗标零凭证试跑。看真实数据零配置即可——
+`from_env()` 无凭据自动领匿名额度；要长期额度按下节配置凭证（可选）。
 
-凭证在开放平台（`https://open.winmale.com`）控制台的「我的 → 开放平台 → 我的应用」页获取，
+凭证在开放平台（`https://open.winmale.com`）控制台的
+「我的 → 开放平台 → 我的应用」页获取，
 `AppId（Client ID）` 与 `API Key（Client Secret）` **两个值缺一不可**。配置任选其一：
 
 ```bash

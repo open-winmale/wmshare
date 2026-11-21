@@ -33,8 +33,8 @@ print(f"{cli.dividend.yield_ttm('600519'):.2%}")        # 3.56%
 print(cli.screener.index_breadth_summary()["total"])   # 5687
 ```
 
-接真实行情只换一行：`cli = wmshare.Client.from_env()`（凭证见下节）；免注册先取真实数据用
-`cli = wmshare.Client.anonymous()`（一次性小配额，凭据独立存放，不覆盖付费凭据）。
+接真实行情也是这一行：`cli = wmshare.Client.from_env()`——没配凭证自动免注册领
+匿名试用额度（一次性，凭据独立存放）；配置凭证即用正式额度（见下节）。
 指标怎么选、每条能省哪些计算，见[我想做 X → 用哪一行](#我想做-x--用哪一行)。
 
 ## 快速上手
@@ -52,7 +52,7 @@ python3 -c "import wmshare; print(wmshare.__version__)"   # 验证安装
 ### 不写 Python：`wmshare` 命令行出成品
 
 装完即得 `wmshare` 命令：筛选 / 收息 / 指数分位 / 转债图文四个任务动词直出成品文件（`--out` 落 md/csv/xlsx），
-其余目录函数用 `call k=v` 透传；**无凭证时自动回退匿名试用**（一次性小配额），`--demo` 走离线快照：
+其余目录函数用 `call k=v` 透传；**无凭证时自动用匿名试用**（免注册一次性额度），`--demo` 走离线快照：
 
 ```bash
 wmshare screen --where "$ROE_TTM_LAST > 0.15" --order "$BONUS_RATE_3Y_AVG_LAST" --out roe.xlsx
@@ -62,9 +62,9 @@ wmshare cbond daily --out ./cb/                                        # 转债�
 wmshare call kline.query_bars sym=600519 limit=30 --json               # 其余 331 函数透传
 ```
 
-### 配置凭证
+### 配置凭证（可选）
 
-凭证在 [开放平台](https://open.winmale.com)「我的 → 开放平台 → 我的应用」页获取 `AppId（Client ID）` 与 `API Key（Client Secret）` 两个值（缺一不可），配置方式任选其一：
+凭证可选：不配置也能取数（自动匿名试用）。配置正式凭证在 [开放平台](https://open.winmale.com)「我的 → 开放平台 → 我的应用」页获取 `AppId（Client ID）` 与 `API Key（Client Secret）` 两个值（缺一不可），配置方式任选其一：
 
 ```bash
 export WMSHARE_CLIENT_ID=<AppId> WMSHARE_CLIENT_SECRET=<API Key>   # 方式一：环境变量

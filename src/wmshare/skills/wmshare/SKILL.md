@@ -28,7 +28,7 @@ python3 -c "import wmshare; print(wmshare.__version__)"   # 探测
 pip install -i https://pypi.tuna.tsinghua.edu.cn/simple wmshare
 ```
 
-零凭证语法试跑：`cli = wmshare.demo_client()`（2026-11-19 真实 API 固定快照；10 只演示宇宙 + 当日全市场 screener，**非实时数据**），调用面覆盖公开示例，用于无凭证时验证代码形态；真实取数必须配置下方凭证。
+零凭证语法试跑：`cli = wmshare.demo_client()`（2026-11-19 真实 API 固定快照；10 只演示宇宙 + 当日全市场 screener，**非实时数据**），调用面覆盖公开示例，用于无凭证时验证代码形态。真实取数零配置也可用：`Client.from_env()` 无凭据自动领匿名额度（一次性）。
 
 MCP 安装与凭证写入：
 
@@ -38,9 +38,9 @@ wmshare-mcp setup --client-id ... --client-secret-stdin --market cn
 wmshare-mcp doctor
 ```
 
-凭证必填（SDK 不再内置体验 AppID）：在开放平台获取 client_id/api-key，
+凭证可选（无凭据自动匿名）：要长期额度在开放平台获取 client_id/api-key，
 配置其一（构造参数 / WMSHARE_CLIENT_ID+WMSHARE_CLIENT_SECRET 环境变量 /
-~/.wmshare/credentials.env 凭证文件）即可取数：
+~/.wmshare/credentials.env 凭证文件）：
 
 
 1. 打开 open.winmale.com，登录后在「我的 → 开放平台 → 我的应用」获取凭证；

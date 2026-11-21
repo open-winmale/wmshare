@@ -13,9 +13,11 @@
     wmshare call kline.query_bars sym=600519 limit=30 --json
 
 客户端构造顺序（首个成功者生效）：``--demo`` 离线快照 → ``--anonymous``
-免注册匿名试用 → 环境变量/凭证文件 → 无凭证时自动回退匿名（服务端未开放
-则给注册指引）。匿名额度是一次性 50 万 EC，本命令**不砍量**——只对
-``screen --fields`` 这类首跑物化可达 ~60 万 EC 的用法打成本警告。
+显式免注册匿名试用 → ``from_env``（配置了凭证用付费凭据；无凭证时 SDK 内部
+自动回落匿名试用，``WMSHARE_DISABLE_ANON=1`` 可关闭，服务端未开放则给注册
+指引）。匿名额度是一次性给足、用完即止（对齐正常注册用户免费档），本命令
+**不砍量**——只对 ``screen --fields`` 这类首跑物化可达 ~60 万 EC 的用法打
+成本警告。
 """
 from __future__ import annotations
 
@@ -160,28 +162,23 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
 
-# ---- 客户端构造：demo → anonymous → from_env，首个成功者生效 ----
+# ---- 客户端构造：demo → --anonymous 显式匿名 → from_env（无凭据时内部自动回落） ----
 
 def _build_client(args: argparse.Namespace) -> tuple[Any, str]:
     if args.demo:
         return wmshare.demo_client(), "demo（离线快照，非实时）"
     if args.anonymous:
         cli = wmshare.Client.anonymous(market=args.market)
-        return cli, "anonymous（匿名试用，一次性小配额）"
-    try:
-        return wmshare.Client.from_env(market=args.market), "credentials（付费凭据）"
-    except wmshare.AuthError as e:
-        if e.code != "config":
-            raise
-        # 无凭证自动回退匿名：让首次真实数据发生在注册之前
-        try:
-            cli = wmshare.Client.anonymous(market=args.market)
-            print("[wmshare] 未配置凭证，已自动回退匿名试用（一次性 50 万 EC）",
-                  file=sys.stderr)
-            return cli, "anonymous（自动回退；注册免费账号可获长期额度）"
-        except wmshare.AuthError as anon_err:
-            raise wmshare.AuthError(
-                f"凭证缺失且匿名试用不可用：{anon_err}\n{e}", code="config") from None
+        return cli, "anonymous（匿名试用，一次性额度）"
+    # from_env 自带登录墙拆除：凭据双缺时自动回落匿名试用（2.7.0 CLI 曾自建
+    # 回退分支，现收敛到 SDK 单一实现——否则 WMSHARE_DISABLE_ANON 在 CLI 侧
+    # 会被绕过，两条回落链语义漂移）。回落成功时凭 _is_anon 区分来源。
+    cli = wmshare.Client.from_env(market=args.market)
+    if _is_anon(cli):
+        print("[wmshare] 未配置凭证，已自动使用匿名试用（免注册；一次性额度，"
+              "注册免费账号可获长期额度）", file=sys.stderr)
+        return cli, "anonymous（自动匿名试用）"
+    return cli, "credentials（付费凭据）"
 
 
 def _is_anon(cli: Any) -> bool:

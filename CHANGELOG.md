@@ -11,6 +11,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.8.0] - 2026-11-21
+
+### Changed
+
+- **`Client.from_env()` 凭据双缺时自动回落匿名试用**（登录墙拆除）：未配置任何
+  凭据时自动领取一份匿名试用额度（本地有存档则复用），`pip install` 后零注册
+  即可取真实数据；凭据独立存放 `~/.wmshare/anon_credentials.env`，不覆盖付费
+  凭据文件。服务端未开放匿名试用时保持 2.6.0 的「缺少凭证」报错口径；
+  名额满/网络失败报错合并注册指引。影响面：原先依赖「无凭据必报错」的自动化
+  脚本。迁移：设 `WMSHARE_DISABLE_ANON=1` 恢复 2.6.0 行为。裸 `Client()` 与
+  部分凭据的成对校验不变；MCP 复用 from_env 同步获益。
+
+### Fixed
+
+- `wmshare` 主命令的匿名回退与 SDK 收敛：CLI 不再自建第二条回退链
+  （原实现在 SDK 回落生效后成为死路，且绕过 `WMSHARE_DISABLE_ANON`）；
+  文案同步额度对齐后的口径（服务端 `ec_balance` 为准）。
+
 ## [2.7.0] - 2026-11-21
 
 ### Added

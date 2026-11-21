@@ -770,14 +770,11 @@ class Client:
     # ---- 凭证 ----
     @classmethod
     def from_env(cls, env: dict[str, str] | None = None, **kw: Any) -> "Client":
-        """从环境解析凭据构造客户端；凭据双缺时自动回落匿名试用（2.7.0 起免注册可用）。
+        """从环境解析凭据构造客户端；凭据双缺时自动回落匿名试用（免注册可用）。
 
-        解析顺序：显式参数 > 环境变量（``WMSHARE_*``）> 凭据文件
-        （``WMSHARE_CREDENTIALS`` 或 ``~/.wmshare/credentials.env``）。
-        凭据双缺时尝试匿名试用：本地有存档则复用，否则自动申领一份并落盘到
-        ``~/.wmshare/anon_credentials.env``（不覆盖付费凭据文件）。服务端未开放
-        匿名试用时保持既有「缺少凭证」报错口径；设 ``WMSHARE_DISABLE_ANON=1``
-        可关闭回落，恢复 2.6.0 的报错行为。
+        解析顺序：显式参数 > 环境变量（``WMSHARE_*``）> 凭据文件（``WMSHARE_CREDENTIALS``）。
+        双缺时自动申领匿名额度并落盘独立文件（不覆盖付费凭据）；服务端未开放时
+        保持「缺少凭证」报错。``WMSHARE_DISABLE_ANON=1`` 关闭回落。
         """
         e = dict(os.environ if env is None else env)
         cred_file = Path(e.get("WMSHARE_CREDENTIALS", DEFAULT_CREDENTIAL_PATH))
