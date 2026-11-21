@@ -11,6 +11,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.6.0] - 2026-11-21
+
+### Added
+
+- **disc.income 域 +3 公开原子**（收息编排下沉 `sys/income` 后按需暴露，331 函数）：
+  - `income.score_explain(symbols)`：单票四维评分逐项解释（为什么是这个档）；
+  - `income.rating_all(industry, gates)`：全量收息排行行（不限 top_n=100 的
+    `cli.dividend.rating` 上限；注意全量直读 ≈1.17M EC，分页场景用）；
+  - `income.diag_fields()`：收息诊断字段清单（字段单一事实源，随目录走）。
+  - cron 物化编排 `income.materialize*` 登记为 internal helpers，**不进 SDK
+    公开目录**——物化属服务端 cron 职责，SDK 侧直调会被误用为实时全市场重算。
+  - 目录锚点随上游 scripts 仓 `86e68303` 同步（upstream_rev / metric_taxonomy /
+    计数门禁 328→331、235/96）。
+
+### Fixed
+
+- 示例计数与 Discussions 入口（40374cc）：`examples/02_catalog_tour.py` 陈旧
+  计数改动态打印；issue 模板补 Discussions/QQ 群联系通道；README 问题反馈
+  条目并入 Discussions 分流。
+
 ## [2.5.0] - 2026-11-20
 
 ### Added

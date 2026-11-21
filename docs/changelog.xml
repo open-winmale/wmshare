@@ -5,8 +5,19 @@
     <link>https://github.com/open-winmale/wmshare</link>
     <description>wmshare 版本变更与接口弃用公告（由 CHANGELOG.md 生成）</description>
     <language>zh-CN</language>
-    <lastBuildDate>Fri, 20 Nov 2026 00:00:00 +0800</lastBuildDate>
+    <lastBuildDate>Sat, 21 Nov 2026 00:00:00 +0800</lastBuildDate>
     <atom:link href="https://github.com/open-winmale/wmshare/raw/main/docs/changelog.xml" rel="self" type="application/rss+xml"/>
+    <item>
+      <title>wmshare 2.6.0 (2026-11-21)</title>
+      <link>https://github.com/open-winmale/wmshare/releases/tag/v2.6.0</link>
+      <guid isPermaLink="false">wmshare:2.6.0</guid>
+      <pubDate>Sat, 21 Nov 2026 00:00:00 +0800</pubDate>
+      <description>Added
+- **disc.income 域 +3 公开原子**（收息编排下沉 `sys/income` 后按需暴露，331 函数）： - `income.score_explain(symbols)`：单票四维评分逐项解释（为什么是这个档）； - `income.rating_all(industry, gates)`：全量收息排行行（不限 top_n=100 的 `cli.dividend.rating` 上限；注意全量直读 ≈1.17M EC，分页场景用）； - `income.diag_fields()`：收息诊断字段清单（字段单一事实源，随目录走）。 - cron 物化编排 `income.materialize*` 登记为 internal helpers，**不进 SDK 公开目录**——物化属服务端 cron 职责，SDK 侧直调会被误用为实时全市场重算。 - 目录锚点随上游 scripts 仓 `86e68303` 同步（upstream_rev / metric_taxonomy / 计数门禁 328→331、235/96）。
+
+Fixed
+- 示例计数与 Discussions 入口（40374cc）：`examples/02_catalog_tour.py` 陈旧 计数改动态打印；issue 模板补 Discussions/QQ 群联系通道；README 问题反馈 条目并入 Discussions 分流。</description>
+    </item>
     <item>
       <title>wmshare 2.5.0 (2026-11-20)</title>
       <link>https://github.com/open-winmale/wmshare/releases/tag/v2.5.0</link>
@@ -283,24 +294,6 @@ Changed
 Fixed
 - **returns_shape 声明滞后清零（drift WARN 29 → 0）**：units/ranges 守护声明引用的 字段未出现在 `returns_shape` 合同里，机器读 openapi/llms.txt 会以为返回行没有这些 字段——文档比实际&quot;少说了字段&quot;，用户按文档取数会拿漏。三批治理： - **T1（segments）**：`query_region` 的 `domestic`/`overseas` 从 `cn` 文本升级为 结构化嵌套 fields；`snapshot` 补全七键结构（含 `overview` 嵌套 `max_name/max_ratio/product_tags/profile`、`coverage` 结构化）。 **修正一处 desc 笔误**：快照顶层键是 `products`（复数），desc 误写单数。 - **T2（forecast）**：`yjyg_rows`/`yjkb_rows` 补 SDK 侧 `returns.shape` 覆盖 （字段集 = 上游 shape ∪ fixtures，补齐被守护的 `rev_amp_*`/`np_yoy`/`roe` 等）； `snapshot` 的 `yjyg`/`yjkb`/`next_disclosure` 结构化嵌套。 - **T3（normalize_with 错位，18 条）**：9 个 fmt 行规范化函数的 `returns.shape` 按 XS row 函数字面量重写，13 个 query 函数经目录优先级链自动继承修正 （`fmt_maps` 一处修正顺带修好 5 个 estimates/intl 函数的文档合同）。 **`equity.query_hgt` 文档曾只列 3 字段、实际返回 7**，此类失真全部消除。
 - **`_shape_fields` 递归化**：`tools/audit_units.py` 现在递归收集嵌套 fields， 与运行时 `walk` 下探嵌套容器的语义对齐。</description>
-    </item>
-    <item>
-      <title>wmshare 1.20.5 (2026-11-14)</title>
-      <link>https://github.com/open-winmale/wmshare/releases/tag/v1.20.5</link>
-      <guid isPermaLink="false">wmshare:1.20.5</guid>
-      <pubDate>Sat, 14 Nov 2026 00:00:00 +0800</pubDate>
-      <description>Added
-- **`tests/test_extract_exposure.py`**（4 用例）：extract 同步的暴露面防回归门禁， 用抽取器自身的 `in_scope()` / 白名单做聚合计数校验（不逐条列未审批 name）， 钉住三份生成物 `upstream_rev` 一致、随包目录与确定性渲染一致。
-- **`tests/test_internal_ns_visibility.py`**（5 用例）：断言内部命名空间零泄漏到 全部对外资产、友好门面 7 个方法仍在且每个都能回溯到目录契约、 目录中的内部函数数量受控、`doc_hidden()` 规则覆盖该命名空间。
-- 验收：16 项静态门禁 + `check_leak`（205 文件）+ mypy 28 文件零问题、 6 个生成器 `--check` rc=0、全量 **1869 passed / 94 skipped / 0 failed**、 `--cov-branch` **88.31% ≥ 85%**。
-
-Changed
-- **内部目录命名空间不再出现在对外清单**：底层函数名仍留在随包目录 （`cli.statements.*` 友好门面的目录感知委托依赖 `cat.function()`），但 `docs/API.md` 附录函数表、`docs/openapi.json` description、`llms*.txt` 的单位声明段、以及 README / GUIDE / INDICATORS / swagger / examples / 技能文档 一律不再回显内部命名空间，用户侧只见 `cli.statements.balance/income/...`。 生成器通过共享的 `INTERNAL_CATALOG_NS` 统一判定；**运行时调用与 API 行为不变**， `cli.call(...)` 对底层名仍可用。历史版本段两处旧口径同步改写为友好接口名。
-- 与上述可见性策略对齐 P1 的两个门禁（`test_docs` / `test_unit_visibility`）， 并新增反向约束，未削弱防线。
-
-Fixed
-- **随包目录与上游抽取结果的漂移消除**：用官方 `tools/extract_from_scripts.py` 从上游重生成 `generated/inventory.json` / `metrics.json`（生成物禁止手改）， `upstream_rev` 锚定 `9d6bfd25`；`cbond.card.returns` 描述补齐 `projects / share / holders / institution`。连带重跑 `extract_metric_taxonomy.py` 与 6 个生成器，`test_extractor_check_no_drift` 恢复绿色。
-- **撤回未走暴露审批的目录扩容**：并发会话曾把 3 个上游**尚未部署、未 live 验证**的财报目录函数收进发布白名单（inventory 294 → 297、域版本升到 1.5.0）。 本版恢复白名单为 5 项、域回 `v1.3.0`、inventory 回到 **294 函数 / 2752 指标**， 并同步恢复受影响的 7 处手写计数（288 函数口径）。上游 A1/A2 仍待部署， 如需收录须在部署并 live 验证后单独走暴露审批。</description>
     </item>
   </channel>
 </rss>
