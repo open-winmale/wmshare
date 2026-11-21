@@ -27,16 +27,25 @@ from wmshare.mcp.apis import (
     route_count,
 )
 from wmshare.mcp.constants import (
+    BACKTEST_RULES,
     CORPORATE_ACTIONS,
     DIVIDEND_ACTIONS,
     ESTIMATE_ACTIONS,
+    ETF_ACTIONS,
+    FUTURES_ACTIONS,
+    INCOME_ACTIONS,
     INTL_ACTIONS,
+    MACRO_ACTIONS,
     MARKET_ACTIONS,
     MARKET_DOMAINS,
     NOTICE_ACTIONS,
+    PDF_ACTIONS,
     SEGMENT_ACTIONS,
     STATEMENT_ACTIONS,
+    TOPLIST_ACTIONS,
     TOOL_NAMES,
+    VALUATION_ACTIONS,
+    VALUATION_METRICS,
 )
 from wmshare.mcp.core import MCPRuntime
 from wmshare.mcp.server import build_server
@@ -124,7 +133,7 @@ def test_status_reports_capability_coverage(runtime: Any) -> None:
     status = tools.status(runtime)
     caps = status["data"]["capabilities"]
     assert caps["friendly_apis"] == route_count()
-    assert caps["first_class_tools"] == 20
+    assert caps["first_class_tools"] == 28
     assert caps["batchable_catalog_functions"] > 100
     assert "pandas/_df" in caps["excluded_from_mcp"][0]
 
@@ -253,10 +262,10 @@ def test_mcp_registry_schema_and_resources() -> None:
             "limits": limits,
         }
     names, facts = asyncio.run(inspect_server())
-    assert set(names) == set(TOOL_NAMES) and len(names) == 20
+    assert set(names) == set(TOOL_NAMES) and len(names) == 28
     coverage = facts["coverage"]
     assert coverage["friendly_apis"] == route_count()
-    assert coverage["first_class_tools"] == 20
+    assert coverage["first_class_tools"] == 28
     assert coverage["batchable_catalog_functions"] >= 100
     assert "pandas DataFrame / _df=True" in coverage["excluded_from_mcp"]
     assert "--client-secret-stdin" in facts["setup"]
@@ -415,13 +424,22 @@ def test_domain_action_enums_are_machine_readable() -> None:
         "wmshare_statement": set(STATEMENT_ACTIONS),
         "wmshare_segments": set(SEGMENT_ACTIONS),
         "wmshare_dividend": set(DIVIDEND_ACTIONS),
+        "wmshare_income": set(INCOME_ACTIONS),
         "wmshare_estimates": set(ESTIMATE_ACTIONS),
         "wmshare_corporate": set(CORPORATE_ACTIONS),
         "wmshare_intl": set(INTL_ACTIONS),
         "wmshare_notice": set(NOTICE_ACTIONS),
+        "wmshare_etf": set(ETF_ACTIONS),
+        "wmshare_macro": set(MACRO_ACTIONS),
+        "wmshare_valuation": set(VALUATION_ACTIONS),
+        "wmshare_toplist": set(TOPLIST_ACTIONS),
+        "wmshare_futures": set(FUTURES_ACTIONS),
+        "wmshare_pdf": set(PDF_ACTIONS),
     }
     for name, values in expected.items():
         assert set(facts[name]["properties"]["action"]["enum"]) == values
+    assert set(facts["wmshare_backtest"]["properties"]["rule"]["enum"]) == set(BACKTEST_RULES)
+    assert set(facts["wmshare_valuation"]["properties"]["metric"]["enum"]) == set(VALUATION_METRICS)
     market_domain = facts["wmshare_market"]["properties"]["domain"]
     market_action = facts["wmshare_market"]["properties"]["action"]
     assert set(market_domain["enum"]) == set(MARKET_DOMAINS)

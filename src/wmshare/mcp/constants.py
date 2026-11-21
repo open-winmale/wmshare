@@ -26,9 +26,17 @@ TOOL_NAMES = (
     "wmshare_statement",
     "wmshare_segments",
     "wmshare_dividend",
+    "wmshare_income",
     "wmshare_estimates",
     "wmshare_corporate",
     "wmshare_market",
+    "wmshare_valuation",
+    "wmshare_etf",
+    "wmshare_backtest",
+    "wmshare_macro",
+    "wmshare_toplist",
+    "wmshare_futures",
+    "wmshare_pdf",
     "wmshare_intl",
     "wmshare_notice",
     "wmshare_batch",
@@ -87,3 +95,19 @@ NOTICE_ACTIONS = (
     "list", "recent", "find", "by_category", "on_date",
     "has_buyback", "has_reduction",
 )
+# 2.8 直达层扩展：结论级/高频/差异化面从网关提为 task tool（action 与对应
+# friendly 门面公开方法一一对应，测试与反射集等值断言）。
+INCOME_ACTIONS = ("rating", "diagnose", "calendar", "decomp")
+BACKTEST_RULES = ("ma_cross", "pe", "pb", "ps", "pr")
+ETF_ACTIONS = (
+    "card", "nav", "share", "div", "portfolio",
+    "profile", "premium", "asset", "rank",
+)
+MACRO_ACTIONS = ("query", "asof", "sampling")
+VALUATION_ACTIONS = (
+    "hist_stats", "daily_basic", "daily_basic_multi", "daily_basic_coverage",
+)
+VALUATION_METRICS = ("pe", "pb", "ps", "pr")
+TOPLIST_ACTIONS = ("by_date", "by_symbol")
+FUTURES_ACTIONS = ("get", "mapping", "snapshot")
+PDF_ACTIONS = ("search", "read_markdown", "status")

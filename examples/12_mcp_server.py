@@ -2,7 +2,7 @@
 
 前提：离线自检零凭证；真实取数需开放平台 AppID
 运行：python examples/12_mcp_server.py
-学到：wmshare-mcp 安装、setup/doctor、最小 MCP client 配置与 20 个工具入口
+学到：wmshare-mcp 安装、setup/doctor、最小 MCP client 配置与 28 个工具入口
 文档：docs/AI.md（MCP 优先路径）、README.md（MCP server 快速开始）
 """
 
@@ -47,7 +47,7 @@ def main() -> None:
     print("  wmshare-mcp doctor")
     print("\nAI 客户端最小配置（不含凭证）：")
     print(json.dumps(CLIENT_CONFIG, ensure_ascii=False, indent=2))
-    print("\n工具入口：20 个 task tools；长尾 friendly API 用")
+    print("\n工具入口：28 个 task tools；长尾 friendly API 用")
     print("wmshare_call(mode='api')；多标的用 wmshare_batch(params=...)。")
 
 

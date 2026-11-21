@@ -152,7 +152,7 @@ for r in res["data"]["rows"][:5]:
 
 - **先查目录再写代码**（一行验证）：
   `python3 -c "import wmshare; print(wmshare.load().search('股息'))"`
-- **本地 MCP server**：20 个 task tools；全部 174 个 friendly API——156 登记 + 18 个组合接口——均可用
+- **本地 MCP server**：28 个 task tools；全部 174 个 friendly API——156 登记 + 18 个组合接口——均可用
   `wmshare_call(target=..., mode="api")` 兜底，macro 域仅此路径。配置：`pip install "wmshare[mcp]"`
   → `wmshare-mcp setup --client-id <AppId> --client-secret-stdin --market cn`（提示后粘贴 API Key，
   `wmshare-mcp doctor` 体检）；客户端最小配置

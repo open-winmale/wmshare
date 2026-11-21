@@ -15,15 +15,23 @@ from wmshare.api import _generated
 from wmshare.client import BatchResult
 from wmshare.mcp import tools
 from wmshare.mcp.constants import (
+    BACKTEST_RULES,
     COMPANY_BLOCKS,
     CORPORATE_ACTIONS,
     DIVIDEND_ACTIONS,
     ESTIMATE_ACTIONS,
+    ETF_ACTIONS,
+    FUTURES_ACTIONS,
+    INCOME_ACTIONS,
     INTL_ACTIONS,
+    MACRO_ACTIONS,
     MARKET_ACTIONS,
     NOTICE_ACTIONS,
+    PDF_ACTIONS,
     SEGMENT_ACTIONS,
     STATEMENT_ACTIONS,
+    TOPLIST_ACTIONS,
+    VALUATION_ACTIONS,
 )
 from wmshare.mcp.core import MCPRuntime
 from wmshare.mcp.server import build_server
@@ -72,7 +80,8 @@ class _MatrixClient:
         for ns in ("kline", "moneyflow", "margin", "cbond", "index", "valuation",
                    "stocks", "info", "statements", "indicator", "dividend", "notice",
                    "screener", "filings", "forecast", "workout", "intl", "segments",
-                   "estimates", "equity"):
+                   "estimates", "equity", "etf", "macro", "toplist", "futures",
+                   "pdf_doc", "backtest"):
             setattr(self, ns, _NS(ns))
 
     def call(self, name, **kwargs):
@@ -331,3 +340,132 @@ def test_pydantic_boundary_via_call_tool(runtime, tool, arguments):
     server = build_server(MCPRuntime(market="cn", demo=True))
     result = asyncio.run(server.call_tool(tool, arguments))
     assert isinstance(result, tuple) and result[1]["ok"] is True
+
+
+# ---- 2.8 直达层扩展：8 个新工具按常量全展开（分派目标受 LEGAL_METHODS 锚定） ----
+
+@pytest.mark.parametrize("action,kwargs", [
+    ("rating", {}),
+    ("diagnose", {"symbols": ["600900", "600519"]}),
+    ("calendar", {"begin": "2026-11-01", "end": "2026-11-30"}),
+    ("decomp", {"symbols": ["600900"], "years": 5}),
+])
+def test_income_every_action(runtime, action, kwargs):
+    _ok(tools.income(runtime, action, **kwargs), action=action)
+
+
+@pytest.mark.parametrize("kwargs,match", [
+    ("nope", "action 只支持"),
+])
+def test_income_invalid_action(runtime, kwargs, match):
+    with pytest.raises(ValueError, match=match):
+        tools.income(runtime, kwargs)
+    with pytest.raises(ValueError, match="symbols 不能为空"):
+        tools.income(runtime, "diagnose")
+
+
+@pytest.mark.parametrize("rule", list(BACKTEST_RULES))
+def test_backtest_every_rule(runtime, rule):
+    kwargs = {"fast": 5, "slow": 20} if rule == "ma_cross" else {"buy": 20.0, "sell": 40.0}
+    _ok(tools.backtest(runtime, "600519", rule=rule, **kwargs), rule=rule)
+
+
+def test_backtest_invalid_params(runtime):
+    with pytest.raises(ValueError, match="rule 只支持"):
+        tools.backtest(runtime, "600519", rule="nope")
+    with pytest.raises(ValueError, match="同时提供"):
+        tools.backtest(runtime, "600519", begin="2026-01-01")
+
+
+@pytest.mark.parametrize("action", list(ETF_ACTIONS))
+def test_etf_every_action(runtime, action):
+    kwargs = {"limit": 10} if action == "rank" else {}
+    _ok(tools.etf(runtime, action, "510300", **kwargs), action=action)
+
+
+def test_etf_invalid_action(runtime):
+    with pytest.raises(ValueError, match="action 只支持"):
+        tools.etf(runtime, "nope", "510300")
+
+
+@pytest.mark.parametrize("action", list(MACRO_ACTIONS))
+def test_macro_every_action(runtime, action):
+    _ok(tools.macro(runtime, action, "$CPI"), action=action)
+
+
+def test_macro_invalid_params(runtime):
+    with pytest.raises(ValueError, match="action 只支持"):
+        tools.macro(runtime, "nope", "$CPI")
+    with pytest.raises(ValueError, match="需要 symbol"):
+        tools.macro(runtime, "query", " ")
+
+
+@pytest.mark.parametrize("action,kwargs", [
+    ("hist_stats", {"symbol": "600519"}),
+    ("daily_basic", {"symbol": "600519", "begin": "2026-11-01", "end": "2026-11-20"}),
+    ("daily_basic_multi", {"symbols": ["600519", "000001"],
+                           "begin": "2026-11-01", "end": "2026-11-20"}),
+    ("daily_basic_coverage", {"symbol": "600519"}),
+])
+def test_valuation_every_action(runtime, action, kwargs):
+    _ok(tools.valuation(runtime, action, **kwargs), action=action)
+
+
+def test_valuation_invalid_params(runtime):
+    with pytest.raises(ValueError, match="action 只支持"):
+        tools.valuation(runtime, "nope", symbol="600519")
+    with pytest.raises(ValueError, match="metric 只支持"):
+        tools.valuation(runtime, "hist_stats", symbol="600519", metric="nope")
+    with pytest.raises(ValueError, match="同时提供"):
+        tools.valuation(runtime, "daily_basic", symbol="600519", begin="2026-11-01")
+
+
+@pytest.mark.parametrize("action,kwargs", [
+    ("by_date", {"trade_date": "2026-11-20"}),
+    ("by_symbol", {"symbol": "600519"}),
+])
+def test_toplist_every_action(runtime, action, kwargs):
+    _ok(tools.toplist(runtime, action, **kwargs), action=action)
+
+
+def test_toplist_invalid_params(runtime):
+    with pytest.raises(ValueError, match="action 只支持"):
+        tools.toplist(runtime, "nope")
+    with pytest.raises(ValueError, match="需要 trade_date"):
+        tools.toplist(runtime, "by_date")
+
+
+@pytest.mark.parametrize("action,kwargs", [
+    ("get", {"code": "RB2605.SHF"}),
+    ("mapping", {"symbol": "RB"}),
+    ("snapshot", {"code": "RB2605.SHF"}),
+])
+def test_futures_every_action(runtime, action, kwargs):
+    _ok(tools.futures(runtime, action, **kwargs), action=action)
+
+
+def test_futures_invalid_params(runtime):
+    with pytest.raises(ValueError, match="action 只支持"):
+        tools.futures(runtime, "nope")
+    with pytest.raises(ValueError, match="需要 symbol"):
+        tools.futures(runtime, "get")
+    with pytest.raises(ValueError, match="同时提供"):
+        tools.futures(runtime, "mapping", symbol="RB", begin="2026-01-01")
+
+
+@pytest.mark.parametrize("action,kwargs", [
+    ("search", {"stock_code": "600519"}),
+    ("read_markdown", {"stock_code": "600519", "period": "2025-12-31"}),
+    ("status", {"file_key": "k1"}),
+])
+def test_pdf_every_action(runtime, action, kwargs):
+    _ok(tools.pdf(runtime, action, **kwargs), action=action)
+
+
+def test_pdf_invalid_params(runtime):
+    with pytest.raises(ValueError, match="action 只支持"):
+        tools.pdf(runtime, "nope")
+    with pytest.raises(ValueError, match="read_markdown 需要"):
+        tools.pdf(runtime, "read_markdown")
+    with pytest.raises(ValueError, match="status 需要"):
+        tools.pdf(runtime, "status")

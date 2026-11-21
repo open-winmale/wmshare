@@ -10,8 +10,9 @@ wmshare 是覆盖 A 股、港股、美股的 Python 财经数据 SDK（BSD-3-Cla
 用对：先装好、先查目录、按单位铁律读数、按决策树选接口。
 
 **MCP 优先级**：如果当前 AI 客户端已连接 `wmshare` MCP server，先用 `wmshare_search` /
-`wmshare_contract` 发现合同，再优先用 20 个 task tools（quote/history/metrics/company/screen/
-disclosures/statement/segments/dividend/estimates/corporate/market/intl/notice 等）；
+`wmshare_contract` 发现合同，再优先用 28 个 task tools（quote/history/metrics/company/screen/
+disclosures/statement/segments/dividend/income/estimates/corporate/market/valuation/etf/
+backtest/macro/toplist/futures/pdf/intl/notice 等）；
 多标的用 `wmshare_batch(params=...)`。长尾目录函数和 friendly API 分别用
 `wmshare_call(mode="catalog")` / `wmshare_call(mode="api")`。没有 MCP 时继续按下面的 SDK 决策树写代码。
 

@@ -131,13 +131,13 @@ def runtime() -> MCPRuntime:
     return rt
 
 
-def test_registry_has_twenty_tools() -> None:
+def test_registry_has_twenty_eight_tools() -> None:
     server = build_server(MCPRuntime(demo=True))
     response = server.list_tools()
     if hasattr(response, "__await__"):
         response = __import__("asyncio").run(response)
     assert {item.name for item in response} == set(TOOL_NAMES)
-    assert len(TOOL_NAMES) == 20
+    assert len(TOOL_NAMES) == 28
     descriptions = [item.description for item in response]
     assert all(descriptions)
 
