@@ -75,6 +75,31 @@ def _today() -> str:
     return date.today().isoformat()
 
 
+def _as_rows(value: Any) -> Any:
+    """门面收口容错：SDK 内部消费方拿到的面板可能是行数组或 DataFrame。
+
+    2.0 起门面把行数组默认收口成 DataFrame（``to_output_frame``），而本管线经
+    ``cli.cbond.board()``（属性直达 CbondApi）取数拿到的是 DF；测试桩与底层
+    ``cli.call`` 给的是行数组。曾经只判 ``isinstance(list)``，2.0 迁移后 live
+    下每次必抛「返回空」而测试桩绕过收口点全绿——统一在这里还原为行数组
+    （与 ``api._rows`` 同语义），其它形态原样透传，由调用方的空值判定兜底。
+    """
+    if isinstance(value, list):
+        return value
+    to_dict = getattr(value, "to_dict", None)
+    if callable(to_dict):
+        try:
+            return value.to_dict("records")
+        except TypeError:  # pragma: no cover - 非 records 兼容形态
+            return value
+    if isinstance(value, dict):
+        for key in ("rows", "data"):
+            inner = value.get(key)
+            if isinstance(inner, list):
+                return inner
+    return value
+
+
 def fetch_snapshot(cli: Any, *, config: DailyConfig | None = None,
                    as_of: str | None = None) -> dict[str, Any]:
     """取一次面板 + 全量条款事件，并顺带拨测 featured 债的日 K 通道。
@@ -92,7 +117,7 @@ def fetch_snapshot(cli: Any, *, config: DailyConfig | None = None,
         if made > cfg.budget:
             raise RuntimeError(f"请求数 {made} 超出本期预算 {cfg.budget}")
 
-    rows = cli.cbond.board()
+    rows = _as_rows(cli.cbond.board())
     spend()
     if not isinstance(rows, list) or not rows:
         raise RuntimeError("cbond.board() 返回空——快照可能未更新，本期不出稿")
@@ -108,7 +133,7 @@ def fetch_snapshot(cli: Any, *, config: DailyConfig | None = None,
         if abs(date_mismatch) > 1:
             raise RuntimeError(f"快照日 {snap_asof} 与请求日 {as_of} 相差超过 1 天")
 
-    events = cli.cbond.event_list()
+    events = _as_rows(cli.cbond.event_list())
     spend()
     if not isinstance(events, list):
         events = []

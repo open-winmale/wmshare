@@ -1318,7 +1318,7 @@ cli.cbond.universe_codes()
 | 方法 | 签名 | 输出 |
 |---|---|---|
 | `cli.cbond.article` | `article(payload, date=None, campaign=None, fig_dir='figs')` | MAP · {source, wechat, summary, date, campaign}（源稿与公众号稿） |
-| `cli.cbond.daily` | `daily(as_of=None, top_n=20, budget=30)` | MAP · {facts, derived, gates, states, top, scatter, calendar, featured_band, caliber_layers, coverage}（口径分层 + 三道闸 + 状态机 + 事件日历） |
+| `cli.cbond.daily` | `daily(as_of=None, top_n=20, budget=60)` | MAP · {facts, derived, gates, states, top, scatter, calendar, featured_band, caliber_layers, coverage}（口径分层 + 三道闸 + 状态机 + 事件日历） |
 | `cli.cbond.figures` | `figures(payload, out_dir, date=None, klines=None)` | MAP · {table, scatter, band_<code>: 图片路径}（需 wmshare[figures]） |
 
 **`cli.cbond.article`** — 把事实包写成图文稿件：源稿 Markdown + 公众号适配稿 + 摘要。
@@ -1338,7 +1338,7 @@ cli.cbond.universe_codes()
 
 **`cli.cbond.daily`** — 跑一期可转债日更，返回事实包（三层口径 + 三道闸 + 状态机 + 事件日历）。
 
-取数只发三次请求：全市场面板一次、条款事件一次、榜单前三各一次日 K 通道；`budget` 是硬上限，超出直接报错而不静默降级。
+取数构成（默认 `enrich`/`curves` 全开）：全市场面板 1 次、条款事件 1 次、榜单前三各 1 次通道日 K、全表日 K 按 ≤120 只/批的批量 eval （批次随在市债数浮动）、收益率曲线 10 次（AAA/国债 × 5 期限）—— **不是固定三次**，实际请求见返回的 `coverage.requests_made`； `budget` 是硬上限（默认与 `DailyConfig.DEFAULT_BUDGET` 对齐）， 超出直接报错而不静默降级。
 
 返回 `{facts, derived, gates, states, top, scatter, calendar, featured_band, caliber_layers, coverage}`。每个数字都带 `sources` 与 `as_of`；口径见 `wmshare.cb.facts` 模块文档。
 
@@ -1346,7 +1346,7 @@ cli.cbond.universe_codes()
 |---|---|---|---|---|
 | `as_of` | string | 否 | `None` | 期望的快照日 ``YYYY-MM-DD``（缺省取面板自带 asOf） |
 | `top_n` | integer | 否 | `20` | 榜单条数 |
-| `budget` | integer | 否 | `30` | 单期请求上限 |
+| `budget` | integer | 否 | `60` | 单期请求上限 |
 
 **`cli.cbond.figures`** — 出当期图：双低榜表格、全市场价差散点、候选个券价格通道。
 

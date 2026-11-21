@@ -8,6 +8,24 @@
     <lastBuildDate>Sat, 21 Nov 2026 00:00:00 +0800</lastBuildDate>
     <atom:link href="https://github.com/open-winmale/wmshare/raw/main/docs/changelog.xml" rel="self" type="application/rss+xml"/>
     <item>
+      <title>wmshare 2.7.0 (2026-11-21)</title>
+      <link>https://github.com/open-winmale/wmshare/releases/tag/v2.7.0</link>
+      <guid isPermaLink="false">wmshare:2.7.0</guid>
+      <pubDate>Sat, 21 Nov 2026 00:00:00 +0800</pubDate>
+      <description>Added
+- **`wmshare` 主命令（一次调用出成品文件，不用写 Python）**：`pip install wmshare` 即得命令行入口，与 `wmshare-mcp` 并列。四个任务动词直出 `--out` 成品 （`.md`/`.csv`/`.xlsx`）：`wmshare screen`（screener.query 全市场选股）、 `wmshare income`（收息排行/诊断/日历/拆解成套落盘 + manifest）、 `wmshare index trend`（PE/PB 历史分位）、`wmshare cbond daily` （转债日更 daily→article→figures 一条链）；其余目录函数用 `wmshare call kline.query_bars sym=600519 limit=30` 透传（参数按目录声明 归一类型，未知参数报合法集合）。**无凭证时自动回退 `Client.anonymous()` 匿名试用**（一次性小配额；`anon_*` 失败给注册指引），`--demo` 走离线快照； 全局旗标（`--demo/--anonymous/--market/--json`）在子命令前后均可放置。 `setup`/`doctor` 复用 `wmshare-mcp` 同款实现（同一份凭证文件）。
+- **成品出口层 `wmshare.export`**（不进目录、不占 FRIENDLY_INDEX/COMPOSITE_METHODS， 不影响任何计数门禁）：`to_markdown()`（表头自动带 `as_of` 与「比率=小数、 金额=元、股数=股」口径约定，把口径契约做成交付物的一部分）、`write()` （按扩展名分派 `.md/.csv/.xlsx/.png`；已成稿文本原样直通；缺可选依赖抛 `UsageError(code=&quot;extra&quot;)` 并给安装命令，不静默降级；PNG 中文复用 `cb.figures` 的五平台 CJK 字体探测）、`write_bundle()`（多产物一次落盘 + `manifest.json` 记录行数/as_of/版本）。xlsx 需新增 extra `pip install &quot;wmshare[excel]&quot;`；`extra` 错误码已登记 [ERRORS.md](docs/ERRORS.md)。
+- 新增示例 `examples/21_cli_export.py`（成品出口三件套，支持 `--demo`）；示例 课程 20→21，README/GUIDE/docs/README 计数同步。
+
+Fixed
+- **修复 `cli.cbond.daily()` 在 2.0 契约下必崩的成品链**（自 2.0 起生效的回归）： 编排层经门面 `cbond.board()` 取数已得 DataFrame，仍按 `isinstance(list)` 判定 → live 每次抛「cbond.board() 返回空」，`article()/figures()` 整链不可用； 测试桩直接返 list 绕过收口点所以全绿。修复=形状容错（`_as_rows()`），并新增 「经门面 DataFrame」回归测试 + 示例 14 端到端用例；顺带修复示例 14 的 `rows.get(&quot;rows&quot;)` 兜底（对 DataFrame 恒空 → 静默 0 行）与事实桶查找 （facts/derived 两桶合并索引，此前 live 下 StopIteration 被上游必崩掩盖）。
+- **修复文档信封漂移（照抄即失败）**：README 选股示例 `res[&quot;count&quot;]` → `res[&quot;data&quot;][&quot;count&quot;]`（`screener.query` 2.0 起返回统一信封）、GUIDE 同段与 `index.trend` 读法、examples 04/17 同款；`test_docs` 的 README 执行桩改返 真实信封形态（此前返扁平 dict 把旧写法焊成绿色——门禁失效根源）。
+- `wmshare_call` 的 `mode` schema 补登 `&quot;cost&quot;`：tools 层早已实现成本估算 （不发请求），但 pydantic Literal 漏登记，经 MCP 协议传 `mode=&quot;cost&quot;` 被 schema 拒绝而文档宣称支持——三层（实现/合同/文档）对齐，测试基线同步。
+- `cli.cbond.daily()` docstring 请求次数如实化（enrich/curves 默认全开时约 24+ 次而非「三次」），`budget` 门面默认 30 与 `DEFAULT_BUDGET=60` 对齐。
+- 文档漂移清扫：QUICKSTART_EN 示例计数与 `cat.metric` 行为描述（实返 None）、 AI.md 演示快照日期（→2026-11-19）、SKILL.md `up_pct` 示例值（80.3→0.803， 2.0 小数契约）。
+- README 新增「不写 Python：`wmshare` 命令行出成品」节与收息排行/ETF 一览 意图行；按店面纪律先删 10 行（匿名说明压缩、分工 quote 合并、主站 bullet 合并、where 语法段去重）后提限 330→339。</description>
+    </item>
+    <item>
       <title>wmshare 2.6.0 (2026-11-21)</title>
       <link>https://github.com/open-winmale/wmshare/releases/tag/v2.6.0</link>
       <guid isPermaLink="false">wmshare:2.6.0</guid>
@@ -274,27 +292,6 @@ Changed
 - live 对账：`cbond.card(&quot;127119&quot;)` 声明 9 键 ↔ 运行时 9 键，零幻影零漏列。
 - 验收：drift `--strict` exit 0、check_version 六源一致、5 个生成器 `--check` rc=0、taxonomy sidecar 同步、mypy 零问题、check_leak 绿、 全量 **1967 passed / 94 skipped / 0 failed**。
 - 域版本：`market.cbond` 1.4.0 → 1.4.1。API 行为无变化（合同/文档修正）。</description>
-    </item>
-    <item>
-      <title>wmshare 1.20.6 (2026-11-16)</title>
-      <link>https://github.com/open-winmale/wmshare/releases/tag/v1.20.6</link>
-      <guid isPermaLink="false">wmshare:1.20.6</guid>
-      <pubDate>Mon, 16 Nov 2026 00:00:00 +0800</pubDate>
-      <description>Added
-- **`tests/test_normalized_query_shapes_cover_guards`**：13 个改动函数的守护字段 ⊆ returns_shape 回归锚。
-- `tests/test_audit_drift.py` +2 嵌套用例、2 处断言随 WARN 清零更新（默认档断 `[]`， strict 升级语义用注入 WARN 验证）。
-- `tests/test_units.py` +2 回归：segments/forecast 嵌套换算与量级守护 （负例须取&quot;percent 换算后仍超界&quot;的值）。
-- **字段面取证三层**：XS row 函数字面量（服务端写死的输出键）+ fixtures 并集 + **live 对账 23 接口双向核验**（声明的字段运行时都在、运行时的字段声明都覆盖、 守护换算生效）。4 个接口（national_team/pledge_detail/release/query_reports） 上游暂无数据，以 XS 字面量为据。
-- 验收：drift `--strict` exit 0、16 项静态门禁绿、mypy 零问题、 5 个生成器 `--check` rc=0、全量 **1967 passed / 94 skipped / 0 failed**、 分支覆盖率 **88% ≥ 85%**。
-- 域版本：`corp.equity` 2.1.1、`fund.estimates` 1.1.1、`market.intl` 1.2.1、 `fund.segments` 1.0.3、`disc.events` 1.1.2。API 行为无变化（纯合同/文档修正）。
-
-Changed
-- **`drift --strict` 纳入门禁**（AGENTS.md 门禁清单 + CI 同款）：shape/units/ranges 声明漂移 ERROR/WARN 均拦截，防合同回归。
-- **llms-full.txt 预算 320K → 350K 字节**：shape 合同化带来约 20KB 正当合同增长； 预算防的是&quot;内联 205KB INDICATORS.md&quot;反模式（真内联约 540K），守护语义不变。
-
-Fixed
-- **returns_shape 声明滞后清零（drift WARN 29 → 0）**：units/ranges 守护声明引用的 字段未出现在 `returns_shape` 合同里，机器读 openapi/llms.txt 会以为返回行没有这些 字段——文档比实际&quot;少说了字段&quot;，用户按文档取数会拿漏。三批治理： - **T1（segments）**：`query_region` 的 `domestic`/`overseas` 从 `cn` 文本升级为 结构化嵌套 fields；`snapshot` 补全七键结构（含 `overview` 嵌套 `max_name/max_ratio/product_tags/profile`、`coverage` 结构化）。 **修正一处 desc 笔误**：快照顶层键是 `products`（复数），desc 误写单数。 - **T2（forecast）**：`yjyg_rows`/`yjkb_rows` 补 SDK 侧 `returns.shape` 覆盖 （字段集 = 上游 shape ∪ fixtures，补齐被守护的 `rev_amp_*`/`np_yoy`/`roe` 等）； `snapshot` 的 `yjyg`/`yjkb`/`next_disclosure` 结构化嵌套。 - **T3（normalize_with 错位，18 条）**：9 个 fmt 行规范化函数的 `returns.shape` 按 XS row 函数字面量重写，13 个 query 函数经目录优先级链自动继承修正 （`fmt_maps` 一处修正顺带修好 5 个 estimates/intl 函数的文档合同）。 **`equity.query_hgt` 文档曾只列 3 字段、实际返回 7**，此类失真全部消除。
-- **`_shape_fields` 递归化**：`tools/audit_units.py` 现在递归收集嵌套 fields， 与运行时 `walk` 下探嵌套容器的语义对齐。</description>
     </item>
   </channel>
 </rss>

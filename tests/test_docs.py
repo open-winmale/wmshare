@@ -382,11 +382,14 @@ class ReadmeClient:
             index_top_movers=lambda *a, **k: [
                 {"symbol": "600519", "name": "贵州茅台", "percent": 0.0052},
             ],
-            # 全市场条件选股：罐头值取 2026-11-10 真实 probe（命中 108，首行伊泰B股）
-            query=lambda *a, **k: {"count": 108, "rows": [
+            # 全市场条件选股：罐头值取 2026-11-10 真实 probe（命中 108，首行伊泰B股）。
+            # 返回形态必须与真实门面一致（统一信封）——曾返扁平 {count, rows}，
+            # 把 README 的 res["count"] 旧写法焊成绿色，live 一跑就 KeyError。
+            query=lambda *a, **k: {"ok": True, "as_of": "2026-11-10",
+                                   "data": {"count": 108, "rows": [
                 {"symbol": "900948", "name": "伊泰B股",
                  "$BONUS_RATE_3Y_AVG_LAST": 0.2104, "$ROE_TTM_LAST": 0.1631},
-            ]},
+            ]}, "meta": {}},
         )
         self.dividend = types.SimpleNamespace(
             yield_ttm=lambda *a, **k: 0.0396,
@@ -612,9 +615,14 @@ def test_readme_is_lean():
     2026-11-12 提至 330：新增「主站、开放平台与 SkillHub」节——同一套数据的三层入口
     此前在店面完全缺失（投研/SkillHub/主站 0 处），读者无从知道有现成工具站与 AI
     技能库；主站按投资者类型列应用（指数定投/可转债/财报专业版/抄作业等）。
+    2026-11-21 提至 339：新增「不写 Python：wmshare 命令行出成品」节（screen/income/
+    index/cbond 四动词 + call 透传 + 无凭证匿名回退——命令行是「不折腾 SDK」的关键
+    上手动线）+ 意图表补收息排行/ETF 一览 + 更多区补 CLI/export 入口。先删 10 行：
+    匿名说明压缩（3→2）、定位段与目录各并 1 行、分工 quote 2→1、主站 bullet 合并
+    （7→6）、where 语法段压缩（4→2，删与零凭证节重复的 demo 句）。
     """
-    assert len(README.splitlines()) <= 330, \
-        f"README 膨胀到 {len(README.splitlines())} 行（上限 330）；长内容下沉 docs/ 或删除"
+    assert len(README.splitlines()) <= 339, \
+        f"README 膨胀到 {len(README.splitlines())} 行（上限 339）；长内容下沉 docs/ 或删除"
 
 
 def test_readme_no_stale_trial_promises():

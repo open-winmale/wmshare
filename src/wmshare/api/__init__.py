@@ -838,11 +838,15 @@ class CbondApi(_Api):
     # 这些方法**不是**目录函数的薄翻译，故不登记 FRIENDLY_INDEX（那张表是
     # 「核心接口 ↔ 底层目录函数」的一一映射，生成器靠它回溯 returns_shape）。
     def daily(self, as_of: str | None = None, top_n: int = 20,
-              budget: int = 30) -> dict[str, Any]:
+              budget: int = 60) -> dict[str, Any]:
         """跑一期可转债日更，返回事实包（三层口径 + 三道闸 + 状态机 + 事件日历）。
 
-        取数只发三次请求：全市场面板一次、条款事件一次、榜单前三各一次日 K
-        通道；``budget`` 是硬上限，超出直接报错而不静默降级。
+        取数构成（默认 ``enrich``/``curves`` 全开）：全市场面板 1 次、条款事件
+        1 次、榜单前三各 1 次通道日 K、全表日 K 按 ≤120 只/批的批量 eval
+        （批次随在市债数浮动）、收益率曲线 10 次（AAA/国债 × 5 期限）——
+        **不是固定三次**，实际请求见返回的 ``coverage.requests_made``；
+        ``budget`` 是硬上限（默认与 ``DailyConfig.DEFAULT_BUDGET`` 对齐），
+        超出直接报错而不静默降级。
 
         返回 ``{facts, derived, gates, states, top, scatter, calendar,
         featured_band, caliber_layers, coverage}``。每个数字都带 ``sources``
@@ -1393,8 +1397,8 @@ class ScreenerApi(_Api):
 
         ``where`` 是 XS 布尔表达式（与/或用 ``&&`` / ``||``、非用 ``!``；比率一律
         小数，0.03 = 3%），服务端索引引擎一次查完，**不是**逐票 eval、也不需要先
-        拉全市场再本地过滤。返回 ``{"count": 命中总数, "rows": [...]}``——``count``
-        是全市场真实命中数，与 ``limit`` 无关（防把 topN 当全市场）。
+        拉全市场再本地过滤。返回统一信封，数据在 ``data`` 内——``data.count`` 是
+        全市场真实命中数，与 ``limit`` 无关（防把 topN 当全市场）。
 
         :param where: 条件表达式，$码须在指标目录内，如 "$BONUS_RATE_3Y_AVG_LAST > 0.03 && $ROE_TTM_LAST > 0.15"
         :param order: 排序指标码（单个 $码）；不传则按索引顺序

@@ -69,6 +69,7 @@
 | `config` | 客户端构造参数或凭证配置错误 | 否 | 按消息修正配置 |
 | `credential_mode` | 凭证文件权限过宽且开启严格模式 | 否 | `chmod 600` 后重试 |
 | `endpoint_unavailable` | 端点不可达或非官方主机未放行 | 否 | 用官方端点；自定义主机需 `allow_custom_host=True` |
+| `extra` | 导出格式需要可选依赖（xlsx/png） | 否 | 按消息安装：`pip install "wmshare[excel]"` 或 `"wmshare[figures]"` |
 | `network` | 网络层失败（重试耗尽） | 是 | 检查网络/代理后重试 |
 | `oauth` | OAuth 取 token 失败 | 是 | 检查 client_id/secret；瞬时失败可重试 |
 | `oauth_response` | OAuth 响应结构异常 | 是 | 重试；持续失败检查网关版本 |

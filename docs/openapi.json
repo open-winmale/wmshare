@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "wmshare 数据 API",
-    "version": "2.6.0",
+    "version": "2.7.0",
     "description": "覆盖 A 股、港股、美股的财经数据核心接口（Python SDK，`pip install wmshare`；`import wmshare`）。凭证必填：在开放平台（open.winmale.com）获取 client_id/api-key；遇到 401/403/429 错误消息即完整的申请与配置指引。覆盖行情 K 线（不复权/前复权/后复权、盘中、分时、ETF、指数）、三大报表（多期、合并 vs 母公司、树视图、新旧会计准则归一）、分红（历史/DPS/窗口/TTM 率）、公告与业绩披露、资金流与指标层。平台指标经 /indicator/get、/indicator/metrics 按指标代码寻址，全量 2983 个指标代码随包内置目录分发（分组清单见 docs/API.md）。",
     "license": {
       "name": "BSD-3-Clause",
@@ -1499,7 +1499,7 @@
       "post": {
         "operationId": "screener_query",
         "summary": "全市场条件选股：一条表达式扫最新索引，返回命中总数与前 N 行。",
-        "description": "``where`` 是 XS 布尔表达式（与/或用 ``&&`` / ``||``、非用 ``!``；比率一律、小数，0.03 = 3%），服务端索引引擎一次查完，**不是**逐票 eval、也不需要先、拉全市场再本地过滤。返回 ``{\"count\": 命中总数, \"rows\": [...]}``——``count``、是全市场真实命中数，与 ``limit`` 无关（防把 topN 当全市场）。、返回统一信封：``data.count`` 是全市场真实命中数（与 limit 无关，防把 topN、当全市场）、``data.rows`` 为 DataFrame（列=symbol/name+$码原文）。、口径与成本：索引为**日频 EOD**（盘中不刷新）；返回列与 indicator/macro、同一台账换算管线（登记码默认换算到基础单位）。``$IS_ST``/``$IS_SUSPEND``、仅 A 股索引有列，港美请改用其它条件。成本 = 1 次请求，EC 随 where/order、引用列的物化成本变化（实测 70~4.8 万，不计标的数），远低于全市场逐票、eval（≈45.6 万且按标的数放大）。、组合接口（宿主 INDEX_QUERY_SPEC）。SDK 调用：`cli.screener.query(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "description": "``where`` 是 XS 布尔表达式（与/或用 ``&&`` / ``||``、非用 ``!``；比率一律、小数，0.03 = 3%），服务端索引引擎一次查完，**不是**逐票 eval、也不需要先、拉全市场再本地过滤。返回统一信封，数据在 ``data`` 内——``data.count`` 是、全市场真实命中数，与 ``limit`` 无关（防把 topN 当全市场）。、返回统一信封：``data.count`` 是全市场真实命中数（与 limit 无关，防把 topN、当全市场）、``data.rows`` 为 DataFrame（列=symbol/name+$码原文）。、口径与成本：索引为**日频 EOD**（盘中不刷新）；返回列与 indicator/macro、同一台账换算管线（登记码默认换算到基础单位）。``$IS_ST``/``$IS_SUSPEND``、仅 A 股索引有列，港美请改用其它条件。成本 = 1 次请求，EC 随 where/order、引用列的物化成本变化（实测 70~4.8 万，不计标的数），远低于全市场逐票、eval（≈45.6 万且按标的数放大）。、组合接口（宿主 INDEX_QUERY_SPEC）。SDK 调用：`cli.screener.query(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "市场行情"
         ],

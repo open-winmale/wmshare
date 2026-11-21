@@ -38,8 +38,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# 出图（cb.figures）才需要 matplotlib
+# 出图（cb.figures / export 落 .png）才需要 matplotlib
 figures = ["matplotlib>=3.6"]
+# export 落 .xlsx 才需要 openpyxl
+excel = ["openpyxl>=3.1"]
 dev = [
     "pytest>=7",
     "pytest-cov>=5",
@@ -47,6 +49,7 @@ dev = [
     "mypy>=1.8",
     "mcp>=1.7,<2",
     "matplotlib>=3.6",
+    "openpyxl>=3.1",
 ]
 mcp = ["mcp>=1.7,<2"]
 
@@ -58,6 +61,7 @@ Changelog = "https://github.com/open-winmale/wmshare/blob/main/CHANGELOG.md"
 Issues = "https://github.com/open-winmale/wmshare/issues"
 
 [project.scripts]
+wmshare = "wmshare.cli:main"
 wmshare-mcp = "wmshare.mcp.cli:main"
 
 [tool.setuptools.packages.find]

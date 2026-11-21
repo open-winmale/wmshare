@@ -463,8 +463,8 @@ def build_server(runtime: MCPRuntime | None = None) -> FastMCP:
         arguments: Annotated[dict[str, Any] | None, Field(description="目标函数/method 的公开参数")] = None,
         market: MarketArg = None,
         mode: Annotated[
-            Literal["catalog", "api"],
-            Field(description="catalog=目录函数；api=SDK friendly API"),
+            Literal["catalog", "api", "cost"],
+            Field(description="catalog=目录函数；api=SDK friendly API；cost=成本估算（不发请求）"),
         ] = "catalog",
         raw: Annotated[bool, Field(description="true 跳过单位规范化，仅诊断用")] = False,
         units: Annotated[

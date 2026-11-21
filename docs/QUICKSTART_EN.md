@@ -74,8 +74,8 @@ and the README section on batch fetching.
 ## Find an indicator code
 
 - Browse the offline catalog: `cat.search("股息")` / `cat.metric(code)` after
-  `cat = cli.catalog` — codes are verified before use (`cat.metric` raises on
-  dead codes).
+  `cat = cli.catalog` — codes are verified before use (`cat.metric` returns
+  `None` for unknown codes; the screener raises with a `cat.search` hint).
 - Full navigation: [docs/INDICATORS.md](INDICATORS.md) (Chinese) — all 2,983 codes
   grouped by data type, with naming grammar and a dead-code warning chapter.
 
@@ -105,9 +105,23 @@ The in-depth documentation is in Chinese:
 [GUIDE.md](GUIDE.md) (task recipes, batching, troubleshooting) ·
 [INDICATORS.md](INDICATORS.md) (indicator catalog) ·
 [API.md](API.md) (156 core endpoints) ·
-[examples/](../examples/README.md) (18 runnable numbered examples: 3 fully offline,
-14 with an offline `--demo` mode, 1 requiring credentials) · [AGENTS.md](../AGENTS.md) and
+[examples/](../examples/README.md) (21 runnable numbered examples: 4 fully offline,
+15 with an offline `--demo` mode, 1 requiring credentials, 1 anonymous trial) ·
+[AGENTS.md](../AGENTS.md) and
 [SKILL.md](../src/wmshare/skills/wmshare/SKILL.md) for agent integration.
+
+## Shell first: the `wmshare` CLI
+
+No Python needed for the four job verbs — each writes a finished file (`--out`,
+`.md`/`.csv`/`.xlsx`); falls back to anonymous trial when no credentials are set:
+
+```bash
+wmshare screen --where "$ROE_TTM_LAST > 0.15" --out roe.xlsx
+wmshare income --top-n 20 --out ./income/
+wmshare index trend --keys index.hs300,index.csi500 --out trend.md
+wmshare cbond daily --out ./cb/
+wmshare call kline.query_bars sym=600519 limit=30 --json   # pass-through for all catalog functions
+```
 
 ## Disclaimer & license
 

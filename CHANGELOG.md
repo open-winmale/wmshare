@@ -11,6 +11,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.7.0] - 2026-11-21
+
+### Added
+
+- **`wmshare` 主命令（一次调用出成品文件，不用写 Python）**：`pip install wmshare`
+  即得命令行入口，与 `wmshare-mcp` 并列。四个任务动词直出 `--out` 成品
+  （`.md`/`.csv`/`.xlsx`）：`wmshare screen`（screener.query 全市场选股）、
+  `wmshare income`（收息排行/诊断/日历/拆解成套落盘 + manifest）、
+  `wmshare index trend`（PE/PB 历史分位）、`wmshare cbond daily`
+  （转债日更 daily→article→figures 一条链）；其余目录函数用
+  `wmshare call kline.query_bars sym=600519 limit=30` 透传（参数按目录声明
+  归一类型，未知参数报合法集合）。**无凭证时自动回退 `Client.anonymous()`
+  匿名试用**（一次性小配额；`anon_*` 失败给注册指引），`--demo` 走离线快照；
+  全局旗标（`--demo/--anonymous/--market/--json`）在子命令前后均可放置。
+  `setup`/`doctor` 复用 `wmshare-mcp` 同款实现（同一份凭证文件）。
+- **成品出口层 `wmshare.export`**（不进目录、不占 FRIENDLY_INDEX/COMPOSITE_METHODS，
+  不影响任何计数门禁）：`to_markdown()`（表头自动带 `as_of` 与「比率=小数、
+  金额=元、股数=股」口径约定，把口径契约做成交付物的一部分）、`write()`
+  （按扩展名分派 `.md/.csv/.xlsx/.png`；已成稿文本原样直通；缺可选依赖抛
+  `UsageError(code="extra")` 并给安装命令，不静默降级；PNG 中文复用
+  `cb.figures` 的五平台 CJK 字体探测）、`write_bundle()`（多产物一次落盘 +
+  `manifest.json` 记录行数/as_of/版本）。xlsx 需新增 extra
+  `pip install "wmshare[excel]"`；`extra` 错误码已登记 [ERRORS.md](docs/ERRORS.md)。
+- 新增示例 `examples/21_cli_export.py`（成品出口三件套，支持 `--demo`）；示例
+  课程 20→21，README/GUIDE/docs/README 计数同步。
+
+### Fixed
+
+- **修复 `cli.cbond.daily()` 在 2.0 契约下必崩的成品链**（自 2.0 起生效的回归）：
+  编排层经门面 `cbond.board()` 取数已得 DataFrame，仍按 `isinstance(list)` 判定
+  → live 每次抛「cbond.board() 返回空」，`article()/figures()` 整链不可用；
+  测试桩直接返 list 绕过收口点所以全绿。修复=形状容错（`_as_rows()`），并新增
+  「经门面 DataFrame」回归测试 + 示例 14 端到端用例；顺带修复示例 14 的
+  `rows.get("rows")` 兜底（对 DataFrame 恒空 → 静默 0 行）与事实桶查找
+  （facts/derived 两桶合并索引，此前 live 下 StopIteration 被上游必崩掩盖）。
+- **修复文档信封漂移（照抄即失败）**：README 选股示例 `res["count"]` →
+  `res["data"]["count"]`（`screener.query` 2.0 起返回统一信封）、GUIDE 同段与
+  `index.trend` 读法、examples 04/17 同款；`test_docs` 的 README 执行桩改返
+  真实信封形态（此前返扁平 dict 把旧写法焊成绿色——门禁失效根源）。
+- `wmshare_call` 的 `mode` schema 补登 `"cost"`：tools 层早已实现成本估算
+  （不发请求），但 pydantic Literal 漏登记，经 MCP 协议传 `mode="cost"` 被
+  schema 拒绝而文档宣称支持——三层（实现/合同/文档）对齐，测试基线同步。
+- `cli.cbond.daily()` docstring 请求次数如实化（enrich/curves 默认全开时约
+  24+ 次而非「三次」），`budget` 门面默认 30 与 `DEFAULT_BUDGET=60` 对齐。
+- 文档漂移清扫：QUICKSTART_EN 示例计数与 `cat.metric` 行为描述（实返 None）、
+  AI.md 演示快照日期（→2026-11-19）、SKILL.md `up_pct` 示例值（80.3→0.803，
+  2.0 小数契约）。
+- README 新增「不写 Python：`wmshare` 命令行出成品」节与收息排行/ETF 一览
+  意图行；按店面纪律先删 10 行（匿名说明压缩、分工 quote 合并、主站 bullet
+  合并、where 语法段去重）后提限 330→339。
+
 ## [2.6.0] - 2026-11-21
 
 ### Added

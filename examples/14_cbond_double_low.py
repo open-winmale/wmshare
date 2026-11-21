@@ -32,7 +32,9 @@ def main(cli=None) -> None:
         # 演示快照不含 cbond 域；此处需真实凭证
         print(f"cbond 域不可用（{e}）：本示例需真实凭证（WMSHARE_CLIENT_ID/SECRET）")
         return
-    rows = rows if isinstance(rows, list) else rows.get("rows", [])
+    # 2.0 门面默认把行数组收口成 DataFrame；注入桩/底层 cli.call 仍是 list。
+    # 曾用 rows.get("rows", []) 兜底——DataFrame.get 语义下恒得 []，静默 0 行。
+    rows = rows if isinstance(rows, list) else rows.to_dict("records")
     asof = max((str(r.get("asOf"))[:10] for r in rows if isinstance(r, dict) and r.get("asOf")),
                default="")
 
@@ -103,8 +105,11 @@ def main(cli=None) -> None:
               f"闸门基座 {layers.get('gate_base')} → 过闸 {layers.get('passed_gate')}")
         print(f"  闸门剔除 {gates.get('excludedN')} 只："
               + "、".join(f"{k} {v}" for k, v in (gates.get("ruleHits") or {}).items()))
-        # 每个事实都带 sources 与 as_of，可逐项复算：缺条目时成稿会直接抛错
-        sample = next(f for f in payload.get("facts") or [] if f["id"] == "mean_dl")
+        # 每个事实都带 sources 与 as_of，可逐项复算：缺条目时成稿会直接抛错。
+        # 事实分两桶（facts=头条、derived=派生，mean_dl 在 derived），与成稿层
+        # Facts 同款按 id 合并索引——只翻一个桶会 StopIteration。
+        pool = (payload.get("facts") or []) + (payload.get("derived") or [])
+        sample = next(f for f in pool if f["id"] == "mean_dl")
         print(f"  事实样例 mean_dl = {sample['value_text']} "
               f"（sources={sample['sources']}，as_of={sample['as_of']}）")
         print(f"  榜单前 3：" + "、".join(t["bondName"] for t in (payload.get("top") or [])[:3]))

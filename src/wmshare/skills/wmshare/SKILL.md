@@ -147,7 +147,7 @@ print(bars[0])
 s = cli.screener.index_breadth_summary()
 print(s)
 # {'total': 5685, 'up': 4567, 'down': 934, 'flat': 184,
-#  'up_pct': 80.3, 'down_pct': 16.4, 'flat_pct': 3.2, 'median_pct': 0.015363}
+#  'up_pct': 0.803, 'down_pct': 0.164, 'flat_pct': 0.032, 'median_pct': 0.015363}
 
 # TTM 股息率：小数，0.0396 = 3.96%
 print(cli.dividend.yield_ttm("600519"))        # 0.0396

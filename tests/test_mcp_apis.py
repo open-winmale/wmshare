@@ -398,7 +398,9 @@ def test_tool_schemas_have_enums_and_descriptions() -> None:
     search = facts["wmshare_search"]["properties"]["kind"]
     assert {"all", "function", "metric", "symbol", "api"} <= set(search["enum"])
     call = facts["wmshare_call"]["properties"]
-    assert set(call["mode"]["enum"]) == {"catalog", "api"}
+    # mode="cost" 已在 tools 层实现（成本估算不发请求）；Literal 曾漏登记，
+    # 经 MCP 协议传 mode="cost" 会被 schema 拒绝而文档宣称支持——三层对齐。
+    assert set(call["mode"]["enum"]) == {"catalog", "api", "cost"}
     assert set(call["units"]["enum"]) == {"base", "native"}
     assert set(facts["wmshare_history"]["properties"]["adj"]["anyOf"][0]["enum"]) == {"qfq", "hfq"}
 

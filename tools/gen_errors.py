@@ -98,6 +98,9 @@ MEANINGS: dict[str, tuple[str, str, str, str]] = {
     "network": ("env", "网络层失败（重试耗尽）", "是", "检查网络/代理后重试"),
     "pandas": ("env", "缺少 pandas（DataFrame 默认路径依赖）", "否",
                "`pip install pandas`（>=1.5）"),
+    # 成品出口（wmshare.export）
+    "extra": ("env", "导出格式需要可选依赖（xlsx/png）", "否",
+              "按消息安装：`pip install \"wmshare[excel]\"` 或 `\"wmshare[figures]\"`"),
     # 批量
     "batch": ("batch", "批量返回不是 MAP 或结构异常", "否", "降级为逐票调用定位问题"),
     "batch_missing": ("batch", "批量返回缺少部分标的（服务端无对应行）", "否",

@@ -10,15 +10,14 @@
 > not live). **Install**: `pip install wmshare`. **Full English quickstart**: [docs/QUICKSTART_EN.md](docs/QUICKSTART_EN.md).
 
 给 Python 量化开发者的中文财经数据 SDK：一行接口拿到清洗好的 A股/港股/美股数据——
-估值分位、TTM 股息率等指标**服务端算好直出**，全市场批量 **11 次请求**绕开限流。
-凭证在开放平台（open.winmale.com）获取后即可取数；各市场逐能力明细见[「市场覆盖」](#市场覆盖)。
+估值分位、TTM 股息率等指标**服务端算好直出**，全市场批量 **11 次请求**绕开限流；凭证在
+开放平台（open.winmale.com）获取后即可取数。各市场逐能力明细见[「市场覆盖」](#市场覆盖)。
 
 ## 目录
 
 [基本功能](#基本功能) · [特色功能](#特色功能) · [快速上手](#快速上手) · [给 AI / Agent](#给-ai--agent) ·
 [主站、开放平台与 SkillHub](#主站开放平台与-skillhub) · [市场覆盖](#市场覆盖) · [我想做 X → 用哪一行](#我想做-x--用哪一行) · [批量取数](#批量取数) ·
-[指数与行业估值历史](#指数与行业估值历史) · [单位与数据守护](#单位与数据守护) ·
-[许可与数据服务](#许可与数据服务) · [更多](#更多)
+[指数与行业估值历史](#指数与行业估值历史) · [单位与数据守护](#单位与数据守护) · [许可与数据服务](#许可与数据服务) · [更多](#更多)
 
 ![notebook 实战：Jupyter 里 10 行代码筛出高股息 + PE 十年低位的股票（2026-11-19 真实数据）](docs/img/quickstart.png)
 
@@ -34,10 +33,9 @@ print(f"{cli.dividend.yield_ttm('600519'):.2%}")        # 3.56%
 print(cli.screener.index_breadth_summary()["total"])   # 5687
 ```
 
-接真实行情只换一行：`cli = wmshare.Client.from_env()`（凭证配置见下节）；免注册先取真实数据用
-`cli = wmshare.Client.anonymous()`（服务端开启匿名试用时可用；一次性小配额，凭据独立存放于
-`~/.wmshare/anon_credentials.env`，不覆盖付费凭据）。
-指标怎么选、每条能替你省掉哪些计算，见[我想做 X → 用哪一行](#我想做-x--用哪一行)。
+接真实行情只换一行：`cli = wmshare.Client.from_env()`（凭证见下节）；免注册先取真实数据用
+`cli = wmshare.Client.anonymous()`（一次性小配额，凭据独立存放，不覆盖付费凭据）。
+指标怎么选、每条能省哪些计算，见[我想做 X → 用哪一行](#我想做-x--用哪一行)。
 
 ## 快速上手
 
@@ -49,7 +47,20 @@ pip install "wmshare[mcp]"           # 可选：本地 MCP server
 python3 -c "import wmshare; print(wmshare.__version__)"   # 验证安装
 ```
 
-国内直连不稳时换清华源：`pip install -i https://pypi.tuna.tsinghua.edu.cn/simple wmshare`（镜像滞后时回官方源）；升级 `pip install -U wmshare`（Windows 用 `py -m pip install -U wmshare`）。
+国内直连不稳时换清华源：`pip install -i https://pypi.tuna.tsinghua.edu.cn/simple wmshare`（镜像滞后时回官方源）。
+
+### 不写 Python：`wmshare` 命令行出成品
+
+装完即得 `wmshare` 命令：筛选 / 收息 / 指数分位 / 转债图文四个任务动词直出成品文件（`--out` 落 md/csv/xlsx），
+其余目录函数用 `call k=v` 透传；**无凭证时自动回退匿名试用**（一次性小配额），`--demo` 走离线快照：
+
+```bash
+wmshare screen --where "$ROE_TTM_LAST > 0.15" --order "$BONUS_RATE_3Y_AVG_LAST" --out roe.xlsx
+wmshare income --top-n 20 --diagnose 600900,600519 --out ./income/     # 收息排行 + 单票诊断
+wmshare index trend --keys index.hs300,index.csi500 --out trend.md     # PE/PB 历史分位
+wmshare cbond daily --out ./cb/                                        # 转债日更图文一条链
+wmshare call kline.query_bars sym=600519 limit=30 --json               # 其余 331 函数透传
+```
 
 ### 配置凭证
 
@@ -76,18 +87,17 @@ res = cli.screener.query(
     " && !$IS_ST && !$IS_SUSPEND",
     order="$BONUS_RATE_3Y_AVG_LAST", limit=10,
 )
-print(res["count"])            # 全市场命中数（不是 10）；2026-11-10 实测 108
-for r in res["rows"][:5]:
+print(res["data"]["count"])    # 全市场命中数（不是 10）；2026-11-10 实测 108
+for r in res["data"]["rows"][:5]:
     print(f'{r["symbol"]}  {r["name"]}  '
           f'三年股息率均值 {r["$BONUS_RATE_3Y_AVG_LAST"]:.2%}  '
           f'ROE {r["$ROE_TTM_LAST"]:.2%}')
 # 900948  伊泰B股  三年股息率均值 21.04%  ROE 16.31%
 ```
 
-`where` 用 XS 语法（`&&` / `||` / `!`，比率一律小数），`$码` 必须是目录内真码；
-要分页续取用 `offset`，只要命中数用 `limit=0`。没配凭证也能先看调用面：
-`cli = wmshare.demo_client()`（同签名、不联网）——`query` 需真实凭证，离线快照只存
-10 只演示宇宙 + 当日全市场 screener，非实时数据；换成 `Client.from_env()` 即接真实数据。
+返回统一信封 `{ok, as_of, data, meta}`（数据在 `data` 内）；`where` 用 XS 语法
+（`&&` / `||` / `!`，比率一律小数），`$码` 必须是目录内真码；分页续取用 `offset`，
+只要命中数用 `limit=0`。`query` 需真实数据（含匿名试用）。
 
 ## 基本功能
 
@@ -155,12 +165,10 @@ for r in res["rows"][:5]:
 同一套数据有三层入口，按使用方式选：
 
 - **[winmale.com](https://winmale.com)（主站）**——不想写代码就看结果。工具按投资者类型分开：
-  - 找低估：市赚率阶梯、银行 PB 阶梯、行业贵不贵、格雷厄姆选股
+  - 找低估：市赚率阶梯、银行 PB 阶梯、行业贵不贵、格雷厄姆选股；做套利：**可转债**（转股成本对正股价）、套利股（已公告要约）、两地折价（A/H）
   - 做定投：**指数定投**（估值评级榜单 + 定投回测，宽基/行业/红利/主题，整体法与中位数双口径）
-  - 做套利：**可转债**（转股成本对正股价，转股有起始日）、套利股（已公告要约）、两地折价（A/H）
   - 读财报：**财报专业版**（资产负债表/利润表/现金流量表/主要指标十年表页，A 股与港股同构）
-  - 跟机构：抄作业（13F 持仓）；另有 ETF 精选、全榜排行、市场拥挤、宏观与海关等，共 25 个内置应用
-  - 工作台：市场总览、行业涨跌热力图、估值排行（低估/合理/高估）；分免费版 / 基础版 / Pro 三档
+  - 跟机构：抄作业（13F 持仓）；工作台：市场总览、行业涨跌热力图、估值排行；分免费版 / 基础版 / Pro 三档
 - **[open.winmale.com](https://open.winmale.com)（开放平台）**——把数据接进自己的系统：
   XS 求值 API、Playground 在线调试、数据目录（指标与分析脚本可浏览试跑）、
   12 篇接入文档（认证/错误码/限速与 EC 配额/缓存重试）、下载中心与控制台。
@@ -169,8 +177,7 @@ for r in res["rows"][:5]:
   37 个金融 Skill + 5 个投研 Role 整包一键装进 Cursor / Claude / WorkBuddy，
   登录后复制安装话术交给助手完成，即可取数、读财报、跑筛选。
 
-> 与本 SDK 的分工：主站给「想直接拿到结果」的人，开放平台给「要接进自己系统」的开发者，
-> SkillHub 给「想在 AI 里问」的使用者；wmshare 是开放平台的 Python 封装，负责第三条路的取数层。
+> 与本 SDK 的分工：主站给「想直接拿到结果」的人，开放平台给「要接进自己系统」的开发者，SkillHub 给「想在 AI 里问」的使用者。
 
 ## 市场覆盖
 
@@ -206,6 +213,8 @@ for r in res["rows"][:5]:
 | 看公司在行业里的位置 | `$CUR_IND_ROE_PCT_LAST`（行业内 ROE 分位，1=行业最高） | 拉全行业成分→逐票取 ROE→排序 |
 | 筛高股息且派息可持续 | `cli.dividend.screen_quality(sym)` | 自写股息/派息率质量模型 |
 | 全市场按任意指标组合选股 | `cli.screener.query("$BONUS_RATE_3Y_AVG_LAST > 0.03 && $ROE_TTM_LAST > 0.15")` | 先批量拉全市场→本地过滤（还容易漏样本） |
+| 收息排行与单票诊断 | `cli.dividend.rating(top_n=20)` / `cli.dividend.diagnose(["600900"])` | 拉全市场分红史→自建评分模型→排序 |
+| ETF 一页看清（净值/溢价/份额/持仓） | `cli.etf.card(sym)` | 行情+基金档案+持仓九路数据自己拼 |
 | 回测这只票的均线买卖点 | `cli.backtest.run("600519", fast=5, slow=20)` | 拉 K 线→自己写撮合/费用→算净值回撤 |
 | 回测 PE/PB 估值买卖点 | `cli.backtest.run("600519", rule="pe", buy=20, sell=40)` | 拉估值序列→自己判买卖→算净值（估值序列平台最多 3 年） |
 | 站上 20 日线了吗 | `cli.screener.screen_above_ma20(sym)` | 拉 K 线→算均线→比较 |
@@ -319,10 +328,11 @@ t["data"]["pe_pct"], t["data"]["pe_pct_window"], t["data"]["pct"]["pe"]["p3"]  #
 
 ## 更多
 
-- **AI 原生**：随包 [SKILL.md](src/wmshare/skills/wmshare/SKILL.md)、[AI 用法](docs/AI.md)、本地 MCP server（skill 可复制进 .agents/.zcode/.claude 的 skills/）；生态工具 [big-winner](https://github.com/open-winmale/big-winner)。
+- **AI 原生**：随包 [SKILL.md](src/wmshare/skills/wmshare/SKILL.md)、[AI 用法](docs/AI.md)、本地 MCP server（skill 可复制进 .agents/.zcode/.claude 的 skills/）；生态工具 [big-winner](https://github.com/open-winmale/big-winner)
+- **命令行与成品出口**：`wmshare screen/income/index/cbond` 直出 md/csv/xlsx（见「不写 Python」节）；`wmshare.export` 把信封/DataFrame 落成带口径表头的成品（`write_bundle` 附 manifest.json）
 - **文档中心 [docs/](docs/README.md)**：使用指南 GUIDE（单票菜谱/批量/多市场/故障排查）· 指标库 [INDICATORS.md](docs/INDICATORS.md)（全量指标码按数据类型分章）· AI 用法 · llms.txt 索引 · [API 参考](docs/API.md)（按资产类别分章的 156 个核心接口 + 指标组）
 - **可转债日更管线**：`cli.cbond.daily()` → `article()` → `figures()` 一条命令出图文（三层口径 + 三道闸 + 状态机 + 事件日历，每个数字带 `sources` 与 `as_of`，缺条目抛错而非补猜测值）；实战 notebook 见 [docs/notebooks/cb_double_low.ipynb](docs/notebooks/cb_double_low.ipynb)（2026-11-07 真实数据）
-- **示例课程 [examples/](examples/README.md)**：20 个编号示例（入门→进阶→生产→AI）——3 个纯离线、15 个带 `--demo` 离线回放、1 个可转债需凭证、1 个匿名试用；CI 端到端覆盖
+- **示例课程 [examples/](examples/README.md)**：21 个编号示例（入门→进阶→生产→AI→成品出口）——4 个纯离线、15 个带 `--demo` 离线回放、1 个可转债需凭证、1 个匿名试用；CI 端到端覆盖
 - **问题反馈 / 交流**：使用提问、数据口径与指标码请求走 [Discussions](https://github.com/open-winmale/wmshare/discussions)；可复现的 bug 提 [GitHub Issues](https://github.com/open-winmale/wmshare/issues)；也欢迎加 QQ 群 `1127142074`（搜索「wmshare开源交流群」）
 - **维护者与治理**：[MAINTAINERS.md](MAINTAINERS.md)（响应承诺与发版流程）· [GOVERNANCE.md](GOVERNANCE.md) · [行为准则](CODE_OF_CONDUCT.md)
 

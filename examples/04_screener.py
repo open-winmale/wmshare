@@ -68,8 +68,8 @@ def main(cli=None, demo: bool = False) -> None:
             " && !$IS_ST && !$IS_SUSPEND",
             order="$BONUS_RATE_3Y_AVG_LAST", limit=5,
         )
-        print(f"  全市场命中 {res['count']} 只（下面只列前 {len(res['rows'])} 只）")
-        for r in res["rows"]:
+        print(f"  全市场命中 {res['data']['count']} 只（下面只列前 {len(res['data']['rows'])} 只）")
+        for r in res["data"]["rows"]:
             print(f"  {r['symbol']}  {r['name']:<6}"
                   f"  三年股息率均值 {r['$BONUS_RATE_3Y_AVG_LAST']:.2%}"
                   f"  ROE {r['$ROE_TTM_LAST']:.2%}")

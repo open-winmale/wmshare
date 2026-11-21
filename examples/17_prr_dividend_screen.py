@@ -151,7 +151,7 @@ def main(cli: Any = None, demo: bool = False) -> None:
     try:
         # 首跑会触发 EC 告警：fields 重列全市场物化是一次性成本，之后命中服务端缓存
         res = cli.screener.query(WHERE, fields=FIELDS, limit=QUERY_LIMIT)
-        rows, count = res["rows"], res["count"]
+        rows, count = res["data"]["rows"], res["data"]["count"]
     except WmshareError as e:
         if e.code != "demo_unsupported":       # 演示客户端无全市场索引列，换罐头行
             raise

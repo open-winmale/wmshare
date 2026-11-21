@@ -215,9 +215,9 @@ cli.screener.screen_volume_spike("600519")  # 放量？
 res = cli.screener.query(
     "$BONUS_RATE_3Y_AVG_LAST > 0.03 && $ROE_TTM_LAST > 0.15 && !$IS_ST",
     order="$BONUS_RATE_3Y_AVG_LAST", limit=10)
-res["count"]                                 # 全市场命中数（不受 limit 截断）
-res["rows"][0]                               # {'symbol': '900948', 'name': '伊泰B股',
-                                             #  '$BONUS_RATE_3Y_AVG_LAST': 0.2104, ...}
+res["data"]["count"]                          # 全市场命中数（不受 limit 截断）
+res["data"]["rows"][0]                        # {'symbol': '900948', 'name': '伊泰B股',
+                                              #  '$BONUS_RATE_3Y_AVG_LAST': 0.2104, ...}
 cli.screener.query("$ROE_TTM_LAST > 0.30", limit=0)   # 只要命中数（不拉行）
 
 # 全市场宽度（服务端索引直出；2.0：*_pct 与 median_pct 均为小数）
@@ -309,7 +309,7 @@ cli = wmshare.Client.from_env()
 
 t = cli.index.trend("index.hs300", "5y")     # 宽基：11 个键（index.hs300/csi500/sz50/…）
 t["data"]["n"], t["data"]["points"].iloc[0], t["data"]["points"].iloc[-1]      # 730 个周频点；升序（旧→新），最新点在末行
-t["pe_pct"], t["pb_pct"]                     # 0.7671 / 0.5753（小数，0.7671 = 76.7% 分位）
+t["data"]["pe_pct"], t["data"]["pb_pct"]     # 0.7671 / 0.5753（小数，0.7671 = 76.7% 分位）
 t["pe_pct_window"]                           # '5y'：实际生效的分位窗口
 
 for k in cli.index.universe_keys("industry"):    # 申万一级 31 个键
