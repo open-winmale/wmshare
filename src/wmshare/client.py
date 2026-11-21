@@ -770,6 +770,15 @@ class Client:
     # ---- 凭证 ----
     @classmethod
     def from_env(cls, env: dict[str, str] | None = None, **kw: Any) -> "Client":
+        """从环境解析凭据构造客户端；凭据双缺时自动回落匿名试用（2.7.0 起免注册可用）。
+
+        解析顺序：显式参数 > 环境变量（``WMSHARE_*``）> 凭据文件
+        （``WMSHARE_CREDENTIALS`` 或 ``~/.wmshare/credentials.env``）。
+        凭据双缺时尝试匿名试用：本地有存档则复用，否则自动申领一份并落盘到
+        ``~/.wmshare/anon_credentials.env``（不覆盖付费凭据文件）。服务端未开放
+        匿名试用时保持既有「缺少凭证」报错口径；设 ``WMSHARE_DISABLE_ANON=1``
+        可关闭回落，恢复 2.6.0 的报错行为。
+        """
         e = dict(os.environ if env is None else env)
         cred_file = Path(e.get("WMSHARE_CREDENTIALS", DEFAULT_CREDENTIAL_PATH))
         # 解析与权限检查统一走 _credentials.py（MCP 侧 credential_values 同用）。
@@ -778,28 +787,94 @@ class Client:
         base = e.get("WMSHARE_BASE_URL") or e.get("OPEN_PLATFORM_BASE_URL")
         cid = e.get("WMSHARE_CLIENT_ID") or e.get("OPEN_PLATFORM_CLIENT_ID")
         sec = e.get("WMSHARE_CLIENT_SECRET") or e.get("OPEN_PLATFORM_CLIENT_SECRET")
-        # 环境变量只在显式参数缺省时注入；凭证成对性由 __init__ 校验（部分配置报错），
-        # 全部缺省时 __init__ 报错并给出申请指引（SDK 不再内置体验 AppID）
+        # 环境变量只在显式参数缺省时注入；凭证成对性由 __init__ 校验（部分配置报错）
         if base:
             kw.setdefault("base_url", base)
         if cid:
             kw.setdefault("client_id", cid)
         if sec:
             kw.setdefault("client_secret", sec)
+        # 登录墙拆除（2.7.0）：全部缺省时尝试匿名试用回落——「缺少凭证」报错只在
+        # 回落不可用时触达（服务端未开放该功能，或用户显式 WMSHARE_DISABLE_ANON）。
+        if not str(kw.get("client_id") or "").strip() and not str(kw.get("client_secret") or "").strip():
+            client = cls._anonymous_fallback(e, kw)
+            if client is not None:
+                return client
         return cls(**kw)
 
     @classmethod
+    def _anonymous_fallback(cls, env: dict[str, str], kw: dict[str, Any]) -> "Client | None":
+        """凭据双缺时尝试匿名试用回落；返回 ``None`` 表示不回落（走原报错路径）。
+
+        - 本地已存匿名凭据 → 直接复用（零网络）；
+        - 否则向服务端申领并落盘（独立文件，永不覆盖付费凭据）；
+        - 服务端未开放匿名试用（404 ``anon_unavailable``）→ 返回 ``None``，
+          from_env 落回原「缺少凭证」报错——错误口径与未拆墙时一致；
+        - 名额满 / 网络失败等其他错误 → 抛 ``AuthError`` 合并注册指引。
+        """
+        from wmshare._anon import (  # 局部导入：回落是可选路径，主构造路径不承担其成本
+            anon_credentials_path,
+            load_anon_credentials,
+            request_anon_credentials,
+            save_anon_credentials,
+        )
+
+        if str(env.get("WMSHARE_DISABLE_ANON", "")).strip().lower() not in ("", "0", "false", "no", "off"):
+            return None
+        # 匿名凭据路径跟随 env 字典（与 WMSHARE_CREDENTIALS 同语义，便于测试隔离）。
+        path_override = env.get("WMSHARE_ANON_CREDENTIALS", "").strip() or None
+
+        saved = load_anon_credentials(Path(path_override) if path_override else None)
+        if saved is not None:
+            kw.setdefault("client_id", saved["client_id"])
+            kw.setdefault("client_secret", saved["client_secret"])
+            client = cls(**kw)
+            client.anon_credentials_path = saved.get("path") or str(  # type: ignore[attr-defined]
+                Path(path_override) if path_override else anon_credentials_path())
+            return client
+
+        base = str(kw.get("base_url") or DEFAULT_BASE_URL)
+        try:
+            creds = request_anon_credentials(base)
+        except AuthError as exc:
+            if getattr(exc, "code", "") == "anon_unavailable":
+                return None  # 服务端未开放该功能：保持既有「缺少凭证」报错口径
+            raise AuthError(
+                f"自动领取匿名试用凭据失败：{exc}\n"
+                "可稍后重试；或到 https://open.winmale.com 注册免费账号并配置凭据。"
+                "零凭证也可先试离线演示：wmshare.demo_client()",
+                code=getattr(exc, "code", None) or "anon_failed",
+            ) from None
+        except TransportError as exc:
+            raise AuthError(
+                f"自动领取匿名试用凭据失败（网络错误：{exc}）；"
+                "请检查网络后重试，或到 https://open.winmale.com 注册免费账号并配置凭据。"
+                "零凭证也可先试离线演示：wmshare.demo_client()",
+                code="anon_failed",
+            ) from None
+        path = save_anon_credentials(
+            creds, Path(path_override) if path_override else anon_credentials_path())
+        kw.setdefault("client_id", creds["client_id"])
+        kw.setdefault("client_secret", creds["client_secret"])
+        client = cls(**kw)
+        # 便于调用方提示用户额度与凭据位置（不参与鉴权）。
+        client.anon_credentials_path = str(path)  # type: ignore[attr-defined]
+        return client
+
+    @classmethod
     def anonymous(cls, *, refresh: bool = False, **kw: Any) -> "Client":
-        """用匿名试用凭据构造客户端（免注册；一次性小配额）。
+        """用匿名试用凭据构造客户端（免注册；一次性额度，对齐正常注册用户免费档）。
 
         首次调用向服务端申领一份匿名凭据并写入 ``~/.wmshare/anon_credentials.env``
         （**与付费凭据文件分离**，不会覆盖 ``credentials.env``）。之后直接复用本地
-        凭据，不再消耗申领名额。
+        凭据，不再消耗申领名额。``Client.from_env()`` 在凭据双缺时会自动走同一条
+        回落链——通常无需显式调用本方法。
 
-        匿名额度是「一次性 50 万 EC，用完即止」——服务端不会周补满。凭据对应的匿名应用
-        由服务端在创建 7 天后自动清理（TTL）；届时本地凭据会失效（401/配额类错误），
-        用 ``Client.anonymous(refresh=True)`` 重新申领一份即可（受当日发放名额限制）。
-        需要长期额度请到 https://open.winmale.com 注册免费账号。
+        匿名额度是「一次性给足、用完即止」（额度与限频、单次上限对齐正常注册用户的
+        免费档，具体数值以服务端返回的 ``ec_balance`` 为准）——服务端不会为匿名应用
+        周补满。凭据对应的匿名应用由服务端在创建 7 天后自动清理（TTL）；届时本地凭据
+        会失效（401/配额类错误），用 ``Client.anonymous(refresh=True)`` 重新申领一份
+        即可（受当日发放名额限制）。需要长期额度请到 https://open.winmale.com 注册免费账号。
 
         :param refresh: 忽略本地已存凭据，重新申领一份。
         :raises AuthError: 服务端未开放匿名试用、今日名额已满，或本网络领取次数超限。

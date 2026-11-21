@@ -234,12 +234,115 @@ def test_from_env_open_platform_fallback(tmp_path):
     assert c.client_id == "pid"
 
 
-def test_from_env_empty_raises_with_guidance(tmp_path):
-    # 隔离本机凭证文件（维护者/用户可能已配置 ~/.wmshare/credentials.env），
-    # 确保测的是「无任何配置 → 构造期报错并附申请指引」这条路径
-    with pytest.raises(WmshareError, match="缺少凭证"):
-        Client.from_env(env={"WMSHARE_CREDENTIALS": str(tmp_path / "absent.env")},
+def test_from_env_empty_falls_back_to_anonymous(monkeypatch, tmp_path):
+    """登录墙拆除（2.7.0）：凭据双缺时自动回落匿名试用——申领 + 落盘 + 可用客户端。
+
+    隔离：WMSHARE_CREDENTIALS 指向不存在文件（不读本机付费凭据），
+    WMSHARE_ANON_CREDENTIALS 指向 tmp（不写本机匿名凭据）。
+    """
+    from wmshare import _anon
+
+    calls = []
+
+    def fake_request(base_url=None, *, timeout=30.0):
+        calls.append(base_url)
+        return {"client_id": "anon_open_testid", "client_secret": "anonsec",
+                "ec_balance": 500000}
+
+    monkeypatch.setattr(_anon, "request_anon_credentials", fake_request)
+    anon_file = tmp_path / "anon.env"
+    c = Client.from_env(env={"WMSHARE_CREDENTIALS": str(tmp_path / "absent.env"),
+                             "WMSHARE_ANON_CREDENTIALS": str(anon_file)},
                         base_url="https://t", catalog=load(), session=FakeSession())
+    assert (c.client_id, c.client_secret) == ("anon_open_testid", "anonsec")
+    assert calls == ["https://t"]                       # base_url 来自 env 解析
+    assert getattr(c, "anon_credentials_path", None) == str(anon_file)
+    assert anon_file.exists() and "WMSHARE_ANON=1" in anon_file.read_text()
+    # 回落永不触碰付费凭据文件（absent.env 从未被创建/写入）
+    assert not (tmp_path / "absent.env").exists()
+
+
+def test_from_env_reuses_saved_anon_without_network(monkeypatch, tmp_path):
+    """本地已有匿名凭据存档 → 直接复用，零网络请求（与 Client.anonymous 同语义）。"""
+    from wmshare import _anon
+
+    anon_file = tmp_path / "anon.env"
+    anon_file.write_text(
+        "WMSHARE_CLIENT_ID=anon_open_saved\nWMSHARE_CLIENT_SECRET=savedsec\nWMSHARE_ANON=1\n")
+
+    def no_network(*a, **k):
+        raise AssertionError("本地有存档时不得发起网络请求")
+
+    monkeypatch.setattr(_anon, "request_anon_credentials", no_network)
+    c = Client.from_env(env={"WMSHARE_CREDENTIALS": str(tmp_path / "absent.env"),
+                             "WMSHARE_ANON_CREDENTIALS": str(anon_file)},
+                        base_url="https://t", catalog=load(), session=FakeSession())
+    assert (c.client_id, c.client_secret) == ("anon_open_saved", "savedsec")
+
+
+def test_from_env_anon_unavailable_keeps_legacy_error(monkeypatch, tmp_path):
+    """服务端未开放匿名试用（404）→ 保持 2.6.0 的「缺少凭证」报错口径。"""
+    from wmshare import _anon
+    from wmshare.errors import AuthError
+
+    def unavailable(base_url=None, *, timeout=30.0):
+        raise AuthError("该服务端未开放匿名试用", code="anon_unavailable")
+
+    monkeypatch.setattr(_anon, "request_anon_credentials", unavailable)
+    with pytest.raises(WmshareError, match="缺少凭证") as ei:
+        Client.from_env(env={"WMSHARE_CREDENTIALS": str(tmp_path / "absent.env"),
+                             "WMSHARE_ANON_CREDENTIALS": str(tmp_path / "anon.env")},
+                        base_url="https://t", catalog=load(), session=FakeSession())
+    assert ei.value.code == "config"
+
+
+def test_from_env_anon_quota_error_mentions_registration(monkeypatch, tmp_path):
+    """名额满（429）→ 报错合并「失败原因 + 注册指引 + 离线演示」。"""
+    from wmshare import _anon
+    from wmshare.errors import AuthError
+
+    def quota(base_url=None, *, timeout=30.0):
+        raise AuthError("匿名试用今日名额已满", code="anon_quota")
+
+    monkeypatch.setattr(_anon, "request_anon_credentials", quota)
+    with pytest.raises(WmshareError, match="匿名试用凭据失败") as ei:
+        Client.from_env(env={"WMSHARE_CREDENTIALS": str(tmp_path / "absent.env"),
+                             "WMSHARE_ANON_CREDENTIALS": str(tmp_path / "anon.env")},
+                        base_url="https://t", catalog=load(), session=FakeSession())
+    assert ei.value.code == "anon_quota"
+    assert "open.winmale.com" in str(ei.value)
+    assert "demo_client" in str(ei.value)
+
+
+def test_from_env_anon_network_error_maps_to_anon_failed(monkeypatch, tmp_path):
+    from wmshare import _anon
+    from wmshare.errors import TransportError
+
+    def netfail(base_url=None, *, timeout=30.0):
+        raise TransportError("connection refused")
+
+    monkeypatch.setattr(_anon, "request_anon_credentials", netfail)
+    with pytest.raises(WmshareError, match="匿名试用凭据失败") as ei:
+        Client.from_env(env={"WMSHARE_CREDENTIALS": str(tmp_path / "absent.env"),
+                             "WMSHARE_ANON_CREDENTIALS": str(tmp_path / "anon.env")},
+                        base_url="https://t", catalog=load(), session=FakeSession())
+    assert ei.value.code == "anon_failed"
+
+
+def test_from_env_disable_anon_restores_legacy_error(monkeypatch, tmp_path):
+    """WMSHARE_DISABLE_ANON=1 → 恢复 2.6.0 报错行为（迁移逃生口），且零网络。"""
+    from wmshare import _anon
+
+    def no_network(*a, **k):
+        raise AssertionError("禁用回落时不得发起网络请求")
+
+    monkeypatch.setattr(_anon, "request_anon_credentials", no_network)
+    with pytest.raises(WmshareError, match="缺少凭证") as ei:
+        Client.from_env(env={"WMSHARE_CREDENTIALS": str(tmp_path / "absent.env"),
+                             "WMSHARE_ANON_CREDENTIALS": str(tmp_path / "anon.env"),
+                             "WMSHARE_DISABLE_ANON": "1"},
+                        base_url="https://t", catalog=load(), session=FakeSession())
+    assert ei.value.code == "config"
 
 
 def test_object_param_serialized(client):
