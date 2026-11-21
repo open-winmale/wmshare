@@ -26,8 +26,9 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _introspect import (  # noqa: E402
-    COMPOSITE_EXAMPLES, COMPOSITE_NOTES, FALLBACK_RETURNS, RETURNS_OVERRIDES,
-    field_cn, is_internal_catalog_name, method_doc, method_example, method_params,
+    COMPOSITE_EXAMPLES, COMPOSITE_NOTES, EXAMPLE_VALUES, FALLBACK_RETURNS,
+    METHOD_EXAMPLE_VALUES, RETURNS_OVERRIDES, SYMBOL_EXAMPLES, field_cn,
+    is_internal_catalog_name, method_doc, method_example, method_params,
     return_shape_for, underlying_fn,
 )
 from wmshare.api import (  # noqa: E402
@@ -925,12 +926,328 @@ def build_fields_json() -> str:
     return json.dumps(payload, ensure_ascii=False, indent=2) + "\n"
 
 
+# ---------------------------------------------------------------------------
+# api_pack.json：逐接口介绍 + 在线测试物料（供开放平台接口文档站消费）
+# ---------------------------------------------------------------------------
+
+API_PACK_OUT = REPO / "docs" / "api_pack.json"
+API_PACK_BUDGET = 600_000   # 总量硬预算（字节）：超限即生成失败，防 demo 行数失控
+DEMO_ROW_CAP = 10           # 每接口示例响应最多保留行数
+DEMO_TEXT_CAP = 400         # 字符串字段截断长度（如公告 PDF 正文）
+
+
+class _CaptureSession:
+    """离线传输桩：记录 ``/v1/analysis/xs/eval`` 请求体，响应恒为空结果。
+
+    与 tests/test_docs.FakeSession 同构，但目的不同：这里不是为了执行，
+    而是让门面真实走一遍生产编译链（``_build_call_line`` + ``normalize_with``
+    + require 头 + symbol 锚点），把**与 SDK 逐字等价**的 eval 请求体捕获进
+    api_pack——开放平台接口文档的「一键测试」按钮据此直接打网关。
+    """
+
+    def __init__(self) -> None:
+        self.headers: dict = {}
+        self.eval_bodies: list[dict] = []
+
+    def post(self, url: str, json: dict | None = None, data: object = None,
+             headers: dict | None = None, timeout: object = None):  # noqa: A002
+        if url.endswith("/v1/oauth/token"):
+            payload: dict = {"data": {"access_token": "capture", "expires_in": 3600}}
+        else:
+            self.eval_bodies.append(dict(json or {}))
+            payload = {"success": True, "data": {"result": []}}
+
+        class _Resp:
+            status_code = 200
+            text = ""
+            headers: dict = {}
+
+            def json(self) -> dict:
+                return payload
+
+        return _Resp()
+
+
+_CAPTURE_CLI: object | None = None
+
+
+def _capture_client() -> object:
+    """构造只用于编译捕获的 Client（哑凭证 + 记录桩，全程不发真实请求）。"""
+    global _CAPTURE_CLI
+    if _CAPTURE_CLI is None:
+        from wmshare.client import Client
+        _CAPTURE_CLI = Client(client_id="gen", client_secret="gen",
+                              session=_CaptureSession(), max_limit=None)
+    return _CAPTURE_CLI
+
+
+def _example_kwargs(ns: str, method: str, params: list, minimal: bool) -> dict:
+    """按 method_example 同源示例值表构造程序化 kwargs（值经 _py_literal 还原）。
+
+    占位符（``"<…>"``，指向前置查询结果的）与非字面量参数一律省略；省略后
+    缺必填参数时由门面调用自然抛错——该尝试按失败计，宁缺毋编。
+    """
+    values = {**EXAMPLE_VALUES, **METHOD_EXAMPLE_VALUES.get((ns, method), {})}
+    kwargs: dict = {}
+    for p in params:
+        if p.name == "symbol":
+            kwargs[p.name] = SYMBOL_EXAMPLES.get(ns, '"600519"').strip('"')
+            continue
+        raw = values.get(p.name)
+        if raw is None or (minimal and not p.required):
+            continue
+        v = _py_literal(raw)
+        if v is None:
+            continue
+        if isinstance(v, str) and "<" in v and ">" in v:
+            continue  # 占位符不能当真实参数下发
+        kwargs[p.name] = v
+    return kwargs
+
+
+def _attempt_kwargs_list(ns: str, method: str, params: list) -> list[dict]:
+    """两组尝试参数：完整示例参数 → 最小参数（symbol + 必填）。
+
+    第二组兜底「示例参数里含演示快照不支持的可选项」（如 kline.bars 的
+    adj/begin/end）：测试 payload 用完整组，演示快照捕获可落最小组。
+    """
+    out: list[dict] = []
+    seen: set[str] = set()
+    for kw in (_example_kwargs(ns, method, params, minimal=False),
+               _example_kwargs(ns, method, params, minimal=True)):
+        key = json.dumps(kw, sort_keys=True, ensure_ascii=False)
+        if key not in seen:
+            seen.add(key)
+            out.append(kw)
+    return out
+
+
+def _payload_usable(body: dict) -> bool:
+    """编译出的 eval 体是否对一键测试有用。
+
+    三类判废（均显式置 null，不做半成品 payload）：
+    - 锚点为空 / 空串占位实参（``pdf_doc.read_markdown("", …)``）：发到网关
+      只会报错；
+    - 引用内部目录命名空间（``xs.require("sys/rptdom/init.xs")`` 等）：生产
+      等价 payload 必然含 require 行，但 tests/test_internal_ns_visibility
+      禁止内部命名空间出现在 docs/——此类接口 test 置 null，UI 降级
+      「到 Playground 自测」。
+    """
+    if not str(body.get("symbol") or "").strip():
+        return False
+    for ln in body.get("xs_lines") or []:
+        if re.search(r"[(,]\s*\"\"", ln):
+            return False
+        m = re.match(r'xs\.require\("sys/([a-z0-9_]+)/', ln)
+        if m and is_internal_catalog_name(f"{m.group(1)}.x"):
+            return False
+        for name in re.findall(r"\b([a-z][a-z0-9_]*\.[a-z][a-z0-9_]*)\(", ln):
+            if is_internal_catalog_name(name):
+                return False
+    return True
+
+
+def _capture_eval_payload(ns: str, method: str, attempts: list[dict]) -> dict | None:
+    """门面真实编译 → 捕获单次 eval 请求体；不可单次回放（组合链路）显式 None。"""
+    cli = _capture_client()
+    sess = cli.session  # type: ignore[attr-defined]
+    for kw in attempts:
+        sess.eval_bodies.clear()
+        fn = getattr(getattr(cli, ns), method)
+        try:
+            fn(**kw)
+        except Exception:
+            pass  # 空桩响应下的后续整形可能报错；请求体已捕获即为有效
+        if len(sess.eval_bodies) == 1:
+            body = sess.eval_bodies[0]
+            if not _payload_usable(body):
+                continue
+            return {"kwargs": kw, "path": "/v1/analysis/xs/eval", "body": body}
+        if len(sess.eval_bodies) > 1:
+            break  # 组合链路多次 eval：PlaygroundRun 单次代理无法一键回放
+    return None
+
+
+def _json_safe(v: object, depth: int = 0) -> object:
+    """演示快照行 → 可序列化 JSON：NaN/Inf→None、长文本截断、行数封顶。"""
+    if depth > 6:
+        return str(v)
+    if isinstance(v, float):
+        return v if math.isfinite(v) else None
+    if isinstance(v, str) and len(v) > DEMO_TEXT_CAP:
+        return v[:DEMO_TEXT_CAP] + f"…(截断，原长 {len(v)})"
+    if isinstance(v, dict):
+        return {str(k): _json_safe(x, depth + 1) for k, x in v.items()}
+    if isinstance(v, (list, tuple)):
+        return [_json_safe(x, depth + 1) for x in v[:DEMO_ROW_CAP]]
+    if hasattr(v, "to_dict"):  # DataFrame → 行数组
+        return [_json_safe(r, depth + 1) for r in v.to_dict("records")[:DEMO_ROW_CAP]]
+    if hasattr(v, "results"):  # BatchResult → 逐票 MAP
+        return _json_safe(dict(v.results), depth + 1)
+    if v is None or isinstance(v, (bool, int, str)):
+        return v
+    return str(v)
+
+
+def _capture_demo(ns: str, method: str, attempts: list[dict]) -> dict:
+    """demo_client() 按示例参数捕获演示快照响应；未覆盖显式标注，不静默缺省。"""
+    from wmshare._demo import DEMO_SNAPSHOT_PROVENANCE, demo_client
+    dcli = demo_client()
+    fn = getattr(getattr(dcli, ns, None), method, None)
+    if fn is None:
+        return {"covered": False, "reason": "demo_namespace_absent",
+                "as_of": DEMO_SNAPSHOT_PROVENANCE["as_of"]}
+    last_code = "no_demo_args"
+    for kw in attempts:
+        try:
+            result = fn(**kw)
+        except Exception as e:  # demo 未覆盖面：显式 code，不静默给假数据
+            last_code = str(getattr(e, "code", "") or type(e).__name__)
+            continue
+        return {"covered": True, "args": kw, "as_of": DEMO_SNAPSHOT_PROVENANCE["as_of"],
+                "result": _json_safe(result)}
+    return {"covered": False, "reason": last_code,
+            "as_of": DEMO_SNAPSHOT_PROVENANCE["as_of"]}
+
+
+def _pack_fields(fn: dict, fn_key: str) -> list[dict]:
+    """返回字段表（与 fields.json 同源）：字段/类型/单位/守护范围/说明。"""
+    fields = _shape_fields(fn_key)
+    units = fn.get("units") or {}
+    ranges = fn.get("ranges") or {}
+    for f in fields:
+        if f["name"] in units:
+            tok = units[f["name"]]
+            f["unit"] = UNIT_CN.get(tok, tok)
+        rng = ranges.get(f["name"])
+        if isinstance(rng, (list, tuple)) and len(rng) == 2:
+            f["range"] = [rng[0], rng[1]]
+    return fields
+
+
+def build_api_pack() -> str:
+    """逐接口介绍 + 在线测试物料包 ``docs/api_pack.json``。
+
+    开放平台「接口文档（逐接口介绍 + 在线测试）」的数据源，与 API.md 同源
+    同口径（目录 yaml + FRIENDLY_INDEX + 运行时内省），不新增手写文案：
+
+    - ``test``：门面真实编译出的 eval 请求体，站点一键测试与 SDK 调用逐字
+      等价；组合链路（多次 eval）或参数不可静态确定时显式 ``null``。
+    - ``demo``：``demo_client()`` 按示例参数捕获的演示快照响应（截行截文），
+      未覆盖接口显式 ``demo_unsupported`` 等原因，不静默缺省。
+    """
+    from wmshare._demo import DEMO_SNAPSHOT_PROVENANCE
+    docs = [yaml.safe_load(p.read_text(encoding="utf-8"))
+            for p in sorted(DOMAINS.glob("*.yaml"))]
+    merged = {fn["name"]: fn for d in docs for fn in (d.get("functions") or [])}
+    fn_domain = {fn["name"]: d["id"] for d in docs for fn in (d.get("functions") or [])}
+    domain_meta = {d["id"]: d for d in docs}
+    ns_chapter = {ns: title for title, nss in CHAPTERS for ns in nss}
+
+    # ns → 域：该 ns 首个核心接口的底层目录函数所属域（与 API.md 域概览同源）；
+    # 纯组合命名空间（backtest/etf，无目录函数）domain 显式 null，UI 回退章名。
+    ns_domain: dict[str, str | None] = {}
+    for _, ns, _, _, underlying in FRIENDLY_INDEX:
+        if ns not in ns_domain:
+            fk = underlying_fn(underlying)
+            ns_domain[ns] = fn_domain.get(fk) if fk else None
+
+    def _entry(ns: str, method: str, cn: str, underlying: str | None,
+               composite: bool) -> dict:
+        cls = FRIENDLY_NAMESPACES[ns]
+        params = method_params(cls, method)
+        fn = merged.get(underlying, {}) if underlying else {}
+        inv = INV.get(underlying, {}) if underlying else {}
+        entry: dict = {
+            "key": f"{ns}.{method}",
+            "ns": ns,
+            "method": method,
+            "cn": (method_doc(cls, method)[0] or cn) if composite else cn,
+            "composite": composite,
+            "desc": method_doc(cls, method)[0] or cn,
+            "params": [{"name": p.name, "type": p.json_type, "required": p.required,
+                        "default": p.default,
+                        "desc": _param_desc(ns, method, p, fn)} for p in params],
+        }
+        if underlying:  # 目录函数支撑：shape 字段表 + 目录 notes
+            shape = return_shape_for(CAT, ns, method, underlying)
+            entry["returns"] = {
+                "desc": RETURNS_OVERRIDES.get((ns, method))
+                or fmt_returns(fn, inv, shape=shape),
+                "fields": _pack_fields(fn, underlying),
+            }
+            entry["notes"] = fn.get("notes") or []
+        else:  # eval 型门面（$CODE 求值/宿主 spec 等）与组合接口：无 shape
+            entry["returns"] = {"desc": FALLBACK_RETURNS.get((ns, method), "—"),
+                                "fields": []}
+            entry["notes"] = []
+        entry["example"] = None if composite else method_example(ns, method, params)
+        attempts = _attempt_kwargs_list(ns, method, params)
+        # 组合链路（多次 eval）PlaygroundRun 单次代理不可回放，显式 null；
+        # eval 型核心门面（$FUT_*/宿主 spec/档案指标等）同样是单次 eval，可测。
+        entry["test"] = None if composite else _capture_eval_payload(ns, method, attempts)
+        entry["demo"] = _capture_demo(ns, method, attempts)
+        return entry
+
+    namespaces_out: list[dict] = []
+    for title, nss in CHAPTERS:
+        for ns in nss:
+            rows = [r for r in FRIENDLY_INDEX if r[1] == ns]
+            comp_methods = sorted(COMPOSITE_METHODS.get(ns, ()))
+            if not rows and not comp_methods:
+                continue
+            # 章类别：取该章首个核心接口的类别（纯组合章继承章类别）
+            cat = rows[0][0] if rows else next(
+                (r[0] for r in FRIENDLY_INDEX if ns_chapter[r[1]] == title), "market")
+            dom_id = ns_domain.get(ns)
+            dom = domain_meta.get(dom_id) if dom_id else None
+            node: dict = {
+                "ns": ns,
+                "cn": ns_title(ns),
+                "chapter": title,
+                "category": cat,
+                "domain": dom_id,
+                "domain_cn": dom.get("cn") if dom else None,
+                "domain_description": (dom.get("description") or "") if dom else None,
+                "domain_units": dom.get("units") or {} if dom else None,
+                "interfaces": [_entry(ns, m, cn, underlying_fn(u), False)
+                               for _, _, m, cn, u in rows],
+                "composites": [_entry(ns, m, m, None, True) for m in comp_methods],
+            }
+            if comp_methods and COMPOSITE_EXAMPLES.get(ns):
+                node["composite_examples"] = COMPOSITE_EXAMPLES[ns]
+            namespaces_out.append(node)
+
+    ifaces = [i for n in namespaces_out for i in (*n["interfaces"], *n["composites"])]
+    payload = {
+        "schema_version": 1,
+        "generated_by": "tools/gen_api_docs.py",
+        "meta": {
+            "core": len(FRIENDLY_INDEX),
+            "composite": sum(len(n["composites"]) for n in namespaces_out),
+            "domains": len(docs),
+            "categories": [{"key": c, "cn": CATEGORY_CN[c]} for c in CATEGORY_ORDER],
+            "demo_covered": sum(1 for i in ifaces if (i.get("demo") or {}).get("covered")),
+            "test_ready": sum(1 for i in ifaces if i.get("test")),
+            "demo_snapshot": DEMO_SNAPSHOT_PROVENANCE,
+        },
+        "namespaces": namespaces_out,
+    }
+    body = json.dumps(payload, ensure_ascii=False, indent=2, allow_nan=False) + "\n"
+    size = len(body.encode("utf-8"))
+    if size > API_PACK_BUDGET:
+        raise AssertionError(f"api_pack {size}B 超预算 {API_PACK_BUDGET}B——"
+                             "请收紧 DEMO_ROW_CAP/DEMO_TEXT_CAP")
+    return body
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true")
     args = ap.parse_args()
     body = build()
     fields_body = build_fields_json()
+    pack_body = build_api_pack()
     if args.check:
         bad = False
         if not OUT.is_file() or OUT.read_text(encoding="utf-8") != body:
@@ -939,14 +1256,20 @@ def main() -> int:
         if not FIELDS_OUT.is_file() or FIELDS_OUT.read_text(encoding="utf-8") != fields_body:
             print("gen_api_docs drift: docs/fields.json", file=sys.stderr)
             bad = True
+        if (not API_PACK_OUT.is_file()
+                or API_PACK_OUT.read_text(encoding="utf-8") != pack_body):
+            print("gen_api_docs drift: docs/api_pack.json", file=sys.stderr)
+            bad = True
         if bad:
             return 1
         print("gen_api_docs ok")
         return 0
     OUT.write_text(body, encoding="utf-8")
     FIELDS_OUT.write_text(fields_body, encoding="utf-8")
+    API_PACK_OUT.write_text(pack_body, encoding="utf-8")
     print(f"wrote {OUT.relative_to(REPO)} ({len(body)} bytes) + "
-          f"{FIELDS_OUT.relative_to(REPO)} ({len(fields_body)} bytes)")
+          f"{FIELDS_OUT.relative_to(REPO)} ({len(fields_body)} bytes) + "
+          f"{API_PACK_OUT.relative_to(REPO)} ({len(pack_body)} bytes)")
     return 0
 
 

@@ -856,6 +856,60 @@ def test_openapi_matches_signatures_and_returns():
             f"{ns}.{method} 响应字段与目录 returns_shape 不一致"
 
 
+def test_api_pack_contract():
+    """api_pack.json（开放平台接口文档站数据源）合同：覆盖 1:1、参数对签名、物料显式。
+
+    独立复刻生成器口径防同错：键集合与 FRIENDLY_INDEX/COMPOSITE_METHODS 精确
+    对齐；demo/test 缺省必须是显式 null/reason（防「静默没数据」假文档）。
+    """
+    pack = json.loads((REPO / "docs" / "api_pack.json").read_text(encoding="utf-8"))
+    assert pack["schema_version"] == 1
+    entries = {i["key"]: i
+               for n in pack["namespaces"]
+               for i in (*n["interfaces"], *n["composites"])}
+    # 覆盖 1:1：核心 + 组合，一个不多一个不少
+    assert set(entries) == ({f"{ns}.{m}" for _, ns, m, _, _ in FRIENDLY_INDEX}
+                            | {f"{ns}.{m}" for ns, ms in COMPOSITE_METHODS.items() for m in ms})
+    assert pack["meta"]["core"] == len(FRIENDLY_INDEX)
+    assert pack["meta"]["composite"] == sum(len(v) for v in COMPOSITE_METHODS.values())
+    assert pack["meta"]["domains"] == len(CAT.domains)
+
+    for _, ns, method, _, _ in FRIENDLY_INDEX:
+        e = entries[f"{ns}.{method}"]
+        assert not e["composite"] and e["example"].startswith(f"cli.{ns}.{method}(")
+        sig = [n for n, p in inspect.signature(getattr(FRIENDLY_NAMESPACES[ns], method))
+               .parameters.items() if n != "self" and not n.startswith("_")]
+        assert [p["name"] for p in e["params"]] == sig, f"{ns}.{method} 参数表漂移"
+        for p in e["params"]:
+            assert p["required"] == (p["default"] is None), \
+                f"{ns}.{method}.{p['name']} required 与默认值矛盾"
+        # eval 型门面（无目录 shape）returns.fields 为空是合法形态，desc 不得缺失
+        assert e["returns"]["desc"], f"{ns}.{method} 缺返回说明"
+        t = e["test"]
+        if t is not None:
+            assert t["path"] == "/v1/analysis/xs/eval"
+            body = t["body"]
+            assert body.get("symbol") and body.get("xs_lines") and body.get("mode") == "call"
+            assert any(ln.lstrip().startswith("return") for ln in body["xs_lines"]), \
+                f"{ns}.{method} eval payload 缺 return 行"
+        demo = e["demo"]
+        if demo["covered"]:
+            assert "result" in demo and demo.get("as_of"), \
+                f"{ns}.{method} demo 覆盖但无响应/溯源"
+        else:
+            assert demo.get("reason"), f"{ns}.{method} demo 未覆盖必须给原因"
+
+    for ns, methods in COMPOSITE_METHODS.items():
+        for method in methods:
+            e = entries[f"{ns}.{method}"]
+            assert e["composite"] and e["test"] is None and e["example"] is None, \
+                f"组合接口 cli.{ns}.{method} 不应带一键测试/单行示例"
+    # meta 计数与实体一致（防计数行拍脑袋）
+    assert pack["meta"]["demo_covered"] == sum(1 for e in entries.values()
+                                               if e["demo"]["covered"])
+    assert pack["meta"]["test_ready"] == sum(1 for e in entries.values() if e["test"])
+
+
 def test_llms_lists_composite_interfaces():
     """llms.txt 必须列出组合接口：AI 文档挖掘只读这份索引，漏列会被误判为「没有该 cli 接口」。
 
