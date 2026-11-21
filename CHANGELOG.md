@@ -15,6 +15,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **匿名试用（免注册取数）**：`Client.anonymous()` 类方法——无凭据时向服务端
+  领取一份一次性小配额凭据并落盘，之后照常 `cli.*` 调用。服务端侧
+  （`openapi.anonymous_trial.enabled`，默认关闭）为每次领取新建独立
+  `anon_open_*` 应用：初始 500,000 EC、单次 CU 上限对齐余额、不参与每周
+  补满、创建 7 天后由 TTL 自动回收；当日活跃名额与全平台发放总量受服务端
+  上限约束。凭据写入独立文件 `~/.wmshare/anon_credentials.env`
+  （`WMSHARE_ANON_CREDENTIALS` 可覆盖），**永不写入付费凭据文件**；
+  凭据失效后 `anonymous(refresh=True)` 重新申领（受当日名额限制）。
+  新增 4 个错误码 `anon_unavailable` / `anon_quota` / `anon_failed` /
+  `anon_bad_response`（见 docs/ERRORS.md），示例 `examples/20_anonymous_trial.py`。
 - **disc.income 域 +3 公开原子**（收息编排下沉 `sys/income` 后按需暴露，331 函数）：
   - `income.score_explain(symbols)`：单票四维评分逐项解释（为什么是这个档）；
   - `income.rating_all(industry, gates)`：全量收息排行行（不限 top_n=100 的
