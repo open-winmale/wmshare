@@ -955,6 +955,37 @@ def test_blocktrade_read_face(cli):
     assert amounts == sorted(amounts, reverse=True), "单日榜必须成交额降序"
 
 
+def test_st_lifecycle_read_face(cli):
+    """ST/停复牌史：简称段按生效日升序、is_st 与简称一致；时间轴严格升序。"""
+    out = _call_or_xfail(lambda: cli.stocks.name_history("000001"))
+    rows = out.to_dict("records") if hasattr(out, "to_dict") else list(out)
+    if not rows:
+        pytest.skip("namechange 尚未回补（采集部署后解除此跳过）")
+    starts = [str(r["start_date"]) for r in rows]
+    assert starts == sorted(starts), f"简称段必须 start_date 升序：{starts}"
+    for r in rows:
+        assert bool(r["is_st"]) == ("ST" in str(r["name"]).upper()), r
+
+    susp = _call_or_xfail(
+        lambda: cli.stocks.suspend_history("600519", "2026-01-01", "2026-11-23"))
+    susp_rows = susp.to_dict("records") if hasattr(susp, "to_dict") else list(susp)
+    if susp_rows:
+        sdates = [str(r["date"]) for r in susp_rows]
+        assert sdates == sorted(sdates), f"停复牌必须 date 升序：{sdates[:3]}…"
+        assert {str(r["type"]) for r in susp_rows} <= {"S", "R"}
+        for r in susp_rows:
+            assert len(str(r["date"])) == 10, r  # ISO YYYY-MM-DD
+
+    lc = _call_or_xfail(lambda: cli.stocks.lifecycle("000001"))
+    events = lc.to_dict("records") if hasattr(lc, "to_dict") else list(lc)
+    assert events, "时间轴不应为空"
+    dates = [str(e["date"]) for e in events]
+    assert dates == sorted(dates), f"时间轴必须 date 升序：{dates[:3]}…"
+    kinds = {str(e["kind"]) for e in events}
+    assert kinds <= {"rename", "st_enter", "st_exit", "suspend", "resume"}, kinds
+    assert "rename" in kinds, "000001 应有简称变更事件"
+
+
 def test_board_moneyflow_three_sources(cli):
     """板块资金流：三源同口径（额=元、率=小数），指定日与最新日逐行一致。"""
     for src, min_rows in (("ths_concept", 300), ("ths_industry", 80), ("dc", 900)):

@@ -2313,6 +2313,40 @@ class StocksNS(_Ns):
         """
         return _out(self._client.call("stocks.limit_price", sym=sym, _raw=_raw), _raw)
 
+    def suspend_history(self, sym: str, begin: str = '', end: str = '', _raw: bool = False) -> Any:
+        """单票停复牌事件
+
+:param sym: 6 位裸码或带 .SH/.SZ/.BJ 后缀
+:param begin: 起始日 YYYY-MM-DD（空=不限）
+:param end: 结束日 YYYY-MM-DD（空=不限）
+
+:returns: ARR · 停复牌事件行（date 升序）
+        """
+        kw: dict[str, Any] = {"sym": sym}
+        if begin is not None:
+            kw["begin"] = begin
+        if end is not None:
+            kw["end"] = end
+        return _out(self._client.call("stocks.suspend_history", **kw, _raw=_raw), _raw)
+
+    def name_history(self, sym: str, _raw: bool = False) -> Any:
+        """单票简称变更史
+
+:param sym: 6 位裸码或带 .SH/.SZ/.BJ 后缀
+
+:returns: ARR · 简称段行（按生效日升序）
+        """
+        return _out(self._client.call("stocks.name_history", sym=sym, _raw=_raw), _raw)
+
+    def lifecycle(self, sym: str, _raw: bool = False) -> Any:
+        """单票 ST/停复牌变动时间轴
+
+:param sym: 6 位裸码或带 .SH/.SZ/.BJ 后缀
+
+:returns: ARR · 时间轴事件行（date 升序）
+        """
+        return _out(self._client.call("stocks.lifecycle", sym=sym, _raw=_raw), _raw)
+
 class ToplistNS(_Ns):
     """龙虎榜（market.toplist）"""
 

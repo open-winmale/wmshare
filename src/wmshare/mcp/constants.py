@@ -88,7 +88,8 @@ MARKET_ACTIONS = {
     "cbond": ("universe", "latest_quotes", "of_stock", "query", "call_hits", "kline_window"),
     "index": ("keys", "members", "weights", "valuation", "trend", "universe_keys"),
     "valuation": ("hist_stats",),
-    "stocks": ("list", "limit_price", "limit_prices"),
+    "stocks": ("list", "limit_price", "limit_prices",
+               "suspend_history", "name_history", "lifecycle"),
     "board": ("moneyflow", "moneyflow_last"),
     "blocktrade": ("by_date", "by_symbol"),
 }

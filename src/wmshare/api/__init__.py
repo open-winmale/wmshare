@@ -10,7 +10,7 @@
     ``_raw=True`` 取上游原始行（list[dict]，跳过规范化与换算）——诊断逃生口；
   - 本层是目录合同的薄翻译：高频方法显式包装；目录内其余非内部函数经 ``__getattr__``
     属性直达（如 ``cli.kline.screen_above_ma20``）；目录标 ``internal: true`` 的
-    规范化辅助（fmt_* 等）不再直达，请走 ``cli.call``——355 个底层函数零遮蔽；
+    规范化辅助（fmt_* 等）不再直达，请走 ``cli.call``——358 个底层函数零遮蔽；
   - 选股能力集中在 ``cli.screener``：单票筛选器（bool）、全市场宽度/涨跌榜与
     全市场条件选股 ``query()``（服务端索引直出）显式包装，kline 目录的其余筛选
     函数经属性直达。
@@ -1295,6 +1295,41 @@ class StocksApi(_Api):
         :returns: dict · 字段同 limit_prices
         """
         return self._c.call("stocks.limit_price", sym=symbol)
+
+    def suspend_history(self, symbol: str, begin: str = "",
+                        end: str = "") -> Any:
+        """单票停复牌事件（按交易日升序）。
+
+        :param symbol: 6 位裸码（也接受 .SH/.SZ/.BJ 后缀）
+        :param begin: 起始日 YYYY-MM-DD（空=不限）
+        :param end: 结束日 YYYY-MM-DD（空=不限）
+        :returns: DataFrame/行表 · date/type（S=停牌 / R=复牌）/timing；
+            长停个股每日一行，单次上限 2000 条
+        """
+        rows = self._c.call("stocks.suspend_history", sym=symbol,
+                            begin=begin, end=end)
+        return _out(_sort_rows_by_date(rows))
+
+    def name_history(self, symbol: str) -> Any:
+        """单票简称变更史（按生效日升序；ST 段带 is_st 标记）。
+
+        :param symbol: 6 位裸码（也接受 .SH/.SZ/.BJ 后缀）
+        :returns: DataFrame/行表 · name/start_date/end_date/ann_date/reason/is_st
+        """
+        rows = self._c.call("stocks.name_history", sym=symbol)
+        return _out(_sort_rows_by_date(rows, key="start_date"))
+
+    def lifecycle(self, symbol: str) -> Any:
+        """单票 ST/停复牌变动时间轴（日期升序）。
+
+        事件 kind：rename（简称变更）/ st_enter / st_exit / suspend / resume；
+        detail 为简称或停牌时段说明。不含上市/退市事件（无历史日期源）。
+
+        :param symbol: 6 位裸码（也接受 .SH/.SZ/.BJ 后缀）
+        :returns: DataFrame/行表 · date/kind/detail
+        """
+        rows = self._c.call("stocks.lifecycle", sym=symbol)
+        return _out(_sort_rows_by_date(rows))
 
 
 # ---------------------------------------------------------------- 选股 market
@@ -4018,6 +4053,9 @@ FRIENDLY_INDEX: list[tuple[str, str, str, str, str]] = [
     ("market", "stocks", "list", "全市场证券列表", "stocks.query_list"),
     ("market", "stocks", "limit_prices", "全市场涨跌停价", "stocks.limit_prices"),
     ("market", "stocks", "limit_price", "单票涨跌停价", "stocks.limit_price"),
+    ("market", "stocks", "suspend_history", "单票停复牌事件", "stocks.suspend_history"),
+    ("market", "stocks", "name_history", "单票简称变更史", "stocks.name_history"),
+    ("market", "stocks", "lifecycle", "单票 ST/停复牌时间轴", "stocks.lifecycle"),
     ("market", "stocks", "industries", "行业目录", "stocks.industry_list"),
     ("market", "stocks", "industry_members", "行业成分股", "stocks.industry_members"),
     ("market", "futures", "get", "期货连续合约单字段", "futures.query_bars（store 直读）"),

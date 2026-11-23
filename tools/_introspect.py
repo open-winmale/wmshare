@@ -51,6 +51,10 @@ METHOD_EXAMPLE_VALUES = {
     # 大宗交易：单日榜需交易日；单票历史用裸码
     ("blocktrade", "by_date"): {"trade_date": '"2026-11-20"', "limit": "10"},
     ("blocktrade", "by_symbol"): {"limit": "10"},
+    # ST/停复牌史：停复牌可带区间；简称史/时间轴按票
+    ("stocks", "suspend_history"): {"begin": '"2026-01-01"', "end": '"2026-11-23"'},
+    ("stocks", "name_history"): {},
+    ("stocks", "lifecycle"): {},
     ("pdf_doc", "find_by_url"): {"url": '"<公告行 url 字段>"'},
     ("pdf_doc", "find_by_key"): {"file_key": '"<search() 行 file_key 字段>"'},
     ("futures", "snapshot"): {"fut_code": '"RB.SHF"'},

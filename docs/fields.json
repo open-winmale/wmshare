@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "generated_by": "tools/gen_api_docs.py",
-  "count": 283,
+  "count": 286,
   "domains": [
     {
       "id": "corp.equity",
@@ -7398,6 +7398,40 @@
             ]
           },
           "checks": [],
+          "fields": []
+        },
+        {
+          "name": "stocks.suspend_history",
+          "cn": "单票停复牌事件",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [
+            "date_iso"
+          ],
+          "fields": []
+        },
+        {
+          "name": "stocks.name_history",
+          "cn": "单票简称变更史",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "stocks.lifecycle",
+          "cn": "单票 ST/停复牌变动时间轴",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [
+            "date_iso"
+          ],
           "fields": []
         }
       ]

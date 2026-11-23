@@ -852,6 +852,13 @@ def market(
         data = cli.stocks.limit_price(_symbol(action, symbol))
     elif domain == "stocks" and action == "limit_prices":
         data = cli.stocks.limit_prices()
+    elif domain == "stocks" and action == "suspend_history":
+        data = cli.stocks.suspend_history(_symbol(action, symbol),
+                                          begin=begin or "", end=end or "")
+    elif domain == "stocks" and action == "name_history":
+        data = cli.stocks.name_history(_symbol(action, symbol))
+    elif domain == "stocks" and action == "lifecycle":
+        data = cli.stocks.lifecycle(_symbol(action, symbol))
     elif domain == "board":
         board_src = src or "ths_concept"
         if board_src not in ("ths_concept", "ths_industry", "dc"):

@@ -3342,6 +3342,213 @@
         }
       }
     },
+    "/stocks/suspend_history": {
+      "post": {
+        "operationId": "stocks_suspend_history",
+        "summary": "单票停复牌事件（按交易日升序）。",
+        "description": ":returns: DataFrame/行表 · date/type（S=停牌 / R=复牌）/timing；、长停个股每日一行，单次上限 2000 条、底层目录函数 `stocks.suspend_history`。SDK 调用：`cli.stocks.suspend_history(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "市场行情"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "symbol": {
+                    "type": "string",
+                    "description": "6 位裸码（也接受 .SH/.SZ/.BJ 后缀）"
+                  },
+                  "begin": {
+                    "type": "string",
+                    "description": "起始日 YYYY-MM-DD（空=不限）"
+                  },
+                  "end": {
+                    "type": "string",
+                    "description": "结束日 YYYY-MM-DD（空=不限）"
+                  }
+                },
+                "required": [
+                  "symbol"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "停复牌事件行",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "date": {
+                        "type": "string",
+                        "description": "交易日"
+                      },
+                      "type": {
+                        "type": "string",
+                        "description": "事件类型（S=停牌 / R=复牌）"
+                      },
+                      "timing": {
+                        "type": "string",
+                        "description": "停牌时段说明"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-wmshare-guards": {
+          "checks": [
+            "date_iso"
+          ]
+        }
+      }
+    },
+    "/stocks/name_history": {
+      "post": {
+        "operationId": "stocks_name_history",
+        "summary": "单票简称变更史（按生效日升序；ST 段带 is_st 标记）。",
+        "description": ":returns: DataFrame/行表 · name/start_date/end_date/ann_date/reason/is_st、底层目录函数 `stocks.name_history`。SDK 调用：`cli.stocks.name_history(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "市场行情"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "symbol": {
+                    "type": "string",
+                    "description": "6 位裸码（也接受 .SH/.SZ/.BJ 后缀）"
+                  }
+                },
+                "required": [
+                  "symbol"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "简称段行",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "description": "证券简称"
+                      },
+                      "start_date": {
+                        "type": "string",
+                        "description": "生效日"
+                      },
+                      "end_date": {
+                        "type": "string",
+                        "description": "失效日（现用简称为空串）"
+                      },
+                      "ann_date": {
+                        "type": "string",
+                        "description": "公告日"
+                      },
+                      "reason": {
+                        "type": "string",
+                        "description": "变更原因原文"
+                      },
+                      "is_st": {
+                        "type": "boolean",
+                        "description": "该简称段是否 ST（含 *ST/SST）"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stocks/lifecycle": {
+      "post": {
+        "operationId": "stocks_lifecycle",
+        "summary": "单票 ST/停复牌变动时间轴（日期升序）。",
+        "description": "事件 kind：rename（简称变更）/ st_enter / st_exit / suspend / resume；、detail 为简称或停牌时段说明。不含上市/退市事件（无历史日期源）。、:returns: DataFrame/行表 · date/kind/detail、底层目录函数 `stocks.lifecycle`。SDK 调用：`cli.stocks.lifecycle(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "市场行情"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "symbol": {
+                    "type": "string",
+                    "description": "6 位裸码（也接受 .SH/.SZ/.BJ 后缀）"
+                  }
+                },
+                "required": [
+                  "symbol"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "时间轴事件行",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "date": {
+                        "type": "string",
+                        "description": "日期（停复牌=交易日 / 简称=生效日）"
+                      },
+                      "kind": {
+                        "type": "string",
+                        "description": "事件类型 rename/st_enter/st_exit/suspend/resume"
+                      },
+                      "detail": {
+                        "type": "string",
+                        "description": "事件说明（简称或停牌时段；停复牌无时段为空串）"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-wmshare-guards": {
+          "checks": [
+            "date_iso"
+          ]
+        }
+      }
+    },
     "/stocks/industries": {
       "post": {
         "operationId": "stocks_industries",

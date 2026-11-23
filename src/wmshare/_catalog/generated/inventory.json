@@ -160,7 +160,7 @@
   "toplist",
   "valuation"
  ],
- "function_count": 365,
+ "function_count": 368,
  "functions": [
   {
    "name": "blocktrade.by_date",
@@ -11094,6 +11094,20 @@
    ]
   },
   {
+   "name": "stocks.lifecycle",
+   "cn": "单票 ST/停复牌变动时间轴",
+   "example": "stocks.lifecycle(\"000001\")",
+   "returns": "ARR · 时间轴事件行(date/kind/detail)",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "sym",
+     "type": "string"
+    }
+   ]
+  },
+  {
    "name": "stocks.limit_price",
    "cn": "单票涨跌停价（当日快照）",
    "example": "stocks.limit_price(\"600519\")",
@@ -11117,6 +11131,20 @@
    "params": []
   },
   {
+   "name": "stocks.name_history",
+   "cn": "单票简称变更史",
+   "example": "stocks.name_history(\"000001\")",
+   "returns": "ARR · 简称段行",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "sym",
+     "type": "string"
+    }
+   ]
+  },
+  {
    "name": "stocks.query_list",
    "cn": "全市场证券列表",
    "example": "stocks.query_list()",
@@ -11124,6 +11152,28 @@
    "returns_shape": null,
    "min_args": 0,
    "params": []
+  },
+  {
+   "name": "stocks.suspend_history",
+   "cn": "单票停复牌事件",
+   "example": "stocks.suspend_history(\"600519\", \"2026-01-01\", \"2026-11-23\")",
+   "returns": "ARR · 停复牌事件行(date ISO/type S|R/timing)",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "sym",
+     "type": "string"
+    },
+    {
+     "name": "begin",
+     "type": "string"
+    },
+    {
+     "name": "end",
+     "type": "string"
+    }
+   ]
   },
   {
    "name": "toplist.by_date",

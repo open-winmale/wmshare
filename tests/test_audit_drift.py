@@ -56,10 +56,10 @@ def test_drift_default_is_green_and_machine_readable(capsys):
     assert result["warnings"] == []
     assert result["strict"] is False
     info = result["info"]
-    # guarded 85 = 83 + blocktrade.by_date/by_symbol（价格/量/额 ranges，2026-11-23 大宗交易）；
-    # functions 355 = 352 + 3（两读面 + internal fmt）
-    assert info["guard_declared"] == 85
-    assert info["functions"] == 355  # +3 大宗交易（2026-11-23）
+    # guarded 87 = 85 + suspend_history/lifecycle 的 date_iso 不变量（2026-11-23 停复牌史）；
+    # functions 358 = 355 + 3（两读面 + 简称史）
+    assert info["guard_declared"] == 87
+    assert info["functions"] == 358  # +3 停复牌史（2026-11-23）
     assert info["markets"]["total"] == 2983
     assert info["markets"]["declared"] == 728
     assert info["markets"]["undeclared"] == 2255
