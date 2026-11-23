@@ -7,8 +7,8 @@ def test_load_and_stats():
     cat = load()
     s = cat.stats()
     assert s["domains"] == 27, s  # +1 market.us_macro（美宏观，2026-11-23）
-    assert s["functions"] == 347, s  # +1 equity.query_holdernum_history 公开（§5）+1 internal fmt（2026-11-23）
-    assert s["raw"] == 251 and s["computed"] == 96, s  # raw +2（户数历史查询与规范化）；computed 不变
+    assert s["functions"] == 349, s  # +户数历史 2（2026-11-23）+ 涨跌停价 2（2026-11-23）
+    assert s["raw"] == 251 and s["computed"] == 98, s  # 涨跌停价两函数为 computed（索引派生）；raw 不变
     assert s["metric_catalog_total"] == 2983, s
     assert s["upstream_rev"], "inventory 应锚定 upstream rev"
 

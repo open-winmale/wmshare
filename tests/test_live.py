@@ -935,6 +935,39 @@ def test_equity_domain_smoke(cli):
         assert r is None or isinstance(r, dict)
 
 
+def test_limit_prices_snapshot(cli):
+    """每日涨跌停价：全市场快照的规则价必须与当日封板收盘精确相等。"""
+    out = _call_or_xfail(lambda: cli.stocks.limit_prices())
+    rows = out.to_dict("records") if hasattr(out, "to_dict") else list(out)
+    assert len(rows) > 4000, f"非停牌全市场应 >4000 行，实际 {len(rows)}"
+
+    def band(sym: str) -> float:
+        p2 = str(sym)[:2]
+        if p2 in ("30", "68"):
+            return 0.20
+        if p2 in ("43", "83", "87", "88", "92"):
+            return 0.30
+        return 0.10
+
+    near = mism = 0
+    for r in rows:
+        if r["rule"] not in ("main10", "gem20", "star20", "bse30"):
+            continue
+        pct = float(r["percent"] or 0)
+        if abs(pct) >= band(r["symbol"]) - 0.001:
+            near += 1
+            want = r["limit_up"] if pct >= 0 else r["limit_down"]
+            if want != r["close"]:
+                mism += 1
+    assert near > 0, "当日应存在贴近涨跌停的样本"
+    assert mism == 0, f"规则价与封板收盘不等：{mism}/{near}"
+
+    one = _call_or_xfail(lambda: cli.stocks.limit_price("600519"))
+    assert one is not None
+    if one["limit_up"] is not None:
+        assert float(one["limit_up"]) > float(one["limit_down"]) > 0
+
+
 def test_holdernum_history_series(cli):
     """股东户数历史（raw 多期档）：日期升序、末期与快照同值、比例=小数。"""
     out = _call_or_xfail(lambda: cli.equity.query_holdernum_history("600519", 8))

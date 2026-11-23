@@ -376,6 +376,16 @@ def test_24_us_macro_replay_raises_explicitly(capsys):
     assert "先估成本" in capsys.readouterr().out
 
 
+def test_25_limit_price_replay_raises_explicitly(capsys):
+    """涨跌停价：成本预估段先跑；stocks 快照未回放——显式 replay_unsupported，
+    不返回空 DF 冒充。"""
+    mod = _load("25_limit_price.py")
+    with pytest.raises(UsageError) as ei:
+        mod.main(fake_client())
+    assert ei.value.code == "replay_unsupported"
+    assert "先估成本" in capsys.readouterr().out
+
+
 def test_20_anonymous_trial_degrades_gracefully():
     """匿名示例在服务端未开启时应打印注册指引并正常退出（不抛异常）。
 
@@ -391,6 +401,6 @@ def test_examples_index_covers_dir():
     """examples/README.md 课程表必须覆盖目录里每个脚本（防孤儿示例）。"""
     index = (EXAMPLES / "README.md").read_text(encoding="utf-8")
     scripts = sorted(p.name for p in EXAMPLES.glob("*.py"))
-    assert len(scripts) == 24, f"示例应恰为 24 个（编号课程），实际 {len(scripts)}：{scripts}"
+    assert len(scripts) == 25, f"示例应恰为 25 个（编号课程），实际 {len(scripts)}：{scripts}"
     for name in scripts:
         assert f"`{name}`" in index, f"examples/README.md 缺 {name} 的索引行"

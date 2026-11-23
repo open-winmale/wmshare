@@ -47,6 +47,7 @@ export WMSHARE_CLIENT_ID=... WMSHARE_CLIENT_SECRET=...   # 长期额度：配置
 | 22 | `22_futures_bars.py` | 2.9 期货新面 | 匿名/凭证 | `futures.bars` 与 kline.bars 同形（date=周期起点/升序/DF）、日频只含交易日、周/月线=上游周期 bar、begin/end 与 n 二选一、按行计费先估后取 | GUIDE·§6.1、API·期货章 |
 | 23 | `23_fx_reserves.py` | 3.0 外汇与储备新面 | 匿名/凭证 | `fx.rate/history/list` 的「每 1 单位外币」口径（上游每 100 外币已 /100）、中间价 vs 中行牌价、`macro.reserves*` 值=美元数值且黄金为市值口径、SDR 无生产者如实标注 | GUIDE·§6.2、API·宏观章 |
 | 24 | `24_us_macro.py` | 3.1 美宏观新面 | 匿名/凭证 | 主题树零取数成本、中文检索、`series_meta().units` 是唯一口径来源（GDP 十亿美元 / UNRATE 百分数 / PAYEMS 千人）、点序列 date 升序且空值不补 0、需授权序列 has_data=False | GUIDE·§6.2、API·宏观章 |
+| 25 | `25_limit_price.py` | 3.1 涨跌停价新面 | 匿名/凭证 | 规则价=前收盘×(1±带宽) 四舍五入到分；带宽只看代码号段（30x/68x=20%、北交所=30%、其余=10%）；收盘价==规则价即当日封板；rule=unbounded/delisting 时价格为空不猜 | GUIDE·§6.1、API·证券与行业基础章 |
 
 ## 约定（新增示例请遵守）
 

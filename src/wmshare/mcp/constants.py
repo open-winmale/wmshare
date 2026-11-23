@@ -87,7 +87,7 @@ MARKET_ACTIONS = {
     "cbond": ("universe", "latest_quotes", "of_stock", "query", "call_hits", "kline_window"),
     "index": ("keys", "members", "weights", "valuation", "trend", "universe_keys"),
     "valuation": ("hist_stats",),
-    "stocks": ("list",),
+    "stocks": ("list", "limit_price", "limit_prices"),
 }
 INTL_ACTIONS = (
     "query_ccass", "query_shareholders", "query_org_rating",

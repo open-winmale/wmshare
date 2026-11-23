@@ -10,7 +10,7 @@
     ``_raw=True`` 取上游原始行（list[dict]，跳过规范化与换算）——诊断逃生口；
   - 本层是目录合同的薄翻译：高频方法显式包装；目录内其余非内部函数经 ``__getattr__``
     属性直达（如 ``cli.kline.screen_above_ma20``）；目录标 ``internal: true`` 的
-    规范化辅助（fmt_* 等）不再直达，请走 ``cli.call``——347 个底层函数零遮蔽；
+    规范化辅助（fmt_* 等）不再直达，请走 ``cli.call``——349 个底层函数零遮蔽；
   - 选股能力集中在 ``cli.screener``：单票筛选器（bool）、全市场宽度/涨跌榜与
     全市场条件选股 ``query()``（服务端索引直出）显式包装，kline 目录的其余筛选
     函数经属性直达。
@@ -1273,6 +1273,26 @@ class StocksApi(_Api):
         raise UsageError(
             f"未找到行业 {name!r}；先调 industries() 查目录，或改用行业代码（如 S48）",
             code="params")
+
+    def limit_prices(self) -> Any:
+        """全市场当日涨跌停价（规则价；非停牌，按代码升序）。
+
+        带宽按代码号段：30x/68x=20%、北交所=30%、其余=10%（ST 股按板块带宽）。
+        前收盘取 close/(1+percent) 后 snap 到分，限价四舍五入到分。
+
+        :returns: DataFrame/行表 · symbol/name/board/close/percent/basis/
+            limit_up/limit_down/rule/is_st；rule 为 unbounded（新股无涨跌幅日等）/
+            delisting（退市整理期）/no_price 时两个价格字段为空
+        """
+        return _out(self._c.call("stocks.limit_prices"))
+
+    def limit_price(self, symbol: str) -> Any:
+        """单票当日涨跌停价（未收录/停牌返回 None）。
+
+        :param symbol: 6 位裸码（也接受 .SH/.SZ/.BJ 后缀）
+        :returns: dict · 字段同 limit_prices
+        """
+        return self._c.call("stocks.limit_price", sym=symbol)
 
 
 # ---------------------------------------------------------------- 选股 market
@@ -3933,6 +3953,8 @@ FRIENDLY_INDEX: list[tuple[str, str, str, str, str]] = [
     ("market", "index", "trend", "指数估值趋势(周频)", "indices.trend"),
     ("market", "index", "universe_keys", "指数域可用键", "indices.universe_keys"),
     ("market", "stocks", "list", "全市场证券列表", "stocks.query_list"),
+    ("market", "stocks", "limit_prices", "全市场涨跌停价", "stocks.limit_prices"),
+    ("market", "stocks", "limit_price", "单票涨跌停价", "stocks.limit_price"),
     ("market", "stocks", "industries", "行业目录", "stocks.industry_list"),
     ("market", "stocks", "industry_members", "行业成分股", "stocks.industry_members"),
     ("market", "futures", "get", "期货连续合约单字段", "futures.query_bars（store 直读）"),

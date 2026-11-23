@@ -86,7 +86,7 @@
 | 3 | 外汇（人民币中间价/日线/基础信息） | **已上线 3.0+**：`cli.fx.rate/history/bars/list`（采集零新增，数据日更在库）；口径=每 1 单位外币折人民币（上游每 100 外币已 /100 归一），中间价与中行牌价分列 | script → wmshare | 已上线 |
 | 4 | FRED 美宏观序列暴露 | **已上线（3.1）**：`cli.us_macro.topics/search/series_meta/points`（精选 88 条 × 11 主题）；单位随序列而变（读 `series_meta().units`）、空值不补 0、需授权序列 `has_data=False` 永不抓取。**遗留**：web 页面读面 `fred.points`/`fred.series` 是「新→旧 + 期间码 year」契约，已标 internal 不进 SDK | wmshare（域 yaml + fred 读面） | 已上线 |
 | 5 | 股东人数历史序列（现仅最新值） | **已上线 3.2**：`cli.equity.query_holdernum_history(symbol, limit)` 读 raw 层单票多期档（600519 实测 108 期、2001-12-31 起），日期升序、比例=小数、与 `query_holdernum` 同口径；单票上限 300 期 | script 历史读面 → wmshare 条目 | 已上线 |
-| 6 | 每日涨跌停价格 | 派生评估（交易所规则 vs 落字段）：现 `$LIMIT_UP` 仅 ±10% 近似旗标；原料 $LISTING_BOARD/$IS_ST/$CLOSE_DAY 全在，纯计算无新采集 | script 派生 → wmshare 暴露 | 待评估 |
+| 6 | 每日涨跌停价格 | **已上线 3.2（当日快照）**：`cli.stocks.limit_price/limit_prices` 规则价=前收盘×(1±带宽) 四舍五入到分，带宽按代码号段（30x/68x=20%、北交所=30%、其余=10%）；实测贴近带宽的 158 行收盘价与规则价逐行相等；rule=unbounded/delisting 不给价。**历史序列待 ⑨ 的 namechange（历史 ST 状态）上线后补** | script 派生 → wmshare 暴露 | 已上线（快照） |
 | 7 | 概念板块（分类/成份/每日行情） | 三条板块日频资金流已落库零读面（概念×2 + 行业×1 板块口径）可先小步暴露；目录/成份/行情需新 collector（第二步） | 小步暴露 → airflow 新采集 → wmshare 域 | 待启动 |
 | 8 | 大宗交易 | 全链路空；龙虎榜四层范式可整套照抄（上游同为按交易日全市场接口 block_trade） | airflow → script → wmshare | 待启动 |
 | 9 | ST/停复牌变动历史（现仅时点旗标） | 6 停牌码+3 ST 码全时点态、collector 每日覆盖不留史；缺 namechange 采集（简称序列可推 ST 进出）+append 式停复牌史+stocks.lifecycle 读面 | airflow → script → wmshare | 待启动 |

@@ -2238,6 +2238,22 @@ class StocksNS(_Ns):
         """行业成分股"""
         return _out(self._client.call("stocks.industry_members", ind=ind, _raw=_raw), _raw)
 
+    def limit_prices(self, _raw: bool = False) -> Any:
+        """全市场涨跌停价（当日快照）
+
+:returns: ARR · 涨跌停价行（非停牌全市场，按代码升序）
+        """
+        return _out(self._client.call("stocks.limit_prices", _raw=_raw), _raw)
+
+    def limit_price(self, sym: str, _raw: bool = False) -> Any:
+        """单票涨跌停价（当日快照）
+
+:param sym: 6 位裸码或带 .SH/.SZ/.BJ 后缀
+
+:returns: MAP · 涨跌停价行（字段同 stocks.limit_prices；未收录/停牌返回 nil）
+        """
+        return _out(self._client.call("stocks.limit_price", sym=sym, _raw=_raw), _raw)
+
 class ToplistNS(_Ns):
     """龙虎榜（market.toplist）"""
 

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "generated_by": "tools/gen_api_docs.py",
-  "count": 277,
+  "count": 279,
   "domains": [
     {
       "id": "corp.equity",
@@ -7197,6 +7197,68 @@
           "internal": false,
           "units": {},
           "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "stocks.limit_prices",
+          "cn": "全市场涨跌停价（当日快照）",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "close": [
+              0,
+              10000.0
+            ],
+            "percent": [
+              -2,
+              2
+            ],
+            "basis": [
+              0,
+              10000.0
+            ],
+            "limit_up": [
+              0,
+              10000.0
+            ],
+            "limit_down": [
+              0,
+              10000.0
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "stocks.limit_price",
+          "cn": "单票涨跌停价（当日快照）",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "close": [
+              0,
+              10000.0
+            ],
+            "percent": [
+              -2,
+              2
+            ],
+            "basis": [
+              0,
+              10000.0
+            ],
+            "limit_up": [
+              0,
+              10000.0
+            ],
+            "limit_down": [
+              0,
+              10000.0
+            ]
+          },
           "checks": [],
           "fields": []
         }

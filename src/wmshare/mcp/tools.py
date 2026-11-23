@@ -846,6 +846,10 @@ def market(
         data = cli.valuation.hist_stats(
             _symbol(action, symbol), metric=metric, window=window
         )
+    elif domain == "stocks" and action == "limit_price":
+        data = cli.stocks.limit_price(_symbol(action, symbol))
+    elif domain == "stocks" and action == "limit_prices":
+        data = cli.stocks.limit_prices()
     else:
         data = cli.stocks.list()
     return success(runtime, data, output=output, max_rows=max_rows,

@@ -8,7 +8,7 @@ wmshare 取数代码**。优先用 MCP；没有 MCP 时用 skill 或文档上下
 - **目录先行**：指标码与函数可编程检索（`cat.search("中文")`），AI 不需要"背"接口，
   查一下再用；编造的码在发请求前就被 `CatalogError` 拦下。
 - **本地 MCP server**：29 个 task tools 覆盖发现、行情、财务、治理、披露、收息、估值、
-  ETF、回测、宏观、龙虎榜、期货、公告结构化与批量；全部 187 个 friendly API（169 登记 +
+  ETF、回测、宏观、龙虎榜、期货、公告结构化与批量；全部 189 个 friendly API（171 登记 +
   18 个组合接口）均可经 `wmshare_call(mode="api")` 兜底（macro 长尾与
   `cbond.article/figures` 仅网关路径）。输出统一 units/rows/next_action。
   结果是**结构化行数组**（DataFrame 在 MCP 边界统一转 records，NaN/NaT→null，

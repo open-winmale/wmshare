@@ -3173,6 +3173,175 @@
         }
       }
     },
+    "/stocks/limit_prices": {
+      "post": {
+        "operationId": "stocks_limit_prices",
+        "summary": "全市场当日涨跌停价（规则价；非停牌，按代码升序）。",
+        "description": "带宽按代码号段：30x/68x=20%、北交所=30%、其余=10%（ST 股按板块带宽）。、前收盘取 close/(1+percent) 后 snap 到分，限价四舍五入到分。、:returns: DataFrame/行表 · symbol/name/board/close/percent/basis/、limit_up/limit_down/rule/is_st；rule 为 unbounded（新股无涨跌幅日等）/、delisting（退市整理期）/no_price 时两个价格字段为空、底层目录函数 `stocks.limit_prices`。SDK 调用：`cli.stocks.limit_prices(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "市场行情"
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "涨跌停价行（代码升序）",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "symbol": {
+                        "type": "string",
+                        "description": "6 位代码"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "证券简称"
+                      },
+                      "board": {
+                        "type": "string",
+                        "description": "上市板块（交易所原文）"
+                      },
+                      "close": {
+                        "type": "number",
+                        "description": "最新价（元）"
+                      },
+                      "percent": {
+                        "type": "number",
+                        "description": "当日涨跌幅（小数）"
+                      },
+                      "basis": {
+                        "type": "number",
+                        "description": "前收盘（元，snap 到分）"
+                      },
+                      "limit_up": {
+                        "type": "number",
+                        "description": "涨停价（元）"
+                      },
+                      "limit_down": {
+                        "type": "number",
+                        "description": "跌停价（元）"
+                      },
+                      "rule": {
+                        "type": "string",
+                        "description": "规则标签 main10/gem20/star20/bse30/unbounded/delisting/no_price"
+                      },
+                      "is_st": {
+                        "type": "boolean",
+                        "description": "是否 ST"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "close": [
+              0,
+              10000.0
+            ],
+            "percent": [
+              -2,
+              2
+            ],
+            "basis": [
+              0,
+              10000.0
+            ],
+            "limit_up": [
+              0,
+              10000.0
+            ],
+            "limit_down": [
+              0,
+              10000.0
+            ]
+          }
+        }
+      }
+    },
+    "/stocks/limit_price": {
+      "post": {
+        "operationId": "stocks_limit_price",
+        "summary": "单票当日涨跌停价（未收录/停牌返回 None）。",
+        "description": ":returns: dict · 字段同 limit_prices、底层目录函数 `stocks.limit_price`。SDK 调用：`cli.stocks.limit_price(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "市场行情"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "symbol": {
+                    "type": "string",
+                    "description": "6 位裸码（也接受 .SH/.SZ/.BJ 后缀）"
+                  }
+                },
+                "required": [
+                  "symbol"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "close": [
+              0,
+              10000.0
+            ],
+            "percent": [
+              -2,
+              2
+            ],
+            "basis": [
+              0,
+              10000.0
+            ],
+            "limit_up": [
+              0,
+              10000.0
+            ],
+            "limit_down": [
+              0,
+              10000.0
+            ]
+          }
+        }
+      }
+    },
     "/stocks/industries": {
       "post": {
         "operationId": "stocks_industries",

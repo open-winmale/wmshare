@@ -1,6 +1,6 @@
 {
  "schema_version": 2,
- "upstream_rev": "9f982205",
+ "upstream_rev": "268733c4",
  "domains": {
   "bonus": {
    "entry": "sys/bonus/init.xs",
@@ -152,7 +152,7 @@
   "toplist",
   "valuation"
  ],
- "function_count": 357,
+ "function_count": 359,
  "functions": [
   {
    "name": "bonus.dps_rpt",
@@ -10815,6 +10815,29 @@
      "type": "string"
     }
    ]
+  },
+  {
+   "name": "stocks.limit_price",
+   "cn": "单票涨跌停价（当日快照）",
+   "example": "stocks.limit_price(\"600519\")",
+   "returns": "MAP · 涨跌停价行",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "sym",
+     "type": "string"
+    }
+   ]
+  },
+  {
+   "name": "stocks.limit_prices",
+   "cn": "全市场涨跌停价（当日快照）",
+   "example": "stocks.limit_prices()",
+   "returns": "ARR · 涨跌停价行(symbol/name/board/close/percent/basis/limit_up/limit_down/rule/is_st)",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": []
   },
   {
    "name": "stocks.query_list",

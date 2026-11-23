@@ -392,6 +392,16 @@ def estimate_cost(name: str, params: dict[str, Any] | None = None, *,
                    note=f"按返回期数线性：8 期冷 ≈2,000 / 热 ≈800 EC，95 期冷 ≈1.6 万 / 热 ≈1,850 EC"
                         f"（实测 2026-11-23）；此 limit={n} 冷态 ≈{800 + n * 170} EC，"
                         "复跑走 fmt 指纹缓存；单票上限 300 期（上游档宽）")
+    elif name == "stocks.limit_prices":
+        # 全市场索引一次投影（7 字段 × 非停牌 ≈5,683 行）。冷态档位对齐同规模
+        # 投影实测（kline.snapshot_batch 2026-11-17：5,693 行 ≈142,260 EC），
+        # 本接口 2026-11-23 live 复跑 75 EC（按自然日 memo）。
+        out.update(ec_lo=75, ec_hi=150_000, model="measured",
+                   note="全市场索引一次投影 ≈25 EC/行（冷 ≈14 万）、按自然日缓存，"
+                        "复跑 ≈75 EC；停牌股不返回")
+    elif name == "stocks.limit_price":
+        out.update(ec_lo=30, ec_hi=60, model="measured",
+                   note="单票索引点查 ≈30-50 EC（无全市场投影）")
     elif name.startswith("toplist."):
         # 实测（2026-11-19 live，修复后）：
         #   by_date 单日整榜 95 行 冷 12,858 → 热 175 EC（fmt_maps 指纹缓存）

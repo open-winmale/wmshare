@@ -1,5 +1,5 @@
 id: market.stocks
-version: 1.0.0
+version: 1.1.0
 cn: 证券与行业基础
 kind: computed
 category: market
@@ -23,3 +23,56 @@ functions:
   - {name: stocks.query_list, cn: 全市场证券列表, layer: L0}
   - {name: stocks.industry_list, cn: 行业目录, layer: L0}
   - {name: stocks.industry_members, cn: 行业成分股, layer: L0}
+  - name: stocks.limit_prices
+    cn: 全市场涨跌停价（当日快照）
+    kind: computed
+    layer: L0
+    ranges:
+      close: [0, 1.0e+4]
+      percent: [-2, 2]
+      basis: [0, 1.0e+4]
+      limit_up: [0, 1.0e+4]
+      limit_down: [0, 1.0e+4]
+    returns:
+      desc: ARR · 涨跌停价行（非停牌全市场，按代码升序）
+      shape:
+        kind: array
+        cn: 涨跌停价行（代码升序）
+        items:
+          kind: object
+          cn: 涨跌停价行
+          fields:
+            - {name: symbol, type: string, cn: 6 位代码}
+            - {name: name, type: string, cn: 证券简称}
+            - {name: board, type: string, cn: 上市板块（交易所原文）}
+            - {name: close, type: float64, cn: 最新价（元）}
+            - {name: percent, type: float64, cn: 当日涨跌幅（小数）}
+            - {name: basis, type: float64, cn: 前收盘（元，snap 到分）, optional: true}
+            - {name: limit_up, type: float64, cn: 涨停价（元）, optional: true}
+            - {name: limit_down, type: float64, cn: 跌停价（元）, optional: true}
+            - {name: rule, type: string, cn: 规则标签 main10/gem20/star20/bse30/unbounded/delisting/no_price}
+            - {name: is_st, type: bool, cn: 是否 ST}
+    example: stocks.limit_prices()
+    notes:
+      - 当日快照（非历史序列）：索引一次投影，全市场冷 ≈14 万 EC、同日复跑 ≈75 EC
+      - 带宽按代码号段：30x/68x=20%、43/83/87/88/92（北交所）=30%、其余=10%；ST 股按板块带宽（2026-11-23 全市场实测未见 5% 档）
+      - 前收盘 = ROUND(close/(1+percent), 2)（A 股报价恒为分，snap 到分消除 percent 四位小数误差）；限价 ROUND 到分
+      - rule=unbounded（当日涨跌幅超带宽 0.2 个百分点，如新股无涨跌幅日）/delisting（退市整理期）/no_price 时价格字段为 nil，不猜
+      - 停牌股不返回；新股上市前 5 个交易日无涨跌停，索引未物化上市日期——快照按板块带宽给理论价，超带宽会被标 unbounded，其余次新股请用 listingdate 自查（已知边界）
+  - name: stocks.limit_price
+    cn: 单票涨跌停价（当日快照）
+    kind: computed
+    layer: L0
+    params:
+      - {name: sym, type: string, required: true, desc: 6 位裸码或带 .SH/.SZ/.BJ 后缀}
+    ranges:
+      close: [0, 1.0e+4]
+      percent: [-2, 2]
+      basis: [0, 1.0e+4]
+      limit_up: [0, 1.0e+4]
+      limit_down: [0, 1.0e+4]
+    returns:
+      desc: MAP · 涨跌停价行（字段同 stocks.limit_prices；未收录/停牌返回 nil）
+    example: 'stocks.limit_price("600519")'
+    notes:
+      - 索引单票点查（≈30-50 EC），口径与全市场快照完全一致

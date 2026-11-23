@@ -114,7 +114,11 @@ def _recommended_tool(domain: str, method: str) -> str:
     if domain == "calendar":
         return "wmshare_call"
     if domain == "stocks":
-        return "wmshare_market" if method == "list" else "wmshare_screen"
+        # limit_price/limit_prices 由 wmshare_market 的 stocks 域直接服务；
+        # 只有行业成分/宽度类走 screen。
+        return ("wmshare_market"
+                if method in {"list", "limit_price", "limit_prices"}
+                else "wmshare_screen")
     if domain == "statements":
         return "wmshare_statement"
     if domain == "segments":
