@@ -471,22 +471,28 @@ def estimate_cost(name: str, params: dict[str, Any] | None = None, *,
             out.update(ec_lo=90, ec_hi=889, model="measured",
                        note="月频时序：冷态 ≈889 EC（12 期）→ 热态 ≈90 EC（数据版本键缓存）")
     elif name.startswith("fred."):
-        # 美宏观序列（market.us_macro 域）。静态面零 store 成本；点序列按行取数 +
-        # 数据版本键缓存。档位以部署后 metering.ec_cost probe 为准（禁拍脑袋）。
+        # 实测（2026-11-23 部署后 metering.ec_cost，cn 客户端）：
+        #   topics 408（静态包，但 xs.call 加载本身计费）/ search 1,324（同）/
+        #   series_meta 746 / points(20行) 冷 986 → 热 92 /
+        #   points(400行) 冷 61,432 → 热 92 / 窗口 2 年 7 行 394。
+        # **共同点：冷态与行数强相关（逐行组装），热态恒定 92 EC**（数据版本键
+        # 缓存命中后不再组装）——与 fx/reserve 同款，勿套 EC_PER_ROW 线性外推。
         if name == "fred.topics":
-            out.update(ec_lo=1, ec_hi=15, model="measured",
-                       note="静态主题包直读（xs/data/fred/topics.json），零 store 取数")
+            out.update(ec_lo=408, ec_hi=408, model="measured",
+                       note="静态主题包直读，恒定 ≈408 EC（xs.call 加载计费，无 store 取数）")
         elif name == "fred.search":
-            out.update(ec_lo=1, ec_hi=25, model="measured",
-                       note="在 88 条精选内匹配（静态包），零 store 取数")
+            out.update(ec_lo=1_324, ec_hi=1_324, model="measured",
+                       note="在 88 条精选内匹配，实测 ≈1,324 EC（含中文名/说明包加载）")
         elif name == "fred.series_meta":
-            out.update(ec_lo=50, ec_hi=250, model="measured",
-                       note="1 行探针判 has_data + 目录元信息单查")
+            out.update(ec_lo=746, ec_hi=746, model="measured",
+                       note="1 行探针判 has_data + 目录元信息单查，实测 ≈746 EC")
         else:  # fred.points_asc
             n = rows if (rows and rows > 0) else 500
-            out.update(ec_lo=60, ec_hi=max(200, int(n * 0.6)), model="measured",
-                       note=f"取数 + 逐行组装（{n} 根为上限），复跑走数据版本键缓存；"
-                            "窗口用 begin/end 下推可显著降本")
+            cold = max(900, int(n * 154))
+            out.update(ec_lo=92, ec_hi=cold, model="measured",
+                       note=f"冷态按行组装（实测 20 行 986、319 行 61,432 → ≈154 EC/行，"
+                            f"{n} 行 ≈{cold}）；**复跑恒定 92 EC**（数据版本键缓存）。"
+                            "长历史务必传 begin/end 收窄窗口（2 年 7 行仅 394 EC）")
     elif name.startswith("pdf_doc."):
         # 实测（2026-11-19 live）：search 5 行 ≈836 EC（含 fmt_one 组装，
         # 无结果缓存，复跑同价）；find_by_key/status/read_* 单行点查数百 EC。
