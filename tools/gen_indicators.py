@@ -13,6 +13,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import sys
 from pathlib import Path
@@ -27,6 +28,7 @@ import wmshare  # noqa: E402
 OUT = REPO / "docs" / "INDICATORS.md"
 PAGES_DIR = REPO / "docs" / "indicators"
 UNITS_YAML = REPO / "src" / "wmshare" / "_catalog" / "units.yaml"
+CATALOG_DIR = REPO / "src" / "wmshare" / "_catalog"
 
 UNIT_CN = {"percent": "百分数→小数", "yi_yuan": "亿元→元", "lot": "手→股"}
 
@@ -528,13 +530,22 @@ def _family_label(code: str) -> str:
     return "—"
 
 
-def _unit_line(code: str, overrides: dict) -> str:
+# taxonomy unit_kind → 单页单位口径说明（非 money/ratio 等基础单位时点明，
+# 否则「默认基础单位：额=元」对美元计价的码是误导——2026-11-23 储备批次修）
+_UNIT_KIND_CN = {
+    "usd_amount": "美元数值（本库金额默认为元；本码例外，值已是美元）",
+}
+
+
+def _unit_line(code: str, overrides: dict, unit_kind: str | None = None) -> str:
     row = overrides.get(code) or {}
-    if not row:
-        return "—（默认基础单位：率=小数 / 额=元 / 量=股）"
-    label = f"`{row.get('native_unit')}` → `{row.get('base_unit')}`"
-    note = row.get("note")
-    return f"{label}（{note}）" if note else label
+    if row:
+        label = f"`{row.get('native_unit')}` → `{row.get('base_unit')}`"
+        note = row.get("note")
+        return f"{label}（{note}）" if note else label
+    if unit_kind in _UNIT_KIND_CN:
+        return f"—（{_UNIT_KIND_CN[unit_kind]}）"
+    return "—（默认基础单位：率=小数 / 额=元 / 量=股）"
 
 
 def build_pages() -> dict[Path, str]:
@@ -547,6 +558,13 @@ def build_pages() -> dict[Path, str]:
     metrics = sorted(cat.metrics["metrics"], key=lambda m: m["code"])
     overrides = (yaml.safe_load(UNITS_YAML.read_text(encoding="utf-8")) or {}).get(
         "overrides") or {}
+    # taxonomy 的 unit_kind 补充 units.yaml 未覆盖的计价口径（usd_amount 等）
+    try:
+        _tax = json.loads(
+            (CATALOG_DIR / "generated" / "metric_taxonomy.json").read_text(encoding="utf-8"))
+        unit_kinds = {r["code"]: r.get("unit_kind") for r in _tax.get("metrics") or []}
+    except (OSError, ValueError, KeyError):
+        unit_kinds = {}
     pages: dict[Path, str] = {}
     by_chapter: dict[str, list[dict]] = {k: [] for k in CHAPTER_TITLES}
     for m in metrics:
@@ -559,7 +577,7 @@ def build_pages() -> dict[Path, str]:
         pages[PAGES_DIR / f"{code.lstrip('$')}.md"] = f"""# `{code}` — {m.get('cn') or '（无中文名）'}
 
 **类型/市场**：{CHAPTER_TITLES[chapter]} · {markets}
-**单位/换算**：{_unit_line(code, overrides)}
+**单位/换算**：{_unit_line(code, overrides, unit_kinds.get(code))}
 **族前缀**：{_family_label(code)}
 {gated}
 取数：`cli.indicator.get("600519", "{code}")` · 多码 `cli.indicator.metrics("600519", ["{code}"])`

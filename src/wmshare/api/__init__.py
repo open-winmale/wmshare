@@ -3125,22 +3125,24 @@ class MacroApi(_Api):
         return self._c.call("macro.phone_share", brand=brand, field=field)
 
     # ---- 官方储备（月频；值=美元数值，非亿元/非亿美元）----
-    def reserves(self) -> Any:
+    def reserves(self, *, _raw: bool = False, _fields: Any = None) -> Any:
         """储备项清单（DataFrame；含可用性——sdr/total 上游无生产者标 available=False）。
 
         **单位**：``value`` 是**美元数值**（外汇储备约 3.4e12=3.4 万亿美元、
         黄金储备约 3.1e11=3064 亿美元）。上游采集以「亿美元×1e8」入库，故原值即美元；
         黄金是美元市值口径，不是吨数/盎司。``date`` 为真实期次（月频可能滞后）。
         """
-        return _out(self._c.call("reserve.list"))
+        return _out(self._c.call("reserve.list"), raw=_raw, _fields=_fields)
 
-    def reserves_history(self, kind: str = "forex", n: int = 12) -> Any:
+    def reserves_history(self, kind: str = "forex", n: int = 12, *,
+                         _raw: bool = False, _fields: Any = None) -> Any:
         """储备时序（DataFrame，date 升序）。
 
         :param kind: 储备项（``forex``=国家外汇储备 / ``gold``=黄金储备；``sdr`` 暂无数据）
         :param n: 期数（1–48，月频）
         """
-        return _out(self._c.call("reserve.query", kind=kind, n=n))
+        return _out(self._c.call("reserve.query", kind=kind, n=n),
+                    raw=_raw, _fields=_fields)
 
     def reserves_asof(self, kind: str = "forex") -> Any:
         """储备最新值（dict；无数据返回 None——不返回 0 冒充）。
@@ -3163,40 +3165,53 @@ class FxApi(_Api):
     在库币种由 :meth:`list` 枚举（美元/欧元/日元/港币/英镑/澳元等）。
     """
 
-    def rate(self, ccy: str = "USD") -> Any:
+    def rate(self, ccy: str = "USD", *, _raw: bool = False) -> Any:
         """最新汇率（dict：ccy/date/middle/buy/cash_buy；无数据返回 None）。
 
         :param ccy: 币种 ISO 代码（``USD``/``EUR``/``JPY``/``HKD``；``RMB``/``CNH`` 归一为 ``CNY``）
+        :param _raw: True 返回上游原始行，跳过规范化
         """
-        return self._c.call("fx.rate", ccy=ccy)
+        return self._c.call("fx.rate", ccy=ccy, _raw=_raw)
 
-    def history(self, ccy: str = "USD", n: int = 30) -> Any:
+    def history(self, ccy: str = "USD", n: int = 30, *,
+                _raw: bool = False, _fields: Any = None) -> Any:
         """汇率日线（DataFrame，date 升序）。
 
         :param ccy: 币种 ISO 代码
-        :param n: 根数（1–2000；0=全历史）
+        :param n: 根数（1–2000；n<=0 归一到 30，不是「取全部」——全历史请用 bars 的 begin/end）
+        :param _raw: True 返回上游原始行
+        :param _fields: 列投影（字段名列表或逗号串）
         """
-        return _out(self._c.call("fx.history", ccy=ccy, n=n))
+        return _out(self._c.call("fx.history", ccy=ccy, n=n),
+                    raw=_raw, _fields=_fields)
 
     def bars(self, ccy: str = "USD", begin: str | None = None,
-             end: str | None = None, limit: int = 500) -> Any:
+             end: str | None = None, limit: int = 500, *,
+             _raw: bool = False, _fields: Any = None) -> Any:
         """汇率区间日线（DataFrame，date 升序）。
 
         :param ccy: 币种 ISO 代码
         :param begin: 开始日期 YYYY-MM-DD（可空）
         :param end: 结束日期 YYYY-MM-DD（可空）
         :param limit: 根数上限（1–500，Client 单次上限）
+        :param _raw: True 返回上游原始行
+        :param _fields: 列投影（字段名列表或逗号串）
         """
         kwargs: dict[str, Any] = {"ccy": ccy, "limit": limit}
         if begin:
             kwargs["begin"] = begin
         if end:
             kwargs["end"] = end
-        return _out(self._c.call("fx.query_bars", **kwargs))
+        return _out(self._c.call("fx.query_bars", **kwargs),
+                    raw=_raw, _fields=_fields)
 
-    def list(self) -> Any:
-        """在库币种清单（DataFrame：ccy/date/middle）。"""
-        return _out(self._c.call("fx.list"))
+    def list(self, *, _raw: bool = False, _fields: Any = None) -> Any:
+        """在库币种清单（DataFrame：ccy/date/middle）。
+
+        :param _raw: True 返回上游原始行
+        :param _fields: 列投影（字段名列表或逗号串）
+        """
+        return _out(self._c.call("fx.list"), raw=_raw, _fields=_fields)
 
 
 class EtfApi(_Api):

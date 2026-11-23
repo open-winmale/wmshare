@@ -16,8 +16,9 @@ notes:
     中间价是每 100 外币口径，美元≈673.5、日元≈4.2，直接使用会差 100 倍）'
   - '中间价（央行授权外汇交易中心发布）与中行牌价（汇买价/钞买价）是两个口径：
     middle=中间价，buy=中行汇买价，cash_buy=中行钞买价，勿混用'
-  - '在库币种由 fx.list 枚举（实测覆盖美元/欧元/日元/港币/英镑/澳元/加元/新加坡元/
-    瑞士法郎/林吉特/泰铢/韩元/新台币等 18 个候选）；不在库的币种返回 nil/空，不造 0'
+  - '在库币种由 fx.list 枚举（2026-11-23 实测 16 个：美元/欧元/日元/港币/英镑/澳元/
+    加元/新加坡元/瑞士法郎/林吉特/泰铢/韩元/新西兰元/瑞典克朗/挪威克朗/丹麦克朗；
+    新台币与人民币不在库）；探测不到的币种不出现、不造 0'
   - '中间价按交易日发布且缺失时前向填充（上游 common_fill_forward）；牌价仅在发布日写入
     ——因此 buy 可能有缺口而 middle 连续'
 functions:
@@ -42,7 +43,7 @@ functions:
     layer: L0
     params:
       - {name: ccy, type: string, required: true, desc: 币种 ISO 代码（同 rate）}
-      - {name: n, type: int, required: false, default: 30, desc: 根数（1..2000；0=全历史）}
+      - {name: n, type: int, required: false, default: 30, desc: 根数（1..2000；n<=0 归一到 30——不是「取全部」，全历史请用 query_bars 的 begin/end）}
     returns:
       desc: ARR · 汇率日线（date 升序；date/ccy/middle/buy）
       shape_ref: inventory

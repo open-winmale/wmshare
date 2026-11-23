@@ -786,7 +786,7 @@ class FxNS(_Ns):
         """汇率日线序列
 
 :param ccy: 币种 ISO 代码（同 rate）
-:param n: 根数（1..2000；0=全历史）
+:param n: 根数（1..2000；n<=0 归一到 30——不是「取全部」，全历史请用 query_bars 的 begin/end）
 
 :returns: ARR · 汇率日线（date 升序；date/ccy/middle/buy）
         """
