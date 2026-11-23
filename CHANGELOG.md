@@ -9,7 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > MAJOR；弃用至少保留 1 个 MINOR，并在 `Deprecated` 段登记替代写法与移除版本。
 > 升级前请扫一眼 Removed / Changed / Deprecated 段。
 
-## [Unreleased]
+## [2.9.0] - 2026-11-23
+
+### Added
+
+- `cli.futures.bars(fut_code, n=, begin=, end=, freq=, fields=, _raw=)`：期货主力连续**历史K线**（此前只有 `get`/`snapshot` 单值与 `mapping` 映射，历史序列只能裸 eval）。与 `kline.bars` 同形——date 升序、DataFrame 默认、`_raw=True` 逃生口；`freq=d/w/m`（日 11 字段 / 周月 8 字段），点数硬顶 d 3000 / w 600 / m 300（成本按点×码线性，暖态 ≈8-11 EC/点·码，2026-11-23 实测）。`date` 为周期起点口径（月=当月 1 日、周=ISO 周一、日=当日）。demo 快照不回放历史序列（显式 `demo_unsupported`）。
+- `wmshare_futures` MCP 工具新增 `bars` action（`n` 或 `begin+end` 二选一）——AI 代理经 MCP 可直达期货历史K线。
 
 ## [2.8.0] - 2026-11-21
 

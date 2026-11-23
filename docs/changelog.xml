@@ -5,8 +5,17 @@
     <link>https://github.com/open-winmale/wmshare</link>
     <description>wmshare 版本变更与接口弃用公告（由 CHANGELOG.md 生成）</description>
     <language>zh-CN</language>
-    <lastBuildDate>Sat, 21 Nov 2026 00:00:00 +0800</lastBuildDate>
+    <lastBuildDate>Mon, 23 Nov 2026 00:00:00 +0800</lastBuildDate>
     <atom:link href="https://github.com/open-winmale/wmshare/raw/main/docs/changelog.xml" rel="self" type="application/rss+xml"/>
+    <item>
+      <title>wmshare 2.9.0 (2026-11-23)</title>
+      <link>https://github.com/open-winmale/wmshare/releases/tag/v2.9.0</link>
+      <guid isPermaLink="false">wmshare:2.9.0</guid>
+      <pubDate>Mon, 23 Nov 2026 00:00:00 +0800</pubDate>
+      <description>Added
+- `cli.futures.bars(fut_code, n=, begin=, end=, freq=, fields=, _raw=)`：期货主力连续**历史K线**（此前只有 `get`/`snapshot` 单值与 `mapping` 映射，历史序列只能裸 eval）。与 `kline.bars` 同形——date 升序、DataFrame 默认、`_raw=True` 逃生口；`freq=d/w/m`（日 11 字段 / 周月 8 字段），点数硬顶 d 3000 / w 600 / m 300（成本按点×码线性，暖态 ≈8-11 EC/点·码，2026-11-23 实测）。`date` 为周期起点口径（月=当月 1 日、周=ISO 周一、日=当日）。demo 快照不回放历史序列（显式 `demo_unsupported`）。
+- `wmshare_futures` MCP 工具新增 `bars` action（`n` 或 `begin+end` 二选一）——AI 代理经 MCP 可直达期货历史K线。</description>
+    </item>
     <item>
       <title>wmshare 2.8.0 (2026-11-21)</title>
       <link>https://github.com/open-winmale/wmshare/releases/tag/v2.8.0</link>
@@ -281,15 +290,6 @@ Changed
       <description>Fixed
 - **修正 PyPI 1.21.0 门面指向已下线的底层函数**：1.21.0 的 statements 门面 委托一个目录函数（内部命名空间，现已随后续上游回归移除）——从 PyPI 安装 1.21.0 的用户调用 `cli.statements.income()` 会报「未知函数」。本版改为 SDK 内置读取脚本实现（三加一 × cn/hk/us，读 fin_* 宽表），含 `indicators()`（主要指标）。
 - 1.21.0 的 rest 行为（`period` 二档、`quarters`、`compare/tree/years` 下线）保持不变；本次仅修正底层取数实现与文档。</description>
-    </item>
-    <item>
-      <title>wmshare 1.21.0 (2026-11-16)</title>
-      <link>https://github.com/open-winmale/wmshare/releases/tag/v1.21.0</link>
-      <guid isPermaLink="false">wmshare:1.21.0</guid>
-      <pubDate>Mon, 16 Nov 2026 00:00:00 +0800</pubDate>
-      <description>Fixed
-- 文档机制保持：组合接口按 composite 渲染路径出参数表与示例； 手写计数（README/GUIDE/AI/INDICATORS/SKILL/docs）与运行时真值一致 （288 函数 / 129 核心 / 137 friendly / 8 组合）。
-- raw-eval 读取不经过目录合同的单位换算与量级守护层（与专业版页面同级）； 列映射由消费侧负责。上游 script 仓同步回归原状（statement 家族保留给 内部页面/附注），本版本与上游部署同窗口发布。</description>
     </item>
   </channel>
 </rss>
