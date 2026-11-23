@@ -2,9 +2,9 @@
 
 前提：凭证可选——无凭证自动回落匿名试用（免注册、真实数据、需网络）
 运行：python examples/26_board_moneyflow.py
-学到：三源（同花顺概念/行业、东财概念+行业）各成一套板块体系，不做跨源映射；
-      额统一为元（同花顺原值亿元已换算）、比率统一为小数、板块指数是点位；
-      榜单按主力净额降序，缺字段为空（同花顺无四档单量、东财无买卖总额）
+学到：三源（ths 概念/行业、dc 概念+行业）各成一套板块体系，不做跨源映射；
+      额统一为元（ths 原值亿元已换算）、比率统一为小数、板块指数是点位；
+      榜单按主力净额降序，缺字段为空（ths 无四档单量、dc 无买卖总额）
 文档：docs/GUIDE.md「行情」节 · API.md「板块资金流」章 · estimate_cost('board.moneyflow_last')
 """
 
@@ -54,7 +54,7 @@ def main(cli: Any = None) -> None:
         same = [x["code"] for x in a] == [x["code"] for x in b]
         print(f"  {latest_date} 前 5 板块与最新榜单一致：{same}")
 
-    print("== 4. 字段边界：同花顺有买卖总额，东财有四档单量（缺失为空） ==")
+    print("== 4. 字段边界：ths 有买卖总额，dc 有四档单量（缺失为空） ==")
     ths = cli.board.moneyflow_last("ths_concept", 1)
     dc = cli.board.moneyflow_last("dc", 1)
     for name, df in (("ths_concept", ths), ("dc", dc)):
