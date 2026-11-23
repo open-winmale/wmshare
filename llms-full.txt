@@ -3658,7 +3658,7 @@ cli.us_macro.series_meta()
 | `series_id` | string | 否 | `'GDP'` | 序列 id（如 ``GDP``/``UNRATE``/``DGS10``） |
 | `begin` | string | 否 | `None` | 开始日期 YYYY-MM-DD（可空=全历史；服务端窗口下推） |
 | `end` | string | 否 | `None` | 结束日期 YYYY-MM-DD（可空） |
-| `limit` | integer | 否 | `500` | 根数（缺省 500、上限 10000——store 单次硬顶，截最新 N 个点； |
+| `limit` | integer | 否 | `500` | 根数，截最新 N 个点。**两层上限**：Client 默认 ``max_limit=500`` |
 
 **输出字段**
 
@@ -7332,7 +7332,7 @@ A 股龙虎榜——指定交易日全市场榜单与单票上榜历史（交易
 | `fred.topics` | 精选主题树 | 原始数据 | L0 | — | ARR · 主题行（topic/name/series）；11 主题合计 88 条序列；字段 topic:string（主题 id（如 growth）） / name:string（主题中文名（如 增长）） / series:array（该主题下的序列 id 清单） | — | 例：`cli.call("fred.topics")`
 | `fred.search` | 精选序列检索 | 原始数据 | L0 | `keyword:string` — 关键词（匹配序列 id / 中文名 / 一句话说明；空串返回全部精选） · `limit:int?` — 返回条数，缺省 20，上限 88 | ARR · 命中行（id/title_zh/blurb_zh/topic）；字段 id:string（序列 id（如 GDP）） / title_zh:string（精选中文名） / blurb_zh:string（精选一句话说明） / topic:string（所属主题 id） | — | 例：`cli.call("fred.search", keyword='GDP', limit=10)`
 | `fred.series_meta` | 序列元信息 | 原始数据 | L0 | `id:string` — 序列 id（如 GDP、UNRATE、DGS10；大写，自动归一） | MAP · 序列元信息；字段 id:string（序列 id） / title:string（原英文标题） / title_zh:string（精选中文名） / blurb_zh:string（精选一句话说明） / units:string（单位（随序列而变：Percent/Billions of Dollars/Thousands of Persons…）） / frequency_short:string（原生频率（Q/M/W/D…）） / release_name:string（所属发布（如 Gross Domestic Product）） / status:string（入库状态（fetched/not_fetched/pre_approval_required…）） / has_data:bool（库里是否有观测（true/false）） / series_url:string（上游序列页 URL） / citation:string（引用要求） / hint:string（无数据时的说明） | — | 例：`cli.call("fred.series_meta", id='GDP')`
-| `fred.points_asc` | 序列点（date 升序） | 原始数据 | L0 | `id:string` — 序列 id（如 GDP、UNRATE、DGS10） · `begin:string?` — 开始日期 YYYY-MM-DD（可空=全历史） · `end:string?` — 结束日期 YYYY-MM-DD（可空） · `limit:int?` — 根数，缺省 500、上限 10000（store 单次硬顶）；截的是最新 N 个点，更长历史按 begin/end 分段各取一次 | ARR · 点（id/date/value；date 升序，空值已跳过）；字段 id:string（序列 id） / date:string（观测日期 YYYY-MM-DD） / value:float（观测值（单位见 fred.series_meta 的 units）） | 量级界 `value`；不变量 `date_iso` | 例：`cli.call("fred.points_asc", id='GDP', begin='', end='', limit=200)`
+| `fred.points_asc` | 序列点（date 升序） | 原始数据 | L0 | `id:string` — 序列 id（如 GDP、UNRATE、DGS10） · `begin:string?` — 开始日期 YYYY-MM-DD（可空=全历史） · `end:string?` — 结束日期 YYYY-MM-DD（可空） · `limit:int?` — 根数（截最新 N 个点）。两层上限：Client 默认 max_limit=500（要更多须 Client(max_limit=None)），服务端 store 硬顶 10000；更长历史按 begin/end 分段各取一次 | ARR · 点（id/date/value；date 升序，空值已跳过）；字段 id:string（序列 id） / date:string（观测日期 YYYY-MM-DD） / value:float（观测值（单位见 fred.series_meta 的 units）） | 量级界 `value`；不变量 `date_iso` | 例：`cli.call("fred.points_asc", id='GDP', begin='', end='', limit=200)`
 | `fred.points` | 折线点（web 读面，新→旧） | 原始数据 | L1 | `id:any`（签名） | ARR · 点 | — | 例：`cli.call("fred.points", id='GDP')`
 | `fred.series` | 已入库包（web 读面） | 原始数据 | L1 | `id:any`（签名） | MAP · 序列包 | — | 例：`cli.call("fred.series", id='GDP')`
 

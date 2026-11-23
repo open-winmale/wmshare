@@ -1054,7 +1054,8 @@ def macro(
     实测成本（2026-11-23）：us_topics ≈408 EC、us_search ≈1,324 EC；
     us_series 冷态 ≈150 EC/行（323 行约 4.7 万、10000 行约 46.8 万），
     **复跑恒定 ≈92 EC**——长历史先读一次再复算，或缩小 n。
-    n 上限 10000（store 单次硬顶）；更长历史用 cli.us_macro.points(begin/end) 分段取。
+    n 受 Client 默认 max_limit=500 约束（要更多须 Client(max_limit=None)），
+    服务端 store 硬顶 10000；更长历史用 cli.us_macro.points(begin/end) 分段取。
     """
     if action not in MACRO_ACTIONS:
         raise ValueError(f"action 只支持 {'/'.join(MACRO_ACTIONS)}")

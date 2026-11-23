@@ -3298,8 +3298,9 @@ class UsMacroApi(_Api):
         :param series_id: 序列 id（如 ``GDP``/``UNRATE``/``DGS10``）
         :param begin: 开始日期 YYYY-MM-DD（可空=全历史；服务端窗口下推）
         :param end: 结束日期 YYYY-MM-DD（可空）
-        :param limit: 根数（缺省 500、上限 10000——store 单次硬顶，截最新 N 个点；
-            更长历史请按 ``begin``/``end`` 分段各取一次，调大 limit 无益）
+        :param limit: 根数，截最新 N 个点。**两层上限**：Client 默认 ``max_limit=500``
+            （要更多须 ``Client(max_limit=None)``），服务端 store 硬顶 10000；
+            更长历史请按 ``begin``/``end`` 分段各取一次
         :param _raw: True 返回上游原始行
         :param _fields: 列投影（字段名列表或逗号串）
         """

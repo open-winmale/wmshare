@@ -10107,7 +10107,7 @@
             {
               "name": "limit",
               "required": false,
-              "desc": "根数（缺省 500、上限 10000——store 单次硬顶，截最新 N 个点；；默认 500"
+              "desc": "根数，截最新 N 个点。**两层上限**：Client 默认 ``max_limit=500``"
             }
           ],
           "returns": {
