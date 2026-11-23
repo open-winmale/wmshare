@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "generated_by": "tools/gen_api_docs.py",
-  "count": 276,
+  "count": 277,
   "domains": [
     {
       "id": "corp.equity",
@@ -56,6 +56,49 @@
             "avg_free_shares": [
               0,
               10000000000.0
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "equity.query_holdernum_history",
+          "cn": "股东户数历史序列",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "holder_total_num": [
+              0,
+              100000000.0
+            ],
+            "total_num_ratio": [
+              -1,
+              100000.0
+            ],
+            "avg_free_shares": [
+              0,
+              10000000000.0
+            ],
+            "avg_freeshares_ratio": [
+              -2,
+              3
+            ],
+            "avg_hold_amt": [
+              0,
+              1000000000.0
+            ],
+            "price": [
+              0,
+              10000.0
+            ],
+            "hold_ratio_total": [
+              0,
+              1
+            ],
+            "freehold_ratio_total": [
+              0,
+              1
             ]
           },
           "checks": [],

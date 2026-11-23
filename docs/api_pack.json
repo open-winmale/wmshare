@@ -2,9 +2,9 @@
   "schema_version": 2,
   "generated_by": "tools/gen_api_docs.py",
   "meta": {
-    "core": 168,
+    "core": 169,
     "composite": 18,
-    "docs_visible": 163,
+    "docs_visible": 164,
     "variants": 21,
     "domains": 27,
     "categories": [
@@ -25,7 +25,7 @@
         "cn": "参考数据"
       }
     ],
-    "test_ready": 161,
+    "test_ready": 162,
     "sampled": 170,
     "samples_provenance": {
       "captured_at": "2026-11-23",
@@ -17669,7 +17669,7 @@
           "method": "query_holdernum",
           "cn": "最新股东户数",
           "composite": false,
-          "desc": "最新股东户数（end_date/hold_focus/avg_hold_amt 单行）。",
+          "desc": "最新股东户数（end_date/holder_total_num/hold_focus/avg_hold_amt 单行）。",
           "params": [
             {
               "name": "symbol",
@@ -17684,6 +17684,10 @@
               {
                 "name": "end_date",
                 "desc": "截止日期"
+              },
+              {
+                "name": "holder_total_num",
+                "desc": "股东户数（户）"
               },
               {
                 "name": "total_num_ratio",
@@ -17759,6 +17763,100 @@
               "hold_ratio_total": 0.6773702615,
               "price": 1258.62,
               "total_num_ratio": -0.060863
+            }
+          }
+        },
+        {
+          "key": "equity.query_holdernum_history",
+          "ns": "equity",
+          "method": "query_holdernum_history",
+          "cn": "股东户数历史",
+          "composite": false,
+          "desc": "股东户数历史序列（end_date 升序；比例=小数，户数=户，金额=元）。",
+          "params": [
+            {
+              "name": "symbol",
+              "required": true,
+              "desc": "6 位裸码（也接受带 .SH/.SZ/.BJ 后缀）"
+            },
+            {
+              "name": "limit",
+              "required": false,
+              "desc": "最近 N 期（默认 40 期≈10 年；上限 500）"
+            }
+          ],
+          "returns": {
+            "kind": "array",
+            "desc": null,
+            "fields": [
+              {
+                "name": "end_date",
+                "desc": "截止日期"
+              },
+              {
+                "name": "holder_total_num",
+                "desc": "股东户数（户）"
+              },
+              {
+                "name": "total_num_ratio",
+                "desc": "户数环比（小数）"
+              },
+              {
+                "name": "avg_free_shares",
+                "desc": "户均流通持股（股）"
+              },
+              {
+                "name": "avg_freeshares_ratio",
+                "desc": "户均流通占比（小数）"
+              },
+              {
+                "name": "hold_focus",
+                "desc": "持股集中度描述"
+              },
+              {
+                "name": "price",
+                "desc": "最新价（元）"
+              },
+              {
+                "name": "avg_hold_amt",
+                "desc": "户均持股市值（元）"
+              },
+              {
+                "name": "hold_ratio_total",
+                "desc": "持股比例合计（小数）"
+              },
+              {
+                "name": "freehold_ratio_total",
+                "desc": "流通股持股比例合计（小数）"
+              }
+            ]
+          },
+          "notes": [
+            "raw 层单票多期档（600519 实测 108 期，2001-12-31 起）；清洗层按期分档只留最新快照",
+            "raw 比例为百分数，规范化后与 query_holdernum 同为小数",
+            "total_num_ratio 上界 1e5（小数）：次新股首期户数可从个位数跳到数万户，实测 301269 首期 +8535 倍，属真实口径",
+            "缺值不补 0；end_date 截断为 YYYY-MM-DD"
+          ],
+          "docs_visible": true,
+          "example": "cli.equity.query_holdernum_history(\"600519\", limit=10)",
+          "test": {
+            "kwargs": {
+              "symbol": "600519",
+              "limit": 10
+            },
+            "path": "/v1/analysis/xs/eval",
+            "body": {
+              "symbol": "600519",
+              "xs_lines": [
+                "__r := equity.query_holdernum_history(\"600519\", 10)",
+                "return equity.fmt_holdernum_history(__r)"
+              ],
+              "args": {
+                "print.plain": true
+              },
+              "script_files": {},
+              "mode": "call",
+              "market": "cn"
             }
           }
         },

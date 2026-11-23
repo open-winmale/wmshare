@@ -935,6 +935,23 @@ def test_equity_domain_smoke(cli):
         assert r is None or isinstance(r, dict)
 
 
+def test_holdernum_history_series(cli):
+    """股东户数历史（raw 多期档）：日期升序、末期与快照同值、比例=小数。"""
+    out = _call_or_xfail(lambda: cli.equity.query_holdernum_history("600519", 8))
+    rows = out.to_dict("records") if hasattr(out, "to_dict") else out
+    assert rows, "600519 应有股东户数历史"
+    dates = [str(r["end_date"]) for r in rows]
+    assert dates == sorted(dates), f"end_date 必须升序：{dates[:3]}…"
+    assert len(set(dates)) == len(dates), "end_date 不得重复"
+    last = rows[-1]
+    assert int(last["holder_total_num"]) > 0
+    assert 0 <= float(last["hold_ratio_total"]) <= 1, "比例必须已归一为小数"
+    snap = _call_or_xfail(lambda: cli.equity.query_holdernum("600519"))
+    assert snap is not None
+    assert str(snap["end_date"])[:10] == str(last["end_date"])
+    assert int(snap["holder_total_num"]) == int(last["holder_total_num"])
+
+
 def test_margin_domain_smoke(cli):
     rows = _call_or_xfail(lambda: cli.margin.query("600519", 5))
     assert rows is None or isinstance(rows, list)

@@ -42,7 +42,10 @@ FULL_PARTS = [
 # 2026-11-23：futures.bars 历史K线门面（API.md 小节 + GUIDE 期货段 + 计数位），预算 424.6K→426.6K；
 # 2026-11-23：futures.query_bars 目录注册（API.md 附录行 + guard manifest 行 + 计数位），预算 426.6K→429K；
 # 2026-11-23：外汇(4)+储备(3) 双域（API.md 新章节 + 附录 7 行 + 信封文档），预算 429K→445K；
-FULL_SIZE_BUDGET = 455_000  # 2026-11-23 美宏观批次（+4 us_macro 章节）；bytes（UTF-8）；禁内联 INDICATORS 全文
+# 2026-11-23：户数历史（equity.query_holdernum_history）把全文推到 455,468 B，超出上一档 468 B。
+# 已先压缩该接口 notes（API.md 不含 notes，无收益）；按先例提预算，一次留出 P2 余量——
+# 后续 ⑥⑦⑧⑨ 每个接口在 API.md 约 0.5-0.8 KB，462K 可覆盖 M1+M2。
+FULL_SIZE_BUDGET = 462_000  # 2026-11-23 P2 批次（户数历史 + 后续覆盖项）；bytes（UTF-8）；禁内联 INDICATORS 全文
 
 
 def _indicators_brief(cat) -> str:

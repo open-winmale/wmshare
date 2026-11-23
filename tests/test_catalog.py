@@ -7,8 +7,8 @@ def test_load_and_stats():
     cat = load()
     s = cat.stats()
     assert s["domains"] == 27, s  # +1 market.us_macro（美宏观，2026-11-23）
-    assert s["functions"] == 345, s  # +4 us_macro 公开 +2 internal（fred，2026-11-23）
-    assert s["raw"] == 249 and s["computed"] == 96, s  # raw +6（fred 6 个）；computed 不变
+    assert s["functions"] == 347, s  # +1 equity.query_holdernum_history 公开（§5）+1 internal fmt（2026-11-23）
+    assert s["raw"] == 251 and s["computed"] == 96, s  # raw +2（户数历史查询与规范化）；computed 不变
     assert s["metric_catalog_total"] == 2983, s
     assert s["upstream_rev"], "inventory 应锚定 upstream rev"
 
@@ -97,7 +97,7 @@ def test_scope_and_categories():
     # 股本股东（v1.5 起具备函数面；requires 指向 sys/equity 预载链）
     assert cat.domain("corp.equity")["stores"] == ["biz.equity", "ref.info"]
     assert cat.domain("corp.equity")["requires"]["path"] == "sys/equity/init.xs"
-    assert len(cat.domain("corp.equity")["functions"]) == 50  # +buyback.snapshot
+    assert len(cat.domain("corp.equity")["functions"]) == 52  # +buyback.snapshot；+户数历史（查询+规范化）
 
 
 def test_curated_metric_groups_exist():

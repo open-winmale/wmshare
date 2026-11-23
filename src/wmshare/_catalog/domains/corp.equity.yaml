@@ -1,5 +1,5 @@
 id: corp.equity
-version: 2.2.0
+version: 2.3.0
 cn: 股东与股本
 kind: raw
 category: reference
@@ -34,6 +34,48 @@ functions:
   # ---- 股东 ----
   - {name: equity.query_holder10, cn: 最新一期十大股东, layer: L0, normalize_with: equity.fmt_holder10, ranges: {hold_num_ratio: [0, 1]}}
   - {name: equity.query_holdernum, cn: 最新股东户数, layer: L0, normalize_with: equity.fmt_holdernum, ranges: {hold_ratio_total: [0, 1], freehold_ratio_total: [0, 1], total_num_ratio: [-1, 1], avg_freeshares_ratio: [-1, 1], avg_hold_amt: [0, 1.0e+09], avg_free_shares: [0, 1.0e+10]}, notes: [total_num_ratio 为股东户数环比变化率，可为负（户数减少），下界取 -1；原下界 0 会让默认调用抛 DataError]}
+  - name: equity.query_holdernum_history
+    cn: 股东户数历史序列
+    kind: raw
+    layer: L0
+    params:
+      - {name: sym, type: string, required: true, desc: 6 位裸码或带 .SH/.SZ/.BJ 后缀}
+      - {name: limit, type: int, required: false, default: 40, desc: 最近 N 期（40 期≈10 年；上限 500）}
+    ranges:
+      holder_total_num: [0, 1.0e+08]
+      total_num_ratio: [-1, 1.0e+05]
+      avg_free_shares: [0, 1.0e+10]
+      avg_freeshares_ratio: [-2, 3]
+      avg_hold_amt: [0, 1.0e+09]
+      price: [0, 1.0e+04]
+      hold_ratio_total: [0, 1]
+      freehold_ratio_total: [0, 1]
+    returns:
+      desc: ARR · 户数历史行（END_DATE 升序，最近 N 期）
+      shape:
+        kind: array
+        cn: 户数历史行（日期升序）
+        items:
+          kind: object
+          cn: 户数行
+          fields:
+            - {name: end_date, type: string, cn: 截止日期}
+            - {name: holder_total_num, type: float64, cn: 股东户数（户）, optional: true}
+            - {name: total_num_ratio, type: float64, cn: 户数环比（小数）, optional: true}
+            - {name: avg_free_shares, type: float64, cn: 户均流通持股（股）, optional: true}
+            - {name: avg_freeshares_ratio, type: float64, cn: 户均流通占比（小数）, optional: true}
+            - {name: hold_focus, type: string, cn: 持股集中度描述, optional: true}
+            - {name: price, type: float64, cn: 最新价（元）, optional: true}
+            - {name: avg_hold_amt, type: float64, cn: 户均持股市值（元）, optional: true}
+            - {name: hold_ratio_total, type: float64, cn: 持股比例合计（小数）, optional: true}
+            - {name: freehold_ratio_total, type: float64, cn: 流通股持股比例合计（小数）, optional: true}
+    normalize_with: equity.fmt_holdernum_history
+    example: 'equity.query_holdernum_history("600519", 8)'
+    notes:
+      - raw 层单票多期档（600519 实测 108 期，2001-12-31 起）；清洗层按期分档只留最新快照
+      - raw 比例为百分数，规范化后与 query_holdernum 同为小数
+      - total_num_ratio 上界 1e5（小数）：次新股首期户数可从个位数跳到数万户，实测 301269 首期 +8535 倍，属真实口径
+      - 缺值不补 0；end_date 截断为 YYYY-MM-DD
   # ---- 质押 ----
   - {name: equity.query_pledge_detail, cn: 主要股东质押明细, layer: L0, normalize_with: equity.fmt_pledge_detail, units: {accum_pledge_tsr: percent, pf_hold_ratio: percent, pf_tsr: percent}, ranges: {accum_pledge_tsr: [0, 1], pf_hold_ratio: [0, 1], pf_tsr: [0, 1]}}
   - {name: equity.query_pledge_summary, cn: 公司质押比例, layer: L0, normalize_with: equity.fmt_pledge_summary, ranges: {pledge_ratio: [0, 1]}}
@@ -109,8 +151,31 @@ functions:
           cn: 股东户数行
           fields:
             - {name: end_date, type: string, cn: 截止日期}
+            - {name: holder_total_num, type: float64, cn: 股东户数（户）, optional: true}
             - {name: total_num_ratio, type: float64, cn: 股东户数环比（小数）, optional: true}
             - {name: avg_free_shares, type: float64, cn: 户均流通持股数（股）, optional: true}
+            - {name: avg_freeshares_ratio, type: float64, cn: 户均流通占比（小数）, optional: true}
+            - {name: hold_focus, type: string, cn: 持股集中度描述, optional: true}
+            - {name: price, type: float64, cn: 最新价（元）, optional: true}
+            - {name: avg_hold_amt, type: float64, cn: 户均持股市值（元）, optional: true}
+            - {name: hold_ratio_total, type: float64, cn: 持股比例合计（小数）, optional: true}
+            - {name: freehold_ratio_total, type: float64, cn: 流通股持股比例合计（小数）, optional: true}
+  - name: equity.fmt_holdernum_history
+    internal: true
+    cn: 股东户数历史规范化
+    layer: L1
+    returns:
+      desc: ARR · 规范化户数历史行（日期升序；比例=小数）
+      shape:
+        kind: array
+        items:
+          kind: object
+          cn: 户数历史行
+          fields:
+            - {name: end_date, type: string, cn: 截止日期}
+            - {name: holder_total_num, type: float64, cn: 股东户数（户）, optional: true}
+            - {name: total_num_ratio, type: float64, cn: 户数环比（小数）, optional: true}
+            - {name: avg_free_shares, type: float64, cn: 户均流通持股（股）, optional: true}
             - {name: avg_freeshares_ratio, type: float64, cn: 户均流通占比（小数）, optional: true}
             - {name: hold_focus, type: string, cn: 持股集中度描述, optional: true}
             - {name: price, type: float64, cn: 最新价（元）, optional: true}

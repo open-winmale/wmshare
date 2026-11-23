@@ -383,6 +383,15 @@ def estimate_cost(name: str, params: dict[str, Any] | None = None, *,
     elif name == "notice.type_regex":
         out.update(ec_lo=8, ec_hi=20, model="measured",
                    note="单键正则解析，实测 ≈14 EC")
+    elif name == "equity.query_holdernum_history":
+        # 实测（2026-11-23 live）：8 期 冷 1,967 → 热 794 EC；95 期 冷 15,623 → 热 1,853 EC。
+        # 成本在 CONOF 逐行规范化（取数只是单档 store.find），所以按 limit 线性。
+        n = rows if (rows and rows > 0) else 40
+        out.update(ec_lo=700 + int(n * 10), ec_hi=800 + int(n * 170),
+                   model="measured",
+                   note=f"按返回期数线性：8 期冷 ≈2,000 / 热 ≈800 EC，95 期冷 ≈1.6 万 / 热 ≈1,850 EC"
+                        f"（实测 2026-11-23）；此 limit={n} 冷态 ≈{800 + n * 170} EC，"
+                        "复跑走 fmt 指纹缓存；单票上限 300 期（上游档宽）")
     elif name.startswith("toplist."):
         # 实测（2026-11-19 live，修复后）：
         #   by_date 单日整榜 95 行 冷 12,858 → 热 175 EC（fmt_maps 指纹缓存）

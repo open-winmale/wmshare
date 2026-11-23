@@ -1,6 +1,6 @@
 {
  "schema_version": 2,
- "upstream_rev": "2f7d012e",
+ "upstream_rev": "9f982205",
  "domains": {
   "bonus": {
    "entry": "sys/bonus/init.xs",
@@ -152,7 +152,7 @@
   "toplist",
   "valuation"
  ],
- "function_count": 355,
+ "function_count": 357,
  "functions": [
   {
    "name": "bonus.dps_rpt",
@@ -2818,15 +2818,57 @@
       "optional": true
      },
      {
-      "name": "hold_focus",
+      "name": "holder_total_num",
       "type": "float64",
-      "cn": "持股集中度",
+      "cn": "股东户数（户）",
+      "optional": true
+     },
+     {
+      "name": "total_num_ratio",
+      "type": "float64",
+      "cn": "户数环比（小数）",
+      "optional": true
+     },
+     {
+      "name": "avg_free_shares",
+      "type": "float64",
+      "cn": "户均流通持股（股）",
+      "optional": true
+     },
+     {
+      "name": "avg_freeshares_ratio",
+      "type": "float64",
+      "cn": "户均流通占比（小数）",
+      "optional": true
+     },
+     {
+      "name": "hold_focus",
+      "type": "string",
+      "cn": "持股集中度描述",
+      "optional": true
+     },
+     {
+      "name": "price",
+      "type": "float64",
+      "cn": "最新价（元）",
       "optional": true
      },
      {
       "name": "avg_hold_amt",
       "type": "float64",
-      "cn": "平均持股金额",
+      "cn": "户均持股市值（元）",
+      "optional": true
+     },
+     {
+      "name": "hold_ratio_total",
+      "type": "float64",
+      "cn": "持股比例合计（小数）",
+      "optional": true
+     },
+     {
+      "name": "freehold_ratio_total",
+      "type": "float64",
+      "cn": "流通股持股比例合计（小数）",
       "optional": true
      }
     ]
@@ -2836,6 +2878,88 @@
     {
      "name": "props",
      "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "equity.fmt_holdernum_history",
+   "cn": "股东户数历史规范化",
+   "example": "equity.fmt_holdernum_history(equity.query_holdernum_history(\"600519\", 8))",
+   "returns": "ARR · 户数行（日期升序）",
+   "returns_shape": {
+    "kind": "array",
+    "cn": "户数历史行（日期升序）",
+    "items": {
+     "kind": "object",
+     "cn": "户数行",
+     "fields": [
+      {
+       "name": "end_date",
+       "type": "string",
+       "cn": "截止日期"
+      },
+      {
+       "name": "holder_total_num",
+       "type": "float64",
+       "cn": "股东户数（户）",
+       "optional": true
+      },
+      {
+       "name": "total_num_ratio",
+       "type": "float64",
+       "cn": "户数环比（小数）",
+       "optional": true
+      },
+      {
+       "name": "avg_free_shares",
+       "type": "float64",
+       "cn": "户均流通持股（股）",
+       "optional": true
+      },
+      {
+       "name": "avg_freeshares_ratio",
+       "type": "float64",
+       "cn": "户均流通占比（小数）",
+       "optional": true
+      },
+      {
+       "name": "hold_focus",
+       "type": "string",
+       "cn": "持股集中度描述",
+       "optional": true
+      },
+      {
+       "name": "price",
+       "type": "float64",
+       "cn": "最新价（元）",
+       "optional": true
+      },
+      {
+       "name": "avg_hold_amt",
+       "type": "float64",
+       "cn": "户均持股市值（元）",
+       "optional": true
+      },
+      {
+       "name": "hold_ratio_total",
+       "type": "float64",
+       "cn": "持股比例合计（小数）",
+       "optional": true
+      },
+      {
+       "name": "freehold_ratio_total",
+       "type": "float64",
+       "cn": "流通股持股比例合计（小数）",
+       "optional": true
+      }
+     ]
+    }
+   },
+   "min_args": null,
+   "params": [
+    {
+     "name": "rows",
+     "type": "array"
     }
    ]
   },
@@ -3623,6 +3747,24 @@
     {
      "name": "sym",
      "type": "string"
+    }
+   ]
+  },
+  {
+   "name": "equity.query_holdernum_history",
+   "cn": "股东户数历史",
+   "example": "equity.query_holdernum_history(\"600519\", 8)",
+   "returns": "ARR · 户数行",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "sym",
+     "type": "string"
+    },
+    {
+     "name": "limit",
+     "type": "int"
     }
    ]
   },

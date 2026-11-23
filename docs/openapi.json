@@ -8434,7 +8434,7 @@
     "/equity/query_holdernum": {
       "post": {
         "operationId": "equity_query_holdernum",
-        "summary": "最新股东户数（end_date/hold_focus/avg_hold_amt 单行）。",
+        "summary": "最新股东户数（end_date/holder_total_num/hold_focus/avg_hold_amt 单行）。",
         "description": "底层目录函数 `equity.query_holdernum`。SDK 调用：`cli.equity.query_holdernum(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "参考数据"
@@ -8470,6 +8470,10 @@
                       "end_date": {
                         "type": "string",
                         "description": "截止日期"
+                      },
+                      "holder_total_num": {
+                        "type": "number",
+                        "description": "股东户数（户）"
                       },
                       "total_num_ratio": {
                         "type": "number",
@@ -8535,6 +8539,133 @@
             "avg_free_shares": [
               0,
               10000000000.0
+            ]
+          }
+        }
+      }
+    },
+    "/equity/query_holdernum_history": {
+      "post": {
+        "operationId": "equity_query_holdernum_history",
+        "summary": "股东户数历史序列（end_date 升序；比例=小数，户数=户，金额=元）。",
+        "description": "数据源为 raw 层单票多期档（单票最多 300 期），与、``query_holdernum`` 同为清洗口径（比例已 /100）。、:returns: DataFrame/行表 · end_date/holder_total_num/total_num_ratio/、avg_free_shares/avg_freeshares_ratio/hold_focus/price/avg_hold_amt/、hold_ratio_total/freehold_ratio_total、底层目录函数 `equity.query_holdernum_history`。SDK 调用：`cli.equity.query_holdernum_history(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "参考数据"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "symbol": {
+                    "type": "string",
+                    "description": "6 位裸码（也接受带 .SH/.SZ/.BJ 后缀）"
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "description": "最近 N 期（默认 40 期≈10 年；上限 500）"
+                  }
+                },
+                "required": [
+                  "symbol"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "户数历史行（日期升序）",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "end_date": {
+                        "type": "string",
+                        "description": "截止日期"
+                      },
+                      "holder_total_num": {
+                        "type": "number",
+                        "description": "股东户数（户）"
+                      },
+                      "total_num_ratio": {
+                        "type": "number",
+                        "description": "户数环比（小数）"
+                      },
+                      "avg_free_shares": {
+                        "type": "number",
+                        "description": "户均流通持股（股）"
+                      },
+                      "avg_freeshares_ratio": {
+                        "type": "number",
+                        "description": "户均流通占比（小数）"
+                      },
+                      "hold_focus": {
+                        "type": "string",
+                        "description": "持股集中度描述"
+                      },
+                      "price": {
+                        "type": "number",
+                        "description": "最新价（元）"
+                      },
+                      "avg_hold_amt": {
+                        "type": "number",
+                        "description": "户均持股市值（元）"
+                      },
+                      "hold_ratio_total": {
+                        "type": "number",
+                        "description": "持股比例合计（小数）"
+                      },
+                      "freehold_ratio_total": {
+                        "type": "number",
+                        "description": "流通股持股比例合计（小数）"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "holder_total_num": [
+              0,
+              100000000.0
+            ],
+            "total_num_ratio": [
+              -1,
+              100000.0
+            ],
+            "avg_free_shares": [
+              0,
+              10000000000.0
+            ],
+            "avg_freeshares_ratio": [
+              -2,
+              3
+            ],
+            "avg_hold_amt": [
+              0,
+              1000000000.0
+            ],
+            "price": [
+              0,
+              10000.0
+            ],
+            "hold_ratio_total": [
+              0,
+              1
+            ],
+            "freehold_ratio_total": [
+              0,
+              1
             ]
           }
         }

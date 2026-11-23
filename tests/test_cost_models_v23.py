@@ -33,6 +33,15 @@ def test_notice_category_static_tables_are_cheap():
     assert keys["ec_lo"] < regex["ec_lo"] + 10  # 都个位数~十几 EC
 
 
+def test_holdernum_history_cost_scales_with_periods():
+    """户数历史：8 期冷 ≈2,000 / 95 期冷 ≈1.6 万，按返回期数线性（2026-11-23 实测）。"""
+    small = _est("equity.query_holdernum_history", {"symbol": "600036", "limit": 8})
+    big = _est("equity.query_holdernum_history", {"symbol": "601318", "limit": 500})
+    assert small["ec_hi"] == 800 + 170 * 8, small
+    assert big["ec_hi"] == 800 + 170 * 500, big
+    assert "指纹缓存" in small["note"]
+
+
 def test_toplist_by_date_cold_vs_warm():
     """整日榜单冷态逐行规范化 ≈1.3 万，复跑走指纹缓存 ≈175。"""
     est = _est("toplist.by_date", {"trade_date": "2026-11-18", "limit": 100})

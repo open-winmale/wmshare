@@ -10,7 +10,7 @@
     ``_raw=True`` 取上游原始行（list[dict]，跳过规范化与换算）——诊断逃生口；
   - 本层是目录合同的薄翻译：高频方法显式包装；目录内其余非内部函数经 ``__getattr__``
     属性直达（如 ``cli.kline.screen_above_ma20``）；目录标 ``internal: true`` 的
-    规范化辅助（fmt_* 等）不再直达，请走 ``cli.call``——345 个底层函数零遮蔽；
+    规范化辅助（fmt_* 等）不再直达，请走 ``cli.call``——347 个底层函数零遮蔽；
   - 选股能力集中在 ``cli.screener``：单票筛选器（bool）、全市场宽度/涨跌榜与
     全市场条件选股 ``query()``（服务端索引直出）显式包装，kline 目录的其余筛选
     函数经属性直达。
@@ -2832,8 +2832,24 @@ class EquityApi(_Api):
         return _out(self._c.call("equity.query_holder10", sym=symbol))
 
     def query_holdernum(self, symbol: str) -> Any:
-        """最新股东户数（end_date/hold_focus/avg_hold_amt 单行）。"""
+        """最新股东户数（end_date/holder_total_num/hold_focus/avg_hold_amt 单行）。"""
         return self._c.call("equity.query_holdernum", sym=symbol)
+
+    def query_holdernum_history(self, symbol: str, limit: int = 40) -> Any:
+        """股东户数历史序列（end_date 升序；比例=小数，户数=户，金额=元）。
+
+        数据源为 raw 层单票多期档（单票最多 300 期），与
+        ``query_holdernum`` 同为清洗口径（比例已 /100）。
+
+        :param symbol: 6 位裸码（也接受带 .SH/.SZ/.BJ 后缀）
+        :param limit: 最近 N 期（默认 40 期≈10 年；上限 500）
+        :returns: DataFrame/行表 · end_date/holder_total_num/total_num_ratio/
+            avg_free_shares/avg_freeshares_ratio/hold_focus/price/avg_hold_amt/
+            hold_ratio_total/freehold_ratio_total
+        """
+        rows = self._c.call("equity.query_holdernum_history",
+                            sym=symbol, limit=limit)
+        return _out(_sort_rows_by_date(rows, key="end_date"))
 
     # ---- 质押 ----
     def query_pledge_detail(self, symbol: str, limit: int = 20) -> Any:
@@ -3993,6 +4009,8 @@ FRIENDLY_INDEX: list[tuple[str, str, str, str, str]] = [
     # ---- equity：全部 query_*（fmt_* 规范化工具经属性直达）----
     ("reference", "equity", "query_holder10", "最新一期十大股东", "equity.query_holder10"),
     ("reference", "equity", "query_holdernum", "最新股东户数", "equity.query_holdernum"),
+    ("reference", "equity", "query_holdernum_history", "股东户数历史",
+     "equity.query_holdernum_history"),
     ("reference", "equity", "query_pledge_detail", "主要股东质押明细",
      "equity.query_pledge_detail"),
     ("reference", "equity", "query_pledge_summary", "公司质押比例",

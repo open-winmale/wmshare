@@ -460,6 +460,19 @@ class EquityNS(_Ns):
         """最新股东户数"""
         return _out(self._client.call("equity.query_holdernum", sym=sym, _raw=_raw), _raw)
 
+    def query_holdernum_history(self, sym: str, limit: int = 40, _raw: bool = False) -> Any:
+        """股东户数历史序列
+
+:param sym: 6 位裸码或带 .SH/.SZ/.BJ 后缀
+:param limit: 最近 N 期（40 期≈10 年；上限 500）
+
+:returns: ARR · 户数历史行（END_DATE 升序，最近 N 期）
+        """
+        kw: dict[str, Any] = {"sym": sym}
+        if limit is not None:
+            kw["limit"] = limit
+        return _out(self._client.call("equity.query_holdernum_history", **kw, _raw=_raw), _raw)
+
     def query_pledge_detail(self, sym: str, limit: int | None = None, _raw: bool = False) -> Any:
         """主要股东质押明细"""
         kw: dict[str, Any] = {"sym": sym}
