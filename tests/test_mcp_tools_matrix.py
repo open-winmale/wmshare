@@ -121,7 +121,10 @@ def test_company_every_block(runtime, block):
 def test_company_default_include(runtime):
     result = tools.company(runtime, "600519")
     _ok(result)
-    # _limit_tree 会把 symbol 并进 blocks 字典，故用子集断言
+    # symbol 留在顶层、blocks 只放块（_limit_tree 曾把 symbol 搬进 blocks，
+    # 导致 row_count 每次多报 1；矩阵测试当时只好退成子集断言）。
+    assert result["data"]["symbol"] == "600519"
+    assert "symbol" not in result["data"]["blocks"]
     assert {"profile", "income", "indicators", "dividend", "notices"} <= set(
         result["data"]["blocks"])
 

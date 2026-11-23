@@ -127,6 +127,8 @@ def success(
 ) -> dict[str, Any]:
     output = _output(output)
     max_rows = _max_rows(max_rows)
+    tail = _time_series_tail(data)
+    tail_keys = _tail_keys(data)
     data = _plain(data)
     rows_total = _row_count(data)
     shown: Any = data
@@ -136,14 +138,16 @@ def success(
     elif output == "summary":
         shown = _summary(data)
     elif isinstance(data, list) and len(data) > max_rows:
-        shown = data[:max_rows]
+        shown = data[-max_rows:] if tail else data[:max_rows]
         truncated = True
         meta.setdefault(
             "next_action",
-            f"提高 max_rows（<= {MAX_ROWS}）、缩小筛选范围，或改用 output=summary/count",
+            (f"时间序列仅保留最近 {max_rows} 行；缩小查询区间或改用 output=summary/count"
+             if tail else
+             f"提高 max_rows（<= {MAX_ROWS}）、缩小筛选范围，或改用 output=summary/count"),
         )
     elif isinstance(data, dict):
-        shown, dict_truncated = _limit_tree(data, max_rows)
+        shown, dict_truncated = _limit_tree(data, max_rows, tail_keys)
         truncated = dict_truncated
         if truncated:
             meta.setdefault(
@@ -230,15 +234,85 @@ def _max_rows(value: int) -> int:
 
 
 def _plain(value: Any) -> Any:
+    """把门面返回值收敛为 JSON 安全的行数组/标量。
+
+    门面（``cli.ns.method``）2.0 起默认返回 pandas DataFrame；MCP 边界必须
+    先转 records，否则 ``str(DataFrame)`` 会把截断后的 pandas 文本预览塞进
+    ``data``（列被折断、row_count 误报 1、max_rows 失效）。
+    """
     if isinstance(value, BatchResult):
         return flatten_batch(value)
     if isinstance(value, dict):
         return {str(k): _plain(v) for k, v in value.items()}
     if isinstance(value, (list, tuple)):
         return [_plain(v) for v in value]
-    if value is None or isinstance(value, (str, int, float, bool)):
+    if value is None or isinstance(value, (str, bool, int)):
         return value
+    if isinstance(value, float):
+        # NaN/Inf 不是合法 JSON；pandas 缺失值在序列化层统一收敛为 null
+        return value if math.isfinite(value) else None
+    to_records = getattr(value, "to_dict", None)
+    if callable(to_records):  # DataFrame → 行数组（Series 等非 records 形态走兜底）
+        try:
+            return _plain(to_records("records"))
+        except (TypeError, ValueError):
+            pass
+    # pandas NA/NaT 既不是 float 也不能 JSON 序列化
+    if type(value).__name__ in {"NAType", "NaTType"}:
+        return None
+    isoformat = getattr(value, "isoformat", None)
+    if callable(isoformat):  # datetime/date/Timestamp → ISO 字符串
+        try:
+            return isoformat()
+        except (TypeError, ValueError):
+            pass
+    item = getattr(value, "item", None)  # numpy 标量 → 原生标量
+    if callable(item) and not hasattr(value, "index"):
+        try:
+            return _plain(item())
+        except (TypeError, ValueError):
+            pass
     return str(value)
+
+
+def _time_series_tail(value: Any) -> bool:
+    """是否为升序时间序列 DataFrame（超限时保留最新行）。
+
+    只认 ``date`` / ``sas`` 列且字符串升序；排名类 DataFrame（如龙虎榜）
+    不含这两列，仍走头部截断。
+    """
+    to_records = getattr(value, "to_dict", None)
+    columns = getattr(value, "columns", None)
+    if not callable(to_records) or columns is None:
+        return False
+    names = {str(name) for name in columns}
+    key = "date" if "date" in names else "sas" if "sas" in names else None
+    if key is None:
+        return False
+    try:
+        raw_values = value[key].tolist()
+    except (AttributeError, KeyError, TypeError, ValueError):
+        return False
+    values: list[str] = []
+    for item in raw_values:
+        if item is None:
+            continue
+        token = str(item)
+        # 缺失值在 str() 下会变成 "nan"/"NaT"/"None" 这类字面量；夹在中间会
+        # 让排序判定失败，时间序列静默退回头部截断（保留最旧而非最新）。
+        if token in {"nan", "NaT", "None", ""}:
+            continue
+        values.append(token)
+    return bool(values) and values == sorted(values)
+
+
+def _tail_keys(data: Any) -> dict[str, bool]:
+    """顶层 dict/blocks 中值为时间序列 DataFrame 的键（须在 _plain 前判定）。"""
+    if not isinstance(data, dict):
+        return {}
+    blocks = data.get("blocks")
+    target = blocks if isinstance(blocks, dict) else data
+    return {str(key): _time_series_tail(value) for key, value in target.items()}
 
 
 def _row_count(data: Any) -> int:
@@ -289,24 +363,43 @@ def _summary(data: Any) -> dict[str, Any]:
     }
 
 
-def _limit_tree(data: Any, max_rows: int) -> tuple[Any, bool]:
-    """Apply the output cap to list values in dict/block payloads."""
+def _limit_tree(data: Any, max_rows: int,
+                tail_keys: dict[str, bool] | None = None,
+                tail: bool = False) -> tuple[Any, bool]:
+    """Apply the output cap to list values in dict/block payloads.
+
+    ``tail_keys`` 标记顶层 dict/blocks 中的时间序列键：超限时保留尾部最新行；
+    其余列表仍保留头部。更深层列表不追踪类型，维持原语义。
+    """
+    tail_keys = tail_keys or {}
     if isinstance(data, list) and len(data) > max_rows:
-        return data[:max_rows], True
+        return (data[-max_rows:] if tail else data[:max_rows]), True
     if isinstance(data, dict) and isinstance(data.get("blocks"), dict):
-        limited: dict[str, Any] = {"symbol": data.get("symbol")}
+        blocks = data["blocks"]
+        limited: dict[str, Any] = {}
         truncated = False
-        for key, value in data["blocks"].items():
-            value, value_truncated = _limit_tree(value, max_rows)
+        for key, value in blocks.items():
+            value, value_truncated = _limit_tree(
+                value, max_rows, tail=tail_keys.get(str(key), False))
             limited[key] = value
             truncated = truncated or value_truncated
-        return {"blocks": limited}, truncated
+        # blocks 里只放块；其余顶层键（symbol 等）必须留在顶层。此前把 symbol
+        # 塞进 blocks 会让 _row_count 把它当一行（wmshare_company 每次多报 1）、
+        # _summary 的 block_row_counts 里出现伪块。
+        rest = {key: value for key, value in data.items() if key != "blocks"}
+        if rest:
+            rest, rest_truncated = _limit_tree(rest, max_rows, tail_keys)
+            truncated = truncated or rest_truncated
+        payload: dict[str, Any] = dict(rest)
+        payload["blocks"] = limited
+        return payload, truncated
     if isinstance(data, dict):
         out: dict[str, Any] = {}
         truncated = False
         for key, value in data.items():
             if isinstance(value, list) and len(value) > max_rows:
-                out[key] = value[:max_rows]
+                out[key] = (value[-max_rows:] if tail_keys.get(str(key))
+                            else value[:max_rows])
                 truncated = True
             elif isinstance(value, dict):
                 out[key], value_truncated = _limit_tree(value, max_rows)
