@@ -1,0 +1,106 @@
+id: market.board
+version: 1.0.0
+cn: 板块资金流
+kind: raw
+category: market
+priority: P1
+description: 板块级日频资金流——ths 概念/行业与 dc 概念·行业三张全市场榜单（每交易日
+  一档，按主力净流入降序）。额=元、率=小数、指数点位保持点位；三源板块代码不互通。
+data_origin: [平台数据服务]
+units:
+  money: 元（三源统一；ths 原值亿元已 ×1e8）
+  ratio: 小数（0.0347 = 3.47%）
+  point: 指数点（板块指数收盘）
+requires: {path: sys/board/init.xs, preloaded: false}
+notes:
+  - 来源 src ∈ ths_concept（ths 概念 386 行/日）/ ths_industry（ths 行业 90 行/日）/ dc（dc 概念+行业 1,081 行/日，content_type 区分）
+  - 单日榜按 net_amount 降序取前 N，不是时间序列；ths 与 dc 板块代码/名称不互通，不做跨源映射
+  - ths 有买卖总额与领涨股涨跌幅，dc 有四档单量金额与净额占比；缺失字段 nil（不补 0）
+functions:
+  - name: board.moneyflow
+    cn: 指定交易日板块资金流
+    kind: raw
+    layer: L0
+    params:
+      - {name: src, type: string, required: true, desc: ths_concept / ths_industry / dc}
+      - {name: trade_date, type: string, required: true, desc: 交易日 YYYY-MM-DD 或 YYYYMMDD}
+      - {name: limit, type: int, required: false, default: 100, desc: 返回前 N 个板块（按主力净流入降序）}
+    ranges:
+      net_amount: [-1.0e+12, 1.0e+12]
+      net_buy: [0, 1.0e+12]
+      net_sell: [0, 1.0e+12]
+      pct_change: [-1, 1]
+      pct_change_stock: [-1, 1]
+      index_close: [0, 1.0e+06]
+      company_num: [0, 5000]
+      rank: [0, 5000]
+      buy_elg: [-1.0e+12, 1.0e+12]
+      buy_lg: [-1.0e+12, 1.0e+12]
+      buy_md: [-1.0e+12, 1.0e+12]
+      buy_sm: [-1.0e+12, 1.0e+12]
+    returns:
+      desc: ARR · 板块资金流行（净额降序；单位见域说明）
+      shape:
+        kind: array
+        cn: 板块资金流行
+        items:
+          kind: object
+          cn: 板块行
+          fields:
+            - {name: date, type: string, cn: 交易日}
+            - {name: code, type: string, cn: 板块代码（上游代码）}
+            - {name: name, type: string, cn: 板块名称}
+            - {name: source, type: string, cn: 来源 ths_concept/ths_industry/dc}
+            - {name: net_amount, type: float64, cn: 主力净流入（元）, optional: true}
+            - {name: net_amount_ratio, type: float64, cn: 净流入占比（小数，仅 dc）, optional: true}
+            - {name: net_buy, type: float64, cn: 流入额（元，仅 ths）, optional: true}
+            - {name: net_sell, type: float64, cn: 流出额（元，仅 ths）, optional: true}
+            - {name: pct_change, type: float64, cn: 板块涨跌幅（小数）, optional: true}
+            - {name: pct_change_stock, type: float64, cn: 领涨股涨跌幅（小数，仅 ths）, optional: true}
+            - {name: company_num, type: int, cn: 成分股数, optional: true}
+            - {name: lead_stock, type: string, cn: 领涨股, optional: true}
+            - {name: index_close, type: float64, cn: 板块指数点位, optional: true}
+            - {name: content_type, type: string, cn: 概念/行业（仅 dc）, optional: true}
+            - {name: rank, type: int, cn: 排名（仅 dc）, optional: true}
+            - {name: buy_elg, type: float64, cn: 超大单净额（元，仅 dc）, optional: true}
+            - {name: buy_lg, type: float64, cn: 大单净额（元，仅 dc）, optional: true}
+            - {name: buy_md, type: float64, cn: 中单净额（元，仅 dc）, optional: true}
+            - {name: buy_sm, type: float64, cn: 小单净额（元，仅 dc）, optional: true}
+    normalize_with: board.fmt_maps
+    example: 'board.moneyflow("ths_concept", "2026-11-20", 20)'
+    notes:
+      - 空日期/未知 src 返回空数组；非交易日无该档 → 空
+  - name: board.moneyflow_last
+    cn: 最新交易日板块资金流
+    kind: raw
+    layer: L0
+    params:
+      - {name: src, type: string, required: true, desc: ths_concept / ths_industry / dc}
+      - {name: limit, type: int, required: false, default: 100, desc: 返回前 N 个板块（按主力净流入降序）}
+    ranges:
+      net_amount: [-1.0e+12, 1.0e+12]
+    returns:
+      desc: ARR · 最新交易日板块资金流行（净额降序；其余字段同 board.moneyflow）
+      shape:
+        kind: array
+        cn: 板块资金流行（字段同 board.moneyflow）
+        items:
+          kind: object
+          cn: 板块行
+          fields:
+            - {name: date, type: string, cn: 交易日}
+            - {name: code, type: string, cn: 板块代码（上游代码）}
+            - {name: name, type: string, cn: 板块名称}
+            - {name: net_amount, type: float64, cn: 主力净流入（元）, optional: true}
+    normalize_with: board.fmt_maps
+    example: 'board.moneyflow_last("ths_industry", 10)'
+    notes:
+      - 以该来源最新 trade_date 做数据版本键缓存，落库即换键（复跑近乎免费）
+  - name: board.fmt_maps
+    internal: true
+    cn: 板块资金流行规范化
+    layer: L1
+    params:
+      - {name: rows, type: any, required: true, desc: moneyflow/moneyflow_last 的原始行}
+    returns:
+      desc: ARR · 规范化板块行（额=元、率=小数、点位=指数点）

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "generated_by": "tools/gen_api_docs.py",
-  "count": 279,
+  "count": 281,
   "domains": [
     {
       "id": "corp.equity",
@@ -3103,6 +3103,89 @@
             "dv_ttm": [
               0,
               0.5
+            ]
+          },
+          "checks": [],
+          "fields": []
+        }
+      ]
+    },
+    {
+      "id": "market.board",
+      "kind": "raw",
+      "data_origin": [
+        "平台数据服务"
+      ],
+      "functions": [
+        {
+          "name": "board.moneyflow",
+          "cn": "指定交易日板块资金流",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "net_amount": [
+              -1000000000000.0,
+              1000000000000.0
+            ],
+            "net_buy": [
+              0,
+              1000000000000.0
+            ],
+            "net_sell": [
+              0,
+              1000000000000.0
+            ],
+            "pct_change": [
+              -1,
+              1
+            ],
+            "pct_change_stock": [
+              -1,
+              1
+            ],
+            "index_close": [
+              0,
+              1000000.0
+            ],
+            "company_num": [
+              0,
+              5000
+            ],
+            "rank": [
+              0,
+              5000
+            ],
+            "buy_elg": [
+              -1000000000000.0,
+              1000000000000.0
+            ],
+            "buy_lg": [
+              -1000000000000.0,
+              1000000000000.0
+            ],
+            "buy_md": [
+              -1000000000000.0,
+              1000000000000.0
+            ],
+            "buy_sm": [
+              -1000000000000.0,
+              1000000000000.0
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "board.moneyflow_last",
+          "cn": "最新交易日板块资金流",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "net_amount": [
+              -1000000000000.0,
+              1000000000000.0
             ]
           },
           "checks": [],

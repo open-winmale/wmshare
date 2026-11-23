@@ -935,6 +935,25 @@ def test_equity_domain_smoke(cli):
         assert r is None or isinstance(r, dict)
 
 
+def test_board_moneyflow_three_sources(cli):
+    """板块资金流：三源同口径（额=元、率=小数），指定日与最新日逐行一致。"""
+    for src, min_rows in (("ths_concept", 300), ("ths_industry", 80), ("dc", 900)):
+        out = _call_or_xfail(lambda: cli.board.moneyflow_last(src, 5))
+        rows = out.to_dict("records") if hasattr(out, "to_dict") else list(out)
+        assert len(rows) == 5, f"{src} 应返回 5 行，实际 {len(rows)}"
+        first = rows[0]
+        assert first["source"] == src
+        assert abs(float(first["net_amount"])) > 1e6, f"{src} 净额应为元量级"
+        assert -1 < float(first["pct_change"]) < 1, f"{src} 涨跌幅应为小数"
+    # 指定交易日回查与最新榜一致（同排序、同截断）
+    last = _call_or_xfail(lambda: cli.board.moneyflow_last("ths_concept", 5))
+    rows = last.to_dict("records") if hasattr(last, "to_dict") else list(last)
+    day = rows[0]["date"]
+    back = _call_or_xfail(lambda: cli.board.moneyflow("ths_concept", day, 5))
+    back_rows = back.to_dict("records") if hasattr(back, "to_dict") else list(back)
+    assert [r["code"] for r in rows] == [r["code"] for r in back_rows]
+
+
 def test_limit_prices_snapshot(cli):
     """每日涨跌停价：全市场快照的规则价必须与当日封板收盘精确相等。"""
     out = _call_or_xfail(lambda: cli.stocks.limit_prices())

@@ -81,6 +81,9 @@ INCLUDED_NS = frozenset({
     # 精选 88 条 × 11 主题。web 页面用的 fred.points/fred.series 标 internal 不进目录，
     # SDK 读面是 fred.topics/search/points_asc/series_meta 四个）
     "fred",
+    # 3.2：板块资金流（上游日频全市场榜单直读，market.board 域；
+    # ths 概念/行业 + dc 概念·行业，额统一元、率统一小数）
+    "board",
 })
 # rptdom 只保留三表透视族（年报 PDF 提取类 rows/notes/note_index 不发布）
 RPTDOM_KEEP = frozenset({"statement", "statement_years", "statement_compare", "statement_tree", "statement_audit"})

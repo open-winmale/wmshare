@@ -10,7 +10,7 @@
     ``_raw=True`` 取上游原始行（list[dict]，跳过规范化与换算）——诊断逃生口；
   - 本层是目录合同的薄翻译：高频方法显式包装；目录内其余非内部函数经 ``__getattr__``
     属性直达（如 ``cli.kline.screen_above_ma20``）；目录标 ``internal: true`` 的
-    规范化辅助（fmt_* 等）不再直达，请走 ``cli.call``——349 个底层函数零遮蔽；
+    规范化辅助（fmt_* 等）不再直达，请走 ``cli.call``——352 个底层函数零遮蔽；
   - 选股能力集中在 ``cli.screener``：单票筛选器（bool）、全市场宽度/涨跌榜与
     全市场条件选股 ``query()``（服务端索引直出）显式包装，kline 目录的其余筛选
     函数经属性直达。
@@ -347,6 +347,7 @@ _FRIENDLY_NS_TO_CATALOG: dict[str, str] = {
     "macro": "macro",
     "fx": "fx",
     "us_macro": "fred",
+    "board": "board",
 }
 
 
@@ -3508,6 +3509,37 @@ class EtfApi(_Api):
         return self._etf("rank", symbol, mode, limit)
 
 
+class BoardApi(_Api):
+    """板块资金流——ths 概念/行业 + dc 概念·行业（日频，按主力净额降序）。
+
+    额统一为元（ths 原值亿元已换算）、比率统一为小数、板块指数保持点位；
+    三源板块代码/名称不互通，不做跨源映射。缺失字段为缺失（不补 0）。
+    """
+
+    def moneyflow(self, src: str, trade_date: str, limit: int = 100) -> Any:
+        """指定交易日板块资金流（净额降序）。
+
+        :param src: ths_concept / ths_industry / dc
+        :param trade_date: 交易日 YYYY-MM-DD（或 YYYYMMDD）
+        :param limit: 返回前 N 个板块，默认 100
+        :returns: DataFrame/行表 · date/code/name/source/net_amount/net_buy/
+            net_sell/pct_change/pct_change_stock/company_num/lead_stock/
+            index_close/content_type/rank/buy_elg/buy_lg/buy_md/buy_sm
+            （缺字段为空；ths 无四档单量、dc 无买卖总额）
+        """
+        return _out(self._c.call("board.moneyflow", src=src,
+                                 trade_date=trade_date, limit=limit))
+
+    def moneyflow_last(self, src: str, limit: int = 100) -> Any:
+        """最新交易日板块资金流（净额降序；按最新日期做版本键缓存）。
+
+        :param src: ths_concept / ths_industry / dc
+        :param limit: 返回前 N 个板块，默认 100
+        :returns: DataFrame/行表 · 字段同 ``moneyflow``
+        """
+        return _out(self._c.call("board.moneyflow_last", src=src, limit=limit))
+
+
 class ToplistApi(_Api):
     """A 股龙虎榜（交易所披露口径，日频）。
 
@@ -3878,6 +3910,7 @@ FRIENDLY_NAMESPACES: dict[str, type[_Api]] = {
     "cbond": CbondApi,
     "index": IndexApi,
     "stocks": StocksApi,
+    "board": BoardApi,
     "statements": StatementsApi,
     "segments": SegmentsApi,
     "valuation": ValuationApi,
@@ -4004,6 +4037,9 @@ FRIENDLY_INDEX: list[tuple[str, str, str, str, str]] = [
     ("disclosure", "pdf_doc", "find_by_url", "按原文链接定位文档", "pdf_doc.find_by_url"),
     ("disclosure", "pdf_doc", "find_by_key", "按文档键定位文档", "pdf_doc.find_by_key"),
     ("market", "toplist", "by_date", "指定交易日龙虎榜", "toplist.by_date"),
+    ("market", "board", "moneyflow", "指定交易日板块资金流", "board.moneyflow"),
+    ("market", "board", "moneyflow_last", "最新交易日板块资金流",
+     "board.moneyflow_last"),
     ("market", "toplist", "by_symbol", "单票上榜历史", "toplist.by_symbol"),
     ("disclosure", "forecast", "yjyg", "业绩预告历史", "forecast.yjyg_rows"),
     ("disclosure", "forecast", "yjyg_latest", "最新业绩预告", "forecast.yjyg_latest"),

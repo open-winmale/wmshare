@@ -45,7 +45,10 @@ FULL_PARTS = [
 # 2026-11-23：户数历史（equity.query_holdernum_history）把全文推到 455,468 B，超出上一档 468 B。
 # 已先压缩该接口 notes（API.md 不含 notes，无收益）；按先例提预算，一次留出 P2 余量——
 # 后续 ⑥⑦⑧⑨ 每个接口在 API.md 约 0.5-0.8 KB，462K 可覆盖 M1+M2。
-FULL_SIZE_BUDGET = 462_000  # 2026-11-23 P2 批次（户数历史 + 后续覆盖项）；bytes（UTF-8）；禁内联 INDICATORS 全文
+# 2026-11-23 修正：板块资金流域（19 字段 × 2 接口 + 章节）实际 13.4 KB，465,621 B 再破 462K。
+# 提到 468K（硬顶 <470K）；M2（⑧⑨⑦-B 约 8-10 个接口）必须做结构化压缩——
+# 候选：llms-full 只内联 API 接口索引+参数，字段表指向 docs/API.md，预计省 150KB+。
+FULL_SIZE_BUDGET = 468_000  # 2026-11-23 P2 批次（户数历史/涨跌停价/板块资金流）；bytes（UTF-8）；禁内联 INDICATORS 全文
 
 
 def _indicators_brief(cat) -> str:

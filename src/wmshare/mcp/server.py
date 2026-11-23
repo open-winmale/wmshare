@@ -50,7 +50,8 @@ CorporateAction = Literal[
     "query_release", "query_reorg", "query_violation",
 ]
 MarketDomain = Literal[
-    "kline", "moneyflow", "margin", "cbond", "index", "valuation", "stocks"
+    "kline", "moneyflow", "margin", "cbond", "index", "valuation", "stocks",
+    "board",
 ]
 IntlAction = Literal[
     "query_ccass", "query_shareholders", "query_org_rating",
@@ -87,7 +88,7 @@ MarketAction = Literal[
     "minute", "is_etf", "bars", "last", "live", "query", "latest", "universe",
     "latest_quotes", "of_stock", "call_hits", "kline_window", "keys", "members",
     "weights", "valuation", "hist_stats", "list", "trend", "universe_keys",
-    "limit_price", "limit_prices",
+    "limit_price", "limit_prices", "moneyflow", "moneyflow_last",
 ]
 
 
@@ -453,18 +454,24 @@ def build_server(runtime: MCPRuntime | None = None) -> FastMCP:
         window: Annotated[str, Field(description="估值历史窗口，最大 3y")] = "3y",
         level: Annotated[int | None, Field(ge=1, le=3, description="行业目录层级")] = None,
         trig: Annotated[float | None, Field(description="可转债强赎触发价，元")] = None,
+        src: Annotated[
+            str | None,
+            Field(description="板块资金流来源 ths_concept/ths_industry/dc（domain='board'）"),
+        ] = None,
+        date: DateArg = None,
         output: OutputArg = "sample",
         max_rows: MaxRowsArg = MAX_ROWS,
     ) -> dict[str, Any]:
-        """取 1 分钟分时、资金流、两融、可转债、指数、估值历史和证券全集。
+        """取 1 分钟分时、资金流、两融、可转债、指数、估值历史、证券全集与板块资金流。
 
         示例：domain='index', action='trend', key='index.hs300'（PE/PB 历史分位）；
-        domain='cbond', action='latest_quotes'（转债全市场面板）；
+        domain='board', action='moneyflow_last', src='ths_concept'（概念板块资金流）；
         domain='moneyflow', action='bars', symbol='600519', n=20（主力资金流）。"""
         return tools.market(rt, domain, action, symbol=symbol, market=market,
                             key=key, n=n, begin=begin, end=end, points=points,
                             sort_by=sort_by, top_n=top_n, metric=metric,
                             window=window, level=level, trig=trig,
+                            src=src, date=date,
                             output=output, max_rows=max_rows)
 
     @mcp.tool()

@@ -7032,6 +7032,265 @@
         }
       }
     },
+    "/board/moneyflow": {
+      "post": {
+        "operationId": "board_moneyflow",
+        "summary": "指定交易日板块资金流（净额降序）。",
+        "description": ":returns: DataFrame/行表 · date/code/name/source/net_amount/net_buy/、net_sell/pct_change/pct_change_stock/company_num/lead_stock/、index_close/content_type/rank/buy_elg/buy_lg/buy_md/buy_sm、（缺字段为空；ths 无四档单量、dc 无买卖总额）、底层目录函数 `board.moneyflow`。SDK 调用：`cli.board.moneyflow(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "市场行情"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "src": {
+                    "type": "string",
+                    "description": "ths_concept / ths_industry / dc"
+                  },
+                  "trade_date": {
+                    "type": "string",
+                    "description": "交易日 YYYY-MM-DD（或 YYYYMMDD）"
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "description": "返回前 N 个板块，默认 100"
+                  }
+                },
+                "required": [
+                  "src",
+                  "trade_date"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "板块资金流行",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "date": {
+                        "type": "string",
+                        "description": "交易日"
+                      },
+                      "code": {
+                        "type": "string",
+                        "description": "板块代码（上游代码）"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "板块名称"
+                      },
+                      "source": {
+                        "type": "string",
+                        "description": "来源 ths_concept/ths_industry/dc"
+                      },
+                      "net_amount": {
+                        "type": "number",
+                        "description": "主力净流入（元）"
+                      },
+                      "net_amount_ratio": {
+                        "type": "number",
+                        "description": "净流入占比（小数，仅 dc）"
+                      },
+                      "net_buy": {
+                        "type": "number",
+                        "description": "流入额（元，仅 ths）"
+                      },
+                      "net_sell": {
+                        "type": "number",
+                        "description": "流出额（元，仅 ths）"
+                      },
+                      "pct_change": {
+                        "type": "number",
+                        "description": "板块涨跌幅（小数）"
+                      },
+                      "pct_change_stock": {
+                        "type": "number",
+                        "description": "领涨股涨跌幅（小数，仅 ths）"
+                      },
+                      "company_num": {
+                        "type": "integer",
+                        "description": "成分股数"
+                      },
+                      "lead_stock": {
+                        "type": "string",
+                        "description": "领涨股"
+                      },
+                      "index_close": {
+                        "type": "number",
+                        "description": "板块指数点位"
+                      },
+                      "content_type": {
+                        "type": "string",
+                        "description": "概念/行业（仅 dc）"
+                      },
+                      "rank": {
+                        "type": "integer",
+                        "description": "排名（仅 dc）"
+                      },
+                      "buy_elg": {
+                        "type": "number",
+                        "description": "超大单净额（元，仅 dc）"
+                      },
+                      "buy_lg": {
+                        "type": "number",
+                        "description": "大单净额（元，仅 dc）"
+                      },
+                      "buy_md": {
+                        "type": "number",
+                        "description": "中单净额（元，仅 dc）"
+                      },
+                      "buy_sm": {
+                        "type": "number",
+                        "description": "小单净额（元，仅 dc）"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "net_amount": [
+              -1000000000000.0,
+              1000000000000.0
+            ],
+            "net_buy": [
+              0,
+              1000000000000.0
+            ],
+            "net_sell": [
+              0,
+              1000000000000.0
+            ],
+            "pct_change": [
+              -1,
+              1
+            ],
+            "pct_change_stock": [
+              -1,
+              1
+            ],
+            "index_close": [
+              0,
+              1000000.0
+            ],
+            "company_num": [
+              0,
+              5000
+            ],
+            "rank": [
+              0,
+              5000
+            ],
+            "buy_elg": [
+              -1000000000000.0,
+              1000000000000.0
+            ],
+            "buy_lg": [
+              -1000000000000.0,
+              1000000000000.0
+            ],
+            "buy_md": [
+              -1000000000000.0,
+              1000000000000.0
+            ],
+            "buy_sm": [
+              -1000000000000.0,
+              1000000000000.0
+            ]
+          }
+        }
+      }
+    },
+    "/board/moneyflow_last": {
+      "post": {
+        "operationId": "board_moneyflow_last",
+        "summary": "最新交易日板块资金流（净额降序；按最新日期做版本键缓存）。",
+        "description": ":returns: DataFrame/行表 · 字段同 ``moneyflow``、底层目录函数 `board.moneyflow_last`。SDK 调用：`cli.board.moneyflow_last(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "市场行情"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "src": {
+                    "type": "string",
+                    "description": "ths_concept / ths_industry / dc"
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "description": "返回前 N 个板块，默认 100"
+                  }
+                },
+                "required": [
+                  "src"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "板块资金流行（字段同 board.moneyflow）",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "date": {
+                        "type": "string",
+                        "description": "交易日"
+                      },
+                      "code": {
+                        "type": "string",
+                        "description": "板块代码（上游代码）"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "板块名称"
+                      },
+                      "net_amount": {
+                        "type": "number",
+                        "description": "主力净流入（元）"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "net_amount": [
+              -1000000000000.0,
+              1000000000000.0
+            ]
+          }
+        }
+      }
+    },
     "/toplist/by_symbol": {
       "post": {
         "operationId": "toplist_by_symbol",

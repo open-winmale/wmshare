@@ -48,6 +48,7 @@ export WMSHARE_CLIENT_ID=... WMSHARE_CLIENT_SECRET=...   # 长期额度：配置
 | 23 | `23_fx_reserves.py` | 3.0 外汇与储备新面 | 匿名/凭证 | `fx.rate/history/list` 的「每 1 单位外币」口径（上游每 100 外币已 /100）、中间价 vs 中行牌价、`macro.reserves*` 值=美元数值且黄金为市值口径、SDR 无生产者如实标注 | GUIDE·§6.2、API·宏观章 |
 | 24 | `24_us_macro.py` | 3.1 美宏观新面 | 匿名/凭证 | 主题树零取数成本、中文检索、`series_meta().units` 是唯一口径来源（GDP 十亿美元 / UNRATE 百分数 / PAYEMS 千人）、点序列 date 升序且空值不补 0、需授权序列 has_data=False | GUIDE·§6.2、API·宏观章 |
 | 25 | `25_limit_price.py` | 3.1 涨跌停价新面 | 匿名/凭证 | 规则价=前收盘×(1±带宽) 四舍五入到分；带宽只看代码号段（30x/68x=20%、北交所=30%、其余=10%）；收盘价==规则价即当日封板；rule=unbounded/delisting 时价格为空不猜 | GUIDE·§6.1、API·证券与行业基础章 |
+| 26 | `26_board_moneyflow.py` | 3.1 板块资金流新面 | 匿名/凭证 | 三源（ths 概念/行业、dc 概念+行业）各成体系不跨源映射；额=元（THS 原值亿元已换算）、率=小数、板块指数=点位；单日榜按主力净额降序；ths 有买卖总额、dc 有四档单量，缺失为空 | GUIDE·§6.1、API·板块资金流章 |
 
 ## 约定（新增示例请遵守）
 

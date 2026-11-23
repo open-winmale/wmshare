@@ -44,6 +44,10 @@ METHOD_EXAMPLE_VALUES = {
     # 批次1 暴露层：类目键真实示例；PDF 定位参数指向取值来源
     ("notice", "category_regex"): {"key": '"buyback"'},
     ("toplist", "by_date"): {"trade_date": '"2026-11-18"', "limit": "10"},
+    # 板块资金流：来源与交易日是必填（缺表会让示例落 … 占位并打红示例执行测试）
+    ("board", "moneyflow"): {"src": '"ths_concept"',
+                             "trade_date": '"2026-11-20"', "limit": "10"},
+    ("board", "moneyflow_last"): {"src": '"ths_concept"', "limit": "10"},
     ("pdf_doc", "find_by_url"): {"url": '"<公告行 url 字段>"'},
     ("pdf_doc", "find_by_key"): {"file_key": '"<search() 行 file_key 字段>"'},
     ("futures", "snapshot"): {"fut_code": '"RB.SHF"'},

@@ -42,6 +42,15 @@ def test_holdernum_history_cost_scales_with_periods():
     assert "指纹缓存" in small["note"]
 
 
+def test_board_moneyflow_cost_by_source():
+    """板块资金流：冷态成本随整档行数（dc 1,081 行 ≈5.4 万），复跑 ≈185 EC。"""
+    con = _est("board.moneyflow_last", {"src": "ths_concept", "limit": 20})
+    dc = _est("board.moneyflow_last", {"src": "dc", "limit": 20})
+    assert con["ec_hi"] == 16_200 and dc["ec_hi"] == 54_000
+    assert con["ec_lo"] == dc["ec_lo"] == 185
+    assert "冷态" in con["note"]
+
+
 def test_toplist_by_date_cold_vs_warm():
     """整日榜单冷态逐行规范化 ≈1.3 万，复跑走指纹缓存 ≈175。"""
     est = _est("toplist.by_date", {"trade_date": "2026-11-18", "limit": 100})

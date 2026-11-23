@@ -2,11 +2,11 @@
   "schema_version": 2,
   "generated_by": "tools/gen_api_docs.py",
   "meta": {
-    "core": 171,
+    "core": 173,
     "composite": 18,
-    "docs_visible": 166,
+    "docs_visible": 168,
     "variants": 21,
-    "domains": 27,
+    "domains": 28,
     "categories": [
       {
         "key": "market",
@@ -25,7 +25,7 @@
         "cn": "参考数据"
       }
     ],
-    "test_ready": 164,
+    "test_ready": 166,
     "sampled": 170,
     "samples_provenance": {
       "captured_at": "2026-11-23",
@@ -4182,6 +4182,225 @@
             },
             "ec": 147.0,
             "result": []
+          }
+        }
+      ],
+      "composites": []
+    },
+    {
+      "ns": "board",
+      "cn": "板块资金流——ths 概念/行业 + dc 概念·行业",
+      "chapter": "A 股行情与选股",
+      "category": "market",
+      "domain": "market.board",
+      "domain_cn": "板块资金流",
+      "domain_description": "板块级日频资金流——ths 概念/行业与 dc 概念·行业三张全市场榜单（每交易日 一档，按主力净流入降序）。额=元、率=小数、指数点位保持点位；三源板块代码不互通。",
+      "domain_units": {
+        "money": "元（三源统一；ths 原值亿元已 ×1e8）",
+        "ratio": "小数（0.0347 = 3.47%）",
+        "point": "指数点（板块指数收盘）"
+      },
+      "interfaces": [
+        {
+          "key": "board.moneyflow",
+          "ns": "board",
+          "method": "moneyflow",
+          "cn": "指定交易日板块资金流",
+          "composite": false,
+          "desc": "指定交易日板块资金流（净额降序）。",
+          "params": [
+            {
+              "name": "src",
+              "required": true,
+              "desc": "ths_concept / ths_industry / dc"
+            },
+            {
+              "name": "trade_date",
+              "required": true,
+              "desc": "交易日 YYYY-MM-DD（或 YYYYMMDD）"
+            },
+            {
+              "name": "limit",
+              "required": false,
+              "desc": "返回前 N 个板块，默认 100"
+            }
+          ],
+          "returns": {
+            "kind": "array",
+            "desc": null,
+            "fields": [
+              {
+                "name": "date",
+                "desc": "交易日"
+              },
+              {
+                "name": "code",
+                "desc": "板块代码（上游代码）"
+              },
+              {
+                "name": "name",
+                "desc": "板块名称"
+              },
+              {
+                "name": "source",
+                "desc": "来源 ths_concept/ths_industry/dc"
+              },
+              {
+                "name": "net_amount",
+                "desc": "主力净流入（元）"
+              },
+              {
+                "name": "net_amount_ratio",
+                "desc": "净流入占比（小数，仅 dc）"
+              },
+              {
+                "name": "net_buy",
+                "desc": "流入额（元，仅 ths）"
+              },
+              {
+                "name": "net_sell",
+                "desc": "流出额（元，仅 ths）"
+              },
+              {
+                "name": "pct_change",
+                "desc": "板块涨跌幅（小数）"
+              },
+              {
+                "name": "pct_change_stock",
+                "desc": "领涨股涨跌幅（小数，仅 ths）"
+              },
+              {
+                "name": "company_num",
+                "desc": "成分股数"
+              },
+              {
+                "name": "lead_stock",
+                "desc": "领涨股"
+              },
+              {
+                "name": "index_close",
+                "desc": "板块指数点位"
+              },
+              {
+                "name": "content_type",
+                "desc": "概念/行业（仅 dc）"
+              },
+              {
+                "name": "rank",
+                "desc": "排名（仅 dc）"
+              },
+              {
+                "name": "buy_elg",
+                "desc": "超大单净额（元，仅 dc）"
+              },
+              {
+                "name": "buy_lg",
+                "desc": "大单净额（元，仅 dc）"
+              },
+              {
+                "name": "buy_md",
+                "desc": "中单净额（元，仅 dc）"
+              },
+              {
+                "name": "buy_sm",
+                "desc": "小单净额（元，仅 dc）"
+              }
+            ]
+          },
+          "notes": [
+            "空日期/未知 src 返回空数组；非交易日无该档 → 空"
+          ],
+          "docs_visible": true,
+          "example": "cli.board.moneyflow(src=\"ths_concept\", trade_date=\"2026-11-20\", limit=10)",
+          "test": {
+            "kwargs": {
+              "src": "ths_concept",
+              "trade_date": "2026-11-20",
+              "limit": 10
+            },
+            "path": "/v1/analysis/xs/eval",
+            "body": {
+              "symbol": "600519",
+              "xs_lines": [
+                "xs.require(\"sys/board/init.xs\")",
+                "__r := board.moneyflow(\"ths_concept\", \"2026-11-20\", 10)",
+                "return board.fmt_maps(__r)"
+              ],
+              "args": {
+                "print.plain": true
+              },
+              "script_files": {},
+              "mode": "call",
+              "market": "cn"
+            }
+          }
+        },
+        {
+          "key": "board.moneyflow_last",
+          "ns": "board",
+          "method": "moneyflow_last",
+          "cn": "最新交易日板块资金流",
+          "composite": false,
+          "desc": "最新交易日板块资金流（净额降序；按最新日期做版本键缓存）。",
+          "params": [
+            {
+              "name": "src",
+              "required": true,
+              "desc": "ths_concept / ths_industry / dc"
+            },
+            {
+              "name": "limit",
+              "required": false,
+              "desc": "返回前 N 个板块，默认 100"
+            }
+          ],
+          "returns": {
+            "kind": "array",
+            "desc": null,
+            "fields": [
+              {
+                "name": "date",
+                "desc": "交易日"
+              },
+              {
+                "name": "code",
+                "desc": "板块代码（上游代码）"
+              },
+              {
+                "name": "name",
+                "desc": "板块名称"
+              },
+              {
+                "name": "net_amount",
+                "desc": "主力净流入（元）"
+              }
+            ]
+          },
+          "notes": [
+            "以该来源最新 trade_date 做数据版本键缓存，落库即换键（复跑近乎免费）"
+          ],
+          "docs_visible": true,
+          "example": "cli.board.moneyflow_last(src=\"ths_concept\", limit=10)",
+          "test": {
+            "kwargs": {
+              "src": "ths_concept",
+              "limit": 10
+            },
+            "path": "/v1/analysis/xs/eval",
+            "body": {
+              "symbol": "600519",
+              "xs_lines": [
+                "xs.require(\"sys/board/init.xs\")",
+                "__r := board.moneyflow_last(\"ths_concept\", 10)",
+                "return board.fmt_maps(__r)"
+              ],
+              "args": {
+                "print.plain": true
+              },
+              "script_files": {},
+              "mode": "call",
+              "market": "cn"
+            }
           }
         }
       ],

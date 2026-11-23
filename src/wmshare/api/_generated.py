@@ -31,6 +31,36 @@ class _Ns:
         self._client = client
 
 
+class BoardNS(_Ns):
+    """板块资金流（market.board）"""
+
+    def moneyflow(self, src: str, trade_date: str, limit: int = 100, _raw: bool = False) -> Any:
+        """指定交易日板块资金流
+
+:param src: ths_concept / ths_industry / dc
+:param trade_date: 交易日 YYYY-MM-DD 或 YYYYMMDD
+:param limit: 返回前 N 个板块（按主力净流入降序）
+
+:returns: ARR · 板块资金流行（净额降序；单位见域说明）
+        """
+        kw: dict[str, Any] = {"src": src, "trade_date": trade_date}
+        if limit is not None:
+            kw["limit"] = limit
+        return _out(self._client.call("board.moneyflow", **kw, _raw=_raw), _raw)
+
+    def moneyflow_last(self, src: str, limit: int = 100, _raw: bool = False) -> Any:
+        """最新交易日板块资金流
+
+:param src: ths_concept / ths_industry / dc
+:param limit: 返回前 N 个板块（按主力净流入降序）
+
+:returns: ARR · 最新交易日板块资金流行（净额降序；其余字段同 board.moneyflow）
+        """
+        kw: dict[str, Any] = {"src": src}
+        if limit is not None:
+            kw["limit"] = limit
+        return _out(self._client.call("board.moneyflow_last", **kw, _raw=_raw), _raw)
+
 class BonusNS(_Ns):
     """分红（disc.bonus）"""
 
@@ -2336,6 +2366,7 @@ class WorkoutNS(_Ns):
         return _out(self._client.call("workout.query", sym=sym, _raw=_raw), _raw)
 
 NAMESPACES: dict[str, type[_Ns]] = {
+    "board": BoardNS,
     "bonus": BonusNS,
     "buyback": BuybackNS,
     "calendar": CalendarNS,

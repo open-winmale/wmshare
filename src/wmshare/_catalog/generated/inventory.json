@@ -1,7 +1,11 @@
 {
  "schema_version": 2,
- "upstream_rev": "268733c4",
+ "upstream_rev": "7d7d9da0",
  "domains": {
+  "board": {
+   "entry": "sys/board/init.xs",
+   "exports": []
+  },
   "bonus": {
    "entry": "sys/bonus/init.xs",
    "exports": []
@@ -152,8 +156,181 @@
   "toplist",
   "valuation"
  ],
- "function_count": 359,
+ "function_count": 362,
  "functions": [
+  {
+   "name": "board.fmt_maps",
+   "cn": "板块资金流行规范化",
+   "example": "board.fmt_maps(board.moneyflow_last(\"ths_concept\", 10))",
+   "returns": "ARR · 规范化板块行",
+   "returns_shape": {
+    "kind": "array",
+    "cn": "板块资金流行",
+    "items": {
+     "kind": "object",
+     "cn": "板块行",
+     "fields": [
+      {
+       "name": "date",
+       "type": "string",
+       "cn": "交易日"
+      },
+      {
+       "name": "code",
+       "type": "string",
+       "cn": "板块代码"
+      },
+      {
+       "name": "name",
+       "type": "string",
+       "cn": "板块名称"
+      },
+      {
+       "name": "source",
+       "type": "string",
+       "cn": "来源 ths_concept/ths_industry/dc"
+      },
+      {
+       "name": "net_amount",
+       "type": "float64",
+       "cn": "主力净流入(元)",
+       "optional": true
+      },
+      {
+       "name": "net_amount_ratio",
+       "type": "float64",
+       "cn": "净流入占比(小数,仅dc)",
+       "optional": true
+      },
+      {
+       "name": "net_buy",
+       "type": "float64",
+       "cn": "流入额(元,仅ths)",
+       "optional": true
+      },
+      {
+       "name": "net_sell",
+       "type": "float64",
+       "cn": "流出额(元,仅ths)",
+       "optional": true
+      },
+      {
+       "name": "pct_change",
+       "type": "float64",
+       "cn": "板块涨跌幅(小数)",
+       "optional": true
+      },
+      {
+       "name": "pct_change_stock",
+       "type": "float64",
+       "cn": "领涨股涨跌幅(小数,仅ths)",
+       "optional": true
+      },
+      {
+       "name": "company_num",
+       "type": "int",
+       "cn": "成分股数",
+       "optional": true
+      },
+      {
+       "name": "lead_stock",
+       "type": "string",
+       "cn": "领涨股",
+       "optional": true
+      },
+      {
+       "name": "index_close",
+       "type": "float64",
+       "cn": "板块指数点位",
+       "optional": true
+      },
+      {
+       "name": "content_type",
+       "type": "string",
+       "cn": "概念/行业(仅dc)",
+       "optional": true
+      },
+      {
+       "name": "rank",
+       "type": "int",
+       "cn": "排名(仅dc)",
+       "optional": true
+      },
+      {
+       "name": "buy_elg",
+       "type": "float64",
+       "cn": "超大单净额(元,仅dc)",
+       "optional": true
+      },
+      {
+       "name": "buy_lg",
+       "type": "float64",
+       "cn": "大单净额(元,仅dc)",
+       "optional": true
+      },
+      {
+       "name": "buy_md",
+       "type": "float64",
+       "cn": "中单净额(元,仅dc)",
+       "optional": true
+      },
+      {
+       "name": "buy_sm",
+       "type": "float64",
+       "cn": "小单净额(元,仅dc)",
+       "optional": true
+      }
+     ]
+    }
+   },
+   "min_args": null,
+   "params": [
+    {
+     "name": "rows",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "board.moneyflow",
+   "cn": "指定交易日板块资金流",
+   "example": "board.moneyflow(\"ths_concept\", \"2026-11-20\", 20)",
+   "returns": "ARR · 板块行",
+   "returns_shape": null,
+   "min_args": 2,
+   "params": [
+    {
+     "name": "src",
+     "type": "string"
+    },
+    {
+     "name": "trade_date",
+     "type": "string"
+    },
+    {
+     "name": "limit",
+     "type": "int"
+    }
+   ]
+  },
+  {
+   "name": "board.moneyflow_last",
+   "cn": "最新交易日板块资金流",
+   "example": "board.moneyflow_last(\"ths_concept\", 20)",
+   "returns": "ARR · 板块行",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "src",
+     "type": "string"
+    },
+    {
+     "name": "limit",
+     "type": "int"
+    }
+   ]
+  },
   {
    "name": "bonus.dps_rpt",
    "cn": "财报期每股分红",

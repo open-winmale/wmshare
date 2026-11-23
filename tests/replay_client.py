@@ -72,6 +72,8 @@ _REPLAY_NAMESPACE_NAMES = (
     "fx",
     # 3.1 美宏观（sys/fred）：同上，未拍摄 → 整域 replay_unsupported
     "us_macro",
+    # 3.1 板块资金流（sys/board）：同上，未拍摄 → 整域 replay_unsupported
+    "board",
 )
 
 

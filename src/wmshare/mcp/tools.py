@@ -785,6 +785,8 @@ def market(
     window: str = "3y",
     level: int | None = None,
     trig: float | None = None,
+    src: str | None = None,
+    date: str | None = None,
     output: str = "sample",
     max_rows: int = MAX_ROWS,
 ) -> dict[str, Any]:
@@ -850,6 +852,16 @@ def market(
         data = cli.stocks.limit_price(_symbol(action, symbol))
     elif domain == "stocks" and action == "limit_prices":
         data = cli.stocks.limit_prices()
+    elif domain == "board":
+        board_src = src or "ths_concept"
+        if board_src not in ("ths_concept", "ths_industry", "dc"):
+            raise ValueError("src 只支持 ths_concept/ths_industry/dc")
+        if action == "moneyflow":
+            if not date:
+                raise ValueError("board.moneyflow 需要 date（交易日 YYYY-MM-DD）")
+            data = cli.board.moneyflow(board_src, date, limit=n or 100)
+        else:
+            data = cli.board.moneyflow_last(board_src, limit=n or 100)
     else:
         data = cli.stocks.list()
     return success(runtime, data, output=output, max_rows=max_rows,
