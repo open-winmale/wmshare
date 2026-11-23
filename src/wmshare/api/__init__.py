@@ -3131,8 +3131,20 @@ class MacroApi(_Api):
         **单位**：``value`` 是**美元数值**（外汇储备约 3.4e12=3.4 万亿美元、
         黄金储备约 3.1e11=3064 亿美元）。上游采集以「亿美元×1e8」入库，故原值即美元；
         黄金是美元市值口径，不是吨数/盎司。``date`` 为真实期次（月频可能滞后）。
+
+        **缺失值**：无数据的储备项 ``value`` 为 ``None``（列保持 object 不降级为
+        float，避免变成 ``nan``）；判断可用性请用 ``available`` 列，勿依赖
+        ``value`` 的取值（``sdr``/``total`` 当前恒为 ``None``）。
         """
-        return _out(self._c.call("reserve.list"), raw=_raw, _fields=_fields)
+        df = _out(self._c.call("reserve.list"), raw=_raw, _fields=_fields)
+        # 可空数值列保持 object：pandas 对「数值混 None」会推断 float64 并把 None
+        # 变成 nan，与 reserves_asof 的 None 语义不一致（2026-11-23 review 实证）。
+        try:
+            if hasattr(df, "columns") and "value" in df.columns:
+                df["value"] = df["value"].astype(object).where(df["value"].notna(), None)
+        except (AttributeError, TypeError, ValueError):
+            pass
+        return df
 
     def reserves_history(self, kind: str = "forex", n: int = 12, *,
                          _raw: bool = False, _fields: Any = None) -> Any:

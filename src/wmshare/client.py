@@ -424,19 +424,34 @@ def estimate_cost(name: str, params: dict[str, Any] | None = None, *,
                         "实测）；同日复跑走数据版本键缓存 ≈135 EC——全历史长窗冷态"
                         "上万元 EC，按需传 limit 或 begin/end")
     elif name.startswith(("fx.", "reserve.")):
-        # 实测（2026-11-23 探针）：FX 走 store.query 单次（listbs 键 + 单文档 PROPS），
-        # 行数即返回根数；储备月频（cursor.listbs 换 store.query 后同样单次）。
-        # 未做正式 EC probe（fx/reserve 尚未部署）→ 如实按行数给宽区间，不编造精确档。
+        # 实测（2026-11-23 部署后 probe，全部取 metering.ec_cost）：
+        #   fx.history 冷/热均 85；fx.list 61（含整表缓存）；reserve.asof 102；
+        #   reserve.list 67；reserve.query(12期) 冷 889 → 热 90；
+        #   fx.query_bars(100行) 冷 1,901 → 热 111（数据版本键缓存）。
+        # 共同点：**缓存命中后基本恒定**（1 行探针 + memo 命中），冷态才有
+        # 下行数相关的取数成本——与 K 线类「按行线性」不同，勿套 EC_PER_ROW。
         if name in ("fx.list",):
-            out.update(ec_lo=200, ec_hi=2_000, model="rows",
-                       note="探测 18 个候选币种各一次 store.query（单行）")
+            out.update(ec_lo=61, ec_hi=61, model="measured",
+                       note="整表版本键缓存后恒定 ≈61 EC（命中零探测；冷首次含 16 币种探测）")
+        elif name == "fx.rate":
+            out.update(ec_lo=147, ec_hi=147, model="measured",
+                       note="单次 store.query 取 1 行 ≈147 EC")
+        elif name == "fx.history":
+            out.update(ec_lo=85, ec_hi=85, model="measured",
+                       note="数据版本键缓存后恒定 ≈85 EC（n 大小不改变成本；冷首次同价）")
+        elif name == "fx.query_bars":
+            out.update(ec_lo=111, ec_hi=1_901, model="measured",
+                       note="区间读面：冷态按行数（100 行 ≈1,901 EC）→ 热态走数据版本键"
+                            "缓存 ≈111 EC")
         elif name == "reserve.asof":
-            out.update(ec_lo=100, ec_hi=800, model="rows", note="单期储备最新值（单次 store.query）")
-        else:
-            n = rows if (rows and rows > 0) else (30 if name.startswith("fx.") else 12)
-            out.update(ec_lo=max(150, n * 3), ec_hi=n * 15 + 300, model="rows",
-                       note=f"按 {n} 行 × ≈3-15 EC/行（store.query 单文档 PROPS 读取，"
-                            "无逐行 CONOF 放大）；未做正式 probe，区间偏保守")
+            out.update(ec_lo=102, ec_hi=102, model="measured",
+                       note="单期储备最新值（单次 store.query）≈102 EC")
+        elif name == "reserve.list":
+            out.update(ec_lo=67, ec_hi=67, model="measured",
+                       note="整表缓存后恒定 ≈67 EC（4 项探测仅首次）")
+        else:  # reserve.query
+            out.update(ec_lo=90, ec_hi=889, model="measured",
+                       note="月频时序：冷态 ≈889 EC（12 期）→ 热态 ≈90 EC（数据版本键缓存）")
     elif name.startswith("pdf_doc."):
         # 实测（2026-11-19 live）：search 5 行 ≈836 EC（含 fmt_one 组装，
         # 无结果缓存，复跑同价）；find_by_key/status/read_* 单行点查数百 EC。
