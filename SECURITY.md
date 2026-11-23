@@ -6,12 +6,12 @@
 
 | Version | Supported |
 |---------|-----------|
-| 2.9.x  | ✅（当前 minor 线） |
-| 2.8.x  | ✅（安全修复） |
-| 2.7.x  | ✅（仅高危修复） |
-| < 2.0  | ❌（不接收安全修复，请升级；1.x → 2.0 迁移见 CHANGELOG 2.0.0 指南） |
+| 3.0.x  | ✅（当前 minor 线） |
+| 2.9.x  | ✅（安全修复） |
+| 2.8.x  | ✅（仅高危修复） |
+| < 3.0  | ❌（不接收安全修复，请升级；2.x → 3.0 迁移见 CHANGELOG 3.0.0 指南） |
 
-Last reviewed: 2026-11-23（as_of `2.9.0`）。策略为「仅当前 minor 线 +
+Last reviewed: 2026-11-23（as_of `3.0.0`）。策略为「仅当前 minor 线 +
 上一 minor 线」，发版时必须同步本表；`tools/check_version.py --check` 会把
 六处版本声明（pyproject / `__version__` / `server.json`×2 / `openapi.info.version` /
 CHANGELOG 顶部 release 段）与表头、`as_of` 一并互校，防止再次腐化。
