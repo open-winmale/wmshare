@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import functools
 import json
-import os
 from collections.abc import Callable
 from typing import Annotated, Any, Literal
 

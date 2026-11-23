@@ -16,7 +16,7 @@ from pathlib import Path
 import pytest
 
 import wmshare
-from wmshare.errors import UsageError, WmshareError
+from wmshare.errors import UsageError
 
 from fake_client import fake_client
 from replay_client import load_replay_snapshot

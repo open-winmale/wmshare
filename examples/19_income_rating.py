@@ -83,7 +83,7 @@ def _safe(fn, *args, **kwargs):
     try:
         return fn(*args, **kwargs)
     except wmshare.WmshareError as e:
-        if getattr(e, "code", "") in {"replay_unsupported", "catalog"}:
+        if getattr(e, "code", "") == "replay_unsupported":
             print(f"[跳过] {e}")
             return None
         raise
