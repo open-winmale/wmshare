@@ -423,6 +423,22 @@ def estimate_cost(name: str, params: dict[str, Any] | None = None, *,
             out.update(ec_lo=185, ec_hi=1_600, model="measured",
                        note="单票上榜历史：冷态 ≈1,600 EC（逐 doc 扫全市场行）、"
                             "复跑走数据版本键缓存 ≈185 EC；limit 越小冷态越省")
+    elif name == "stocks.suspend_history":
+        # 实测（2026-11-23 live）：清洗档一票一日一档，成本 ≈185 EC/档；
+        # 000001 全史约 500 档 ≈9 万 EC，当日复跑走 memo ≈200 EC。
+        out.update(ec_lo=140, ec_hi=40_000, model="measured",
+                   note="清洗档按年分档后冷态 ≈100 EC/事件（143 行 ≈1.5 万 EC，2026-11-23 实测；"
+                        "长停个股 300+ 行 ≈3 万）；当日复跑走 memo ≈140 EC")
+    elif name == "stocks.name_history":
+        # 实测（2026-11-23 live）：3 段简称史 580 EC（档数少）。
+        out.update(ec_lo=110, ec_hi=2_000, model="measured",
+                   note="简称史档数少（通常 1-10 段）：冷态 ≈630 EC（3 段）、当日复跑走 memo ≈110 EC")
+    elif name == "stocks.lifecycle":
+        # 实测（2026-11-23 live）：000001（3 段简称 + 200 停牌档）68,524 EC。
+        out.update(ec_lo=110, ec_hi=95_000, model="measured",
+                   note="简称史 + 停复牌史合并：冷态随事件数线性（≈250-320 EC/事件；"
+                        "133 事件 ≈3.3 万、278 事件 ≈8.9 万，2026-11-23 实测）；"
+                        "当日复跑走 memo ≈110 EC")
     elif name == "board.concepts_of":
         # 实测（2026-11-23 live）：索引单票点查 88 EC。
         out.update(ec_lo=60, ec_hi=120, model="measured",
