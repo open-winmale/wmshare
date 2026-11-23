@@ -3448,7 +3448,7 @@ cli.fx.rate()
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
 | `ccy` | string | 否 | `'USD'` | 币种 ISO 代码 |
-| `n` | integer | 否 | `30` | 根数（1–2000；0=全历史） |
+| `n` | integer | 否 | `30` | 根数（1–2000；n<=0 归一到 30，不是「取全部」——全历史请用 bars 的 begin/end） |
 
 **输出字段**
 
@@ -7088,13 +7088,13 @@ A 股龙虎榜——指定交易日全市场榜单与单票上榜历史（交易
 单位口径：date=YYYY-MM-DD。
 - 口径：middle/buy 均为「每 1 单位外币折人民币」（已由上游 /100 归一；原始央行 中间价是每 100 外币口径，美元≈673.5、日元≈4.2，直接使用会差 100 倍）
 - 中间价（央行授权外汇交易中心发布）与中行牌价（汇买价/钞买价）是两个口径： middle=中间价，buy=中行汇买价，cash_buy=中行钞买价，勿混用
-- 在库币种由 fx.list 枚举（实测覆盖美元/欧元/日元/港币/英镑/澳元/加元/新加坡元/ 瑞士法郎/林吉特/泰铢/韩元/新台币等 18 个候选）；不在库的币种返回 nil/空，不造 0
+- 在库币种由 fx.list 枚举（2026-11-23 实测 16 个：美元/欧元/日元/港币/英镑/澳元/ 加元/新加坡元/瑞士法郎/林吉特/泰铢/韩元/新西兰元/瑞典克朗/挪威克朗/丹麦克朗； 新台币与人民币不在库）；探测不到的币种不出现、不造 0
 - 中间价按交易日发布且缺失时前向填充（上游 common_fill_forward）；牌价仅在发布日写入 ——因此 buy 可能有缺口而 middle 连续
 
 | 函数 | 中文 | 性质 | 层 | 参数 | 返回 | 单位与守护 |
 |---|---|---|---|---|---|---|
 | `fx.rate` | 最新汇率 | 原始数据 | L0 | `ccy:string` — 币种 ISO 代码（USD/EUR/JPY/HKD；RMB/CNH 归一为 CNY） | MAP · 汇率快照；字段 ccy:string（币种 ISO 代码） / date:string（数据日期 YYYY-MM-DD） / middle:float（央行中间价（每 1 单位外币折人民币）） / buy:float（中行汇买价（同上口径）） / cash_buy:float（中行钞买价（同上口径）） / currency:string（币种原值（上游披露）） | 量级界 `middle`、`buy`、`cash_buy` | 例：`cli.call("fx.rate", ccy='USD')`
-| `fx.history` | 汇率日线序列 | 原始数据 | L0 | `ccy:string` — 币种 ISO 代码（同 rate） · `n:int=30` — 根数（1..2000；0=全历史） | ARR · 汇率日线（date 升序；date/ccy/middle/buy）；字段 date:string（日期 YYYY-MM-DD） / ccy:string（币种 ISO 代码） / middle:float（央行中间价（每 1 单位外币折人民币）） / buy:float（中行汇买价（同上口径）） | 量级界 `middle`、`buy`；不变量 `date_iso` | 例：`cli.call("fx.history", ccy='USD', n=30)`
+| `fx.history` | 汇率日线序列 | 原始数据 | L0 | `ccy:string` — 币种 ISO 代码（同 rate） · `n:int=30` — 根数（1..2000；n<=0 归一到 30——不是「取全部」，全历史请用 query_bars 的 begin/end） | ARR · 汇率日线（date 升序；date/ccy/middle/buy）；字段 date:string（日期 YYYY-MM-DD） / ccy:string（币种 ISO 代码） / middle:float（央行中间价（每 1 单位外币折人民币）） / buy:float（中行汇买价（同上口径）） | 量级界 `middle`、`buy`；不变量 `date_iso` | 例：`cli.call("fx.history", ccy='USD', n=30)`
 | `fx.list` | 在库币种清单 | 原始数据 | L0 | — | ARR · 在库币种（ccy/date/middle；按候选清单探测，无数据的币种不出现）；字段 ccy:string（币种 ISO 代码） / date:string（最新数据日期 YYYY-MM-DD） / middle:float（最新中间价（每 1 单位外币折人民币）） | 量级界 `middle` | 例：`cli.call("fx.list")`
 | `fx.query_bars` | 汇率区间日线 | 原始数据 | L0 | `ccy:string` — 币种 ISO 代码 · `begin:string?` — 开始日期 YYYY-MM-DD（可空） · `end:string?` — 结束日期 YYYY-MM-DD（可空） · `limit:int=500` — 根数上限（1..500，Client 单次上限） | ARR · 汇率日线（date 升序；date/ccy/middle/buy）；字段 date:string（日期 YYYY-MM-DD） / ccy:string（币种 ISO 代码） / middle:float（央行中间价（每 1 单位外币折人民币）） / buy:float（中行汇买价（同上口径）） | 量级界 `middle`、`buy`；不变量 `date_iso` | 例：`cli.call("fx.query_bars", ccy='USD', begin='2026-09-01', end='2026-09-30', limit=100)`
 
