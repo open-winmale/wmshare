@@ -732,9 +732,13 @@ class Client:
                    "凭证配置同步改为 WMSHARE_* 环境变量 / ~/.wmshare/credentials.env，"
                    "旧配置不再被读取，请迁移。\n" if legacy else "\n")
                 # 报错即引导：未配置凭证时首选 Client.from_env()——凭据双缺
-                # 会自动回落匿名试用（免注册、真实数据、免费额度）。
+                # 会自动回落匿名试用（免注册、真实数据、免费额度）。回落不可用
+                # （服务端未开放 / WMSHARE_DISABLE_ANON=1）时 from_env 也会落到
+                # 本错误，故文案必须自解释，不能把「去用 from_env()」当唯一出口。
                 + "未配置凭证可用 wmshare.Client.from_env() 自动领取匿名试用"
-                  "（免注册、真实数据、免费额度；WMSHARE_DISABLE_ANON=1 可关闭）。\n"
+                  "（免注册、真实数据、免费额度）。若已在 from_env() 中仍见本"
+                  "错误，说明该服务端未开放匿名试用、或 WMSHARE_DISABLE_ANON=1"
+                  " 已关闭回落，请直接配置上述凭证。\n"
                 + f"{APPID_GUIDANCE}",
                 code="config")
         self.market = market

@@ -254,7 +254,8 @@ def test_replay_signatures_cover_live_facade_params():
     的 _fields/fut_symbol、volume_spike 的 min_ratio）。
 
     2026-11-19 收紧：此前「整方法缺失」会被静默跳过，于是整域未拍与单方法
-    缺口全部漏检。现在缺失即失败，例外只能走 ``REPLAY_MISSING`` 白名单。
+    缺口全部漏检。现在缺失即失败——没有白名单，未拍摄的能力只在运行时以
+    ``replay_unsupported`` 显式报错（签名本身必须存在）。
     """
     import sys
     from pathlib import Path
