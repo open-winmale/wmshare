@@ -175,114 +175,114 @@
             "as_of": "2026-11-19",
             "result": [
               {
-                "amount": 5922014054.0,
-                "close": 1168.63,
-                "date": "2026-06-26",
-                "high": 1199.0,
-                "low": 1168.1,
-                "open": 1199.0,
-                "percent": -0.013047999999999999,
-                "sas": "2026:D177",
-                "volume": 5006600.0
+                "amount": 6752970915.0,
+                "close": 1452.0,
+                "date": "2026-11-05",
+                "high": 1466.0,
+                "low": 1430.0,
+                "open": 1446.7,
+                "percent": 0.003844,
+                "sas": "2026:D309",
+                "volume": 4671200.0
               },
               {
-                "amount": 7949237761.0,
-                "close": 1194.96,
-                "date": "2026-06-29",
-                "high": 1215.0,
-                "low": 1151.01,
-                "open": 1169.0,
-                "percent": 0.022531,
-                "sas": "2026:D180",
-                "volume": 6687800.0
+                "amount": 6199528289.0,
+                "close": 1453.0,
+                "date": "2026-11-06",
+                "high": 1457.72,
+                "low": 1436.0,
+                "open": 1450.0,
+                "percent": 0.000689,
+                "sas": "2026:D310",
+                "volume": 4284700.0
               },
               {
-                "amount": 4684236159.0,
-                "close": 1185.49,
-                "date": "2026-06-30",
-                "high": 1195.67,
-                "low": 1176.0,
-                "open": 1187.0,
-                "percent": -0.007925,
-                "sas": "2026:D181",
-                "volume": 3960700.0
+                "amount": 3578407287.0,
+                "close": 1444.99,
+                "date": "2026-11-09",
+                "high": 1449.99,
+                "low": 1435.08,
+                "open": 1440.06,
+                "percent": -0.0055130000000000005,
+                "sas": "2026:D313",
+                "volume": 2480100.0
               },
               {
-                "amount": 5033838236.0,
-                "close": 1193.01,
-                "date": "2026-07-01",
-                "high": 1196.8,
-                "low": 1166.33,
-                "open": 1180.1,
-                "percent": 0.006343,
-                "sas": "2026:D182",
-                "volume": 4247300.0
+                "amount": 3316078849.0,
+                "close": 1439.0,
+                "date": "2026-11-10",
+                "high": 1444.5,
+                "low": 1431.26,
+                "open": 1438.23,
+                "percent": -0.004144999999999999,
+                "sas": "2026:D314",
+                "volume": 2303700.0
               },
               {
-                "amount": 6122360932.0,
-                "close": 1203.0,
-                "date": "2026-07-02",
-                "high": 1215.52,
-                "low": 1190.51,
-                "open": 1193.01,
-                "percent": 0.008374,
-                "sas": "2026:D183",
-                "volume": 5087000.0
+                "amount": 5633865699.0,
+                "close": 1402.3,
+                "date": "2026-11-11",
+                "high": 1445.62,
+                "low": 1402.0,
+                "open": 1445.0,
+                "percent": -0.025504,
+                "sas": "2026:D315",
+                "volume": 3984700.0
               },
               {
-                "amount": 4099266243.0,
-                "close": 1194.45,
-                "date": "2026-07-03",
-                "high": 1210.14,
-                "low": 1185.0,
-                "open": 1205.24,
-                "percent": -0.007107,
-                "sas": "2026:D184",
-                "volume": 3426700.0
+                "amount": 4536814518.0,
+                "close": 1410.27,
+                "date": "2026-11-12",
+                "high": 1411.0,
+                "low": 1388.11,
+                "open": 1395.13,
+                "percent": 0.005684,
+                "sas": "2026:D316",
+                "volume": 3237200.0
               },
               {
-                "amount": 4913750668.0,
-                "close": 1206.91,
-                "date": "2026-07-06",
-                "high": 1215.0,
-                "low": 1180.0,
-                "open": 1186.0,
-                "percent": 0.010431999999999999,
-                "sas": "2026:D187",
-                "volume": 4097000.0
+                "amount": 5954834070.0,
+                "close": 1435.26,
+                "date": "2026-11-13",
+                "high": 1437.69,
+                "low": 1394.0,
+                "open": 1404.0,
+                "percent": 0.01772,
+                "sas": "2026:D317",
+                "volume": 4177900.0
               },
               {
-                "amount": 3264967794.0,
-                "close": 1188.8,
-                "date": "2026-07-07",
-                "high": 1202.0,
-                "low": 1188.11,
-                "open": 1200.0,
-                "percent": -0.015005,
-                "sas": "2026:D188",
-                "volume": 2736500.0
+                "amount": 5767305714.0,
+                "close": 1453.9,
+                "date": "2026-11-16",
+                "high": 1454.93,
+                "low": 1425.0,
+                "open": 1426.3,
+                "percent": 0.012987,
+                "sas": "2026:D320",
+                "volume": 3996700.0
               },
               {
-                "amount": 3071933498.0,
-                "close": 1199.3,
-                "date": "2026-07-08",
-                "high": 1200.98,
-                "low": 1177.0,
-                "open": 1188.77,
-                "percent": 0.008832,
-                "sas": "2026:D189",
-                "volume": 2577600.0
+                "amount": 5094594655.0,
+                "close": 1457.7,
+                "date": "2026-11-17",
+                "high": 1461.6,
+                "low": 1437.71,
+                "open": 1458.88,
+                "percent": 0.002614,
+                "sas": "2026:D321",
+                "volume": 3511600.0
               },
               {
-                "amount": 4035216946.0,
-                "close": 1182.19,
-                "date": "2026-07-09",
-                "high": 1191.99,
-                "low": 1178.0,
-                "open": 1191.0,
-                "percent": -0.014267,
-                "sas": "2026:D190",
-                "volume": 3409600.0
+                "amount": 4316023208.0,
+                "close": 1442.66,
+                "date": "2026-11-18",
+                "high": 1456.0,
+                "low": 1431.7,
+                "open": 1450.0,
+                "percent": -0.010318,
+                "sas": "2026:D322",
+                "volume": 2984600.0
               }
             ]
           },
@@ -627,8 +627,8 @@
             }
           ],
           "returns": {
-            "kind": "array",
-            "desc": "MAP · symbol → bar",
+            "kind": "object",
+            "desc": "symbol → bar",
             "fields": []
           },
           "notes": [
@@ -777,8 +777,8 @@
             }
           ],
           "returns": {
-            "kind": "array",
-            "desc": "MAP · 分时包 {trading_day, bars:[t,hm,close,volume,amount,...], bar_n}；休市读上一交易日",
+            "kind": "object",
+            "desc": "分时包 {trading_day, bars:[t,hm,close,volume,amount,...], bar_n}；休市读上一交易日",
             "fields": []
           },
           "notes": [
@@ -1036,7 +1036,7 @@
             }
           ],
           "returns": {
-            "kind": "array",
+            "kind": "text",
             "desc": "bool · true=场内 ETF",
             "fields": []
           },
@@ -1102,7 +1102,7 @@
             }
           ],
           "returns": {
-            "kind": "array",
+            "kind": "text",
             "desc": "bool",
             "fields": []
           },
@@ -1161,7 +1161,7 @@
             }
           ],
           "returns": {
-            "kind": "array",
+            "kind": "text",
             "desc": "bool",
             "fields": []
           },
@@ -1217,7 +1217,7 @@
             }
           ],
           "returns": {
-            "kind": "array",
+            "kind": "text",
             "desc": "bool",
             "fields": []
           },
@@ -1276,7 +1276,7 @@
             }
           ],
           "returns": {
-            "kind": "array",
+            "kind": "text",
             "desc": "bool",
             "fields": []
           },
@@ -1332,7 +1332,7 @@
             }
           ],
           "returns": {
-            "kind": "array",
+            "kind": "text",
             "desc": "bool",
             "fields": []
           },
@@ -1393,7 +1393,7 @@
             }
           ],
           "returns": {
-            "kind": "array",
+            "kind": "text",
             "desc": "bool",
             "fields": []
           },
@@ -1456,7 +1456,7 @@
             }
           ],
           "returns": {
-            "kind": "array",
+            "kind": "text",
             "desc": "bool",
             "fields": []
           },
@@ -1519,7 +1519,7 @@
             }
           ],
           "returns": {
-            "kind": "array",
+            "kind": "text",
             "desc": "bool",
             "fields": []
           },
@@ -1673,7 +1673,7 @@
           ],
           "returns": {
             "kind": "array",
-            "desc": "ARR · 行 label:str（档位） count:int pct_of_total:float（百分数，52.3=52.3%）",
+            "desc": "行 label:str（档位） count:int pct_of_total:float（百分数，52.3=52.3%）",
             "fields": []
           },
           "notes": [],
@@ -1803,7 +1803,7 @@
           ],
           "returns": {
             "kind": "array",
-            "desc": "ARR · 行 bin:str（档位） industry:str（行业代码，如 industry.S77） count:int",
+            "desc": "行 bin:str（档位） industry:str（行业代码，如 industry.S77） count:int",
             "fields": []
           },
           "notes": [],
@@ -2519,44 +2519,44 @@
               },
               "equity": [
                 {
-                  "date": "2026-06-26",
-                  "nav": 1000000.0
+                  "date": "2026-11-05",
+                  "nav": 1072058.81
                 },
                 {
-                  "date": "2026-06-29",
-                  "nav": 1000000.0
+                  "date": "2026-11-06",
+                  "nav": 1072758.81
                 },
                 {
-                  "date": "2026-06-30",
-                  "nav": 1000000.0
+                  "date": "2026-11-09",
+                  "nav": 1067151.81
                 },
                 {
-                  "date": "2026-07-01",
-                  "nav": 1000000.0
+                  "date": "2026-11-10",
+                  "nav": 1062958.81
                 },
                 {
-                  "date": "2026-07-02",
-                  "nav": 1000000.0
+                  "date": "2026-11-11",
+                  "nav": 1037268.81
                 },
                 {
-                  "date": "2026-07-03",
-                  "nav": 1000000.0
+                  "date": "2026-11-12",
+                  "nav": 1042847.81
                 },
                 {
-                  "date": "2026-07-06",
-                  "nav": 1000000.0
+                  "date": "2026-11-13",
+                  "nav": 1060340.81
                 },
                 {
-                  "date": "2026-07-07",
-                  "nav": 1000000.0
+                  "date": "2026-11-16",
+                  "nav": 1073388.81
                 },
                 {
-                  "date": "2026-07-08",
-                  "nav": 1000000.0
+                  "date": "2026-11-17",
+                  "nav": 1076048.81
                 },
                 {
-                  "date": "2026-07-09",
-                  "nav": 1000000.0
+                  "date": "2026-11-18",
+                  "nav": 1064712.92
                 }
               ],
               "caliber": {
@@ -2821,103 +2821,103 @@
             "as_of": "2026-11-19",
             "result": [
               {
-                "date": "2026-10-22",
-                "elg_net": -290066700.00000024,
-                "lg_net": 622244400.0,
-                "md_net": -331687100.0,
-                "net_mf": 305011200.0,
-                "sas": "2026:D295",
-                "sm_net": -490600.0,
+                "date": "2026-11-05",
+                "elg_net": -331839300.0,
+                "lg_net": -37434700.0,
+                "md_net": 369349300.0,
+                "net_mf": 403452600.0,
+                "sas": "2026:D309",
+                "sm_net": -75300.0,
                 "source": "store"
               },
               {
-                "date": "2026-10-23",
-                "elg_net": -485075900.00000024,
-                "lg_net": 716673700.0,
-                "md_net": -231160900.0,
-                "net_mf": 591890100.0,
-                "sas": "2026:D296",
-                "sm_net": -436799.9999999999,
+                "date": "2026-11-06",
+                "elg_net": -172071900.0,
+                "lg_net": -138856300.0,
+                "md_net": 311054400.0,
+                "net_mf": 438547600.0,
+                "sas": "2026:D310",
+                "sm_net": -126200.0,
                 "source": "store"
               },
               {
-                "date": "2026-10-26",
-                "elg_net": -171612400.0,
-                "lg_net": 22674000.00000024,
-                "md_net": 149405700.0,
-                "net_mf": 1005753200.0000001,
-                "sas": "2026:D299",
-                "sm_net": -467300.0,
+                "date": "2026-11-09",
+                "elg_net": 52687600.0,
+                "lg_net": -47845200.0,
+                "md_net": -4833700.0,
+                "net_mf": -52644700.0,
+                "sas": "2026:D313",
+                "sm_net": -8700.0,
                 "source": "store"
               },
               {
-                "date": "2026-10-27",
-                "elg_net": -307725200.0,
-                "lg_net": 525461500.0,
-                "md_net": -217343200.0,
-                "net_mf": 845343000.0,
-                "sas": "2026:D300",
-                "sm_net": -393100.0,
+                "date": "2026-11-10",
+                "elg_net": -164763200.0,
+                "lg_net": 260858700.00000012,
+                "md_net": -96041000.0,
+                "net_mf": 87831500.0,
+                "sas": "2026:D314",
+                "sm_net": -54600.0,
                 "source": "store"
               },
               {
-                "date": "2026-10-28",
-                "elg_net": -194315300.0,
-                "lg_net": 292511200.0,
-                "md_net": -97806300.0,
-                "net_mf": -640585000.0,
-                "sas": "2026:D301",
-                "sm_net": -389600.0,
+                "date": "2026-11-11",
+                "elg_net": -316850700.0,
+                "lg_net": -67713299.99999976,
+                "md_net": 384860799.9999995,
+                "net_mf": -265952700.0,
+                "sas": "2026:D315",
+                "sm_net": -296800.0,
                 "source": "store"
               },
               {
-                "date": "2026-10-29",
-                "elg_net": -48586200.00000024,
-                "lg_net": 53708300.0,
-                "md_net": -4631900.0,
-                "net_mf": 821186700.0,
-                "sas": "2026:D302",
-                "sm_net": -490400.0000000001,
+                "date": "2026-11-12",
+                "elg_net": 10817599.99999988,
+                "lg_net": -325924200.0,
+                "md_net": 315190200.0,
+                "net_mf": -182650900.0,
+                "sas": "2026:D316",
+                "sm_net": -83500.0,
                 "source": "store"
               },
               {
-                "date": "2026-10-30",
-                "elg_net": 87341600.0,
-                "lg_net": 383532900.0,
-                "md_net": -470442200.0,
-                "net_mf": 1685991400.0000002,
-                "sas": "2026:D303",
-                "sm_net": -432500.0,
+                "date": "2026-11-13",
+                "elg_net": 177695700.0,
+                "lg_net": 109356400.0,
+                "md_net": -286797600.0,
+                "net_mf": 513034100.00000006,
+                "sas": "2026:D317",
+                "sm_net": -254400.0,
                 "source": "store"
               },
               {
-                "date": "2026-11-02",
-                "elg_net": -186878800.0,
-                "lg_net": 316193399.9999995,
-                "md_net": -128468400.0,
-                "net_mf": 1420590900.0,
-                "sas": "2026:D306",
-                "sm_net": -846200.0,
+                "date": "2026-11-16",
+                "elg_net": -178305599.99999976,
+                "lg_net": 690353800.0,
+                "md_net": -511731400.0,
+                "net_mf": 922678000.0,
+                "sas": "2026:D320",
+                "sm_net": -316900.0,
                 "source": "store"
               },
               {
-                "date": "2026-11-03",
-                "elg_net": -582615000.0,
-                "lg_net": 905998700.0,
-                "md_net": -322539500.0,
-                "net_mf": 2776846300.0,
-                "sas": "2026:D307",
-                "sm_net": -844100.0,
+                "date": "2026-11-17",
+                "elg_net": -23339000.0,
+                "lg_net": 239433200.00000024,
+                "md_net": -215839400.0,
+                "net_mf": 254594500.0,
+                "sas": "2026:D321",
+                "sm_net": -254900.0,
                 "source": "store"
               },
               {
-                "date": "2026-11-04",
-                "elg_net": -406837100.0,
-                "lg_net": -183221099.99999952,
-                "md_net": 590442200.0,
-                "net_mf": 547777600.0,
-                "sas": "2026:D308",
-                "sm_net": -384100.00000000006,
+                "date": "2026-11-18",
+                "elg_net": -201077700.0,
+                "lg_net": -49096500.0,
+                "md_net": 250391100.0,
+                "net_mf": 205014900.00000003,
+                "sas": "2026:D322",
+                "sm_net": -217000.00000000006,
                 "source": "store"
               }
             ]
@@ -4006,80 +4006,80 @@
                 "exchange": "SZSE",
                 "in_date": "",
                 "out_date": "",
-                "security_code": "000001",
-                "security_name": "平安银行"
+                "security_code": "000029",
+                "security_name": "深深房Ａ"
               },
               {
                 "effective_date": "2026-11-18",
                 "exchange": "SZSE",
                 "in_date": "",
                 "out_date": "",
-                "security_code": "000002",
-                "security_name": "万  科Ａ"
+                "security_code": "000030",
+                "security_name": "富奥股份"
               },
               {
                 "effective_date": "2026-11-18",
                 "exchange": "SZSE",
                 "in_date": "",
                 "out_date": "",
-                "security_code": "000006",
-                "security_name": "深振业Ａ"
+                "security_code": "000031",
+                "security_name": "大悦城"
               },
               {
                 "effective_date": "2026-11-18",
                 "exchange": "SZSE",
                 "in_date": "",
                 "out_date": "",
-                "security_code": "000008",
-                "security_name": "神州高铁"
+                "security_code": "000032",
+                "security_name": "深桑达Ａ"
               },
               {
                 "effective_date": "2026-11-18",
                 "exchange": "SZSE",
                 "in_date": "",
                 "out_date": "",
-                "security_code": "000009",
-                "security_name": "中国宝安"
+                "security_code": "000034",
+                "security_name": "神州数码"
               },
               {
                 "effective_date": "2026-11-18",
                 "exchange": "SZSE",
                 "in_date": "",
                 "out_date": "",
-                "security_code": "000012",
-                "security_name": "南  玻Ａ"
+                "security_code": "000035",
+                "security_name": "中国天楹"
               },
               {
                 "effective_date": "2026-11-18",
                 "exchange": "SZSE",
                 "in_date": "",
                 "out_date": "",
-                "security_code": "000021",
-                "security_name": "深科技"
+                "security_code": "000036",
+                "security_name": "华联控股"
               },
               {
                 "effective_date": "2026-11-18",
                 "exchange": "SZSE",
                 "in_date": "",
                 "out_date": "",
-                "security_code": "000025",
-                "security_name": "特  力Ａ"
+                "security_code": "000039",
+                "security_name": "中集集团"
               },
               {
                 "effective_date": "2026-11-18",
                 "exchange": "SZSE",
                 "in_date": "",
                 "out_date": "",
-                "security_code": "000027",
-                "security_name": "深圳能源"
+                "security_code": "000042",
+                "security_name": "中洲控股"
               },
               {
                 "effective_date": "2026-11-18",
                 "exchange": "SZSE",
                 "in_date": "",
                 "out_date": "",
-                "security_code": "000028",
-                "security_name": "国药一致"
+                "security_code": "000048",
+                "security_name": "京基智农"
               }
             ]
           },
@@ -4352,7 +4352,7 @@
             }
           ],
           "returns": {
-            "kind": "array",
+            "kind": "text",
             "desc": "bool",
             "fields": []
           },
@@ -4527,7 +4527,7 @@
           "params": [],
           "returns": {
             "kind": "array",
-            "desc": "ARR · 证券行(symbol/name/exchange/industry/industry_name/is_st/listed)",
+            "desc": "证券行(symbol/name/exchange/industry/industry_name/is_st/listed)",
             "fields": []
           },
           "notes": [],
@@ -4725,7 +4725,7 @@
           ],
           "returns": {
             "kind": "array",
-            "desc": "ARR · 行业行(symbol/name/level/parent/standard)",
+            "desc": "行业行(symbol/name/level/parent/standard)",
             "fields": []
           },
           "notes": [],
@@ -4755,63 +4755,63 @@
             "result": [
               {
                 "level": 1,
-                "name": "农林牧渔",
+                "name": "电力设备",
                 "standard": "sw2021",
-                "symbol": "S11"
+                "symbol": "S63"
               },
               {
                 "level": 1,
-                "name": "基础化工",
+                "name": "机械设备",
                 "standard": "sw2021",
-                "symbol": "S22"
+                "symbol": "S64"
               },
               {
                 "level": 1,
-                "name": "钢铁",
+                "name": "国防军工",
                 "standard": "sw2021",
-                "symbol": "S23"
+                "symbol": "S65"
               },
               {
                 "level": 1,
-                "name": "有色金属",
+                "name": "计算机",
                 "standard": "sw2021",
-                "symbol": "S24"
+                "symbol": "S71"
               },
               {
                 "level": 1,
-                "name": "电子",
+                "name": "传媒",
                 "standard": "sw2021",
-                "symbol": "S27"
+                "symbol": "S72"
               },
               {
                 "level": 1,
-                "name": "汽车",
+                "name": "通信",
                 "standard": "sw2021",
-                "symbol": "S28"
+                "symbol": "S73"
               },
               {
                 "level": 1,
-                "name": "家用电器",
+                "name": "煤炭",
                 "standard": "sw2021",
-                "symbol": "S33"
+                "symbol": "S74"
               },
               {
                 "level": 1,
-                "name": "食品饮料",
+                "name": "石油石化",
                 "standard": "sw2021",
-                "symbol": "S34"
+                "symbol": "S75"
               },
               {
                 "level": 1,
-                "name": "纺织服饰",
+                "name": "环保",
                 "standard": "sw2021",
-                "symbol": "S35"
+                "symbol": "S76"
               },
               {
                 "level": 1,
-                "name": "轻工制造",
+                "name": "美容护理",
                 "standard": "sw2021",
-                "symbol": "S36"
+                "symbol": "S77"
               }
             ]
           },
@@ -4886,7 +4886,7 @@
           ],
           "returns": {
             "kind": "array",
-            "desc": "ARR · 证券行(同 query_list)",
+            "desc": "证券行(同 query_list)",
             "fields": []
           },
           "notes": [],
@@ -7386,7 +7386,7 @@
           ],
           "returns": {
             "kind": "array",
-            "desc": "ARR · 规范化事件行",
+            "desc": "规范化事件行",
             "fields": []
           },
           "notes": [],
@@ -7445,7 +7445,7 @@
             }
           ],
           "returns": {
-            "kind": "array",
+            "kind": "text",
             "desc": "int · 近 30 个交易日正股收盘 ≥ 触发价的天数",
             "fields": []
           },
@@ -7507,8 +7507,8 @@
             }
           ],
           "returns": {
-            "kind": "array",
-            "desc": "MAP · K线列",
+            "kind": "object",
+            "desc": "K线列",
             "fields": []
           },
           "notes": [],
@@ -7589,7 +7589,7 @@
           ],
           "returns": {
             "kind": "array",
-            "desc": "ARR · 行 {date, open, high, low, close, volume, amount}（列式窗口按位转行；量=张，价/额=元；不复权）",
+            "desc": "行 {date, open, high, low, close, volume, amount}（列式窗口按位转行；量=张，价/额=元；不复权）",
             "fields": []
           },
           "notes": [],
@@ -7642,7 +7642,7 @@
           "params": [],
           "returns": {
             "kind": "array",
-            "desc": "ARR · 代码",
+            "desc": "代码",
             "fields": []
           },
           "notes": [],
@@ -9270,7 +9270,7 @@
           "params": [],
           "returns": {
             "kind": "array",
-            "desc": "ARR · 指数键",
+            "desc": "指数键",
             "fields": []
           },
           "notes": [],
@@ -9297,16 +9297,16 @@
             "args": {},
             "as_of": "2026-11-19",
             "result": [
-              "index.hs300",
-              "index.csi500",
-              "index.sz50",
-              "index.cybz",
-              "index.star50",
-              "index.shzs",
-              "index.szcz",
-              "index.zx100",
-              "index.szzzs",
-              "index.gz2000"
+              "index.gz2000",
+              "index.kc200",
+              "industry.S11",
+              "industry.S22",
+              "industry.S23",
+              "industry.S24",
+              "industry.S27",
+              "industry.S28",
+              "index.csidividend",
+              "index.ssedividend"
             ]
           },
           "sample": {
@@ -9349,7 +9349,7 @@
           ],
           "returns": {
             "kind": "array",
-            "desc": "ARR · 成分行",
+            "desc": "成分行",
             "fields": []
           },
           "notes": [],
@@ -9589,7 +9589,7 @@
           ],
           "returns": {
             "kind": "array",
-            "desc": "ARR · 权重行",
+            "desc": "权重行",
             "fields": []
           },
           "notes": [],
@@ -9889,8 +9889,8 @@
             }
           ],
           "returns": {
-            "kind": "array",
-            "desc": "MAP · 周频趋势",
+            "kind": "object",
+            "desc": "周频趋势",
             "fields": []
           },
           "notes": [],
@@ -9931,54 +9931,54 @@
                 "n": 120,
                 "points": [
                   {
-                    "date": "2024-06-07",
-                    "pe": 11.6641,
-                    "pb": 1.0864
+                    "date": "2026-07-17",
+                    "pe": 12.4787,
+                    "pb": 1.3747
                   },
                   {
-                    "date": "2024-06-14",
-                    "pe": 11.6262,
-                    "pb": 1.0848
+                    "date": "2026-07-24",
+                    "pe": 12.4024,
+                    "pb": 1.3695
                   },
                   {
-                    "date": "2024-06-21",
-                    "pe": 11.5934,
-                    "pb": 1.0837
+                    "date": "2026-07-31",
+                    "pe": 12.3296,
+                    "pb": 1.3646
                   },
                   {
-                    "date": "2024-06-28",
-                    "pe": 11.5656,
-                    "pb": 1.0831
+                    "date": "2026-08-07",
+                    "pe": 12.2606,
+                    "pb": 1.3601
                   },
                   {
-                    "date": "2024-07-05",
-                    "pe": 11.5431,
-                    "pb": 1.0829
+                    "date": "2026-08-14",
+                    "pe": 12.1955,
+                    "pb": 1.356
                   },
                   {
-                    "date": "2024-07-12",
-                    "pe": 11.5257,
-                    "pb": 1.0832
+                    "date": "2026-08-21",
+                    "pe": 12.1346,
+                    "pb": 1.3523
                   },
                   {
-                    "date": "2024-07-19",
-                    "pe": 11.5137,
-                    "pb": 1.084
+                    "date": "2026-08-28",
+                    "pe": 12.0779,
+                    "pb": 1.3489
                   },
                   {
-                    "date": "2024-07-26",
-                    "pe": 11.5071,
-                    "pb": 1.0853
+                    "date": "2026-09-04",
+                    "pe": 12.0258,
+                    "pb": 1.346
                   },
                   {
-                    "date": "2024-08-02",
-                    "pe": 11.5058,
-                    "pb": 1.0871
+                    "date": "2026-09-11",
+                    "pe": 11.9783,
+                    "pb": 1.3435
                   },
                   {
-                    "date": "2024-08-09",
-                    "pe": 11.51,
-                    "pb": 1.0895
+                    "date": "2026-09-18",
+                    "pe": 11.9355,
+                    "pb": 1.3414
                   }
                 ],
                 "pe_pct": 0.17647058823529413,
@@ -10158,7 +10158,7 @@
           ],
           "returns": {
             "kind": "array",
-            "desc": "ARR · 指数键",
+            "desc": "指数键",
             "fields": []
           },
           "notes": [],
@@ -10185,7 +10185,6 @@
             "args": {},
             "as_of": "2026-11-19",
             "result": [
-              "index.hs300",
               "index.csi500",
               "index.sz50",
               "index.cybz",
@@ -10194,7 +10193,8 @@
               "index.szcz",
               "index.zx100",
               "index.szzzs",
-              "index.gz2000"
+              "index.gz2000",
+              "index.kc200"
             ]
           },
           "sample": {
@@ -10504,8 +10504,8 @@
             }
           ],
           "returns": {
-            "kind": "array",
-            "desc": "MAP · ok/metric/store/frequency/periods/latest/series（series 每点含 sas/annual/sampling/value）",
+            "kind": "object",
+            "desc": "ok/metric/store/frequency/periods/latest/series（series 每点含 sas/annual/sampling/value）",
             "fields": []
           },
           "notes": [],
@@ -10752,7 +10752,7 @@
             }
           ],
           "returns": {
-            "kind": "array",
+            "kind": "text",
             "desc": "最新一期原生值（无数据返回 nil）",
             "fields": []
           },
@@ -10815,7 +10815,7 @@
           ],
           "returns": {
             "kind": "array",
-            "desc": "ARR · 原生采样期点",
+            "desc": "原生采样期点",
             "fields": []
           },
           "notes": [],
@@ -10884,7 +10884,7 @@
             }
           ],
           "returns": {
-            "kind": "array",
+            "kind": "text",
             "desc": "\"month\"/\"quarter\"/\"year\"/\"day\"（无法判定时回退 \"month\"）",
             "fields": []
           },
@@ -10946,7 +10946,7 @@
             }
           ],
           "returns": {
-            "kind": "array",
+            "kind": "text",
             "desc": "该曲线该期限的最新收益率原值",
             "fields": []
           },
@@ -11011,7 +11011,7 @@
             }
           ],
           "returns": {
-            "kind": "array",
+            "kind": "text",
             "desc": "当月单值（掉榜返回 nil）",
             "fields": []
           },
@@ -11078,7 +11078,7 @@
             }
           ],
           "returns": {
-            "kind": "array",
+            "kind": "text",
             "desc": "当周单值（掉榜返回 nil）",
             "fields": []
           },
@@ -11145,7 +11145,7 @@
             }
           ],
           "returns": {
-            "kind": "array",
+            "kind": "text",
             "desc": "当月单值（掉榜返回 nil）",
             "fields": []
           },
@@ -11212,7 +11212,7 @@
             }
           ],
           "returns": {
-            "kind": "array",
+            "kind": "text",
             "desc": "当月单值（掉榜返回 nil）",
             "fields": []
           },
@@ -11279,7 +11279,7 @@
             }
           ],
           "returns": {
-            "kind": "array",
+            "kind": "text",
             "desc": "当月单值（掉榜返回 nil）",
             "fields": []
           },
@@ -11346,7 +11346,7 @@
             }
           ],
           "returns": {
-            "kind": "array",
+            "kind": "text",
             "desc": "当周单值（掉榜返回 nil）",
             "fields": []
           },
@@ -11421,12 +11421,12 @@
             {
               "name": "symbol",
               "required": true,
-              "desc": "6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码）"
+              "desc": "6 位 A 股裸码（自动归一前缀/后缀）"
             }
           ],
           "returns": {
-            "kind": "array",
-            "desc": "MAP · {年份: 审计意见}",
+            "kind": "object",
+            "desc": "{年份: 审计意见}",
             "fields": []
           },
           "notes": [],
@@ -11552,93 +11552,93 @@
             "as_of": "2026-11-19",
             "result": [
               {
-                "cn": "taxPayable",
-                "k": "taxPayable",
+                "cn": "deferTaxAsset",
+                "k": "deferTaxAsset",
                 "vals": {
-                  "2023": 6949663893.87,
-                  "2024": 7717686541.38,
-                  "2025": 7697169830.69
+                  "2023": 4645887425.1,
+                  "2024": 5520006868.83,
+                  "2025": 6602469151.22
                 }
               },
               {
-                "cn": "totalEquity",
-                "k": "totalEquity",
+                "cn": "lendFund",
+                "k": "lendFund",
                 "vals": {
-                  "2023": 223656469294.82,
-                  "2024": 242011315120.6,
-                  "2025": 253959253909.07
+                  "2023": 105553836462.58,
+                  "2024": 127187293298.17,
+                  "2025": 99096188059.75
                 }
               },
               {
-                "cn": "intangibleAsset",
-                "k": "intangibleAsset",
+                "cn": "unassignRpofit",
+                "k": "unassignRpofit",
                 "vals": {
-                  "2023": 8572267313.84,
-                  "2024": 8850205831,
-                  "2025": 8685618688.56
+                  "2023": 172983178300.09,
+                  "2024": 182787415205.05,
+                  "2025": 191905148832.21
                 }
               },
               {
-                "cn": "otherCurrentAsset",
-                "k": "otherCurrentAsset",
+                "cn": "totalOtherPayable",
+                "k": "totalOtherPayable",
                 "vals": {
-                  "2023": 71403906.57,
-                  "2024": 160176582.69,
-                  "2025": 51027010.56
+                  "2023": 5213133685.87,
+                  "2024": 5429006700.86,
+                  "2025": 5298261266.22
                 }
               },
               {
-                "cn": "monetaryfunds",
-                "k": "monetaryfunds",
+                "cn": "userightAsset",
+                "k": "userightAsset",
                 "vals": {
-                  "2023": 69070136376.12,
-                  "2024": 59295822956.89,
-                  "2025": 51690610946.5
+                  "2023": 314205484.56,
+                  "2024": 410594173.53,
+                  "2025": 221738227.51
                 }
               },
               {
-                "cn": "accountsPayable",
-                "k": "accountsPayable",
+                "cn": "otherCompreIncome",
+                "k": "otherCompreIncome",
                 "vals": {
-                  "2023": 3093091103.67,
-                  "2024": 3514969230.31,
-                  "2025": 4007309049.87
+                  "2023": -6061727.51,
+                  "2024": -9916224.69,
+                  "2025": -5778843.62
                 }
               },
               {
-                "cn": "totalOtherReceivable",
-                "k": "totalOtherReceivable",
+                "cn": "otherCurrentLiab",
+                "k": "otherCurrentLiab",
                 "vals": {
-                  "2023": 27502107.3,
-                  "2024": 29955673.47,
-                  "2025": 36281302.94
+                  "2023": 1822498012.3,
+                  "2024": 1222693799.51,
+                  "2025": 994959710.24
                 }
               },
               {
-                "cn": "creditorInvest",
-                "k": "creditorInvest",
+                "cn": "totalAsset",
+                "k": "totalAsset",
                 "vals": {
-                  "2023": 5323002071.02,
-                  "2024": 1515174439.92,
-                  "2025": 1113032405.66
+                  "2023": 272699660092.25,
+                  "2024": 298944579918.7,
+                  "2025": 303834844021.44
                 }
               },
               {
-                "cn": "totalNoncurrentLiab",
-                "k": "totalNoncurrentLiab",
+                "cn": "minorityEquity",
+                "k": "minorityEquity",
                 "vals": {
-                  "2023": 345579296.23,
-                  "2024": 417274179.14,
-                  "2025": 265113294.56
+                  "2023": 7987897687.39,
+                  "2024": 8905330721.13,
+                  "2025": 9321442876.89
                 }
               },
               {
-                "cn": "totalLiab",
-                "k": "totalLiab",
+                "cn": "otherNoncurrentFinasset",
+                "k": "otherNoncurrentFinasset",
                 "vals": {
-                  "2023": 49043190797.43,
-                  "2024": 56933264798.1,
-                  "2025": 49875590112.37
+                  "2023": 4002439902.57,
+                  "2024": 4028978995.56,
+                  "2025": 4105141593.22
                 }
               }
             ]
@@ -11750,93 +11750,92 @@
             "as_of": "2026-11-19",
             "result": [
               {
-                "cn": "subsidiaryPayDividend",
-                "k": "subsidiaryPayDividend",
+                "cn": "payOtherOperating",
+                "k": "payOtherOperating",
                 "vals": {
-                  "2023": 2204530367.41,
-                  "2024": 2164148570.54,
-                  "2025": 2569934067.5
+                  "2023": 7943709518.14,
+                  "2024": 9015412761.18,
+                  "2025": 9012158197.61
                 }
               },
               {
-                "cn": "netCashFlowfromOperatingActivities",
-                "k": "netCashFlowfromOperatingActivities",
+                "cn": "totalOperatingOutflow",
+                "k": "totalOperatingOutflow",
                 "vals": {
-                  "2023": 66593247721.09,
-                  "2024": 92463692168.43,
-                  "2025": 61522204989.35
+                  "2023": 101662921234.86,
+                  "2024": 107622642492.13,
+                  "2025": 124606593776.59
                 }
               },
               {
-                "cn": "endCashEquivalents",
-                "k": "endCashEquivalents",
+                "cn": "operatePayableAdd",
+                "k": "operatePayableAdd",
                 "vals": {
-                  "2023": 3000000000,
-                  "2024": 5672140000,
-                  "2025": 8472980000
+                  "2023": -591505967.47,
+                  "2024": 8065959951.08,
+                  "2025": -6806428089.04
                 }
               },
               {
-                "cn": "inventoryReduce",
-                "k": "inventoryReduce",
+                "cn": "assignDividendPorfit",
+                "k": "assignDividendPorfit",
                 "vals": {
-                  "2023": -7610810825.29,
-                  "2024": -7908100095.94,
-                  "2025": -7084136638.71
+                  "2023": 58754786730.01,
+                  "2024": 70951027702.94,
+                  "2025": 67241733345.45
                 }
               },
               {
-                "cn": "salesServices",
-                "k": "salesServices",
+                "cn": "faIrDepr",
+                "k": "faIrDepr",
                 "vals": {
-                  "2023": 163699909417.62,
-                  "2024": 182645203339.89,
-                  "2025": 183990403487.8
+                  "2023": 1651428992.2,
+                  "2024": 1721165327.14,
+                  "2025": 1893338311.91
                 }
               },
               {
-                "cn": "disposalLongAsset",
-                "k": "disposalLongAsset",
+                "cn": "beginCashEquivalents",
+                "k": "beginCashEquivalents",
                 "vals": {
-                  "2023": 24948352.95,
-                  "2024": 715708.44,
-                  "2025": 155949.5
+                  "2024": 3000000000,
+                  "2025": 5672140000
                 }
               },
               {
-                "cn": "cashPaidforInvestments",
-                "k": "cashPaidforInvestments",
+                "cn": "payInterestCommission",
+                "k": "payInterestCommission",
                 "vals": {
-                  "2023": 14817852800,
-                  "2024": 5745136000,
-                  "2025": 62097000000
+                  "2023": 142896151.21,
+                  "2024": 97061751.28,
+                  "2025": 141082631.31
                 }
               },
               {
-                "cn": "loanAdvanceAdd",
-                "k": "loanAdvanceAdd",
+                "cn": "receiveInvestIncome",
+                "k": "receiveInvestIncome",
                 "vals": {
-                  "2023": -2051930316.19,
-                  "2024": 262376929.65,
-                  "2025": -848113545.25
+                  "2023": 140715000,
+                  "2024": 92382151.66,
+                  "2025": 111683655.9
                 }
               },
               {
-                "cn": "payOtherInvest",
-                "k": "payOtherInvest",
+                "cn": "payAllTax",
+                "k": "payAllTax",
                 "vals": {
-                  "2023": 7021867.1,
-                  "2024": 9984973.67,
-                  "2025": 9029941.27
+                  "2023": 66683472509.22,
+                  "2024": 77055621533.11,
+                  "2025": 77430597986.28
                 }
               },
               {
-                "cn": "depositInterbankAdd",
-                "k": "depositInterbankAdd",
+                "cn": "payOtherFinance",
+                "k": "payOtherFinance",
                 "vals": {
-                  "2023": -810223002.76,
-                  "2024": 11060205782.1,
-                  "2025": -5099271966.87
+                  "2023": 134315261.93,
+                  "2024": 116478781.87,
+                  "2025": 6185347863.42
                 }
               }
             ]
@@ -11948,35 +11947,62 @@
             "as_of": "2026-11-19",
             "result": [
               {
-                "cn": "operateCost",
-                "k": "operateCost",
+                "cn": "operateIncomeBalance",
+                "k": "operateIncomeBalance",
                 "vals": {
-                  "2023": 11867273851.78,
-                  "2024": 13789482367.98,
-                  "2025": 14892277570.91
+                  "2023": 0,
+                  "2024": 0,
+                  "2025": 0
                 }
               },
               {
-                "cn": "creditImpairmentIncome",
-                "k": "creditImpairmentIncome",
+                "cn": "minorityInterest",
+                "k": "minorityInterest",
                 "vals": {
-                  "2023": 37871293.26,
-                  "2024": -23248436.03,
-                  "2025": 17234379.37
+                  "2023": 2787404727.05,
+                  "2024": 3106581604.28,
+                  "2025": 2990257731.99
                 }
               },
               {
-                "cn": "nonbusinessExpense",
-                "k": "nonbusinessExpense",
+                "cn": "otherOperatingExpense",
+                "k": "otherOperatingExpense",
                 "vals": {
-                  "2023": 132881174.52,
-                  "2024": 120937834.74,
-                  "2025": 128635598.86
+                  "2023": 0,
+                  "2024": 0,
+                  "2025": 0
                 }
               },
               {
-                "cn": "parentOci",
-                "k": "parentOci",
+                "cn": "interestExpense",
+                "k": "interestExpense",
+                "vals": {
+                  "2023": 113500129.93,
+                  "2024": 105127802.03,
+                  "2025": 175775959.12
+                }
+              },
+              {
+                "cn": "uninsuranceCe",
+                "k": "uninsuranceCe",
+                "vals": {
+                  "2023": 0,
+                  "2024": 0,
+                  "2025": 0
+                }
+              },
+              {
+                "cn": "dilutedEps",
+                "k": "dilutedEps",
+                "vals": {
+                  "2023": 59.49,
+                  "2024": 68.64,
+                  "2025": 65.66
+                }
+              },
+              {
+                "cn": "ableOci",
+                "k": "ableOci",
                 "vals": {
                   "2023": 4715179.82,
                   "2024": -3854497.18,
@@ -11984,17 +12010,17 @@
                 }
               },
               {
-                "cn": "feesandCommissionsExpense",
-                "k": "feesandCommissionsExpense",
+                "cn": "saleExpense",
+                "k": "saleExpense",
                 "vals": {
-                  "2023": 68578.57,
-                  "2024": 94078.17,
-                  "2025": 103597.22
+                  "2023": 4648613585.82,
+                  "2024": 5639300059.49,
+                  "2025": 7253499600.68
                 }
               },
               {
-                "cn": "otherOperatingRevenueItems",
-                "k": "otherOperatingRevenueItems",
+                "cn": "securityUnderwriteNi",
+                "k": "securityUnderwriteNi",
                 "vals": {
                   "2023": 0,
                   "2024": 0,
@@ -12002,39 +12028,12 @@
                 }
               },
               {
-                "cn": "totalOperatingCost",
-                "k": "totalOperatingCost",
-                "vals": {
-                  "2023": 46960889468.54,
-                  "2024": 54523971452.57,
-                  "2025": 57370818034.33
-                }
-              },
-              {
-                "cn": "reinsureIncome",
-                "k": "reinsureIncome",
+                "cn": "bankInterestNi",
+                "k": "bankInterestNi",
                 "vals": {
                   "2023": 0,
                   "2024": 0,
                   "2025": 0
-                }
-              },
-              {
-                "cn": "assetDisposalIncome",
-                "k": "assetDisposalIncome",
-                "vals": {
-                  "2023": -479736.97,
-                  "2024": 388852.05,
-                  "2025": 3106625.19
-                }
-              },
-              {
-                "cn": "investmentIncome",
-                "k": "investmentIncome",
-                "vals": {
-                  "2023": 34025967.82,
-                  "2024": 9130340.37,
-                  "2025": 561176.14
                 }
               }
             ]
@@ -12250,7 +12249,7 @@
             {
               "name": "limit",
               "required": false,
-              "desc": "条数上限；默认 20"
+              "desc": "返回条数上限；默认 20"
             }
           ],
           "returns": {
@@ -12341,7 +12340,7 @@
             {
               "name": "limit",
               "required": false,
-              "desc": "条数上限；默认 20"
+              "desc": "返回条数上限；默认 20"
             }
           ],
           "returns": {
@@ -12449,7 +12448,7 @@
             {
               "name": "limit",
               "required": false,
-              "desc": "条数上限；默认 20"
+              "desc": "返回条数上限；默认 20"
             }
           ],
           "returns": {
@@ -12542,7 +12541,7 @@
             {
               "name": "limit",
               "required": false,
-              "desc": "条数上限；默认 20"
+              "desc": "返回条数上限；默认 20"
             }
           ],
           "returns": {
@@ -12998,7 +12997,7 @@
             {
               "name": "symbol",
               "required": true,
-              "desc": "6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码）"
+              "desc": "6 位 A 股裸码（自动归一前缀/后缀）"
             },
             {
               "name": "metric",
@@ -13060,44 +13059,44 @@
                 "pct": 0.5515394912985274,
                 "series": [
                   {
-                    "date": "2023-11-20",
-                    "value": 31.09886627447691
+                    "date": "2026-11-05",
+                    "value": 22.092283296038
                   },
                   {
-                    "date": "2023-11-21",
-                    "value": 31.584096812092863
+                    "date": "2026-11-06",
+                    "value": 22.107498367178525
                   },
                   {
-                    "date": "2023-11-22",
-                    "value": 31.4342929115707
+                    "date": "2026-11-09",
+                    "value": 21.985625647342943
                   },
                   {
-                    "date": "2023-11-23",
-                    "value": 31.51351782480327
+                    "date": "2026-11-10",
+                    "value": 21.894487371211216
                   },
                   {
-                    "date": "2023-11-24",
-                    "value": 31.354715103401684
+                    "date": "2026-11-11",
+                    "value": 21.336094260354056
                   },
                   {
-                    "date": "2023-11-27",
-                    "value": 31.10768864788811
+                    "date": "2026-11-12",
+                    "value": 21.45735837734402
                   },
                   {
-                    "date": "2023-11-28",
-                    "value": 31.214262918695397
+                    "date": "2026-11-13",
+                    "value": 21.837583005145664
                   },
                   {
-                    "date": "2023-11-29",
-                    "value": 31.314308633178392
+                    "date": "2026-11-16",
+                    "value": 22.121191931204997
                   },
                   {
-                    "date": "2023-11-30",
-                    "value": 31.61056393232646
+                    "date": "2026-11-17",
+                    "value": 22.179009201538978
                   },
                   {
-                    "date": "2023-12-01",
-                    "value": 31.059694936531187
+                    "date": "2026-11-18",
+                    "value": 21.950174531585528
                   }
                 ]
               },
@@ -13171,7 +13170,7 @@
             {
               "name": "symbol",
               "required": true,
-              "desc": "6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码）"
+              "desc": "6 位 A 股裸码（自动归一前缀/后缀）"
             },
             {
               "name": "begin",
@@ -13455,7 +13454,7 @@
             {
               "name": "symbol",
               "required": true,
-              "desc": "6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码）"
+              "desc": "6 位 A 股裸码（自动归一前缀/后缀）"
             },
             {
               "name": "begin",
@@ -15355,7 +15354,7 @@
             {
               "name": "limit",
               "required": false,
-              "desc": "条数上限；默认 20"
+              "desc": "返回条数上限；默认 20"
             }
           ],
           "returns": {
@@ -15525,7 +15524,7 @@
             {
               "name": "limit",
               "required": false,
-              "desc": "条数上限；默认 50"
+              "desc": "返回条数上限；默认 50"
             },
             {
               "name": "market",
@@ -15703,7 +15702,7 @@
             {
               "name": "limit",
               "required": false,
-              "desc": "条数上限；默认 20"
+              "desc": "返回条数上限；默认 20"
             },
             {
               "name": "market",
@@ -15891,7 +15890,7 @@
             {
               "name": "limit",
               "required": false,
-              "desc": "条数上限；默认 50"
+              "desc": "返回条数上限；默认 50"
             },
             {
               "name": "market",
@@ -16040,7 +16039,7 @@
             {
               "name": "limit",
               "required": false,
-              "desc": "条数上限；默认 50"
+              "desc": "返回条数上限；默认 50"
             },
             {
               "name": "market",
@@ -16327,7 +16326,7 @@
             }
           ],
           "returns": {
-            "kind": "array",
+            "kind": "text",
             "desc": "bool",
             "fields": []
           },
@@ -16388,7 +16387,7 @@
             }
           ],
           "returns": {
-            "kind": "array",
+            "kind": "text",
             "desc": "bool",
             "fields": []
           },
@@ -16439,7 +16438,7 @@
           "params": [],
           "returns": {
             "kind": "array",
-            "desc": "ARR · 类目键列表（reduction/insider_buy/buyback/equity_incentive/forecast/dividend/risk/mna/contract/pledge/issue/report/suspend/correct）",
+            "desc": "类目键列表（reduction/insider_buy/buyback/equity_incentive/forecast/dividend/risk/mna/contract/pledge/issue/report/suspend/correct）",
             "fields": []
           },
           "notes": [
@@ -16468,16 +16467,16 @@
             "args": {},
             "as_of": "2026-11-19",
             "result": [
-              "reduction",
-              "dividend",
-              "issue",
-              "mna",
               "correct",
               "report",
               "risk",
               "suspend",
               "forecast",
-              "insider_buy"
+              "insider_buy",
+              "pledge",
+              "buyback",
+              "contract",
+              "equity_incentive"
             ]
           },
           "sample": {
@@ -16509,7 +16508,7 @@
             }
           ],
           "returns": {
-            "kind": "array",
+            "kind": "text",
             "desc": "string · NOTICE_TYPE 匹配正则",
             "fields": []
           },
@@ -16587,7 +16586,7 @@
             {
               "name": "limit",
               "required": false,
-              "desc": "条数上限；默认 10"
+              "desc": "返回条数上限；默认 10"
             }
           ],
           "returns": {
@@ -16843,7 +16842,7 @@
             {
               "name": "limit",
               "required": false,
-              "desc": "条数上限；默认 20"
+              "desc": "返回条数上限；默认 20"
             },
             {
               "name": "skip",
@@ -16853,7 +16852,7 @@
           ],
           "returns": {
             "kind": "array",
-            "desc": "ARR · 命中文档元数据行（file_key/status/text_chars/source_url/oss_url/stock_code/announce_date/title/kind/has_markdown，不含正文）",
+            "desc": "命中文档元数据行（file_key/status/text_chars/source_url/oss_url/stock_code/announce_date/title/kind/has_markdown，不含正文）",
             "fields": []
           },
           "notes": [],
@@ -17359,8 +17358,8 @@
             }
           ],
           "returns": {
-            "kind": "array",
-            "desc": "MAP · 原始文档行或 nil",
+            "kind": "object",
+            "desc": "原始文档行或 nil",
             "fields": []
           },
           "notes": [],
@@ -17388,8 +17387,8 @@
             }
           ],
           "returns": {
-            "kind": "array",
-            "desc": "MAP · 原始文档行或 nil",
+            "kind": "object",
+            "desc": "原始文档行或 nil",
             "fields": []
           },
           "notes": [],
@@ -17724,7 +17723,7 @@
             }
           ],
           "returns": {
-            "kind": "array",
+            "kind": "text",
             "desc": "预告行 MAP 或 nil",
             "fields": []
           },
@@ -17799,7 +17798,7 @@
             {
               "name": "limit",
               "required": false,
-              "desc": "条数上限；默认 8"
+              "desc": "返回条数上限；默认 8"
             }
           ],
           "returns": {
@@ -17966,7 +17965,7 @@
             }
           ],
           "returns": {
-            "kind": "array",
+            "kind": "text",
             "desc": "快报行 MAP 或 nil",
             "fields": []
           },
@@ -18035,7 +18034,7 @@
             {
               "name": "limit",
               "required": false,
-              "desc": "条数上限；默认 8"
+              "desc": "返回条数上限；默认 8"
             }
           ],
           "returns": {
@@ -18134,7 +18133,7 @@
             }
           ],
           "returns": {
-            "kind": "array",
+            "kind": "text",
             "desc": "预约披露行 MAP 或 nil",
             "fields": []
           },
@@ -18314,154 +18313,154 @@
             "as_of": "2026-11-19",
             "result": [
               {
-                "announce": "2013-03-29",
+                "announce": "2022-11-29",
                 "bonus_share": 0.0,
                 "ccy": "CNY",
                 "content": "",
-                "dps": 6.419,
-                "ex_date": "2013-06-07",
-                "ex_div": "2013-06-07",
-                "net_profit": 13308079613,
-                "pay": "2013-06-17",
-                "payout_ratio": 0.5008,
-                "record_date": "2013-06-06",
-                "sas": "2012:Q4",
-                "total": 6664077420.0
+                "dps": 21.91,
+                "ex_date": "2022-12-27",
+                "ex_div": "2022-12-27",
+                "net_profit": 0,
+                "pay": "2022-12-27",
+                "payout_ratio": 0.0,
+                "record_date": "2022-12-26",
+                "sas": "2022:Q4",
+                "total": 27523293798.000004
               },
               {
-                "announce": "2014-03-25",
-                "bonus_share": 0.1,
-                "ccy": "CNY",
-                "content": "",
-                "dps": 4.374,
-                "ex_date": "2014-06-25",
-                "ex_div": "2014-06-25",
-                "net_profit": 15136639784,
-                "pay": "2014-06-25",
-                "payout_ratio": 0.3,
-                "record_date": "2014-06-24",
-                "sas": "2013:Q4",
-                "total": 4540999320.0
-              },
-              {
-                "announce": "2015-04-21",
-                "bonus_share": 0.1,
-                "ccy": "CNY",
-                "content": "",
-                "dps": 4.374,
-                "ex_date": "2015-07-17",
-                "ex_div": "2015-07-17",
-                "net_profit": 15349804322,
-                "pay": "2015-07-17",
-                "payout_ratio": 0.3254,
-                "record_date": "2015-07-16",
-                "sas": "2014:Q4",
-                "total": 4995099252.0
-              },
-              {
-                "announce": "2016-03-24",
+                "announce": "2023-03-31",
                 "bonus_share": 0.0,
                 "ccy": "CNY",
                 "content": "",
-                "dps": 6.171,
-                "ex_date": "2016-07-01",
-                "ex_div": "2016-07-01",
-                "net_profit": 15503090276,
-                "pay": "2016-07-01",
-                "payout_ratio": 0.5,
-                "record_date": "2016-06-30",
-                "sas": "2015:Q4",
-                "total": 7751996624.0
-              },
-              {
-                "announce": "2017-04-15",
-                "bonus_share": 0.0,
-                "ccy": "CNY",
-                "content": "",
-                "dps": 6.787,
-                "ex_date": "2017-07-07",
-                "ex_div": "2017-07-07",
-                "net_profit": 16718362734,
-                "pay": "2017-07-07",
-                "payout_ratio": 0.51,
-                "record_date": "2017-07-06",
-                "sas": "2016:Q4",
-                "total": 8525814469.0
-              },
-              {
-                "announce": "2018-03-28",
-                "bonus_share": 0.0,
-                "ccy": "CNY",
-                "content": "",
-                "dps": 10.999,
-                "ex_date": "2018-06-15",
-                "ex_div": "2018-06-15",
-                "net_profit": 27079360256,
-                "pay": "2018-06-15",
-                "payout_ratio": 0.5102,
-                "record_date": "2018-06-14",
-                "sas": "2017:Q4",
-                "total": 13816919602.0
-              },
-              {
-                "announce": "2019-03-29",
-                "bonus_share": 0.0,
-                "ccy": "CNY",
-                "content": "",
-                "dps": 14.539,
-                "ex_date": "2019-06-28",
-                "ex_div": "2019-06-28",
-                "net_profit": 35203625263,
-                "pay": "2019-06-28",
-                "payout_ratio": 0.5188,
-                "record_date": "2019-06-27",
-                "sas": "2018:Q4",
-                "total": 18263859814.0
-              },
-              {
-                "announce": "2020-04-22",
-                "bonus_share": 0.0,
-                "ccy": "CNY",
-                "content": "",
-                "dps": 17.025,
-                "ex_date": "2020-06-24",
-                "ex_div": "2020-06-24",
-                "net_profit": 41206471014,
-                "pay": "2020-06-24",
+                "dps": 25.911,
+                "ex_date": "2023-06-30",
+                "ex_div": "2023-06-30",
+                "net_profit": 62716443738,
+                "pay": "2023-06-30",
                 "payout_ratio": 0.519,
-                "record_date": "2020-06-23",
-                "sas": "2019:Q4",
-                "total": 21386767544.999996
+                "record_date": "2023-06-29",
+                "sas": "2022:Q4",
+                "total": 32549341196.0
               },
               {
-                "announce": "2021-03-31",
+                "announce": "2023-11-21",
                 "bonus_share": 0.0,
                 "ccy": "CNY",
                 "content": "",
-                "dps": 19.293,
-                "ex_date": "2021-06-25",
-                "ex_div": "2021-06-25",
-                "net_profit": 46697285430,
-                "pay": "2021-06-25",
-                "payout_ratio": 0.519,
-                "record_date": "2021-06-24",
-                "sas": "2020:Q4",
-                "total": 24235824155.0
+                "dps": 19.106,
+                "ex_date": "2023-12-20",
+                "ex_div": "2023-12-20",
+                "net_profit": 0,
+                "pay": "2023-12-20",
+                "payout_ratio": 0.0,
+                "record_date": "2023-12-19",
+                "sas": "2023:Q4",
+                "total": 24000915167.0
               },
               {
-                "announce": "2022-03-31",
+                "announce": "2024-04-03",
                 "bonus_share": 0.0,
                 "ccy": "CNY",
                 "content": "",
-                "dps": 21.675,
-                "ex_date": "2022-06-30",
-                "ex_div": "2022-06-30",
-                "net_profit": 52460144378,
-                "pay": "2022-06-30",
+                "dps": 30.876,
+                "ex_date": "2024-06-19",
+                "ex_div": "2024-06-19",
+                "net_profit": 74734071551,
+                "pay": "2024-06-19",
                 "payout_ratio": 0.519,
-                "record_date": "2022-06-29",
-                "sas": "2021:Q4",
-                "total": 27228087315.000004
+                "record_date": "2024-06-18",
+                "sas": "2023:Q4",
+                "total": 38786363273.0
+              },
+              {
+                "announce": "2024-11-09",
+                "bonus_share": 0.0,
+                "ccy": "CNY",
+                "content": "",
+                "dps": 23.882,
+                "ex_date": "2024-12-20",
+                "ex_div": "2024-12-20",
+                "net_profit": 0,
+                "pay": "2024-12-20",
+                "payout_ratio": 0.0,
+                "record_date": "2024-12-19",
+                "sas": "2024:Q3",
+                "total": 30000515860.0
+              },
+              {
+                "announce": "2025-04-03",
+                "bonus_share": 0.0,
+                "ccy": "CNY",
+                "content": "",
+                "dps": 27.673,
+                "ex_date": "2025-06-26",
+                "ex_div": "2025-06-26",
+                "net_profit": 86228146422,
+                "pay": "2025-06-26",
+                "payout_ratio": 0.4021,
+                "record_date": "2025-06-25",
+                "sas": "2024:Q4",
+                "total": 34671161737.0
+              },
+              {
+                "announce": "2025-08-13",
+                "bonus_share": 0.0,
+                "ccy": "CNY",
+                "content": "",
+                "dps": 0.0,
+                "ex_date": "2025-06-30",
+                "ex_div": "2025-06-30",
+                "net_profit": 0,
+                "pay": "",
+                "payout_ratio": 0.0,
+                "record_date": "",
+                "sas": "2025:Q2",
+                "total": 0.0
+              },
+              {
+                "announce": "2025-11-06",
+                "bonus_share": 0.0,
+                "ccy": "CNY",
+                "content": "",
+                "dps": 23.957,
+                "ex_date": "2025-12-19",
+                "ex_div": "2025-12-19",
+                "net_profit": 0,
+                "pay": "2025-12-19",
+                "payout_ratio": 0.0,
+                "record_date": "2025-12-18",
+                "sas": "2025:Q3",
+                "total": 30000637541.0
+              },
+              {
+                "announce": "2026-06-22",
+                "bonus_share": 0.0,
+                "ccy": "CNY",
+                "content": "",
+                "dps": 28.02423,
+                "ex_date": "2026-06-26",
+                "ex_div": "2026-06-26",
+                "net_profit": 0,
+                "pay": "2026-06-26",
+                "payout_ratio": 0.0,
+                "record_date": "2026-06-25",
+                "sas": "2025:Q4",
+                "total": 35032574305.19223
+              },
+              {
+                "announce": "2026-08-15",
+                "bonus_share": 0.0,
+                "ccy": "CNY",
+                "content": "",
+                "dps": 0.0,
+                "ex_date": "2026-06-30",
+                "ex_div": "2026-06-30",
+                "net_profit": 0,
+                "pay": "",
+                "payout_ratio": 0.0,
+                "record_date": "",
+                "sas": "2026:Q2",
+                "total": 0.0
               }
             ]
           },
@@ -18633,7 +18632,7 @@
             }
           ],
           "returns": {
-            "kind": "array",
+            "kind": "text",
             "desc": "float · 财报期每股分红（元/股）",
             "fields": []
           },
@@ -18754,7 +18753,7 @@
             }
           ],
           "returns": {
-            "kind": "array",
+            "kind": "text",
             "desc": "float · 小数（0.0396 = 3.96%）",
             "fields": []
           },
@@ -18813,7 +18812,7 @@
             }
           ],
           "returns": {
-            "kind": "array",
+            "kind": "text",
             "desc": "float · 小数（0.799 = 79.9%）",
             "fields": []
           },
@@ -18884,7 +18883,7 @@
             }
           ],
           "returns": {
-            "kind": "array",
+            "kind": "text",
             "desc": "bool",
             "fields": []
           },
@@ -18946,7 +18945,7 @@
             }
           ],
           "returns": {
-            "kind": "array",
+            "kind": "text",
             "desc": "bool",
             "fields": []
           },
@@ -19010,7 +19009,7 @@
             }
           ],
           "returns": {
-            "kind": "array",
+            "kind": "text",
             "desc": "bool",
             "fields": []
           },
@@ -19084,8 +19083,8 @@
             }
           ],
           "returns": {
-            "kind": "array",
-            "desc": "MAP · 收息榜（rows 含 rank/symbol/name/industry/四维 score/dividend_score/gate_pass，facets_industries 全集，asof/universe/missing_slices 元数据；COLD_CACHE 时 ok=false）",
+            "kind": "object",
+            "desc": "收息榜（rows 含 rank/symbol/name/industry/四维 score/dividend_score/gate_pass，facets_industries 全集，asof/universe/missing_slices 元数据；COLD_CACHE 时 ok=false）",
             "fields": []
           },
           "notes": [
@@ -19207,8 +19206,8 @@
             }
           ],
           "returns": {
-            "kind": "array",
-            "desc": "MAP · events（一个事件含公告/登记/除息/到账四日期，窗口内任一命中即返回；stocks 为名称/股息率/市值 enrich）",
+            "kind": "object",
+            "desc": "events（一个事件含公告/登记/除息/到账四日期，窗口内任一命中即返回；stocks 为名称/股息率/市值 enrich）",
             "fields": []
           },
           "notes": [
@@ -19293,8 +19292,8 @@
             }
           ],
           "returns": {
-            "kind": "array",
-            "desc": "MAP · items[]（total_return/price_return/dividend_return/cagr_*/monthly 月末累计序列/yearly 逐年表/attribution EPS×PE 归因；ok=false 为 K 线覆盖不足）",
+            "kind": "object",
+            "desc": "items[]（total_return/price_return/dividend_return/cagr_*/monthly 月末累计序列/yearly 逐年表/attribution EPS×PE 归因；ok=false 为 K 线覆盖不足）",
             "fields": []
           },
           "notes": [
@@ -22817,8 +22816,8 @@
           "desc": "进行中契约套利看板（信封：data.deals / data.quotes）。",
           "params": [],
           "returns": {
-            "kind": "array",
-            "desc": "MAP · as_of/deals/quotes",
+            "kind": "object",
+            "desc": "as_of/deals/quotes",
             "fields": []
           },
           "notes": [],
@@ -23064,7 +23063,7 @@
           ],
           "returns": {
             "kind": "array",
-            "desc": "ARR · 规范化条款行",
+            "desc": "规范化条款行",
             "fields": []
           },
           "notes": [],
@@ -24966,7 +24965,7 @@
           ],
           "returns": {
             "kind": "object",
-            "desc": "MAP · 发行行",
+            "desc": "发行行",
             "fields": []
           },
           "notes": [],
@@ -25042,7 +25041,7 @@
             {
               "name": "symbol",
               "required": true,
-              "desc": "6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码）"
+              "desc": "6 位 A 股裸码（自动归一前缀/后缀）"
             },
             {
               "name": "mode",
@@ -25102,7 +25101,7 @@
             {
               "name": "symbol",
               "required": true,
-              "desc": "6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码）"
+              "desc": "6 位 A 股裸码（自动归一前缀/后缀）"
             },
             {
               "name": "mode",
@@ -25478,7 +25477,7 @@
             {
               "name": "symbol",
               "required": true,
-              "desc": "6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码）"
+              "desc": "6 位 A 股裸码（自动归一前缀/后缀）"
             },
             {
               "name": "mode",
@@ -25756,7 +25755,7 @@
             {
               "name": "symbol",
               "required": true,
-              "desc": "6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码）"
+              "desc": "6 位 A 股裸码（自动归一前缀/后缀）"
             },
             {
               "name": "mode",
@@ -25790,7 +25789,7 @@
             {
               "name": "symbol",
               "required": true,
-              "desc": "6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码）"
+              "desc": "6 位 A 股裸码（自动归一前缀/后缀）"
             },
             {
               "name": "mode",
@@ -25890,7 +25889,7 @@
             {
               "name": "symbol",
               "required": true,
-              "desc": "6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码）"
+              "desc": "6 位 A 股裸码（自动归一前缀/后缀）"
             },
             {
               "name": "mode",
@@ -25948,7 +25947,7 @@
             {
               "name": "symbol",
               "required": true,
-              "desc": "6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码）"
+              "desc": "6 位 A 股裸码（自动归一前缀/后缀）"
             },
             {
               "name": "mode",
@@ -26019,7 +26018,7 @@
             {
               "name": "symbol",
               "required": true,
-              "desc": "6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码）"
+              "desc": "6 位 A 股裸码（自动归一前缀/后缀）"
             },
             {
               "name": "mode",
@@ -26029,7 +26028,7 @@
             {
               "name": "limit",
               "required": false,
-              "desc": "条数上限"
+              "desc": "返回条数上限"
             }
           ],
           "returns": {
@@ -26086,7 +26085,7 @@
             {
               "name": "symbol",
               "required": true,
-              "desc": "6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码）"
+              "desc": "6 位 A 股裸码（自动归一前缀/后缀）"
             },
             {
               "name": "mode",

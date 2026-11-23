@@ -68,7 +68,7 @@ CHAPTER_METRIC_CATEGORIES: dict[str, list[str]] = {"财务基本面": ["fundamen
 PARAM_DOCS: dict[str, str] = {
     "symbol": "6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码）",
     "n": "根数",
-    "limit": "条数上限",
+    "limit": "返回条数上限",
     "begin": "开始日期 YYYY-MM-DD（含端点）",
     "end": "结束日期 YYYY-MM-DD（含端点）",
     "window": "窗口（\"7d\"/\"1m\"/…/\"5y\" 或天数）",
@@ -94,12 +94,15 @@ PARAM_DOCS: dict[str, str] = {
 }
 
 # 按 ns 覆写兜底表：仅 A 股数据的门面，symbol 不得宣传港美（真多市场门面
-# kline/notice/intl/stocks/info/indicator 不在表内，走通用兜底或目录 desc）。
+# kline/notice/intl/stocks/info/indicator 不在表内——indicator 明确支持美股
+# 标的与 $FUT_* 期货码；etf 为 A 股场内基金，statements/valuation 为 A 股报表
+# 与每日估值）。
 PARAM_DOCS_CN_ONLY: dict[str, dict[str, str]] = {
     ns: {"symbol": "6 位 A 股裸码（自动归一前缀/后缀）"}
     for ns in ("margin", "moneyflow", "screener", "dividend", "equity",
                "filings", "forecast", "segments", "estimates", "workout",
-               "cbond", "backtest", "index", "macro")
+               "cbond", "backtest", "index", "macro",
+               "etf", "valuation", "statements")
 }
 
 
@@ -1073,7 +1076,11 @@ def _capture_eval_payload(ns: str, method: str, attempts: list[dict]) -> dict | 
 
 def _json_safe(v: object, depth: int = 0,
                row_cap: int = DEMO_ROW_CAP, text_cap: int = DEMO_TEXT_CAP) -> object:
-    """示例响应行 → 可序列化 JSON：NaN/Inf→None、长文本截断、行数封顶。"""
+    """示例响应行 → 可序列化 JSON：NaN/Inf→None、长文本截断、行数封顶。
+
+    行列表取**尾部** row_cap 行——SDK 契约是 date 升序(旧→新),头部是最旧行,
+    文档示例与新鲜度审计都要最新行。
+    """
     if depth > 6:
         return str(v)
     if isinstance(v, float):
@@ -1083,10 +1090,10 @@ def _json_safe(v: object, depth: int = 0,
     if isinstance(v, dict):
         return {str(k): _json_safe(x, depth + 1, row_cap, text_cap) for k, x in v.items()}
     if isinstance(v, (list, tuple)):
-        return [_json_safe(x, depth + 1, row_cap, text_cap) for x in v[:row_cap]]
+        return [_json_safe(x, depth + 1, row_cap, text_cap) for x in v[-row_cap:]]
     if hasattr(v, "to_dict"):  # DataFrame → 行数组
         return [_json_safe(r, depth + 1, row_cap, text_cap)
-                for r in v.to_dict("records")[:row_cap]]
+                for r in v.to_dict("records")[-row_cap:]]
     if hasattr(v, "results"):  # BatchResult → 逐票 MAP
         return _json_safe(dict(v.results), depth + 1, row_cap, text_cap)
     if v is None or isinstance(v, (bool, int, str)):
@@ -1205,12 +1212,15 @@ def build_api_pack() -> str:
         }
         if underlying:  # 目录函数支撑：shape 字段表 + 目录 notes
             shape = return_shape_for(CAT, ns, method, underlying)
+            raw_desc = RETURNS_OVERRIDES.get((ns, method)) \
+                or fmt_returns(fn, inv, shape=shape)
+            kind, stripped = _split_kind_prefix(raw_desc)
             entry["returns"] = {
-                # 字段表即返回说明（TickDB 式）；密文 desc 行不再输出
-                "kind": (shape or {}).get("kind") or "array",
+                # 字段表即返回说明（TickDB 式）；密文 desc 行与「ARR·/MAP·」
+                # 形态前缀不上用户面（kind 由前缀或 shape 推导）
+                "kind": (shape or {}).get("kind") or (kind if stripped else "array"),
                 "desc": None if (shape and (shape.get("items") or shape).get("fields"))
-                else (RETURNS_OVERRIDES.get((ns, method))
-                      or fmt_returns(fn, inv, shape=shape)),
+                else (stripped or None),
                 "fields": _pack_fields(fn, underlying),
             }
             entry["notes"] = fn.get("notes") or []

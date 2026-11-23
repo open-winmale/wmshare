@@ -1856,7 +1856,7 @@ cli.macro.phone_share(brand="小米", field="share")
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 
 **输出**：MAP · {年份: 审计意见}
 
@@ -1935,7 +1935,7 @@ audit = cli.statements.audit("600519")               # 审计意见（按年报�
 |---|---|---|---|---|
 | `symbol` | string | 是 | — | 6 位裸码 |
 | `source` | string | 否 | `'clean'` | "clean"（默认，清洗归一）或 "raw"（披露明细） |
-| `limit` | integer | 否 | `20` | 条数上限 |
+| `limit` | integer | 否 | `20` | 返回条数上限 |
 
 **输出字段**
 
@@ -1964,7 +1964,7 @@ cli.segments.products("600519", limit=10)
 |---|---|---|---|---|
 | `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `source` | string | 否 | `'clean'` | "clean"（默认，清洗归一）或 "raw"（披露明细） |
-| `limit` | integer | 否 | `20` | 条数上限 |
+| `limit` | integer | 否 | `20` | 返回条数上限 |
 
 **输出字段**
 
@@ -1993,7 +1993,7 @@ cli.segments.business("600519", limit=10)
 |---|---|---|---|---|
 | `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `source` | string | 否 | `'clean'` | "clean"（默认，清洗归一）或 "raw"（披露明细） |
-| `limit` | integer | 否 | `20` | 条数上限 |
+| `limit` | integer | 否 | `20` | 返回条数上限 |
 
 **输出字段**
 
@@ -2019,7 +2019,7 @@ cli.segments.region("600519", limit=10)
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
 | `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
-| `limit` | integer | 否 | `20` | 条数上限 |
+| `limit` | integer | 否 | `20` | 返回条数上限 |
 
 **输出字段**
 
@@ -2134,7 +2134,7 @@ cli.segments.periods("600519")
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `metric` | string | 否 | `'pe'` | "pe" / "pb" / "ps" / "pr" |
 | `window` | string | 否 | `'3y'` | "6m" / "1y" / "2y" / "3y" / "5y" / "10y" |
 
@@ -2154,7 +2154,7 @@ cli.valuation.hist_stats("600519", metric="pe", window="3y")
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `begin` | string | 否 | `None` | ISO 起日（含），``None``/``""`` = 开区间 |
 | `end` | string | 否 | `None` | ISO 止日（含），``None``/``""`` = 开区间 |
 | `fields` | object | 否 | `None` | list[str] / 逗号字符串 / ``None``（全部 8 个） |
@@ -2196,7 +2196,7 @@ cli.valuation.daily_basic_multi(symbols=["600519", "000001"], begin="2026-11-01"
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `begin` | string | 否 | `None` | 关心区间的起日；早于表内可读范围时 ``truncated`` 为真 |
 | `end` | string | 否 | `None` | 关心区间的止日；``None``/``""`` = 开区间 |
 
@@ -2717,7 +2717,7 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位 元（
 | `symbol` | string | 是 | — | 6 位 A 股代码 / 港股 5 位代码（按代码自动路由市场） |
 | `window` | string | 否 | `'3m'` | 时间窗 |
 | `keyword` | string | 否 | `''` | 标题/类型正则（可空） |
-| `limit` | integer | 否 | `20` | 条数上限 |
+| `limit` | integer | 否 | `20` | 返回条数上限 |
 
 **输出字段**
 
@@ -2749,7 +2749,7 @@ cli.notice.list("600519", window="3m", keyword="回购", limit=10)
 |---|---|---|---|---|
 | `window` | string | 否 | `'7d'` | 时间窗口，如 "7d"/"1m" 或天数 |
 | `keyword` | string | 否 | `''` | 标题/类型正则（可空） |
-| `limit` | integer | 否 | `50` | 条数上限 |
+| `limit` | integer | 否 | `50` | 返回条数上限 |
 | `market` | string | 否 | `''` | 公告市场，缺省自动（=cn）；港股显式传 "hk" |
 
 **输出字段**
@@ -2782,7 +2782,7 @@ cli.notice.recent(window="3m", keyword="回购", limit=10)
 |---|---|---|---|---|
 | `category` | string | 是 | — | 公告类别（如 ``"回购"``/``"减持"``；上游类别词表） |
 | `window` | string | 否 | `'1m'` | 窗口（"7d"/"1m"/…/"5y" 或天数） |
-| `limit` | integer | 否 | `20` | 条数上限 |
+| `limit` | integer | 否 | `20` | 返回条数上限 |
 | `market` | string | 否 | `''` | 公告市场，缺省自动（=cn）；港股显式传 "hk" |
 
 **输出字段**
@@ -2817,7 +2817,7 @@ cli.notice.by_category(category="回购", window="3m", limit=10)
 | `begin` | string | 是 | — | 起始日期（含） |
 | `end` | string | 是 | — | 结束日期（含） |
 | `keyword` | string | 否 | `''` | 标题/类型正则（可空） |
-| `limit` | integer | 否 | `50` | 条数上限 |
+| `limit` | integer | 否 | `50` | 返回条数上限 |
 | `market` | string | 否 | `''` | 公告市场，缺省自动（按标的代码路由）；全市场语义可显式传 "cn"/"hk" |
 
 **输出字段**
@@ -2850,7 +2850,7 @@ cli.notice.find("600519", begin="2026-01-01", end="2026-03-31", keyword="回购"
 |---|---|---|---|---|
 | `date` | string | 是 | — | 日期（YYYY-MM-DD） |
 | `keyword` | string | 否 | `''` | 标题/类型正则（可空） |
-| `limit` | integer | 否 | `50` | 条数上限 |
+| `limit` | integer | 否 | `50` | 返回条数上限 |
 | `market` | string | 否 | `''` | 公告市场，缺省自动（=cn）；港股显式传 "hk" |
 
 **输出字段**
@@ -2990,7 +2990,7 @@ cli.notice.category_regex(key="buyback")
 |---|---|---|---|---|
 | `symbol` | string | 是 | — | 6 位裸码 |
 | `kind` | string | 否 | `'all'` | 报告类型：``all \| annual \| semi \| quarter`` |
-| `limit` | integer | 否 | `10` | 条数上限 |
+| `limit` | integer | 否 | `10` | 返回条数上限 |
 
 **输出字段**
 
@@ -3053,7 +3053,7 @@ cli.filings.latest("600519", kind="annual")
 | `announce_date_to` | string | 否 | `''` | 披露日止（YYYY-MM-DD） |
 | `status` | string | 否 | `''` | ``ready \| pending \| fetched \| failed \| converting`` |
 | `kind` | string | 否 | `''` | 文档类型 |
-| `limit` | integer | 否 | `20` | 条数上限 |
+| `limit` | integer | 否 | `20` | 返回条数上限 |
 | `skip` | integer | 否 | `0` | 翻页跳过条数 |
 
 **输出**：ARR · 命中文档元数据行（file_key/status/text_chars/source_url/oss_url/stock_code/announce_date/title/kind/has_markdown，不含正文）
@@ -3261,7 +3261,7 @@ cli.forecast.yjyg_latest("600519")
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
 | `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
-| `limit` | integer | 否 | `8` | 条数上限 |
+| `limit` | integer | 否 | `8` | 返回条数上限 |
 
 **输出字段**
 
@@ -3313,7 +3313,7 @@ cli.forecast.yjkb_latest("600519")
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
 | `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
-| `limit` | integer | 否 | `8` | 条数上限 |
+| `limit` | integer | 否 | `8` | 返回条数上限 |
 
 **输出字段**
 
@@ -4738,7 +4738,7 @@ cli.intl.issue_info("00700")
 |---|---|---|---|---|
 | `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
 | `mode` | string | 否 | `'latest'` | 返回模式（"latest"=最新一条 / "series"=序列；ETF 九视图共用） |
-| `limit` | integer | 否 | `None` | 条数上限 |
+| `limit` | integer | 否 | `None` | 返回条数上限 |
 
 **`cli.etf.share`** — ETF 份额（信封：fd_share 份；mode=latest\|series）。
 

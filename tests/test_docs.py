@@ -886,9 +886,14 @@ def test_api_pack_contract():
             # TickDB 式三字段：name/required/desc；必填 ⇔ 该参数签名无默认值
             assert set(p) == {"name", "required", "desc"} and p["desc"], \
                 f"{ns}.{method}.{p['name']} 参数行结构漂移或缺说明"
+            assert p["desc"] != "—", f"{ns}.{method}.{p['name']} 参数说明缺失"
         # 字段表 TickDB 式两字段：name/desc（类型/守护/可空标记不上用户面）
         for f in e["returns"]["fields"]:
             assert set(f) == {"name", "desc"}, f"{ns}.{method} 返回字段行结构漂移"
+        # 返回说明不得泄漏「ARR ·/MAP ·」等内部形态前缀（kind 字段单独表达）
+        rd = e["returns"]["desc"] or ""
+        assert not rd.startswith(("ARR · ", "MAP · ", "标量 · ", "数值 · ")), \
+            f"{ns}.{method} 返回说明泄漏形态前缀"
         t = e["test"]
         if t is not None:
             assert t["path"] == "/v1/analysis/xs/eval"
