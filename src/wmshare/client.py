@@ -423,6 +423,17 @@ def estimate_cost(name: str, params: dict[str, Any] | None = None, *,
             out.update(ec_lo=185, ec_hi=1_600, model="measured",
                        note="单票上榜历史：冷态 ≈1,600 EC（逐 doc 扫全市场行）、"
                             "复跑走数据版本键缓存 ≈185 EC；limit 越小冷态越省")
+    elif name == "blocktrade.by_date":
+        # 实测（2026-11-23 live，全量回补后 4,100 日 / 68 万行）：
+        # 单日档点查 1,272~1,703 EC（按当日行数浮动，档内行数即读取量）。
+        out.update(ec_lo=1_200, ec_hi=1_800, model="measured",
+                   note="单日一档点查 ≈1,300~1,700 EC（2026-11-23 全量回补后实测）；"
+                        "成本随当日大宗笔数浮动，非固定开销")
+    elif name == "blocktrade.by_symbol":
+        # 实测（2026-11-23 live）：冷 4,814 → 热 243 EC（数据版本键缓存）。
+        out.update(ec_lo=240, ec_hi=4_900, model="measured",
+                   note="单票历史：冷态 ≈4,800 EC（raw 按日分档，单票过滤需扫全档）、"
+                        "复跑走数据版本键缓存 ≈240 EC；limit 越小冷态越省")
     elif name == "futures.mapping":
         # 实测（2026-11-19 live）：窗口 13 行 冷 833 → 热 160 EC；
         # 全历史 4,287 行 冷 214,514 EC（CONOF 逐行计费），必须传窗口。

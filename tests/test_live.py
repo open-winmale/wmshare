@@ -939,8 +939,7 @@ def test_blocktrade_read_face(cli):
     """大宗交易：单票历史 date 升序、成交额≈价×量；单日榜成交额降序。"""
     out = _call_or_xfail(lambda: cli.blocktrade.by_symbol("000001", 5))
     rows = out.to_dict("records") if hasattr(out, "to_dict") else list(out)
-    if not rows:
-        pytest.skip("block_trade 尚未回补（采集部署后解除此跳过）")
+    assert rows, "000001 应有大宗交易历史（2010 至今全量已回补，4,100 个交易日）"
     dates = [str(r["date"]) for r in rows]
     assert dates == sorted(dates), f"单票历史必须 date 升序：{dates}"
     for r in rows:

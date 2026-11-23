@@ -16,6 +16,9 @@ notes:
   - 行内只有证券代码（无简称）；要名称请用 cli.stocks.list 或 cli.info.profile 关联
   - 单日榜按成交额降序取前 N；单票历史按日期收集、SDK 门面统一升序（date 升序）
   - 买卖方为营业部/机构名称原文；同一交易日同票可有多笔（不同价格/买卖方）
+  - B 股（900xxx.SH / 200xxx.SZ）price 为外币报价（美元/港币）、amount 仍为人民币，
+    price×volume≠amount 属正常口径差；本接口不做汇率换算，跨市场比较需自行折算
+  - 2010 年至今全量（约 3,900 个交易日 / 60 万行）；早于 2010 年上游无数据
 functions:
   - name: blocktrade.by_date
     cn: 指定交易日大宗交易

@@ -6954,7 +6954,7 @@ cli.info.profile("600519")
 - **每日估值 域**：可用性：仅 A 股（CN 专用表；HK/US 无流通股份源，诚实缺列不建表）；数据自物化日起可用；历史回填由样本 DAG 提供（pe/pb/ps/pr ≤3y，引擎窗口硬顶； mv 族回走窗口见方案 §5/§9），更早区间诚实缺行；行内缺失字段诚实缺列（不零填充）；亏损期 pe_ttm 缺行与平台现算口径一致
 - `valuation.daily_basic`（个股每日估值序列）：as_of = 表内最新行日期（与 begin/end 过滤无关，供调用方判新鲜度）； 未知字段名在 meta.requested_unknown 里如实回报，不静默丢弃
 - `valuation.daily_basic_multi`（多票每日估值序列）：行合同与 valuation.daily_basic 完全一致，可 concat 后按 symbol 分组； EC 仍按票计价（批量只省请求调度，不省算力），地板 ≈1；707 EC/票； 单票读窗口 1；500 日文档，meta.per_symbol 各项的 truncated 标出被截断的票
-- **大宗交易 域**：行内只有证券代码（无简称）；要名称请用 cli.stocks.list 或 cli.info.profile 关联；单日榜按成交额降序取前 N；单票历史按日期收集、SDK 门面统一升序（date 升序）；买卖方为营业部/机构名称原文；同一交易日同票可有多笔（不同价格/买卖方）
+- **大宗交易 域**：行内只有证券代码（无简称）；要名称请用 cli.stocks.list 或 cli.info.profile 关联；单日榜按成交额降序取前 N；单票历史按日期收集、SDK 门面统一升序（date 升序）；买卖方为营业部/机构名称原文；同一交易日同票可有多笔（不同价格/买卖方）；B 股（900xxx.SH / 200xxx.SZ）price 为外币报价（美元/港币）、amount 仍为人民币， price×volume≠amount 属正常口径差；本接口不做汇率换算，跨市场比较需自行折算；2010 年至今全量（约 3,900 个交易日 / 60 万行）；早于 2010 年上游无数据
 - `blocktrade.by_date`（指定交易日大宗交易）：非交易日/未采集日返回空数组；同一票多笔各一行
 - `blocktrade.by_symbol`（单票大宗交易历史）：以最新落库交易日做数据版本键缓存（历史只增不改，落库即换键）
 - **板块资金流 域**：来源 src ∈ ths_concept（ths 概念 386 行/日）/ ths_industry（ths 行业 90 行/日）/ dc（dc 概念+行业 1,081 行/日，content_type 区分）；单日榜按 net_amount 降序取前 N，不是时间序列；ths 与 dc 板块代码/名称不互通，不做跨源映射；ths 有买卖总额与领涨股涨跌幅，dc 有四档单量金额与净额占比；缺失字段 nil（不补 0）
@@ -6999,9 +6999,9 @@ cli.info.profile("600519")
 - **证券与行业基础 域**：全表单次返回（cn≈5.7k / hk≈2.8k / us≈5.3k 行），排序不保证；SDK 侧可自行排序过滤；cn/hk universe 随上游每日刷新；us universe 为手动 DAG 刷新，新上市/退市有滞后；上游 usall 含空 symbol 占位行，域库侧已剔除（us 5560→5337）；返回行数恒等有效标的数；美股：列表与个股行业码可用；行业目录树上游未灌数（手动灰度），industry_list 恒空、 industry_members 不可用；exchange 为小写交易所简称（sz/sh/bj/hk…），部分档案缺失为空串；ST/停复牌史为 A 股专项：停复牌按交易日、简称变更按生效日；无上市/退市日期源，时间轴不含上市事件
 - `stocks.limit_prices`（全市场涨跌停价（当日快照））：当日快照（非历史序列）：索引一次投影，全市场冷 ≈14 万 EC、同日复跑 ≈75 EC；带宽按代码号段：30x/68x=20%、43/83/87/88/92（北交所）=30%、其余=10%；ST 股按板块带宽（2026-11-23 全市场实测未见 5% 档）；前收盘 = ROUND(close/(1+percent), 2)（A 股报价恒为分，snap 到分消除 percent 四位小数误差）；限价 ROUND 到分；rule=unbounded（当日涨跌幅超带宽 0.2 个百分点，如新股无涨跌幅日）/delisting（退市整理期）/no_price 时价格字段为 nil，不猜；停牌股不返回；新股上市前 5 个交易日无涨跌停，索引未物化上市日期——快照按板块带宽给理论价，超带宽会被标 unbounded，其余次新股请用 listingdate 自查（已知边界）
 - `stocks.limit_price`（单票涨跌停价（当日快照））：索引单票点查（≈30-50 EC），口径与全市场快照完全一致
-- `stocks.suspend_history`（单票停复牌事件）：停牌事件按交易日逐条（长停个股每天一行），区间查询默认上限 2000 条；自 1999 年起的全量历史；日更采集自 2026-11 起（窗口回看 40 天）
+- `stocks.suspend_history`（单票停复牌事件）：停牌事件按交易日逐条（长停个股每天一行）；单票全史一次返回（清洗档单文档直读，≈25-60 EC）；自 1999 年起的全量历史；日更采集自 2026-11 起（窗口回看 40 天，采集后当日清洗）
 - `stocks.name_history`（单票简称变更史）：简称段首尾相接（end_date=下一段生效日前一日）；is_st 由简称含 ST 判定；只覆盖发生简称变更的进出，无变更的上市初期不在表内
-- `stocks.lifecycle`（单票 ST/停复牌变动时间轴）：由 name_history + suspend_history 合并派生，日期升序；同一天多事件顺序不保证；st_exit 的日期=首个非 ST 简称的生效日；detail=新简称；不含上市/退市事件（无历史日期源；当前状态看 stocks.query_list 的 is_st/listed）；停复牌明细上限 2000 条（超长停牌史个股取前 2000 条）
+- `stocks.lifecycle`（单票 ST/停复牌变动时间轴）：由 name_history + suspend_history 合并派生，日期升序；同一天多事件顺序不保证；st_exit 的日期=首个非 ST 简称的生效日；detail=新简称；不含上市/退市事件（无历史日期源；当前状态看 stocks.query_list 的 is_st/listed）；单票全史一次返回（清洗档单文档直读，≈50-100 EC/次）
 - **龙虎榜 域**：行合同：同票多上榜原因各一行；率为小数（上游百分数已 /100）、金额=元、日期=ISO；ranges 为结构性宽界（2026-11-19 live 锚点：单日 95 行、涨跌幅 ±20cm 内、 成交额最大 ≈8.5e9 元），用于拦数量级错位；后续按分布实测收紧；复跑近免费：fmt_maps 规范化结果按行指纹缓存（榜单历史不可变，36a5de20 范式）；席位/营业部明细（外部行情源的席位接口）无落库——不提供 by_seat
 - `toplist.by_symbol`（单票上榜历史）：龙虎榜是事件表——未上榜的日子无行；判断「近 N 日是否上榜」用行数与 date 字段推断，不是补零序列
 - **美宏观 域**：序列在 `eco.macro / fred.LIST.{id}`，按原生频率切片落库（list[] 是该切片观测）； 精选范围 = `xs/data/fred/topics.json` 的 11 主题 × 88 条，**不是**上游全量目录 （约 85 万行），检索只在这 88 条内做——精选即产品口径，也避免万级扫描成本。；**单位随序列而变**，本域不声明统一量纲：GDP 是十亿美元（Billions of Dollars）、 UNRATE 是百分数（Percent）、PAYEMS 是千人（Thousands of Persons）。跨序列 比较前必须先读 `fred.series_meta(id).units`，否则量级必错。；**空值不是 0**：上游缺失记为 "."，落库为 nil，本域读面直接跳过该点（不补 0、 不插值）。需要原始文本时用 web 侧 `fred.series`（本域标 internal 未暴露）。；**需授权序列永不抓取**：`status=pre_approval_required` 的序列在上游即被粘住 （版权限制），`series_meta` 如实返回该状态且 `has_data=false`，不会自动补数。；引用要求：数据来自圣路易斯联储 FRED，对外引用需保留 `citation` 字段原文。；点序列 `date` 升序（旧→新，全库合同）；窗口用 `begin/end` 下推，服务端按 `startTs/endTs` 过滤，不全量取回再筛。
