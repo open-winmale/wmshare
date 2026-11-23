@@ -130,6 +130,34 @@ def test_search_and_contract_friendly_api(runtime: Any) -> None:
     assert contract["data"]["recommended_tool"] == "wmshare_segments"
 
 
+def test_recommended_tool_can_actually_serve_the_route() -> None:
+    """推荐工具必须真能服务该路由，而不是「是个工具名」就算过。
+
+    曾经的缺陷：``_recommended_tool`` 把 futures 归进 wmshare_market 那一组，
+    但 ``MARKET_DOMAINS`` 不含 futures——模型照着 recommended_tool 去调，
+    直接吃「domain 只支持 …」。旧断言只校验「在 TOOL_NAMES 里」，拦不住。
+    """
+    market_domains = set(MARKET_ACTIONS)
+    for route in api_routes():
+        if route.recommended_tool == "wmshare_market":
+            assert route.domain in market_domains, (
+                f"{route.target} 推荐到 wmshare_market，但 {route.domain} "
+                f"不在 MARKET_DOMAINS（{sorted(market_domains)}）")
+        if route.recommended_tool == "wmshare_futures":
+            assert route.domain == "futures"
+    futures_routes = [route for route in api_routes() if route.domain == "futures"]
+    assert futures_routes, "futures 域应至少有一条 friendly 路由"
+    for route in futures_routes:
+        assert route.recommended_tool == "wmshare_futures"
+
+    # 推荐工具的 action 枚举必须覆盖该路由的方法名（direct 工具无 action 的除外）
+    futures_actions = set(FUTURES_ACTIONS)
+    for route in futures_routes:
+        assert route.method in futures_actions, (
+            f"{route.target} 的方法不在 FUTURES_ACTIONS={sorted(futures_actions)}，"
+            "推荐到 wmshare_futures 也调不到")
+
+
 def test_status_reports_capability_coverage(runtime: Any) -> None:
     status = tools.status(runtime)
     caps = status["data"]["capabilities"]

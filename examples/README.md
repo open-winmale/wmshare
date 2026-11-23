@@ -34,7 +34,7 @@ export WMSHARE_CLIENT_ID=... WMSHARE_CLIENT_SECRET=...   # 长期额度：配置
 | 09 | `09_ai_skill_setup.py` | AI | **离线** | skill 自检与装入 agent；AI 正确行为的验证标准 | AI.md（全文） |
 | 10 | `10_notice_monitor.py` | 进阶 | 匿名/凭证 | 公告轮询器：poll_now 手动一轮、ack/at-least-once、seek_oldest 重置 | GUIDE·公告变更订阅 |
 | 11 | `11_statements_tour.py` | 进阶 | 匿名/凭证 | 三大报表科目行结构、合并 vs 母公司（diffp 小数）、审计意见 | GUIDE·单票菜谱 |
-| 12 | `12_mcp_server.py` | AI | **离线自检** | `wmshare-mcp` 安装自检、凭证写入、最小 MCP 配置、28 个工具入口与 friendly API 兜底 | README·MCP server、AI·MCP 路径 |
+| 12 | `12_mcp_server.py` | AI | **离线自检** | `wmshare-mcp` 安装自检、凭证写入、最小 MCP 配置、29 个工具入口与 friendly API 兜底 | README·MCP server、AI·MCP 路径 |
 | 13 | `13_futures_macro.py` | 进阶 | 匿名/凭证 | 期货主力指标码（fut_symbol 换合约/外盘）、宏观时序与中债收益率（原生口径） | GUIDE·§6.1、API·期货/宏观章 |
 | 14 | `14_cbond_double_low.py` | 生产 | 匿名/凭证 | 前半手工算双低（board 原始字段，看清在市口径）；后半 `cbond.daily()` 一条链路出事实包 + `article()` 成稿 + `figures()` 出图；缺条目即抛错不补猜测值 | GUIDE·单票菜谱·可转债、docs/notebooks/cb_double_low.ipynb |
 | 15 | `15_backtest_ma.py` | 进阶 | 匿名/凭证 | 单股均线买卖点回测：逐笔成交明细（买/卖、费用、盈亏、持有天数）+ 净值/回撤汇总；固定口径次日开盘、T+1、整手 | GUIDE·单票菜谱·单股回测 |

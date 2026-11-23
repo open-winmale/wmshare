@@ -132,7 +132,7 @@ def runtime() -> MCPRuntime:
     return rt
 
 
-def test_registry_has_twenty_eight_tools() -> None:
+def test_registry_exposes_every_tool_name() -> None:
     server = build_server(fake_runtime())
     response = server.list_tools()
     if hasattr(response, "__await__"):

@@ -11,6 +11,8 @@ wmshare 取数代码**。优先用 MCP；没有 MCP 时用 skill 或文档上下
   ETF、回测、宏观、龙虎榜、期货、公告结构化与批量；全部 186 个 friendly API（168 登记 +
   18 个组合接口）均可经 `wmshare_call(mode="api")` 兜底（macro 长尾与
   `cbond.article/figures` 仅网关路径）。输出统一 units/rows/next_action。
+  结果是**结构化行数组**（DataFrame 在 MCP 边界统一转 records，NaN/NaT→null，
+  可直接 `json.dumps`）；时间序列超 `max_rows` 保留**最新**一段，排名类列表仍保留头部。
 - **skill 随包分发**：单位铁律、意图→接口决策树、坑位清单、错误速查，装进 agent 即生效
   （`wmshare.skill_dir()`）。
 - **错误消息即修复指引**：401/403/429 的消息里就是申请与配置步骤，429 附批量续跑位置。

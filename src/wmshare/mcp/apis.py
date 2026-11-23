@@ -105,9 +105,14 @@ def _recommended_tool(domain: str, method: str) -> str:
         return "wmshare_market"
     if domain == "screener":
         return "wmshare_screen"
-    if domain in {"moneyflow", "margin", "cbond", "index", "valuation",
-                  "calendar", "futures"}:
+    if domain in {"moneyflow", "margin", "cbond", "index", "valuation"}:
         return "wmshare_market"
+    # futures / calendar 必须显式分流：MARKET_DOMAINS 都不含它们，推荐到
+    # wmshare_market 会让调用方按推荐直接吃「domain 只支持…」。
+    if domain == "futures":
+        return "wmshare_futures"
+    if domain == "calendar":
+        return "wmshare_call"
     if domain == "stocks":
         return "wmshare_market" if method == "list" else "wmshare_screen"
     if domain == "statements":
