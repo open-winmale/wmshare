@@ -12487,7 +12487,7 @@
       "post": {
         "operationId": "us_macro_points",
         "summary": "序列点（DataFrame，date 升序=旧→新；空值已跳过不补 0）。",
-        "description": "底层目录函数 `fred.points_asc`。SDK 调用：`cli.us_macro.points(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "description": "更长历史请按 ``begin``/``end`` 分段各取一次，调大 limit 无益）、底层目录函数 `fred.points_asc`。SDK 调用：`cli.us_macro.points(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "参考数据"
         ],
@@ -12512,7 +12512,7 @@
                   },
                   "limit": {
                     "type": "integer",
-                    "description": "根数（缺省 500=Client 单次上限；服务端上限 20000，长历史请传 Client(max_limit=None)）"
+                    "description": "根数（缺省 500、上限 10000——store 单次硬顶，截最新 N 个点；"
                   }
                 },
                 "required": []

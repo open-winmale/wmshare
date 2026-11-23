@@ -48,6 +48,9 @@ INTERNAL_HELPERS = {
     "income.materialize",
     "income.materialize_merge",
     "income.materialize_slice",
+    # 美宏观日期校验：纯字符级判断（DATE()/INT() 遇非法串会抛宿主异常 → HTTP 500），
+    # 仅供 fred.points_asc 内部调用，不暴露给 SDK 用户。
+    "fred.iso_date",
 }
 
 

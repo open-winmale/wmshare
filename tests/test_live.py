@@ -452,6 +452,15 @@ def test_us_macro_series(cli):
     if locked and locked.get("status") == "pre_approval_required":
         assert locked["has_data"] is False, "需授权序列不应有数据"
 
+    # 参数健壮性：非法日期曾使 DATE() 抛宿主异常（HTTP 500）。现应视为未提供该端。
+    bad = _call_or_xfail(lambda: cli.us_macro.points("GDP", begin="not-a-date",
+                                                     end="also-bad", limit=5))
+    assert len(bad) >= 1, "非法日期应退化为「不设窗口」而不是抛异常或空集"
+
+    # 单次硬顶：limit 超过 store 上限（10000）时不得静默超领，也不得报错
+    big = _call_or_xfail(lambda: cli.us_macro.points("DGS10", limit=12000))
+    assert len(big) <= 10_000, f"store 单次硬顶 10000 行，实际返回 {len(big)}"
+
 
 def test_notice_read_text(cli):
     """公告正文读取：取一条有 PDF 的公告，预览路径应返回纯读 MAP。

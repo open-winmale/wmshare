@@ -767,7 +767,7 @@ class FredNS(_Ns):
 :param id: 序列 id（如 GDP、UNRATE、DGS10）
 :param begin: 开始日期 YYYY-MM-DD（可空=全历史）
 :param end: 结束日期 YYYY-MM-DD（可空）
-:param limit: 根数，缺省 500（Client 单次上限），服务端上限 20000
+:param limit: 根数，缺省 500、上限 10000（store 单次硬顶）；截的是最新 N 个点，更长历史按 begin/end 分段各取一次
 
 :returns: ARR · 点（id/date/value；date 升序，空值已跳过）
         """

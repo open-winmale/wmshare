@@ -1,6 +1,6 @@
 {
  "schema_version": 2,
- "upstream_rev": "08307c8b",
+ "upstream_rev": "2f7d012e",
  "domains": {
   "bonus": {
    "entry": "sys/bonus/init.xs",
@@ -152,7 +152,7 @@
   "toplist",
   "valuation"
  ],
- "function_count": 354,
+ "function_count": 355,
  "functions": [
   {
    "name": "bonus.dps_rpt",
@@ -4503,6 +4503,20 @@
     {
      "name": "limit",
      "type": "int"
+    }
+   ]
+  },
+  {
+   "name": "fred.iso_date",
+   "cn": "ISO 日期校验（YYYY-MM-DD）",
+   "example": "fred.iso_date(\"2026-11-19\")",
+   "returns": "bool",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "s",
+     "type": "string"
     }
    ]
   },

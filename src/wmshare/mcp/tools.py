@@ -1052,8 +1052,9 @@ def macro(
     us_topics/us_search/us_series 走美宏观序列（code 传序列 id 如 GDP/DGS10）：
     **单位随序列而变**，先 us_series 读 units 再解读数值。
     实测成本（2026-11-23）：us_topics ≈408 EC、us_search ≈1,324 EC；
-    us_series 冷态按行 ≈154 EC/行（319 行约 6.1 万），**复跑恒定 ≈92 EC**
-    ——长历史先读一次再复算，或缩小 n。
+    us_series 冷态 ≈150 EC/行（323 行约 4.7 万、10000 行约 46.8 万），
+    **复跑恒定 ≈92 EC**——长历史先读一次再复算，或缩小 n。
+    n 上限 10000（store 单次硬顶）；更长历史用 cli.us_macro.points(begin/end) 分段取。
     """
     if action not in MACRO_ACTIONS:
         raise ValueError(f"action 只支持 {'/'.join(MACRO_ACTIONS)}")

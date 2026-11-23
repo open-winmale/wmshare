@@ -473,10 +473,11 @@ def estimate_cost(name: str, params: dict[str, Any] | None = None, *,
     elif name.startswith("fred."):
         # 实测（2026-11-23 部署后 metering.ec_cost，cn 客户端）：
         #   topics 408（静态包，但 xs.call 加载本身计费）/ search 1,324（同）/
-        #   series_meta 746 / points(20行) 冷 986 → 热 92 /
-        #   points(400行) 冷 61,432 → 热 92 / 窗口 2 年 7 行 394。
-        # **共同点：冷态与行数强相关（逐行组装），热态恒定 92 EC**（数据版本键
-        # 缓存命中后不再组装）——与 fx/reserve 同款，勿套 EC_PER_ROW 线性外推。
+        #   series_meta 746 / points(20行) 冷 986 → 热 92 / 窗口 2 年 7 行 394。
+        # 2026-11-23 review 修正：行内组装从逐行 append 改为 CONOF/CONFT 向量化
+        # （append 深拷贝是 O(n²)），实测重标 45 EC/行（500 行 22,619 / 2,000 行
+        # 90,180 / 10,000 行 450,509，线性 ≈45 EC/行 + ~2,000 固定）。
+        # 热态仍恒定 ≈92 EC（数据版本键缓存命中后不组装）。
         if name == "fred.topics":
             out.update(ec_lo=408, ec_hi=408, model="measured",
                        note="静态主题包直读，恒定 ≈408 EC（xs.call 加载计费，无 store 取数）")
@@ -488,11 +489,15 @@ def estimate_cost(name: str, params: dict[str, Any] | None = None, *,
                        note="1 行探针判 has_data + 目录元信息单查，实测 ≈746 EC")
         else:  # fred.points_asc
             n = rows if (rows and rows > 0) else 500
-            cold = max(900, int(n * 154))
+            if n > 10_000:
+                n = 10_000  # store 单次硬顶，更大的 limit 不会多拿行
+            cold = 2_000 + int(n * 45)
             out.update(ec_lo=92, ec_hi=cold, model="measured",
-                       note=f"冷态按行组装（实测 20 行 986、319 行 61,432 → ≈154 EC/行，"
-                            f"{n} 行 ≈{cold}）；**复跑恒定 92 EC**（数据版本键缓存）。"
-                            "长历史务必传 begin/end 收窄窗口（2 年 7 行仅 394 EC）")
+                       note=f"冷态 ≈45 EC/行 + ~2,000 固定（实测 500 行 22,619、"
+                            f"2,000 行 90,180、10,000 行 450,509），{n} 行 ≈{cold}；"
+                            "**复跑恒定 92 EC**（数据版本键缓存）。上限 10000 行"
+                            "（store 单次硬顶）；更长历史按 begin/end 分段各取一次"
+                            "（2 年 7 行仅 394 EC）")
     elif name.startswith("pdf_doc."):
         # 实测（2026-11-19 live）：search 5 行 ≈836 EC（含 fmt_one 组装，
         # 无结果缓存，复跑同价）；find_by_key/status/read_* 单行点查数百 EC。
