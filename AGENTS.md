@@ -37,7 +37,8 @@ pytest -q --cov-branch                # 离线全量（行/分支覆盖率 ≥85
   `cat.search / cat.function` 确认，禁止凭记忆编造；
 - **公开文档零竞品名、零导流话术**（CTA 禁词表见 `tests/test_docs.py::test_docs_no_ad_diversion_cta`，
   Gitee 内容风控会拦截导流类措辞，故全库执行）；
-- **生成物不手改**：docs/API.md、docs/fields.json、docs/api_pack.json、docs/openapi.json、
+- **生成物不手改**：docs/API.md、docs/fields.json、docs/api_pack.json、
+  docs/api_pack_samples.json（维护者联网拍摄）、docs/openapi.json、
   docs/swagger.html、llms.txt、llms-full.txt、docs/INDICATORS.md、docs/indicators/、
   docs/ERRORS.md、docs/DATA_CALENDAR.md、docs/changelog.xml
   由 `tools/gen_*.py` 生成——改源头后重新生成，漂移门禁会拦截手改；

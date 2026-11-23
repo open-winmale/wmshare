@@ -32,7 +32,7 @@ from _introspect import (  # noqa: E402
     return_shape_for, underlying_fn,
 )
 from wmshare.api import (  # noqa: E402
-    COMPOSITE_METHODS, FRIENDLY_INDEX, FRIENDLY_NAMESPACES)
+    COMPOSITE_METHODS, DOC_META, FRIENDLY_INDEX, FRIENDLY_NAMESPACES)
 from wmshare.catalog import catalog_dir, load  # noqa: E402
 
 DOMAINS = catalog_dir() / "domains"
@@ -931,9 +931,12 @@ def build_fields_json() -> str:
 # ---------------------------------------------------------------------------
 
 API_PACK_OUT = REPO / "docs" / "api_pack.json"
-API_PACK_BUDGET = 600_000   # 总量硬预算（字节）：超限即生成失败，防 demo 行数失控
+API_PACK_SAMPLES = REPO / "docs" / "api_pack_samples.json"
+API_PACK_BUDGET = 900_000   # 总量硬预算（字节）：超限即生成失败，防示例响应失控
 DEMO_ROW_CAP = 10           # 每接口示例响应最多保留行数
 DEMO_TEXT_CAP = 400         # 字符串字段截断长度（如公告 PDF 正文）
+SAMPLE_ROW_CAP = 6          # 真实拍摄响应保留行数（更紧，控制体积）
+SAMPLE_TEXT_CAP = 200
 
 
 class _CaptureSession:
@@ -1068,22 +1071,24 @@ def _capture_eval_payload(ns: str, method: str, attempts: list[dict]) -> dict | 
     return None
 
 
-def _json_safe(v: object, depth: int = 0) -> object:
-    """演示快照行 → 可序列化 JSON：NaN/Inf→None、长文本截断、行数封顶。"""
+def _json_safe(v: object, depth: int = 0,
+               row_cap: int = DEMO_ROW_CAP, text_cap: int = DEMO_TEXT_CAP) -> object:
+    """示例响应行 → 可序列化 JSON：NaN/Inf→None、长文本截断、行数封顶。"""
     if depth > 6:
         return str(v)
     if isinstance(v, float):
         return v if math.isfinite(v) else None
-    if isinstance(v, str) and len(v) > DEMO_TEXT_CAP:
-        return v[:DEMO_TEXT_CAP] + f"…(截断，原长 {len(v)})"
+    if isinstance(v, str) and len(v) > text_cap:
+        return v[:text_cap] + f"…(截断，原长 {len(v)})"
     if isinstance(v, dict):
-        return {str(k): _json_safe(x, depth + 1) for k, x in v.items()}
+        return {str(k): _json_safe(x, depth + 1, row_cap, text_cap) for k, x in v.items()}
     if isinstance(v, (list, tuple)):
-        return [_json_safe(x, depth + 1) for x in v[:DEMO_ROW_CAP]]
+        return [_json_safe(x, depth + 1, row_cap, text_cap) for x in v[:row_cap]]
     if hasattr(v, "to_dict"):  # DataFrame → 行数组
-        return [_json_safe(r, depth + 1) for r in v.to_dict("records")[:DEMO_ROW_CAP]]
+        return [_json_safe(r, depth + 1, row_cap, text_cap)
+                for r in v.to_dict("records")[:row_cap]]
     if hasattr(v, "results"):  # BatchResult → 逐票 MAP
-        return _json_safe(dict(v.results), depth + 1)
+        return _json_safe(dict(v.results), depth + 1, row_cap, text_cap)
     if v is None or isinstance(v, (bool, int, str)):
         return v
     return str(v)
@@ -1110,19 +1115,50 @@ def _capture_demo(ns: str, method: str, attempts: list[dict]) -> dict:
             "as_of": DEMO_SNAPSHOT_PROVENANCE["as_of"]}
 
 
+_KIND_PREFIX = {"ARR": "array", "MAP": "object", "标量": "scalar", "数值": "scalar"}
+
+
 def _pack_fields(fn: dict, fn_key: str) -> list[dict]:
-    """返回字段表（与 fields.json 同源）：字段/类型/单位/守护范围/说明。"""
-    fields = _shape_fields(fn_key)
+    """返回字段表（TickDB 式两列语义）：字段 + 说明。
+
+    shape 读目录本体（CAT.function），不走 generated/inventory.json——两者在
+    returns_shape 上有漂移（inventory 缺新面），目录才是合同事实源。
+    单位换算融进说明文字（量（手→股））；可空性与守护范围是内部 QA 机制，
+    不进面向用户的文档面（机器合同仍在 fields.json / openapi x-wmshare-guards）。
+    """
+    try:
+        sh = CAT.function(fn_key).get("returns_shape") or {}
+    except Exception:
+        sh = {}
+    items = sh.get("items") if isinstance(sh.get("items"), dict) else sh
+    fields = [f for f in (items or {}).get("fields") or [] if f.get("name")]
     units = fn.get("units") or {}
-    ranges = fn.get("ranges") or {}
+    out = []
     for f in fields:
-        if f["name"] in units:
-            tok = units[f["name"]]
-            f["unit"] = UNIT_CN.get(tok, tok)
-        rng = ranges.get(f["name"])
-        if isinstance(rng, (list, tuple)) and len(rng) == 2:
-            f["range"] = [rng[0], rng[1]]
-    return fields
+        desc = field_cn(f) or ""
+        tok = units.get(f["name"])
+        if tok:
+            unit = UNIT_CN.get(tok, tok)
+            desc = f"{desc}（{unit}）" if desc else unit
+        out.append({"name": f["name"], "desc": desc or "—"})
+    return out
+
+
+def _split_kind_prefix(desc: str) -> tuple[str, str]:
+    """剥掉 FALLBACK_RETURNS 的「ARR · / MAP · / 标量 · / 数值 · 」前缀 → (kind, 余文)。"""
+    for token, kind in _KIND_PREFIX.items():
+        if desc.startswith(f"{token} · "):
+            return kind, desc[len(token) + 3:]
+    return "text", desc
+
+
+def _pack_param(p, ns: str, method: str, fn: dict) -> dict:
+    """TickDB 式参数行：参数 | 必填 | 说明（默认值融进说明，不设类型列）。"""
+    desc = _param_desc(ns, method, p, fn)
+    if p.default is not None and p.default != "None" and "默认" not in desc \
+            and "可选" not in desc:
+        desc = f"{desc}；默认 {p.default}" if desc else f"默认 {p.default}"
+    return {"name": p.name, "required": p.required, "desc": desc}
 
 
 def build_api_pack() -> str:
@@ -1165,22 +1201,29 @@ def build_api_pack() -> str:
             "cn": (method_doc(cls, method)[0] or cn) if composite else cn,
             "composite": composite,
             "desc": method_doc(cls, method)[0] or cn,
-            "params": [{"name": p.name, "type": p.json_type, "required": p.required,
-                        "default": p.default,
-                        "desc": _param_desc(ns, method, p, fn)} for p in params],
+            "params": [_pack_param(p, ns, method, fn) for p in params],
         }
         if underlying:  # 目录函数支撑：shape 字段表 + 目录 notes
             shape = return_shape_for(CAT, ns, method, underlying)
             entry["returns"] = {
-                "desc": RETURNS_OVERRIDES.get((ns, method))
-                or fmt_returns(fn, inv, shape=shape),
+                # 字段表即返回说明（TickDB 式）；密文 desc 行不再输出
+                "kind": (shape or {}).get("kind") or "array",
+                "desc": None if (shape and (shape.get("items") or shape).get("fields"))
+                else (RETURNS_OVERRIDES.get((ns, method))
+                      or fmt_returns(fn, inv, shape=shape)),
                 "fields": _pack_fields(fn, underlying),
             }
             entry["notes"] = fn.get("notes") or []
         else:  # eval 型门面（$CODE 求值/宿主 spec 等）与组合接口：无 shape
-            entry["returns"] = {"desc": FALLBACK_RETURNS.get((ns, method), "—"),
-                                "fields": []}
+            kind, rest = _split_kind_prefix(FALLBACK_RETURNS.get((ns, method), ""))
+            entry["returns"] = {"kind": kind, "desc": rest or None, "fields": []}
             entry["notes"] = []
+        meta = DOC_META.get((ns, method)) or {}
+        # 变体（page=宿主）不成独立页：渲染在宿主页 variants 表里
+        entry["docs_visible"] = bool(meta.get("docs_visible", True)) and "page" not in meta
+        if "page" in meta:
+            entry["page"] = meta["page"]
+            entry["variant"] = meta.get("variant") or cn
         entry["example"] = None if composite else method_example(ns, method, params)
         attempts = _attempt_kwargs_list(ns, method, params)
         # 组合链路（多次 eval）PlaygroundRun 单次代理不可回放，显式 null；
@@ -1218,17 +1261,51 @@ def build_api_pack() -> str:
                 node["composite_examples"] = COMPOSITE_EXAMPLES[ns]
             namespaces_out.append(node)
 
+    # 变体归组：DOC_META 里 page= 指向宿主的条目,挂到宿主页 variants
+    by_key = {i["key"]: i for n in namespaces_out
+              for i in (*n["interfaces"], *n["composites"])}
+    for key, item in by_key.items():
+        host_key = item.get("page")
+        if not host_key:
+            continue
+        host = by_key.get(host_key)
+        if host is None:
+            raise AssertionError(f"DOC_META 变体 {key} 的宿主 {host_key} 不存在")
+        host.setdefault("variants", []).append({
+            "key": key, "variant": item.get("variant") or key,
+            "desc": item["desc"], "params": item["params"],
+        })
+    # 宿主页自身也可能被标为变体（不可能：宿主必须 docs_visible）——防呆已由上方断言覆盖
+
     ifaces = [i for n in namespaces_out for i in (*n["interfaces"], *n["composites"])]
+    visible = [i for i in ifaces if i["docs_visible"]]
+
+    # 真实拍摄样本（tools/generate_api_pack_samples.py 联网产出；离线缺省）
+    samples_doc = None
+    if API_PACK_SAMPLES.is_file():
+        samples_doc = json.loads(API_PACK_SAMPLES.read_text(encoding="utf-8"))
+    sample_map = {s["key"]: s for s in (samples_doc or {}).get("samples") or []}
+    sampled = 0
+    for i in ifaces:
+        s = sample_map.get(i["key"])
+        if s and "result" in s:  # result=None 也是真实响应（标的无该数据）
+            i["sample"] = s
+            sampled += 1
+
     payload = {
-        "schema_version": 1,
+        "schema_version": 2,
         "generated_by": "tools/gen_api_docs.py",
         "meta": {
             "core": len(FRIENDLY_INDEX),
             "composite": sum(len(n["composites"]) for n in namespaces_out),
+            "docs_visible": len(visible),
+            "variants": sum(1 for i in ifaces if i.get("page")),
             "domains": len(docs),
             "categories": [{"key": c, "cn": CATEGORY_CN[c]} for c in CATEGORY_ORDER],
             "demo_covered": sum(1 for i in ifaces if (i.get("demo") or {}).get("covered")),
             "test_ready": sum(1 for i in ifaces if i.get("test")),
+            "sampled": sampled,
+            "samples_provenance": (samples_doc or {}).get("provenance"),
             "demo_snapshot": DEMO_SNAPSHOT_PROVENANCE,
         },
         "namespaces": namespaces_out,
@@ -1237,7 +1314,7 @@ def build_api_pack() -> str:
     size = len(body.encode("utf-8"))
     if size > API_PACK_BUDGET:
         raise AssertionError(f"api_pack {size}B 超预算 {API_PACK_BUDGET}B——"
-                             "请收紧 DEMO_ROW_CAP/DEMO_TEXT_CAP")
+                             "请收紧 DEMO_ROW_CAP/DEMO_TEXT_CAP/SAMPLE_ROW_CAP")
     return body
 
 

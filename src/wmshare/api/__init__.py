@@ -3646,5 +3646,43 @@ FRIENDLY_INDEX: list[tuple[str, str, str, str, str]] = [
     ("reference", "macro", "phone_share", "手机品牌周份额", "macro.phone_share"),
 ]
 
+# 文档暴露面元数据（开放平台接口文档站消费；SDK 面 / openapi / llms 全量不变）。
+# 不在表内 = 默认完整成页。三类：
+#   docs_visible=False —— 内部辅助接口：SDK 可调、cat.search 可查，但不成文档页
+#     （参照 TickDB「只成页必要接口」的口径：纯谓词/运维探针不值得一张页）；
+#   page=<宿主key> —— 同族变体：渲染在宿主页的「同族变体」表里一行，
+#     variant=变体名；宿主必须是同命名空间内保留成页的接口；
+#   variant_note —— 变体行说明（阈值/形态），缺省用该方法 docstring 首句。
+DOC_META: dict[tuple[str, str], dict] = {
+    # ---- 内部辅助：不成页 ----
+    ("kline", "is_etf"): {"docs_visible": False},
+    ("valuation", "daily_basic_coverage"): {"docs_visible": False},
+    # ---- screener：13 → 1 页三小节（query 主页 + 两组变体表） ----
+    ("screener", "screen_limit_up"): {"page": "screener.query", "variant": "涨停"},
+    ("screener", "screen_limit_down"): {"page": "screener.query", "variant": "跌停"},
+    ("screener", "screen_above_ma20"): {"page": "screener.query", "variant": "站上 MA20"},
+    ("screener", "screen_ma60_up"): {"page": "screener.query", "variant": "MA60 上行"},
+    ("screener", "screen_breakout_ma20"): {"page": "screener.query", "variant": "突破 MA20"},
+    ("screener", "screen_momentum_20d"): {"page": "screener.query", "variant": "20 日动量"},
+    ("screener", "screen_pullback_20d"): {"page": "screener.query", "variant": "20 日回撤"},
+    ("screener", "screen_volume_spike"): {"page": "screener.query", "variant": "放量"},
+    ("screener", "index_breadth_summary"): {"page": "screener.query", "variant": "全市场涨跌全景"},
+    ("screener", "index_breadth_bins"): {"page": "screener.query", "variant": "涨跌幅分桶"},
+    ("screener", "index_breadth_bin_industries"): {"page": "screener.query", "variant": "分桶行业分布"},
+    ("screener", "index_top_movers"): {"page": "screener.query", "variant": "涨跌榜"},
+    # ---- calendar：3 → 1 页（days 主页 + 两个便捷变体） ----
+    ("calendar", "is_open"): {"page": "calendar.days", "variant": "是否交易日"},
+    ("calendar", "next"): {"page": "calendar.days", "variant": "之后 N 个交易日"},
+    # ---- macro：数据集预设并入 query 主页 ----
+    ("macro", "nev_monthly"): {"page": "macro.query", "variant": "新势力月交付"},
+    ("macro", "nev_weekly"): {"page": "macro.query", "variant": "新势力周销量"},
+    ("macro", "avc_monthly"): {"page": "macro.query", "variant": "奥维家电月度"},
+    ("macro", "chinaiol_monthly"): {"page": "macro.query", "variant": "家电产销月度"},
+    ("macro", "cpca_top"): {"page": "macro.query", "variant": "乘联会厂商排行"},
+    ("macro", "phone_share"): {"page": "macro.query", "variant": "手机品牌周份额"},
+    # ---- cbond：bars 与 kline_window 同底层，行式并入列式主页 ----
+    ("cbond", "bars"): {"page": "cbond.kline_window", "variant": "转债日线（行式）"},
+}
+
 # 类型化门面（生成层）：目录命名空间的完整类型签名；运行时仍走 client.call()。
 from wmshare.api._generated import NAMESPACES as GENERATED_NAMESPACES  # noqa: E402

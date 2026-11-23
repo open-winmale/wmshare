@@ -243,6 +243,63 @@ FALLBACK_RETURNS = {
         "MAP · {ok, as_of, data: {key, begin, end, members: [{symbol, name, weight,"
         " …]}}}（begin 时点的成分名单快照）",
 }
+# 无目录 shape 的核心门面返回说明补全（取自各方法 docstring 首句，人话口径；
+# 开放平台接口文档站的「返回」段直接渲染该文本——不加 ARR·/MAP· 前缀，
+# kind 由生成器按形态归类）。
+FALLBACK_RETURNS.update({
+    ("margin", "query"): "个股两融历史行表：trade_date/fin_buy_amt/fin_repay_amt/fin_balance 等，date 升序",
+    ("margin", "latest"): "最新一日两融单行，字段同 query()",
+    ("calendar", "next"): "某日之后 N 个交易日（date 升序；不足 N 个如实返回）",
+    ("toplist", "by_date"): "指定交易日的全市场龙虎榜行表（席位买卖/净额/上榜原因等，date 升序）",
+    ("toplist", "by_symbol"): "单票上榜历史（最近事件行，按日期升序）",
+    ("index", "valuation"): "宽基估值时序（信封：data.series 为 d/pe/pb 序列，按 d 升序）",
+    ("futures", "mapping"): "主力换月映射行表（主力连续码 → 当日实际合约；date 升序）",
+    ("estimates", "query_forecast"): "机构盈利预测（逐年 EPS/PE，A=实际 E=预测）",
+    ("estimates", "query_forecast_detail"): "盈利预测明细（机构/研究员/归母净利/评级）",
+    ("estimates", "query_rating"): "评级统计（综合评级与买卖家数按窗口）",
+    ("estimates", "query_reports"): "个股研报列表（标题/机构/作者/行业/报告链接）",
+    ("notice", "list"): "单票公告行表：date/title/type/url/pdf_url，date 升序",
+    ("notice", "recent"): "全市场近期公告行表：date/title/type/symbol/url，date 升序（cn/hk）",
+    ("notice", "by_category"): "按类别查公告行表（如「回购」），date 升序（cn/hk）",
+    ("notice", "find"): "按日期区间查单票公告行表，date 升序（begin/end 均含当日）",
+    ("notice", "on_date"): "指定日期的全市场公告行表（date 格式 YYYY-MM-DD；cn/hk）",
+    ("pdf_doc", "read_text"): "MAP：{ok, status, file_key, text, text_truncated, source_url}（正文前 4000 字预览；未就绪不入队）",
+    ("pdf_doc", "read_markdown"): "MAP：财报 markdown 挂接正文 / 经营评述",
+    ("pdf_doc", "status"): "MAP：文档转换状态（status/convert_policy/kind/has_markdown/task）",
+    ("equity", "query_holder10"): "最新一期十大股东行表（holder_name/hold_num/hold_num_ratio）",
+    ("equity", "query_holdernum"): "最新股东户数单行（end_date/hold_focus/avg_hold_amt）",
+    ("equity", "query_pledge_detail"): "主要股东质押明细行表（质押家数/数量/比例/状态）",
+    ("equity", "query_pledge_summary"): "公司质押比例时序（trade_date/pledge_ratio/质押股数/质押市值）",
+    ("equity", "query_pledge_market"): "市场整体质押时序（全市场口径，不传标的）",
+    ("equity", "query_pledge_industry"): "行业质押比例（全市场按行业，不传标的）",
+    ("equity", "query_pledge_org"): "质押机构分布（质权人类型维度，不传标的）",
+    ("equity", "query_institution_detail"): "机构持股明细（机构 × 报告期持股数/市值/占比）",
+    ("equity", "query_institution_summary"): "机构持仓占比时序（机构家数/合计占比/环比变动）",
+    ("equity", "query_hgt"): "沪港通持股行表（机构/持股数/市值/占比变动）",
+    ("equity", "query_national_team"): "国家队持股（证券主体 × 报告期持股占比）",
+    ("equity", "query_release"): "限售解禁日程行表（解禁日期/数量/占比/类型）",
+    ("equity", "query_buyback_plan"): "回购方案全览单行（进度/价格上限/金额上限/起始日）",
+    ("equity", "query_buyback_detail"): "回购执行明细单行（已回购股数/金额/公告日）",
+    ("equity", "buyback_snapshot"): "回购六口径快照（exec/plan × 近1年/累计 × 含/不含注销式）",
+    ("equity", "query_reorg"): "并购重组行表（进度/交易金额/公告日）",
+    ("equity", "query_related_trade"): "关联交易行表（关联方/交易金额/公告日）",
+    ("equity", "query_concert"): "一致行动人行表（组合名称/合计持股比例）",
+    ("equity", "query_guarantee"): "对外担保行表（担保方/金额/是否履行完毕）",
+    ("equity", "query_litigation"): "诉讼记录行表（案名/涉案金额/原告/被告）",
+    ("equity", "query_violation"): "违规处罚行表（类型/处分/罚款金额）",
+    ("equity", "query_executives"): "高管名册行表（姓名/职务/薪酬/持股）",
+    ("equity", "query_exec_change"): "高管增减持最新一行（日期/高管/变动股数/均价）",
+    ("equity", "query_exec_change_at"): "指定报告期的高管增减持单行",
+    ("equity", "query_capital_change"): "股本结构最新一行（总股本/流通股本）",
+    ("equity", "query_capital_change_at"): "指定报告期的股本结构单行",
+    ("intl", "query_ccass"): "港股 CCASS 经纪持仓行表（经纪商/持股数/占发行股比）",
+    ("intl", "query_shareholders"): "港股主要股东/董事权益行表（股东/持股数/占总股比）",
+    ("intl", "query_org_rating"): "港股机构评级行表（机构/评级/目标价，披露币种）",
+    ("intl", "query_profit_forecast"): "港股盈利预测（披露原文中文键：财政年度/纯利/每股盈利等）",
+    ("intl", "query_sellshort"): "港美沽空（沽空量/占比，shares=股）",
+    ("intl", "issue_info"): "美股发行信息快照（发行价/数量/日期，以披露源为准）",
+})
+
 
 _PARAM_RE = re.compile(r"^:param (\w+):\s*(.*)$")
 

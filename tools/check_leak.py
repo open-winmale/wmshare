@@ -82,6 +82,10 @@ THIRDPARTY_SKIP = {"tests/test_symbols.py", "tests/test_index_daily_notebook.py"
 THIRDPARTY_SKIP_PREFIXES = (
     "src/wmshare/_catalog/symbols/",
     "src/wmshare/_demo_data.json",
+    # 接口文档数据包：demo/真实拍摄样本都是「API 返回值」原文（公告 url=
+    # 上游站点域名、note 带上游系统名），与 _demo_data.json 同性质豁免。
+    "docs/api_pack.json",
+    "docs/api_pack_samples.json",
 )
 
 # 凭证赋值（带字面量）

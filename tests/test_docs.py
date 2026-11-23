@@ -861,13 +861,15 @@ def test_api_pack_contract():
 
     独立复刻生成器口径防同错：键集合与 FRIENDLY_INDEX/COMPOSITE_METHODS 精确
     对齐；demo/test 缺省必须是显式 null/reason（防「静默没数据」假文档）。
+    DOC_META（api/__init__）决定文档站暴露面：隐藏接口 SDK 仍可调，只是不成页。
     """
+    from wmshare.api import DOC_META
     pack = json.loads((REPO / "docs" / "api_pack.json").read_text(encoding="utf-8"))
-    assert pack["schema_version"] == 1
+    assert pack["schema_version"] == 2
     entries = {i["key"]: i
                for n in pack["namespaces"]
                for i in (*n["interfaces"], *n["composites"])}
-    # 覆盖 1:1：核心 + 组合，一个不多一个不少
+    # 覆盖 1:1：核心 + 组合，一个不多一个不少（隐藏/变体只是元数据，条目仍在）
     assert set(entries) == ({f"{ns}.{m}" for _, ns, m, _, _ in FRIENDLY_INDEX}
                             | {f"{ns}.{m}" for ns, ms in COMPOSITE_METHODS.items() for m in ms})
     assert pack["meta"]["core"] == len(FRIENDLY_INDEX)
@@ -881,10 +883,12 @@ def test_api_pack_contract():
                .parameters.items() if n != "self" and not n.startswith("_")]
         assert [p["name"] for p in e["params"]] == sig, f"{ns}.{method} 参数表漂移"
         for p in e["params"]:
-            assert p["required"] == (p["default"] is None), \
-                f"{ns}.{method}.{p['name']} required 与默认值矛盾"
-        # eval 型门面（无目录 shape）returns.fields 为空是合法形态，desc 不得缺失
-        assert e["returns"]["desc"], f"{ns}.{method} 缺返回说明"
+            # TickDB 式三字段：name/required/desc；必填 ⇔ 该参数签名无默认值
+            assert set(p) == {"name", "required", "desc"} and p["desc"], \
+                f"{ns}.{method}.{p['name']} 参数行结构漂移或缺说明"
+        # 字段表 TickDB 式两字段：name/desc（类型/守护/可空标记不上用户面）
+        for f in e["returns"]["fields"]:
+            assert set(f) == {"name", "desc"}, f"{ns}.{method} 返回字段行结构漂移"
         t = e["test"]
         if t is not None:
             assert t["path"] == "/v1/analysis/xs/eval"
@@ -898,6 +902,18 @@ def test_api_pack_contract():
                 f"{ns}.{method} demo 覆盖但无响应/溯源"
         else:
             assert demo.get("reason"), f"{ns}.{method} demo 未覆盖必须给原因"
+        # DOC_META 与 pack 条目互证：隐藏/变体标记必须精确一致
+        meta = DOC_META.get((ns, method))
+        if meta is None:
+            assert e["docs_visible"] and "page" not in e, \
+                f"{ns}.{method} 不应有隐藏/变体标记"
+        elif "page" in meta:
+            assert e["docs_visible"] is False and e.get("page") == meta["page"], \
+                f"{ns}.{method} 变体归属漂移"
+            assert e["key"] in {v["key"] for v in entries[meta["page"]].get("variants", [])}, \
+                f"{ns}.{method} 未挂到宿主页 variants"
+        else:
+            assert e["docs_visible"] is False, f"{ns}.{method} 应隐藏"
 
     for ns, methods in COMPOSITE_METHODS.items():
         for method in methods:
@@ -908,6 +924,16 @@ def test_api_pack_contract():
     assert pack["meta"]["demo_covered"] == sum(1 for e in entries.values()
                                                if e["demo"]["covered"])
     assert pack["meta"]["test_ready"] == sum(1 for e in entries.values() if e["test"])
+    assert pack["meta"]["docs_visible"] == sum(1 for e in entries.values()
+                                               if e["docs_visible"])
+    assert pack["meta"]["variants"] == sum(1 for e in entries.values() if e.get("page"))
+    # 变体宿主必须自身可见（隐藏接口不能当组页宿主）
+    for e in entries.values():
+        for v in e.get("variants") or []:
+            assert e["docs_visible"], f"{e['key']} 是隐藏接口却挂着变体 {v['key']}"
+    # 已拍样本：result 键存在即计入（None 也是真实响应=标的无数据）
+    sampled = {i["key"] for i in entries.values() if "result" in (i.get("sample") or {})}
+    assert pack["meta"]["sampled"] == len(sampled)
 
 
 def test_llms_lists_composite_interfaces():
