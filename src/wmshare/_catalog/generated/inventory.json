@@ -1,6 +1,6 @@
 {
  "schema_version": 2,
- "upstream_rev": "e56f7fcf",
+ "upstream_rev": "5a82fc1a",
  "domains": {
   "bonus": {
    "entry": "sys/bonus/init.xs",
@@ -36,6 +36,10 @@
   },
   "futures": {
    "entry": "sys/futures/init.xs",
+   "exports": []
+  },
+  "fx": {
+   "entry": "sys/fx/init.xs",
    "exports": []
   },
   "income": {
@@ -93,6 +97,10 @@
    "entry": "sys/pdf_doc/init.xs",
    "exports": []
   },
+  "reserve": {
+   "entry": "sys/reserve/init.xs",
+   "exports": []
+  },
   "rptdom": {
    "entry": "sys/rptdom/init.xs",
    "exports": []
@@ -125,6 +133,7 @@
   "estimates",
   "filings",
   "futures",
+  "fx",
   "indices",
   "intl",
   "kline",
@@ -133,11 +142,12 @@
   "moneyflow",
   "notice",
   "pdf_doc",
+  "reserve",
   "segments",
   "toplist",
   "valuation"
  ],
- "function_count": 341,
+ "function_count": 348,
  "functions": [
   {
    "name": "bonus.dps_rpt",
@@ -4653,6 +4663,190 @@
     },
     {
      "name": "period",
+     "type": "string"
+    }
+   ]
+  },
+  {
+   "name": "fx.history",
+   "cn": "汇率日线序列",
+   "example": "fx.history(\"USD\", 30)",
+   "returns": "ARR",
+   "returns_shape": {
+    "kind": "array",
+    "cn": "汇率日线",
+    "items": {
+     "kind": "object",
+     "cn": "汇率行",
+     "fields": [
+      {
+       "name": "date",
+       "type": "string",
+       "cn": "日期 YYYY-MM-DD"
+      },
+      {
+       "name": "ccy",
+       "type": "string",
+       "cn": "币种 ISO 代码"
+      },
+      {
+       "name": "middle",
+       "type": "float64",
+       "cn": "央行中间价（每 1 单位外币折人民币）"
+      },
+      {
+       "name": "buy",
+       "type": "float64",
+       "cn": "中行汇买价（同上口径）"
+      }
+     ]
+    }
+   },
+   "min_args": 1,
+   "params": [
+    {
+     "name": "ccy",
+     "type": "string"
+    },
+    {
+     "name": "n",
+     "type": "int"
+    }
+   ]
+  },
+  {
+   "name": "fx.list",
+   "cn": "在库币种清单",
+   "example": "fx.list()",
+   "returns": "ARR",
+   "returns_shape": {
+    "kind": "array",
+    "cn": "币种清单",
+    "items": {
+     "kind": "object",
+     "cn": "币种",
+     "fields": [
+      {
+       "name": "ccy",
+       "type": "string",
+       "cn": "币种 ISO 代码"
+      },
+      {
+       "name": "date",
+       "type": "string",
+       "cn": "最新数据日期 YYYY-MM-DD"
+      },
+      {
+       "name": "middle",
+       "type": "float64",
+       "cn": "最新中间价（每 1 单位外币折人民币）"
+      }
+     ]
+    }
+   },
+   "min_args": null,
+   "params": []
+  },
+  {
+   "name": "fx.query_bars",
+   "cn": "汇率区间日线",
+   "example": "fx.query_bars(\"USD\", \"2026-09-01\", \"2026-09-30\", 100)",
+   "returns": "ARR",
+   "returns_shape": {
+    "kind": "array",
+    "cn": "汇率日线",
+    "items": {
+     "kind": "object",
+     "cn": "汇率行",
+     "fields": [
+      {
+       "name": "date",
+       "type": "string",
+       "cn": "日期 YYYY-MM-DD"
+      },
+      {
+       "name": "ccy",
+       "type": "string",
+       "cn": "币种 ISO 代码"
+      },
+      {
+       "name": "middle",
+       "type": "float64",
+       "cn": "央行中间价（每 1 单位外币折人民币）"
+      },
+      {
+       "name": "buy",
+       "type": "float64",
+       "cn": "中行汇买价（同上口径）"
+      }
+     ]
+    }
+   },
+   "min_args": 1,
+   "params": [
+    {
+     "name": "ccy",
+     "type": "string"
+    },
+    {
+     "name": "begin",
+     "type": "string"
+    },
+    {
+     "name": "end",
+     "type": "string"
+    },
+    {
+     "name": "limit",
+     "type": "int"
+    }
+   ]
+  },
+  {
+   "name": "fx.rate",
+   "cn": "最新汇率（每 1 单位外币折人民币）",
+   "example": "fx.rate(\"USD\")",
+   "returns": "MAP",
+   "returns_shape": {
+    "kind": "object",
+    "cn": "汇率快照",
+    "fields": [
+     {
+      "name": "ccy",
+      "type": "string",
+      "cn": "币种 ISO 代码"
+     },
+     {
+      "name": "date",
+      "type": "string",
+      "cn": "数据日期 YYYY-MM-DD"
+     },
+     {
+      "name": "middle",
+      "type": "float64",
+      "cn": "央行中间价（每 1 单位外币折人民币）"
+     },
+     {
+      "name": "buy",
+      "type": "float64",
+      "cn": "中行汇买价（同上口径）"
+     },
+     {
+      "name": "cash_buy",
+      "type": "float64",
+      "cn": "中行钞买价（同上口径）"
+     },
+     {
+      "name": "currency",
+      "type": "string",
+      "cn": "币种原值（上游披露）"
+     }
+    ]
+   },
+   "min_args": 1,
+   "params": [
+    {
+     "name": "ccy",
      "type": "string"
     }
    ]
@@ -9481,6 +9675,135 @@
     {
      "name": "meta",
      "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "reserve.asof",
+   "cn": "储备最新值",
+   "example": "reserve.asof(\"forex\")",
+   "returns": "MAP",
+   "returns_shape": {
+    "kind": "object",
+    "cn": "储备快照",
+    "fields": [
+     {
+      "name": "kind",
+      "type": "string",
+      "cn": "储备项代码"
+     },
+     {
+      "name": "date",
+      "type": "string",
+      "cn": "最新数据期 YYYY-MM"
+     },
+     {
+      "name": "value",
+      "type": "float64",
+      "cn": "美元数值"
+     },
+     {
+      "name": "unit",
+      "type": "string",
+      "cn": "量纲说明"
+     }
+    ]
+   },
+   "min_args": 1,
+   "params": [
+    {
+     "name": "kind",
+     "type": "string"
+    }
+   ]
+  },
+  {
+   "name": "reserve.list",
+   "cn": "储备项清单",
+   "example": "reserve.list()",
+   "returns": "ARR",
+   "returns_shape": {
+    "kind": "array",
+    "cn": "储备项",
+    "items": {
+     "kind": "object",
+     "cn": "储备项信息",
+     "fields": [
+      {
+       "name": "kind",
+       "type": "string",
+       "cn": "储备项代码 forex/gold/sdr/total"
+      },
+      {
+       "name": "label",
+       "type": "string",
+       "cn": "中文标签"
+      },
+      {
+       "name": "available",
+       "type": "bool",
+       "cn": "是否已有数据"
+      },
+      {
+       "name": "date",
+       "type": "string",
+       "cn": "最新数据期 YYYY-MM，无数据为空"
+      },
+      {
+       "name": "value",
+       "type": "float64",
+       "cn": "最新值，美元数值；无数据为 nil"
+      },
+      {
+       "name": "unit",
+       "type": "string",
+       "cn": "量纲说明"
+      }
+     ]
+    }
+   },
+   "min_args": 0,
+   "params": []
+  },
+  {
+   "name": "reserve.query",
+   "cn": "储备时序",
+   "example": "reserve.query(\"forex\", 12)",
+   "returns": "ARR",
+   "returns_shape": {
+    "kind": "array",
+    "cn": "储备时序",
+    "items": {
+     "kind": "object",
+     "cn": "储备行",
+     "fields": [
+      {
+       "name": "date",
+       "type": "string",
+       "cn": "期次 YYYY-MM"
+      },
+      {
+       "name": "kind",
+       "type": "string",
+       "cn": "储备项代码"
+      },
+      {
+       "name": "value",
+       "type": "float64",
+       "cn": "美元数值"
+      }
+     ]
+    }
+   },
+   "min_args": 1,
+   "params": [
+    {
+     "name": "kind",
+     "type": "string"
+    },
+    {
+     "name": "n",
+     "type": "int"
     }
    ]
   },

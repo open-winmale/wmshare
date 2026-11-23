@@ -70,8 +70,8 @@
 | # | 数据项 | 定性 | 链路 | 状态 |
 |---|---|---|---|---|
 | 1 | 期货日线/周月线历史序列 | 补暴露面 | wmshare 目录 | **已上线**（`cli.futures.bars` 门面 2.9.0 + `futures.query_bars` store 直读进目录，2026-11-23——全历史长窗/结算·持仓字段/同日复跑缓存，分工见 API.md 期货节） |
-| 2 | 官方储备（外汇储备/黄金储备/SDR） | 中国总量链路已通（`$CURRENCY_RESERVE_*`+v2macro fxreserve）；缺口=国别/SDR/实物盎司，第一步核 `common/fred_catalog`（IMF 国别储备系列或可直接 ingest；OWID 仅年频跨国） | airflow → script → wmshare | 待启动 |
-| 3 | 外汇（人民币中间价/日线/基础信息） | **采集零新增**：中行牌价+SAFE/PBOC 中间价日更在库，`$CR_*` 全家族已在指标目录 | 仅缺 wmshare 域层 | 待启动 |
+| 2 | 官方储备（外汇储备/黄金储备/SDR） | **已上线 3.0+**：`cli.macro.reserves/reserves_history/reserves_asof`（月频外汇+黄金，值=美元数值）；**遗留**：SDR 上游无生产者（`available=False` 如实标注）、黄金仅市值口径无吨数/盎司、国别维度待走 FRED 目录核（丢队列④） | script → wmshare | 已上线（部分） |
+| 3 | 外汇（人民币中间价/日线/基础信息） | **已上线 3.0+**：`cli.fx.rate/history/bars/list`（采集零新增，数据日更在库）；口径=每 1 单位外币折人民币（上游每 100 外币已 /100 归一），中间价与中行牌价分列 | script → wmshare | 已上线 |
 | 4 | FRED 美宏观序列暴露 | 纯暴露层确认（fred_build+4 DAG+sys/fred 全在，wmshare 侧零暴露） | wmshare（域 yaml+fred.search 读面） | 待启动 |
 | 5 | 股东人数历史序列（现仅最新值） | **底层按季留史已核实**（mongo symbol×季度多 doc 追加，HIST_PCT 序列可读） | script 历史读面 → wmshare 条目 | 待启动 |
 | 6 | 每日涨跌停价格 | 派生评估（交易所规则 vs 落字段）：现 `$LIMIT_UP` 仅 ±10% 近似旗标；原料 $LISTING_BOARD/$IS_ST/$CLOSE_DAY 全在，纯计算无新采集 | script 派生 → wmshare 暴露 | 待评估 |

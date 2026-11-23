@@ -73,6 +73,10 @@ INCLUDED_NS = frozenset({
     # 2.5：收息库（四维评分/资格门/静态下限复原 + 收息榜/收息诊断/分红日历/收益拆解，
     # disc.income 域；与 web 收息佬、skillhub wm-income 三面共享同一 SoT）
     "income",
+    # 2.9/3.0：外汇汇率（eco.macro currencyrate.PROPS 直读，market.fx 域）
+    "fx",
+    # 2.9/3.0：官方储备（alt.bssaa cn.currency.reserve.* 直读，market.macro 域储备条目）
+    "reserve",
 })
 # rptdom 只保留三表透视族（年报 PDF 提取类 rows/notes/note_index 不发布）
 RPTDOM_KEEP = frozenset({"statement", "statement_years", "statement_compare", "statement_tree", "statement_audit"})

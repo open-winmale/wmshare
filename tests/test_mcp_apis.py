@@ -134,7 +134,7 @@ def test_status_reports_capability_coverage(runtime: Any) -> None:
     status = tools.status(runtime)
     caps = status["data"]["capabilities"]
     assert caps["friendly_apis"] == route_count()
-    assert caps["first_class_tools"] == 28
+    assert caps["first_class_tools"] == 29
     assert caps["batchable_catalog_functions"] > 100
     assert "pandas/_df" in caps["excluded_from_mcp"][0]
 
@@ -148,7 +148,7 @@ def test_catalog_contract_surface_is_complete() -> None:
         for domain in cat.domains.values()
         for function in domain.get("functions", [])
     }
-    assert len(names) == cat.stats()["functions"] == 332
+    assert len(names) == cat.stats()["functions"] == 339
     for name in names:
         assert cat.function(name)
     assert len(batchable_catalog_functions()) >= 100
@@ -263,10 +263,10 @@ def test_mcp_registry_schema_and_resources() -> None:
             "limits": limits,
         }
     names, facts = asyncio.run(inspect_server())
-    assert set(names) == set(TOOL_NAMES) and len(names) == 28
+    assert set(names) == set(TOOL_NAMES) and len(names) == 29
     coverage = facts["coverage"]
     assert coverage["friendly_apis"] == route_count()
-    assert coverage["first_class_tools"] == 28
+    assert coverage["first_class_tools"] == 29
     assert coverage["batchable_catalog_functions"] >= 100
     assert "pandas DataFrame / _df=True" in coverage["excluded_from_mcp"]
     assert "--client-secret-stdin" in facts["setup"]

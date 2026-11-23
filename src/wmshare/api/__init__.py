@@ -10,7 +10,7 @@
     ``_raw=True`` 取上游原始行（list[dict]，跳过规范化与换算）——诊断逃生口；
   - 本层是目录合同的薄翻译：高频方法显式包装；目录内其余非内部函数经 ``__getattr__``
     属性直达（如 ``cli.kline.screen_above_ma20``）；目录标 ``internal: true`` 的
-    规范化辅助（fmt_* 等）不再直达，请走 ``cli.call``——332 个底层函数零遮蔽；
+    规范化辅助（fmt_* 等）不再直达，请走 ``cli.call``——339 个底层函数零遮蔽；
   - 选股能力集中在 ``cli.screener``：单票筛选器（bool）、全市场宽度/涨跌榜与
     全市场条件选股 ``query()``（服务端索引直出）显式包装，kline 目录的其余筛选
     函数经属性直达。
@@ -332,6 +332,7 @@ _FRIENDLY_NS_TO_CATALOG: dict[str, str] = {
     "stocks": "stocks",
     "intl": "intl",
     "macro": "macro",
+    "fx": "fx",
 }
 
 
@@ -3123,6 +3124,80 @@ class MacroApi(_Api):
         """手机品牌周份额取值（field=share/rank，披露原值；掉榜返回 None）。"""
         return self._c.call("macro.phone_share", brand=brand, field=field)
 
+    # ---- 官方储备（月频；值=美元数值，非亿元/非亿美元）----
+    def reserves(self) -> Any:
+        """储备项清单（DataFrame；含可用性——sdr/total 上游无生产者标 available=False）。
+
+        **单位**：``value`` 是**美元数值**（外汇储备约 3.4e12=3.4 万亿美元、
+        黄金储备约 3.1e11=3064 亿美元）。上游采集以「亿美元×1e8」入库，故原值即美元；
+        黄金是美元市值口径，不是吨数/盎司。``date`` 为真实期次（月频可能滞后）。
+        """
+        return _out(self._c.call("reserve.list"))
+
+    def reserves_history(self, kind: str = "forex", n: int = 12) -> Any:
+        """储备时序（DataFrame，date 升序）。
+
+        :param kind: 储备项（``forex``=国家外汇储备 / ``gold``=黄金储备；``sdr`` 暂无数据）
+        :param n: 期数（1–48，月频）
+        """
+        return _out(self._c.call("reserve.query", kind=kind, n=n))
+
+    def reserves_asof(self, kind: str = "forex") -> Any:
+        """储备最新值（dict；无数据返回 None——不返回 0 冒充）。
+
+        :param kind: 储备项（``forex`` / ``gold``）
+        """
+        return self._c.call("reserve.asof", kind=kind)
+
+
+class FxApi(_Api):
+    """人民币外汇汇率（央行中间价 + 中行牌价，日频）。
+
+    **口径（最易错）**：``middle``/``buy`` 均为「**每 1 单位**外币折人民币」
+    （USD≈7.1、JPY≈0.042、HKD≈0.86）。上游原始中间价是「每 100 外币」口径
+    （美元≈710），SDK 已统一 /100 归一——若看到 700 量级的美元值，说明读的是
+    未归一的原始字段。
+
+    ``middle`` 是央行授权发布的中间价（缺失按前值填充，连续）；``buy`` 是中行
+    汇买价（仅发布日写入，可能有缺口）。两者是不同口径，勿混用。
+    在库币种由 :meth:`list` 枚举（美元/欧元/日元/港币/英镑/澳元等）。
+    """
+
+    def rate(self, ccy: str = "USD") -> Any:
+        """最新汇率（dict：ccy/date/middle/buy/cash_buy；无数据返回 None）。
+
+        :param ccy: 币种 ISO 代码（``USD``/``EUR``/``JPY``/``HKD``；``RMB``/``CNH`` 归一为 ``CNY``）
+        """
+        return self._c.call("fx.rate", ccy=ccy)
+
+    def history(self, ccy: str = "USD", n: int = 30) -> Any:
+        """汇率日线（DataFrame，date 升序）。
+
+        :param ccy: 币种 ISO 代码
+        :param n: 根数（1–2000；0=全历史）
+        """
+        return _out(self._c.call("fx.history", ccy=ccy, n=n))
+
+    def bars(self, ccy: str = "USD", begin: str | None = None,
+             end: str | None = None, limit: int = 500) -> Any:
+        """汇率区间日线（DataFrame，date 升序）。
+
+        :param ccy: 币种 ISO 代码
+        :param begin: 开始日期 YYYY-MM-DD（可空）
+        :param end: 结束日期 YYYY-MM-DD（可空）
+        :param limit: 根数上限（1–500，Client 单次上限）
+        """
+        kwargs: dict[str, Any] = {"ccy": ccy, "limit": limit}
+        if begin:
+            kwargs["begin"] = begin
+        if end:
+            kwargs["end"] = end
+        return _out(self._c.call("fx.query_bars", **kwargs))
+
+    def list(self) -> Any:
+        """在库币种清单（DataFrame：ccy/date/middle）。"""
+        return _out(self._c.call("fx.list"))
+
 
 class EtfApi(_Api):
     """ETF 九视图读取（组合门面；读已发布的 skillhub 脚本，非目录函数）。
@@ -3586,6 +3661,7 @@ FRIENDLY_NAMESPACES: dict[str, type[_Api]] = {
     "equity": EquityApi,
     "intl": IntlApi,
     "macro": MacroApi,
+    "fx": FxApi,
     "backtest": BacktestApi,
     "etf": EtfApi,
     "futures": FuturesApi,
@@ -3774,6 +3850,15 @@ FRIENDLY_INDEX: list[tuple[str, str, str, str, str]] = [
     ("reference", "macro", "chinaiol_monthly", "家电产销月度", "macro.chinaiol_monthly"),
     ("reference", "macro", "cpca_top", "乘联会厂商排行", "macro.cpca_top"),
     ("reference", "macro", "phone_share", "手机品牌周份额", "macro.phone_share"),
+    # ---- reserve：官方储备（月频；值=美元数值，非亿元/非亿美元）----
+    ("reference", "macro", "reserves", "储备项清单", "reserve.list"),
+    ("reference", "macro", "reserves_history", "储备时序", "reserve.query"),
+    ("reference", "macro", "reserves_asof", "储备最新值", "reserve.asof"),
+    # ---- fx：人民币外汇汇率（每 1 单位外币折人民币）----
+    ("reference", "fx", "rate", "最新汇率", "fx.rate"),
+    ("reference", "fx", "history", "汇率日线", "fx.history"),
+    ("reference", "fx", "bars", "汇率区间日线", "fx.query_bars"),
+    ("reference", "fx", "list", "在库币种清单", "fx.list"),
 ]
 
 # 文档暴露面元数据（开放平台接口文档站消费；SDK 面 / openapi / llms 全量不变）。

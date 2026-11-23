@@ -770,6 +770,57 @@ class FuturesNS(_Ns):
             kw["period"] = period
         return _out(self._client.call("futures.query_bars", **kw, _raw=_raw), _raw)
 
+class FxNS(_Ns):
+    """外汇汇率（market.fx）"""
+
+    def rate(self, ccy: str, _raw: bool = False) -> Any:
+        """最新汇率
+
+:param ccy: 币种 ISO 代码（USD/EUR/JPY/HKD；RMB/CNH 归一为 CNY）
+
+:returns: MAP · 汇率快照（ccy/date/middle/buy/cash_buy/currency；无数据返回 nil）
+        """
+        return _out(self._client.call("fx.rate", ccy=ccy, _raw=_raw), _raw)
+
+    def history(self, ccy: str, n: int = 30, _raw: bool = False) -> Any:
+        """汇率日线序列
+
+:param ccy: 币种 ISO 代码（同 rate）
+:param n: 根数（1..2000；0=全历史）
+
+:returns: ARR · 汇率日线（date 升序；date/ccy/middle/buy）
+        """
+        kw: dict[str, Any] = {"ccy": ccy}
+        if n is not None:
+            kw["n"] = n
+        return _out(self._client.call("fx.history", **kw, _raw=_raw), _raw)
+
+    def list(self, _raw: bool = False) -> Any:
+        """在库币种清单
+
+:returns: ARR · 在库币种（ccy/date/middle；按候选清单探测，无数据的币种不出现）
+        """
+        return _out(self._client.call("fx.list", _raw=_raw), _raw)
+
+    def query_bars(self, ccy: str, begin: str | None = None, end: str | None = None, limit: int = 500, _raw: bool = False) -> Any:
+        """汇率区间日线
+
+:param ccy: 币种 ISO 代码
+:param begin: 开始日期 YYYY-MM-DD（可空）
+:param end: 结束日期 YYYY-MM-DD（可空）
+:param limit: 根数上限（1..500，Client 单次上限）
+
+:returns: ARR · 汇率日线（date 升序；date/ccy/middle/buy）
+        """
+        kw: dict[str, Any] = {"ccy": ccy}
+        if begin is not None:
+            kw["begin"] = begin
+        if end is not None:
+            kw["end"] = end
+        if limit is not None:
+            kw["limit"] = limit
+        return _out(self._client.call("fx.query_bars", **kw, _raw=_raw), _raw)
+
 class IncomeNS(_Ns):
     """收息（disc.income）"""
 
@@ -1941,6 +1992,38 @@ class Pdf_docNS(_Ns):
         """
         return _out(self._client.call("pdf_doc.find_by_key", file_key=file_key, _raw=_raw), _raw)
 
+class ReserveNS(_Ns):
+    """宏观（market.macro）"""
+
+    def list(self, _raw: bool = False) -> Any:
+        """储备项清单
+
+:returns: ARR · 储备项（kind/label/available/date/value/unit；缺生产者项 available=false）
+        """
+        return _out(self._client.call("reserve.list", _raw=_raw), _raw)
+
+    def query(self, kind: str, n: int = 12, _raw: bool = False) -> Any:
+        """储备时序
+
+:param kind: 储备项（forex=国家外汇储备 / gold=黄金储备）
+:param n: 期数（1..48，月频）
+
+:returns: ARR · 储备时序（date 升序 YYYY-MM；date/kind/value）
+        """
+        kw: dict[str, Any] = {"kind": kind}
+        if n is not None:
+            kw["n"] = n
+        return _out(self._client.call("reserve.query", **kw, _raw=_raw), _raw)
+
+    def asof(self, kind: str, _raw: bool = False) -> Any:
+        """储备最新值
+
+:param kind: 储备项（forex / gold；sdr 无数据返回 nil）
+
+:returns: MAP · 储备快照（kind/date/value/unit；无数据返回 nil）
+        """
+        return _out(self._client.call("reserve.asof", kind=kind, _raw=_raw), _raw)
+
 class RptdomNS(_Ns):
     """财务报表（fund.statements）"""
 
@@ -2182,6 +2265,7 @@ NAMESPACES: dict[str, type[_Ns]] = {
     "filings": FilingsNS,
     "forecast": ForecastNS,
     "futures": FuturesNS,
+    "fx": FxNS,
     "income": IncomeNS,
     "indices": IndicesNS,
     "intl": IntlNS,
@@ -2191,6 +2275,7 @@ NAMESPACES: dict[str, type[_Ns]] = {
     "moneyflow": MoneyflowNS,
     "notice": NoticeNS,
     "pdf_doc": Pdf_docNS,
+    "reserve": ReserveNS,
     "rptdom": RptdomNS,
     "segments": SegmentsNS,
     "stocks": StocksNS,

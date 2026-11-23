@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "upstream_rev": "e56f7fcf",
+  "upstream_rev": "5a82fc1a",
   "taxonomy_version": "2026-11-13",
   "stats": {
     "count": 2983,
@@ -61,7 +61,7 @@
       "count": 27,
       "days": 70,
       "index_point": 156,
-      "money": 781,
+      "money": 775,
       "multiple": 101,
       "per_share": 50,
       "percentile": 55,
@@ -69,7 +69,8 @@
       "ratio": 1078,
       "shares": 18,
       "text": 176,
-      "unknown": 247
+      "unknown": 247,
+      "usd_amount": 6
     }
   },
   "metrics": [
@@ -4719,7 +4720,7 @@
       "period": "monthly",
       "window": "none",
       "caliber": [],
-      "unit_kind": "money",
+      "unit_kind": "usd_amount",
       "status": "active"
     },
     {
@@ -4729,7 +4730,7 @@
       "period": "monthly",
       "window": "none",
       "caliber": [],
-      "unit_kind": "money",
+      "unit_kind": "usd_amount",
       "status": "active"
     },
     {
@@ -7329,7 +7330,7 @@
       "period": "monthly",
       "window": "none",
       "caliber": [],
-      "unit_kind": "money",
+      "unit_kind": "usd_amount",
       "status": "active"
     },
     {
@@ -7339,7 +7340,7 @@
       "period": "monthly",
       "window": "none",
       "caliber": [],
-      "unit_kind": "money",
+      "unit_kind": "usd_amount",
       "status": "active"
     },
     {
@@ -7349,7 +7350,7 @@
       "period": "monthly",
       "window": "none",
       "caliber": [],
-      "unit_kind": "money",
+      "unit_kind": "usd_amount",
       "status": "active"
     },
     {
@@ -7359,7 +7360,7 @@
       "period": "monthly",
       "window": "none",
       "caliber": [],
-      "unit_kind": "money",
+      "unit_kind": "usd_amount",
       "status": "active"
     },
     {

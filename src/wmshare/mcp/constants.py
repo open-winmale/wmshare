@@ -34,6 +34,7 @@ TOOL_NAMES = (
     "wmshare_etf",
     "wmshare_backtest",
     "wmshare_macro",
+    "wmshare_fx",
     "wmshare_toplist",
     "wmshare_futures",
     "wmshare_pdf",
@@ -103,7 +104,9 @@ ETF_ACTIONS = (
     "card", "nav", "share", "div", "portfolio",
     "profile", "premium", "asset", "rank",
 )
-MACRO_ACTIONS = ("query", "asof", "sampling")
+MACRO_ACTIONS = ("query", "asof", "sampling", "reserve", "reserve_history")
+# 外汇汇率：rate=最新 / history=日线 / bars=区间 / list=在库币种
+FX_ACTIONS = ("rate", "history", "bars", "list")
 VALUATION_ACTIONS = (
     "hist_stats", "daily_basic", "daily_basic_multi", "daily_basic_coverage",
 )

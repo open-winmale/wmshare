@@ -74,7 +74,7 @@ def test_check_registers_all_tools(capsys: pytest.CaptureFixture[str]) -> None:
     assert rc == 0
     payload = json.loads(capsys.readouterr().out)
     assert payload["ok"] is True
-    assert len(payload["tools"]) == 28
+    assert len(payload["tools"]) == 29
 
 
 def test_check_respects_runtime_flags(capsys: pytest.CaptureFixture[str]) -> None:

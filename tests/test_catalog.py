@@ -6,9 +6,9 @@ from wmshare.catalog import load
 def test_load_and_stats():
     cat = load()
     s = cat.stats()
-    assert s["domains"] == 25, s  # +1 disc.income（2026-11-20 收息场景）
-    assert s["functions"] == 332, s  # +1 futures.query_bars（store 直读，2026-11-23）
-    assert s["raw"] == 236 and s["computed"] == 96, s  # raw +query_bars；computed 不变（2026-11-23）
+    assert s["domains"] == 26, s  # +1 market.fx（外汇，2026-11-23）
+    assert s["functions"] == 339, s  # +4 fx +3 reserve（2026-11-23 外汇+储备批次）
+    assert s["raw"] == 243 and s["computed"] == 96, s  # raw +7（fx 4 + reserve 3）；computed 不变
     assert s["metric_catalog_total"] == 2983, s
     assert s["upstream_rev"], "inventory 应锚定 upstream rev"
 
@@ -18,7 +18,7 @@ def test_macro_domain_contract():
     cat = load()
     dom = cat.domain("market.macro")
     assert dom["kind"] == "raw" and dom["category"] == "reference"
-    assert len(dom["functions"]) == 11
+    assert len(dom["functions"]) == 14  # +3 reserve（2026-11-23）
     fn = cat.function("macro.query")
     assert [p["name"] for p in fn["params"]] == ["code", "n"]
     assert fn["params"][1]["default"] == 4
@@ -82,7 +82,7 @@ def test_namespaces_and_metrics():
             "cbond", "workout", "indices", "intl", "stocks", "macro",
             "valuation",
             "calendar", "buyback", "toplist", "futures",
-            "income"} == cat.namespaces()  # 2.3 批次 + 2.5 income（收息场景）
+            "income", "fx", "reserve"} == cat.namespaces()  # 2.5 income + 3.0 fx/reserve
     m = cat.metric("$PE_TTM_LAST")
     assert m and m["cn"]
     assert cat.metric("$NOT_EXIST") is None
@@ -147,6 +147,6 @@ def test_catalog_shipped_inside_package():
     cdir = catmod.catalog_dir()
     assert cdir == pkg_root / "_catalog"
     assert (cdir / "schema" / "domain.schema.json").is_file()
-    assert len(list((cdir / "domains").glob("*.yaml"))) == 25  # 批次1 pdf_doc / 批次3 toplist+futures / 2.5 income
+    assert len(list((cdir / "domains").glob("*.yaml"))) == 26  # +market.fx（2026-11-23 外汇域）
     for g in ("inventory.json", "metrics.json"):
         assert (cdir / "generated" / g).is_file()

@@ -8,11 +8,11 @@ wmshare 的文档按「教程 / 怎么做 / 参考 / 解释」四层组织
 |---|---|---|
 | 5 分钟装好并跑通第一行 | [README](../README.md) | 店面：特性、安装、选股实战（真实数据）、凭证、离线演示 |
 | English quick start | [QUICKSTART_EN.md](QUICKSTART_EN.md) | Why it exists / anonymous first call / standing quota / batching & unit contract |
-| 系统学一遍（可运行课程） | [examples/](../examples/README.md) | 22 个编号示例：离线优先、CI 全覆盖、输出带单位注释 |
+| 系统学一遍（可运行课程） | [examples/](../examples/README.md) | 23 个编号示例：离线优先、CI 全覆盖、输出带单位注释 |
 | 完成某个具体任务 | [GUIDE.md](GUIDE.md) | 单票菜谱、全市场与行业（含指数/行业估值历史算法）、批量绕 429、多市场、pandas、公告订阅 |
 | 查指标码（全量导航） | [INDICATORS.md](INDICATORS.md) | 全量指标码按数据类型分章：概览/股票行情/股票指标/行业/指数及ETF/宏观/期货/可转债/港美，含命名语法、死码警示与场景速查（生成物） |
 | 按分类找指标、判断能否组合 | [METRIC_ADAPTER.md](METRIC_ADAPTER.md) | 可选适配层：scope/topic 找码、确定性组合组、扁平码单独取、口径/周期/单位边界 |
-| 查某个接口的参数与返回 | [API.md](API.md) | 157 个核心接口 + 18 个组合接口参考（生成物，按资产类别分章：行情与选股/可转债/指数/期货/宏观/财务/披露/港美/参考，每接口一节含参数表/输出字段/示例）；逐接口介绍 + 在线测试见开放平台「接口文档」（数据源为 [api_pack.json](api_pack.json)，由同一目录生成）；机器可读 [openapi.json](openapi.json) / [swagger.html](swagger.html) / [fields.json](fields.json) |
+| 查某个接口的参数与返回 | [API.md](API.md) | 164 个核心接口 + 18 个组合接口参考（生成物，按资产类别分章：行情与选股/可转债/指数/期货/宏观/财务/披露/港美/参考，每接口一节含参数表/输出字段/示例）；逐接口介绍 + 在线测试见开放平台「接口文档」（数据源为 [api_pack.json](api_pack.json)，由同一目录生成）；机器可读 [openapi.json](openapi.json) / [swagger.html](swagger.html) / [fields.json](fields.json) |
 | 查某个指标码的说明 | [indicators/](indicators/README.md) | 逐码一页：类型/市场/单位/取数与批量示例（生成物，全量 2,983 码） |
 | 先估这次调用多少 EC / 查硬限制 | [LIMITS.md](LIMITS.md) | 单次/批量/限流/重试硬限制与绕行配方；运行时先估后取用 `cli.cost_estimate(...)` |
 | 按报错码查处理办法 | [ERRORS.md](ERRORS.md) | 异常层级 + 全部 `code`（含义/可重试/处理建议，生成物） |

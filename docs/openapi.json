@@ -11760,6 +11760,523 @@
         }
       }
     },
+    "/macro/reserves": {
+      "post": {
+        "operationId": "macro_reserves",
+        "summary": "储备项清单（DataFrame；含可用性——sdr/total 上游无生产者标 available=False）。",
+        "description": "**单位**：``value`` 是**美元数值**（外汇储备约 3.4e12=3.4 万亿美元、、黄金储备约 3.1e11=3064 亿美元）。上游采集以「亿美元×1e8」入库，故原值即美元；、黄金是美元市值口径，不是吨数/盎司。``date`` 为真实期次（月频可能滞后）。、底层目录函数 `reserve.list`。SDK 调用：`cli.macro.reserves(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "宏观数据"
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "储备项",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "description": "储备项代码 forex/gold/sdr/total"
+                      },
+                      "label": {
+                        "type": "string",
+                        "description": "中文标签"
+                      },
+                      "available": {
+                        "type": "boolean",
+                        "description": "是否已有数据"
+                      },
+                      "date": {
+                        "type": "string",
+                        "description": "最新数据期 YYYY-MM，无数据为空"
+                      },
+                      "value": {
+                        "type": "number",
+                        "description": "最新值，美元数值；无数据为 nil"
+                      },
+                      "unit": {
+                        "type": "string",
+                        "description": "量纲说明"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "value": [
+              0,
+              1000000000000000
+            ]
+          }
+        }
+      }
+    },
+    "/macro/reserves_history": {
+      "post": {
+        "operationId": "macro_reserves_history",
+        "summary": "储备时序（DataFrame，date 升序）。",
+        "description": "底层目录函数 `reserve.query`。SDK 调用：`cli.macro.reserves_history(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "宏观数据"
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "description": "储备项（``forex``=国家外汇储备 / ``gold``=黄金储备；``sdr`` 暂无数据）"
+                  },
+                  "n": {
+                    "type": "integer",
+                    "description": "期数（1–48，月频）"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "储备时序",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "date": {
+                        "type": "string",
+                        "description": "期次 YYYY-MM"
+                      },
+                      "kind": {
+                        "type": "string",
+                        "description": "储备项代码"
+                      },
+                      "value": {
+                        "type": "number",
+                        "description": "美元数值"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "value": [
+              0,
+              1000000000000000
+            ]
+          }
+        }
+      }
+    },
+    "/macro/reserves_asof": {
+      "post": {
+        "operationId": "macro_reserves_asof",
+        "summary": "储备最新值（dict；无数据返回 None——不返回 0 冒充）。",
+        "description": "底层目录函数 `reserve.asof`。SDK 调用：`cli.macro.reserves_asof(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "宏观数据"
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "description": "储备项（``forex`` / ``gold``）"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "储备快照",
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "description": "储备项代码"
+                    },
+                    "date": {
+                      "type": "string",
+                      "description": "最新数据期 YYYY-MM"
+                    },
+                    "value": {
+                      "type": "number",
+                      "description": "美元数值"
+                    },
+                    "unit": {
+                      "type": "string",
+                      "description": "量纲说明"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "value": [
+              0,
+              1000000000000000
+            ]
+          }
+        }
+      }
+    },
+    "/fx/rate": {
+      "post": {
+        "operationId": "fx_rate",
+        "summary": "最新汇率（dict：ccy/date/middle/buy/cash_buy；无数据返回 None）。",
+        "description": "底层目录函数 `fx.rate`。SDK 调用：`cli.fx.rate(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "参考数据"
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "ccy": {
+                    "type": "string",
+                    "description": "币种 ISO 代码（``USD``/``EUR``/``JPY``/``HKD``；``RMB``/``CNH`` 归一为 ``CNY``）"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "汇率快照",
+                  "type": "object",
+                  "properties": {
+                    "ccy": {
+                      "type": "string",
+                      "description": "币种 ISO 代码"
+                    },
+                    "date": {
+                      "type": "string",
+                      "description": "数据日期 YYYY-MM-DD"
+                    },
+                    "middle": {
+                      "type": "number",
+                      "description": "央行中间价（每 1 单位外币折人民币）"
+                    },
+                    "buy": {
+                      "type": "number",
+                      "description": "中行汇买价（同上口径）"
+                    },
+                    "cash_buy": {
+                      "type": "number",
+                      "description": "中行钞买价（同上口径）"
+                    },
+                    "currency": {
+                      "type": "string",
+                      "description": "币种原值（上游披露）"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "middle": [
+              1e-05,
+              2000
+            ],
+            "buy": [
+              1e-05,
+              2000
+            ],
+            "cash_buy": [
+              1e-05,
+              2000
+            ]
+          }
+        }
+      }
+    },
+    "/fx/history": {
+      "post": {
+        "operationId": "fx_history",
+        "summary": "汇率日线（DataFrame，date 升序）。",
+        "description": "底层目录函数 `fx.history`。SDK 调用：`cli.fx.history(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "参考数据"
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "ccy": {
+                    "type": "string",
+                    "description": "币种 ISO 代码"
+                  },
+                  "n": {
+                    "type": "integer",
+                    "description": "根数（1–2000；0=全历史）"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "汇率日线",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "date": {
+                        "type": "string",
+                        "description": "日期 YYYY-MM-DD"
+                      },
+                      "ccy": {
+                        "type": "string",
+                        "description": "币种 ISO 代码"
+                      },
+                      "middle": {
+                        "type": "number",
+                        "description": "央行中间价（每 1 单位外币折人民币）"
+                      },
+                      "buy": {
+                        "type": "number",
+                        "description": "中行汇买价（同上口径）"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "middle": [
+              1e-05,
+              2000
+            ],
+            "buy": [
+              1e-05,
+              2000
+            ]
+          },
+          "checks": [
+            "date_iso"
+          ]
+        }
+      }
+    },
+    "/fx/bars": {
+      "post": {
+        "operationId": "fx_bars",
+        "summary": "汇率区间日线（DataFrame，date 升序）。",
+        "description": "底层目录函数 `fx.query_bars`。SDK 调用：`cli.fx.bars(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "参考数据"
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "ccy": {
+                    "type": "string",
+                    "description": "币种 ISO 代码"
+                  },
+                  "begin": {
+                    "type": "string",
+                    "description": "开始日期 YYYY-MM-DD（可空）"
+                  },
+                  "end": {
+                    "type": "string",
+                    "description": "结束日期 YYYY-MM-DD（可空）"
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "description": "根数上限（1–500，Client 单次上限）"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "汇率日线",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "date": {
+                        "type": "string",
+                        "description": "日期 YYYY-MM-DD"
+                      },
+                      "ccy": {
+                        "type": "string",
+                        "description": "币种 ISO 代码"
+                      },
+                      "middle": {
+                        "type": "number",
+                        "description": "央行中间价（每 1 单位外币折人民币）"
+                      },
+                      "buy": {
+                        "type": "number",
+                        "description": "中行汇买价（同上口径）"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "middle": [
+              1e-05,
+              2000
+            ],
+            "buy": [
+              1e-05,
+              2000
+            ]
+          },
+          "checks": [
+            "date_iso"
+          ]
+        }
+      }
+    },
+    "/fx/list": {
+      "post": {
+        "operationId": "fx_list",
+        "summary": "在库币种清单（DataFrame：ccy/date/middle）。",
+        "description": "底层目录函数 `fx.list`。SDK 调用：`cli.fx.list(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "参考数据"
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "币种清单",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "ccy": {
+                        "type": "string",
+                        "description": "币种 ISO 代码"
+                      },
+                      "date": {
+                        "type": "string",
+                        "description": "最新数据日期 YYYY-MM-DD"
+                      },
+                      "middle": {
+                        "type": "number",
+                        "description": "最新中间价（每 1 单位外币折人民币）"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "middle": [
+              1e-05,
+              2000
+            ]
+          }
+        }
+      }
+    },
     "/v1/analysis/xs/eval": {
       "post": {
         "operationId": "xs_eval",

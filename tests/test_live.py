@@ -353,6 +353,50 @@ def test_futures_bars(cli):
     assert len(win) >= 1 and list(win["date"]) == sorted(win["date"])
 
 
+def test_fx_rate_and_history(cli):
+    """外汇：美元中间价量级归一（每 1 单位≈7.1，非每 100 外币≈700）+ 日线升序"""
+    snap = _call_or_xfail(lambda: cli.fx.rate("USD"))
+    assert snap and snap.get("middle") is not None
+    # 硬断言：USD/CNY 必在 5~10 区间；若退化成每 100 外币原值（≈700）立即暴露
+    assert 5.0 <= float(snap["middle"]) <= 10.0, f"USD 中间价量级异常：{snap['middle']}"
+    assert len(str(snap.get("date", ""))) == 10, "date 应为 ISO YYYY-MM-DD"
+
+    df = _call_or_xfail(lambda: cli.fx.history("USD", n=10))
+    assert len(df) >= 1
+    assert list(df["date"]) == sorted(df["date"]), "history 应为 date 升序"
+    assert {"date", "ccy", "middle", "buy"} <= set(df.columns)
+    vals = [v for v in df["middle"].tolist() if v is not None]
+    assert vals and all(5.0 <= float(v) <= 10.0 for v in vals), "USD 日线全量级异常"
+
+    win = _call_or_xfail(
+        lambda: cli.fx.bars("USD", begin="2026-11-01", end="2026-11-21"))
+    assert list(win["date"]) == sorted(win["date"])
+
+    lst = _call_or_xfail(lambda: cli.fx.list())
+    assert len(lst) >= 3 and "USD" in set(lst["ccy"])
+
+
+def test_macro_reserves(cli):
+    """储备：值=美元数值（外汇≈3e12、黄金≈3e11 量级），SDR 无生产者返回 None"""
+    items = _call_or_xfail(lambda: cli.macro.reserves())
+    assert {"kind", "label", "available", "value"} <= set(items.columns)
+    kinds = set(items["kind"])
+    assert {"forex", "gold", "sdr"} <= kinds
+    avail = {row["kind"]: row["available"] for row in items.to_dict("records")}
+    assert avail["forex"] is True and avail["gold"] is True
+    assert avail["sdr"] is False, "SDR 上游无生产者，应如实标 False"
+
+    snap = _call_or_xfail(lambda: cli.macro.reserves_asof("forex"))
+    # 硬断言：外汇储备约 3~4 万亿美元 = 3~4e12；若变成 亿美元(≈3e4) 或 元(≈2e13+) 立即暴露
+    assert 2.5e12 <= float(snap["value"]) <= 5.0e12, f"外汇储备量级异常：{snap['value']}"
+    assert len(str(snap.get("date", ""))) == 7, "储备期次应为 YYYY-MM"
+
+    hist = _call_or_xfail(lambda: cli.macro.reserves_history("forex", n=6))
+    assert len(hist) >= 1 and list(hist["date"]) == sorted(hist["date"])
+
+    assert cli.macro.reserves_asof("sdr") is None, "SDR 无数据应返回 None（不返回 0）"
+
+
 def test_notice_read_text(cli):
     """公告正文读取：取一条有 PDF 的公告，预览路径应返回纯读 MAP。
 

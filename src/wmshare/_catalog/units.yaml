@@ -36,6 +36,12 @@ overrides:
   "$ROC_TTM_LAST":           {base_unit: ratio, native_unit: percent, note: "实测 1.76 = 176%"}
   "$BONUS_FUNDS_TOTAL_RATE": {base_unit: ratio, native_unit: percent, note: "实测 182.16 = 182%"}
 
+  # 注：$CURRENCY_RESERVE_FOREX / _GOLD 的「(亿)(美元)」也是历史命名——值已是美元原值
+  # （2026-11-23 实测 forex 3.405e12=3.4 万亿、gold 3.064e11=3064 亿；上游 Base=亿美元×1e8，
+  # 展示层 /1e8 还原成亿美元）。**不登记 overrides**：base==native(usd) 无换算语义，
+  # 登记了反而会被 _ledger_tokens 当 scale（若加 usd token）重复放大 1e8。
+  # 语义由 taxonomy 的 unit_kind=usd_amount 承载（见 _catalog/taxonomy.yaml code_overrides）。
+
 # cn 带 (亿)/(万亿)/(万元)/(千元) 但数值已是基础单位：命名遗留，不改值。
 naming_legacy:
   pattern: '\\((?:亿|万亿|万元|千元|万|千)[^)]*\\)'

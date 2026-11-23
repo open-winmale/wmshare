@@ -58,8 +58,8 @@ def test_drift_default_is_green_and_machine_readable(capsys):
     info = result["info"]
     # guarded 66 = 65 + valuation.daily_basic_multi（8 个 ranges，2026-11-19）；
     # functions 328 = 317 + income 10 + members_daily
-    assert info["guard_declared"] == 70
-    assert info["functions"] == 332  # +1 futures.query_bars（store 直读，2026-11-23）
+    assert info["guard_declared"] == 77
+    assert info["functions"] == 339  # +4 fx +3 reserve（2026-11-23 外汇+储备批次）
     assert info["markets"]["total"] == 2983
     assert info["markets"]["declared"] == 728
     assert info["markets"]["undeclared"] == 2255

@@ -83,6 +83,7 @@ unit_kinds:
   days: 天数
   percentile: 分位（0..1）
   index_point: 指数点
+  usd_amount: 金额（美元）
   count: 计数
   text: 文本
   bool: 布尔
@@ -177,6 +178,10 @@ code_overrides:
   "$IDW_BONUS_RATE_MV": {period: ttm, caliber: [weighted], unit_kind: ratio}
   "$IDW_BONUS_RATE_TTM": {period: ttm, caliber: [weighted], unit_kind: ratio}
   "$BOND_ISSUE_COUPON_IR": {period: snapshot, unit_kind: ratio}
+  # 官方储备：值已是美元（上游 Base=亿美元×1e8，展示层 /1e8 还原成亿美元），
+  # 不是元——若标 money 会与 SDK「金额=元」契约冲突（2026-11-23 实测 3.405e12）。
+  "$CURRENCY_RESERVE_FOREX": {period: monthly, unit_kind: usd_amount}
+  "$CURRENCY_RESERVE_GOLD": {period: monthly, unit_kind: usd_amount}
   "$LD": {caliber: []}
 
 quality:

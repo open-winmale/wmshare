@@ -423,6 +423,20 @@ def estimate_cost(name: str, params: dict[str, Any] | None = None, *,
                    note=f"按行数线性 ≈128 EC/行 × {n} 行（10 行冷 867、250 行冷 31,691 "
                         "实测）；同日复跑走数据版本键缓存 ≈135 EC——全历史长窗冷态"
                         "上万元 EC，按需传 limit 或 begin/end")
+    elif name.startswith(("fx.", "reserve.")):
+        # 实测（2026-11-23 探针）：FX 走 store.query 单次（listbs 键 + 单文档 PROPS），
+        # 行数即返回根数；储备月频（cursor.listbs 换 store.query 后同样单次）。
+        # 未做正式 EC probe（fx/reserve 尚未部署）→ 如实按行数给宽区间，不编造精确档。
+        if name in ("fx.list",):
+            out.update(ec_lo=200, ec_hi=2_000, model="rows",
+                       note="探测 18 个候选币种各一次 store.query（单行）")
+        elif name == "reserve.asof":
+            out.update(ec_lo=100, ec_hi=800, model="rows", note="单期储备最新值（单次 store.query）")
+        else:
+            n = rows if (rows and rows > 0) else (30 if name.startswith("fx.") else 12)
+            out.update(ec_lo=max(150, n * 3), ec_hi=n * 15 + 300, model="rows",
+                       note=f"按 {n} 行 × ≈3-15 EC/行（store.query 单文档 PROPS 读取，"
+                            "无逐行 CONOF 放大）；未做正式 probe，区间偏保守")
     elif name.startswith("pdf_doc."):
         # 实测（2026-11-19 live）：search 5 行 ≈836 EC（含 fmt_one 组装，
         # 无结果缓存，复跑同价）；find_by_key/status/read_* 单行点查数百 EC。

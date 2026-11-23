@@ -65,7 +65,8 @@ EtfAction = Literal[
     "card", "nav", "share", "div", "portfolio",
     "profile", "premium", "asset", "rank",
 ]
-MacroAction = Literal["query", "asof", "sampling"]
+MacroAction = Literal["query", "asof", "sampling", "reserve", "reserve_history"]
+FxAction = Literal["rate", "history", "bars", "list"]
 ValuationAction = Literal[
     "hist_stats", "daily_basic", "daily_basic_multi", "daily_basic_coverage"
 ]
@@ -98,7 +99,7 @@ def build_server(runtime: MCPRuntime | None = None) -> FastMCP:
     mcp = FastMCP(
         "wmshare",
         instructions=(
-            f"{SOURCE}：28 个 task tools 覆盖高频与结论级数据面；长尾 friendly API 用 "
+            f"{SOURCE}：29 个 task tools 覆盖高频与结论级数据面；长尾 friendly API 用 "
             "wmshare_call(mode='api')，目录函数批量用 wmshare_batch(params=...)。"
             "先离线 search/contract，再取数；多标的不要逐票循环。"
             "按意图选工具：估值分位→wmshare_metrics($PCT_*)或 "
@@ -537,7 +538,7 @@ def build_server(runtime: MCPRuntime | None = None) -> FastMCP:
     @mcp.tool()
     @protocol
     def wmshare_macro(
-        action: Annotated[MacroAction, Field(description="query=近 n 期时序 / asof=最新一期值 / sampling=采样频率")],
+        action: Annotated[MacroAction, Field(description="query=近 n 期时序 / asof=最新一期值 / sampling=采样频率 / reserve=储备项清单 / reserve_history=储备时序（code 传 forex 或 gold）")],
         code: Annotated[str, Field(description="宏观指标码，如 $CPI/$GDP/$M2；先 wmshare_search 查码")],
         n: Annotated[int, Field(ge=1, le=100, description="query 返回期数")] = 6,
         output: OutputArg = "sample",
@@ -546,10 +547,36 @@ def build_server(runtime: MCPRuntime | None = None) -> FastMCP:
         """宏观指标时序/最新值/采样频率（上游原值口径：价格指数=点、流量存量=元、收益率=小数）。
 
         示例：action='query', code='$CPI', n=6（近 6 个月 CPI）；
-        action='asof', code='$GDP'（最新一期 GDP）；action='sampling', code='$CPI'。
+        action='asof', code='$GDP'（最新一期 GDP）；action='sampling', code='$CPI'；
+        action='reserve', code='forex'（储备项清单，含 sdr 不可用标注）；
+        action='reserve_history', code='forex', n=12（近 12 个月储备时序）。
+        储备值单位：美元数值（外汇≈3.4e12、黄金≈3.1e11），非亿元/非亿美元。
         """
         return tools.macro(rt, action, code=code, n=n, output=output,
                            max_rows=max_rows)
+
+    @mcp.tool()
+    @protocol
+    def wmshare_fx(
+        action: Annotated[FxAction, Field(description="rate=最新汇率 / history=日线 / bars=区间日线 / list=在库币种")],
+        ccy: Annotated[str, Field(description="币种 ISO 代码，如 USD/EUR/JPY/HKD；list 时可留空")] = "USD",
+        n: Annotated[int, Field(ge=1, le=500, description="history 返回根数")] = 30,
+        begin: Annotated[str | None, Field(description="bars 起始日 YYYY-MM-DD")] = None,
+        end: Annotated[str | None, Field(description="bars 结束日 YYYY-MM-DD")] = None,
+        output: OutputArg = "sample",
+        max_rows: MaxRowsArg = MAX_ROWS,
+    ) -> dict[str, Any]:
+        """人民币外汇汇率（央行中间价 + 中行牌价，日频；每 1 单位外币折人民币）。
+
+        middle/buy 均为「每 1 单位外币折人民币」（USD≈7.1、JPY≈0.042、HKD≈0.86）；
+        上游原始中间价是每 100 外币口径（美元≈710），SDK 已统一 /100 归一。
+        middle=央行中间价（缺失前向填充、连续）；buy=中行汇买价（仅发布日写入、可能有缺口）。
+
+        示例：action='rate', ccy='USD'（最新美元中间价）；
+        action='history', ccy='USD', n=30（近 30 个交易日）；action='list'（在库币种）。
+        """
+        return tools.fx(rt, action, ccy=ccy, n=n, begin=begin, end=end,
+                        output=output, max_rows=max_rows)
 
     @mcp.tool()
     @protocol

@@ -67,6 +67,9 @@ _REPLAY_NAMESPACE_NAMES = (
     "stocks", "statements", "segments", "valuation", "estimates", "indicator",
     "notice", "filings", "pdf_doc", "forecast", "workout", "dividend", "info",
     "equity", "intl", "macro", "backtest", "etf", "futures", "calendar",
+    # 3.0 外汇（sys/fx）：快照未拍 → 整域 replay_unsupported，签名由
+    # _UnsupportedNamespace 兜底（参数表由门禁逐项核对 live 定义）
+    "fx",
 )
 
 

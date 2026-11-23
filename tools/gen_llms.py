@@ -41,7 +41,8 @@ FULL_PARTS = [
 # 真内联 INDICATORS 全文仍会到 ~540 KB，守护语义不变。
 # 2026-11-23：futures.bars 历史K线门面（API.md 小节 + GUIDE 期货段 + 计数位），预算 424.6K→426.6K；
 # 2026-11-23：futures.query_bars 目录注册（API.md 附录行 + guard manifest 行 + 计数位），预算 426.6K→429K；
-FULL_SIZE_BUDGET = 429_000  # 2026-11-21 from_env（2.8.0）基础上期货批次再提；bytes（UTF-8），不是字符数；禁内联 INDICATORS 全文
+# 2026-11-23：外汇(4)+储备(3) 双域（API.md 新章节 + 附录 7 行 + 信封文档），预算 429K→445K；
+FULL_SIZE_BUDGET = 445_000  # 2026-11-23 外汇+储备批次（+4 fx +3 reserve 章节与 API.md 附录）；bytes（UTF-8）；禁内联 INDICATORS 全文
 
 
 def _indicators_brief(cat) -> str:

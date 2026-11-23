@@ -25,6 +25,7 @@ from wmshare.mcp.constants import (
     FUTURES_ACTIONS,
     INCOME_ACTIONS,
     INTL_ACTIONS,
+    FX_ACTIONS,
     MACRO_ACTIONS,
     MARKET_ACTIONS,
     MARKET_DOMAINS,
@@ -1050,8 +1051,17 @@ def macro(
     """
     if action not in MACRO_ACTIONS:
         raise ValueError(f"action 只支持 {'/'.join(MACRO_ACTIONS)}")
-    code_value = _symbol(action, code, allow_empty=False)
     cli = runtime.client("cn")
+    # 储备两 action 不消费 code（用 kind），先分流
+    if action in ("reserve", "reserve_history"):
+        kind = _symbol(action, code, allow_empty=False)
+        if action == "reserve":
+            data = cli.macro.reserves()
+        else:
+            data = cli.macro.reserves_history(kind, n=_optional_limit(n, 48))
+        return success(runtime, data, output=output, max_rows=max_rows,
+                       action=action, kind=kind, market="cn")
+    code_value = _symbol(action, code, allow_empty=False)
     if action == "query":
         data = cli.macro.query(code_value, n=_optional_limit(n, 100))
     elif action == "asof":
@@ -1060,6 +1070,39 @@ def macro(
         data = cli.macro.sampling_of(code_value)
     return success(runtime, data, output=output, max_rows=max_rows,
                    action=action, code=code_value, market="cn")
+
+
+def fx(
+    runtime: MCPRuntime,
+    action: str,
+    ccy: str = "USD",
+    n: int = 30,
+    begin: str | None = None,
+    end: str | None = None,
+    output: str = "sample",
+    max_rows: int = MAX_ROWS,
+) -> dict[str, Any]:
+    """人民币外汇汇率（央行中间价 + 中行牌价，日频）。
+
+    rate=最新汇率快照（ccy/date/middle/buy/cash_buy），history=日线（date 升序），
+    bars=区间日线（begin/end），list=在库币种清单。
+    **口径**：middle/buy 均为「每 1 单位外币折人民币」（USD≈7.1、JPY≈0.042）；
+    上游原始中间价是每 100 外币口径，SDK 已统一 /100 归一。
+    """
+    if action not in FX_ACTIONS:
+        raise ValueError(f"action 只支持 {'/'.join(FX_ACTIONS)}")
+    cli = runtime.client("cn")
+    code = _symbol(action, ccy, allow_empty=False)
+    if action == "rate":
+        data = cli.fx.rate(code)
+    elif action == "history":
+        data = cli.fx.history(code, n=_optional_limit(n, 500))
+    elif action == "bars":
+        data = cli.fx.bars(code, begin=begin, end=end)
+    else:
+        data = cli.fx.list()
+    return success(runtime, data, output=output, max_rows=max_rows,
+                   action=action, ccy=code, market="cn")
 
 
 def valuation(

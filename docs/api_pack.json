@@ -2,11 +2,11 @@
   "schema_version": 2,
   "generated_by": "tools/gen_api_docs.py",
   "meta": {
-    "core": 157,
+    "core": 164,
     "composite": 18,
-    "docs_visible": 152,
+    "docs_visible": 159,
     "variants": 21,
-    "domains": 25,
+    "domains": 26,
     "categories": [
       {
         "key": "market",
@@ -25,7 +25,7 @@
         "cn": "参考数据"
       }
     ],
-    "test_ready": 150,
+    "test_ready": 157,
     "sampled": 170,
     "samples_provenance": {
       "captured_at": "2026-11-23",
@@ -9413,6 +9413,455 @@
             },
             "ec": 65.0,
             "result": 11
+          }
+        },
+        {
+          "key": "macro.reserves",
+          "ns": "macro",
+          "method": "reserves",
+          "cn": "储备项清单",
+          "composite": false,
+          "desc": "储备项清单（DataFrame；含可用性——sdr/total 上游无生产者标 available=False）。",
+          "params": [],
+          "returns": {
+            "kind": "array",
+            "desc": null,
+            "fields": [
+              {
+                "name": "kind",
+                "desc": "储备项代码 forex/gold/sdr/total"
+              },
+              {
+                "name": "label",
+                "desc": "中文标签"
+              },
+              {
+                "name": "available",
+                "desc": "是否已有数据"
+              },
+              {
+                "name": "date",
+                "desc": "最新数据期 YYYY-MM，无数据为空"
+              },
+              {
+                "name": "value",
+                "desc": "最新值，美元数值；无数据为 nil"
+              },
+              {
+                "name": "unit",
+                "desc": "量纲说明"
+              }
+            ]
+          },
+          "notes": [
+            "forex/gold 有数据；sdr/total 上游无生产者，如实标注 available=false 而不是返回空冒充"
+          ],
+          "docs_visible": true,
+          "example": "cli.macro.reserves()",
+          "test": {
+            "kwargs": {},
+            "path": "/v1/analysis/xs/eval",
+            "body": {
+              "symbol": "600519",
+              "xs_lines": [
+                "return reserve.list()"
+              ],
+              "args": {
+                "print.plain": true
+              },
+              "script_files": {},
+              "mode": "call",
+              "market": "cn"
+            }
+          }
+        },
+        {
+          "key": "macro.reserves_history",
+          "ns": "macro",
+          "method": "reserves_history",
+          "cn": "储备时序",
+          "composite": false,
+          "desc": "储备时序（DataFrame，date 升序）。",
+          "params": [
+            {
+              "name": "kind",
+              "required": false,
+              "desc": "储备项（``forex``=国家外汇储备 / ``gold``=黄金储备；``sdr`` 暂无数据）；默认 'forex'"
+            },
+            {
+              "name": "n",
+              "required": false,
+              "desc": "期数（1–48，月频）；默认 12"
+            }
+          ],
+          "returns": {
+            "kind": "array",
+            "desc": null,
+            "fields": [
+              {
+                "name": "date",
+                "desc": "期次 YYYY-MM"
+              },
+              {
+                "name": "kind",
+                "desc": "储备项代码"
+              },
+              {
+                "name": "value",
+                "desc": "美元数值"
+              }
+            ]
+          },
+          "notes": [
+            "value 为美元数值（forex 约 3.4e12 量级、gold 约 3e11 量级）；月频，末值可能滞后"
+          ],
+          "docs_visible": true,
+          "example": "cli.macro.reserves_history(kind=\"annual\", n=30)",
+          "test": {
+            "kwargs": {
+              "kind": "annual",
+              "n": 30
+            },
+            "path": "/v1/analysis/xs/eval",
+            "body": {
+              "symbol": "600519",
+              "xs_lines": [
+                "return reserve.query(\"annual\", 30)"
+              ],
+              "args": {
+                "print.plain": true
+              },
+              "script_files": {},
+              "mode": "call",
+              "market": "cn"
+            }
+          }
+        },
+        {
+          "key": "macro.reserves_asof",
+          "ns": "macro",
+          "method": "reserves_asof",
+          "cn": "储备最新值",
+          "composite": false,
+          "desc": "储备最新值（dict；无数据返回 None——不返回 0 冒充）。",
+          "params": [
+            {
+              "name": "kind",
+              "required": false,
+              "desc": "储备项（``forex`` / ``gold``）；默认 'forex'"
+            }
+          ],
+          "returns": {
+            "kind": "object",
+            "desc": null,
+            "fields": [
+              {
+                "name": "kind",
+                "desc": "储备项代码"
+              },
+              {
+                "name": "date",
+                "desc": "最新数据期 YYYY-MM"
+              },
+              {
+                "name": "value",
+                "desc": "美元数值"
+              },
+              {
+                "name": "unit",
+                "desc": "量纲说明"
+              }
+            ]
+          },
+          "notes": [],
+          "docs_visible": true,
+          "example": "cli.macro.reserves_asof(kind=\"annual\")",
+          "test": {
+            "kwargs": {
+              "kind": "annual"
+            },
+            "path": "/v1/analysis/xs/eval",
+            "body": {
+              "symbol": "600519",
+              "xs_lines": [
+                "return reserve.asof(\"annual\")"
+              ],
+              "args": {
+                "print.plain": true
+              },
+              "script_files": {},
+              "mode": "call",
+              "market": "cn"
+            }
+          }
+        }
+      ],
+      "composites": []
+    },
+    {
+      "ns": "fx",
+      "cn": "人民币外汇汇率",
+      "chapter": "宏观",
+      "category": "reference",
+      "domain": "market.fx",
+      "domain_cn": "外汇汇率",
+      "domain_description": "人民币外汇汇率——央行中间价与中行牌价日线。数据由平台日更入库 （17 币种中行牌价 + 外管局/央行中间价，中间价缺失按前值填充），本域提供 最新汇率、日线序列与区间查询三个读面。",
+      "domain_units": {
+        "date": "YYYY-MM-DD"
+      },
+      "interfaces": [
+        {
+          "key": "fx.rate",
+          "ns": "fx",
+          "method": "rate",
+          "cn": "最新汇率",
+          "composite": false,
+          "desc": "最新汇率（dict：ccy/date/middle/buy/cash_buy；无数据返回 None）。",
+          "params": [
+            {
+              "name": "ccy",
+              "required": false,
+              "desc": "币种 ISO 代码（``USD``/``EUR``/``JPY``/``HKD``；``RMB``/``CNH`` 归一为 ``CNY``）；默认 'USD'"
+            }
+          ],
+          "returns": {
+            "kind": "object",
+            "desc": null,
+            "fields": [
+              {
+                "name": "ccy",
+                "desc": "币种 ISO 代码"
+              },
+              {
+                "name": "date",
+                "desc": "数据日期 YYYY-MM-DD"
+              },
+              {
+                "name": "middle",
+                "desc": "央行中间价（每 1 单位外币折人民币）"
+              },
+              {
+                "name": "buy",
+                "desc": "中行汇买价（同上口径）"
+              },
+              {
+                "name": "cash_buy",
+                "desc": "中行钞买价（同上口径）"
+              },
+              {
+                "name": "currency",
+                "desc": "币种原值（上游披露）"
+              }
+            ]
+          },
+          "notes": [
+            "量级界覆盖日元/韩元（每单位约 0.005-0.05）到英镑/欧元（约 8-10）；越界即疑似未归一的每 100 外币原值"
+          ],
+          "docs_visible": true,
+          "example": "cli.fx.rate()",
+          "test": {
+            "kwargs": {},
+            "path": "/v1/analysis/xs/eval",
+            "body": {
+              "symbol": "600519",
+              "xs_lines": [
+                "return fx.rate(\"USD\")"
+              ],
+              "args": {
+                "print.plain": true
+              },
+              "script_files": {},
+              "mode": "call",
+              "market": "cn"
+            }
+          }
+        },
+        {
+          "key": "fx.history",
+          "ns": "fx",
+          "method": "history",
+          "cn": "汇率日线",
+          "composite": false,
+          "desc": "汇率日线（DataFrame，date 升序）。",
+          "params": [
+            {
+              "name": "ccy",
+              "required": false,
+              "desc": "币种 ISO 代码；默认 'USD'"
+            },
+            {
+              "name": "n",
+              "required": false,
+              "desc": "根数（1–2000；0=全历史）；默认 30"
+            }
+          ],
+          "returns": {
+            "kind": "array",
+            "desc": null,
+            "fields": [
+              {
+                "name": "date",
+                "desc": "日期 YYYY-MM-DD"
+              },
+              {
+                "name": "ccy",
+                "desc": "币种 ISO 代码"
+              },
+              {
+                "name": "middle",
+                "desc": "央行中间价（每 1 单位外币折人民币）"
+              },
+              {
+                "name": "buy",
+                "desc": "中行汇买价（同上口径）"
+              }
+            ]
+          },
+          "notes": [
+            "数据版本键缓存——最新入库日期变化即换键，日内复跑命中缓存"
+          ],
+          "docs_visible": true,
+          "example": "cli.fx.history(n=30)",
+          "test": {
+            "kwargs": {
+              "n": 30
+            },
+            "path": "/v1/analysis/xs/eval",
+            "body": {
+              "symbol": "600519",
+              "xs_lines": [
+                "return fx.history(\"USD\", 30)"
+              ],
+              "args": {
+                "print.plain": true
+              },
+              "script_files": {},
+              "mode": "call",
+              "market": "cn"
+            }
+          }
+        },
+        {
+          "key": "fx.bars",
+          "ns": "fx",
+          "method": "bars",
+          "cn": "汇率区间日线",
+          "composite": false,
+          "desc": "汇率区间日线（DataFrame，date 升序）。",
+          "params": [
+            {
+              "name": "ccy",
+              "required": false,
+              "desc": "币种 ISO 代码；默认 'USD'"
+            },
+            {
+              "name": "begin",
+              "required": false,
+              "desc": "开始日期 YYYY-MM-DD（可空）"
+            },
+            {
+              "name": "end",
+              "required": false,
+              "desc": "结束日期 YYYY-MM-DD（可空）"
+            },
+            {
+              "name": "limit",
+              "required": false,
+              "desc": "根数上限（1–500，Client 单次上限）；默认 500"
+            }
+          ],
+          "returns": {
+            "kind": "array",
+            "desc": null,
+            "fields": [
+              {
+                "name": "date",
+                "desc": "日期 YYYY-MM-DD"
+              },
+              {
+                "name": "ccy",
+                "desc": "币种 ISO 代码"
+              },
+              {
+                "name": "middle",
+                "desc": "央行中间价（每 1 单位外币折人民币）"
+              },
+              {
+                "name": "buy",
+                "desc": "中行汇买价（同上口径）"
+              }
+            ]
+          },
+          "notes": [
+            "begin/end 通过服务端 startTs/endTs 下推（不客户端过滤）；区间无数据返回空数组"
+          ],
+          "docs_visible": true,
+          "example": "cli.fx.bars(begin=\"2026-01-01\", end=\"2026-03-31\", limit=10)",
+          "test": {
+            "kwargs": {
+              "begin": "2026-01-01",
+              "end": "2026-03-31",
+              "limit": 10
+            },
+            "path": "/v1/analysis/xs/eval",
+            "body": {
+              "symbol": "600519",
+              "xs_lines": [
+                "return fx.query_bars(\"USD\", \"2026-01-01\", \"2026-03-31\", 10)"
+              ],
+              "args": {
+                "print.plain": true
+              },
+              "script_files": {},
+              "mode": "call",
+              "market": "cn"
+            }
+          }
+        },
+        {
+          "key": "fx.list",
+          "ns": "fx",
+          "method": "list",
+          "cn": "在库币种清单",
+          "composite": false,
+          "desc": "在库币种清单（DataFrame：ccy/date/middle）。",
+          "params": [],
+          "returns": {
+            "kind": "array",
+            "desc": null,
+            "fields": [
+              {
+                "name": "ccy",
+                "desc": "币种 ISO 代码"
+              },
+              {
+                "name": "date",
+                "desc": "最新数据日期 YYYY-MM-DD"
+              },
+              {
+                "name": "middle",
+                "desc": "最新中间价（每 1 单位外币折人民币）"
+              }
+            ]
+          },
+          "notes": [],
+          "docs_visible": true,
+          "example": "cli.fx.list()",
+          "test": {
+            "kwargs": {},
+            "path": "/v1/analysis/xs/eval",
+            "body": {
+              "symbol": "600519",
+              "xs_lines": [
+                "return fx.list()"
+              ],
+              "args": {
+                "print.plain": true
+              },
+              "script_files": {},
+              "mode": "call",
+              "market": "cn"
+            }
           }
         }
       ],

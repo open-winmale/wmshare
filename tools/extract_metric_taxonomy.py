@@ -262,6 +262,10 @@ def _unit_kind_of(code: str, cn: str, topic: str, group_unit: str) -> str:
             return "index_point"
         if re.search(r"率|同比|增长|占比", cn):
             return "ratio"
+        # 美元计价必须先判（"亿美元" 含「元」字，会被下面的 money 规则误吞）：
+        # 值已是美元数值（上游 Base=亿美元×1e8），标 money(元) 违反 SDK 金额契约。
+        if re.search(r"美元", cn):
+            return "usd_amount"
         if re.search(r"金额|亿元|万亿|元", cn):
             return "money"
         return "index_point"

@@ -138,7 +138,7 @@ def test_registry_has_twenty_eight_tools() -> None:
     if hasattr(response, "__await__"):
         response = __import__("asyncio").run(response)
     assert {item.name for item in response} == set(TOOL_NAMES)
-    assert len(TOOL_NAMES) == 28
+    assert len(TOOL_NAMES) == 29
     descriptions = [item.description for item in response]
     assert all(descriptions)
 
