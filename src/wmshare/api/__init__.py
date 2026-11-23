@@ -226,6 +226,29 @@ def _compact_date(value: str) -> str:
         return s
 
 
+def _sas_to_iso(value: Any) -> str:
+    """sas 周期戳 → ISO 日期（周期起点口径：M=当月 1 日、W=ISO 周一、D=当日）。
+
+    服务端 cursor 周期戳形如 ``2026:M10`` / ``2026:W48`` / ``2026:D326``；
+    非周期戳（已 ISO 等）原样返回。
+    """
+    s = str(value or "").strip()
+    m = re.fullmatch(r"(\d{4}):([MWD])(\d{1,3})", s)
+    if not m:
+        return s
+    y, kind, num = int(m.group(1)), m.group(2), int(m.group(3))
+    try:
+        if kind == "M":
+            if not 1 <= num <= 12:
+                return s
+            return f"{y:04d}-{num:02d}-01"
+        if kind == "W":
+            return date.fromisocalendar(y, num, 1).isoformat()
+        return (date(y, 1, 1) + timedelta(days=num - 1)).isoformat()
+    except ValueError:
+        return s
+
+
 def _per_symbol(v: Any, fn: Any) -> Any:
     """批量结果逐标的映射 fn（errors 原样透传）；普通结果直接 fn(v)。
 
@@ -3419,6 +3442,112 @@ class FuturesApi(_Api):
             return values
         return {field: values.get(code_) for code_, field in mapping.items()}
 
+    # bars 点数上限：eval 点读按「点 × 码」计费（2026-11-23 实测暖态 ≈8-11 EC/点·码），
+    # 日频全史 ≈25 年 × 250 日 ≈ 6000 点会烧出五位数 EC——硬顶逼调用方选低频或缩窗。
+    _BAR_POINT_CAPS: dict[str, int] = {"d": 3000, "w": 600, "m": 300}
+    _BAR_CURSOR_FN = {"d": "ds", "w": "ws", "m": "ms"}
+
+    def bars(self, fut_code: str, n: int | None = None, begin: str | None = None,
+             end: str | None = None, freq: str | None = None,
+             fields: Any = None, _raw: bool = False) -> Any:
+        """期货主力连续历史K线（周期序列 × ``$FUT_*`` 点读；date 升序）。
+
+        eval 组合面（``RANGE(cursor.*, ITER($FUT_*…))`` + ``fut.symbol`` 传参），
+        与 ``kline.bars`` 同形：date 升序、DataFrame 默认、``_raw=True`` 逃生口。
+        ``date`` 为周期起点口径（月=当月 1 日、周=ISO 周一、日=当日）；
+        非交易日周期沿用上游口径原样返回（``has_kline`` 列可辨）。
+
+        :param fut_code: 合约键（同 ``get()``；主力连续，非单合约）
+        :param n: 取最近 n 个周期（默认 120；与 begin/end 二选一）
+        :param begin: 开始日期 YYYY-MM-DD（含当日；须与 end 成对）
+        :param end: 结束日期 YYYY-MM-DD（含当日）
+        :param freq: ``d``（默认，11 字段）/ ``w``（8 字段）/ ``m``（8 字段）；
+            长区间建议 ``m``（点数省 20 倍以上）
+        :param fields: 列投影（字段名/``sas`` 列表，如 ``["date", "close"]``）
+        :param _raw: True 跳过收口，返回 {sas: [...], vals: [[...]]} 原始形态
+        :raises UsageError: freq 非法 / begin-end 不成对 / 点数超上限
+            （d 3000 / w 600 / m 300——上游主力连续数据起点约束与成本双重要求）
+        """
+        self._require_cn_client()
+        code = self._normalize_fut(fut_code)
+        key = self._FREQ_ALIAS.get(str(freq or "d").strip().lower())
+        if key is None:
+            raise UsageError(
+                f"futures.bars: 不支持的 freq={freq!r}；可用 None/\"d\"（日）、"
+                "\"w\"（周）、\"m\"（月）", code="freq") from None
+        mapping = self._FREQ_CODES[key]
+        if (begin is not None) != (end is not None):
+            raise UsageError("begin 与 end 需同时提供", code="range")
+        if n is not None and begin is not None:
+            raise UsageError("n 与 begin/end 二选一", code="range")
+
+        today = date.today()
+        if begin is not None:
+            try:
+                b = date.fromisoformat(str(begin)[:10])
+                e = date.fromisoformat(str(end)[:10])
+            except ValueError as exc:
+                raise UsageError(f"begin/end 需为 YYYY-MM-DD：{exc}", code="range") from None
+            if b > e:
+                raise UsageError(f"begin={begin} 晚于 end={end}", code="range")
+            n_points = self._periods_back(key, b, today)
+        else:
+            try:
+                n_points = 120 if n is None else int(n)
+            except (TypeError, ValueError) as exc:
+                raise UsageError(f"n 需为正整数：{n!r}", code="params") from None
+        cap = self._BAR_POINT_CAPS[key]
+        if n_points < 1:
+            raise UsageError(f"点数需 ≥1（freq={key}）", code="range")
+        if n_points > cap:
+            raise UsageError(
+                f"futures.bars: freq={key} 点数 {n_points} 超上限 {cap}（成本按点×码计，"
+                f"2026-11-23 实测 ≈8-11 EC/点·码）；请缩小区间或改用低频 freq",
+                code="range")
+
+        codes = ", ".join(mapping)
+        cur = self._BAR_CURSOR_FN[key]
+        xs = (f'pts := cursor.{cur}({n_points}, "now")\n'
+              f'vals := RANGE(pts, ITER({codes}))\n'
+              'return {"sas": pts, "vals": vals}')
+        anchor = _DEFAULT_SYMBOLS.get("cn", "600519")
+        result = self._c.eval_result(xs, symbol=anchor, args={"fut.symbol": code})
+        if _raw:
+            return result
+        if not (isinstance(result, dict) and isinstance(result.get("sas"), list)
+                and isinstance(result.get("vals"), list)):
+            raise DataError(
+                f"futures.bars: 上游返回形态异常（期望 sas/vals 两列，得到 "
+                f"{type(result).__name__}）", code="response")
+        sas_list: list = result["sas"]
+        vals: list = result["vals"]
+        if len(sas_list) != len(vals):
+            raise DataError(
+                f"futures.bars: sas/vals 行数不一致（{len(sas_list)} vs {len(vals)}）",
+                code="response")
+        rows: list[dict[str, Any]] = []
+        code_names = list(mapping)
+        for sas, point in zip(sas_list, vals):
+            row: dict[str, Any] = {"sas": sas, "date": _sas_to_iso(sas)}
+            for i, name in enumerate(code_names):
+                row[mapping[code_names[i]]] = point[i] if i < len(point) else None
+            rows.append(row)
+        rows.reverse()  # cursor 新→旧 → 2.0 契约 date 升序
+        if begin is not None:
+            b_iso, e_iso = b.isoformat(), e.isoformat()
+            rows = [r for r in rows if b_iso <= str(r["date"])[:10] <= e_iso]
+        return _out(rows, raw=_raw, _fields=fields)
+
+    @staticmethod
+    def _periods_back(key: str, begin: "date", today: "date") -> int:
+        """begin → 今天的周期数（含缓冲 2 期；begin/end 过滤在客户端收口）。"""
+        days = max(0, (today - begin).days)
+        if key == "d":
+            return days + 2
+        if key == "w":
+            return days // 7 + 2
+        return (today.year - begin.year) * 12 + (today.month - begin.month) + 2
+
 
 # 组合接口：跨多个目录函数的研究级封装（取数 → 规则 → 事实包 → 成稿/出图）。
 # 不登记 FRIENDLY_INDEX（那张表是「核心接口 ↔ 底层目录函数」的一一映射）；
@@ -3519,6 +3648,7 @@ FRIENDLY_INDEX: list[tuple[str, str, str, str, str]] = [
     ("market", "stocks", "industry_members", "行业成分股", "stocks.industry_members"),
     ("market", "futures", "get", "期货连续合约单字段", "指标码 $FUT_*（fut_symbol 求值）"),
     ("market", "futures", "snapshot", "期货连续合约快照", "指标码 $FUT_*（fut_symbol 求值）"),
+    ("market", "futures", "bars", "期货主力连续历史K线", "指标码 $FUT_*（fut_symbol 求值）"),
     ("market", "futures", "mapping", "主力换月映射", "futures.mapping"),
     ("fundamentals", "statements", "audit", "审计意见", "rptdom.statement_audit"),
     ("fundamentals", "indicator", "get", "取单个指标", "指标代码直查"),

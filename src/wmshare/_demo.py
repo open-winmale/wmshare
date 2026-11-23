@@ -697,6 +697,7 @@ class DemoClient:
         self.futures = SimpleNamespace(
             snapshot=self._futures_snapshot,
             get=self._futures_get,
+            bars=self._futures_bars,
             mapping=self._futures_mapping,
         )
         self.calendar = SimpleNamespace(
@@ -1096,6 +1097,14 @@ class DemoClient:
         if text not in snap:
             raise UsageError(f"演示快照 {fut_code} 无字段 {text!r}", code="demo_unsupported")
         return snap[text]
+
+    def _futures_bars(self, fut_code: str, n: int | None = None,
+                      begin: str | None = None, end: str | None = None,
+                      freq: str | None = None, fields: Any = None,
+                      _raw: bool = False) -> Any:
+        # 签名与 live 门面逐字对齐（test_demo_signatures 逐参比对）；历史序列
+        # 是点读面（点×码计费），离线快照不回放——显式 demo_unsupported。
+        raise _unsupported("futures.bars", kind="期货历史序列")
 
     def _moneyflow_last(self, symbol: str, _raw: bool = False) -> Any:
         if _raw:

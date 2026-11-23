@@ -200,7 +200,7 @@ for r in res["data"]["rows"][:5]:
 
 ## 基本功能
 
-随包离线目录：**25 个数据域 · 331 个底层函数 · 2983 个指标代码**；友好层 **156 个核心接口**，
+随包离线目录：**25 个数据域 · 331 个底层函数 · 2983 个指标代码**；友好层 **157 个核心接口**，
 按使用视角组织为（11 个指标组、78 个精选常用指标代码，`cat.search("中文")` 可编程检索）：
 
 | 门面 | 核心能力 | 单位口径 |
@@ -242,7 +242,7 @@ for r in res["data"]["rows"][:5]:
 - **全市场批量**：`cli.batch_all(name, codes)` 把 A 股 5,375 家压成 **11 次请求**绕开限流。
 - **全市场筛选服务端直出**：`cli.screener.query("$ROE_TTM_LAST > 0.15")` 一条表达式扫全市场索引
   （`count`=真实命中数）；涨跌全景/分桶/行业分布/涨跌榜同走服务端预计算索引，毫秒级。
-- **离线目录防编造**：331 个底层函数、156 个核心接口、2,983 个指标码离线可查
+- **离线目录防编造**：331 个底层函数、157 个核心接口、2,983 个指标码离线可查
   （`cat.search("中文")`），目录之外的名字显式报错。
 - **零凭证离线试跑**：`wmshare.demo_client()`（**同签名**、不联网，2026-11-19 固定快照；非实时数据）。未回放的命名空间/方法照样能点出来，调用即抛 `UsageError(code="demo_unsupported")`——不会 `AttributeError` 装作没这个能力。
 - **数据守护**：全库统一单位（比率=小数、金额=元、量=股），返回前做单位换算与关键不变量校验；**精选 78 码另带口径与量级守护**（违例抛 `DataError`），其余码只保底不变量，口径以返回值/注释为准。
@@ -251,7 +251,7 @@ for r in res["data"]["rows"][:5]:
 
 - **先查目录再写代码**（一行验证）：
   `python3 -c "import wmshare; print(wmshare.load().search('股息'))"`
-- **本地 MCP server**：28 个 task tools；全部 174 个 friendly API——156 登记 + 18 个组合接口——均可用
+- **本地 MCP server**：28 个 task tools；全部 175 个 friendly API——157 登记 + 18 个组合接口——均可用
   `wmshare_call(target=..., mode="api")` 兜底，macro 域仅此路径。配置：`pip install "wmshare[mcp]"`
   → `wmshare-mcp setup --client-id <AppId> --client-secret-stdin --market cn`（提示后粘贴 API Key，
   `wmshare-mcp doctor` 体检）；客户端最小配置
@@ -429,9 +429,9 @@ t["data"]["pe_pct"], t["data"]["pe_pct_window"], t["data"]["pct"]["pe"]["p3"]  #
 
 - **AI 原生**：随包 [SKILL.md](src/wmshare/skills/wmshare/SKILL.md)、[AI 用法](docs/AI.md)、本地 MCP server（skill 可复制进 .agents/.zcode/.claude 的 skills/）；生态工具 [big-winner](https://github.com/open-winmale/big-winner)
 - **命令行与成品出口**：`wmshare screen/income/index/cbond` 直出 md/csv/xlsx（见「不写 Python」节）；`wmshare.export` 把信封/DataFrame 落成带口径表头的成品（`write_bundle` 附 manifest.json）
-- **文档中心 [docs/](docs/README.md)**：使用指南 GUIDE（单票菜谱/批量/多市场/故障排查）· 指标库 [INDICATORS.md](docs/INDICATORS.md)（全量指标码按数据类型分章）· AI 用法 · llms.txt 索引 · [API 参考](docs/API.md)（按资产类别分章的 156 个核心接口 + 指标组）
+- **文档中心 [docs/](docs/README.md)**：使用指南 GUIDE（单票菜谱/批量/多市场/故障排查）· 指标库 [INDICATORS.md](docs/INDICATORS.md)（全量指标码按数据类型分章）· AI 用法 · llms.txt 索引 · [API 参考](docs/API.md)（按资产类别分章的 157 个核心接口 + 指标组）
 - **可转债日更管线**：`cli.cbond.daily()` → `article()` → `figures()` 一条命令出图文（三层口径 + 三道闸 + 状态机 + 事件日历，每个数字带 `sources` 与 `as_of`，缺条目抛错而非补猜测值）；实战 notebook 见 [docs/notebooks/cb_double_low.ipynb](docs/notebooks/cb_double_low.ipynb)（2026-11-07 真实数据）
-- **示例课程 [examples/](examples/README.md)**：21 个编号示例（入门→进阶→生产→AI→成品出口）——4 个纯离线、15 个带 `--demo` 离线回放、1 个可转债需凭证、1 个匿名试用；CI 端到端覆盖
+- **示例课程 [examples/](examples/README.md)**：22 个编号示例（入门→进阶→生产→AI→成品出口）——4 个纯离线、16 个带 `--demo` 离线回放、1 个可转债需凭证、1 个匿名试用；CI 端到端覆盖
 - **问题反馈 / 交流**：使用提问、数据口径与指标码请求走 [Discussions](https://github.com/open-winmale/wmshare/discussions)；可复现的 bug 提 [GitHub Issues](https://github.com/open-winmale/wmshare/issues)；也欢迎加 QQ 群 `1127142074`（搜索「wmshare开源交流群」）
 - **维护者与治理**：[MAINTAINERS.md](MAINTAINERS.md)（响应承诺与发版流程）· [GOVERNANCE.md](GOVERNANCE.md) · [行为准则](CODE_OF_CONDUCT.md)
 
@@ -567,7 +567,7 @@ cat.metrics_in_group("dividend")                         # 指标组内全部精
 | 行业目录 / 行业成分 | `cli.stocks.industries(1)`（申万/恒生；美股目录树暂缺）/ `cli.stocks.industry_members("银行")`（中文名或代码 S48） |
 | 少量标的单批（≤500） | `cli.call_batch("kline.snapshot", ["600519", "000001"])` 或任意单标的接口传 list：`cli.kline.last(["600519", "000001"])`；`to_df()` 出每标的一行长表 |
 
-完整 156 个核心接口 + 18 个组合接口（可转债 3 + 回测 1 + 报表 4 + ETF 9 + 收息诊断 1）与全部底层函数：仓库用户看 docs/GUIDE.md（上手）与
+完整 157 个核心接口 + 18 个组合接口（可转债 3 + 回测 1 + 报表 4 + ETF 9 + 收息诊断 1）与全部底层函数：仓库用户看 docs/GUIDE.md（上手）与
 docs/API.md（参考）；pip 用户用 `cat.search(...)` / `cat.function(...)` 查（同一份合同）。
 全量指标码（2983 个）按数据类型分章的导航、命名语法与死码清单见 docs/INDICATORS.md（生成物）。
 
@@ -679,7 +679,7 @@ cp -r "$(python3 -c 'import wmshare; print(wmshare.skill_dir())')" ~/.agents/ski
 
 本指南是 **how-to + 解释层**：会做什么 → 怎么做好。其他层各有其位——
 教程看 [README](../README.md) 与 [examples/](../examples/README.md)（可运行课程），
-接口参考看 [API.md](API.md)（按资产类别分章的 156 个核心接口，生成物），
+接口参考看 [API.md](API.md)（按资产类别分章的 157 个核心接口，生成物），
 AI 用法看 [AI.md](AI.md)。
 
 > 代码块里的输出注释都是**真实运行结果**（2026-10-29，cn 市场，免费档凭证），
@@ -720,7 +720,7 @@ export WMSHARE_CLIENT_ID=<AppId> WMSHARE_CLIENT_SECRET=<API Key>
 
 ### 2.1 双层 API：门面 + 目录
 
-- **门面层** `cli.<命名空间>.<方法>()`：27 个命名空间、156 个核心接口，方法名动宾化可猜
+- **门面层** `cli.<命名空间>.<方法>()`：27 个命名空间、157 个核心接口，方法名动宾化可猜
   （`kline.bars`、`dividend.yield_ttm`、`screener.screen_limit_up`）。
 - **目录层** `cli.call("<域>.<函数名>", ...)`：331 个底层函数按目录合同直调，
   参数名以 `cat.function(name)["params"]` 为准。门面未包装的函数经属性直达
@@ -1168,8 +1168,20 @@ cli.macro.bond_curve("中债国债收益率曲线", "10年")   # 0.0168 = 1.68%�
 cli.macro.nev_monthly("零跑", "sales")               # 行业情报单值（名单精确匹配，掉榜 None）
 ```
 
-期货走指标码层（主力连续，日/周/月三族；`symbol` 传任意 A 股代码绑定期间上下文，
-合约键经 `fut_symbol` 指定——国内 `cn.SR.ZCE`（后缀非 .CZCE）/`cn.RB.SHF`，外盘 `global.CL`）：
+期货走 `cli.futures` 门面（主力连续，**须 cn 客户端**；合约键 `RB.SHF`/`global.CL`，
+单位为期货原生口径：价格=元、量=手、金额=万元）：
+
+```python
+cli.futures.snapshot("RB.SHF")                       # 日频 11 字段快照 {字段: 值}
+cli.futures.get("AL.SHF", "settle", freq="m")        # 单字段单值（外盘换 global. 前缀）
+cli.futures.bars("AL.SHF", n=6, freq="m")            # 历史K线 DataFrame（date 升序）；
+                                                     # begin/end 与 n 二选一；长区间用
+                                                     # m 频（点数省 20 倍，d 硬顶 3000）
+cli.cost_estimate("futures.bars", n=120)             # 先估成本（点×码线性计费）
+```
+
+底层指标码层等价形态（`symbol` 传任意 A 股代码绑定期间上下文，合约键经 `fut_symbol`
+指定——国内 `cn.SR.ZCE`（后缀非 .CZCE）/`cn.RB.SHF`，外盘 `global.CL`）：
 
 ```python
 cli.indicator.get("600519", "$FUT_CLOSE")                           # 缺省 cn.SR.ZCE
@@ -1300,7 +1312,7 @@ wmshare 取数代码**。优先用 MCP；没有 MCP 时用 skill 或文档上下
 - **目录先行**：指标码与函数可编程检索（`cat.search("中文")`），AI 不需要"背"接口，
   查一下再用；编造的码在发请求前就被 `CatalogError` 拦下。
 - **本地 MCP server**：28 个 task tools 覆盖发现、行情、财务、治理、披露、收息、估值、
-  ETF、回测、宏观、龙虎榜、期货、公告结构化与批量；全部 174 个 friendly API（156 登记 +
+  ETF、回测、宏观、龙虎榜、期货、公告结构化与批量；全部 175 个 friendly API（157 登记 +
   18 个组合接口）均可经 `wmshare_call(mode="api")` 兜底（macro 长尾与
   `cbond.article/figures` 仅网关路径）。输出统一 units/rows/next_action。
 - **skill 随包分发**：单位铁律、意图→接口决策树、坑位清单、错误速查，装进 agent 即生效
@@ -1456,7 +1468,7 @@ python3 -c "import wmshare; print(wmshare.load().metric('\$PE_TTM_LAST'))"
 
 <!-- GENERATED by tools/gen_api_docs.py — do not hand-edit -->
 
-共 **25** 个数据域 · **156** 个核心接口 · **11** 个指标组（指标目录全量 2983 个指标代码）；全量 331 个底层函数见文末折叠附录。核心接口按资产类别分章，每接口一节（输入参数 / 输出字段 / 示例）。
+共 **25** 个数据域 · **157** 个核心接口 · **11** 个指标组（指标目录全量 2983 个指标代码）；全量 331 个底层函数见文末折叠附录。核心接口按资产类别分章，每接口一节（输入参数 / 输出字段 / 示例）。
 
 ## 能力总览
 
@@ -3055,6 +3067,29 @@ cli.futures.get(fut_code="RB.SHF", field="close")
 cli.futures.snapshot(fut_code="RB.SHF")
 ```
 
+#### `cli.futures.bars` — 期货主力连续历史K线
+
+期货主力连续历史K线（周期序列 × ``$FUT_*`` 点读；date 升序）。
+
+**输入参数**
+
+| 参数 | 类型 | 必填 | 默认 | 说明 |
+|---|---|---|---|---|
+| `fut_code` | string | 是 | — | 合约键（同 ``get()``；主力连续，非单合约） |
+| `n` | integer | 否 | `None` | 取最近 n 个周期（默认 120；与 begin/end 二选一） |
+| `begin` | string | 否 | `None` | 开始日期 YYYY-MM-DD（含当日；须与 end 成对） |
+| `end` | string | 否 | `None` | 结束日期 YYYY-MM-DD（含当日） |
+| `freq` | string | 否 | `None` | ``d``（默认，11 字段）/ ``w``（8 字段）/ ``m``（8 字段）； |
+| `fields` | object | 否 | `None` | 列投影（字段名/``sas`` 列表，如 ``["date", "close"]``） |
+
+**输出**：DF · 历史K线（date 升序；日频 11 字段/周月 8 字段，价=元、量=手、额=万元；date 为周期起点口径：月=当月 1 日、周=ISO 周一、日=当日）
+
+**示例**
+
+```python
+cli.futures.bars(fut_code="AL.SHF", freq="m")
+```
+
 #### `cli.futures.mapping` — 主力换月映射
 
 主力换月映射（主力连续码 → 当日实际合约；date 升序）。
@@ -3310,7 +3345,7 @@ cli.macro.phone_share(brand="小米", field="share")
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 
 **输出**：MAP · {年份: 审计意见}
 
@@ -3389,7 +3424,7 @@ audit = cli.statements.audit("600519")               # 审计意见（按年报�
 |---|---|---|---|---|
 | `symbol` | string | 是 | — | 6 位裸码 |
 | `source` | string | 否 | `'clean'` | "clean"（默认，清洗归一）或 "raw"（披露明细） |
-| `limit` | integer | 否 | `20` | 条数上限 |
+| `limit` | integer | 否 | `20` | 返回条数上限 |
 
 **输出字段**
 
@@ -3418,7 +3453,7 @@ cli.segments.products("600519", limit=10)
 |---|---|---|---|---|
 | `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `source` | string | 否 | `'clean'` | "clean"（默认，清洗归一）或 "raw"（披露明细） |
-| `limit` | integer | 否 | `20` | 条数上限 |
+| `limit` | integer | 否 | `20` | 返回条数上限 |
 
 **输出字段**
 
@@ -3447,7 +3482,7 @@ cli.segments.business("600519", limit=10)
 |---|---|---|---|---|
 | `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `source` | string | 否 | `'clean'` | "clean"（默认，清洗归一）或 "raw"（披露明细） |
-| `limit` | integer | 否 | `20` | 条数上限 |
+| `limit` | integer | 否 | `20` | 返回条数上限 |
 
 **输出字段**
 
@@ -3473,7 +3508,7 @@ cli.segments.region("600519", limit=10)
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
 | `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
-| `limit` | integer | 否 | `20` | 条数上限 |
+| `limit` | integer | 否 | `20` | 返回条数上限 |
 
 **输出字段**
 
@@ -3588,7 +3623,7 @@ cli.segments.periods("600519")
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `metric` | string | 否 | `'pe'` | "pe" / "pb" / "ps" / "pr" |
 | `window` | string | 否 | `'3y'` | "6m" / "1y" / "2y" / "3y" / "5y" / "10y" |
 
@@ -3608,7 +3643,7 @@ cli.valuation.hist_stats("600519", metric="pe", window="3y")
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `begin` | string | 否 | `None` | ISO 起日（含），``None``/``""`` = 开区间 |
 | `end` | string | 否 | `None` | ISO 止日（含），``None``/``""`` = 开区间 |
 | `fields` | object | 否 | `None` | list[str] / 逗号字符串 / ``None``（全部 8 个） |
@@ -3650,7 +3685,7 @@ cli.valuation.daily_basic_multi(symbols=["600519", "000001"], begin="2026-11-01"
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
+| `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `begin` | string | 否 | `None` | 关心区间的起日；早于表内可读范围时 ``truncated`` 为真 |
 | `end` | string | 否 | `None` | 关心区间的止日；``None``/``""`` = 开区间 |
 
@@ -4171,7 +4206,7 @@ TTM 聚合（最近四个季度滚动求和）与单期披露值（单位 元（
 | `symbol` | string | 是 | — | 6 位 A 股代码 / 港股 5 位代码（按代码自动路由市场） |
 | `window` | string | 否 | `'3m'` | 时间窗 |
 | `keyword` | string | 否 | `''` | 标题/类型正则（可空） |
-| `limit` | integer | 否 | `20` | 条数上限 |
+| `limit` | integer | 否 | `20` | 返回条数上限 |
 
 **输出字段**
 
@@ -4203,7 +4238,7 @@ cli.notice.list("600519", window="3m", keyword="回购", limit=10)
 |---|---|---|---|---|
 | `window` | string | 否 | `'7d'` | 时间窗口，如 "7d"/"1m" 或天数 |
 | `keyword` | string | 否 | `''` | 标题/类型正则（可空） |
-| `limit` | integer | 否 | `50` | 条数上限 |
+| `limit` | integer | 否 | `50` | 返回条数上限 |
 | `market` | string | 否 | `''` | 公告市场，缺省自动（=cn）；港股显式传 "hk" |
 
 **输出字段**
@@ -4236,7 +4271,7 @@ cli.notice.recent(window="3m", keyword="回购", limit=10)
 |---|---|---|---|---|
 | `category` | string | 是 | — | 公告类别（如 ``"回购"``/``"减持"``；上游类别词表） |
 | `window` | string | 否 | `'1m'` | 窗口（"7d"/"1m"/…/"5y" 或天数） |
-| `limit` | integer | 否 | `20` | 条数上限 |
+| `limit` | integer | 否 | `20` | 返回条数上限 |
 | `market` | string | 否 | `''` | 公告市场，缺省自动（=cn）；港股显式传 "hk" |
 
 **输出字段**
@@ -4271,7 +4306,7 @@ cli.notice.by_category(category="回购", window="3m", limit=10)
 | `begin` | string | 是 | — | 起始日期（含） |
 | `end` | string | 是 | — | 结束日期（含） |
 | `keyword` | string | 否 | `''` | 标题/类型正则（可空） |
-| `limit` | integer | 否 | `50` | 条数上限 |
+| `limit` | integer | 否 | `50` | 返回条数上限 |
 | `market` | string | 否 | `''` | 公告市场，缺省自动（按标的代码路由）；全市场语义可显式传 "cn"/"hk" |
 
 **输出字段**
@@ -4304,7 +4339,7 @@ cli.notice.find("600519", begin="2026-01-01", end="2026-03-31", keyword="回购"
 |---|---|---|---|---|
 | `date` | string | 是 | — | 日期（YYYY-MM-DD） |
 | `keyword` | string | 否 | `''` | 标题/类型正则（可空） |
-| `limit` | integer | 否 | `50` | 条数上限 |
+| `limit` | integer | 否 | `50` | 返回条数上限 |
 | `market` | string | 否 | `''` | 公告市场，缺省自动（=cn）；港股显式传 "hk" |
 
 **输出字段**
@@ -4444,7 +4479,7 @@ cli.notice.category_regex(key="buyback")
 |---|---|---|---|---|
 | `symbol` | string | 是 | — | 6 位裸码 |
 | `kind` | string | 否 | `'all'` | 报告类型：``all \| annual \| semi \| quarter`` |
-| `limit` | integer | 否 | `10` | 条数上限 |
+| `limit` | integer | 否 | `10` | 返回条数上限 |
 
 **输出字段**
 
@@ -4507,7 +4542,7 @@ cli.filings.latest("600519", kind="annual")
 | `announce_date_to` | string | 否 | `''` | 披露日止（YYYY-MM-DD） |
 | `status` | string | 否 | `''` | ``ready \| pending \| fetched \| failed \| converting`` |
 | `kind` | string | 否 | `''` | 文档类型 |
-| `limit` | integer | 否 | `20` | 条数上限 |
+| `limit` | integer | 否 | `20` | 返回条数上限 |
 | `skip` | integer | 否 | `0` | 翻页跳过条数 |
 
 **输出**：ARR · 命中文档元数据行（file_key/status/text_chars/source_url/oss_url/stock_code/announce_date/title/kind/has_markdown，不含正文）
@@ -4715,7 +4750,7 @@ cli.forecast.yjyg_latest("600519")
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
 | `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
-| `limit` | integer | 否 | `8` | 条数上限 |
+| `limit` | integer | 否 | `8` | 返回条数上限 |
 
 **输出字段**
 
@@ -4767,7 +4802,7 @@ cli.forecast.yjkb_latest("600519")
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
 | `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
-| `limit` | integer | 否 | `8` | 条数上限 |
+| `limit` | integer | 否 | `8` | 返回条数上限 |
 
 **输出字段**
 
@@ -6192,7 +6227,7 @@ cli.intl.issue_info("00700")
 |---|---|---|---|---|
 | `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
 | `mode` | string | 否 | `'latest'` | 返回模式（"latest"=最新一条 / "series"=序列；ETF 九视图共用） |
-| `limit` | integer | 否 | `None` | 条数上限 |
+| `limit` | integer | 否 | `None` | 返回条数上限 |
 
 **`cli.etf.share`** — ETF 份额（信封：fd_share 份；mode=latest\|series）。
 
@@ -6334,7 +6369,7 @@ A 股交易日历——区间交易日、是否开市、之后 N 个交易日。
 单位口径：date=YYYY-MM-DD。
 - 主力连续码形如 "RB.SHF"（品种.交易所）；82 品种（74 商品 + 8 金融）见 cli.futures.snapshot 的品种寻址
 - 映射行不可变（换月历史固定），fmt_maps 结果按行指纹缓存（36a5de20 范式）
-- 无全合约标准日线表（仅主力连续）——合约级 K 线不在覆盖面
+- 主力连续历史K线走 `cli.futures.bars`（组合面，eval `RANGE(cursor.*, ITER($FUT_*))` 点读，2026-11-23 起）；单合约级 K 线仍不在覆盖面（上游仅主力连续）
 - 成本：全历史一次取数冷 ≈21 万 EC（4287 行 CONOF 逐行计费，2026-11-19 实测）， 建议 `mapping("RB.SHF", begin, end)` 传窗口按需取；复跑走指纹缓存 ≈141 EC
 
 | 函数 | 中文 | 性质 | 层 | 参数 | 返回 | 单位与守护 |

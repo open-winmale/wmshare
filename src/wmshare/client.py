@@ -402,6 +402,15 @@ def estimate_cost(name: str, params: dict[str, Any] | None = None, *,
         out.update(ec_lo=160, ec_hi=5_000, model="measured",
                    note="按窗口行数：13 行冷 ≈833 / 热 ≈160 EC；"
                         "全历史 4,287 行冷 ≈21.4 万 EC——务必传 begin/end 收窄窗口")
+    elif name == "futures.bars":
+        # 实测（2026-11-23 live，AL.SHF）：月频 204 点×8 码 = 17,837 EC（≈87/点）、
+        # 日频 250 点×11 码 = 24,912 EC（≈100/点）；暖态 ≈8-11 EC/点·码，冷首查上浮。
+        # 门面已按 freq 硬顶点数（d 3000/w 600/m 300）。
+        points = max(1, int(rows)) if rows else 120  # 120 = bars 默认 n
+        out.update(ec_lo=points * 60, ec_hi=points * 130 + 500, model="measured",
+                   note=f"按点数×码数线性（暖态 ≈8-11 EC/点·码，日频 11 码、周/月 8 码）："
+                        f"{points} 点 ≈{points * 60}~{points * 130} EC；冷首查上浮——"
+                        "长区间建议 freq='m'（点数省 20 倍）")
     elif name.startswith("pdf_doc."):
         # 实测（2026-11-19 live）：search 5 行 ≈836 EC（含 fmt_one 组装，
         # 无结果缓存，复跑同价）；find_by_key/status/read_* 单行点查数百 EC。

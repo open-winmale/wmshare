@@ -439,6 +439,8 @@ def test_toplist_invalid_params(runtime):
     ("get", {"code": "RB2605.SHF"}),
     ("mapping", {"symbol": "RB"}),
     ("snapshot", {"code": "RB2605.SHF"}),
+    ("bars", {"code": "AL.SHF", "n": 6, "freq": "m"}),
+    ("bars", {"code": "AL.SHF", "begin": "2026-01-01", "end": "2026-06-30"}),
 ])
 def test_futures_every_action(runtime, action, kwargs):
     _ok(tools.futures(runtime, action, **kwargs), action=action)
@@ -451,6 +453,10 @@ def test_futures_invalid_params(runtime):
         tools.futures(runtime, "get")
     with pytest.raises(ValueError, match="同时提供"):
         tools.futures(runtime, "mapping", symbol="RB", begin="2026-01-01")
+    with pytest.raises(ValueError, match="bars 需要"):
+        tools.futures(runtime, "bars", code="AL.SHF")
+    with pytest.raises(ValueError, match="bars 需要"):
+        tools.futures(runtime, "bars", code="AL.SHF", begin="2026-01-01")
 
 
 @pytest.mark.parametrize("action,kwargs", [

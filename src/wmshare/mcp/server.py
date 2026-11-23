@@ -72,7 +72,7 @@ ValuationAction = Literal[
 ]
 ValuationMetric = Literal["pe", "pb", "ps", "pr"]
 ToplistAction = Literal["by_date", "by_symbol"]
-FuturesAction = Literal["get", "mapping", "snapshot"]
+FuturesAction = Literal["get", "mapping", "snapshot", "bars"]
 PdfAction = Literal["search", "read_markdown", "status"]
 CompanyBlock = Literal[
     "profile", "income", "balance", "cashflow", "indicators", "dividend", "notices"
@@ -577,24 +577,26 @@ def build_server(runtime: MCPRuntime | None = None) -> FastMCP:
     @mcp.tool()
     @protocol
     def wmshare_futures(
-        action: Annotated[FuturesAction, Field(description="get=合约字段取值 / mapping=主力连续映射 / snapshot=合约快照")],
-        code: Annotated[str | None, Field(description="get/snapshot 需要的合约代码或主力连续，如 RB2605.SHF")] = None,
+        action: Annotated[FuturesAction, Field(description="get=合约字段取值 / mapping=主力连续映射 / snapshot=合约快照 / bars=主力连续历史K线")],
+        code: Annotated[str | None, Field(description="get/snapshot/bars 需要的合约代码或主力连续，如 RB2605.SHF / AL.SHF")] = None,
         symbol: Annotated[str | None, Field(description="mapping 需要的品种代码，如 RB")] = None,
         field: Annotated[str, Field(description="get 的字段（close/open/…）")] = "close",
-        freq: Annotated[str | None, Field(description="频率 d/w/m；snapshot 缺省 d")] = None,
+        freq: Annotated[str | None, Field(description="频率 d/w/m；snapshot/bars 缺省 d")] = None,
         native: Annotated[bool, Field(description="get=true 保留上游原值口径")] = False,
+        n: Annotated[int | None, Field(description="bars 取最近 n 个周期（默认 120；与 begin/end 二选一）")] = None,
         begin: DateArg = None,
         end: DateArg = None,
         output: OutputArg = "sample",
         max_rows: MaxRowsArg = MAX_ROWS,
     ) -> dict[str, Any]:
-        """期货主力数据（74 商品+8 金融）：合约字段、主力连续映射、合约快照。
+        """期货主力数据（74 商品+8 金融）：合约字段、主力连续映射、合约快照、历史K线。
 
         mapping 冷查实测 ≈21.4 万 EC、热查 ≈141 EC——先 wmshare_call(mode='cost')
-        预估；begin/end 需成对提供。
+        预估；begin/end 需成对提供。bars 按「点×码」线性计费（暖态 ≈8-11
+        EC/点·码，点数硬顶 d 3000/w 600/m 300），长区间建议 freq='m'。
         """
         return tools.futures(rt, action, code=code, symbol=symbol, field=field,
-                             freq=freq, native=native, begin=begin, end=end,
+                             freq=freq, native=native, n=n, begin=begin, end=end,
                              output=output, max_rows=max_rows)
 
     @mcp.tool()

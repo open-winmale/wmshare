@@ -2,9 +2,9 @@
   "schema_version": 2,
   "generated_by": "tools/gen_api_docs.py",
   "meta": {
-    "core": 156,
+    "core": 157,
     "composite": 18,
-    "docs_visible": 151,
+    "docs_visible": 152,
     "variants": 21,
     "domains": 25,
     "categories": [
@@ -26,7 +26,7 @@
       }
     ],
     "demo_covered": 61,
-    "test_ready": 149,
+    "test_ready": 150,
     "sampled": 170,
     "samples_provenance": {
       "captured_at": "2026-11-23",
@@ -10385,6 +10385,80 @@
               "oi_chg": -18678,
               "has_kline": true
             }
+          }
+        },
+        {
+          "key": "futures.bars",
+          "ns": "futures",
+          "method": "bars",
+          "cn": "期货主力连续历史K线",
+          "composite": false,
+          "desc": "期货主力连续历史K线（周期序列 × ``$FUT_*`` 点读；date 升序）。",
+          "params": [
+            {
+              "name": "fut_code",
+              "required": true,
+              "desc": "合约键（同 ``get()``；主力连续，非单合约）"
+            },
+            {
+              "name": "n",
+              "required": false,
+              "desc": "取最近 n 个周期（默认 120；与 begin/end 二选一）"
+            },
+            {
+              "name": "begin",
+              "required": false,
+              "desc": "开始日期 YYYY-MM-DD（含当日；须与 end 成对）"
+            },
+            {
+              "name": "end",
+              "required": false,
+              "desc": "结束日期 YYYY-MM-DD（含当日）"
+            },
+            {
+              "name": "freq",
+              "required": false,
+              "desc": "``d``（默认，11 字段）/ ``w``（8 字段）/ ``m``（8 字段）；"
+            },
+            {
+              "name": "fields",
+              "required": false,
+              "desc": "列投影（字段名/``sas`` 列表，如 ``[\"date\", \"close\"]``）"
+            }
+          ],
+          "returns": {
+            "kind": "text",
+            "desc": "DF · 历史K线（date 升序；日频 11 字段/周月 8 字段，价=元、量=手、额=万元；date 为周期起点口径：月=当月 1 日、周=ISO 周一、日=当日）",
+            "fields": []
+          },
+          "notes": [],
+          "docs_visible": true,
+          "example": "cli.futures.bars(fut_code=\"AL.SHF\", freq=\"m\")",
+          "test": {
+            "kwargs": {
+              "fut_code": "AL.SHF"
+            },
+            "path": "/v1/analysis/xs/eval",
+            "body": {
+              "symbol": "600519",
+              "xs_lines": [
+                "pts := cursor.ds(120, \"now\")",
+                "vals := RANGE(pts, ITER($FUT_OPEN, $FUT_HIGH, $FUT_LOW, $FUT_CLOSE, $FUT_SETTLE, $FUT_PRE_SETTLE, $FUT_VOLUME, $FUT_AMOUNT, $FUT_OI, $FUT_OI_CHG, $FUT_HAS))",
+                "return {\"sas\": pts, \"vals\": vals}"
+              ],
+              "args": {
+                "print.plain": true,
+                "fut.symbol": "cn.AL.SHF"
+              },
+              "script_files": {},
+              "mode": "call",
+              "market": "cn"
+            }
+          },
+          "demo": {
+            "covered": false,
+            "reason": "demo_unsupported",
+            "as_of": "2026-11-19"
           }
         },
         {

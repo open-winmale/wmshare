@@ -2,9 +2,9 @@
 
 **编号即学习路径**：每个脚本独立可跑；输出里的数值都带单位注释——读输出就能学会
 「率/分位=小数（0.0396 = 3.96%）、金额=元、量=股」的基础口径。
-21 个示例全部在 CI 里以子进程真实执行：4 个纯离线（02/03/09/12）、15 个带 `--demo`
+22 个示例全部在 CI 里以子进程真实执行：4 个纯离线（02/03/09/12）、16 个带 `--demo`
 注入演示客户端（`main(cli=None)`）、14 号可转债需凭证（演示快照不含 cbond 域）、
-20 号需服务端开启匿名试用（未开启时优雅降级）。
+20 号需服务端开启匿名试用（未开启时优雅降级）、22 号期货历史序列未回放（显式降级）。
 可放心照抄。
 
 ## 运行
@@ -45,6 +45,7 @@ python examples/01_quickstart.py
 | 19 | `19_income_rating.py` | 2.5 收息场景 | 凭证（demo 未回放，显式降级） | 收息流闭环：全市场排行（四维评分）→ 批量诊断 → 分红日历 → N 年拿息拆解；COLD_CACHE 与批量纪律 | API·disc.income / dividend.rating·diagnose·calendar·decomp |
 | 20 | `20_anonymous_trial.py` | 匿名试用 | 需服务端开启匿名试用（未开启时打印注册指引） | `Client.anonymous()` 免注册取真实数据；匿名额度边界与升级路径 | README「零凭证先试」 |
 | 21 | `21_cli_export.py` | 成品出口 | 凭证 / **`--demo`**（xlsx 需 `wmshare[excel]`） | `wmshare.export` 三件套：`to_markdown`（as_of+单位口径表头）、`write` 按扩展名分派、`write_bundle` + manifest.json；命令行同能力见 README「不写 Python」节 | README·命令行出成品 |
+| 22 | `22_futures_bars.py` | 2.9 期货新面 | 凭证 / **`--demo`**（历史序列未回放，显式降级） | `futures.bars` 与 kline.bars 同形（date 升序/DF）、freq 三档点数经济学（长区间 m 省 20 倍）、begin/end 与 n 二选一、成本预估先行 | GUIDE·§6.1、API·期货章 |
 
 ## 约定（新增示例请遵守）
 

@@ -109,5 +109,5 @@ VALUATION_ACTIONS = (
 )
 VALUATION_METRICS = ("pe", "pb", "ps", "pr")
 TOPLIST_ACTIONS = ("by_date", "by_symbol")
-FUTURES_ACTIONS = ("get", "mapping", "snapshot")
+FUTURES_ACTIONS = ("get", "mapping", "snapshot", "bars")
 PDF_ACTIONS = ("search", "read_markdown", "status")

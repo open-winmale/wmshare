@@ -293,6 +293,7 @@ def test_18_calendar_margin(capsys):
         "18_calendar_margin.py",
         "19_income_rating.py",
         "21_cli_export.py",
+        "22_futures_bars.py",
 ])
 def test_credential_examples_run_with_demo_snapshot(name):
     if name in ("07_stocks_industry_batch.py", "08_pandas_analysis.py"):
@@ -317,6 +318,6 @@ def test_examples_index_covers_dir():
     """examples/README.md 课程表必须覆盖目录里每个脚本（防孤儿示例）。"""
     index = (EXAMPLES / "README.md").read_text(encoding="utf-8")
     scripts = sorted(p.name for p in EXAMPLES.glob("*.py"))
-    assert len(scripts) == 21, f"示例应恰为 21 个（编号课程），实际 {len(scripts)}：{scripts}"
+    assert len(scripts) == 22, f"示例应恰为 22 个（编号课程），实际 {len(scripts)}：{scripts}"
     for name in scripts:
         assert f"`{name}`" in index, f"examples/README.md 缺 {name} 的索引行"

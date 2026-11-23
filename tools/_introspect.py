@@ -47,6 +47,7 @@ METHOD_EXAMPLE_VALUES = {
     ("pdf_doc", "find_by_url"): {"url": '"<公告行 url 字段>"'},
     ("pdf_doc", "find_by_key"): {"file_key": '"<search() 行 file_key 字段>"'},
     ("futures", "snapshot"): {"fut_code": '"RB.SHF"'},
+    ("futures", "bars"): {"fut_code": '"AL.SHF"', "freq": '"m"', "_skip": ("n", "begin", "end")},  # 互斥组：示例取 n 缺省形态
     ("calendar", "is_open"): {"date": '"2026-01-05"'},
     ("calendar", "next"): {"date": '"2026-01-30"', "n": "3"},
     ("margin", "market_summary"): {"limit": "6"},
@@ -170,6 +171,9 @@ FALLBACK_RETURNS = {
         "标量 · 连续合约单字段当前值（价=元、量=手、额=万元；`$码` 透传上游口径）",
     ("futures", "snapshot"):
         "MAP · {字段: 值}（一次指标批量求值；字段集同 ``cli.futures.get`` 可选集）",
+    ("futures", "bars"):
+        "DF · 历史K线（date 升序；日频 11 字段/周月 8 字段，价=元、量=手、额=万元；"
+        "date 为周期起点口径：月=当月 1 日、周=ISO 周一、日=当日）",
     ("valuation", "daily_basic"):
         "MAP · {ok, as_of, data: [{date, symbol, field, value}], meta}"
         "（8 字段长表，date 升序；as_of=表内最新行日期；"
@@ -390,11 +394,12 @@ def method_example(ns: str, method: str, params: list[Param]) -> str:
     """
     overrides = METHOD_EXAMPLE_VALUES.get((ns, method), {})
     values = {**EXAMPLE_VALUES, **overrides}
+    skip = overrides.get("_skip") or ()  # 显式不参与示例的参数（互斥组，如 n vs begin/end）
     parts: list[str] = []
     if any(p.name == "symbol" for p in params):
         parts.append(SYMBOL_EXAMPLES.get(ns, '"600519"'))
     for p in params:
-        if p.name == "symbol":
+        if p.name == "symbol" or p.name in skip:
             continue
         if p.name in values:
             parts.append(f"{p.name}={values[p.name]}")

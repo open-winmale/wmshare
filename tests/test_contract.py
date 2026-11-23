@@ -61,6 +61,11 @@ class FakeSession:
                 if url.endswith("/v1/oauth/token"):
                     return {"data": {"access_token": "tok", "expires_in": 3600}}
                 lines = (json or {}).get("xs_lines") or []
+                # futures.bars 组合面：sas/vals 两列点读
+                if any("RANGE(pts" in ln for ln in lines):
+                    return {"success": True, "data": {"result": {
+                        "sas": ["2026:M2", "2026:M1"],
+                        "vals": [[1.0] * 11, [2.0] * 11]}}}
                 if any("bonus.query_list" in ln for ln in lines) and \
                         any('"rows"' in ln for ln in lines):
                     return {"success": True,

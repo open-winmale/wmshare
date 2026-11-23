@@ -91,3 +91,18 @@ facades:
       fd_share: yi_yuan
     invariant: "五类 *_ratio 合计 ≤ 1.0（换算后小数）；net_asset ≥ 0"
     note: "ETF 九视图共用单位声明（apply_facade_units 递归消费）"
+  "futures.bars":
+    # 期货原生口径显式豁免（与 FuturesApi docstring 同口径）：价格=元、量=手
+    # （一手=合约乘数）、金额=万元——与交易所披露一致，不换算到全库基础单位。
+    fields:
+      open: price
+      high: price
+      low: price
+      close: price
+      settle: price
+      pre_settle: price
+      volume: lot         # 手（原生，不换算）
+      open_interest: lot
+      oi_chg: lot
+      amount: money       # 万元（原生，不换算）
+    note: "主力连续历史K线（eval 点读面）；price/lot/money 为文档审计 token 不换算"

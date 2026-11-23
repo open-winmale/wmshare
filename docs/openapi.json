@@ -3355,6 +3355,67 @@
         }
       }
     },
+    "/futures/bars": {
+      "post": {
+        "operationId": "futures_bars",
+        "summary": "期货主力连续历史K线（周期序列 × ``$FUT_*`` 点读；date 升序）。",
+        "description": "eval 组合面（``RANGE(cursor.*, ITER($FUT_*…))`` + ``fut.symbol`` 传参），、与 ``kline.bars`` 同形：date 升序、DataFrame 默认、``_raw=True`` 逃生口。、``date`` 为周期起点口径（月=当月 1 日、周=ISO 周一、日=当日）；、非交易日周期沿用上游口径原样返回（``has_kline`` 列可辨）。、长区间建议 ``m``（点数省 20 倍以上）、:raises UsageError: freq 非法 / begin-end 不成对 / 点数超上限、（d 3000 / w 600 / m 300——上游主力连续数据起点约束与成本双重要求）、指标码 $FUT_*（fut_symbol 求值）。SDK 调用：`cli.futures.bars(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "市场行情"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fut_code": {
+                    "type": "string",
+                    "description": "合约键（同 ``get()``；主力连续，非单合约）"
+                  },
+                  "n": {
+                    "type": "integer",
+                    "description": "取最近 n 个周期（默认 120；与 begin/end 二选一）"
+                  },
+                  "begin": {
+                    "type": "string",
+                    "description": "开始日期 YYYY-MM-DD（含当日；须与 end 成对）"
+                  },
+                  "end": {
+                    "type": "string",
+                    "description": "结束日期 YYYY-MM-DD（含当日）"
+                  },
+                  "freq": {
+                    "type": "string",
+                    "description": "``d``（默认，11 字段）/ ``w``（8 字段）/ ``m``（8 字段）；"
+                  },
+                  "fields": {
+                    "type": "object",
+                    "description": "列投影（字段名/``sas`` 列表，如 ``[\"date\", \"close\"]``）"
+                  }
+                },
+                "required": [
+                  "fut_code"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "DF · 历史K线（date 升序；日频 11 字段/周月 8 字段，价=元、量=手、额=万元；date 为周期起点口径：月=当月 1 日、周=ISO 周一、日=当日）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/futures/mapping": {
       "post": {
         "operationId": "futures_mapping",

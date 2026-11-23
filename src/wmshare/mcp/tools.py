@@ -1150,15 +1150,17 @@ def futures(
     field: str = "close",
     freq: str | None = None,
     native: bool = False,
+    n: int | None = None,
     begin: str | None = None,
     end: str | None = None,
     output: str = "sample",
     max_rows: int = MAX_ROWS,
 ) -> dict[str, Any]:
-    """期货主力：合约字段取值、主力连续映射、合约快照（74 商品+8 金融）。
+    """期货主力：合约字段取值、主力连续映射、合约快照、历史K线（74 商品+8 金融）。
 
     code 是合约代码（如 RB2605.SHF）或主力连续；field 取 close/open/…；
     freq=d/w/m。mapping 冷查实测 ≈21.4 万 EC、热查 ≈141 EC——先 cost 预估。
+    bars 按「点×码」线性计费（暖态 ≈8-11 EC/点·码），长区间建议 freq='m'。
     """
     if action not in FUTURES_ACTIONS:
         raise ValueError(f"action 只支持 {'/'.join(FUTURES_ACTIONS)}")
@@ -1172,6 +1174,14 @@ def futures(
         begin, end = _required_date_pair(begin, end)
         data = cli.futures.mapping(_symbol(action, symbol, allow_empty=False),
                                    begin=str(begin or ""), end=str(end or ""))
+    elif action == "bars":
+        if n is None and not (begin and end):
+            raise ValueError("bars 需要 n（最近 n 个周期）或 begin+end 成对区间")
+        data = cli.futures.bars(_symbol(action, code, allow_empty=False),
+                                n=n,
+                                begin=str(begin) if begin else None,
+                                end=str(end) if end else None,
+                                freq=str(freq) if freq else None)
     else:
         data = cli.futures.snapshot(_symbol(action, code, allow_empty=False),
                                     freq=str(freq or "d"))

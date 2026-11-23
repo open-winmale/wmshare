@@ -2,7 +2,7 @@
 
 本指南是 **how-to + 解释层**：会做什么 → 怎么做好。其他层各有其位——
 教程看 [README](../README.md) 与 [examples/](../examples/README.md)（可运行课程），
-接口参考看 [API.md](API.md)（按资产类别分章的 156 个核心接口，生成物），
+接口参考看 [API.md](API.md)（按资产类别分章的 157 个核心接口，生成物），
 AI 用法看 [AI.md](AI.md)。
 
 > 代码块里的输出注释都是**真实运行结果**（2026-10-29，cn 市场，免费档凭证），
@@ -43,7 +43,7 @@ export WMSHARE_CLIENT_ID=<AppId> WMSHARE_CLIENT_SECRET=<API Key>
 
 ### 2.1 双层 API：门面 + 目录
 
-- **门面层** `cli.<命名空间>.<方法>()`：27 个命名空间、156 个核心接口，方法名动宾化可猜
+- **门面层** `cli.<命名空间>.<方法>()`：27 个命名空间、157 个核心接口，方法名动宾化可猜
   （`kline.bars`、`dividend.yield_ttm`、`screener.screen_limit_up`）。
 - **目录层** `cli.call("<域>.<函数名>", ...)`：331 个底层函数按目录合同直调，
   参数名以 `cat.function(name)["params"]` 为准。门面未包装的函数经属性直达
@@ -491,8 +491,20 @@ cli.macro.bond_curve("中债国债收益率曲线", "10年")   # 0.0168 = 1.68%�
 cli.macro.nev_monthly("零跑", "sales")               # 行业情报单值（名单精确匹配，掉榜 None）
 ```
 
-期货走指标码层（主力连续，日/周/月三族；`symbol` 传任意 A 股代码绑定期间上下文，
-合约键经 `fut_symbol` 指定——国内 `cn.SR.ZCE`（后缀非 .CZCE）/`cn.RB.SHF`，外盘 `global.CL`）：
+期货走 `cli.futures` 门面（主力连续，**须 cn 客户端**；合约键 `RB.SHF`/`global.CL`，
+单位为期货原生口径：价格=元、量=手、金额=万元）：
+
+```python
+cli.futures.snapshot("RB.SHF")                       # 日频 11 字段快照 {字段: 值}
+cli.futures.get("AL.SHF", "settle", freq="m")        # 单字段单值（外盘换 global. 前缀）
+cli.futures.bars("AL.SHF", n=6, freq="m")            # 历史K线 DataFrame（date 升序）；
+                                                     # begin/end 与 n 二选一；长区间用
+                                                     # m 频（点数省 20 倍，d 硬顶 3000）
+cli.cost_estimate("futures.bars", n=120)             # 先估成本（点×码线性计费）
+```
+
+底层指标码层等价形态（`symbol` 传任意 A 股代码绑定期间上下文，合约键经 `fut_symbol`
+指定——国内 `cn.SR.ZCE`（后缀非 .CZCE）/`cn.RB.SHF`，外盘 `global.CL`）：
 
 ```python
 cli.indicator.get("600519", "$FUT_CLOSE")                           # 缺省 cn.SR.ZCE

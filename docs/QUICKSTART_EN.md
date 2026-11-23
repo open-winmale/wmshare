@@ -107,7 +107,7 @@ by default (`Client(max_limit=...)` to adjust).
 The in-depth documentation is in Chinese:
 [GUIDE.md](GUIDE.md) (task recipes, batching, troubleshooting) ·
 [INDICATORS.md](INDICATORS.md) (indicator catalog) ·
-[API.md](API.md) (156 core endpoints) ·
+[API.md](API.md) (157 core endpoints) ·
 [examples/](../examples/README.md) (21 runnable numbered examples: 4 fully offline,
 15 with an offline `--demo` mode, 1 requiring credentials, 1 anonymous trial) ·
 [AGENTS.md](../AGENTS.md) and

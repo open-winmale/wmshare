@@ -340,6 +340,19 @@ def test_futures_mapping(cli):
     assert len(win) <= len(rows), "窗口行数不超过全历史"
 
 
+def test_futures_bars(cli):
+    """期货主力连续历史K线：AL.SHF 月频近 6 期（date 升序、字段齐、周期起点口径）"""
+    df = _call_or_xfail(lambda: cli.futures.bars("AL.SHF", n=6, freq="m"))
+    assert len(df) == 6
+    assert list(df["date"]) == sorted(df["date"]), "bars 应为 date 升序"
+    assert {"date", "open", "high", "low", "close", "settle",
+            "volume", "open_interest", "has_kline"} <= set(df.columns)
+    assert all(str(d).endswith("-01") for d in df["date"]), "月频 date=当月 1 日"
+    win = _call_or_xfail(
+        lambda: cli.futures.bars("AL.SHF", begin="2026-11-01", end="2026-11-20"))
+    assert len(win) >= 1 and list(win["date"]) == sorted(win["date"])
+
+
 def test_notice_read_text(cli):
     """公告正文读取：取一条有 PDF 的公告，预览路径应返回纯读 MAP。
 

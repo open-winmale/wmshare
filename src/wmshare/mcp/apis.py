@@ -23,6 +23,7 @@ _HAND_EXAMPLES: dict[str, str] = {
     "pdf_doc.find_by_key": 'cli.pdf_doc.find_by_key("<search() 行 file_key 字段>")',
     "toplist.by_date": 'cli.toplist.by_date("2026-11-18", limit=10)',
     "toplist.by_symbol": 'cli.toplist.by_symbol("000530", limit=10)',
+    "futures.bars": 'cli.futures.bars("AL.SHF", n=12, freq="m")',
     "valuation.daily_basic_multi":
         'cli.valuation.daily_basic_multi(["600519", "000001"], fields=["pe_ttm"])',
     "valuation.daily_basic_coverage": 'cli.valuation.daily_basic_coverage("600519")',

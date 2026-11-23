@@ -15,7 +15,8 @@ notes:
   - 主力连续码形如 "RB.SHF"（品种.交易所）；82 品种（74 商品 + 8 金融）见
     cli.futures.snapshot 的品种寻址
   - 映射行不可变（换月历史固定），fmt_maps 结果按行指纹缓存（36a5de20 范式）
-  - 无全合约标准日线表（仅主力连续）——合约级 K 线不在覆盖面
+  - 主力连续历史K线走 `cli.futures.bars`（组合面，eval `RANGE(cursor.*, ITER($FUT_*))`
+    点读，2026-11-23 起）；单合约级 K 线仍不在覆盖面（上游仅主力连续）
   - 成本：全历史一次取数冷 ≈21 万 EC（4287 行 CONOF 逐行计费，2026-11-19 实测），
     建议 `mapping("RB.SHF", begin, end)` 传窗口按需取；复跑走指纹缓存 ≈141 EC
 functions:
