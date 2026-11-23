@@ -9,6 +9,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > MAJOR；弃用至少保留 1 个 MINOR，并在 `Deprecated` 段登记替代写法与移除版本。
 > 升级前请扫一眼 Removed / Changed / Deprecated 段。
 
+## [3.2.0] - 2026-11-23
+
+### Added
+
+- **板块资金流域 `market.board`**：`cli.board.moneyflow(src, trade_date, limit)` /
+  `moneyflow_last(src, limit)`——三张日频全市场榜单（ths 概念 386 行/日、ths 行业
+  90 行/日、dc 概念+行业 1,081 行/日）。额=元（ths 原值亿元已换算）、率=小数、
+  板块指数=点位；三源板块代码/名称不互通、不做跨源映射；缺失字段为空（不补 0）。
+- **每日涨跌停价**：`cli.stocks.limit_price(symbol)` / `limit_prices()`——规则价
+  =前收盘×(1±带宽) 四舍五入到分，带宽按代码号段（30x/68x=20%、北交所=30%、
+  其余=10%，ST 按板块带宽）；`rule=unbounded/delisting/no_price` 时价格为空
+  （新股无涨跌幅日/退市整理期，不猜）。当日快照——历史序列需历史 ST 状态，
+  随后续版本提供。
+- **股东户数历史**：`cli.equity.query_holdernum_history(symbol, limit=40)`——单票
+  多期户数（实测 600519 108 期、2001-12 起），date 升序，比例与 `query_holdernum`
+  同为小数；单票上限 300 期。
+- **美国宏观序列域 `market.us_macro`**（原计划 3.1，随本版发出）：
+  `cli.us_macro.topics/search/series_meta/points`，精选 88 条 × 11 主题；单位随
+  序列而变（读 `series_meta().units`）、空值跳过不补 0、需授权序列
+  `has_data=False` 永不抓取。
+- `cli.equity.query_holdernum` 输出补 `holder_total_num`（户数本身）。
+- MCP：`wmshare_corporate` 增 `query_holdernum_history`；`wmshare_market` 增
+  `stocks.limit_price/limit_prices` 与 `board.moneyflow/moneyflow_last`（新增
+  `src`/`date` 参数）。
+
+### Fixed
+
+- **MCP 输出形态**：DataFrame 在 MCP 边界统一转结构化行数组（NaN/NaT→null，可直接
+  `json.dumps`），修复此前返回 pandas 截断文本预览（列被折、行被省略）；时间序列
+  超 `max_rows` 保留**最新**一段，排名类列表保留头部。
+- MCP `_limit_tree` 把 `symbol` 误并入 `blocks`（`wmshare_company` 每次多报 1 行）
+  ——symbol 及后续顶层键留在顶层。
+- MCP 推荐工具路由：futures → `wmshare_futures`、calendar → `wmshare_call`，修复
+  「按推荐调用必报 domain 只支持…」；并加不变量测试锁死。
+- `docs/GUIDE.md` 函数计数漂移（328 → 目录真值）。
+
+### Changed
+
+- 目录规模：28 域 / 352 函数 / 173 核心接口 + 18 组合接口 / 29 MCP 工具；守护
+  覆盖率下限 22.60% → 23.57%。
+- 3.0.1 发布说明漏记的外汇/储备七接口补记：`cli.fx.rate/history/bars/list`（每 1
+  单位外币折人民币；中间价与中行牌价分列）与 `cli.macro.reserves/reserves_history/
+  reserves_asof`（月频外汇+黄金，值=美元数值；SDR 上游无生产者如实标注）。
+
 ## [3.0.1] - 2026-11-23
 
 ### Fixed
