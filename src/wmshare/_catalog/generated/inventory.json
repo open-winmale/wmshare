@@ -1,6 +1,6 @@
 {
  "schema_version": 2,
- "upstream_rev": "86e68303",
+ "upstream_rev": "e56f7fcf",
  "domains": {
   "bonus": {
    "entry": "sys/bonus/init.xs",
@@ -137,7 +137,7 @@
   "toplist",
   "valuation"
  ],
- "function_count": 340,
+ "function_count": 341,
  "functions": [
   {
    "name": "bonus.dps_rpt",
@@ -4548,6 +4548,111 @@
     },
     {
      "name": "end",
+     "type": "string"
+    }
+   ]
+  },
+  {
+   "name": "futures.query_bars",
+   "cn": "期货主力连续 K 线",
+   "example": "futures.query_bars(\"RB.SHF\", \"\", \"\", 250, \"D\")",
+   "returns": "ARR · bars",
+   "returns_shape": {
+    "kind": "array",
+    "cn": "期货 K 线序列",
+    "items": {
+     "kind": "object",
+     "cn": "期货 bar",
+     "fields": [
+      {
+       "name": "date",
+       "type": "string",
+       "cn": "交易日"
+      },
+      {
+       "name": "symbol",
+       "type": "string",
+       "cn": "主力连续码（品种.交易所）"
+      },
+      {
+       "name": "open",
+       "type": "float64",
+       "cn": "开"
+      },
+      {
+       "name": "high",
+       "type": "float64",
+       "cn": "高"
+      },
+      {
+       "name": "low",
+       "type": "float64",
+       "cn": "低"
+      },
+      {
+       "name": "close",
+       "type": "float64",
+       "cn": "收"
+      },
+      {
+       "name": "settle",
+       "type": "float64",
+       "cn": "结算价"
+      },
+      {
+       "name": "pre_settle",
+       "type": "float64",
+       "cn": "前结算价"
+      },
+      {
+       "name": "volume",
+       "type": "float64",
+       "cn": "成交量（手）"
+      },
+      {
+       "name": "amount",
+       "type": "float64",
+       "cn": "成交额（元，上游万元×1e4）"
+      },
+      {
+       "name": "oi",
+       "type": "float64",
+       "cn": "持仓量（手）"
+      },
+      {
+       "name": "oi_chg",
+       "type": "float64",
+       "cn": "持仓变化（手）"
+      },
+      {
+       "name": "percent",
+       "type": "float64",
+       "cn": "涨跌幅（小数，对前结算）"
+      }
+     ],
+     "name": ""
+    }
+   },
+   "min_args": 1,
+   "params": [
+    {
+     "name": "sym",
+     "type": "string"
+    },
+    {
+     "name": "begin",
+     "type": "string"
+    },
+    {
+     "name": "end",
+     "type": "string"
+    },
+    {
+     "name": "limit",
+     "type": "int"
+    },
+    {
+     "name": "period",
      "type": "string"
     }
    ]

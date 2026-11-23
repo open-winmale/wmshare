@@ -411,6 +411,18 @@ def estimate_cost(name: str, params: dict[str, Any] | None = None, *,
                    note=f"按点数×码数线性（暖态 ≈8-11 EC/点·码，日频 11 码、周/月 8 码）："
                         f"{points} 点 ≈{points * 60}~{points * 130} EC；冷首查上浮——"
                         "长区间建议 freq='m'（点数省 20 倍）")
+    elif name == "futures.query_bars":
+        # 实测（2026-11-23 live，RB.SHF）：10 行冷 867、250 行冷 31,691 EC
+        # → 线性 ≈128 EC/行（CONOF 逐行计费）；同日复跑命中数据版本键缓存 ≈135 EC。
+        # 周期上限：日 5500 / 周 1200 / 月 360（缺省取满，超上限会被截到上限）。
+        _period = str(p.get("period") or "D").strip().upper()[:1]
+        _cap = {"W": 1200, "M": 360}.get(_period, 5500)
+        n = rows if (rows and rows > 0) else _cap
+        out.update(ec_lo=max(300, int(n * 128) - 450), ec_hi=int(n * 128) + 450,
+                   model="measured",
+                   note=f"按行数线性 ≈128 EC/行 × {n} 行（10 行冷 867、250 行冷 31,691 "
+                        "实测）；同日复跑走数据版本键缓存 ≈135 EC——全历史长窗冷态"
+                        "上万元 EC，按需传 limit 或 begin/end")
     elif name.startswith("pdf_doc."):
         # 实测（2026-11-19 live）：search 5 行 ≈836 EC（含 fmt_one 组装，
         # 无结果缓存，复跑同价）；find_by_key/status/read_* 单行点查数百 EC。

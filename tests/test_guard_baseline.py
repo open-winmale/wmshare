@@ -20,12 +20,11 @@ AUDIT_REPORT = REPO / ".internal" / "UNIT_AUDIT.md"
 # 实测（2026-11-18 收紧）：5 个有函数但 guarded=0 的域；fund.indicators 为 0 函数域，不计。
 # 此前基线含 disc.bonus/market.margin/market.moneyflow——三者已补 ranges，从基线移除，
 # 回退为零守护即红（2026-11-18 数据质量收紧）。
+# market.futures：query_bars 补 ranges/checks（2026-11-23），按预告从基线移除——
+# mapping 行仍是字符串字段无数值语义，但域已不再零守护。
 ZERO_GUARD_BASELINE = {
     "disc.filings", "disc.notice", "disc.workout",
     "market.macro", "market.stocks",
-    # market.futures：mapping 行（date/symbol/mapping_symbol）全为字符串字段，
-    # 无数值 ranges 语义（批次3 2026-11-19）——加数值面时从基线移除
-    "market.futures",
 }
 DRIFT_WARN_BASELINE = 0
 
@@ -41,7 +40,7 @@ def _load(path: Path, name: str):
 def test_guard_coverage_cannot_regress():
     mod = _load(GUARD_TOOL, "guard_coverage_baseline")
     result = mod.collect(mod.DEFAULT_DOMAINS)
-    assert result["functions"] == 331
+    assert result["functions"] == 332
     assert result["guarded"] >= 65
     # 分子 65 = 63（批次1）+ toplist by_date/by_symbol（金额 ranges，批次3）。
     # 分母 316 的稀释项均为无数值守护语义的检索/工具函数（批次1 9 条 + mapping/

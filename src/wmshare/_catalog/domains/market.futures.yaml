@@ -1,12 +1,13 @@
 id: market.futures
-version: 1.0.0
+version: 1.1.0
 cn: 期货
 kind: raw
 category: market
 priority: P1
 description: 国内期货辅助读面。主力连续行情经 `$FUT_*` 指标码 + `fut_symbol`
   （cli.futures.get / snapshot，2.0 起）；本域目录函数提供**换月映射**——
-  主力连续码 → 当日实际合约（换月追踪，随日线日更）。
+  主力连续码 → 当日实际合约（换月追踪，随日线日更）——以及**主力连续
+  历史 K 线 store 直读**（全历史一次取，含结算/持仓字段）。
 data_origin: [外部行情源]
 units:
   date: YYYY-MM-DD
@@ -15,8 +16,9 @@ notes:
   - 主力连续码形如 "RB.SHF"（品种.交易所）；82 品种（74 商品 + 8 金融）见
     cli.futures.snapshot 的品种寻址
   - 映射行不可变（换月历史固定），fmt_maps 结果按行指纹缓存（36a5de20 范式）
-  - 主力连续历史K线走 `cli.futures.bars`（组合面，eval `RANGE(cursor.*, ITER($FUT_*))`
-    点读，2026-11-23 起）；单合约级 K 线仍不在覆盖面（上游仅主力连续）
+  - 主力连续历史 K 线两个门面：`cli.futures.bars`（组合面点读，2026-11-23 起）与
+    `futures.query_bars`（store 直读，分工见函数级 notes）；单合约级 K 线仍不在
+    覆盖面（上游仅主力连续）
   - 成本：全历史一次取数冷 ≈21 万 EC（4287 行 CONOF 逐行计费，2026-11-19 实测），
     建议 `mapping("RB.SHF", begin, end)` 传窗口按需取；复跑走指纹缓存 ≈141 EC
 functions:
@@ -42,5 +44,32 @@ functions:
             - {name: mapping_symbol, type: string, cn: 当日实际合约}
     example: 'futures.mapping("RB.SHF", "2026-11-01", "2026-11-18")'
     normalize_with: futures.fmt_maps
+  - name: futures.query_bars
+    cn: 主力连续历史 K 线（store 直读）
+    kind: raw
+    layer: L0
+    params:
+      - {name: sym, type: string, required: true, desc: 主力连续码（品种.交易所，如 RB.SHF；自动补 cn. 前缀；郑商所后缀 .ZCE）}
+      - {name: begin, type: string, required: false, desc: 开始日期 YYYY-MM-DD（可空=全历史）}
+      - {name: end, type: string, required: false, desc: 结束日期 YYYY-MM-DD（可空）}
+      - {name: limit, type: int, required: false, desc: 根数，缺省取满（日 5500/周 1200/月 360）}
+      - {name: period, type: string, required: false, default: D, desc: 周期 D/W/M（也收 day/week/month）}
+    returns:
+      desc: ARR · bars（date 升序；date/symbol/open/high/low/close/settle/pre_settle/volume/amount/oi/oi_chg/percent）
+      shape_ref: inventory
+    example: 'futures.query_bars("RB.SHF", "", "", 250, "D")'
+    ranges:
+      percent: [-1, 1]
+      volume: [0, 1.0e+8]
+      oi: [0, 1.0e+8]
+      oi_chg: [-1.0e+8, 1.0e+8]
+      amount: [0, 1.0e+13]
+    checks: [date_iso]
+    notes:
+      - 与 cli.futures.bars 分工：门面=点读组合面（短窗便捷）；本函数=store 直读
+        （全历史长窗一次取、含结算/持仓变化字段）
+      - 郑商所后缀 .ZCE（store 键系），与门面 czce 系口径不同；量/持仓=手、额=元、
+        percent=小数（对前结算）——期货原生单位，不做 SDK 单位换算
+      - 数据版本键缓存（最新日 K 日期入键）：同日复跑近零成本，跨日自动取到新 bar
   # ---- L1：格式化 ----
   - {name: futures.fmt_maps, cn: 映射行规范化, kind: raw, layer: L1, internal: true}

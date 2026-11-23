@@ -69,15 +69,15 @@
 
 | # | 数据项 | 定性 | 链路 | 状态 |
 |---|---|---|---|---|
-| 1 | 期货日线/周月线历史序列 | 补暴露面 | **已上线**（`cli.futures.bars`，2.9.0；上游另有 `futures.query_bars` store 读面——低成本长窗+结算/持仓字段，暴露待排） |
-| 2 | 官方储备（外汇储备/黄金储备/SDR） | 新数据（先核 FRED/OWID 复用） | airflow → script → wmshare | 待启动 |
-| 3 | 外汇（人民币中间价/日线/基础信息） | 新数据 | airflow → script → wmshare | 待启动 |
-| 4 | FRED 美宏观序列暴露 | 纯暴露层（`skhub.fred_build` 已有） | wmshare | 待启动 |
-| 5 | 股东人数历史序列（现仅最新值） | 补历史读面 | script → wmshare | 先核底层留史 |
-| 6 | 每日涨跌停价格 | 派生评估（交易所规则 vs 落字段） | 评估后定 | 待评估 |
-| 7 | 概念板块（分类/成份/每日行情） | 新数据 | airflow → script → wmshare | 待启动 |
-| 8 | 大宗交易 | 新数据 | airflow → script → wmshare | 待启动 |
-| 9 | ST/停复牌变动历史（现仅时点旗标） | 新数据 | airflow → script → wmshare | 待启动 |
+| 1 | 期货日线/周月线历史序列 | 补暴露面 | wmshare 目录 | **已上线**（`cli.futures.bars` 门面 2.9.0 + `futures.query_bars` store 直读进目录，2026-11-23——全历史长窗/结算·持仓字段/同日复跑缓存，分工见 API.md 期货节） |
+| 2 | 官方储备（外汇储备/黄金储备/SDR） | 中国总量链路已通（`$CURRENCY_RESERVE_*`+v2macro fxreserve）；缺口=国别/SDR/实物盎司，第一步核 `common/fred_catalog`（IMF 国别储备系列或可直接 ingest；OWID 仅年频跨国） | airflow → script → wmshare | 待启动 |
+| 3 | 外汇（人民币中间价/日线/基础信息） | **采集零新增**：中行牌价+SAFE/PBOC 中间价日更在库，`$CR_*` 全家族已在指标目录 | 仅缺 wmshare 域层 | 待启动 |
+| 4 | FRED 美宏观序列暴露 | 纯暴露层确认（fred_build+4 DAG+sys/fred 全在，wmshare 侧零暴露） | wmshare（域 yaml+fred.search 读面） | 待启动 |
+| 5 | 股东人数历史序列（现仅最新值） | **底层按季留史已核实**（mongo symbol×季度多 doc 追加，HIST_PCT 序列可读） | script 历史读面 → wmshare 条目 | 待启动 |
+| 6 | 每日涨跌停价格 | 派生评估（交易所规则 vs 落字段）：现 `$LIMIT_UP` 仅 ±10% 近似旗标；原料 $LISTING_BOARD/$IS_ST/$CLOSE_DAY 全在，纯计算无新采集 | script 派生 → wmshare 暴露 | 待评估 |
+| 7 | 概念板块（分类/成份/每日行情） | 三条板块日频资金流已落库零读面（概念×2 + 行业×1 板块口径）可先小步暴露；目录/成份/行情需新 collector（第二步） | 小步暴露 → airflow 新采集 → wmshare 域 | 待启动 |
+| 8 | 大宗交易 | 全链路空；龙虎榜四层范式可整套照抄（上游同为按交易日全市场接口 block_trade） | airflow → script → wmshare | 待启动 |
+| 9 | ST/停复牌变动历史（现仅时点旗标） | 6 停牌码+3 ST 码全时点态、collector 每日覆盖不留史；缺 namechange 采集（简称序列可推 ST 进出）+append 式停复牌史+stocks.lifecycle 读面 | airflow → script → wmshare | 待启动 |
 
 长线另立项（不入常规批次）：期权（合约/行情）、历史分钟线（平台级大工程）。
 不做清单：LOF/场外/货基、游资名录/热榜/竞价明细、第三方源资金流变体、中信行业、

@@ -748,6 +748,28 @@ class FuturesNS(_Ns):
             kw["end"] = end
         return _out(self._client.call("futures.mapping", **kw, _raw=_raw), _raw)
 
+    def query_bars(self, sym: str, begin: str | None = None, end: str | None = None, limit: int | None = None, period: str = 'D', _raw: bool = False) -> Any:
+        """主力连续历史 K 线（store 直读）
+
+:param sym: 主力连续码（品种.交易所，如 RB.SHF；自动补 cn. 前缀；郑商所后缀 .ZCE）
+:param begin: 开始日期 YYYY-MM-DD（可空=全历史）
+:param end: 结束日期 YYYY-MM-DD（可空）
+:param limit: 根数，缺省取满（日 5500/周 1200/月 360）
+:param period: 周期 D/W/M（也收 day/week/month）
+
+:returns: ARR · bars（date 升序；date/symbol/open/high/low/close/settle/pre_settle/volume/amount/oi/oi_chg/percent）
+        """
+        kw: dict[str, Any] = {"sym": sym}
+        if begin is not None:
+            kw["begin"] = begin
+        if end is not None:
+            kw["end"] = end
+        if limit is not None:
+            kw["limit"] = limit
+        if period is not None:
+            kw["period"] = period
+        return _out(self._client.call("futures.query_bars", **kw, _raw=_raw), _raw)
+
 class IncomeNS(_Ns):
     """收息（disc.income）"""
 

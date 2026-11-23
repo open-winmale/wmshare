@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "generated_by": "tools/gen_api_docs.py",
-  "count": 264,
+  "count": 265,
   "domains": [
     {
       "id": "corp.equity",
@@ -4219,6 +4219,138 @@
           "ranges": {},
           "checks": [],
           "fields": []
+        },
+        {
+          "name": "futures.query_bars",
+          "cn": "主力连续历史 K 线（store 直读）",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "percent": [
+              -1,
+              1
+            ],
+            "volume": [
+              0,
+              100000000.0
+            ],
+            "oi": [
+              0,
+              100000000.0
+            ],
+            "oi_chg": [
+              -100000000.0,
+              100000000.0
+            ],
+            "amount": [
+              0,
+              10000000000000.0
+            ]
+          },
+          "checks": [
+            "date_iso"
+          ],
+          "fields": [
+            {
+              "name": "date",
+              "type": "string",
+              "optional": false,
+              "desc": "交易日"
+            },
+            {
+              "name": "symbol",
+              "type": "string",
+              "optional": false,
+              "desc": "主力连续码（品种.交易所）"
+            },
+            {
+              "name": "open",
+              "type": "float64",
+              "optional": false,
+              "desc": "开"
+            },
+            {
+              "name": "high",
+              "type": "float64",
+              "optional": false,
+              "desc": "高"
+            },
+            {
+              "name": "low",
+              "type": "float64",
+              "optional": false,
+              "desc": "低"
+            },
+            {
+              "name": "close",
+              "type": "float64",
+              "optional": false,
+              "desc": "收"
+            },
+            {
+              "name": "settle",
+              "type": "float64",
+              "optional": false,
+              "desc": "结算价"
+            },
+            {
+              "name": "pre_settle",
+              "type": "float64",
+              "optional": false,
+              "desc": "前结算价"
+            },
+            {
+              "name": "volume",
+              "type": "float64",
+              "optional": false,
+              "desc": "成交量（手）",
+              "range": [
+                0,
+                100000000.0
+              ]
+            },
+            {
+              "name": "amount",
+              "type": "float64",
+              "optional": false,
+              "desc": "成交额（元，上游万元×1e4）",
+              "range": [
+                0,
+                10000000000000.0
+              ]
+            },
+            {
+              "name": "oi",
+              "type": "float64",
+              "optional": false,
+              "desc": "持仓量（手）",
+              "range": [
+                0,
+                100000000.0
+              ]
+            },
+            {
+              "name": "oi_chg",
+              "type": "float64",
+              "optional": false,
+              "desc": "持仓变化（手）",
+              "range": [
+                -100000000.0,
+                100000000.0
+              ]
+            },
+            {
+              "name": "percent",
+              "type": "float64",
+              "optional": false,
+              "desc": "涨跌幅（小数，对前结算）",
+              "range": [
+                -1,
+                1
+              ]
+            }
+          ]
         }
       ]
     },
