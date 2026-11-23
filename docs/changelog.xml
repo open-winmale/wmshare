@@ -8,6 +8,21 @@
     <lastBuildDate>Mon, 23 Nov 2026 00:00:00 +0800</lastBuildDate>
     <atom:link href="https://github.com/open-winmale/wmshare/raw/main/docs/changelog.xml" rel="self" type="application/rss+xml"/>
     <item>
+      <title>wmshare 3.0.1 (2026-11-23)</title>
+      <link>https://github.com/open-winmale/wmshare/releases/tag/v3.0.1</link>
+      <guid isPermaLink="false">wmshare:3.0.1</guid>
+      <pubDate>Mon, 23 Nov 2026 00:00:00 +0800</pubDate>
+      <description>Changed
+- `cli.futures.snapshot` 输出新增 `date` 键（周期起点口径，便于核对新鲜度）。
+- 周/月线为上游周期 bar（成交量为周期合计），SDK 不做二次聚合；外盘仅日线。
+- `_raw=True` 保持 2.9 的 `{sas, vals}` 形态（`sas` 周期戳、`vals` 按 `$码` 顺序、新→旧），行只含交易日。
+
+Fixed
+- **`cli.futures` 读面改 store 直读**（`futures.query_bars`）：修复 `get`/`snapshot` 的「最新值」被锚到 A 股锚点报告期末（实测停在 2026-09-30）的问题；日频只含 交易日（不再有周末/未更新占位行），`n` 为根数，`begin/end` 含端点。
+- 修复外盘合约键归一化：`global.CL` 曾被切成 `gloBAL.CL` 导致全部外盘不可寻址。
+- `estimate_cost(&quot;futures.bars&quot;)` 按 store 行数重标（冷 ≈190+126 EC/行、同日复跑 版本键缓存 ≈135 EC），区间按跨度估算而非固定 120。</description>
+    </item>
+    <item>
       <title>wmshare 3.0.0 (2026-11-23)</title>
       <link>https://github.com/open-winmale/wmshare/releases/tag/v3.0.0</link>
       <guid isPermaLink="false">wmshare:3.0.0</guid>
@@ -286,14 +301,6 @@ Changed
 
 Changed
 - `kline.snapshot` 加按「标的+自然日」缓存：首个新标的仍约 10,250 EC（均线需 回看 K 线序列），重复调用降到约 26 EC。notes 补成本模型与 `snapshot_batch` 指引。</description>
-    </item>
-    <item>
-      <title>wmshare 1.21.2 (2026-11-16)</title>
-      <link>https://github.com/open-winmale/wmshare/releases/tag/v1.21.2</link>
-      <guid isPermaLink="false">wmshare:1.21.2</guid>
-      <pubDate>Mon, 16 Nov 2026 00:00:00 +0800</pubDate>
-      <description>Fixed
-- **清除随 1.21.0/1.21.1 发布到公开文档的数据商名称**：`statements` 门面类 docstring 中的第三方数据商来源点名已改为中性口径表述；`docs/API.md` 与 `llms-full.txt` 由生成器同步。此前该词经语句传播进入生成物，触发内容规范门禁失败。</description>
     </item>
   </channel>
 </rss>

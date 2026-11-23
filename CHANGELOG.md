@@ -9,6 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > MAJOR；弃用至少保留 1 个 MINOR，并在 `Deprecated` 段登记替代写法与移除版本。
 > 升级前请扫一眼 Removed / Changed / Deprecated 段。
 
+## [3.0.1] - 2026-11-23
+
+### Fixed
+
+- **`cli.futures` 读面改 store 直读**（`futures.query_bars`）：修复 `get`/`snapshot`
+  的「最新值」被锚到 A 股锚点报告期末（实测停在 2026-09-30）的问题；日频只含
+  交易日（不再有周末/未更新占位行），`n` 为根数，`begin/end` 含端点。
+- 修复外盘合约键归一化：`global.CL` 曾被切成 `gloBAL.CL` 导致全部外盘不可寻址。
+- `estimate_cost("futures.bars")` 按 store 行数重标（冷 ≈190+126 EC/行、同日复跑
+  版本键缓存 ≈135 EC），区间按跨度估算而非固定 120。
+
+### Changed
+
+- `cli.futures.snapshot` 输出新增 `date` 键（周期起点口径，便于核对新鲜度）。
+- 周/月线为上游周期 bar（成交量为周期合计），SDK 不做二次聚合；外盘仅日线。
+- `_raw=True` 保持 2.9 的 `{sas, vals}` 形态（`sas` 周期戳、`vals` 按 `$码`
+  顺序、新→旧），行只含交易日。
+
 ## [3.0.0] - 2026-11-23
 
 ### Removed
