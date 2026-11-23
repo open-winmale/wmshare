@@ -10,7 +10,7 @@
     ``_raw=True`` 取上游原始行（list[dict]，跳过规范化与换算）——诊断逃生口；
   - 本层是目录合同的薄翻译：高频方法显式包装；目录内其余非内部函数经 ``__getattr__``
     属性直达（如 ``cli.kline.screen_above_ma20``）；目录标 ``internal: true`` 的
-    规范化辅助（fmt_* 等）不再直达，请走 ``cli.call``——358 个底层函数零遮蔽；
+    规范化辅助（fmt_* 等）不再直达，请走 ``cli.call``——361 个底层函数零遮蔽；
   - 选股能力集中在 ``cli.screener``：单票筛选器（bool）、全市场宽度/涨跌榜与
     全市场条件选股 ``query()``（服务端索引直出）显式包装，kline 目录的其余筛选
     函数经属性直达。
@@ -3575,6 +3575,31 @@ class BoardApi(_Api):
         """
         return _out(self._c.call("board.moneyflow_last", src=src, limit=limit))
 
+    def concepts_of(self, symbol: str) -> Any:
+        """单票概念标签（当前截面；未收录返回 None）。
+
+        :param symbol: 6 位裸码（也接受 .SH/.SZ/.BJ 后缀）
+        :returns: dict · symbol/name/tags（tags 为去 "s:" 前缀的概念名数组）
+        """
+        return self._c.call("board.concepts_of", sym=symbol)
+
+    def concept_members(self, name: str, limit: int = 100) -> Any:
+        """概念成份股（名称包含匹配，按代码升序）。
+
+        :param name: 概念名（如 "白酒"、"机器人"；包含匹配，无命中返回空）
+        :param limit: 返回前 N 只，默认 100
+        :returns: DataFrame/行表 · symbol/name/close/percent
+        """
+        return _out(self._c.call("board.concept_members", name=name, limit=limit))
+
+    def concept_list(self, limit: int = 100) -> Any:
+        """概念目录（概念名 + 成份数，按成份数降序）。
+
+        :param limit: 返回前 N 个概念，默认 100
+        :returns: DataFrame/行表 · concept/members
+        """
+        return _out(self._c.call("board.concept_list", limit=limit))
+
 
 class BlocktradeApi(_Api):
     """A 股大宗交易（日频全市场，成交额降序；额=元/量=股/价=元）。
@@ -4108,6 +4133,9 @@ FRIENDLY_INDEX: list[tuple[str, str, str, str, str]] = [
     ("market", "board", "moneyflow", "指定交易日板块资金流", "board.moneyflow"),
     ("market", "board", "moneyflow_last", "最新交易日板块资金流",
      "board.moneyflow_last"),
+    ("market", "board", "concepts_of", "单票概念标签", "board.concepts_of"),
+    ("market", "board", "concept_members", "概念成份股", "board.concept_members"),
+    ("market", "board", "concept_list", "概念目录", "board.concept_list"),
     ("market", "blocktrade", "by_date", "指定交易日大宗交易", "blocktrade.by_date"),
     ("market", "blocktrade", "by_symbol", "单票大宗交易历史",
      "blocktrade.by_symbol"),

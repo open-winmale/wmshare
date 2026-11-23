@@ -1,6 +1,6 @@
 {
  "schema_version": 2,
- "upstream_rev": "619325de",
+ "upstream_rev": "e3e9ca24",
  "domains": {
   "blocktrade": {
    "entry": "sys/blocktrade/init.xs",
@@ -160,7 +160,7 @@
   "toplist",
   "valuation"
  ],
- "function_count": 368,
+ "function_count": 371,
  "functions": [
   {
    "name": "blocktrade.by_date",
@@ -255,6 +255,52 @@
     {
      "name": "rows",
      "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "board.concept_list",
+   "cn": "概念目录",
+   "example": "board.concept_list(50)",
+   "returns": "ARR · 目录行(concept/members)",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": [
+    {
+     "name": "limit",
+     "type": "int"
+    }
+   ]
+  },
+  {
+   "name": "board.concept_members",
+   "cn": "概念成份股",
+   "example": "board.concept_members(\"白酒\", 10)",
+   "returns": "ARR · 成份行(symbol/name/close/percent)",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "name",
+     "type": "string"
+    },
+    {
+     "name": "limit",
+     "type": "int"
+    }
+   ]
+  },
+  {
+   "name": "board.concepts_of",
+   "cn": "单票概念标签",
+   "example": "board.concepts_of(\"600519\")",
+   "returns": "MAP · symbol/name/tags",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "sym",
+     "type": "string"
     }
    ]
   },

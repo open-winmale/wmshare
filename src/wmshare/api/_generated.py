@@ -90,6 +90,40 @@ class BoardNS(_Ns):
             kw["limit"] = limit
         return _out(self._client.call("board.moneyflow_last", **kw, _raw=_raw), _raw)
 
+    def concepts_of(self, sym: str, _raw: bool = False) -> Any:
+        """单票概念标签
+
+:param sym: 6 位裸码或带 .SH/.SZ/.BJ 后缀
+
+:returns: MAP · symbol/name/tags（未收录返回 nil）
+        """
+        return _out(self._client.call("board.concepts_of", sym=sym, _raw=_raw), _raw)
+
+    def concept_members(self, name: str, limit: int = 100, _raw: bool = False) -> Any:
+        """概念成份股
+
+:param name: 概念名（名称包含匹配，如 白酒/机器人）
+:param limit: 返回前 N 只（按代码升序截断）
+
+:returns: ARR · 成份行（代码升序）
+        """
+        kw: dict[str, Any] = {"name": name}
+        if limit is not None:
+            kw["limit"] = limit
+        return _out(self._client.call("board.concept_members", **kw, _raw=_raw), _raw)
+
+    def concept_list(self, limit: int = 100, _raw: bool = False) -> Any:
+        """概念目录
+
+:param limit: 返回前 N 个概念（按成份数降序）
+
+:returns: ARR · 概念目录行（成份数降序）
+        """
+        kw: dict[str, Any] = {}
+        if limit is not None:
+            kw["limit"] = limit
+        return _out(self._client.call("board.concept_list", **kw, _raw=_raw), _raw)
+
 class BonusNS(_Ns):
     """分红（disc.bonus）"""
 

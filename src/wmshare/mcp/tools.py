@@ -787,6 +787,7 @@ def market(
     trig: float | None = None,
     src: str | None = None,
     date: str | None = None,
+    name: str | None = None,
     output: str = "sample",
     max_rows: int = MAX_ROWS,
 ) -> dict[str, Any]:
@@ -859,6 +860,14 @@ def market(
         data = cli.stocks.name_history(_symbol(action, symbol))
     elif domain == "stocks" and action == "lifecycle":
         data = cli.stocks.lifecycle(_symbol(action, symbol))
+    elif domain == "board" and action == "concepts_of":
+        data = cli.board.concepts_of(_symbol(action, symbol))
+    elif domain == "board" and action == "concept_members":
+        if not name:
+            raise ValueError("board.concept_members 需要 name（概念名，如 白酒）")
+        data = cli.board.concept_members(name, limit=n or 100)
+    elif domain == "board" and action == "concept_list":
+        data = cli.board.concept_list(limit=n or 100)
     elif domain == "board":
         board_src = src or "ths_concept"
         if board_src not in ("ths_concept", "ths_industry", "dc"):

@@ -53,6 +53,10 @@ METHOD_EXAMPLE_VALUES = {
     ("blocktrade", "by_symbol"): {"limit": "10"},
     # ST/停复牌史：停复牌可带区间；简称史/时间轴按票
     ("stocks", "suspend_history"): {"begin": '"2026-01-01"', "end": '"2026-11-23"'},
+    # 概念：concept_members 的概念名必须给真实值（占位会打红示例执行测试）
+    ("board", "concepts_of"): {},
+    ("board", "concept_members"): {"name": '"白酒"', "limit": "10"},
+    ("board", "concept_list"): {"limit": "20"},
     ("stocks", "name_history"): {},
     ("stocks", "lifecycle"): {},
     ("pdf_doc", "find_by_url"): {"url": '"<公告行 url 字段>"'},

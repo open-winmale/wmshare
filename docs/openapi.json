@@ -7498,6 +7498,201 @@
         }
       }
     },
+    "/board/concepts_of": {
+      "post": {
+        "operationId": "board_concepts_of",
+        "summary": "单票概念标签（当前截面；未收录返回 None）。",
+        "description": ":returns: dict · symbol/name/tags（tags 为去 \"s:\" 前缀的概念名数组）、底层目录函数 `board.concepts_of`。SDK 调用：`cli.board.concepts_of(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "市场行情"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "symbol": {
+                    "type": "string",
+                    "description": "6 位裸码（也接受 .SH/.SZ/.BJ 后缀）"
+                  }
+                },
+                "required": [
+                  "symbol"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "单票概念标签",
+                  "type": "object",
+                  "properties": {
+                    "symbol": {
+                      "type": "string",
+                      "description": "6 位代码"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "证券简称"
+                    },
+                    "tags": {
+                      "description": "概念名数组（去 s: 前缀）"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/board/concept_members": {
+      "post": {
+        "operationId": "board_concept_members",
+        "summary": "概念成份股（名称包含匹配，按代码升序）。",
+        "description": ":returns: DataFrame/行表 · symbol/name/close/percent、底层目录函数 `board.concept_members`。SDK 调用：`cli.board.concept_members(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "市场行情"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "概念名（如 \"白酒\"、\"机器人\"；包含匹配，无命中返回空）"
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "description": "返回前 N 只，默认 100"
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "概念成份行",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "symbol": {
+                        "type": "string",
+                        "description": "6 位代码"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "证券简称"
+                      },
+                      "close": {
+                        "type": "number",
+                        "description": "最新价（元）"
+                      },
+                      "percent": {
+                        "type": "number",
+                        "description": "当日涨跌幅（小数）"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "close": [
+              0,
+              10000.0
+            ],
+            "percent": [
+              -2,
+              2
+            ]
+          }
+        }
+      }
+    },
+    "/board/concept_list": {
+      "post": {
+        "operationId": "board_concept_list",
+        "summary": "概念目录（概念名 + 成份数，按成份数降序）。",
+        "description": ":returns: DataFrame/行表 · concept/members、底层目录函数 `board.concept_list`。SDK 调用：`cli.board.concept_list(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "市场行情"
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "limit": {
+                    "type": "integer",
+                    "description": "返回前 N 个概念，默认 100"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "概念目录行",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "concept": {
+                        "type": "string",
+                        "description": "概念名"
+                      },
+                      "members": {
+                        "type": "integer",
+                        "description": "成份股数"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "members": [
+              1,
+              10000.0
+            ]
+          }
+        }
+      }
+    },
     "/blocktrade/by_date": {
       "post": {
         "operationId": "blocktrade_by_date",

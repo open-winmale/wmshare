@@ -29,6 +29,9 @@ _HAND_EXAMPLES: dict[str, str] = {
     "stocks.suspend_history": 'cli.stocks.suspend_history("600519", "2026-01-01", "2026-11-23")',
     "stocks.name_history": 'cli.stocks.name_history("000001")',
     "stocks.lifecycle": 'cli.stocks.lifecycle("000001")',
+    "board.concepts_of": 'cli.board.concepts_of("600519")',
+    "board.concept_members": 'cli.board.concept_members("白酒", limit=10)',
+    "board.concept_list": 'cli.board.concept_list(limit=20)',
     "toplist.by_symbol": 'cli.toplist.by_symbol("000530", limit=10)',
     "futures.bars": 'cli.futures.bars("AL.SHF", n=12, freq="m")',
     "valuation.daily_basic_multi":

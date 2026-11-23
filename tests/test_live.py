@@ -985,6 +985,29 @@ def test_st_lifecycle_read_face(cli):
     assert "rename" in kinds, "000001 应有简称变更事件"
 
 
+def test_board_concept_tags(cli):
+    """概念标签：单票 tags 非空且去 s: 前缀；成份代码升序；目录成份数降序。"""
+    info = _call_or_xfail(lambda: cli.board.concepts_of("600519"))
+    if info is None:
+        pytest.skip("概念索引未物化（$CONCEPT_TAGS 为空）")
+    tags = info.get("tags") or []
+    assert tags, "600519 应有概念标签"
+    assert not any(str(t).startswith("s:") for t in tags), f"tags 应去前缀：{tags[:3]}"
+
+    members = _call_or_xfail(lambda: cli.board.concept_members("白酒", 50))
+    rows = members.to_dict("records") if hasattr(members, "to_dict") else list(members)
+    assert rows, "白酒概念应有成份股"
+    syms = [str(r["symbol"]) for r in rows]
+    assert syms == sorted(syms), f"成份应代码升序：{syms[:5]}"
+
+    cat = _call_or_xfail(lambda: cli.board.concept_list(100))
+    cat_rows = cat.to_dict("records") if hasattr(cat, "to_dict") else list(cat)
+    assert cat_rows, "概念目录不应为空"
+    counts = [int(r["members"]) for r in cat_rows]
+    assert counts == sorted(counts, reverse=True), "目录应成份数降序"
+    assert counts[0] > 1, "最大概念应有多个成份"
+
+
 def test_board_moneyflow_three_sources(cli):
     """板块资金流：三源同口径（额=元、率=小数），指定日与最新日逐行一致。"""
     for src, min_rows in (("ths_concept", 300), ("ths_industry", 80), ("dc", 900)):

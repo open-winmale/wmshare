@@ -423,6 +423,19 @@ def estimate_cost(name: str, params: dict[str, Any] | None = None, *,
             out.update(ec_lo=185, ec_hi=1_600, model="measured",
                        note="单票上榜历史：冷态 ≈1,600 EC（逐 doc 扫全市场行）、"
                             "复跑走数据版本键缓存 ≈185 EC；limit 越小冷态越省")
+    elif name == "board.concepts_of":
+        # 实测（2026-11-23 live）：索引单票点查 88 EC。
+        out.update(ec_lo=60, ec_hi=120, model="measured",
+                   note="索引单票点查 ≈90 EC（2026-11-23 实测）；未收录返回 None")
+    elif name == "board.concept_members":
+        # 实测（2026-11-23 live）：CONTAINS 过滤无法走索引，冷 81,148 → 热 ≈200 EC。
+        out.update(ec_lo=200, ec_hi=85_000, model="measured",
+                   note="索引全表扫描：冷 ≈8.1 万 EC、当日复跑走 memo ≈200 EC；"
+                        "limit 只影响返回行数不影响冷态成本")
+    elif name == "board.concept_list":
+        # 实测（2026-11-23 live）：全市场 tags 投影冷态 ≈15 万 EC（按 limit 截断前）。
+        out.update(ec_lo=200, ec_hi=160_000, model="measured",
+                   note="全市场标签投影 + 去重计数：冷 ≈15 万 EC、当日复跑走 memo ≈200 EC")
     elif name == "blocktrade.by_date":
         # 实测（2026-11-23 live，全量回补后 4,100 日 / 68 万行）：
         # 单日档点查 1,272~1,703 EC（按当日行数浮动，档内行数即读取量）。

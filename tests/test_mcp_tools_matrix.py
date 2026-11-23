@@ -144,7 +144,8 @@ def _market_cases():
     return [pytest.param(domain, action,
                          {"symbol": "600519", "key": "index.hs300", "trig": 110.0,
                           "n": 5, "points": 10, "sort_by": "weight", "top_n": 5,
-                          "src": "ths_concept", "date": "2026-11-20"},
+                          "src": "ths_concept", "date": "2026-11-20",
+                          "name": "白酒"},
                          id=f"{domain}.{action}")
             for domain, actions in MARKET_ACTIONS.items() for action in actions]
 

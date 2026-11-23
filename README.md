@@ -100,7 +100,7 @@ for r in res["data"]["rows"][:5]:
 
 ## 基本功能
 
-随包离线目录：**29 个数据域 · 358 个底层函数 · 2983 个指标代码**；友好层 **178 个核心接口**，
+随包离线目录：**29 个数据域 · 361 个底层函数 · 2983 个指标代码**；友好层 **181 个核心接口**，
 按使用视角组织为（11 个指标组、78 个精选常用指标代码，`cat.search("中文")` 可编程检索）：
 
 | 门面 | 核心能力 | 单位口径 |
@@ -144,7 +144,7 @@ for r in res["data"]["rows"][:5]:
 - **全市场批量**：`cli.batch_all(name, codes)` 把 A 股 5,375 家压成 **11 次请求**绕开限流。
 - **全市场筛选服务端直出**：`cli.screener.query("$ROE_TTM_LAST > 0.15")` 一条表达式扫全市场索引
   （`count`=真实命中数）；涨跌全景/分桶/行业分布/涨跌榜同走服务端预计算索引，毫秒级。
-- **离线目录防编造**：358 个底层函数、178 个核心接口、2,983 个指标码离线可查
+- **离线目录防编造**：361 个底层函数、181 个核心接口、2,983 个指标码离线可查
   （`cat.search("中文")`），目录之外的名字显式报错。
 - **免注册先试**：`Client.from_env()` 无凭证自动回落匿名试用（真实数据、免费额度；`WMSHARE_DISABLE_ANON=1` 可关闭）。
 - **数据守护**：全库统一单位（比率=小数、金额=元、量=股），返回前做单位换算与关键不变量校验；**精选 78 码另带口径与量级守护**（违例抛 `DataError`），其余码只保底不变量，口径以返回值/注释为准。
@@ -153,7 +153,7 @@ for r in res["data"]["rows"][:5]:
 
 - **先查目录再写代码**（一行验证）：
   `python3 -c "import wmshare; print(wmshare.load().search('股息'))"`
-- **本地 MCP server**：29 个 task tools；全部 196 个 friendly API——178 登记 + 18 个组合接口——均可用
+- **本地 MCP server**：29 个 task tools；全部 199 个 friendly API——181 登记 + 18 个组合接口——均可用
   `wmshare_call(target=..., mode="api")` 兜底，macro 域仅此路径。配置：`pip install "wmshare[mcp]"`
   → `wmshare-mcp setup --client-id <AppId> --client-secret-stdin --market cn`（提示后粘贴 API Key，
   `wmshare-mcp doctor` 体检）；客户端最小配置
@@ -330,9 +330,9 @@ t["data"]["pe_pct"], t["data"]["pe_pct_window"], t["data"]["pct"]["pe"]["p3"]  #
 
 - **AI 原生**：随包 [SKILL.md](src/wmshare/skills/wmshare/SKILL.md)、[AI 用法](docs/AI.md)、本地 MCP server（skill 可复制进 .agents/.zcode/.claude 的 skills/）；生态工具 [big-winner](https://github.com/open-winmale/big-winner)
 - **命令行与成品出口**：`wmshare screen/income/index/cbond` 直出 md/csv/xlsx（见「不写 Python」节）；`wmshare.export` 把信封/DataFrame 落成带口径表头的成品（`write_bundle` 附 manifest.json）
-- **文档中心 [docs/](docs/README.md)**：使用指南 GUIDE（单票菜谱/批量/多市场/故障排查）· 指标库 [INDICATORS.md](docs/INDICATORS.md)（全量指标码按数据类型分章）· AI 用法 · llms.txt 索引 · [API 参考](docs/API.md)（按资产类别分章的 178 个核心接口 + 指标组）
+- **文档中心 [docs/](docs/README.md)**：使用指南 GUIDE（单票菜谱/批量/多市场/故障排查）· 指标库 [INDICATORS.md](docs/INDICATORS.md)（全量指标码按数据类型分章）· AI 用法 · llms.txt 索引 · [API 参考](docs/API.md)（按资产类别分章的 181 个核心接口 + 指标组）
 - **可转债日更管线**：`cli.cbond.daily()` → `article()` → `figures()` 一条命令出图文（每个数字带 `sources` 与 `as_of`，缺条目抛错而非补猜测值）；实战 notebook 见 [docs/notebooks/cb_double_low.ipynb](docs/notebooks/cb_double_low.ipynb)（2026-11-07 真实数据）
-- **示例课程 [examples/](examples/README.md)**：28 个编号示例（入门→进阶→生产→AI→成品出口）——无凭证自动匿名试用（需网络），CI 注入离线回放夹具端到端覆盖
+- **示例课程 [examples/](examples/README.md)**：29 个编号示例（入门→进阶→生产→AI→成品出口）——无凭证自动匿名试用（需网络），CI 注入离线回放夹具端到端覆盖
 - **问题反馈 / 交流**：使用提问、数据口径与指标码请求走 [Discussions](https://github.com/open-winmale/wmshare/discussions)；可复现的 bug 提 [GitHub Issues](https://github.com/open-winmale/wmshare/issues)；也欢迎加 QQ 群 `1127142074`（搜索「wmshare开源交流群」）
 - **维护者与治理**：[MAINTAINERS.md](MAINTAINERS.md)（响应承诺与发版流程）· [GOVERNANCE.md](GOVERNANCE.md) · [行为准则](CODE_OF_CONDUCT.md)
 

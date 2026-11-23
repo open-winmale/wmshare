@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "generated_by": "tools/gen_api_docs.py",
-  "count": 286,
+  "count": 289,
   "domains": [
     {
       "id": "corp.equity",
@@ -3241,6 +3241,50 @@
             "net_amount": [
               -1000000000000.0,
               1000000000000.0
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "board.concepts_of",
+          "cn": "单票概念标签",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "board.concept_members",
+          "cn": "概念成份股",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "close": [
+              0,
+              10000.0
+            ],
+            "percent": [
+              -2,
+              2
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "board.concept_list",
+          "cn": "概念目录",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "members": [
+              1,
+              10000.0
             ]
           },
           "checks": [],

@@ -7,8 +7,8 @@ def test_load_and_stats():
     cat = load()
     s = cat.stats()
     assert s["domains"] == 29, s  # +market.board（板块资金流）+ market.blocktrade（大宗交易，2026-11-23）
-    assert s["functions"] == 358, s  # +户数历史2/涨跌停价2/板块资金流3/大宗交易3/停复牌史3
-    assert s["raw"] == 257 and s["computed"] == 101, s  # 停复牌史三读面（派生视图，computed +3）；raw 不变
+    assert s["functions"] == 361, s  # +户数历史2/涨跌停价2/板块资金流3/大宗交易3/停复牌史3/概念3
+    assert s["raw"] == 257 and s["computed"] == 104, s  # 停复牌史 3 + 概念目录 3（派生视图，computed +6）；raw 不变
     assert s["metric_catalog_total"] == 2983, s
     assert s["upstream_rev"], "inventory 应锚定 upstream rev"
 

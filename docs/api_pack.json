@@ -2,9 +2,9 @@
   "schema_version": 2,
   "generated_by": "tools/gen_api_docs.py",
   "meta": {
-    "core": 178,
+    "core": 181,
     "composite": 18,
-    "docs_visible": 173,
+    "docs_visible": 176,
     "variants": 21,
     "domains": 29,
     "categories": [
@@ -25,7 +25,7 @@
         "cn": "参考数据"
       }
     ],
-    "test_ready": 171,
+    "test_ready": 174,
     "sampled": 170,
     "samples_provenance": {
       "captured_at": "2026-11-23",
@@ -4593,6 +4593,186 @@
                 "xs.require(\"sys/board/init.xs\")",
                 "__r := board.moneyflow_last(\"ths_concept\", 10)",
                 "return board.fmt_maps(__r)"
+              ],
+              "args": {
+                "print.plain": true
+              },
+              "script_files": {},
+              "mode": "call",
+              "market": "cn"
+            }
+          }
+        },
+        {
+          "key": "board.concepts_of",
+          "ns": "board",
+          "method": "concepts_of",
+          "cn": "单票概念标签",
+          "composite": false,
+          "desc": "单票概念标签（当前截面；未收录返回 None）。",
+          "params": [
+            {
+              "name": "symbol",
+              "required": true,
+              "desc": "6 位裸码（也接受 .SH/.SZ/.BJ 后缀）"
+            }
+          ],
+          "returns": {
+            "kind": "object",
+            "desc": null,
+            "fields": [
+              {
+                "name": "symbol",
+                "desc": "6 位代码"
+              },
+              {
+                "name": "name",
+                "desc": "证券简称"
+              },
+              {
+                "name": "tags",
+                "desc": "概念名数组（去 s: 前缀）"
+              }
+            ]
+          },
+          "notes": [
+            "当前截面（上游只给最新标签，无 PIT 历史）；索引点查 ≈90 EC",
+            "概念名含指数/风格标签（HS300_/MSCI中国/融资融券…），不做概念/风格分流"
+          ],
+          "docs_visible": true,
+          "example": "cli.board.concepts_of(\"600519\")",
+          "test": {
+            "kwargs": {
+              "symbol": "600519"
+            },
+            "path": "/v1/analysis/xs/eval",
+            "body": {
+              "symbol": "600519",
+              "xs_lines": [
+                "xs.require(\"sys/board/init.xs\")",
+                "return board.concepts_of(\"600519\")"
+              ],
+              "args": {
+                "print.plain": true
+              },
+              "script_files": {},
+              "mode": "call",
+              "market": "cn"
+            }
+          }
+        },
+        {
+          "key": "board.concept_members",
+          "ns": "board",
+          "method": "concept_members",
+          "cn": "概念成份股",
+          "composite": false,
+          "desc": "概念成份股（名称包含匹配，按代码升序）。",
+          "params": [
+            {
+              "name": "name",
+              "required": true,
+              "desc": "概念名（如 \"白酒\"、\"机器人\"；包含匹配，无命中返回空）"
+            },
+            {
+              "name": "limit",
+              "required": false,
+              "desc": "返回前 N 只，默认 100"
+            }
+          ],
+          "returns": {
+            "kind": "array",
+            "desc": null,
+            "fields": [
+              {
+                "name": "symbol",
+                "desc": "6 位代码"
+              },
+              {
+                "name": "name",
+                "desc": "证券简称"
+              },
+              {
+                "name": "close",
+                "desc": "最新价（元）"
+              },
+              {
+                "name": "percent",
+                "desc": "当日涨跌幅（小数）"
+              }
+            ]
+          },
+          "notes": [
+            "名称包含匹配（\"白酒\" 命中 白酒/白酒概念 等标签）；无命中返回空数组",
+            "索引全表扫描：冷 ≈8 万 EC、当日复跑走 memo ≈200 EC；停牌股也在成份内"
+          ],
+          "docs_visible": true,
+          "example": "cli.board.concept_members(name=\"白酒\", limit=10)",
+          "test": {
+            "kwargs": {
+              "name": "白酒",
+              "limit": 10
+            },
+            "path": "/v1/analysis/xs/eval",
+            "body": {
+              "symbol": "600519",
+              "xs_lines": [
+                "xs.require(\"sys/board/init.xs\")",
+                "return board.concept_members(\"白酒\", 10)"
+              ],
+              "args": {
+                "print.plain": true
+              },
+              "script_files": {},
+              "mode": "call",
+              "market": "cn"
+            }
+          }
+        },
+        {
+          "key": "board.concept_list",
+          "ns": "board",
+          "method": "concept_list",
+          "cn": "概念目录",
+          "composite": false,
+          "desc": "概念目录（概念名 + 成份数，按成份数降序）。",
+          "params": [
+            {
+              "name": "limit",
+              "required": false,
+              "desc": "返回前 N 个概念，默认 100"
+            }
+          ],
+          "returns": {
+            "kind": "array",
+            "desc": null,
+            "fields": [
+              {
+                "name": "concept",
+                "desc": "概念名"
+              },
+              {
+                "name": "members",
+                "desc": "成份股数"
+              }
+            ]
+          },
+          "notes": [
+            "全市场标签去重 + 计数：冷 ≈15 万 EC、当日复跑走 memo ≈200 EC",
+            "概念名口径与 concept_members 一致（同一份标签），可直接串联使用"
+          ],
+          "docs_visible": true,
+          "example": "cli.board.concept_list(limit=20)",
+          "test": {
+            "kwargs": {
+              "limit": 20
+            },
+            "path": "/v1/analysis/xs/eval",
+            "body": {
+              "symbol": "600519",
+              "xs_lines": [
+                "xs.require(\"sys/board/init.xs\")",
+                "return board.concept_list(20)"
               ],
               "args": {
                 "print.plain": true
