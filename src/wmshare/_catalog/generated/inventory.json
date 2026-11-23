@@ -1,6 +1,6 @@
 {
  "schema_version": 2,
- "upstream_rev": "9b3c23c6",
+ "upstream_rev": "08307c8b",
  "domains": {
   "bonus": {
    "entry": "sys/bonus/init.xs",
@@ -32,6 +32,10 @@
   },
   "forecast": {
    "entry": "sys/forecast/init.xs",
+   "exports": []
+  },
+  "fred": {
+   "entry": "sys/fred/init.xs",
    "exports": []
   },
   "futures": {
@@ -132,6 +136,7 @@
   "equity",
   "estimates",
   "filings",
+  "fred",
   "futures",
   "fx",
   "indices",
@@ -147,7 +152,7 @@
   "toplist",
   "valuation"
  ],
- "function_count": 348,
+ "function_count": 354,
  "functions": [
   {
    "name": "bonus.dps_rpt",
@@ -4500,6 +4505,243 @@
      "type": "int"
     }
    ]
+  },
+  {
+   "name": "fred.points",
+   "cn": "折线点（web 读面，新→旧）",
+   "example": "fred.points(\"GDP\")",
+   "returns": "ARR · 点",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "id",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "fred.points_asc",
+   "cn": "序列点（date 升序）",
+   "example": "fred.points_asc(\"GDP\", \"\", \"\", 200)",
+   "returns": "ARR · 点",
+   "returns_shape": {
+    "kind": "array",
+    "cn": "点序列",
+    "items": {
+     "kind": "object",
+     "cn": "观测点",
+     "fields": [
+      {
+       "name": "id",
+       "type": "string",
+       "cn": "序列 id"
+      },
+      {
+       "name": "date",
+       "type": "string",
+       "cn": "观测日期 YYYY-MM-DD"
+      },
+      {
+       "name": "value",
+       "type": "float64",
+       "cn": "观测值（单位见 fred.series_meta 的 units）"
+      }
+     ]
+    }
+   },
+   "min_args": 1,
+   "params": [
+    {
+     "name": "id",
+     "type": "string"
+    },
+    {
+     "name": "begin",
+     "type": "string"
+    },
+    {
+     "name": "end",
+     "type": "string"
+    },
+    {
+     "name": "limit",
+     "type": "int"
+    }
+   ]
+  },
+  {
+   "name": "fred.search",
+   "cn": "精选序列检索（id/中文名/说明）",
+   "example": "fred.search(\"GDP\", 10)",
+   "returns": "ARR · 命中行",
+   "returns_shape": {
+    "kind": "array",
+    "cn": "命中行",
+    "items": {
+     "kind": "object",
+     "cn": "命中",
+     "fields": [
+      {
+       "name": "id",
+       "type": "string",
+       "cn": "序列 id（如 GDP）"
+      },
+      {
+       "name": "title_zh",
+       "type": "string",
+       "cn": "精选中文名"
+      },
+      {
+       "name": "blurb_zh",
+       "type": "string",
+       "cn": "精选一句话说明"
+      },
+      {
+       "name": "topic",
+       "type": "string",
+       "cn": "所属主题 id"
+      }
+     ]
+    }
+   },
+   "min_args": 1,
+   "params": [
+    {
+     "name": "keyword",
+     "type": "string"
+    },
+    {
+     "name": "limit",
+     "type": "int"
+    }
+   ]
+  },
+  {
+   "name": "fred.series",
+   "cn": "已入库包（web 读面）",
+   "example": "fred.series(\"GDP\")",
+   "returns": "MAP · 序列包",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "id",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "fred.series_meta",
+   "cn": "序列元信息（单位/频率/状态）",
+   "example": "fred.series_meta(\"GDP\")",
+   "returns": "MAP · 元信息",
+   "returns_shape": {
+    "kind": "object",
+    "cn": "序列元信息",
+    "fields": [
+     {
+      "name": "id",
+      "type": "string",
+      "cn": "序列 id"
+     },
+     {
+      "name": "title",
+      "type": "string",
+      "cn": "原英文标题"
+     },
+     {
+      "name": "title_zh",
+      "type": "string",
+      "cn": "精选中文名"
+     },
+     {
+      "name": "blurb_zh",
+      "type": "string",
+      "cn": "精选一句话说明"
+     },
+     {
+      "name": "units",
+      "type": "string",
+      "cn": "单位（随序列而变：Percent/Billions of Dollars/Thousands of Persons…）"
+     },
+     {
+      "name": "frequency_short",
+      "type": "string",
+      "cn": "原生频率（Q/M/W/D…）"
+     },
+     {
+      "name": "release_name",
+      "type": "string",
+      "cn": "所属发布（如 Gross Domestic Product）"
+     },
+     {
+      "name": "status",
+      "type": "string",
+      "cn": "入库状态（fetched/not_fetched/pre_approval_required…）"
+     },
+     {
+      "name": "has_data",
+      "type": "bool",
+      "cn": "库里是否有观测（true/false）"
+     },
+     {
+      "name": "series_url",
+      "type": "string",
+      "cn": "上游序列页 URL"
+     },
+     {
+      "name": "citation",
+      "type": "string",
+      "cn": "引用要求"
+     },
+     {
+      "name": "hint",
+      "type": "string",
+      "cn": "无数据时的说明"
+     }
+    ]
+   },
+   "min_args": 1,
+   "params": [
+    {
+     "name": "id",
+     "type": "string"
+    }
+   ]
+  },
+  {
+   "name": "fred.topics",
+   "cn": "精选主题树（11 主题 × 88 序列）",
+   "example": "fred.topics()",
+   "returns": "ARR · 主题行",
+   "returns_shape": {
+    "kind": "array",
+    "cn": "主题行",
+    "items": {
+     "kind": "object",
+     "cn": "主题",
+     "fields": [
+      {
+       "name": "topic",
+       "type": "string",
+       "cn": "主题 id（如 growth）"
+      },
+      {
+       "name": "name",
+       "type": "string",
+       "cn": "主题中文名（如 增长）"
+      },
+      {
+       "name": "series",
+       "type": "array",
+       "cn": "该主题下的序列 id 清单"
+      }
+     ]
+    }
+   },
+   "min_args": 0,
+   "params": []
   },
   {
    "name": "futures.fmt_maps",

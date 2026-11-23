@@ -22,9 +22,10 @@ AUDIT_REPORT = REPO / ".internal" / "UNIT_AUDIT.md"
 # 回退为零守护即红（2026-11-18 数据质量收紧）。
 # market.futures：query_bars 补 ranges/checks（2026-11-23），按预告从基线移除——
 # mapping 行仍是字符串字段无数值语义，但域已不再零守护。
+# market.macro：储备三函数带 ranges（2026-11-23），同样移除（基线不得登记不实项）。
 ZERO_GUARD_BASELINE = {
     "disc.filings", "disc.notice", "disc.workout",
-    "market.macro", "market.stocks",
+    "market.stocks",
 }
 DRIFT_WARN_BASELINE = 0
 
@@ -40,13 +41,13 @@ def _load(path: Path, name: str):
 def test_guard_coverage_cannot_regress():
     mod = _load(GUARD_TOOL, "guard_coverage_baseline")
     result = mod.collect(mod.DEFAULT_DOMAINS)
-    assert result["functions"] == 339
+    assert result["functions"] == 345  # +6 fred（2026-11-23 美宏观）
     assert result["guarded"] >= 65
     # 分子 65 = 63（批次1）+ toplist by_date/by_symbol（金额 ranges，批次3）。
     # 分母 316 的稀释项均为无数值守护语义的检索/工具函数（批次1 9 条 + mapping/
     # fmt_maps/notice 类目等——audit_units 的函数级 units 仅接受换算词
     # lot/percent/yi_yuan，字符串返回值无 ranges 语义）。
-    assert result["ratio"] >= 0.2056  # 70/332=0.2108（3.0 外汇+储备后 73/339，只许变好）
+    assert result["ratio"] >= 0.2260  # 3.1 美宏观后 78/345=0.2261（只许变好；此前 73/339=0.2153）
     zero = {name for name, stat in result["per_domain"].items()
             if stat["functions"] > 0 and stat["guarded"] == 0}
     assert zero <= ZERO_GUARD_BASELINE, f"新增零守护域：{sorted(zero - ZERO_GUARD_BASELINE)}"

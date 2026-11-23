@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "generated_by": "tools/gen_api_docs.py",
-  "count": 272,
+  "count": 276,
   "domains": [
     {
       "id": "corp.equity",
@@ -7275,6 +7275,202 @@
           },
           "checks": [],
           "fields": []
+        }
+      ]
+    },
+    {
+      "id": "market.us_macro",
+      "kind": "raw",
+      "data_origin": [
+        "外部宏观数据源"
+      ],
+      "functions": [
+        {
+          "name": "fred.topics",
+          "cn": "精选主题树",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "topic",
+              "type": "string",
+              "optional": false,
+              "desc": "主题 id（如 growth）"
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "optional": false,
+              "desc": "主题中文名（如 增长）"
+            },
+            {
+              "name": "series",
+              "type": "array",
+              "optional": false,
+              "desc": "该主题下的序列 id 清单"
+            }
+          ]
+        },
+        {
+          "name": "fred.search",
+          "cn": "精选序列检索",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "id",
+              "type": "string",
+              "optional": false,
+              "desc": "序列 id（如 GDP）"
+            },
+            {
+              "name": "title_zh",
+              "type": "string",
+              "optional": false,
+              "desc": "精选中文名"
+            },
+            {
+              "name": "blurb_zh",
+              "type": "string",
+              "optional": false,
+              "desc": "精选一句话说明"
+            },
+            {
+              "name": "topic",
+              "type": "string",
+              "optional": false,
+              "desc": "所属主题 id"
+            }
+          ]
+        },
+        {
+          "name": "fred.series_meta",
+          "cn": "序列元信息",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {},
+          "checks": [],
+          "fields": [
+            {
+              "name": "id",
+              "type": "string",
+              "optional": false,
+              "desc": "序列 id"
+            },
+            {
+              "name": "title",
+              "type": "string",
+              "optional": false,
+              "desc": "原英文标题"
+            },
+            {
+              "name": "title_zh",
+              "type": "string",
+              "optional": false,
+              "desc": "精选中文名"
+            },
+            {
+              "name": "blurb_zh",
+              "type": "string",
+              "optional": false,
+              "desc": "精选一句话说明"
+            },
+            {
+              "name": "units",
+              "type": "string",
+              "optional": false,
+              "desc": "单位（随序列而变：Percent/Billions of Dollars/Thousands of Persons…）"
+            },
+            {
+              "name": "frequency_short",
+              "type": "string",
+              "optional": false,
+              "desc": "原生频率（Q/M/W/D…）"
+            },
+            {
+              "name": "release_name",
+              "type": "string",
+              "optional": false,
+              "desc": "所属发布（如 Gross Domestic Product）"
+            },
+            {
+              "name": "status",
+              "type": "string",
+              "optional": false,
+              "desc": "入库状态（fetched/not_fetched/pre_approval_required…）"
+            },
+            {
+              "name": "has_data",
+              "type": "bool",
+              "optional": false,
+              "desc": "库里是否有观测（true/false）"
+            },
+            {
+              "name": "series_url",
+              "type": "string",
+              "optional": false,
+              "desc": "上游序列页 URL"
+            },
+            {
+              "name": "citation",
+              "type": "string",
+              "optional": false,
+              "desc": "引用要求"
+            },
+            {
+              "name": "hint",
+              "type": "string",
+              "optional": false,
+              "desc": "无数据时的说明"
+            }
+          ]
+        },
+        {
+          "name": "fred.points_asc",
+          "cn": "序列点（date 升序）",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "value": [
+              -1000000000,
+              10000000000000
+            ]
+          },
+          "checks": [
+            "date_iso"
+          ],
+          "fields": [
+            {
+              "name": "id",
+              "type": "string",
+              "optional": false,
+              "desc": "序列 id"
+            },
+            {
+              "name": "date",
+              "type": "string",
+              "optional": false,
+              "desc": "观测日期 YYYY-MM-DD"
+            },
+            {
+              "name": "value",
+              "type": "float64",
+              "optional": false,
+              "desc": "观测值（单位见 fred.series_meta 的 units）",
+              "range": [
+                -1000000000,
+                10000000000000
+              ]
+            }
+          ]
         }
       ]
     }

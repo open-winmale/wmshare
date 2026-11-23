@@ -54,7 +54,7 @@ CHAPTERS: list[tuple[str, list[str]]] = [
     ("可转债", ["cbond"]),
     ("指数", ["index"]),
     ("期货", ["futures"]),  # 2.0：连续合约快照门面（$FUT_* 指标码求值封装）
-    ("宏观", ["macro", "fx"]),  # fx：人民币外汇汇率（中间价/牌价日线），与宏观同章
+    ("宏观", ["macro", "fx", "us_macro"]),  # fx=人民币汇率（中间价/牌价日线）；us_macro=美国宏观序列（单位随序列而变）
     ("财务基本面", ["statements", "segments", "valuation", "estimates", "indicator"]),
     ("信息披露与公司行动", ["notice", "filings", "pdf_doc", "forecast", "dividend", "equity", "workout"]),
     ("港股与美股", ["intl"]),

@@ -470,6 +470,23 @@ def estimate_cost(name: str, params: dict[str, Any] | None = None, *,
         else:  # reserve.query
             out.update(ec_lo=90, ec_hi=889, model="measured",
                        note="月频时序：冷态 ≈889 EC（12 期）→ 热态 ≈90 EC（数据版本键缓存）")
+    elif name.startswith("fred."):
+        # 美宏观序列（market.us_macro 域）。静态面零 store 成本；点序列按行取数 +
+        # 数据版本键缓存。档位以部署后 metering.ec_cost probe 为准（禁拍脑袋）。
+        if name == "fred.topics":
+            out.update(ec_lo=1, ec_hi=15, model="measured",
+                       note="静态主题包直读（xs/data/fred/topics.json），零 store 取数")
+        elif name == "fred.search":
+            out.update(ec_lo=1, ec_hi=25, model="measured",
+                       note="在 88 条精选内匹配（静态包），零 store 取数")
+        elif name == "fred.series_meta":
+            out.update(ec_lo=50, ec_hi=250, model="measured",
+                       note="1 行探针判 has_data + 目录元信息单查")
+        else:  # fred.points_asc
+            n = rows if (rows and rows > 0) else 500
+            out.update(ec_lo=60, ec_hi=max(200, int(n * 0.6)), model="measured",
+                       note=f"取数 + 逐行组装（{n} 根为上限），复跑走数据版本键缓存；"
+                            "窗口用 begin/end 下推可显著降本")
     elif name.startswith("pdf_doc."):
         # 实测（2026-11-19 live）：search 5 行 ≈836 EC（含 fmt_one 组装，
         # 无结果缓存，复跑同价）；find_by_key/status/read_* 单行点查数百 EC。

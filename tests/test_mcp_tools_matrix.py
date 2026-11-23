@@ -81,8 +81,8 @@ class _MatrixClient:
         for ns in ("kline", "moneyflow", "margin", "cbond", "index", "valuation",
                    "stocks", "info", "statements", "indicator", "dividend", "notice",
                    "screener", "filings", "forecast", "workout", "intl", "segments",
-                   "estimates", "equity", "etf", "macro", "toplist", "futures",
-                   "pdf_doc", "backtest"):
+                   "estimates", "equity", "etf", "macro", "us_macro", "toplist",
+                   "futures", "pdf_doc", "backtest"):
             setattr(self, ns, _NS(ns))
 
     def call(self, name, **kwargs):

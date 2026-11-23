@@ -25,7 +25,7 @@ python3 tools/extract_metric_taxonomy.py --check  # 指标适配层 sidecar 漂�
 python3 tools/validate_metric_taxonomy.py         # sidecar 与 metrics.json 1:1
 python3 tools/validate_units.py                   # 单位台账（手/亿元/百分数）
 python3 tools/check_version.py --check  # 六处版本声明互校（含 SECURITY.md 表头）
-python3 tools/guard_coverage.py --min 0.203333  # 守护声明覆盖率下限（防回退；阈值以 tests/test_guard_baseline.py 基线为准）
+python3 tools/guard_coverage.py --min 0.2260  # 守护声明覆盖率下限（防回退；阈值以 tests/test_guard_baseline.py 基线为准）
 python3 tools/gen_api_docs.py       # 重生成 docs/API.md + docs/fields.json（改了目录必须重跑）
 python3 tools/gen_typed_api.py      # 重生成类型化门面 docs 同源
 python3 tools/gen_openapi.py        # 重生成 docs/openapi.json + swagger.html

@@ -77,6 +77,10 @@ INCLUDED_NS = frozenset({
     "fx",
     # 2.9/3.0：官方储备（alt.bssaa cn.currency.reserve.* 直读，market.macro 域储备条目）
     "reserve",
+    # 3.1：美宏观序列（eco.macro fred.LIST.{id} 直读，market.us_macro 域；
+    # 精选 88 条 × 11 主题。web 页面用的 fred.points/fred.series 标 internal 不进目录，
+    # SDK 读面是 fred.topics/search/points_asc/series_meta 四个）
+    "fred",
 })
 # rptdom 只保留三表透视族（年报 PDF 提取类 rows/notes/note_index 不发布）
 RPTDOM_KEEP = frozenset({"statement", "statement_years", "statement_compare", "statement_tree", "statement_audit"})

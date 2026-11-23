@@ -65,7 +65,8 @@ EtfAction = Literal[
     "card", "nav", "share", "div", "portfolio",
     "profile", "premium", "asset", "rank",
 ]
-MacroAction = Literal["query", "asof", "sampling", "reserve", "reserve_history"]
+MacroAction = Literal["query", "asof", "sampling", "reserve", "reserve_history",
+                      "us_topics", "us_search", "us_series"]
 FxAction = Literal["rate", "history", "bars", "list"]
 ValuationAction = Literal[
     "hist_stats", "daily_basic", "daily_basic_multi", "daily_basic_coverage"
@@ -538,8 +539,8 @@ def build_server(runtime: MCPRuntime | None = None) -> FastMCP:
     @mcp.tool()
     @protocol
     def wmshare_macro(
-        action: Annotated[MacroAction, Field(description="query=近 n 期时序 / asof=最新一期值 / sampling=采样频率 / reserve=储备项清单 / reserve_history=储备时序（code 传 forex 或 gold）")],
-        code: Annotated[str, Field(description="宏观指标码，如 $CPI/$GDP/$M2；先 wmshare_search 查码")],
+        action: Annotated[MacroAction, Field(description="query=近 n 期时序 / asof=最新一期值 / sampling=采样频率 / reserve=储备项清单 / reserve_history=储备时序（code 传 forex 或 gold） / us_topics=美宏观主题树 / us_search=美宏观序列检索（code 传关键词）/ us_series=美宏观序列点（code 传序列 id 如 GDP）")],
+        code: Annotated[str, Field(description="宏观指标码，如 $CPI/$GDP/$M2；先 wmshare_search 查码。us_* 系列传美宏观序列 id 或关键词（如 GDP/DGS10/通胀）")],
         n: Annotated[int, Field(ge=1, le=100, description="query 返回期数")] = 6,
         output: OutputArg = "sample",
         max_rows: MaxRowsArg = MAX_ROWS,
@@ -784,7 +785,8 @@ def _add_resources(mcp: FastMCP, rt: MCPRuntime) -> None:
             "429 返回 partial=true、error.kind=LimitError、retry_after_seconds、"
             "completed、resume_start 和 resume_symbols；不要重试已完成部分。"
             "等待限流窗口后用 symbols[resume_start:] 或 resume_symbols 续跑。"
-            "单次 MCP 输出最多 200 行，超限时用 summary/count 或缩小范围。"
+            "单次 MCP 输出最多 200 行，超限时用 summary/count 或缩小范围；"
+            "时间序列（date/sas 升序）超限保留最新段，其余列表保留头部。"
         )
 
     @mcp.resource("wmshare://coverage")
@@ -802,7 +804,7 @@ def _add_resources(mcp: FastMCP, rt: MCPRuntime) -> None:
             "catalog_gateway": "wmshare_call(mode='catalog')",
             "cost_gateway": "wmshare_call(mode='cost')",
             "batchable_catalog_functions": len(apis.batchable_catalog_functions()),
-            "excluded_from_mcp": ["pandas DataFrame / _df=True", "notice_poller", "长驻订阅"],
+            "excluded_from_mcp": ["notice_poller", "长驻订阅"],
             "contract_paths": [
                 "wmshare_search(kind='api')",
                 "wmshare_contract(kind='api')",

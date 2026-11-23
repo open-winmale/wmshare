@@ -104,7 +104,8 @@ ETF_ACTIONS = (
     "card", "nav", "share", "div", "portfolio",
     "profile", "premium", "asset", "rank",
 )
-MACRO_ACTIONS = ("query", "asof", "sampling", "reserve", "reserve_history")
+MACRO_ACTIONS = ("query", "asof", "sampling", "reserve", "reserve_history",
+                 "us_topics", "us_search", "us_series")
 # 外汇汇率：rate=最新 / history=日线 / bars=区间 / list=在库币种
 FX_ACTIONS = ("rate", "history", "bars", "list")
 VALUATION_ACTIONS = (

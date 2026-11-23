@@ -8,7 +8,7 @@ wmshare 取数代码**。优先用 MCP；没有 MCP 时用 skill 或文档上下
 - **目录先行**：指标码与函数可编程检索（`cat.search("中文")`），AI 不需要"背"接口，
   查一下再用；编造的码在发请求前就被 `CatalogError` 拦下。
 - **本地 MCP server**：29 个 task tools 覆盖发现、行情、财务、治理、披露、收息、估值、
-  ETF、回测、宏观、龙虎榜、期货、公告结构化与批量；全部 182 个 friendly API（164 登记 +
+  ETF、回测、宏观、龙虎榜、期货、公告结构化与批量；全部 186 个 friendly API（168 登记 +
   18 个组合接口）均可经 `wmshare_call(mode="api")` 兜底（macro 长尾与
   `cbond.article/figures` 仅网关路径）。输出统一 units/rows/next_action。
 - **skill 随包分发**：单位铁律、意图→接口决策树、坑位清单、错误速查，装进 agent 即生效
@@ -49,8 +49,8 @@ Agent 工作流：
 1. `wmshare_status` 看市场、凭证、目录和 capability coverage；
 2. `wmshare_search` / `wmshare_contract` 找标的、函数、指标码、friendly API 与参数；
 3. 高频意图优先用 29 个 task tools（statement、segments、dividend、income、estimates、
-   corporate、market、valuation、etf、backtest、macro、toplist、futures、pdf、intl、
-   notice 等领域面都已 first-class 暴露）；
+   corporate、market、valuation、etf、backtest、macro（含美宏观 us_* action）、toplist、
+   futures、pdf、intl、notice 等领域面都已 first-class 暴露）；
 4. 多标的用 `wmshare_batch`；`params/raw/units` 会透传给 SDK `batch_iter`；
 5. 长尾目录函数用 `wmshare_call(mode="catalog")`，长尾 friendly API 用
    `wmshare_call(mode="api")`；**调用前想估算 EC 消耗**用 `wmshare_call(mode="cost",

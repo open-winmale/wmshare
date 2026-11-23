@@ -2,7 +2,7 @@
 
 本指南是 **how-to + 解释层**：会做什么 → 怎么做好。其他层各有其位——
 教程看 [README](../README.md) 与 [examples/](../examples/README.md)（可运行课程），
-接口参考看 [API.md](API.md)（按资产类别分章的 164 个核心接口，生成物），
+接口参考看 [API.md](API.md)（按资产类别分章的 168 个核心接口，生成物），
 AI 用法看 [AI.md](AI.md)。
 
 > 代码块里的输出注释都是**真实运行结果**（2026-10-29，cn 市场，免费档凭证），
@@ -39,9 +39,9 @@ export WMSHARE_CLIENT_ID=<AppId> WMSHARE_CLIENT_SECRET=<API Key>
 
 ### 2.1 双层 API：门面 + 目录
 
-- **门面层** `cli.<命名空间>.<方法>()`：28 个命名空间、164 个核心接口，方法名动宾化可猜
+- **门面层** `cli.<命名空间>.<方法>()`：29 个命名空间、168 个核心接口，方法名动宾化可猜
   （`kline.bars`、`dividend.yield_ttm`、`screener.screen_limit_up`）。
-- **目录层** `cli.call("<域>.<函数名>", ...)`：339 个底层函数按目录合同直调，
+- **目录层** `cli.call("<域>.<函数名>", ...)`：345 个底层函数按目录合同直调，
   参数名以 `cat.function(name)["params"]` 为准。门面未包装的函数经属性直达
   （如 `cli.dividend.index_where_high_yield_5()`）；目录之外的名字显式报错——
   门面不遮蔽目录公开函数（internal 辅助除外），292 个都能直达。
@@ -509,7 +509,50 @@ cli.indicator.get("600519", "$FUT_CLOSE")                           # 缺省 cn.
 cli.indicator.get("600519", "$FUT_CLOSE", fut_symbol="global.CL")   # 外盘 WTI
 ```
 
-代码表与口径详见 [API.md](API.md)「期货」「宏观」两章。
+代码表与口径详见 [API.md](API.md)「期货」「宏观」「美宏观」三章。
+
+### 6.2 汇率、官方储备与美国宏观
+
+**人民币外汇汇率**走 `cli.fx`——口径是「**每 1 单位**外币折人民币」（USD≈7.1、
+JPY≈0.042）；上游原始中间价是「每 100 外币」口径（美元≈670），SDK 已统一 /100
+归一，看到 600+ 量级的美元值说明读的是未归一原值：
+
+```python
+cli.fx.rate("USD")                     # {'ccy','date','middle','buy','cash_buy'}
+cli.fx.history("USD", n=30)            # 日线 DataFrame（date 升序）
+cli.fx.bars("USD", begin="2026-11-01", end="2026-11-21")   # 区间
+cli.fx.list()                          # 在库币种（USD/EUR/JPY/HKD…）
+```
+
+`middle` 是央行授权发布的中间价（缺失按前值填充、连续）；`buy` 是中行汇买价
+（仅发布日写入、可能有缺口）。两者口径不同，勿混用。
+
+**官方储备**挂在 `cli.macro` 的 `reserves*` 家族，月频（外汇 + 黄金）：
+
+```python
+cli.macro.reserves()                   # 清单：kind/label/available/value
+cli.macro.reserves_asof("forex")       # {'date': '2026-10', 'value': 3405178000000}
+cli.macro.reserves_history("forex", n=6)
+```
+
+**量纲铁律**：`value` 是**美元数值**（外汇≈3.4e12 = 3.4 万亿美元、黄金≈3.1e11
+= 3064 亿美元），不是元、也不是亿美元——除 1e12 得万亿美元。黄金是**市值口径**，
+没有吨数/盎司。`sdr` 上游无生产者，清单里 `available=False`、`reserves_asof`
+返回 `None`（不返回 0）。
+
+**美国宏观序列**走 `cli.us_macro`（精选 88 条 × 11 主题）：
+
+```python
+cli.us_macro.topics()                        # 11 主题及其序列清单（零取数成本）
+cli.us_macro.search("通胀", 5)                # 中文/英文检索 → id + 中文名 + 说明
+cli.us_macro.series_meta("GDP")              # units/frequency/status/has_data
+cli.us_macro.points("GDP", limit=20)         # 点序列 DataFrame（date 升序）
+```
+
+**口径铁律**：本域**不做统一单位换算**——GDP 是十亿美元（Billions of Dollars）、
+UNRATE 是百分数（Percent）、PAYEMS 是千人（Thousands of Persons）。跨序列比较前
+必须先读 `series_meta().units`，否则量级必错。`status="pre_approval_required"`
+的序列在上游即被版权粘住、永不抓取（`has_data=False` 如实标注）。
 
 ## 7. pandas 与 DataFrame
 

@@ -10,7 +10,7 @@
     ``_raw=True`` 取上游原始行（list[dict]，跳过规范化与换算）——诊断逃生口；
   - 本层是目录合同的薄翻译：高频方法显式包装；目录内其余非内部函数经 ``__getattr__``
     属性直达（如 ``cli.kline.screen_above_ma20``）；目录标 ``internal: true`` 的
-    规范化辅助（fmt_* 等）不再直达，请走 ``cli.call``——339 个底层函数零遮蔽；
+    规范化辅助（fmt_* 等）不再直达，请走 ``cli.call``——345 个底层函数零遮蔽；
   - 选股能力集中在 ``cli.screener``：单票筛选器（bool）、全市场宽度/涨跌榜与
     全市场条件选股 ``query()``（服务端索引直出）显式包装，kline 目录的其余筛选
     函数经属性直达。
@@ -346,6 +346,7 @@ _FRIENDLY_NS_TO_CATALOG: dict[str, str] = {
     "intl": "intl",
     "macro": "macro",
     "fx": "fx",
+    "us_macro": "fred",
 }
 
 
@@ -3239,6 +3240,77 @@ class FxApi(_Api):
         return _out(self._c.call("fx.list"), raw=_raw, _fields=_fields)
 
 
+class UsMacroApi(_Api):
+    """美国宏观序列（精选 88 条 × 11 主题；单位随序列而变）。
+
+    **口径铁律**：本域**不做统一单位换算**——GDP 是十亿美元（Billions of Dollars）、
+    UNRATE 是百分数（Percent）、PAYEMS 是千人（Thousands of Persons）。跨序列比较
+    前必须先读 :meth:`series_meta` 的 ``units``，否则量级必错。这与 ``cli.macro``
+    （国产指标码，单位已归一为元/点/小数）是两套东西，勿混。
+
+    典型动线：:meth:`topics` 看有哪些序列 → :meth:`search` 按中文/英文找 id →
+    :meth:`series_meta` 读单位与状态 → :meth:`points` 取升序点序列。
+
+    ``status="pre_approval_required"`` 的序列在上游即被版权粘住，永不抓取
+    （``has_data=False`` 如实标注，不会自动补数）。
+    """
+
+    def topics(self, *, _raw: bool = False) -> Any:
+        """精选主题树（DataFrame：topic/name/series；11 主题合计 88 条序列）。
+
+        静态包直读，零取数成本——不知道有哪些序列时先调它。
+
+        :param _raw: True 返回上游原始行
+        """
+        return _out(self._c.call("fred.topics"), raw=_raw)
+
+    def search(self, keyword: str = "", limit: int = 20, *,
+               _raw: bool = False, _fields: Any = None) -> Any:
+        """在精选序列内检索（DataFrame：id/title_zh/blurb_zh/topic）。
+
+        匹配序列 id、精选中文名与一句话说明；中文关键词可直接命中，
+        不必先知道英文 id。只在 88 条精选内做，不扫上游全量目录。
+
+        :param keyword: 关键词（空串返回全部精选）
+        :param limit: 返回条数（缺省 20，上限 88）
+        :param _raw: True 返回上游原始行
+        :param _fields: 列投影（字段名列表或逗号串）
+        """
+        return _out(self._c.call("fred.search", keyword=keyword, limit=limit),
+                    raw=_raw, _fields=_fields)
+
+    def series_meta(self, series_id: str = "GDP", *, _raw: bool = False) -> Any:
+        """序列元信息（dict：id/title/title_zh/units/frequency_short/status/has_data/…）。
+
+        **先读 ``units`` 再解读数值**——这是本域唯一的口径来源。``has_data=False``
+        表示库里还没观测（未抓取或需授权），不是「值为 0」。
+
+        :param series_id: 序列 id（如 ``GDP``/``UNRATE``/``DGS10``；自动大写归一）
+        :param _raw: True 返回上游原始行
+        """
+        return self._c.call("fred.series_meta", id=series_id, _raw=_raw)
+
+    def points(self, series_id: str = "GDP", begin: str | None = None,
+               end: str | None = None, limit: int = 500, *,
+               _raw: bool = False, _fields: Any = None) -> Any:
+        """序列点（DataFrame，date 升序=旧→新；空值已跳过不补 0）。
+
+        :param series_id: 序列 id（如 ``GDP``/``UNRATE``/``DGS10``）
+        :param begin: 开始日期 YYYY-MM-DD（可空=全历史；服务端窗口下推）
+        :param end: 结束日期 YYYY-MM-DD（可空）
+        :param limit: 根数（缺省 500=Client 单次上限；服务端上限 20000，长历史请传 Client(max_limit=None)）
+        :param _raw: True 返回上游原始行
+        :param _fields: 列投影（字段名列表或逗号串）
+        """
+        kwargs: dict[str, Any] = {"id": series_id, "limit": limit}
+        if begin:
+            kwargs["begin"] = begin
+        if end:
+            kwargs["end"] = end
+        return _out(self._c.call("fred.points_asc", **kwargs),
+                    raw=_raw, _fields=_fields)
+
+
 class EtfApi(_Api):
     """ETF 九视图读取（组合门面；读已发布的 skillhub 脚本，非目录函数）。
 
@@ -3784,6 +3856,7 @@ FRIENDLY_NAMESPACES: dict[str, type[_Api]] = {
     "intl": IntlApi,
     "macro": MacroApi,
     "fx": FxApi,
+    "us_macro": UsMacroApi,
     "backtest": BacktestApi,
     "etf": EtfApi,
     "futures": FuturesApi,
@@ -3981,6 +4054,10 @@ FRIENDLY_INDEX: list[tuple[str, str, str, str, str]] = [
     ("reference", "fx", "history", "汇率日线", "fx.history"),
     ("reference", "fx", "bars", "汇率区间日线", "fx.query_bars"),
     ("reference", "fx", "list", "在库币种清单", "fx.list"),
+    ("reference", "us_macro", "topics", "美宏观主题树", "fred.topics"),
+    ("reference", "us_macro", "search", "美宏观序列检索", "fred.search"),
+    ("reference", "us_macro", "series_meta", "美宏观序列元信息", "fred.series_meta"),
+    ("reference", "us_macro", "points", "美宏观序列点（升序）", "fred.points_asc"),
 ]
 
 # 文档暴露面元数据（开放平台接口文档站消费；SDK 面 / openapi / llms 全量不变）。

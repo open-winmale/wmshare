@@ -68,7 +68,7 @@ def status(
             "cost_gateway": "wmshare_call(mode='cost', target=…, arguments={…})",
             "batchable_catalog_functions": len(batchable_catalog_functions()),
             "first_class_tools": len(TOOL_NAMES),
-            "excluded_from_mcp": ["pandas/_df", "notice_poller", "长驻订阅"],
+            "excluded_from_mcp": ["notice_poller", "长驻订阅"],
         },
         "setup": {
             "console": "open.winmale.com 开放平台 → 我的应用",
@@ -1048,10 +1048,26 @@ def macro(
 
     query 取近 n 期时序（date 升序），asof 取最新一期值，sampling 查该码的
     采样频率——返回值是上游原值口径（价格指数=点、流量存量=元、收益率=小数）。
+    reserve 列储备项、reserve_history 取储备时序（元/美元数值，见返回 units）。
+    us_topics/us_search/us_series 走美宏观序列（code 传序列 id 如 GDP/DGS10）：
+    **单位随序列而变**，先 us_series 读 units 再解读数值。
     """
     if action not in MACRO_ACTIONS:
         raise ValueError(f"action 只支持 {'/'.join(MACRO_ACTIONS)}")
     cli = runtime.client("cn")
+    # 美宏观三 action 走 fred 命名空间（code 是序列 id，不是指标码）
+    if action in ("us_topics", "us_search", "us_series"):
+        if action == "us_topics":
+            data = cli.us_macro.topics()
+            return success(runtime, data, output=output, max_rows=max_rows,
+                           action=action, market="cn")
+        code_value = _symbol(action, code, allow_empty=False)
+        if action == "us_search":
+            data = cli.us_macro.search(code_value, limit=_optional_limit(n, 88))
+        else:
+            data = cli.us_macro.points(code_value, limit=_optional_limit(n, 500))
+        return success(runtime, data, output=output, max_rows=max_rows,
+                       action=action, code=code_value, market="cn")
     # 储备两 action 不消费 code（用 kind），先分流
     if action in ("reserve", "reserve_history"):
         kind = _symbol(action, code, allow_empty=False)
@@ -1192,7 +1208,8 @@ def futures(
 
     code 是合约代码（如 RB2605.SHF）或主力连续；field 取 close/open/…；
     freq=d/w/m。mapping 冷查实测 ≈21.4 万 EC、热查 ≈141 EC——先 cost 预估。
-    bars 按「点×码」线性计费（暖态 ≈8-11 EC/点·码），长区间建议 freq='m'。
+    bars 走 store 直读，按**行数**计费（冷 ≈190+126 EC/行、同日复跑命中数据版本键
+    缓存 ≈135 EC），长区间建议 freq='m'（行数省约 20 倍）。snapshot/get 单行 ≈135~320 EC。
     """
     if action not in FUTURES_ACTIONS:
         raise ValueError(f"action 只支持 {'/'.join(FUTURES_ACTIONS)}")

@@ -136,7 +136,7 @@ def test_status_reports_capability_coverage(runtime: Any) -> None:
     assert caps["friendly_apis"] == route_count()
     assert caps["first_class_tools"] == 29
     assert caps["batchable_catalog_functions"] > 100
-    assert "pandas/_df" in caps["excluded_from_mcp"][0]
+    assert caps["excluded_from_mcp"] == ["notice_poller", "长驻订阅"]
 
 
 def test_catalog_contract_surface_is_complete() -> None:
@@ -148,7 +148,7 @@ def test_catalog_contract_surface_is_complete() -> None:
         for domain in cat.domains.values()
         for function in domain.get("functions", [])
     }
-    assert len(names) == cat.stats()["functions"] == 339
+    assert len(names) == cat.stats()["functions"] == 345
     for name in names:
         assert cat.function(name)
     assert len(batchable_catalog_functions()) >= 100
@@ -268,7 +268,7 @@ def test_mcp_registry_schema_and_resources() -> None:
     assert coverage["friendly_apis"] == route_count()
     assert coverage["first_class_tools"] == 29
     assert coverage["batchable_catalog_functions"] >= 100
-    assert "pandas DataFrame / _df=True" in coverage["excluded_from_mcp"]
+    assert coverage["excluded_from_mcp"] == ["notice_poller", "长驻订阅"]
     assert "--client-secret-stdin" in facts["setup"]
     assert "--client-secret " not in facts["setup"]
     for phrase in ("partial=true", "resume_start", "resume_symbols", "retry_after_seconds"):

@@ -56,10 +56,10 @@ def test_drift_default_is_green_and_machine_readable(capsys):
     assert result["warnings"] == []
     assert result["strict"] is False
     info = result["info"]
-    # guarded 66 = 65 + valuation.daily_basic_multi（8 个 ranges，2026-11-19）；
-    # functions 328 = 317 + income 10 + members_daily
-    assert info["guard_declared"] == 77
-    assert info["functions"] == 339  # +4 fx +3 reserve（2026-11-23 外汇+储备批次）
+    # guarded 78 = 77 + fred.points_asc（ranges+checks，2026-11-23 美宏观）；
+    # functions 345 = 339 + 6 fred
+    assert info["guard_declared"] == 78
+    assert info["functions"] == 345  # +6 fred（2026-11-23 美宏观）
     assert info["markets"]["total"] == 2983
     assert info["markets"]["declared"] == 728
     assert info["markets"]["undeclared"] == 2255

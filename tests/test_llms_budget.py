@@ -33,7 +33,7 @@ def test_full_text_has_brief_and_respects_budget():
 def test_indicators_full_text_is_not_inlined():
     mod = _load()
     assert "docs/INDICATORS.md" not in mod.FULL_PARTS
-    assert mod.FULL_SIZE_BUDGET < 460_000  # 内联 205 KB 会直接击穿（硬顶随预算提额同步：2026-11-23 外汇+储备批次 430K→460K）
+    assert mod.FULL_SIZE_BUDGET < 470_000  # 内联 205 KB 会直接击穿（硬顶随预算提额同步：2026-11-23 美宏观批次 445K→470K）
     content = mod.build_llms_full_txt()
     assert "## 4. 股票指标码" not in content  # INDICATORS 全文的独有 H2
 

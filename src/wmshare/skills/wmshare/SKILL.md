@@ -18,7 +18,7 @@ backtest/macro/toplist/futures/pdf/intl/notice 等）；
 
 **它不是**：撮合级/组合级回测引擎（单股均线买卖点回测用 `cli.backtest.run`：次日开盘成交、
 T+1、整手、佣金/印花固定，不复现盘口排队与分红税）；数据库（数据经云端 API 运行时获取，
-不随包分发）；全品类数据超市（26 个数据域，覆盖 A 股个股常用研究数据、宏观时序与期货主力连续指标码，
+不随包分发）；全品类数据超市（27 个数据域，覆盖 A 股个股常用研究数据、宏观时序与期货主力连续指标码，
 场外/LOF/货基基金（仅场内 ETF 九视图）、期权、债券（可转债除外）未覆盖）。
 
 ## 1. 环境前置
@@ -119,12 +119,14 @@ cat.metrics_in_group("dividend")                         # 指标组内全部精
 | 可转债双低榜 / 强赎下修观测 | `cli.cbond.daily()`（全市场面板一次取数 → 三层口径 + 三道闸 + 状态机 + 事件日历，返回带 `sources` 的事实包）；只要原始面板用 `cli.cbond.board()` |
 | 可转债图文成稿 / 出图 | `cli.cbond.article(payload, date="20261107")` / `cli.cbond.figures(payload, "/tmp/cb", date="20261107")`（后者需 `pip install "wmshare[figures]"`） |
 | 宏观时序 / 最新单值 | `cli.macro.query("$CPI", 6)`（价格指数=点）/ `cli.macro.asof("$GDP")`（元） |
+| 人民币汇率 / 外汇与黄金储备 | `cli.fx.rate("USD")`（每 1 单位外币，USD≈7.1）/ `cli.macro.reserves_asof("forex")`（美元数值 ≈3.4e12，除 1e12 得万亿美元） |
+| 美国宏观（GDP/失业率/利率…） | `cli.us_macro.search("通胀")` → `cli.us_macro.series_meta(id)` 读 units → `cli.us_macro.points(id)`；**单位随序列而变**（百分数/十亿美元/千人），不换算直接读 |
 | 期货主力连续 | `cli.indicator.get("600519", "$FUT_CLOSE", fut_symbol="cn.RB.SHF")`（symbol 传任意 A 股码；外盘 global.CL） |
 | 全市场代码池（A/港/美全表） | `cli.stocks.list()`（行含 symbol/name/exchange/industry/listed；港/美换 `Client(market=...)`） |
 | 行业目录 / 行业成分 | `cli.stocks.industries(1)`（申万/恒生；美股目录树暂缺）/ `cli.stocks.industry_members("银行")`（中文名或代码 S48） |
 | 少量标的单批（≤500） | `cli.call_batch("kline.snapshot", ["600519", "000001"])` 或任意单标的接口传 list：`cli.kline.last(["600519", "000001"])`；`to_df()` 出每标的一行长表 |
 
-完整 164 个核心接口 + 18 个组合接口（可转债 3 + 回测 1 + 报表 4 + ETF 9 + 收息诊断 1）与全部底层函数：仓库用户看 docs/GUIDE.md（上手）与
+完整 168 个核心接口 + 18 个组合接口（可转债 3 + 回测 1 + 报表 4 + ETF 9 + 收息诊断 1）与全部底层函数：仓库用户看 docs/GUIDE.md（上手）与
 docs/API.md（参考）；pip 用户用 `cat.search(...)` / `cat.function(...)` 查（同一份合同）。
 全量指标码（2983 个）按数据类型分章的导航、命名语法与死码清单见 docs/INDICATORS.md（生成物）。
 

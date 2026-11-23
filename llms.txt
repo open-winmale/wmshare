@@ -1,6 +1,6 @@
 # wmshare
 
-> 覆盖 A 股、港股、美股的 Python 财经数据 SDK：26 个数据域、339 个底层函数、2983 个指标码、164 个核心接口 + 18 个组合接口（共 182 个 friendly API）。BSD-3-Clause 开源；取数需开放平台凭证（环境变量 WMSHARE_CLIENT_ID / WMSHARE_CLIENT_SECRET，见 README）。
+> 覆盖 A 股、港股、美股的 Python 财经数据 SDK：27 个数据域、345 个底层函数、2983 个指标码、168 个核心接口 + 18 个组合接口（共 186 个 friendly API）。BSD-3-Clause 开源；取数需开放平台凭证（环境变量 WMSHARE_CLIENT_ID / WMSHARE_CLIENT_SECRET，见 README）。
 
 ## Docs
 
@@ -10,12 +10,12 @@
 - [指标库 INDICATORS](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/INDICATORS.md)：全量指标码按族导航——命名语法、11 组精选口径、死码清单与场景速查（先查码，禁止自算已有指标）
 - [指标单页索引](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/indicators/README.md)：逐码一页（类型/市场/单位/取数示例），长尾检索与 AI 引用入口
 - [AI 用法](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/AI.md)：MCP server、skill、文档上下文与报错驱动的 Agent 接入路径
-- [API 参考](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/API.md)：164 个核心接口 + 18 个组合接口的参数 / 返回 / 单位口径（字段字典 [fields.json](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/fields.json)）
+- [API 参考](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/API.md)：168 个核心接口 + 18 个组合接口的参数 / 返回 / 单位口径（字段字典 [fields.json](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/fields.json)）
 - [限制与配额](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/LIMITS.md)：单次/批量/限流/重试硬限制、先估后取（`cli.cost_estimate`）与取数配方
 - [错误码](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/ERRORS.md)：异常层级 + 全部 `code`（含义/可重试/处理）
 - [数据日历](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/DATA_CALENDAR.md)：各数据集更新频率与过期阈值；[兼容政策](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/COMPATIBILITY.md)：弃用窗口与迁移表
 - [Agent Skill](https://raw.githubusercontent.com/open-winmale/wmshare/main/src/wmshare/skills/wmshare/SKILL.md)：随包分发的 agent 用法合同（目录先行、单位铁律、决策树、坑位）
-- [可运行示例](https://raw.githubusercontent.com/open-winmale/wmshare/main/examples/README.md)：23 个编号示例（全部支持演示客户端离线试跑），CI 端到端覆盖
+- [可运行示例](https://raw.githubusercontent.com/open-winmale/wmshare/main/examples/README.md)：24 个编号示例（全部支持演示客户端离线试跑），CI 端到端覆盖
 - [CHANGELOG](https://raw.githubusercontent.com/open-winmale/wmshare/main/CHANGELOG.md)：版本历史
 
 ## Key Concepts
@@ -56,6 +56,7 @@
 - `market.moneyflow`（资金流向）（cli.moneyflow）：个股日频资金流向（主力 / 超大单 / 大单 / 中单 / 小单净流入）、最新一行、 全市场快照一次取数（board）
 - `market.stocks`（证券与行业基础）（cli.stocks）：证券基础库——全市场证券列表（代码/名称/交易所/三级行业/上市日期/ST）、 行业目录（申万 sw2021、恒生 hsi）、行业成分股（支持…
 - `market.toplist`（龙虎榜）：A 股龙虎榜——指定交易日全市场榜单与单票上榜历史（交易所披露口径， 日频落库直读）
+- `market.us_macro`（美宏观）：美国宏观序列（精选 88 条 × 11 主题，随上游日更/月更/季更落库）
 
 ## Composite Interfaces
 
@@ -89,7 +90,7 @@
 
 ## 单位与守护声明（机器可读）
 
-> 共 76 个函数带 units / ranges / checks 声明；每行 `` `函数名`: JSON ``，键为 units（换算）/ ranges（量级界）/ checks（不变量）。SDK 在返回前按声明换算并校验，违例抛 DataError；原生口径用 `_units="native"`。内部命名空间的函数声明见 openapi.json 的 `x-wmshare-guards`（按友好接口）。
+> 共 77 个函数带 units / ranges / checks 声明；每行 `` `函数名`: JSON ``，键为 units（换算）/ ranges（量级界）/ checks（不变量）。SDK 在返回前按声明换算并校验，违例抛 DataError；原生口径用 `_units="native"`。内部命名空间的函数声明见 openapi.json 的 `x-wmshare-guards`（按友好接口）。
 
 - `bonus.query_list`: {"ranges": {"dps": [0, 500], "net_profit": [0, 1000000000000.0], "payout_ratio": [0, 20], "total": [0, 2000000000000.0]}}
 - `bonus.snapshot`: {"ranges": {"bonus_npts_rate": [0, 1], "bonus_total": [0, 2000000000000.0], "bonus_ttm": [0, 1000000000000.0], "dps_ttm": [0, 200], "mv": [0, 5000000000000.0], "payout_ttm": [0, 5], "pct_yield_3y": [0, 1], "pe_ttm": [-500, 5000], "yield_3y_avg": [0, 0.5], "yield_3y_min": [0, 0.5], "yield_lyr": [0, 0.5], "yield_ttm": [0, 0.5]}}
@@ -128,6 +129,7 @@
 - `forecast.yjkb_rows`: {"ranges": {"np_yoy": [-100, 1000], "rev_yoy": [-100, 1000], "roe": [-2, 5]}, "units": {"np_yoy": "percent", "rev_yoy": "percent", "roe": "percent"}}
 - `forecast.yjyg_latest`: {"ranges": {"np_amp_lower": [-100, 1000], "np_amp_upper": [-100, 1000], "rev_amp_lower": [-100, 1000], "rev_amp_upper": [-100, 1000]}, "units": {"np_amp_lower": "percent", "np_amp_upper": "percent", "rev_amp_lower": "percent", "rev_amp_upper": "percent"}}
 - `forecast.yjyg_rows`: {"ranges": {"np_amp_lower": [-100, 1000], "np_amp_upper": [-100, 1000], "rev_amp_lower": [-100, 1000], "rev_amp_upper": [-100, 1000]}, "units": {"np_amp_lower": "percent", "np_amp_upper": "percent", "rev_amp_lower": "percent", "rev_amp_upper": "percent"}}
+- `fred.points_asc`: {"checks": ["date_iso"], "ranges": {"value": [-1000000000, 10000000000000]}}
 - `futures.query_bars`: {"checks": ["date_iso"], "ranges": {"amount": [0, 10000000000000.0], "oi": [0, 100000000.0], "oi_chg": [-100000000.0, 100000000.0], "percent": [-1, 1], "volume": [0, 100000000.0]}}
 - `fx.history`: {"checks": ["date_iso"], "ranges": {"buy": [1e-05, 2000], "middle": [1e-05, 2000]}}
 - `fx.list`: {"ranges": {"middle": [1e-05, 2000]}}

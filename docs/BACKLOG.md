@@ -53,6 +53,18 @@
   `forecast` 三个入口原已走 `clamp_limit`；`intl/estimates/margin/equity/
   filings` 用 `{"unwrap":"list"}` 无 limit 参数，不受影响。
 
+## 已发布面遗留（登记不装死）
+
+- **3.0.1 发布说明漏记外汇/储备**：`[3.0.1]` 段只写期货修复，`cli.fx` 四接口与
+  `cli.macro.reserves*` 三接口零字提及（代码与 `market.fx.yaml` 确在该 tag 内）。
+  处置：**下一个版本的 CHANGELOG 段补记**（不改已发布的 Release 正文）。
+- **汇率/储备未纳入新鲜度看板**：`../airflow/data_monitor/stats_config.py` 的
+  `STATS_CHECKS` 无 `currencyrate` 与 `currency.reserve.*` 条目（上游 Go 采集链已
+  paused）。故 `docs/DATA_CALENDAR.md` 不含这两项——**不伪造新鲜度条目**，
+  待上游恢复生产后补登记。
+- **美宏观无新鲜度阈值**：`fred.*` 同样不在 `STATS_CHECKS`；序列更新频率随
+  各序列原生频率（D/W/M/Q）而异，单一阈值无意义。点序列取回后以末点日期自判。
+
 ## 上游指标目录缺席（登记待办，SDK 侧不伪造）
 
 - `$BOND_YIELD_GOV_10Y`（十年国债收益率）：服务端指标层已在产（`AT(sym, $BOND_YIELD_GOV_10Y)`
@@ -72,7 +84,7 @@
 | 1 | 期货日线/周月线历史序列 | 补暴露面 | wmshare 目录 | **已上线**（`cli.futures.bars` 门面 2.9.0 + `futures.query_bars` store 直读进目录，2026-11-23——全历史长窗/结算·持仓字段/同日复跑缓存，分工见 API.md 期货节） |
 | 2 | 官方储备（外汇储备/黄金储备/SDR） | **已上线 3.0+**：`cli.macro.reserves/reserves_history/reserves_asof`（月频外汇+黄金，值=美元数值）；**遗留**：SDR 上游无生产者（`available=False` 如实标注）、黄金仅市值口径无吨数/盎司、国别维度待走 FRED 目录核（丢队列④） | script → wmshare | 已上线（部分） |
 | 3 | 外汇（人民币中间价/日线/基础信息） | **已上线 3.0+**：`cli.fx.rate/history/bars/list`（采集零新增，数据日更在库）；口径=每 1 单位外币折人民币（上游每 100 外币已 /100 归一），中间价与中行牌价分列 | script → wmshare | 已上线 |
-| 4 | FRED 美宏观序列暴露 | 纯暴露层确认（fred_build+4 DAG+sys/fred 全在，wmshare 侧零暴露） | wmshare（域 yaml+fred.search 读面） | 待启动 |
+| 4 | FRED 美宏观序列暴露 | **已上线（3.1）**：`cli.us_macro.topics/search/series_meta/points`（精选 88 条 × 11 主题）；单位随序列而变（读 `series_meta().units`）、空值不补 0、需授权序列 `has_data=False` 永不抓取。**遗留**：web 页面读面 `fred.points`/`fred.series` 是「新→旧 + 期间码 year」契约，已标 internal 不进 SDK | wmshare（域 yaml + fred 读面） | 已上线 |
 | 5 | 股东人数历史序列（现仅最新值） | **底层按季留史已核实**（mongo symbol×季度多 doc 追加，HIST_PCT 序列可读） | script 历史读面 → wmshare 条目 | 待启动 |
 | 6 | 每日涨跌停价格 | 派生评估（交易所规则 vs 落字段）：现 `$LIMIT_UP` 仅 ±10% 近似旗标；原料 $LISTING_BOARD/$IS_ST/$CLOSE_DAY 全在，纯计算无新采集 | script 派生 → wmshare 暴露 | 待评估 |
 | 7 | 概念板块（分类/成份/每日行情） | 三条板块日频资金流已落库零读面（概念×2 + 行业×1 板块口径）可先小步暴露；目录/成份/行情需新 collector（第二步） | 小步暴露 → airflow 新采集 → wmshare 域 | 待启动 |

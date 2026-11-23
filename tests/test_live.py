@@ -412,6 +412,47 @@ def test_macro_reserves(cli):
     assert cli.macro.reserves_asof("sdr") is None, "SDR 无数据应返回 None（不返回 0）"
 
 
+def test_us_macro_series(cli):
+    """美宏观：升序合同 + 单位随序列而变 + 需授权序列如实无数据。
+
+    量纲硬断言（本域最易错处）：GDP 是十亿美元口径（≈3e4），UNRATE 是百分数
+    （0~30）。若有人把单位当元来归一，GDP 会掉到 3e4 以外的量级立即暴露。
+    """
+    topics = _call_or_xfail(lambda: cli.us_macro.topics())
+    assert len(topics) == 11, f"精选主题应 11 个，实际 {len(topics)}"
+    assert {"topic", "name", "series"} <= set(topics.columns)
+    total_series = sum(len(list(s)) for s in topics["series"])
+    assert total_series == 88, f"精选序列应 88 条，实际 {total_series}"
+
+    hits = _call_or_xfail(lambda: cli.us_macro.search("GDP", 5))
+    assert len(hits) >= 1 and "GDP" in set(hits["id"])
+    assert all(hits["title_zh"]), "精选中文名应齐（88 条均有中文名）"
+
+    meta = _call_or_xfail(lambda: cli.us_macro.series_meta("GDP"))
+    assert meta["units"] == "Billions of Dollars", f"GDP 单位应为十亿美元：{meta['units']}"
+    assert meta["has_data"] is True
+    assert meta["citation"].startswith("FRED"), "引用字段原文应保留"
+
+    pts = _call_or_xfail(lambda: cli.us_macro.points("GDP", limit=20))
+    assert len(pts) >= 1
+    assert list(pts["date"]) == sorted(pts["date"]), "点序列应 date 升序（旧→新）"
+    assert {"id", "date", "value"} <= set(pts.columns)
+    last = float(pts["value"].iloc[-1])
+    # 十亿美元口径：名义 GDP 万亿美元级 → 2e4~4e4；若误当元/百万分立即暴露
+    assert 1e3 <= last <= 1e5, f"GDP 末值量级异常（应为十亿美元）：{last}"
+
+    # 百分数序列：不同单位必须共存于同一读面（证明无统一换算）
+    unrate = _call_or_xfail(lambda: cli.us_macro.points("UNRATE", limit=10))
+    if len(unrate) >= 1:
+        v = float(unrate["value"].iloc[-1])
+        assert 0.0 <= v <= 30.0, f"UNRATE 应为百分数（0~30），实际 {v}"
+
+    # 需授权序列：如实标 has_data=False，不伪造数据
+    locked = _call_or_xfail(lambda: cli.us_macro.series_meta("CSUSHPINSA"))
+    if locked and locked.get("status") == "pre_approval_required":
+        assert locked["has_data"] is False, "需授权序列不应有数据"
+
+
 def test_notice_read_text(cli):
     """公告正文读取：取一条有 PDF 的公告，预览路径应返回纯读 MAP。
 

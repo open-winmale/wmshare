@@ -12277,6 +12277,292 @@
         }
       }
     },
+    "/us_macro/topics": {
+      "post": {
+        "operationId": "us_macro_topics",
+        "summary": "精选主题树（DataFrame：topic/name/series；11 主题合计 88 条序列）。",
+        "description": "静态包直读，零取数成本——不知道有哪些序列时先调它。、底层目录函数 `fred.topics`。SDK 调用：`cli.us_macro.topics(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "参考数据"
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "主题行",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "topic": {
+                        "type": "string",
+                        "description": "主题 id（如 growth）"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "主题中文名（如 增长）"
+                      },
+                      "series": {
+                        "description": "该主题下的序列 id 清单"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/us_macro/search": {
+      "post": {
+        "operationId": "us_macro_search",
+        "summary": "在精选序列内检索（DataFrame：id/title_zh/blurb_zh/topic）。",
+        "description": "匹配序列 id、精选中文名与一句话说明；中文关键词可直接命中，、不必先知道英文 id。只在 88 条精选内做，不扫上游全量目录。、底层目录函数 `fred.search`。SDK 调用：`cli.us_macro.search(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "参考数据"
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "keyword": {
+                    "type": "string",
+                    "description": "关键词（空串返回全部精选）"
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "description": "返回条数（缺省 20，上限 88）"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "命中行",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "description": "序列 id（如 GDP）"
+                      },
+                      "title_zh": {
+                        "type": "string",
+                        "description": "精选中文名"
+                      },
+                      "blurb_zh": {
+                        "type": "string",
+                        "description": "精选一句话说明"
+                      },
+                      "topic": {
+                        "type": "string",
+                        "description": "所属主题 id"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/us_macro/series_meta": {
+      "post": {
+        "operationId": "us_macro_series_meta",
+        "summary": "序列元信息（dict：id/title/title_zh/units/frequency_short/status/has_data/…）。",
+        "description": "**先读 ``units`` 再解读数值**——这是本域唯一的口径来源。``has_data=False``、表示库里还没观测（未抓取或需授权），不是「值为 0」。、底层目录函数 `fred.series_meta`。SDK 调用：`cli.us_macro.series_meta(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "参考数据"
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "series_id": {
+                    "type": "string",
+                    "description": "序列 id（如 ``GDP``/``UNRATE``/``DGS10``；自动大写归一）"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "序列元信息",
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "序列 id"
+                    },
+                    "title": {
+                      "type": "string",
+                      "description": "原英文标题"
+                    },
+                    "title_zh": {
+                      "type": "string",
+                      "description": "精选中文名"
+                    },
+                    "blurb_zh": {
+                      "type": "string",
+                      "description": "精选一句话说明"
+                    },
+                    "units": {
+                      "type": "string",
+                      "description": "单位（随序列而变：Percent/Billions of Dollars/Thousands of Persons…）"
+                    },
+                    "frequency_short": {
+                      "type": "string",
+                      "description": "原生频率（Q/M/W/D…）"
+                    },
+                    "release_name": {
+                      "type": "string",
+                      "description": "所属发布（如 Gross Domestic Product）"
+                    },
+                    "status": {
+                      "type": "string",
+                      "description": "入库状态（fetched/not_fetched/pre_approval_required…）"
+                    },
+                    "has_data": {
+                      "type": "boolean",
+                      "description": "库里是否有观测（true/false）"
+                    },
+                    "series_url": {
+                      "type": "string",
+                      "description": "上游序列页 URL"
+                    },
+                    "citation": {
+                      "type": "string",
+                      "description": "引用要求"
+                    },
+                    "hint": {
+                      "type": "string",
+                      "description": "无数据时的说明"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/us_macro/points": {
+      "post": {
+        "operationId": "us_macro_points",
+        "summary": "序列点（DataFrame，date 升序=旧→新；空值已跳过不补 0）。",
+        "description": "底层目录函数 `fred.points_asc`。SDK 调用：`cli.us_macro.points(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "参考数据"
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "series_id": {
+                    "type": "string",
+                    "description": "序列 id（如 ``GDP``/``UNRATE``/``DGS10``）"
+                  },
+                  "begin": {
+                    "type": "string",
+                    "description": "开始日期 YYYY-MM-DD（可空=全历史；服务端窗口下推）"
+                  },
+                  "end": {
+                    "type": "string",
+                    "description": "结束日期 YYYY-MM-DD（可空）"
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "description": "根数（缺省 500=Client 单次上限；服务端上限 20000，长历史请传 Client(max_limit=None)）"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "点序列",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "description": "序列 id"
+                      },
+                      "date": {
+                        "type": "string",
+                        "description": "观测日期 YYYY-MM-DD"
+                      },
+                      "value": {
+                        "type": "number",
+                        "description": "观测值（单位见 fred.series_meta 的 units）"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "value": [
+              -1000000000,
+              10000000000000
+            ]
+          },
+          "checks": [
+            "date_iso"
+          ]
+        }
+      }
+    },
     "/v1/analysis/xs/eval": {
       "post": {
         "operationId": "xs_eval",

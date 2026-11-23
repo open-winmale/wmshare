@@ -70,6 +70,8 @@ _REPLAY_NAMESPACE_NAMES = (
     # 3.0 外汇（sys/fx）：快照未拍 → 整域 replay_unsupported，签名由
     # _UnsupportedNamespace 兜底（参数表由门禁逐项核对 live 定义）
     "fx",
+    # 3.1 美宏观（sys/fred）：同上，未拍摄 → 整域 replay_unsupported
+    "us_macro",
 )
 
 

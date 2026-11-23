@@ -729,6 +729,57 @@ class ForecastNS(_Ns):
         """
         return _out(self._client.call("forecast.snapshot", sym=sym, _raw=_raw), _raw)
 
+class FredNS(_Ns):
+    """美宏观（market.us_macro）"""
+
+    def topics(self, _raw: bool = False) -> Any:
+        """精选主题树
+
+:returns: ARR · 主题行（topic/name/series）；11 主题合计 88 条序列
+        """
+        return _out(self._client.call("fred.topics", _raw=_raw), _raw)
+
+    def search(self, keyword: str, limit: int | None = None, _raw: bool = False) -> Any:
+        """精选序列检索
+
+:param keyword: 关键词（匹配序列 id / 中文名 / 一句话说明；空串返回全部精选）
+:param limit: 返回条数，缺省 20，上限 88
+
+:returns: ARR · 命中行（id/title_zh/blurb_zh/topic）
+        """
+        kw: dict[str, Any] = {"keyword": keyword}
+        if limit is not None:
+            kw["limit"] = limit
+        return _out(self._client.call("fred.search", **kw, _raw=_raw), _raw)
+
+    def series_meta(self, id: str, _raw: bool = False) -> Any:
+        """序列元信息
+
+:param id: 序列 id（如 GDP、UNRATE、DGS10；大写，自动归一）
+
+:returns: MAP · 元信息（id/title/title_zh/blurb_zh/units/frequency_short/release_name/status/has_data/series_url/citation/hint）
+        """
+        return _out(self._client.call("fred.series_meta", id=id, _raw=_raw), _raw)
+
+    def points_asc(self, id: str, begin: str | None = None, end: str | None = None, limit: int | None = None, _raw: bool = False) -> Any:
+        """序列点（date 升序）
+
+:param id: 序列 id（如 GDP、UNRATE、DGS10）
+:param begin: 开始日期 YYYY-MM-DD（可空=全历史）
+:param end: 结束日期 YYYY-MM-DD（可空）
+:param limit: 根数，缺省 500（Client 单次上限），服务端上限 20000
+
+:returns: ARR · 点（id/date/value；date 升序，空值已跳过）
+        """
+        kw: dict[str, Any] = {"id": id}
+        if begin is not None:
+            kw["begin"] = begin
+        if end is not None:
+            kw["end"] = end
+        if limit is not None:
+            kw["limit"] = limit
+        return _out(self._client.call("fred.points_asc", **kw, _raw=_raw), _raw)
+
 class FuturesNS(_Ns):
     """期货（market.futures）"""
 
@@ -2264,6 +2315,7 @@ NAMESPACES: dict[str, type[_Ns]] = {
     "estimates": EstimatesNS,
     "filings": FilingsNS,
     "forecast": ForecastNS,
+    "fred": FredNS,
     "futures": FuturesNS,
     "fx": FxNS,
     "income": IncomeNS,

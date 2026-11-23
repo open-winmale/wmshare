@@ -2,11 +2,11 @@
   "schema_version": 2,
   "generated_by": "tools/gen_api_docs.py",
   "meta": {
-    "core": 164,
+    "core": 168,
     "composite": 18,
-    "docs_visible": 159,
+    "docs_visible": 163,
     "variants": 21,
-    "domains": 26,
+    "domains": 27,
     "categories": [
       {
         "key": "market",
@@ -25,7 +25,7 @@
         "cn": "参考数据"
       }
     ],
-    "test_ready": 157,
+    "test_ready": 161,
     "sampled": 170,
     "samples_provenance": {
       "captured_at": "2026-11-23",
@@ -9849,6 +9849,304 @@
               "symbol": "600519",
               "xs_lines": [
                 "return fx.list()"
+              ],
+              "args": {
+                "print.plain": true
+              },
+              "script_files": {},
+              "mode": "call",
+              "market": "cn"
+            }
+          }
+        }
+      ],
+      "composites": []
+    },
+    {
+      "ns": "us_macro",
+      "cn": "美国宏观序列",
+      "chapter": "宏观",
+      "category": "reference",
+      "domain": "market.us_macro",
+      "domain_cn": "美宏观",
+      "domain_description": "美国宏观序列（精选 88 条 × 11 主题，随上游日更/月更/季更落库）。 读面是「主题树 → 检索 → 元信息 → 升序点序列」四件：单位随序列而变 （Percent / Billions of Dollars / Thousands of Persons…），必须读 `fred.series_meta().units` 再解读数值，本域**不提供统一单位声明**。 与 market.macro 的区别：后者是国产宏观指标码（$CPI/$GDP 走 alt.bssaa 指标层、 单位已归一），本域是美元口径的原始观测序列，两者数据源与口径都不同，勿混。",
+      "domain_units": {
+        "date": "YYYY-MM-DD"
+      },
+      "interfaces": [
+        {
+          "key": "us_macro.topics",
+          "ns": "us_macro",
+          "method": "topics",
+          "cn": "美宏观主题树",
+          "composite": false,
+          "desc": "精选主题树（DataFrame：topic/name/series；11 主题合计 88 条序列）。",
+          "params": [],
+          "returns": {
+            "kind": "array",
+            "desc": null,
+            "fields": [
+              {
+                "name": "topic",
+                "desc": "主题 id（如 growth）"
+              },
+              {
+                "name": "name",
+                "desc": "主题中文名（如 增长）"
+              },
+              {
+                "name": "series",
+                "desc": "该主题下的序列 id 清单"
+              }
+            ]
+          },
+          "notes": [
+            "静态包直读（`xs/data/fred/topics.json`），**零 store 成本**——不知道有哪些 序列时先调它，再按主题取点，避免盲目试 id。"
+          ],
+          "docs_visible": true,
+          "example": "cli.us_macro.topics()",
+          "test": {
+            "kwargs": {},
+            "path": "/v1/analysis/xs/eval",
+            "body": {
+              "symbol": "600519",
+              "xs_lines": [
+                "return fred.topics()"
+              ],
+              "args": {
+                "print.plain": true
+              },
+              "script_files": {},
+              "mode": "call",
+              "market": "cn"
+            }
+          }
+        },
+        {
+          "key": "us_macro.search",
+          "ns": "us_macro",
+          "method": "search",
+          "cn": "美宏观序列检索",
+          "composite": false,
+          "desc": "在精选序列内检索（DataFrame：id/title_zh/blurb_zh/topic）。",
+          "params": [
+            {
+              "name": "keyword",
+              "required": false,
+              "desc": "关键词（空串返回全部精选）；默认 ''"
+            },
+            {
+              "name": "limit",
+              "required": false,
+              "desc": "返回条数（缺省 20，上限 88）；默认 20"
+            }
+          ],
+          "returns": {
+            "kind": "array",
+            "desc": null,
+            "fields": [
+              {
+                "name": "id",
+                "desc": "序列 id（如 GDP）"
+              },
+              {
+                "name": "title_zh",
+                "desc": "精选中文名"
+              },
+              {
+                "name": "blurb_zh",
+                "desc": "精选一句话说明"
+              },
+              {
+                "name": "topic",
+                "desc": "所属主题 id"
+              }
+            ]
+          },
+          "notes": [
+            "只在 88 条精选内匹配，不扫上游全量目录（约 85 万行）——成本差三个数量级。",
+            "中文关键词可命中（按精选中文名与说明匹配），不必先知道英文 id。"
+          ],
+          "docs_visible": true,
+          "example": "cli.us_macro.search(keyword=\"回购\", limit=10)",
+          "test": {
+            "kwargs": {
+              "keyword": "回购",
+              "limit": 10
+            },
+            "path": "/v1/analysis/xs/eval",
+            "body": {
+              "symbol": "600519",
+              "xs_lines": [
+                "return fred.search(\"回购\", 10)"
+              ],
+              "args": {
+                "print.plain": true
+              },
+              "script_files": {},
+              "mode": "call",
+              "market": "cn"
+            }
+          }
+        },
+        {
+          "key": "us_macro.series_meta",
+          "ns": "us_macro",
+          "method": "series_meta",
+          "cn": "美宏观序列元信息",
+          "composite": false,
+          "desc": "序列元信息（dict：id/title/title_zh/units/frequency_short/status/has_data/…）。",
+          "params": [
+            {
+              "name": "series_id",
+              "required": false,
+              "desc": "序列 id（如 ``GDP``/``UNRATE``/``DGS10``；自动大写归一）；默认 'GDP'"
+            }
+          ],
+          "returns": {
+            "kind": "object",
+            "desc": null,
+            "fields": [
+              {
+                "name": "id",
+                "desc": "序列 id"
+              },
+              {
+                "name": "title",
+                "desc": "原英文标题"
+              },
+              {
+                "name": "title_zh",
+                "desc": "精选中文名"
+              },
+              {
+                "name": "blurb_zh",
+                "desc": "精选一句话说明"
+              },
+              {
+                "name": "units",
+                "desc": "单位（随序列而变：Percent/Billions of Dollars/Thousands of Persons…）"
+              },
+              {
+                "name": "frequency_short",
+                "desc": "原生频率（Q/M/W/D…）"
+              },
+              {
+                "name": "release_name",
+                "desc": "所属发布（如 Gross Domestic Product）"
+              },
+              {
+                "name": "status",
+                "desc": "入库状态（fetched/not_fetched/pre_approval_required…）"
+              },
+              {
+                "name": "has_data",
+                "desc": "库里是否有观测（true/false）"
+              },
+              {
+                "name": "series_url",
+                "desc": "上游序列页 URL"
+              },
+              {
+                "name": "citation",
+                "desc": "引用要求"
+              },
+              {
+                "name": "hint",
+                "desc": "无数据时的说明"
+              }
+            ]
+          },
+          "notes": [
+            "**先读 units 再解读数值**——这是本域唯一的口径来源（GDP 十亿美元、 UNRATE 百分数、PAYEMS 千人）。",
+            "`has_data=false` 表示库里还没有该序列观测（未抓取或需授权），不是「值为 0」。",
+            "不返回点序列（避免元信息面拉全历史）；点走 fred.points_asc。"
+          ],
+          "docs_visible": true,
+          "example": "cli.us_macro.series_meta()",
+          "test": {
+            "kwargs": {},
+            "path": "/v1/analysis/xs/eval",
+            "body": {
+              "symbol": "600519",
+              "xs_lines": [
+                "return fred.series_meta(\"GDP\")"
+              ],
+              "args": {
+                "print.plain": true
+              },
+              "script_files": {},
+              "mode": "call",
+              "market": "cn"
+            }
+          }
+        },
+        {
+          "key": "us_macro.points",
+          "ns": "us_macro",
+          "method": "points",
+          "cn": "美宏观序列点（升序）",
+          "composite": false,
+          "desc": "序列点（DataFrame，date 升序=旧→新；空值已跳过不补 0）。",
+          "params": [
+            {
+              "name": "series_id",
+              "required": false,
+              "desc": "序列 id（如 ``GDP``/``UNRATE``/``DGS10``）；默认 'GDP'"
+            },
+            {
+              "name": "begin",
+              "required": false,
+              "desc": "开始日期 YYYY-MM-DD（可空=全历史；服务端窗口下推）"
+            },
+            {
+              "name": "end",
+              "required": false,
+              "desc": "结束日期 YYYY-MM-DD（可空）"
+            },
+            {
+              "name": "limit",
+              "required": false,
+              "desc": "根数（缺省 500=Client 单次上限；服务端上限 20000，长历史请传 Client(max_limit=None)）；默认 500"
+            }
+          ],
+          "returns": {
+            "kind": "array",
+            "desc": null,
+            "fields": [
+              {
+                "name": "id",
+                "desc": "序列 id"
+              },
+              {
+                "name": "date",
+                "desc": "观测日期 YYYY-MM-DD"
+              },
+              {
+                "name": "value",
+                "desc": "观测值（单位见 fred.series_meta 的 units）"
+              }
+            ]
+          },
+          "notes": [
+            "date 升序（旧→新，全库合同）+ 纯 ISO 日期。web 侧的 `fred.series` 是 另一套契约（新→旧、行内 year 是期间码），本域不用它。",
+            "空值跳过不补 0：上游 \".\" 记为 nil，直接不出该点（不是 0）。",
+            "数据版本键缓存（最新观测日期入键）：同一序列复跑近零成本，新观测落库自动换键。",
+            "ranges 的 value 界是**跨序列宽界**（只拦量级灾难）：88 条序列单位各异 （百分数到万亿美元），真实量级以 series_meta 的 units 为准。"
+          ],
+          "docs_visible": true,
+          "example": "cli.us_macro.points(begin=\"2026-01-01\", end=\"2026-03-31\", limit=10)",
+          "test": {
+            "kwargs": {
+              "begin": "2026-01-01",
+              "end": "2026-03-31",
+              "limit": 10
+            },
+            "path": "/v1/analysis/xs/eval",
+            "body": {
+              "symbol": "600519",
+              "xs_lines": [
+                "return fred.points_asc(\"GDP\", \"2026-01-01\", \"2026-03-31\", 10)"
               ],
               "args": {
                 "print.plain": true
