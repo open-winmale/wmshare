@@ -7291,6 +7291,192 @@
         }
       }
     },
+    "/blocktrade/by_date": {
+      "post": {
+        "operationId": "blocktrade_by_date",
+        "summary": "指定交易日全市场大宗交易（成交额降序）。",
+        "description": ":returns: DataFrame/行表 · date/symbol/price/volume/amount/buyer/seller、底层目录函数 `blocktrade.by_date`。SDK 调用：`cli.blocktrade.by_date(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "市场行情"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "trade_date": {
+                    "type": "string",
+                    "description": "交易日 YYYY-MM-DD（或 YYYYMMDD）"
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "description": "前 N 条，默认 100"
+                  }
+                },
+                "required": [
+                  "trade_date"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "大宗交易行",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "date": {
+                        "type": "string",
+                        "description": "交易日"
+                      },
+                      "symbol": {
+                        "type": "string",
+                        "description": "6 位裸码"
+                      },
+                      "price": {
+                        "type": "number",
+                        "description": "成交价（元）"
+                      },
+                      "volume": {
+                        "type": "number",
+                        "description": "成交量（股）"
+                      },
+                      "amount": {
+                        "type": "number",
+                        "description": "成交额（元）"
+                      },
+                      "buyer": {
+                        "type": "string",
+                        "description": "买方营业部"
+                      },
+                      "seller": {
+                        "type": "string",
+                        "description": "卖方营业部"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "price": [
+              0,
+              10000.0
+            ],
+            "volume": [
+              0,
+              1000000000.0
+            ],
+            "amount": [
+              0,
+              100000000000.0
+            ]
+          }
+        }
+      }
+    },
+    "/blocktrade/by_symbol": {
+      "post": {
+        "operationId": "blocktrade_by_symbol",
+        "summary": "单票大宗交易历史（最近 N 条事件，date 升序）。",
+        "description": ":returns: DataFrame/行表 · 字段同 ``by_date``、底层目录函数 `blocktrade.by_symbol`。SDK 调用：`cli.blocktrade.by_symbol(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "市场行情"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "symbol": {
+                    "type": "string",
+                    "description": "6 位裸码（也接受 .SH/.SZ/.BJ 后缀）"
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "description": "最近事件条数，默认 100"
+                  }
+                },
+                "required": [
+                  "symbol"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "单票大宗事件行",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "date": {
+                        "type": "string",
+                        "description": "交易日"
+                      },
+                      "symbol": {
+                        "type": "string",
+                        "description": "6 位裸码"
+                      },
+                      "price": {
+                        "type": "number",
+                        "description": "成交价（元）"
+                      },
+                      "volume": {
+                        "type": "number",
+                        "description": "成交量（股）"
+                      },
+                      "amount": {
+                        "type": "number",
+                        "description": "成交额（元）"
+                      },
+                      "buyer": {
+                        "type": "string",
+                        "description": "买方营业部"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "price": [
+              0,
+              10000.0
+            ],
+            "volume": [
+              0,
+              1000000000.0
+            ],
+            "amount": [
+              0,
+              100000000000.0
+            ]
+          }
+        }
+      }
+    },
     "/toplist/by_symbol": {
       "post": {
         "operationId": "toplist_by_symbol",

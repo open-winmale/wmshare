@@ -10,7 +10,7 @@
     ``_raw=True`` 取上游原始行（list[dict]，跳过规范化与换算）——诊断逃生口；
   - 本层是目录合同的薄翻译：高频方法显式包装；目录内其余非内部函数经 ``__getattr__``
     属性直达（如 ``cli.kline.screen_above_ma20``）；目录标 ``internal: true`` 的
-    规范化辅助（fmt_* 等）不再直达，请走 ``cli.call``——352 个底层函数零遮蔽；
+    规范化辅助（fmt_* 等）不再直达，请走 ``cli.call``——355 个底层函数零遮蔽；
   - 选股能力集中在 ``cli.screener``：单票筛选器（bool）、全市场宽度/涨跌榜与
     全市场条件选股 ``query()``（服务端索引直出）显式包装，kline 目录的其余筛选
     函数经属性直达。
@@ -348,6 +348,7 @@ _FRIENDLY_NS_TO_CATALOG: dict[str, str] = {
     "fx": "fx",
     "us_macro": "fred",
     "board": "board",
+    "blocktrade": "blocktrade",
 }
 
 
@@ -3540,6 +3541,34 @@ class BoardApi(_Api):
         return _out(self._c.call("board.moneyflow_last", src=src, limit=limit))
 
 
+class BlocktradeApi(_Api):
+    """A 股大宗交易（日频全市场，成交额降序；额=元/量=股/价=元）。
+
+    行内只有证券代码（无简称）；单票历史由门面统一为 date 升序。
+    同一交易日同票可有多笔（不同价格/买卖方），各占一行。
+    """
+
+    def by_date(self, trade_date: str, limit: int = 100) -> Any:
+        """指定交易日全市场大宗交易（成交额降序）。
+
+        :param trade_date: 交易日 YYYY-MM-DD（或 YYYYMMDD）
+        :param limit: 前 N 条，默认 100
+        :returns: DataFrame/行表 · date/symbol/price/volume/amount/buyer/seller
+        """
+        return _out(self._c.call("blocktrade.by_date",
+                                 trade_date=trade_date, limit=limit))
+
+    def by_symbol(self, symbol: str, limit: int = 100) -> Any:
+        """单票大宗交易历史（最近 N 条事件，date 升序）。
+
+        :param symbol: 6 位裸码（也接受 .SH/.SZ/.BJ 后缀）
+        :param limit: 最近事件条数，默认 100
+        :returns: DataFrame/行表 · 字段同 ``by_date``
+        """
+        rows = self._c.call("blocktrade.by_symbol", sym=symbol, limit=limit)
+        return _out(_sort_rows_by_date(rows))
+
+
 class ToplistApi(_Api):
     """A 股龙虎榜（交易所披露口径，日频）。
 
@@ -3911,6 +3940,7 @@ FRIENDLY_NAMESPACES: dict[str, type[_Api]] = {
     "index": IndexApi,
     "stocks": StocksApi,
     "board": BoardApi,
+    "blocktrade": BlocktradeApi,
     "statements": StatementsApi,
     "segments": SegmentsApi,
     "valuation": ValuationApi,
@@ -4040,6 +4070,9 @@ FRIENDLY_INDEX: list[tuple[str, str, str, str, str]] = [
     ("market", "board", "moneyflow", "指定交易日板块资金流", "board.moneyflow"),
     ("market", "board", "moneyflow_last", "最新交易日板块资金流",
      "board.moneyflow_last"),
+    ("market", "blocktrade", "by_date", "指定交易日大宗交易", "blocktrade.by_date"),
+    ("market", "blocktrade", "by_symbol", "单票大宗交易历史",
+     "blocktrade.by_symbol"),
     ("market", "toplist", "by_symbol", "单票上榜历史", "toplist.by_symbol"),
     ("disclosure", "forecast", "yjyg", "业绩预告历史", "forecast.yjyg_rows"),
     ("disclosure", "forecast", "yjyg_latest", "最新业绩预告", "forecast.yjyg_latest"),

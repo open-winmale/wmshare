@@ -48,6 +48,9 @@ METHOD_EXAMPLE_VALUES = {
     ("board", "moneyflow"): {"src": '"ths_concept"',
                              "trade_date": '"2026-11-20"', "limit": "10"},
     ("board", "moneyflow_last"): {"src": '"ths_concept"', "limit": "10"},
+    # 大宗交易：单日榜需交易日；单票历史用裸码
+    ("blocktrade", "by_date"): {"trade_date": '"2026-11-20"', "limit": "10"},
+    ("blocktrade", "by_symbol"): {"limit": "10"},
     ("pdf_doc", "find_by_url"): {"url": '"<公告行 url 字段>"'},
     ("pdf_doc", "find_by_key"): {"file_key": '"<search() 行 file_key 字段>"'},
     ("futures", "snapshot"): {"fut_code": '"RB.SHF"'},

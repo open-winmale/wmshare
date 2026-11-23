@@ -862,6 +862,12 @@ def market(
             data = cli.board.moneyflow(board_src, date, limit=n or 100)
         else:
             data = cli.board.moneyflow_last(board_src, limit=n or 100)
+    elif domain == "blocktrade" and action == "by_date":
+        if not date:
+            raise ValueError("blocktrade.by_date 需要 date（交易日 YYYY-MM-DD）")
+        data = cli.blocktrade.by_date(date, limit=n or 100)
+    elif domain == "blocktrade":
+        data = cli.blocktrade.by_symbol(_symbol(action, symbol), limit=n or 100)
     else:
         data = cli.stocks.list()
     return success(runtime, data, output=output, max_rows=max_rows,

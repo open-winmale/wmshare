@@ -31,6 +31,35 @@ class _Ns:
         self._client = client
 
 
+class BlocktradeNS(_Ns):
+    """大宗交易（market.blocktrade）"""
+
+    def by_date(self, trade_date: str, limit: int = 100, _raw: bool = False) -> Any:
+        """指定交易日大宗交易
+
+:param trade_date: 交易日 YYYY-MM-DD 或 YYYYMMDD
+:param limit: 返回前 N 条（成交额降序）
+
+:returns: ARR · 大宗交易行（成交额降序）
+        """
+        kw: dict[str, Any] = {"trade_date": trade_date}
+        if limit is not None:
+            kw["limit"] = limit
+        return _out(self._client.call("blocktrade.by_date", **kw, _raw=_raw), _raw)
+
+    def by_symbol(self, sym: str, limit: int = 100, _raw: bool = False) -> Any:
+        """单票大宗交易历史
+
+:param sym: 6 位裸码或带 .SH/.SZ/.BJ 后缀
+:param limit: 最近 N 条事件
+
+:returns: ARR · 单票大宗事件行（date 升序；字段同 blocktrade.by_date）
+        """
+        kw: dict[str, Any] = {"sym": sym}
+        if limit is not None:
+            kw["limit"] = limit
+        return _out(self._client.call("blocktrade.by_symbol", **kw, _raw=_raw), _raw)
+
 class BoardNS(_Ns):
     """板块资金流（market.board）"""
 
@@ -2366,6 +2395,7 @@ class WorkoutNS(_Ns):
         return _out(self._client.call("workout.query", sym=sym, _raw=_raw), _raw)
 
 NAMESPACES: dict[str, type[_Ns]] = {
+    "blocktrade": BlocktradeNS,
     "board": BoardNS,
     "bonus": BonusNS,
     "buyback": BuybackNS,

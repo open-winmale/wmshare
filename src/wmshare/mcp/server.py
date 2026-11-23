@@ -51,7 +51,7 @@ CorporateAction = Literal[
 ]
 MarketDomain = Literal[
     "kline", "moneyflow", "margin", "cbond", "index", "valuation", "stocks",
-    "board",
+    "board", "blocktrade",
 ]
 IntlAction = Literal[
     "query_ccass", "query_shareholders", "query_org_rating",
@@ -89,6 +89,7 @@ MarketAction = Literal[
     "latest_quotes", "of_stock", "call_hits", "kline_window", "keys", "members",
     "weights", "valuation", "hist_stats", "list", "trend", "universe_keys",
     "limit_price", "limit_prices", "moneyflow", "moneyflow_last",
+    "by_date", "by_symbol",
 ]
 
 

@@ -935,6 +935,26 @@ def test_equity_domain_smoke(cli):
         assert r is None or isinstance(r, dict)
 
 
+def test_blocktrade_read_face(cli):
+    """大宗交易：单票历史 date 升序、成交额≈价×量；单日榜成交额降序。"""
+    out = _call_or_xfail(lambda: cli.blocktrade.by_symbol("000001", 5))
+    rows = out.to_dict("records") if hasattr(out, "to_dict") else list(out)
+    if not rows:
+        pytest.skip("block_trade 尚未回补（采集部署后解除此跳过）")
+    dates = [str(r["date"]) for r in rows]
+    assert dates == sorted(dates), f"单票历史必须 date 升序：{dates}"
+    for r in rows:
+        assert float(r["volume"]) > 0 and float(r["amount"]) > 0
+        implied = float(r["price"]) * float(r["volume"])
+        assert abs(float(r["amount"]) - implied) / max(implied, 1) < 0.01, (
+            f"amount 与 price×volume 偏离过大：{r}")
+    day = _call_or_xfail(lambda: cli.blocktrade.by_date(dates[-1], 5))
+    day_rows = day.to_dict("records") if hasattr(day, "to_dict") else list(day)
+    assert day_rows, "最新一笔所在交易日应有全市场榜"
+    amounts = [float(r["amount"]) for r in day_rows]
+    assert amounts == sorted(amounts, reverse=True), "单日榜必须成交额降序"
+
+
 def test_board_moneyflow_three_sources(cli):
     """板块资金流：三源同口径（额=元、率=小数），指定日与最新日逐行一致。"""
     for src, min_rows in (("ths_concept", 300), ("ths_industry", 80), ("dc", 900)):

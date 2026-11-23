@@ -1,0 +1,88 @@
+id: market.blocktrade
+version: 1.0.0
+cn: 大宗交易
+kind: raw
+category: market
+priority: P1
+description: A 股大宗交易（日频全市场）——指定交易日全市场大宗明细（成交额降序）与
+  单票历史。额=元、量=股、价=元（上游 vol 万股/amount 万元已 ×1e4），日期=ISO。
+data_origin: [平台数据服务]
+units:
+  price: 元
+  volume: 股
+  amount: 元
+requires: {path: sys/blocktrade/init.xs, preloaded: false}
+notes:
+  - 行内只有证券代码（无简称）；要名称请用 cli.stocks.list 或 cli.info.profile 关联
+  - 单日榜按成交额降序取前 N；单票历史按日期收集、SDK 门面统一升序（date 升序）
+  - 买卖方为营业部/机构名称原文；同一交易日同票可有多笔（不同价格/买卖方）
+functions:
+  - name: blocktrade.by_date
+    cn: 指定交易日大宗交易
+    kind: raw
+    layer: L0
+    params:
+      - {name: trade_date, type: string, required: true, desc: 交易日 YYYY-MM-DD 或 YYYYMMDD}
+      - {name: limit, type: int, required: false, default: 100, desc: 返回前 N 条（成交额降序）}
+    ranges:
+      price: [0, 1.0e+04]
+      volume: [0, 1.0e+09]
+      amount: [0, 1.0e+11]
+    returns:
+      desc: ARR · 大宗交易行（成交额降序）
+      shape:
+        kind: array
+        cn: 大宗交易行
+        items:
+          kind: object
+          cn: 大宗行
+          fields:
+            - {name: date, type: string, cn: 交易日}
+            - {name: symbol, type: string, cn: 6 位裸码}
+            - {name: price, type: float64, cn: 成交价（元）}
+            - {name: volume, type: float64, cn: 成交量（股）}
+            - {name: amount, type: float64, cn: 成交额（元）}
+            - {name: buyer, type: string, cn: 买方营业部, optional: true}
+            - {name: seller, type: string, cn: 卖方营业部, optional: true}
+    normalize_with: blocktrade.fmt_maps
+    example: 'blocktrade.by_date("2026-11-20", 50)'
+    notes:
+      - 非交易日/未采集日返回空数组；同一票多笔各一行
+  - name: blocktrade.by_symbol
+    cn: 单票大宗交易历史
+    kind: raw
+    layer: L0
+    params:
+      - {name: sym, type: string, required: true, desc: 6 位裸码或带 .SH/.SZ/.BJ 后缀}
+      - {name: limit, type: int, required: false, default: 100, desc: 最近 N 条事件}
+    ranges:
+      price: [0, 1.0e+04]
+      volume: [0, 1.0e+09]
+      amount: [0, 1.0e+11]
+    returns:
+      desc: ARR · 单票大宗事件行（date 升序；字段同 blocktrade.by_date）
+      shape:
+        kind: array
+        cn: 单票大宗事件行
+        items:
+          kind: object
+          cn: 大宗行
+          fields:
+            - {name: date, type: string, cn: 交易日}
+            - {name: symbol, type: string, cn: 6 位裸码}
+            - {name: price, type: float64, cn: 成交价（元）}
+            - {name: volume, type: float64, cn: 成交量（股）}
+            - {name: amount, type: float64, cn: 成交额（元）}
+            - {name: buyer, type: string, cn: 买方营业部, optional: true}
+    normalize_with: blocktrade.fmt_maps
+    example: 'blocktrade.by_symbol("000530", 20)'
+    notes:
+      - 以最新落库交易日做数据版本键缓存（历史只增不改，落库即换键）
+  - name: blocktrade.fmt_maps
+    internal: true
+    cn: 大宗交易行规范化
+    layer: L1
+    params:
+      - {name: rows, type: any, required: true, desc: by_date/by_symbol 的原始行}
+    returns:
+      desc: ARR · 规范化大宗行（额=元、量=股、日期=ISO）

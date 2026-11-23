@@ -49,6 +49,7 @@ export WMSHARE_CLIENT_ID=... WMSHARE_CLIENT_SECRET=...   # 长期额度：配置
 | 24 | `24_us_macro.py` | 3.1 美宏观新面 | 匿名/凭证 | 主题树零取数成本、中文检索、`series_meta().units` 是唯一口径来源（GDP 十亿美元 / UNRATE 百分数 / PAYEMS 千人）、点序列 date 升序且空值不补 0、需授权序列 has_data=False | GUIDE·§6.2、API·宏观章 |
 | 25 | `25_limit_price.py` | 3.1 涨跌停价新面 | 匿名/凭证 | 规则价=前收盘×(1±带宽) 四舍五入到分；带宽只看代码号段（30x/68x=20%、北交所=30%、其余=10%）；收盘价==规则价即当日封板；rule=unbounded/delisting 时价格为空不猜 | GUIDE·§6.1、API·证券与行业基础章 |
 | 26 | `26_board_moneyflow.py` | 3.1 板块资金流新面 | 匿名/凭证 | 三源（ths 概念/行业、dc 概念+行业）各成体系不跨源映射；额=元（THS 原值亿元已换算）、率=小数、板块指数=点位；单日榜按主力净额降序；ths 有买卖总额、dc 有四档单量，缺失为空 | GUIDE·§6.1、API·板块资金流章 |
+| 27 | `27_block_trade.py` | 3.1 大宗交易新面 | 匿名/凭证 | 行内只有证券代码（名称需 join stocks/info）；额=元、量=股（上游万元/万股已换算）；单日榜成交额降序、单票历史 date 升序；同票同日多笔各一行；成交额≈价×量可自检 | GUIDE·§6.1、API·大宗交易章 |
 
 ## 约定（新增示例请遵守）
 

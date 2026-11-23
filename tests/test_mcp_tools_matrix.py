@@ -79,7 +79,7 @@ class _MatrixClient:
 
     def __init__(self) -> None:
         for ns in ("kline", "moneyflow", "margin", "cbond", "index", "valuation",
-                   "stocks", "board", "info", "statements", "indicator", "dividend", "notice",
+                   "stocks", "board", "blocktrade", "info", "statements", "indicator", "dividend", "notice",
                    "screener", "filings", "forecast", "workout", "intl", "segments",
                    "estimates", "equity", "etf", "macro", "us_macro", "toplist",
                    "futures", "pdf_doc", "backtest"):
@@ -165,6 +165,7 @@ def test_market_every_action(runtime, domain, action, kwargs):
     ("index", "trend", {}, "需要 key"),
     ("board", "moneyflow", {}, "需要 date"),
     ("board", "moneyflow_last", {"src": "nope"}, "src 只支持"),
+    ("blocktrade", "by_date", {}, "需要 date"),
 ])
 def test_market_invalid_params(runtime, domain, action, kwargs, match):
     with pytest.raises(ValueError, match=match):

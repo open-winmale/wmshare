@@ -79,7 +79,7 @@ CORPORATE_ACTIONS = (
 )
 MARKET_DOMAINS = (
     "kline", "moneyflow", "margin", "cbond", "index", "valuation", "stocks",
-    "board",
+    "board", "blocktrade",
 )
 MARKET_ACTIONS = {
     "kline": ("minute", "is_etf"),
@@ -90,6 +90,7 @@ MARKET_ACTIONS = {
     "valuation": ("hist_stats",),
     "stocks": ("list", "limit_price", "limit_prices"),
     "board": ("moneyflow", "moneyflow_last"),
+    "blocktrade": ("by_date", "by_symbol"),
 }
 INTL_ACTIONS = (
     "query_ccass", "query_shareholders", "query_org_rating",

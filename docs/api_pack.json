@@ -2,11 +2,11 @@
   "schema_version": 2,
   "generated_by": "tools/gen_api_docs.py",
   "meta": {
-    "core": 173,
+    "core": 175,
     "composite": 18,
-    "docs_visible": 168,
+    "docs_visible": 170,
     "variants": 21,
-    "domains": 28,
+    "domains": 29,
     "categories": [
       {
         "key": "market",
@@ -25,7 +25,7 @@
         "cn": "参考数据"
       }
     ],
-    "test_ready": 166,
+    "test_ready": 168,
     "sampled": 170,
     "samples_provenance": {
       "captured_at": "2026-11-23",
@@ -4393,6 +4393,179 @@
                 "xs.require(\"sys/board/init.xs\")",
                 "__r := board.moneyflow_last(\"ths_concept\", 10)",
                 "return board.fmt_maps(__r)"
+              ],
+              "args": {
+                "print.plain": true
+              },
+              "script_files": {},
+              "mode": "call",
+              "market": "cn"
+            }
+          }
+        }
+      ],
+      "composites": []
+    },
+    {
+      "ns": "blocktrade",
+      "cn": "A 股大宗交易",
+      "chapter": "A 股行情与选股",
+      "category": "market",
+      "domain": "market.blocktrade",
+      "domain_cn": "大宗交易",
+      "domain_description": "A 股大宗交易（日频全市场）——指定交易日全市场大宗明细（成交额降序）与 单票历史。额=元、量=股、价=元（上游 vol 万股/amount 万元已 ×1e4），日期=ISO。",
+      "domain_units": {
+        "price": "元",
+        "volume": "股",
+        "amount": "元"
+      },
+      "interfaces": [
+        {
+          "key": "blocktrade.by_date",
+          "ns": "blocktrade",
+          "method": "by_date",
+          "cn": "指定交易日大宗交易",
+          "composite": false,
+          "desc": "指定交易日全市场大宗交易（成交额降序）。",
+          "params": [
+            {
+              "name": "trade_date",
+              "required": true,
+              "desc": "交易日 YYYY-MM-DD（或 YYYYMMDD）"
+            },
+            {
+              "name": "limit",
+              "required": false,
+              "desc": "前 N 条，默认 100"
+            }
+          ],
+          "returns": {
+            "kind": "array",
+            "desc": null,
+            "fields": [
+              {
+                "name": "date",
+                "desc": "交易日"
+              },
+              {
+                "name": "symbol",
+                "desc": "6 位裸码"
+              },
+              {
+                "name": "price",
+                "desc": "成交价（元）"
+              },
+              {
+                "name": "volume",
+                "desc": "成交量（股）"
+              },
+              {
+                "name": "amount",
+                "desc": "成交额（元）"
+              },
+              {
+                "name": "buyer",
+                "desc": "买方营业部"
+              },
+              {
+                "name": "seller",
+                "desc": "卖方营业部"
+              }
+            ]
+          },
+          "notes": [
+            "非交易日/未采集日返回空数组；同一票多笔各一行"
+          ],
+          "docs_visible": true,
+          "example": "cli.blocktrade.by_date(trade_date=\"2026-11-20\", limit=10)",
+          "test": {
+            "kwargs": {
+              "trade_date": "2026-11-20",
+              "limit": 10
+            },
+            "path": "/v1/analysis/xs/eval",
+            "body": {
+              "symbol": "600519",
+              "xs_lines": [
+                "xs.require(\"sys/blocktrade/init.xs\")",
+                "__r := blocktrade.by_date(\"2026-11-20\", 10)",
+                "return blocktrade.fmt_maps(__r)"
+              ],
+              "args": {
+                "print.plain": true
+              },
+              "script_files": {},
+              "mode": "call",
+              "market": "cn"
+            }
+          }
+        },
+        {
+          "key": "blocktrade.by_symbol",
+          "ns": "blocktrade",
+          "method": "by_symbol",
+          "cn": "单票大宗交易历史",
+          "composite": false,
+          "desc": "单票大宗交易历史（最近 N 条事件，date 升序）。",
+          "params": [
+            {
+              "name": "symbol",
+              "required": true,
+              "desc": "6 位裸码（也接受 .SH/.SZ/.BJ 后缀）"
+            },
+            {
+              "name": "limit",
+              "required": false,
+              "desc": "最近事件条数，默认 100"
+            }
+          ],
+          "returns": {
+            "kind": "array",
+            "desc": null,
+            "fields": [
+              {
+                "name": "date",
+                "desc": "交易日"
+              },
+              {
+                "name": "symbol",
+                "desc": "6 位裸码"
+              },
+              {
+                "name": "price",
+                "desc": "成交价（元）"
+              },
+              {
+                "name": "volume",
+                "desc": "成交量（股）"
+              },
+              {
+                "name": "amount",
+                "desc": "成交额（元）"
+              },
+              {
+                "name": "buyer",
+                "desc": "买方营业部"
+              }
+            ]
+          },
+          "notes": [
+            "以最新落库交易日做数据版本键缓存（历史只增不改，落库即换键）"
+          ],
+          "docs_visible": true,
+          "example": "cli.blocktrade.by_symbol(\"600519\", limit=10)",
+          "test": {
+            "kwargs": {
+              "symbol": "600519",
+              "limit": 10
+            },
+            "path": "/v1/analysis/xs/eval",
+            "body": {
+              "symbol": "600519",
+              "xs_lines": [
+                "xs.require(\"sys/blocktrade/init.xs\")",
+                "__r := blocktrade.by_symbol(\"600519\", 10)",
+                "return blocktrade.fmt_maps(__r)"
               ],
               "args": {
                 "print.plain": true

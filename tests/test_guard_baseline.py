@@ -40,13 +40,13 @@ def _load(path: Path, name: str):
 def test_guard_coverage_cannot_regress():
     mod = _load(GUARD_TOOL, "guard_coverage_baseline")
     result = mod.collect(mod.DEFAULT_DOMAINS)
-    assert result["functions"] == 352  # +2 户数历史 +2 涨跌停价 +3 板块资金流（2026-11-23）
-    assert result["guarded"] >= 83
-    # 分子 83 = 81（涨跌停价）+ board.moneyflow/moneyflow_last（金额/率 ranges）。
-    # 分母 352 的稀释项均为无数值守护语义的检索/工具函数（批次1 9 条 + mapping/
+    assert result["functions"] == 355  # +2 户数历史 +2 涨跌停价 +3 板块资金流 +3 大宗交易（2026-11-23）
+    assert result["guarded"] >= 85
+    # 分子 85 = 83（板块资金流）+ blocktrade.by_date/by_symbol（价格/量/额 ranges）。
+    # 分母 355 的稀释项均为无数值守护语义的检索/工具函数（批次1 9 条 + mapping/
     # fmt_maps/notice 类目等——audit_units 的函数级 units 仅接受换算词
     # lot/percent/yi_yuan，字符串返回值无 ranges 语义）。
-    assert result["ratio"] >= 0.2357  # 板块资金流后 83/352=0.2358（只许变好；此前 81/349=0.2321）
+    assert result["ratio"] >= 0.2394  # 大宗交易后 85/355=0.2394（只许变好；此前 83/352=0.2358）
     zero = {name for name, stat in result["per_domain"].items()
             if stat["functions"] > 0 and stat["guarded"] == 0}
     assert zero <= ZERO_GUARD_BASELINE, f"新增零守护域：{sorted(zero - ZERO_GUARD_BASELINE)}"

@@ -1,7 +1,11 @@
 {
  "schema_version": 2,
- "upstream_rev": "7d7d9da0",
+ "upstream_rev": "f2f792a9",
  "domains": {
+  "blocktrade": {
+   "entry": "sys/blocktrade/init.xs",
+   "exports": []
+  },
   "board": {
    "entry": "sys/board/init.xs",
    "exports": []
@@ -156,8 +160,104 @@
   "toplist",
   "valuation"
  ],
- "function_count": 362,
+ "function_count": 365,
  "functions": [
+  {
+   "name": "blocktrade.by_date",
+   "cn": "指定交易日大宗交易",
+   "example": "blocktrade.by_date(\"2026-11-20\", 50)",
+   "returns": "ARR · 大宗行",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "trade_date",
+     "type": "string"
+    },
+    {
+     "name": "limit",
+     "type": "int"
+    }
+   ]
+  },
+  {
+   "name": "blocktrade.by_symbol",
+   "cn": "单票大宗交易历史",
+   "example": "blocktrade.by_symbol(\"000530\", 20)",
+   "returns": "ARR · 大宗事件行",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "sym",
+     "type": "string"
+    },
+    {
+     "name": "limit",
+     "type": "int"
+    }
+   ]
+  },
+  {
+   "name": "blocktrade.fmt_maps",
+   "cn": "大宗交易行规范化",
+   "example": "blocktrade.fmt_maps(blocktrade.by_date(\"2026-11-20\", 10))",
+   "returns": "ARR · 规范化大宗行",
+   "returns_shape": {
+    "kind": "array",
+    "cn": "大宗交易行",
+    "items": {
+     "kind": "object",
+     "cn": "大宗行",
+     "fields": [
+      {
+       "name": "date",
+       "type": "string",
+       "cn": "交易日"
+      },
+      {
+       "name": "symbol",
+       "type": "string",
+       "cn": "6位裸码"
+      },
+      {
+       "name": "price",
+       "type": "float64",
+       "cn": "成交价(元)"
+      },
+      {
+       "name": "volume",
+       "type": "float64",
+       "cn": "成交量(股)"
+      },
+      {
+       "name": "amount",
+       "type": "float64",
+       "cn": "成交额(元)"
+      },
+      {
+       "name": "buyer",
+       "type": "string",
+       "cn": "买方营业部",
+       "optional": true
+      },
+      {
+       "name": "seller",
+       "type": "string",
+       "cn": "卖方营业部",
+       "optional": true
+      }
+     ]
+    }
+   },
+   "min_args": null,
+   "params": [
+    {
+     "name": "rows",
+     "type": "any"
+    }
+   ]
+  },
   {
    "name": "board.fmt_maps",
    "cn": "板块资金流行规范化",

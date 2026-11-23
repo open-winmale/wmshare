@@ -74,6 +74,8 @@ _REPLAY_NAMESPACE_NAMES = (
     "us_macro",
     # 3.1 板块资金流（sys/board）：同上，未拍摄 → 整域 replay_unsupported
     "board",
+    # 3.3 大宗交易（sys/blocktrade）：同上，未拍摄 → 整域 replay_unsupported
+    "blocktrade",
 )
 
 

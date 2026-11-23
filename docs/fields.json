@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "generated_by": "tools/gen_api_docs.py",
-  "count": 281,
+  "count": 283,
   "domains": [
     {
       "id": "corp.equity",
@@ -3103,6 +3103,61 @@
             "dv_ttm": [
               0,
               0.5
+            ]
+          },
+          "checks": [],
+          "fields": []
+        }
+      ]
+    },
+    {
+      "id": "market.blocktrade",
+      "kind": "raw",
+      "data_origin": [
+        "平台数据服务"
+      ],
+      "functions": [
+        {
+          "name": "blocktrade.by_date",
+          "cn": "指定交易日大宗交易",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "price": [
+              0,
+              10000.0
+            ],
+            "volume": [
+              0,
+              1000000000.0
+            ],
+            "amount": [
+              0,
+              100000000000.0
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "blocktrade.by_symbol",
+          "cn": "单票大宗交易历史",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "price": [
+              0,
+              10000.0
+            ],
+            "volume": [
+              0,
+              1000000000.0
+            ],
+            "amount": [
+              0,
+              100000000000.0
             ]
           },
           "checks": [],

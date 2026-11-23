@@ -8,7 +8,7 @@ wmshare 取数代码**。优先用 MCP；没有 MCP 时用 skill 或文档上下
 - **目录先行**：指标码与函数可编程检索（`cat.search("中文")`），AI 不需要"背"接口，
   查一下再用；编造的码在发请求前就被 `CatalogError` 拦下。
 - **本地 MCP server**：29 个 task tools 覆盖发现、行情、财务、治理、披露、收息、估值、
-  ETF、回测、宏观、龙虎榜、期货、公告结构化与批量；全部 191 个 friendly API（173 登记 +
+  ETF、回测、宏观、龙虎榜、期货、公告结构化与批量；全部 193 个 friendly API（175 登记 +
   18 个组合接口）均可经 `wmshare_call(mode="api")` 兜底（macro 长尾与
   `cbond.article/figures` 仅网关路径）。输出统一 units/rows/next_action。
   结果是**结构化行数组**（DataFrame 在 MCP 边界统一转 records，NaN/NaT→null，
@@ -17,7 +17,7 @@ wmshare 取数代码**。优先用 MCP；没有 MCP 时用 skill 或文档上下
   （`wmshare.skill_dir()`）。
 - **错误消息即修复指引**：401/403/429 的消息里就是申请与配置步骤，429 附批量续跑位置。
 - **llms.txt**：仓库根的 AI 友好文档索引（[llms.txt 规范](https://llmstxt.org)），
-  `llms-full.txt` 是全文拼接版，可直接投喂。
+  `llms-full.txt` 是接口章节拼接版（API 全量函数附录未内联，按需查 docs/API.md），可直接投喂。
 
 ## 路径 A：MCP server（推荐，AI 直接调工具）
 
@@ -85,7 +85,7 @@ cp -r "$(python3 -c 'import wmshare; print(wmshare.skill_dir())')" ~/.agents/ski
 ## 路径 C：文档作上下文（无 skill / 无 MCP 的 agent）
 
 把以下材料之一放进 system prompt / 项目上下文（按上下文预算从大到小）：
-`llms-full.txt`（全文）→ `README.md + docs/GUIDE.md` → `docs/GUIDE.md + docs/API.md`。
+`llms-full.txt`（接口章节全文）→ `README.md + docs/GUIDE.md` → `docs/GUIDE.md + docs/API.md`。
 
 可直接复制的提示词模板：
 
@@ -149,7 +149,7 @@ python3 -c "import wmshare; print(wmshare.load().metric('\$PE_TTM_LAST'))"
 
 ## 进阶
 
-- **全文投喂**：`llms-full.txt`（README + 指南 + AI.md + API.md 拼接）适合大上下文
+- **全文投喂**：`llms-full.txt`（README + 指南 + AI.md + API 接口章节拼接；全量函数附录未内联）适合大上下文
   agent；`llms.txt` 是带注释的链接索引，适合按需抓取。
 - **skill 源文件**：`wmshare.skill_dir()` 返回随包路径，可直接读 `SKILL.md` 原文
   （不装目录、只要 AI 读一遍也有效）。

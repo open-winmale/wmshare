@@ -84,6 +84,8 @@ INCLUDED_NS = frozenset({
     # 3.2：板块资金流（上游日频全市场榜单直读，market.board 域；
     # ths 概念/行业 + dc 概念·行业，额统一元、率统一小数）
     "board",
+    # 3.3：A股大宗交易（上游日频全市场明细直读，market.blocktrade 域）
+    "blocktrade",
 })
 # rptdom 只保留三表透视族（年报 PDF 提取类 rows/notes/note_index 不发布）
 RPTDOM_KEEP = frozenset({"statement", "statement_years", "statement_compare", "statement_tree", "statement_audit"})

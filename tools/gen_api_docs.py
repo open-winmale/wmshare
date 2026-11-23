@@ -50,7 +50,7 @@ CATEGORY_ORDER = ["market", "fundamentals", "disclosure", "reference"]
 # 每章内按命名空间分节；无友好层命名空间的章（期货）为指标码专题。
 # 断言：FRIENDLY_INDEX 的每个 ns 恰好归入一章（build() 内校验，防漂移漏收）。
 CHAPTERS: list[tuple[str, list[str]]] = [
-    ("A 股行情与选股", ["kline", "screener", "backtest", "moneyflow", "margin", "calendar", "stocks", "toplist", "board"]),
+    ("A 股行情与选股", ["kline", "screener", "backtest", "moneyflow", "margin", "calendar", "stocks", "toplist", "board", "blocktrade"]),
     ("可转债", ["cbond"]),
     ("指数", ["index"]),
     ("期货", ["futures"]),  # 2.0：连续合约快照门面（$FUT_* 指标码求值封装）

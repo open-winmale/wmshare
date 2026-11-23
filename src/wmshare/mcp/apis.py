@@ -24,6 +24,8 @@ _HAND_EXAMPLES: dict[str, str] = {
     "toplist.by_date": 'cli.toplist.by_date("2026-11-18", limit=10)',
     "board.moneyflow": 'cli.board.moneyflow("ths_concept", "2026-11-20", limit=10)',
     "board.moneyflow_last": 'cli.board.moneyflow_last("ths_concept", limit=10)',
+    "blocktrade.by_date": 'cli.blocktrade.by_date("2026-11-20", limit=10)',
+    "blocktrade.by_symbol": 'cli.blocktrade.by_symbol("000530", limit=10)',
     "toplist.by_symbol": 'cli.toplist.by_symbol("000530", limit=10)',
     "futures.bars": 'cli.futures.bars("AL.SHF", n=12, freq="m")',
     "valuation.daily_basic_multi":
@@ -107,7 +109,8 @@ def _recommended_tool(domain: str, method: str) -> str:
         return "wmshare_market"
     if domain == "screener":
         return "wmshare_screen"
-    if domain in {"moneyflow", "margin", "cbond", "index", "valuation", "board"}:
+    if domain in {"moneyflow", "margin", "cbond", "index", "valuation", "board",
+                  "blocktrade"}:
         return "wmshare_market"
     # futures / calendar 必须显式分流：MARKET_DOMAINS 都不含它们，推荐到
     # wmshare_market 会让调用方按推荐直接吃「domain 只支持…」。

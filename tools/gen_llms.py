@@ -46,9 +46,54 @@ FULL_PARTS = [
 # 已先压缩该接口 notes（API.md 不含 notes，无收益）；按先例提预算，一次留出 P2 余量——
 # 后续 ⑥⑦⑧⑨ 每个接口在 API.md 约 0.5-0.8 KB，462K 可覆盖 M1+M2。
 # 2026-11-23 修正：板块资金流域（19 字段 × 2 接口 + 章节）实际 13.4 KB，465,621 B 再破 462K。
-# 提到 468K（硬顶 <470K）；M2（⑧⑨⑦-B 约 8-10 个接口）必须做结构化压缩——
-# 候选：llms-full 只内联 API 接口索引+参数，字段表指向 docs/API.md，预计省 150KB+。
-FULL_SIZE_BUDGET = 468_000  # 2026-11-23 P2 批次（户数历史/涨跌停价/板块资金流）；bytes（UTF-8）；禁内联 INDICATORS 全文
+# 2026-11-23 结构化压缩（M2 定案）：API.md 的「附录：全量底层函数目录」占 150 KB+，
+# 从 llms-full 中剥掉（保留指向 docs/API.md 的指针）——接口章节仍是全文，长尾目录
+# 按需查 API.md。全文回落到 ~310 KB，M2（⑧⑨⑦-B）新增接口有充足余量。
+FULL_SIZE_BUDGET = 468_000  # 2026-11-23 P2 批次；bytes（UTF-8）；禁内联 INDICATORS 全文与 API 附录
+
+API_APPENDIX_HEADING = "## 附录：全量底层函数目录"
+
+
+def _strip_api_appendix(text: str) -> str:
+    """剥掉 API.md 的全量函数附录（约 150 KB），换成指向原文的指针。
+
+    llms-full 是「大上下文 agent 直读」物；接口章节（参数/字段/示例）保留全文，
+    长尾目录函数表体积大且可用 cat.search / docs/API.md 按需查。
+    """
+    idx = text.find(API_APPENDIX_HEADING)
+    if idx < 0:
+        return text
+    return (text[:idx].rstrip()
+            + "\n\n> 附录「全量底层函数目录」未内联（约 150 KB）：完整表见 "
+            f"[API.md]({RAW}/docs/API.md)，或运行时用 cat.search / cat.function 查询。\n")
+
+
+def _function_notes_digest(cat) -> str:
+    """附录未内联时保留「函数级注意事项」摘要（坑位不能因体积被藏起来）。
+
+    只列有 notes 的目录函数（函数名 + 中文名 + notes 原文），不带宽表。
+    """
+    rows: list[str] = []
+    for domain in cat.domains.values():
+        dnotes = domain.get("notes") or []
+        if dnotes:
+            rows.append(f"- **{domain.get('cn') or domain.get('id')} 域**："
+                        + "；".join(dnotes))
+        for fn in domain.get("functions") or []:
+            name = fn.get("name")
+            if not name or is_internal_catalog_name(name):
+                continue
+            # 目录函数合同里的 notes 是 yaml 与上游 inventory 注解的合并结果
+            # （indices.weights 等坑位只在 inventory 侧），必须走 cat.function。
+            meta = cat.function(name) or {}
+            notes = meta.get("notes") or fn.get("notes") or []
+            if not notes:
+                continue
+            rows.append(f"- `{name}`（{fn.get('cn') or ''}）：" + "；".join(notes))
+    if not rows:
+        return ""
+    return ("## 函数级注意事项（全量函数附录未内联，坑位摘要）\n\n"
+            + "\n".join(rows))
 
 
 def _indicators_brief(cat) -> str:
@@ -220,7 +265,7 @@ def build_llms_txt() -> str:
         "## Optional",
         "",
         f"- [openapi.json]({RAW}/docs/openapi.json)：OpenAPI 3.1 机器可读合同",
-        f"- [llms-full.txt]({RAW}/llms-full.txt)：本页所列文档的全文拼接（大上下文 agent 直读）",
+        f"- [llms-full.txt]({RAW}/llms-full.txt)：本页所列文档拼接（接口章节全文；API 全量函数附录与指标库全文未内联，按需查原文）",
         "- 指标库全文约 205 KB **未内联**进 llms-full.txt：头部只给指标族摘要，"
         f"全量指标码按 [INDICATORS]({RAW}/docs/INDICATORS.md) 取原文",
         f"- [CONTRIBUTING]({RAW}/CONTRIBUTING.md)：贡献门禁与内容规范",
@@ -239,6 +284,8 @@ def build_llms_full_txt() -> str:
              + _guard_manifest_lines(cat) + "\n"]
     for rel in FULL_PARTS:
         body = (REPO / rel).read_text(encoding="utf-8")
+        if rel == "docs/API.md":
+            body = _strip_api_appendix(body) + "\n\n" + _function_notes_digest(cat)
         parts.append(f"\n\n---\n\n<!-- 来源：{rel} -->\n\n{body.strip()}")
     content = parts[0] + "".join(parts[1:]) + "\n"
     size = len(content.encode("utf-8"))
