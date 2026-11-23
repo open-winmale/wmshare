@@ -432,10 +432,6 @@ def estimate_cost(name: str, params: dict[str, Any] | None = None, *,
         out.update(ec_lo=200, ec_hi=85_000, model="measured",
                    note="索引全表扫描：冷 ≈8.1 万 EC、当日复跑走 memo ≈200 EC；"
                         "limit 只影响返回行数不影响冷态成本")
-    elif name == "board.concept_list":
-        # 实测（2026-11-23 live）：全市场 tags 投影冷态 ≈15 万 EC（按 limit 截断前）。
-        out.update(ec_lo=200, ec_hi=160_000, model="measured",
-                   note="全市场标签投影 + 去重计数：冷 ≈15 万 EC、当日复跑走 memo ≈200 EC")
     elif name == "blocktrade.by_date":
         # 实测（2026-11-23 live，全量回补后 4,100 日 / 68 万行）：
         # 单日档点查 1,272~1,703 EC（按当日行数浮动，档内行数即读取量）。

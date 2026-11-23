@@ -2,9 +2,9 @@
   "schema_version": 2,
   "generated_by": "tools/gen_api_docs.py",
   "meta": {
-    "core": 181,
+    "core": 180,
     "composite": 18,
-    "docs_visible": 176,
+    "docs_visible": 175,
     "variants": 21,
     "domains": 29,
     "categories": [
@@ -25,7 +25,7 @@
         "cn": "参考数据"
       }
     ],
-    "test_ready": 174,
+    "test_ready": 173,
     "sampled": 170,
     "samples_provenance": {
       "captured_at": "2026-11-23",
@@ -4719,60 +4719,6 @@
               "xs_lines": [
                 "xs.require(\"sys/board/init.xs\")",
                 "return board.concept_members(\"白酒\", 10)"
-              ],
-              "args": {
-                "print.plain": true
-              },
-              "script_files": {},
-              "mode": "call",
-              "market": "cn"
-            }
-          }
-        },
-        {
-          "key": "board.concept_list",
-          "ns": "board",
-          "method": "concept_list",
-          "cn": "概念目录",
-          "composite": false,
-          "desc": "概念目录（概念名 + 成份数，按成份数降序）。",
-          "params": [
-            {
-              "name": "limit",
-              "required": false,
-              "desc": "返回前 N 个概念，默认 100"
-            }
-          ],
-          "returns": {
-            "kind": "array",
-            "desc": null,
-            "fields": [
-              {
-                "name": "concept",
-                "desc": "概念名"
-              },
-              {
-                "name": "members",
-                "desc": "成份股数"
-              }
-            ]
-          },
-          "notes": [
-            "全市场标签去重 + 计数：冷 ≈15 万 EC、当日复跑走 memo ≈200 EC",
-            "概念名口径与 concept_members 一致（同一份标签），可直接串联使用"
-          ],
-          "docs_visible": true,
-          "example": "cli.board.concept_list(limit=20)",
-          "test": {
-            "kwargs": {
-              "limit": 20
-            },
-            "path": "/v1/analysis/xs/eval",
-            "body": {
-              "symbol": "600519",
-              "xs_lines": [
-                "xs.require(\"sys/board/init.xs\")",
-                "return board.concept_list(20)"
               ],
               "args": {
                 "print.plain": true

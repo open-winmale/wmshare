@@ -986,7 +986,7 @@ def test_st_lifecycle_read_face(cli):
 
 
 def test_board_concept_tags(cli):
-    """概念标签：单票 tags 非空且去 s: 前缀；成份代码升序；目录成份数降序。"""
+    """概念标签：单票 tags 非空且去 s: 前缀；成份按代码升序。"""
     info = _call_or_xfail(lambda: cli.board.concepts_of("600519"))
     if info is None:
         pytest.skip("概念索引未物化（$CONCEPT_TAGS 为空）")
@@ -1000,12 +1000,6 @@ def test_board_concept_tags(cli):
     syms = [str(r["symbol"]) for r in rows]
     assert syms == sorted(syms), f"成份应代码升序：{syms[:5]}"
 
-    cat = _call_or_xfail(lambda: cli.board.concept_list(100))
-    cat_rows = cat.to_dict("records") if hasattr(cat, "to_dict") else list(cat)
-    assert cat_rows, "概念目录不应为空"
-    counts = [int(r["members"]) for r in cat_rows]
-    assert counts == sorted(counts, reverse=True), "目录应成份数降序"
-    assert counts[0] > 1, "最大概念应有多个成份"
 
 
 def test_board_moneyflow_three_sources(cli):

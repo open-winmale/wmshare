@@ -142,29 +142,6 @@ functions:
     notes:
       - 名称包含匹配（"白酒" 命中 白酒/白酒概念 等标签）；无命中返回空数组
       - 索引全表扫描：冷 ≈8 万 EC、当日复跑走 memo ≈200 EC；停牌股也在成份内
-  - name: board.concept_list
-    cn: 概念目录
-    kind: computed
-    layer: L0
-    params:
-      - {name: limit, type: int, required: false, default: 100, desc: 返回前 N 个概念（按成份数降序）}
-    ranges:
-      members: [1, 1.0e+04]
-    returns:
-      desc: ARR · 概念目录行（成份数降序）
-      shape:
-        kind: array
-        cn: 概念目录行
-        items:
-          kind: object
-          cn: 概念行
-          fields:
-            - {name: concept, type: string, cn: 概念名}
-            - {name: members, type: int64, cn: 成份股数}
-    example: 'board.concept_list(50)'
-    notes:
-      - 全市场标签去重 + 计数：冷 ≈15 万 EC、当日复跑走 memo ≈200 EC
-      - 概念名口径与 concept_members 一致（同一份标签），可直接串联使用
   - name: board.fmt_maps
     internal: true
     cn: 板块资金流行规范化

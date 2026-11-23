@@ -7632,67 +7632,6 @@
         }
       }
     },
-    "/board/concept_list": {
-      "post": {
-        "operationId": "board_concept_list",
-        "summary": "概念目录（概念名 + 成份数，按成份数降序）。",
-        "description": ":returns: DataFrame/行表 · concept/members、底层目录函数 `board.concept_list`。SDK 调用：`cli.board.concept_list(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
-        "tags": [
-          "市场行情"
-        ],
-        "requestBody": {
-          "required": false,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "limit": {
-                    "type": "integer",
-                    "description": "返回前 N 个概念，默认 100"
-                  }
-                },
-                "required": []
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "调用成功",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "description": "概念目录行",
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "concept": {
-                        "type": "string",
-                        "description": "概念名"
-                      },
-                      "members": {
-                        "type": "integer",
-                        "description": "成份股数"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "x-wmshare-guards": {
-          "ranges": {
-            "members": [
-              1,
-              10000.0
-            ]
-          }
-        }
-      }
-    },
     "/blocktrade/by_date": {
       "post": {
         "operationId": "blocktrade_by_date",

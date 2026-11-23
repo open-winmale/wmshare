@@ -20,11 +20,10 @@
 
 ## 单位与守护声明（机器可读）
 
-> 共 88 个函数带 units / ranges / checks 声明；每行 `` `函数名`: JSON ``，键为 units（换算）/ ranges（量级界）/ checks（不变量）。SDK 在返回前按声明换算并校验，违例抛 DataError；原生口径用 `_units="native"`。内部命名空间的函数声明见 openapi.json 的 `x-wmshare-guards`（按友好接口）。
+> 共 87 个函数带 units / ranges / checks 声明；每行 `` `函数名`: JSON ``，键为 units（换算）/ ranges（量级界）/ checks（不变量）。SDK 在返回前按声明换算并校验，违例抛 DataError；原生口径用 `_units="native"`。内部命名空间的函数声明见 openapi.json 的 `x-wmshare-guards`（按友好接口）。
 
 - `blocktrade.by_date`: {"ranges": {"amount": [0, 100000000000.0], "price": [0, 10000.0], "volume": [0, 1000000000.0]}}
 - `blocktrade.by_symbol`: {"ranges": {"amount": [0, 100000000000.0], "price": [0, 10000.0], "volume": [0, 1000000000.0]}}
-- `board.concept_list`: {"ranges": {"members": [1, 10000.0]}}
 - `board.concept_members`: {"ranges": {"close": [0, 10000.0], "percent": [-2, 2]}}
 - `board.moneyflow`: {"ranges": {"buy_elg": [-1000000000000.0, 1000000000000.0], "buy_lg": [-1000000000000.0, 1000000000000.0], "buy_md": [-1000000000000.0, 1000000000000.0], "buy_sm": [-1000000000000.0, 1000000000000.0], "company_num": [0, 5000], "index_close": [0, 1000000.0], "net_amount": [-1000000000000.0, 1000000000000.0], "net_buy": [0, 1000000000000.0], "net_sell": [0, 1000000000000.0], "pct_change": [-1, 1], "pct_change_stock": [-1, 1], "rank": [0, 5000]}}
 - `board.moneyflow_last`: {"ranges": {"net_amount": [-1000000000000.0, 1000000000000.0]}}
@@ -219,7 +218,7 @@ for r in res["data"]["rows"][:5]:
 
 ## 基本功能
 
-随包离线目录：**29 个数据域 · 361 个底层函数 · 2983 个指标代码**；友好层 **181 个核心接口**，
+随包离线目录：**29 个数据域 · 360 个底层函数 · 2983 个指标代码**；友好层 **180 个核心接口**，
 按使用视角组织为（11 个指标组、78 个精选常用指标代码，`cat.search("中文")` 可编程检索）：
 
 | 门面 | 核心能力 | 单位口径 |
@@ -263,7 +262,7 @@ for r in res["data"]["rows"][:5]:
 - **全市场批量**：`cli.batch_all(name, codes)` 把 A 股 5,375 家压成 **11 次请求**绕开限流。
 - **全市场筛选服务端直出**：`cli.screener.query("$ROE_TTM_LAST > 0.15")` 一条表达式扫全市场索引
   （`count`=真实命中数）；涨跌全景/分桶/行业分布/涨跌榜同走服务端预计算索引，毫秒级。
-- **离线目录防编造**：361 个底层函数、181 个核心接口、2,983 个指标码离线可查
+- **离线目录防编造**：360 个底层函数、180 个核心接口、2,983 个指标码离线可查
   （`cat.search("中文")`），目录之外的名字显式报错。
 - **免注册先试**：`Client.from_env()` 无凭证自动回落匿名试用（真实数据、免费额度；`WMSHARE_DISABLE_ANON=1` 可关闭）。
 - **数据守护**：全库统一单位（比率=小数、金额=元、量=股），返回前做单位换算与关键不变量校验；**精选 78 码另带口径与量级守护**（违例抛 `DataError`），其余码只保底不变量，口径以返回值/注释为准。
@@ -272,7 +271,7 @@ for r in res["data"]["rows"][:5]:
 
 - **先查目录再写代码**（一行验证）：
   `python3 -c "import wmshare; print(wmshare.load().search('股息'))"`
-- **本地 MCP server**：29 个 task tools；全部 199 个 friendly API——181 登记 + 18 个组合接口——均可用
+- **本地 MCP server**：29 个 task tools；全部 198 个 friendly API——180 登记 + 18 个组合接口——均可用
   `wmshare_call(target=..., mode="api")` 兜底，macro 域仅此路径。配置：`pip install "wmshare[mcp]"`
   → `wmshare-mcp setup --client-id <AppId> --client-secret-stdin --market cn`（提示后粘贴 API Key，
   `wmshare-mcp doctor` 体检）；客户端最小配置
@@ -449,7 +448,7 @@ t["data"]["pe_pct"], t["data"]["pe_pct_window"], t["data"]["pct"]["pe"]["p3"]  #
 
 - **AI 原生**：随包 [SKILL.md](src/wmshare/skills/wmshare/SKILL.md)、[AI 用法](docs/AI.md)、本地 MCP server（skill 可复制进 .agents/.zcode/.claude 的 skills/）；生态工具 [big-winner](https://github.com/open-winmale/big-winner)
 - **命令行与成品出口**：`wmshare screen/income/index/cbond` 直出 md/csv/xlsx（见「不写 Python」节）；`wmshare.export` 把信封/DataFrame 落成带口径表头的成品（`write_bundle` 附 manifest.json）
-- **文档中心 [docs/](docs/README.md)**：使用指南 GUIDE（单票菜谱/批量/多市场/故障排查）· 指标库 [INDICATORS.md](docs/INDICATORS.md)（全量指标码按数据类型分章）· AI 用法 · llms.txt 索引 · [API 参考](docs/API.md)（按资产类别分章的 181 个核心接口 + 指标组）
+- **文档中心 [docs/](docs/README.md)**：使用指南 GUIDE（单票菜谱/批量/多市场/故障排查）· 指标库 [INDICATORS.md](docs/INDICATORS.md)（全量指标码按数据类型分章）· AI 用法 · llms.txt 索引 · [API 参考](docs/API.md)（按资产类别分章的 180 个核心接口 + 指标组）
 - **可转债日更管线**：`cli.cbond.daily()` → `article()` → `figures()` 一条命令出图文（每个数字带 `sources` 与 `as_of`，缺条目抛错而非补猜测值）；实战 notebook 见 [docs/notebooks/cb_double_low.ipynb](docs/notebooks/cb_double_low.ipynb)（2026-11-07 真实数据）
 - **示例课程 [examples/](examples/README.md)**：29 个编号示例（入门→进阶→生产→AI→成品出口）——无凭证自动匿名试用（需网络），CI 注入离线回放夹具端到端覆盖
 - **问题反馈 / 交流**：使用提问、数据口径与指标码请求走 [Discussions](https://github.com/open-winmale/wmshare/discussions)；可复现的 bug 提 [GitHub Issues](https://github.com/open-winmale/wmshare/issues)；也欢迎加 QQ 群 `1127142074`（搜索「wmshare开源交流群」）
@@ -589,7 +588,7 @@ cat.metrics_in_group("dividend")                         # 指标组内全部精
 | 行业目录 / 行业成分 | `cli.stocks.industries(1)`（申万/恒生；美股目录树暂缺）/ `cli.stocks.industry_members("银行")`（中文名或代码 S48） |
 | 少量标的单批（≤500） | `cli.call_batch("kline.snapshot", ["600519", "000001"])` 或任意单标的接口传 list：`cli.kline.last(["600519", "000001"])`；`to_df()` 出每标的一行长表 |
 
-完整 181 个核心接口 + 18 个组合接口（可转债 3 + 回测 1 + 报表 4 + ETF 9 + 收息诊断 1）与全部底层函数：仓库用户看 docs/GUIDE.md（上手）与
+完整 180 个核心接口 + 18 个组合接口（可转债 3 + 回测 1 + 报表 4 + ETF 9 + 收息诊断 1）与全部底层函数：仓库用户看 docs/GUIDE.md（上手）与
 docs/API.md（参考）；pip 用户用 `cat.search(...)` / `cat.function(...)` 查（同一份合同）。
 全量指标码（2983 个）按数据类型分章的导航、命名语法与死码清单见 docs/INDICATORS.md（生成物）。
 
@@ -701,7 +700,7 @@ cp -r "$(python3 -c 'import wmshare; print(wmshare.skill_dir())')" ~/.agents/ski
 
 本指南是 **how-to + 解释层**：会做什么 → 怎么做好。其他层各有其位——
 教程看 [README](../README.md) 与 [examples/](../examples/README.md)（可运行课程），
-接口参考看 [API.md](API.md)（按资产类别分章的 181 个核心接口，生成物），
+接口参考看 [API.md](API.md)（按资产类别分章的 180 个核心接口，生成物），
 AI 用法看 [AI.md](AI.md)。
 
 > 代码块里的输出注释都是**真实运行结果**（2026-10-29，cn 市场，免费档凭证），
@@ -738,9 +737,9 @@ export WMSHARE_CLIENT_ID=<AppId> WMSHARE_CLIENT_SECRET=<API Key>
 
 ### 2.1 双层 API：门面 + 目录
 
-- **门面层** `cli.<命名空间>.<方法>()`：31 个命名空间、181 个核心接口，方法名动宾化可猜
+- **门面层** `cli.<命名空间>.<方法>()`：31 个命名空间、180 个核心接口，方法名动宾化可猜
   （`kline.bars`、`dividend.yield_ttm`、`screener.screen_limit_up`）。
-- **目录层** `cli.call("<域>.<函数名>", ...)`：361 个底层函数按目录合同直调，
+- **目录层** `cli.call("<域>.<函数名>", ...)`：360 个底层函数按目录合同直调，
   参数名以 `cat.function(name)["params"]` 为准。门面未包装的函数经属性直达
   （如 `cli.dividend.index_where_high_yield_5()`）；目录之外的名字显式报错——
   门面不遮蔽目录公开函数（internal 辅助除外），292 个都能直达。
@@ -1355,7 +1354,7 @@ poller.start()               # 或切后台：daemon 线程定时轮询；退出
 
 - **和直接下交易所数据比，图什么？** 目录先行 + 单位统一 + 数据守护 + 批量限流治理——
   取数正确性的工程问题 SDK 替你管了。
-- **数据能离线吗？** 目录（361 个函数/2983 个指标码/代码表）随包离线；行情财报数据在云端，
+- **数据能离线吗？** 目录（360 个函数/2983 个指标码/代码表）随包离线；行情财报数据在云端，
   需凭证与额度。
 - **支持哪些 Python？** ≥3.11（3.10 已 EOL，1.19.0 起不再支持）；pandas 自 2.0 起为核心依赖。
 - **怎么贡献/报漏洞？** 见 [CONTRIBUTING](../CONTRIBUTING.md) 与 [SECURITY](../SECURITY.md)；
@@ -1375,7 +1374,7 @@ wmshare 取数代码**。优先用 MCP；没有 MCP 时用 skill 或文档上下
 - **目录先行**：指标码与函数可编程检索（`cat.search("中文")`），AI 不需要"背"接口，
   查一下再用；编造的码在发请求前就被 `CatalogError` 拦下。
 - **本地 MCP server**：29 个 task tools 覆盖发现、行情、财务、治理、披露、收息、估值、
-  ETF、回测、宏观、龙虎榜、期货、公告结构化与批量；全部 199 个 friendly API（181 登记 +
+  ETF、回测、宏观、龙虎榜、期货、公告结构化与批量；全部 198 个 friendly API（180 登记 +
   18 个组合接口）均可经 `wmshare_call(mode="api")` 兜底（macro 长尾与
   `cbond.article/figures` 仅网关路径）。输出统一 units/rows/next_action。
   结果是**结构化行数组**（DataFrame 在 MCP 边界统一转 records，NaN/NaT→null，
@@ -1533,7 +1532,7 @@ python3 -c "import wmshare; print(wmshare.load().metric('\$PE_TTM_LAST'))"
 
 <!-- GENERATED by tools/gen_api_docs.py — do not hand-edit -->
 
-共 **29** 个数据域 · **181** 个核心接口 · **11** 个指标组（指标目录全量 2983 个指标代码）；全量 361 个底层函数见文末折叠附录。核心接口按资产类别分章，每接口一节（输入参数 / 输出字段 / 示例）。
+共 **29** 个数据域 · **180** 个核心接口 · **11** 个指标组（指标目录全量 2983 个指标代码）；全量 360 个底层函数见文末折叠附录。核心接口按资产类别分章，每接口一节（输入参数 / 输出字段 / 示例）。
 
 ## 能力总览
 
@@ -1548,7 +1547,7 @@ python3 -c "import wmshare; print(wmshare.load().metric('\$PE_TTM_LAST'))"
 | 数据域 | 核心能力 | 单位口径 |
 |---|---|---|
 | `market.blocktrade`（大宗交易） | 指定交易日大宗交易、单票大宗交易历史 | price=元；volume=股；amount=元 |
-| `market.board`（板块资金流） | 指定交易日板块资金流、最新交易日板块资金流、单票概念标签、概念成份股、概念目录 | money=元（三源统一；ths 原值亿元已 ×1e8）；ratio=小数（0.0347 = 3.47%）；point=指数点（板块指数收盘） |
+| `market.board`（板块资金流） | 指定交易日板块资金流、最新交易日板块资金流、单票概念标签、概念成份股 | money=元（三源统一；ths 原值亿元已 ×1e8）；ratio=小数（0.0347 = 3.47%）；point=指数点（板块指数收盘） |
 | `market.calendar`（交易日历） | 交易日历区间、是否交易日、之后 N 个交易日 | date=ISO 日期字符串（YYYY-MM-DD） |
 | `market.cbond`（可转债） | 转债全市场面板（快照+最新事件+盘中价+callHits+下修地板价）、转债合约快照全表、转债最新快照、正股关联转债、转债条款事件列表… | price=元（转债价/转股价，面值 100 口径）；ratio=小数（SDK 基础单位；上游 percent 已按 percent 声明换算） |
 | `market.fund`（场内基金（ETF）） | 公司档案：名称/行业/组织类型/上市日期 | — |
@@ -1627,7 +1626,7 @@ cat.function("bonus.snapshot_yield_ttm")["params"]   # 函数合同：参数/返
 
 **三原则**：① 批次只能同一市场（跨市场混批 SDK 直接报错）；② 容错用批级`on_batch_error="skip"`（跳过失败批继续），**不要**用 `call_batch(on_error="skip")`——它是票级逐票请求，会放大请求数正好制造 429；③ 单批撞 `CALC_LIMIT_EXCEEDED`（算力超限）减小 `batch_size`，遇 429 停止并按消息里的 `codes[done:]` 续跑。
 
-**指标码不是批量 `name`**：`name` 必须是目录函数名（361 个，如 `kline.snapshot`），传 `indicator.get` 会报 CatalogError。一票多码用 `cli.indicator.metrics(sym, codes)`；全市场指标码没有批量入口，需逐票调用（指标取数是按 `(标的, 码)` 寻址，不是按标的切片）。
+**指标码不是批量 `name`**：`name` 必须是目录函数名（360 个，如 `kline.snapshot`），传 `indicator.get` 会报 CatalogError。一票多码用 `cli.indicator.metrics(sym, codes)`；全市场指标码没有批量入口，需逐票调用（指标取数是按 `(标的, 码)` 寻址，不是按标的切片）。
 
 ```python
 codes = [r["symbol"] for r in cli.stocks.list()]      # 全市场代码池（A 股 5,375 家）
@@ -2836,29 +2835,6 @@ cli.board.concepts_of("600519")
 
 ```python
 cli.board.concept_members(name="白酒", limit=10)
-```
-
-#### `cli.board.concept_list` — 概念目录
-
-概念目录（概念名 + 成份数，按成份数降序）。
-
-**输入参数**
-
-| 参数 | 类型 | 必填 | 默认 | 说明 |
-|---|---|---|---|---|
-| `limit` | integer | 否 | `100` | 返回前 N 个概念，默认 100 |
-
-**输出字段**
-
-| 字段 | 类型 | 单位/换算 | 守护范围 | 说明 |
-|---|---|---|---|---|
-| `concept` | string | — | — | 概念名 |
-| `members` | int | — | [1, 10000] | 成份股数 |
-
-**示例**
-
-```python
-cli.board.concept_list(limit=20)
 ```
 
 ### A 股大宗交易（`cli.blocktrade`）
@@ -7037,7 +7013,6 @@ cli.info.profile("600519")
 - `board.moneyflow_last`（最新交易日板块资金流）：以该来源最新 trade_date 做数据版本键缓存，落库即换键（复跑近乎免费）
 - `board.concepts_of`（单票概念标签）：当前截面（上游只给最新标签，无 PIT 历史）；索引点查 ≈90 EC；概念名含指数/风格标签（HS300_/MSCI中国/融资融券…），不做概念/风格分流
 - `board.concept_members`（概念成份股）：名称包含匹配（"白酒" 命中 白酒/白酒概念 等标签）；无命中返回空数组；索引全表扫描：冷 ≈8 万 EC、当日复跑走 memo ≈200 EC；停牌股也在成份内
-- `board.concept_list`（概念目录）：全市场标签去重 + 计数：冷 ≈15 万 EC、当日复跑走 memo ≈200 EC；概念名口径与 concept_members 一致（同一份标签），可直接串联使用
 - **交易日历 域**：可用性：仅 A 股日历（无港美交易日历）；days 返回 date 升序（旧→新，2.0 标准）；跨年区间自动合并年档， 年档缺失（如次年历未灌）按空处理——返回行数即覆盖度；next 交易日不足 N 个时如实返回（LEN 判断），绝不静默循环补齐
 - **可转债 域**：可用性：仅 A 股（沪深可转债）；quote_list/latest_quotes/board 为全市场快照（按日更新）；of_stock 按正股取关联债；在市判据用 outstanding 字段（余额>0 且未到期）。仅判 remainSize>0 会把已到期债当在标；callHits 统计正股无复权收盘 ≥ 强赎触发价的近 30 个交易日天数，仅股价已跨线时返回；勿以单日价判定已满足；resetFloor / resetMeeting 等 reset* 字段取自 resetEvent（仍在进行中的下修提议），不是 event；event 是最新一条公告，不分类型——回售/转股结果会挤掉下修提议，取下修信息须用 resetEvent；kline_window 返回 store 列式窗口（open/close/high/low/volume/amount），samplingName 为降序需自行反转；min1_live 为缓存命中制，miss 返回 nil；event_list 深度是 90 个 YEAR_DAY 文档（约 111 自然日），更老的条款公告不在返回内；board 不含 volume/amount——成交额与换手率须经 kline_window 批量取（call_batch，每批 ≤120 只）；board 不含债券信用评级、基金持仓、正股流通市值；需评级时用 notice 域公告原文抽取，勿以其他指标冒充；kline_window 可批量：标的参数名为 code，call_batch 一次 eval 拼 MAP 即覆盖全表（省请求次数，不省 EC）
 - `cbond.board`（转债全市场面板（快照+最新事件+盘中价+callHits+下修地板价））：bondPercent 仅盘中 live 命中时返回；callHits 仅正股收盘已跨触发价时返回

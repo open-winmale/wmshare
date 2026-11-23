@@ -112,18 +112,6 @@ class BoardNS(_Ns):
             kw["limit"] = limit
         return _out(self._client.call("board.concept_members", **kw, _raw=_raw), _raw)
 
-    def concept_list(self, limit: int = 100, _raw: bool = False) -> Any:
-        """概念目录
-
-:param limit: 返回前 N 个概念（按成份数降序）
-
-:returns: ARR · 概念目录行（成份数降序）
-        """
-        kw: dict[str, Any] = {}
-        if limit is not None:
-            kw["limit"] = limit
-        return _out(self._client.call("board.concept_list", **kw, _raw=_raw), _raw)
-
 class BonusNS(_Ns):
     """分红（disc.bonus）"""
 

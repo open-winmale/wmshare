@@ -6,7 +6,7 @@
       概念名含指数/风格标签（HS300_/MSCI中国/融资融券），不做概念/风格分流；
       concept_members 是名称包含匹配（"白酒" 命中多个标签），按代码升序；
       当前截面无 PIT 历史——历史成份不可得，不要用它回测历史选股
-文档：docs/GUIDE.md「行情」节 · API.md「板块」章 · estimate_cost('board.concept_list')
+文档：docs/GUIDE.md「行情」节 · API.md「板块」章 · estimate_cost('board.concept_members')
 """
 
 from __future__ import annotations
@@ -23,8 +23,7 @@ def main(cli: Any = None) -> None:
 
     print("== 1. 先估成本（索引全表扫描类接口冷态较贵，当日复跑走 memo） ==")
     for name, kw in (("board.concepts_of", {"symbol": "600519"}),
-                     ("board.concept_members", {"name": "白酒", "limit": 10}),
-                     ("board.concept_list", {"limit": 20})):
+                     ("board.concept_members", {"name": "白酒", "limit": 10})):
         est = cli.cost_estimate(name, **kw)
         lo, hi = est["ec_lo"], est["ec_hi"]
         if lo is None:
@@ -47,16 +46,6 @@ def main(cli: Any = None) -> None:
     for r in rows:
         pct = float(r.get("percent") or 0) * 100
         print(f"  {r['symbol']} {r['name']}  {r.get('close')} 元  {pct:+.2f}%")
-
-    print("== 4. 概念目录（按成份数降序前 10） ==")
-    catalog = cli.board.concept_list(10)
-    cat_rows = catalog.to_dict("records") if hasattr(catalog, "to_dict") else list(catalog)
-    for r in cat_rows:
-        print(f"  {r['concept']}：{r['members']} 只")
-
-    print("== 5. 自检：目录首行成份数 ≥ 次行（降序） ==")
-    counts = [int(r["members"]) for r in cat_rows]
-    print(f"  {counts} · 降序={counts == sorted(counts, reverse=True)}")
 
 
 if __name__ == "__main__":

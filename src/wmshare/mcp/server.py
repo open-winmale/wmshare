@@ -90,7 +90,7 @@ MarketAction = Literal[
     "weights", "valuation", "hist_stats", "list", "trend", "universe_keys",
     "limit_price", "limit_prices", "moneyflow", "moneyflow_last",
     "by_date", "by_symbol", "suspend_history", "name_history", "lifecycle",
-    "concepts_of", "concept_members", "concept_list",
+    "concepts_of", "concept_members",
 ]
 
 

@@ -91,7 +91,7 @@ MARKET_ACTIONS = {
     "stocks": ("list", "limit_price", "limit_prices",
                "suspend_history", "name_history", "lifecycle"),
     "board": ("moneyflow", "moneyflow_last",
-              "concepts_of", "concept_members", "concept_list"),
+              "concepts_of", "concept_members"),
     "blocktrade": ("by_date", "by_symbol"),
 }
 INTL_ACTIONS = (
