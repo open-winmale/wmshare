@@ -1,23 +1,17 @@
 """pandas 分析：门面默认返回 DataFrame，直接做研究计算。
 
-前提：凭证必填（pandas 为 2.0 硬依赖，随包安装）；`--demo` 用随包演示数据零凭证试跑
+前提：pandas 为 2.0 硬依赖（随包安装）；凭证可选——无凭证自动回落匿名试用（需网络）
 运行：python examples/08_pandas_analysis.py
 学到：门面 DataFrame 默认（date 升序，无需再排序）；MA20/动量/资金流合计/分红历史表
 文档：docs/GUIDE.md（pandas）
 """
-import sys
 import wmshare
 from wmshare import Client
 
 
-def main(cli=None, demo: bool = False) -> None:
+def main(cli=None) -> None:
     if cli is None:
-        if demo:
-            cli = wmshare.demo_client()
-            print("(演示模式：随包罐头数据，非真实行情)")
-            print()
-        else:
-            cli = wmshare.Client.from_env()
+        cli = wmshare.Client.from_env()
     SYMBOL = "600519"
 
     # ---- 日 K → DataFrame：2.0 起默认 DataFrame 且 date 升序（旧→新），直接算指标 ----
@@ -43,4 +37,4 @@ def main(cli=None, demo: bool = False) -> None:
 
 
 if __name__ == "__main__":
-    main(demo="--demo" in sys.argv)
+    main()

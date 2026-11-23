@@ -1,9 +1,9 @@
-"""数据质量契约：方向/新鲜度/空值语义/跨接口一致性 + demo 快照新三面校验。
+"""数据质量契约：方向/新鲜度/空值语义/跨接口一致性。
 
 数据质量的两层防线：
 1. 运行时守护（units.yaml ranges/checks）——覆盖换算与量级，见 tests/test_units.py；
 2. 本文件——**契约测试**：乱序输入必须升序输出、日期不得未来、None/0 语义稳定、
-   同一事实在不同接口的读数必须一致、demo 新三面（calendar/margin/futures）快照
+   同一事实在不同接口的读数必须一致；回放夹具自身结构由
    必须过结构校验（此前完全不校验）。
 """
 from __future__ import annotations
@@ -14,10 +14,8 @@ from typing import Any
 
 import pytest
 
-from wmshare._demo import _validate_snapshot
 from wmshare.catalog import load
 from wmshare.client import Client
-from wmshare.errors import WmshareError
 
 # ---------------------------------------------------------------- fixtures
 
@@ -149,16 +147,6 @@ def test_envelope_as_of_iso_and_not_future():
             assert len(as_of) == 10 and as_of <= today, f"as_of 非法或未来：{as_of}"
 
 
-def test_demo_envelope_as_of_matches_snapshot():
-    import wmshare
-
-    demo = wmshare.demo_client()
-    as_of = demo.snapshot_as_of() if hasattr(demo, "snapshot_as_of") else None
-    trend = demo.index.trend("index.hs300", "5y")
-    if as_of:
-        assert trend["as_of"] == as_of  # demo 组合面 as_of 与快照拍摄日一致
-
-
 # ---------------------------------------------------- 跨接口一致性
 
 
@@ -208,36 +196,3 @@ def test_daily_basic_pe_matches_indicator():
                                  rel_tol=0.02)
 
 
-# ---------------------------------------- demo 快照新三面结构校验（含负例）
-
-
-def _load_document() -> dict[str, Any]:
-    import json
-
-    from wmshare._demo import _DATA_PATH
-
-    return json.loads(_DATA_PATH.read_bytes())
-
-
-def test_demo_snapshot_new_faces_pass_validator():
-    _validate_snapshot(_load_document())  # 不抛 = 通过
-
-
-@pytest.mark.parametrize("mutate", [
-    pytest.param(lambda d: d["data"]["calendar"]["days"].reverse(),
-                 id="calendar-desc"),
-    pytest.param(lambda d: d["data"]["calendar"]["days"].append(
-        dict(d["data"]["calendar"]["days"][-1])), id="calendar-dup"),
-    pytest.param(lambda d: d["data"]["margin"]["market_summary"].pop(0),
-                 id="margin-unpaired"),
-    pytest.param(lambda d: d["data"]["margin"]["universe"].append(
-        dict(d["data"]["margin"]["universe"][0])), id="margin-universe-dup"),
-    pytest.param(lambda d: d["data"]["futures"].popitem(), id="futures-missing"),
-    pytest.param(lambda d: d["data"]["futures"]["RB.SHF"].update(settle=-1.0),
-                 id="futures-negative-settle"),
-])
-def test_demo_snapshot_new_faces_negative_cases(mutate):
-    doc = _load_document()
-    mutate(doc)
-    with pytest.raises((ValueError, WmshareError)):
-        _validate_snapshot(doc)

@@ -7,7 +7,7 @@ wmshare 的文档按「教程 / 怎么做 / 参考 / 解释」四层组织
 | 我想… | 去哪 | 说明 |
 |---|---|---|
 | 5 分钟装好并跑通第一行 | [README](../README.md) | 店面：特性、安装、选股实战（真实数据）、凭证、离线演示 |
-| English quick start | [QUICKSTART_EN.md](QUICKSTART_EN.md) | Why it exists / offline demo / first live call / batching & unit contract |
+| English quick start | [QUICKSTART_EN.md](QUICKSTART_EN.md) | Why it exists / anonymous first call / standing quota / batching & unit contract |
 | 系统学一遍（可运行课程） | [examples/](../examples/README.md) | 22 个编号示例：离线优先、CI 全覆盖、输出带单位注释 |
 | 完成某个具体任务 | [GUIDE.md](GUIDE.md) | 单票菜谱、全市场与行业（含指数/行业估值历史算法）、批量绕 429、多市场、pandas、公告订阅 |
 | 查指标码（全量导航） | [INDICATORS.md](INDICATORS.md) | 全量指标码按数据类型分章：概览/股票行情/股票指标/行业/指数及ETF/宏观/期货/可转债/港美，含命名语法、死码警示与场景速查（生成物） |
@@ -27,11 +27,11 @@ wmshare 的文档按「教程 / 怎么做 / 参考 / 解释」四层组织
 
 | 任务 | 可运行示例 | 文档章节 |
 |---|---|---|
-| 筛高股息且派息可持续 | `examples/05_dividend_screener.py --demo` | GUIDE · 单票菜谱 |
-| 看估值贵不贵（历史分位） | `examples/06_indicator_tour.py --demo` | GUIDE · 单票菜谱、核心概念 |
-| 扫均线 / 全市场涨跌宽度 | `examples/04_screener.py --demo`、`examples/08_pandas_analysis.py` | GUIDE · 单票菜谱、pandas |
-| 监控公告变更 | `examples/10_notice_monitor.py --demo` | GUIDE · 公告变更订阅 |
-| 拉三大财务报表 | `examples/11_statements_tour.py --demo` | GUIDE · 单票菜谱 |
+| 筛高股息且派息可持续 | `examples/05_dividend_screener.py` | GUIDE · 单票菜谱 |
+| 看估值贵不贵（历史分位） | `examples/06_indicator_tour.py` | GUIDE · 单票菜谱、核心概念 |
+| 扫均线 / 全市场涨跌宽度 | `examples/04_screener.py`、`examples/08_pandas_analysis.py` | GUIDE · 单票菜谱、pandas |
+| 监控公告变更 | `examples/10_notice_monitor.py` | GUIDE · 公告变更订阅 |
+| 拉三大财务报表 | `examples/11_statements_tour.py` | GUIDE · 单票菜谱 |
 | 接入 AI MCP client | `examples/12_mcp_server.py` | README · MCP server、AI · MCP 路径 |
 
 ## 阅读路径建议

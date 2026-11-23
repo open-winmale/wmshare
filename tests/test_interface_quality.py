@@ -245,28 +245,30 @@ def test_method_param_doc_debt_ratchet():
         f":param 债务变多：{len(current)} > 基线 {len(PARAM_DOC_DEBT)}")
 
 
-def test_demo_signatures_cover_live_facade_params():
-    """demo 与 live 门面签名一致：live 的每个形参 demo 都必须能接收。
+def test_replay_signatures_cover_live_facade_params():
+    """离线回放夹具与 live 门面签名一致：live 的每个形参夹具都必须能接收。
 
-    缺口会让用户拿 TypeError（或更糟：参数被静默吞掉）而不是 demo_unsupported。
+    缺口会让离线测试拿 TypeError（或更糟：参数被静默吞掉）而不是显式报错。
     未回放的能力可以报错，但不能「假装没有这个参数」——2026-11-18 实测曾漂移
     17 处（kline freq/_fields、screener 形参名 symbol vs sym、margin/indicator
     的 _fields/fut_symbol、volume_spike 的 min_ratio）。
 
-    2026-11-19 收紧：此前 ``if not callable(demo_fn): continue`` 会把 demo 侧
-    **整方法缺失**静默跳过，于是 8 个整域未拍（cbond/etf/intl/...）与
-    ``notice.has_buyback`` 这类单方法缺口全部漏检，用户照抄 README 撞
-    AttributeError。现在缺失即失败，例外只能走 ``DEMO_MISSING`` 白名单。
+    2026-11-19 收紧：此前「整方法缺失」会被静默跳过，于是整域未拍与单方法
+    缺口全部漏检。现在缺失即失败，例外只能走 ``REPLAY_MISSING`` 白名单。
     """
-    import wmshare
+    import sys
+    from pathlib import Path
 
-    demo = wmshare.demo_client()
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from replay_client import replay_client
+
+    replay = replay_client()
     problems = []
     checked = 0
     for ns, cls in FRIENDLY_NAMESPACES.items():
-        demo_ns = getattr(demo, ns, None)
-        if demo_ns is None:
-            problems.append(f"cli.{ns}: demo 侧整个命名空间缺失")
+        replay_ns = getattr(replay, ns, None)
+        if replay_ns is None:
+            problems.append(f"cli.{ns}: 回放夹具整个命名空间缺失")
             continue
         for method in dir(cls):
             if method.startswith("_"):
@@ -274,50 +276,55 @@ def test_demo_signatures_cover_live_facade_params():
             live_fn = getattr(cls, method, None)
             if not callable(live_fn):
                 continue
-            demo_fn = getattr(demo_ns, method, None)
-            if not callable(demo_fn):
-                problems.append(f"cli.{ns}.{method}: demo 侧不可调用")
+            replay_fn = getattr(replay_ns, method, None)
+            if not callable(replay_fn):
+                problems.append(f"cli.{ns}.{method}: 回放夹具侧不可调用")
                 continue
             checked += 1
             live_params = list(inspect.signature(live_fn).parameters)[1:]  # 去 self
-            demo_params = list(inspect.signature(demo_fn).parameters)
-            missing = [p for p in live_params if p not in demo_params]
+            replay_params = list(inspect.signature(replay_fn).parameters)
+            missing = [p for p in live_params if p not in replay_params]
             if missing:
                 problems.append(f"cli.{ns}.{method} 缺 {missing}"
-                                f"（live={live_params} demo={demo_params}）")
+                                f"（live={live_params} replay={replay_params}）")
     assert checked >= 58, f"只比对到 {checked} 对方法，扫描范围可能被改坏"
-    assert not problems, "demo 与 live 门面签名漂移：\n" + "\n".join(problems)
+    assert not problems, "回放夹具与 live 门面签名漂移：\n" + "\n".join(problems)
 
 
-def test_demo_unbacked_calls_raise_demo_unsupported():
-    """demo 侧每个可调用项：要么正常返回，要么 demo_unsupported，绝不 AttributeError。
+def test_replay_unbacked_calls_raise_replay_unsupported():
+    """回放夹具每个可调用项：要么正常返回，要么 replay_unsupported，绝不 AttributeError。
 
     「同签名」的可验证含义在这里：属性一定存在且可调用。未回放的能力用
-    ``UsageError(code="demo_unsupported")`` 明确表示「快照没拍」，与
+    ``UsageError(code="replay_unsupported")`` 明确表示「快照没拍」，与
     「SDK 没有这个能力」（AttributeError）区分开。
 
     固定用例取 README 正文推荐过的 ``cli.notice.has_buyback(sym, "6m")``——
-    2026-11-19 前它在 demo 上直接 AttributeError。
+    2026-11-19 前它在回放侧直接 AttributeError。
     """
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
     import wmshare
+    from replay_client import replay_client
     from wmshare.errors import UsageError
 
-    demo = wmshare.demo_client()
+    replay = replay_client()
     # 固定用例：README「我想做 X → 用哪一行」表格里推荐过的调用
     with pytest.raises(UsageError) as exc:
-        demo.notice.has_buyback("600519", "6m")
-    assert exc.value.code == "demo_unsupported"
+        replay.notice.has_buyback("600519", "6m")
+    assert exc.value.code == "replay_unsupported"
 
-    # 全命名空间扫描：每个方法都要么可调用成功、要么 demo_unsupported
+    # 全命名空间扫描：每个方法都要么可调用成功、要么显式报错
     checked = 0
     for ns in wmshare.api.FRIENDLY_NAMESPACES:
-        demo_ns = getattr(demo, ns, None)
-        assert demo_ns is not None, f"cli.{ns}: demo 侧命名空间缺失"
+        replay_ns = getattr(replay, ns, None)
+        assert replay_ns is not None, f"cli.{ns}: 回放夹具命名空间缺失"
         for method in dir(wmshare.api.FRIENDLY_NAMESPACES[ns]):
             if method.startswith("_"):
                 continue
-            target = getattr(demo_ns, method, None)
-            assert callable(target), f"cli.{ns}.{method}: demo 侧不可调用"
+            target = getattr(replay_ns, method, None)
+            assert callable(target), f"cli.{ns}.{method}: 回放夹具不可调用"
             checked += 1
-    assert checked > 150, f"只扫描到 {checked} 个 demo 方法，扫描面可能被改坏"
+    assert checked > 150, f"只扫描到 {checked} 个回放方法，扫描面可能被改坏"
 

@@ -64,10 +64,12 @@ pytest -q --cov-branch                # 离线全量（行/分支覆盖率 ≥85
 - **内部函数**：目录标 `internal: true`（fmt_* 等）不进任何门面属性直达；
   新增辅助函数默认标 internal。
 - **新接口验收模板**：目录 yaml（units/ranges/checks 非空声明）→ FRIENDLY_INDEX →
-  六 gen 再生成 → INDICATORS 锚点 → examples 课程表条目 → demo 同形（DF/升序/信封，
-  未回放面显式 `demo_unsupported`）→ 计数级联（README/AI/GUIDE/SKILL/llms）→
+  六 gen 再生成 → INDICATORS 锚点 → examples 课程表条目 → 离线夹具同步（DF/升序/信封，
+  未拍摄面显式 `replay_unsupported`）→ 计数级联（README/AI/GUIDE/SKILL/llms）→
   测试基线级联（`test_catalog` / `test_guard_baseline` / `test_audit_drift` /
   `test_mcp_apis`，数字以各测试内基线常量为准，不写进本文件）。
+  完整操作手册（三条落地路线、文件级联表、基线索引、验收 checklist、已知缺口）见
+  `docs/INTERFACE_SPEC.md`。
 
 ## 防坑清单（都踩过，别再踩）
 
@@ -77,8 +79,8 @@ pytest -q --cov-branch                # 离线全量（行/分支覆盖率 ≥85
    只有 `d/pe/pb`。任何「股息率分位」都是造假。
 3. **序列方向**：服务端 `indices.trend` 的 `base`/`med` 是**新→旧**（cursor.ds 顺序）。
    取「当前值」用 `points[0]`；`reversed(points)` 拿到的是最旧点（历史 bug 根因）。
-4. **demo 与 live 必须同向**：`_demo.py` 曾按升序生成、用 `pts[-1]`，与 live 相反，
-   导致 1143 个测试全绿也没抓到分位错位。改 demo 后要断言方向。
+4. **夹具与 live 必须同向**：离线回放夹具（`tests/replay_client.py`）曾按升序生成、
+   用 `pts[-1]`，与 live 相反，导致 1143 个测试全绿也没抓到分位错位。改夹具后要断言方向。
 5. **预热缓存会冷**：`m_valtrend_series:v1:{key}` 依赖 cron。未命中的键必须优雅降级
    （显式标「缓存未命中」），不能当 0 或静默给错值。
 6. **EC 优化只走既有范式，评估必须端到端**：统一用「memo 取数缓存 + `fmt_maps` 结果
@@ -88,9 +90,9 @@ pytest -q --cov-branch                # 离线全量（行/分支覆盖率 ≥85
 7. **能力对标优先于客户端砍量**：区间/全量查询不得用「估算行数、砍请求量」换 EC
    （2026-11-18 `estimate_interval_rows` 被用户否决为投机取巧）；缺页走服务端锚点窗口
    分页（`query_at_anchor(_adj)` 模式），并配「锚点未前移即抛 `LimitError`」快速失败守卫。
-8. **demo 与 live 签名必须同形**：不只是方向同向——新增/改签名门面必须同步 `_demo.py`
-   （58 对由 `test_demo_signatures_cover_live_facade_params` 逐对比对强制）；未回放面
-   显式抛 `demo_unsupported`，不允许 `TypeError` 或静默吞参。
+8. **夹具与 live 签名必须同形**：不只是方向同向——新增/改签名门面必须同步
+   `tests/replay_client.py`（58 对由 `test_replay_signatures_cover_live_facade_params`
+   逐对比对强制）；未拍摄面显式抛 `replay_unsupported`，不允许 `TypeError` 或静默吞参。
 9. **`estimate_cost` 档位必须 live 实测校准**：成本模型数字以生产 `metering.ec_cost`
    probe 为准，禁止拍脑袋标 `cache_hit`（2.2.1 实证：daily_basic 标 4~200，实测按扫描行
    计费 1,707~18,317 EC）。新增档位先 probe 再写模型，模型里注明实测日期。

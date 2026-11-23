@@ -1,7 +1,6 @@
 """全市场代码池 → 行业成分 → 批量取数：绕开 429 的一条龙完整链路。
 
-前提：凭证必填（export WMSHARE_CLIENT_ID=... WMSHARE_CLIENT_SECRET=...）；；`--demo` 用随包演示数据零凭证试跑
-      本示例对全市场遍历两遍（batch_all + batch_iter），约消耗 25 次请求、十几秒
+前提：凭证可选——无凭证自动回落匿名试用（免注册、真实数据、需网络）
 运行：python examples/07_stocks_industry_batch.py
 学到：stocks.list/industries/industry_members；batch_all/batch_iter/call_batch 三入口分工
 文档：docs/GUIDE.md（全市场与行业、批量取数）
@@ -16,18 +15,13 @@ import sys
 import wmshare
 
 
-def main(cli=None, demo: bool = False) -> None:
+def main(cli=None) -> None:
     if cli is None:
-        if demo:
-            cli = wmshare.demo_client()
-            print("(演示模式：随包罐头数据，非真实行情)")
-            print()
-        else:
-            cli = wmshare.Client.from_env()
+        cli = wmshare.Client.from_env()
 
-    # ---- 1) 证券列表（真实 Client 全市场；demo 为演示宇宙） ----
+    # ---- 1) 证券列表（全市场） ----
     rows = cli.stocks.list()
-    scope = "演示宇宙" if demo else "全市场"
+    scope = "全市场"
     first = rows.iloc[0].to_dict() if hasattr(rows, "iloc") else rows[0]
     print(f"{scope}共 {len(rows)} 家（字段：{sorted(first.keys())}）")
 
@@ -49,7 +43,7 @@ def main(cli=None, demo: bool = False) -> None:
         print(f"行业解析失败：{e}")
         return
 
-    # ---- 3) 批量取数：真实全市场分批；demo 是演示宇宙一次批量 ----
+    # ---- 3) 批量取数：全市场分批 ----
     all_codes = list(rows["symbol"]) if hasattr(rows, "columns") else [r["symbol"] for r in rows]
     res = cli.batch_all("kline.snapshot", all_codes)
     naive = len(all_codes)
@@ -72,4 +66,4 @@ def main(cli=None, demo: bool = False) -> None:
 
 
 if __name__ == "__main__":
-    main(demo="--demo" in sys.argv)
+    main()

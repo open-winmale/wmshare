@@ -158,8 +158,8 @@ def test_sas_to_iso():
     assert _sas_to_iso("2026:M13") == "2026:M13"  # 越界原样
 
 
-def test_demo_bars_unsupported():
-    demo = wmshare.demo_client()
-    with pytest.raises(UsageError, match="demo_unsupported|期货历史序列") as ei:
-        demo.futures.bars("AL.SHF", n=6)
-    assert ei.value.code == "demo_unsupported"
+def test_replay_bars_unsupported():
+    from replay_client import replay_client
+    with pytest.raises(UsageError, match="replay_unsupported|期货历史序列") as ei:
+        replay_client().futures.bars("AL.SHF", n=6)
+    assert ei.value.code == "replay_unsupported"

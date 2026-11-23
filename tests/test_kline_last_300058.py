@@ -7,7 +7,7 @@
     WMSHARE_LIVE_SMOKE=1 PYTHONPATH=src python -m pytest -q tests/test_kline_last_300058.py
 
 覆盖：Client() 无参凭证错误、store.latest 取当日、9 字段/单位、数值锚点、
-_raw 原生单位、批量、demo 显式报错、真实客户端新鲜度冒烟。
+_raw 原生单位、批量、真实客户端新鲜度冒烟。
 """
 from __future__ import annotations
 
@@ -126,12 +126,6 @@ def test_last_batch(client):
     batch = client.kline.last([SYM, "600519"])
     assert set(batch.results) == {SYM, "600519"} and not batch.errors
     assert all(r["date"] == "2026-11-13" for r in batch.results.values())
-
-
-def test_demo_rejects_unknown_symbol():
-    """demo 快照不含 300058，必须显式报错而非返回 None 冒充成功。"""
-    with pytest.raises(UsageError, match="演示宇宙"):
-        wmshare.demo_client().kline.last(SYM)
 
 
 # ---- 3. 联网冒烟（需凭证 + 显式开关；收盘后运行）----

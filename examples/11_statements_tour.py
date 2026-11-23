@@ -1,24 +1,18 @@
 """财务报表：三大报表多期科目行（cn/hk/us 全市场宽表）+ 审计意见。
 
-前提：凭证必填（export WMSHARE_CLIENT_ID=... WMSHARE_CLIENT_SECRET=...）；`--demo` 用随包演示数据零凭证试跑
+前提：凭证可选——无凭证自动回落匿名试用（免注册、真实数据、需网络）
 运行：python examples/11_statements_tour.py
 学到：报表行结构（k 科目键=披露科目原文/cn 同列名/vals 各期值，金额=披露原币）；period="quarter" 取季报全档；审计意见按年报
 文档：docs/GUIDE.md（单票菜谱·三大报表）
 """
-import sys
 import wmshare
 
 SYMBOL = "600519"
 
 
-def main(cli=None, demo: bool = False) -> None:
+def main(cli=None) -> None:
     if cli is None:
-        if demo:
-            cli = wmshare.demo_client()
-            print("(演示模式：随包罐头数据，非真实行情)")
-            print()
-        else:
-            cli = wmshare.Client.from_env()
+        cli = wmshare.Client.from_env()
 
     # ---- 三大报表：科目行 {k 科目键, cn 同列名, vals:{年份: 值}}，金额=披露原币 ----
     for kind, title in (("income", "利润表"), ("balance", "资产负债表"),
@@ -42,5 +36,4 @@ def main(cli=None, demo: bool = False) -> None:
 
 
 if __name__ == "__main__":
-    demo = "--demo" in sys.argv
-    main(demo=demo)
+    main()

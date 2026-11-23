@@ -56,20 +56,9 @@ def status(
     """Return runtime, credentials, and catalog facts without reading secrets."""
     creds = credential_status()
     stats = wmshare.load().stats()
-    # 快照版本与当前包/上游版本分开列，避免 LLM 把 1.11.0 的罐头当成本版数据。
-    from wmshare._demo import DEMO_SNAPSHOT_PROVENANCE
     data = {
         "server_version": wmshare.__version__,
         "market": runtime.market,
-        "demo": runtime.demo,
-        "demo_notice": "非实时、固定快照，仅用于调用面验证" if runtime.demo else None,
-        "demo_snapshot": {
-            "snapshot_as_of": DEMO_SNAPSHOT_PROVENANCE["as_of"],
-            "snapshot_sdk_version": DEMO_SNAPSHOT_PROVENANCE["snapshot_sdk_version"],
-            "snapshot_catalog_rev": DEMO_SNAPSHOT_PROVENANCE["snapshot_catalog_rev"],
-            "current_sdk_version": wmshare.__version__,
-            "current_upstream_rev": stats.get("upstream_rev"),
-        },
         "credentials": creds,
         "catalog": stats,
         "capabilities": {

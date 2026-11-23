@@ -6,7 +6,7 @@
      和逐只可追溯的事实条目一起返回；``article()`` / ``figures()`` 直接出图文。
 日常生产用管线段；想核对口径用手工段，两者应当对得上。
 
-前提：凭证必填（export WMSHARE_CLIENT_ID=... WMSHARE_CLIENT_SECRET=...）；演示快照不含 cbond 域，故无 --demo
+前提：凭证可选——无凭证自动回落匿名试用（免注册、真实数据、需网络）
 运行：python examples/14_cbond_double_low.py
 学到：cbond.board 单次全市场面板；双低=价格+溢价率×100（小数口径）；YTM 双口径
       （wmshare.cb.valuation 现金流 IRR，basis 分档，与日更线同源）；强赎/下修观测行内直读
@@ -29,8 +29,8 @@ def main(cli=None) -> None:
     try:
         rows = cli.cbond.board()
     except (AttributeError, WmshareError) as e:
-        # 演示快照不含 cbond 域；此处需真实凭证
-        print(f"cbond 域不可用（{e}）：本示例需真实凭证（WMSHARE_CLIENT_ID/SECRET）")
+        # cbond 域取数失败：显式说明而非静默空结果
+        print(f"cbond 域不可用（{e}）：检查凭证/匿名额度（WMSHARE_CLIENT_ID/SECRET 或 from_env 自动匿名）")
         return
     # 2.0 门面默认把行数组收口成 DataFrame；注入桩/底层 cli.call 仍是 list。
     # 曾用 rows.get("rows", []) 兜底——DataFrame.get 语义下恒得 []，静默 0 行。

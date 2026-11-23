@@ -12,6 +12,7 @@ import pytest
 
 pytest.importorskip("mcp")
 
+from fake_client import fake_runtime  # noqa: E402
 from wmshare.api import COMPOSITE_METHODS, FRIENDLY_INDEX  # noqa: E402
 from wmshare.errors import LimitError  # noqa: E402
 from wmshare.mcp import apis, core, tools  # noqa: E402
@@ -39,7 +40,7 @@ def test_every_registry_action_is_schema_reachable(action):
 
 
 def test_tool_schema_enum_matches_registry():
-    server = build_server(MCPRuntime(demo=True))
+    server = build_server(fake_runtime())
 
     async def schemas():
         listed = await server.list_tools()
@@ -73,7 +74,7 @@ def test_no_stale_friendly_api_count_in_ai_surface():
 
 
 def test_search_kind_description_uses_runtime_count():
-    server = build_server(MCPRuntime(demo=True))
+    server = build_server(fake_runtime())
 
     async def schemas():
         listed = await server.list_tools()
@@ -98,7 +99,7 @@ def test_filesystem_routes_rejected_by_gateway(target, tmp_path):
 def test_gateway_policy_error_has_prescriptive_fix():
     envelope = core.error(
         apis.GatewayPolicyError("cbond.figures 会向任意路径写文件"),
-        MCPRuntime(demo=True),
+        MCPRuntime(),
     )
     assert envelope["error"]["code"] == "gateway_policy"
     assert any("本地 Python SDK" in line for line in envelope["error"]["fix"])
@@ -131,14 +132,14 @@ class _FakeCli:
 
 
 def test_ec_budget_blocks_overspend(monkeypatch):
-    rt = MCPRuntime(demo=False, max_ec_per_call=5)
+    rt = MCPRuntime(max_ec_per_call=5)
     monkeypatch.setattr(MCPRuntime, "client", lambda self, market=None: _FakeCli(999))
     with pytest.raises(LimitError, match="ec_budget|超过 MCP 单次上限"):
         tools.call(rt, "kline.bars", mode="api")
 
 
 def test_ec_cost_is_exposed_in_envelope(monkeypatch):
-    rt = MCPRuntime(demo=False)
+    rt = MCPRuntime()
     monkeypatch.setattr(MCPRuntime, "client", lambda self, market=None: _FakeCli(10))
     result = tools.call(rt, "kline.bars", mode="api")
     assert result["ok"] is True
@@ -156,38 +157,33 @@ def test_mcp_max_ec_env_override(monkeypatch):
 
 _OLD_META_KEYS = ("market", "source", "units", "row_count", "rows_total",
                   "truncated", "next_action")
-_NEW_META_KEYS = ("demo", "as_of", "retrieved_at", "data_freshness")
+_NEW_META_KEYS = ("retrieved_at", "data_freshness")
 
 
-@pytest.mark.parametrize("demo", [True, False])
-def test_success_envelope_carries_provenance(demo):
-    rt = MCPRuntime(demo=demo)
-    meta = core.success(rt, [1, 2])["meta"]
+def test_success_envelope_carries_provenance():
+    meta = core.success(MCPRuntime(), [1, 2])["meta"]
     for key in _OLD_META_KEYS + _NEW_META_KEYS:
         assert key in meta
-    assert meta["demo"] is demo
-    assert meta["data_freshness"] == ("snapshot" if demo else "live")
-    if demo:
-        assert meta["as_of"], "demo 信封必须带快照日期"
-    else:
-        assert meta["as_of"] is None
+    assert meta["data_freshness"] == "live"
+    assert "demo" not in meta and "as_of" not in meta, "demo 溯源键已随 3.0.0 移除"
 
 
 def test_error_envelope_carries_provenance_and_tolerates_missing_runtime():
-    with_runtime = core.error(ValueError("x"), MCPRuntime(demo=True))
+    with_runtime = core.error(ValueError("x"), MCPRuntime())
     without_runtime = core.error(ValueError("x"))
     for envelope in (with_runtime, without_runtime):
         for key in _NEW_META_KEYS:
             assert key in envelope["meta"]
-    assert with_runtime["meta"]["data_freshness"] == "snapshot"
+    assert with_runtime["meta"]["data_freshness"] == "live"
     assert without_runtime["meta"]["data_freshness"] == "unknown"
 
 
 def test_status_tool_envelope_carries_provenance():
-    envelope = tools.status(MCPRuntime(demo=True))
+    envelope = tools.status(fake_runtime())
     assert envelope["ok"] is True
     for key in _NEW_META_KEYS:
         assert key in envelope["meta"]
+    assert "demo" not in envelope["data"], "status 的 demo 键组已随 3.0.0 移除"
 
 
 # ---- S8：公开面手写计数锚定运行时 ----

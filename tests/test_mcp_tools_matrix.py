@@ -33,6 +33,7 @@ from wmshare.mcp.constants import (
     TOPLIST_ACTIONS,
     VALUATION_ACTIONS,
 )
+from fake_client import fake_runtime  # noqa: E402
 from wmshare.mcp.core import MCPRuntime
 from wmshare.mcp.server import build_server
 
@@ -99,7 +100,7 @@ class _MatrixClient:
 @pytest.fixture
 def runtime(monkeypatch):
     monkeypatch.setattr(MCPRuntime, "client", lambda self, market=None: _MatrixClient())
-    return MCPRuntime(demo=False)
+    return MCPRuntime()
 
 
 def _ok(result, **meta_keys):
@@ -337,7 +338,7 @@ def test_basic_discovery_tools(runtime):
     ("wmshare_company", {"symbol": "600519", "include": ["profile"]}),
 ])
 def test_pydantic_boundary_via_call_tool(runtime, tool, arguments):
-    server = build_server(MCPRuntime(market="cn", demo=True))
+    server = build_server(fake_runtime())
     result = asyncio.run(server.call_tool(tool, arguments))
     assert isinstance(result, tuple) and result[1]["ok"] is True
 

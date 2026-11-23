@@ -47,6 +47,7 @@ from wmshare.mcp.constants import (
     VALUATION_ACTIONS,
     VALUATION_METRICS,
 )
+from fake_client import fake_runtime  # noqa: E402
 from wmshare.mcp.core import MCPRuntime
 from wmshare.mcp.server import build_server
 from wmshare.mcp import tools
@@ -90,7 +91,7 @@ def routes() -> tuple[Any, ...]:
 
 @pytest.fixture()
 def runtime() -> MCPRuntime:
-    rt = MCPRuntime(market="cn", demo=False)
+    rt = MCPRuntime(market="cn")
     rt._clients = {"cn": GatewayFakeClient()}
     return rt
 
@@ -172,7 +173,7 @@ def test_generic_api_gateway_invokes_and_guards(runtime: Any) -> None:
 
 
 def test_generic_catalog_gateway_supports_raw_units() -> None:
-    rt = MCPRuntime(market="cn", demo=False)
+    rt = MCPRuntime(market="cn")
     rt._clients = {"cn": CatalogFakeClient()}
     result = tools.call(rt, "segments.snapshot", {"sym": "600519"}, raw=True, units="native")
     assert result["ok"] is True
@@ -191,7 +192,7 @@ class BatchFakeClient:
 
 
 def test_batch_params_are_forwarded() -> None:
-    rt = MCPRuntime(market="cn", demo=False)
+    rt = MCPRuntime(market="cn")
     rt._clients = {"cn": BatchFakeClient()}
     runtime = rt
     result = tools.batch(
@@ -204,7 +205,7 @@ def test_batch_params_are_forwarded() -> None:
 
 
 def test_every_friendly_route_is_invokable() -> None:
-    rt = MCPRuntime(market="cn", demo=False)
+    rt = MCPRuntime(market="cn")
     client = GatewayFakeClient()
     for route in api_routes():
         # 有文件系统副作用的路由仍在 registry（SDK 层可用），但 MCP 网关
@@ -239,7 +240,7 @@ def test_every_friendly_route_is_invokable() -> None:
 
 
 def test_intl_requires_non_cn_market() -> None:
-    rt = MCPRuntime(market="cn", demo=False)
+    rt = MCPRuntime(market="cn")
     rt._clients = {"cn": GatewayFakeClient(), "hk": GatewayFakeClient()}
     with pytest.raises(ValueError, match="hk/us"):
         tools.intl(rt, "query_ccass", "00700")
@@ -248,7 +249,7 @@ def test_intl_requires_non_cn_market() -> None:
 
 
 def test_mcp_registry_schema_and_resources() -> None:
-    server = build_server(MCPRuntime(market="cn", demo=True))
+    server = build_server(fake_runtime())
     async def inspect_server() -> tuple[list[str], dict[str, Any]]:
         listed = await server.list_tools()
         schema = {tool.name: tool.inputSchema for tool in listed}
@@ -288,7 +289,7 @@ def test_mcp_registry_schema_and_resources() -> None:
 
 
 def test_function_and_api_resources_emit_json() -> None:
-    server = build_server(MCPRuntime(market="cn", demo=True))
+    server = build_server(fake_runtime())
     async def read_resources() -> tuple[dict[str, Any], dict[str, Any]]:
         fn_template = server._resource_manager._templates["wmshare://catalog/function/{name}"]
         resource = await fn_template.create_resource(
@@ -305,7 +306,7 @@ def test_function_and_api_resources_emit_json() -> None:
 
 
 def _domain_runtime() -> MCPRuntime:
-    rt = MCPRuntime(market="cn", demo=False)
+    rt = MCPRuntime(market="cn")
     rt._clients = {"cn": GatewayFakeClient(), "hk": GatewayFakeClient()}
     return rt
 
@@ -394,7 +395,7 @@ def test_docs_mcp_numbers_match_routes() -> None:
 
 
 def test_tool_schemas_have_enums_and_descriptions() -> None:
-    server = build_server(MCPRuntime(market="cn", demo=True))
+    server = build_server(fake_runtime())
     async def schemas() -> dict[str, dict[str, Any]]:
         listed = await server.list_tools()
         return {tool.name: tool.inputSchema for tool in listed}
@@ -415,7 +416,7 @@ def test_tool_schemas_have_enums_and_descriptions() -> None:
 
 
 def test_domain_action_enums_are_machine_readable() -> None:
-    server = build_server(MCPRuntime(market="cn", demo=True))
+    server = build_server(fake_runtime())
     async def schemas() -> dict[str, dict[str, Any]]:
         listed = await server.list_tools()
         return {tool.name: tool.inputSchema for tool in listed}

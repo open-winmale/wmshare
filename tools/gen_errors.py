@@ -34,7 +34,6 @@ CATEGORIES: list[tuple[str, str]] = [
     ("env", "环境与凭证"),
     ("quota", "配额与限流"),
     ("batch", "批量"),
-    ("demo", "演示模式"),
     ("stream", "订阅"),
 ]
 
@@ -105,12 +104,6 @@ MEANINGS: dict[str, tuple[str, str, str, str]] = {
     "batch": ("batch", "批量返回不是 MAP 或结构异常", "否", "降级为逐票调用定位问题"),
     "batch_missing": ("batch", "批量返回缺少部分标的（服务端无对应行）", "否",
                       "核对代码有效性/停牌；准全市场捷径用 `truncated` 判断"),
-    # 演示模式
-    "demo_unsupported": ("demo", "该数据面未纳入离线演示快照", "否",
-                         "换真实客户端（需凭证）"),
-    "demo_symbol": ("demo", "演示快照未覆盖该标的", "否", "用快照内标的或真实客户端"),
-    "demo_limit": ("demo", "演示快照条数不足", "否", "减小 `limit` 或换真实客户端"),
-    "demo_market": ("demo", "演示快照仅覆盖单一市场", "否", "用该市场客户端或真实客户端"),
     # 订阅
     "stream_reset": ("stream", "订阅进度超出服务端保留期", "否",
                      "`seek_oldest(market)` 后继续消费"),

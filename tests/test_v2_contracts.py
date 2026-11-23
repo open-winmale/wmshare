@@ -281,7 +281,6 @@ def test_mcp_cost_mode_offline():
 
     class _RT:
         market = "cn"
-        demo = None
 
         def client(self, market=None):
             c = Client(base_url="https://t", client_id="i", client_secret="s",
@@ -338,10 +337,10 @@ def test_cost_estimate_full_market_shortcut_model(cli):
     assert est2["ec_lo"] == 3 * 55
 
 
-def test_demo_list_snapshot_same_shape_as_live():
-    """demo 与 live 同形同次数：≥3 票列表 = 一次请求的 BatchResult。"""
-    import wmshare
-    demo = wmshare.demo_client()
+def test_replay_list_snapshot_same_shape_as_live():
+    """回放夹具与 live 同形同次数：≥3 票列表 = 一次请求的 BatchResult。"""
+    from replay_client import replay_client
+    demo = replay_client()
     out = demo.kline.snapshot(["600519", "000858", "601088"])
     assert type(out).__name__ == "BatchResult"
     assert out.requests == 1 and set(out.results) == {"600519", "000858", "601088"}
@@ -365,12 +364,12 @@ def test_futures_cffex_codes_addressable(cli):
 
 
 def test_cost_estimate_available_offline_on_both_clients():
-    """EC 预估是纯离线能力：真实客户端与 demo 客户端共用同一模型。"""
-    import wmshare
+    """EC 预估是纯离线能力：真实客户端与回放夹具共用同一模型。"""
+    from replay_client import replay_client
 
     real = Client(base_url="https://t", client_id="i", client_secret="s",
                   catalog=load(), session=FakeSession())
-    demo = wmshare.demo_client()
+    demo = replay_client()
     for cli in (real, demo):
         est = cli.cost_estimate("margin.universe", limit=500)
         assert est["model"] == "rows_per_symbol"

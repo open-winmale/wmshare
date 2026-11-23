@@ -29,7 +29,7 @@ python3 -c "import wmshare; print(wmshare.__version__)"   # 探测
 pip install -i https://pypi.tuna.tsinghua.edu.cn/simple wmshare
 ```
 
-零凭证语法试跑：`cli = wmshare.demo_client()`（2026-11-19 真实 API 固定快照；10 只演示宇宙 + 当日全市场 screener，**非实时数据**），调用面覆盖公开示例，用于无凭证时验证代码形态。真实取数零配置也可用：`Client.from_env()` 无凭据自动领匿名额度（一次性）。
+零配置取数：`cli = wmshare.Client.from_env()`——无凭据自动免注册领匿名试用（真实数据、免费额度、需网络；`WMSHARE_DISABLE_ANON=1` 可关闭）。
 
 MCP 安装与凭证写入：
 

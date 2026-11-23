@@ -1,25 +1,21 @@
 """交易日历与市场级两融：回测窗口的前置面 + 市场杠杆情绪观测。
 
-前提：需真实凭证（export WMSHARE_CLIENT_ID=... WMSHARE_CLIENT_SECRET=...）；`--demo`
-  用随包快照（2026-11-17 重拍已覆盖 calendar/margin 市场面/futures）零凭证试跑
+前提：凭证可选——无凭证自动回落匿名试用（免注册、真实数据、需网络）
 运行：python examples/18_calendar_margin.py
 学到：calendar.days/next 供回测与窗口计算取交易日锚（此前靠日 K 存在性隐式判定的坑移除）；
   margin.market_summary 观测全市场融资余额（杠杆情绪）；margin.universe 判定标的资格；
   futures.snapshot 取期货连续合约快照（商品 RB / 金融 IF，中金所 CFX 也支持）
 文档：docs/GUIDE.md（§批量与全市场）+ docs/API.md（market.calendar / market.margin）
 """
-import sys
 from typing import Any
 
 import wmshare
-from wmshare import UsageError, WmshareError
+from wmshare import WmshareError
 
 
-def main(cli: Any = None, demo: bool = False) -> None:
+def main(cli: Any = None) -> None:
     if cli is None:
-        cli = wmshare.demo_client() if demo else wmshare.Client.from_env()
-    if demo:
-        print("[演示模式] 随包快照回放（2026-11-17 拍摄，非实时）")
+        cli = wmshare.Client.from_env()
 
     _print("交易日历：2026-01 区间交易日（前 5 行）", _safe(lambda: cli.calendar.days("2026-01-01", "2026-01-31")))
     _print("日历：之后 3 个交易日（自最近已知日起）", _safe(lambda: cli.calendar.next("2026-01-30", 3)))
@@ -41,18 +37,13 @@ def _print(title: str, value: Any) -> None:
 
 
 def _safe(fn: Any) -> Any:
-    """demo 快照不回放 2.0 新面时显式降级说明（不伪造数据）。"""
+    """取数失败显式说明（不伪造数据、不静默空结果）。"""
     try:
         return fn()
-    except UsageError as e:
-        if getattr(e, "code", "") == "demo_unsupported":
-            print(f"[demo 跳过] {e}")
-            return None
-        raise
     except WmshareError as e:
         print(f"[取数失败] {e}")
         return None
 
 
 if __name__ == "__main__":
-    main(demo="--demo" in sys.argv)
+    main()

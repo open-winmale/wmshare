@@ -78,11 +78,11 @@ def test_check_registers_all_tools(capsys: pytest.CaptureFixture[str]) -> None:
 
 
 def test_check_respects_runtime_flags(capsys: pytest.CaptureFixture[str]) -> None:
-    rc = main(["--demo", "--market", "hk", "--check"])
+    rc = main(["--market", "hk", "--check"])
     assert rc == 0
     payload = json.loads(capsys.readouterr().out)
     assert payload["market"] == "hk"
-    assert payload["demo"] is True
+    assert "demo" not in payload, "demo 旗标已随 3.0.0 移除"
 
 
 def test_setup_rejects_empty_secret(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:

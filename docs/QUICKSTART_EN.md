@@ -25,27 +25,25 @@ Claude, …) can query the market without a human writing glue code.
 pip install wmshare
 ```
 
-## Try it offline — no sign-up, 3 lines
+## First call — no sign-up, 3 lines
 
-The package ships a frozen snapshot (captured 2026-11-19, not live data). This runs
-fully offline and is pinned by tests:
+No registration needed: `Client.from_env()` automatically falls back to an
+anonymous trial (one-shot quota aligned with the free tier) when no credentials
+are configured — real data, network required:
 
 ```python
 import wmshare
 
-cli = wmshare.demo_client()
-print(f"{cli.dividend.yield_ttm('600519'):.2%}")        # 3.56%
-print(cli.screener.index_breadth_summary()["total"])    # 5687
+cli = wmshare.Client.from_env()                        # anonymous fallback, no sign-up
+print(f"{cli.dividend.yield_ttm('600519'):.2%}")       # 3.96%
+print(cli.screener.index_breadth_summary()["total"])   # 5685
 ```
 
-Codes outside the demo universe raise an explicit error instead of returning
-made-up values.
+Unknown symbols raise an explicit error instead of returning made-up values.
 
-## First live call
+## Standing quota
 
-No registration needed: `Client.from_env()` automatically falls back to an
-anonymous trial (one-shot quota aligned with the free tier) when no credentials
-are configured. For a standing quota, get an AppId / API Key from
+For a standing quota, get an AppId / API Key from
 [open.winmale.com](https://open.winmale.com), then:
 
 ```bash
@@ -108,8 +106,8 @@ The in-depth documentation is in Chinese:
 [GUIDE.md](GUIDE.md) (task recipes, batching, troubleshooting) ·
 [INDICATORS.md](INDICATORS.md) (indicator catalog) ·
 [API.md](API.md) (157 core endpoints) ·
-[examples/](../examples/README.md) (21 runnable numbered examples: 4 fully offline,
-15 with an offline `--demo` mode, 1 requiring credentials, 1 anonymous trial) ·
+[examples/](../examples/README.md) (22 runnable numbered examples: anonymous
+trial by default, 4 fully offline) ·
 [AGENTS.md](../AGENTS.md) and
 [SKILL.md](../src/wmshare/skills/wmshare/SKILL.md) for agent integration.
 

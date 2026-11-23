@@ -13,8 +13,8 @@
 - **内部函数**：目录标 `internal: true` 的辅助（fmt_* 等）不进任何门面属性直达；
   新增内部辅助默认标 internal。
 - **新接口验收**：目录 yaml（units/ranges/checks 非空）→ FRIENDLY_INDEX → 六 gen 再生成
-  → INDICATORS 锚点 → examples 课程表条目 → demo 同形（DF/升序/信封；未回放面显式
-  `demo_unsupported`）→ 计数级联（README/AI/GUIDE/SKILL/llms/docs/README）。
+  → INDICATORS 锚点 → examples 课程表条目 → 离线夹具同步（DF/升序/信封；未拍摄面显式
+  `replay_unsupported`）→ 计数级联（README/AI/GUIDE/SKILL/llms/docs/README）。
 
 ## 提交前门禁（全部必须通过）
 
@@ -94,7 +94,7 @@ CI（`.github/workflows/ci.yml`）在每次 push/PR 上跑同样的门禁。
 
 ```bash
 pip install -e ".[dev,dataframe]"
-python examples/01_quickstart.py       # 需要已配置的凭证；--demo 零凭证试跑
+python examples/01_quickstart.py       # 无凭证自动匿名试用；长期额度配凭证
 python examples/02_catalog_tour.py     # 离线示例（02/03/09 无需凭证）
 python examples/08_pandas_analysis.py  # DataFrame 分析（需凭证 + pandas）
 # 全部 11 个示例与课程表：examples/README.md
@@ -123,6 +123,9 @@ python examples/08_pandas_analysis.py  # DataFrame 分析（需凭证 + pandas�
   文档相对链接不悬空；示例数在 README/docs/README/仓库保持一致。
 - **可理解性**：字段级返回表只增不减（`FIELD_TABLE_MIN`）；方法级 `:param` 债务
   ratchet（`PARAM_DOC_DEBT`）；单位/守护范围随目录声明进字段表。
+
+新增/修改接口的完整操作步骤（三条落地路线、文件级联、基线索引、验收 checklist）见
+[docs/INTERFACE_SPEC.md](docs/INTERFACE_SPEC.md)。
 
 ## 提交信息
 

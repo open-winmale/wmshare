@@ -1,8 +1,7 @@
 """收息流投研闭环：排行 → 批量诊断 → 日历 → 拆解。
 
-前提：需真实凭证（export WMSHARE_CLIENT_ID=... WMSHARE_CLIENT_SECRET=...）；`--demo`
-      模式下收息面未回放（依赖 cron 物化 memo 与实时索引），各步显式降级不伪造数据
-运行：python examples/19_income_rating.py [--demo]
+前提：凭证可选——无凭证自动回落匿名试用（免注册、真实数据、需网络）
+运行：python examples/19_income_rating.py
 学到：dividend.rating 全市场一次取数（勿现场重算评分）、diagnose 原生批量
       （勿逐票循环）、COLD_CACHE 与冷首查尖刺的处理姿势
 文档：docs/GUIDE.md「收息场景」节 · 目录 `cat.function("income.rating_rows")`
@@ -10,18 +9,14 @@
 
 from __future__ import annotations
 
-import sys
 from typing import Any
 
 
-def main(cli: Any = None, demo: bool = False) -> None:
+def main(cli: Any = None) -> None:
     import wmshare
 
     if cli is None:
-        cli = wmshare.demo_client() if demo else wmshare.Client.from_env()
-    if demo:
-        print("演示模式：固定快照回放，非实时数据（收息面依赖 cron memo 与实时索引，"
-              "未拍摄时逐步显式降级，不伪造数据）")
+        cli = wmshare.Client.from_env()
 
     print("== 1. 发现：全市场收息排行（四维评分 + 档位 + 资格门，一次取数） ==")
     env = _safe(cli.dividend.rating, top_n=5, grade="strong")
@@ -82,17 +77,17 @@ def main(cli: Any = None, demo: bool = False) -> None:
 
 
 def _safe(fn, *args, **kwargs):
-    """demo 未回放面显式降级（不伪造数据）；真实故障原样抛出。"""
+    """数据面缺失显式降级（不伪造数据）；真实故障原样抛出。"""
     import wmshare
 
     try:
         return fn(*args, **kwargs)
     except wmshare.WmshareError as e:
-        if getattr(e, "code", "") == "demo_unsupported":
-            print(f"[demo 跳过] {e}")
+        if getattr(e, "code", "") in {"replay_unsupported", "catalog"}:
+            print(f"[跳过] {e}")
             return None
         raise
 
 
 if __name__ == "__main__":
-    main(demo="--demo" in sys.argv)
+    main()

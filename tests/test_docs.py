@@ -361,6 +361,20 @@ class ReadmeClient:
 
     def __init__(self):
         import types
+
+        class _IL:
+            def __getitem__(self, i):
+                return ("2026-10-24", 1331.88)
+
+        class _Pts:
+            iloc = _IL()
+
+        self.index = types.SimpleNamespace(
+            # 指数节示例罐头：与 GUIDE 同日真实 probe 同量级（5y 分位）
+            trend=lambda key, window: {"ok": True, "as_of": "2026-10-24", "data": {
+                "points": _Pts(), "n": 5, "pe_pct": 0.42, "pe_pct_window": "5y",
+                "pct": {"pe": {"p3": 0.51, "p5": 0.42, "p10": 0.33}}}, "meta": {}},
+        )
         self.kline = types.SimpleNamespace(
             bars=lambda *a, **k: [{"date": "2026-10-20", "close": 1331.88,
                                    "volume": 3413500.0, "amount": 4525398959.0,
@@ -493,39 +507,31 @@ def test_readme_example_outputs_documented():
         assert line is not None, f"README 示例缺少 {call} 与预期输出 {value} 的对应注释"
 
 
-def test_readme_zero_credential_snippet_matches_snapshot():
-    """首屏「零凭证先试」块的注释值必须等于真实快照回放值。
+def test_readme_zero_credential_snippet_is_anonymous():
+    """首屏「零凭证先试」块必须走 from_env 匿名回落（demo 模式已于 3.0.0 移除）。
 
-    首屏是唯一给未注册用户的钩子：值一旦与 ``_demo_data.json`` 漂移，陌生人照抄就跑出
-    不同数字。这里直接打真快照（不 patch），把注释与快照焊死。
-
-    QUICKSTART_EN 是同一钩子的英文面（2026-11-19 前长期写 3.73%/5686 与旧日期），
-    一并纳入，避免只守中文首屏。
+    demo 曾是首屏钩子（注释值与快照焊死）；3.0.0 起零凭证体验=``from_env()``
+    自动匿名试用（真实数据、免注册、免费额度）。离线环境无法断言真实输出值，
+    这里钉住动线存在性与旧入口清零。
     """
-    import wmshare
-
-    assert "wmshare.demo_client()" in README, "首屏缺少零凭证试跑入口"
-    demo = wmshare.demo_client()
+    assert "demo_client" not in README, "README 仍有 demo_client 残留"
     surfaces = {"README.md": README,
                 "docs/QUICKSTART_EN.md": (REPO / "docs" / "QUICKSTART_EN.md").read_text(
                     encoding="utf-8")}
     for name, text in surfaces.items():
-        assert "wmshare.demo_client()" in text, f"{name} 缺少零凭证试跑入口"
-        for label, value in (("yield", f"{demo.dividend.yield_ttm('600519'):.2%}"),
-                             ("total", str(demo.screener.index_breadth_summary()["total"]))):
-            assert value in text, f"{name} 注释的 {label} 值 {value} 与快照回放不符"
+        assert "wmshare.Client.from_env()" in text, f"{name} 缺少零凭证匿名试跑入口"
+        assert "demo_client" not in text, f"{name} 仍有 demo_client 残留"
 
 
 def test_quickstart_en_matches_runtime():
-    """英文 Quickstart 的计数、快照日期与计费口径必须与运行时/代码一致。
+    """英文 Quickstart 的计数与计费口径必须与运行时/代码一致。
 
     2026-11-19 实测的三类漂移：指标码写 2,752（实际 2,983）、快照日期写
-    2026-10-30（实际 ``SNAPSHOT_AS_OF``）、以及最危险的一处——把计费写成
+    2026-10-30（快照已随 3.0.0 移除）、以及最危险的一处——把计费写成
     「billed per request, not per row」，与 EC 按服务端物化行计费相反，
     会直接诱导用户批量跑全市场后超额消耗 EC。
     """
     import wmshare
-    from wmshare._demo import SNAPSHOT_AS_OF
 
     text = (REPO / "docs" / "QUICKSTART_EN.md").read_text(encoding="utf-8")
     stats = wmshare.load().stats()
@@ -535,8 +541,6 @@ def test_quickstart_en_matches_runtime():
         "QUICKSTART_EN 的指标码全量计数与运行时目录不符"
     assert f"({len(FRIENDLY_INDEX)} core endpoints)" in text, \
         "QUICKSTART_EN 的核心接口计数与 FRIENDLY_INDEX 不符"
-    assert SNAPSHOT_AS_OF in text, \
-        f"QUICKSTART_EN 的快照日期未写明当前 SNAPSHOT_AS_OF={SNAPSHOT_AS_OF}"
 
     # 计费口径：不得再出现「按请求而非按行计费」的相反表述
     flat = " ".join(text.split())
@@ -865,7 +869,7 @@ def test_api_pack_contract():
     """api_pack.json（开放平台接口文档站数据源）合同：覆盖 1:1、参数对签名、物料显式。
 
     独立复刻生成器口径防同错：键集合与 FRIENDLY_INDEX/COMPOSITE_METHODS 精确
-    对齐；demo/test 缺省必须是显式 null/reason（防「静默没数据」假文档）。
+    对齐；test 物料缺省必须是显式 null（防「静默没数据」假文档）。
     DOC_META（api/__init__）决定文档站暴露面：隐藏接口 SDK 仍可调，只是不成页。
     """
     from wmshare.api import DOC_META
@@ -906,12 +910,7 @@ def test_api_pack_contract():
             assert body.get("symbol") and body.get("xs_lines") and body.get("mode") == "call"
             assert any(ln.lstrip().startswith("return") for ln in body["xs_lines"]), \
                 f"{ns}.{method} eval payload 缺 return 行"
-        demo = e["demo"]
-        if demo["covered"]:
-            assert "result" in demo and demo.get("as_of"), \
-                f"{ns}.{method} demo 覆盖但无响应/溯源"
-        else:
-            assert demo.get("reason"), f"{ns}.{method} demo 未覆盖必须给原因"
+        assert "demo" not in e, f"{ns}.{method} api_pack 仍有 demo 字段残留"
         # DOC_META 与 pack 条目互证：隐藏/变体标记必须精确一致
         meta = DOC_META.get((ns, method))
         if meta is None:
@@ -931,8 +930,6 @@ def test_api_pack_contract():
             assert e["composite"] and e["test"] is None and e["example"] is None, \
                 f"组合接口 cli.{ns}.{method} 不应带一键测试/单行示例"
     # meta 计数与实体一致（防计数行拍脑袋）
-    assert pack["meta"]["demo_covered"] == sum(1 for e in entries.values()
-                                               if e["demo"]["covered"])
     assert pack["meta"]["test_ready"] == sum(1 for e in entries.values() if e["test"])
     assert pack["meta"]["docs_visible"] == sum(1 for e in entries.values()
                                                if e["docs_visible"])

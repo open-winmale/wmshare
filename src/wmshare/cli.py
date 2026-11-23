@@ -12,12 +12,11 @@
     wmshare cbond daily --out ./cb/
     wmshare call kline.query_bars sym=600519 limit=30 --json
 
-客户端构造顺序（首个成功者生效）：``--demo`` 离线快照 → ``--anonymous``
-显式免注册匿名试用 → ``from_env``（配置了凭证用付费凭据；无凭证时 SDK 内部
-自动回落匿名试用，``WMSHARE_DISABLE_ANON=1`` 可关闭，服务端未开放则给注册
-指引）。匿名额度是一次性给足、用完即止（对齐正常注册用户免费档），本命令
-**不砍量**——只对 ``screen --fields`` 这类首跑物化可达 ~60 万 EC 的用法打
-成本警告。
+客户端构造顺序（首个成功者生效）：``--anonymous`` 显式免注册匿名试用 →
+``from_env``（配置了凭证用付费凭据；无凭证时 SDK 内部自动回落匿名试用，
+``WMSHARE_DISABLE_ANON=1`` 可关闭，服务端未开放则给注册指引）。匿名额度是
+一次性给足、用完即止（对齐正常注册用户免费档），本命令**不砍量**——只对
+``screen --fields`` 这类首跑物化可达 ~60 万 EC 的用法打成本警告。
 """
 from __future__ import annotations
 
@@ -32,7 +31,6 @@ from wmshare import export as _export
 __all__ = ["main", "parser"]
 
 _ANON_HINT = "[wmshare] 到 https://open.winmale.com 注册免费账号获取稳定额度"
-_DEMO_HINT = "[wmshare] 换真实数据：wmshare --anonymous <命令> 或配置凭证后重跑"
 
 
 def _common_flags(target: argparse.ArgumentParser, *, top: bool) -> argparse.ArgumentParser:
@@ -40,19 +38,17 @@ def _common_flags(target: argparse.ArgumentParser, *, top: bool) -> argparse.Arg
 
     子命令层一律 ``default=argparse.SUPPRESS``：argparse 的子 parser 复用顶层
     namespace 并先填充全部 defaults——非 SUPPRESS 的 store_true 隐含 False，
-    会把顶层解析出的 ``--demo=True`` 覆盖回 False（实测踩过：旗标放在子命令
-    前却走了付费凭据客户端）。SUPPRESS 让「子位置未给出」时不写该属性。
+    会把顶层解析出的旗标覆盖回 False（实测踩过：旗标放在子命令前却走了
+    付费凭据客户端）。SUPPRESS 让「子位置未给出」时不写该属性。
     """
-    demo: dict[str, Any] = dict(action="store_true", help="离线演示快照（零凭证、非实时）")
     anon: dict[str, Any] = dict(action="store_true", help="免注册匿名试用（一次性小配额）")
     market: dict[str, Any] = dict(help="市场 cn/hk/us（默认 cn）")
     js: dict[str, Any] = dict(action="store_true",
                               help="打印原始返回（JSON）；与 --out 组合时落盘照常")
     if not top:
-        for kw in (demo, anon, js):
+        for kw in (anon, js):
             kw["default"] = argparse.SUPPRESS
         market["default"] = argparse.SUPPRESS
-    target.add_argument("--demo", **demo)
     target.add_argument("--anonymous", **anon)
     target.add_argument("--market", **market)
     target.add_argument("--json", **js)
@@ -152,9 +148,7 @@ def main(argv: list[str] | None = None) -> int:
         return handlers[args.command](cli, args)
     except wmshare.WmshareError as e:
         print(f"[wmshare] {type(e).__name__} ({e.code}): {e}", file=sys.stderr)
-        if e.code == "demo_unsupported":
-            print(_DEMO_HINT, file=sys.stderr)
-        elif e.code.startswith("anon_"):
+        if e.code.startswith("anon_"):
             print(_ANON_HINT, file=sys.stderr)
         return 2
     except (ValueError, OSError) as e:
@@ -162,11 +156,9 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
 
-# ---- 客户端构造：demo → --anonymous 显式匿名 → from_env（无凭据时内部自动回落） ----
+# ---- 客户端构造：--anonymous 显式匿名 → from_env（无凭据时内部自动回落） ----
 
 def _build_client(args: argparse.Namespace) -> tuple[Any, str]:
-    if args.demo:
-        return wmshare.demo_client(), "demo（离线快照，非实时）"
     if args.anonymous:
         cli = wmshare.Client.anonymous(market=args.market)
         return cli, "anonymous（匿名试用，一次性额度）"

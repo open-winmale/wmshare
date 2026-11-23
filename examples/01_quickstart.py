@@ -1,22 +1,16 @@
 """快速上手：四类数据一次过，全市场批量只花 12 次请求。
 
-前提：凭证必填（export WMSHARE_CLIENT_ID=... WMSHARE_CLIENT_SECRET=...）；`--demo` 用随包演示数据零凭证试跑
+前提：凭证可选——无凭证自动回落匿名试用（免注册、真实数据、需网络）
 运行：python examples/01_quickstart.py
 学到：行情/财务/披露/参考四类取数；批量绕开 429；错误消息自带申请步骤
 文档：docs/GUIDE.md（安装与凭证、单票菜谱、批量取数）
 """
-import sys
 import wmshare
 
 
-def main(cli=None, demo: bool = False) -> None:
+def main(cli=None) -> None:
     if cli is None:
-        if demo:
-            cli = wmshare.demo_client()
-            print("(演示模式：随包罐头数据，非真实行情)")
-            print()
-        else:
-            cli = wmshare.Client.from_env()
+        cli = wmshare.Client.from_env()
     SYMBOL = "600519"
 
     # ---- 市场行情 ----
@@ -57,9 +51,9 @@ def main(cli=None, demo: bool = False) -> None:
     profile = cli.info.profile(SYMBOL)
     print(f"{profile.get('name')} · {profile.get('industry')} · 上市 {profile.get('listing_date')}")
 
-    # ---- 批量取数：真实 Client 是全市场；demo 是 10 只演示宇宙 ----
+    # ---- 批量取数：全市场 ----
     codes = list(cli.stocks.list()["symbol"])
-    scope = "演示宇宙" if demo else "全市场"
+    scope = "全市场"
     res = cli.batch_all("kline.snapshot", codes)
     print(f"{scope} {len(res.results)} 家：{res.requests} 次请求"
           f"（逐票需 {len(codes)} 次；免费档限额 500 次/小时）")
@@ -71,7 +65,7 @@ def main(cli=None, demo: bool = False) -> None:
 
 if __name__ == "__main__":
     try:
-        main(demo="--demo" in sys.argv)
+        main()
     except wmshare.WmshareError as e:
         # 401/403/429 等会在这里直接显示 AppID 申请步骤，而不是裸 traceback。
         print(f"取数失败：{e}")

@@ -151,8 +151,9 @@ def test_client_without_credentials_rejected():
         Client(base_url="https://t", catalog=load(), session=FakeSession())
     assert ei.value.code == "config"
     assert "open.winmale.com" in str(ei.value)
-    # 报错即引导：零凭证离线演示入口必须随错误给出（同 README 首屏口径）
-    assert "wmshare.demo_client()" in str(ei.value)
+    # 报错即引导：匿名试用入口必须随错误给出（from_env 凭据双缺自动回落）
+    assert "Client.from_env()" in str(ei.value)
+    assert "匿名试用" in str(ei.value)
 
 
 def test_missing_credentials_mention_legacy_finpipe(monkeypatch, tmp_path):
@@ -311,7 +312,7 @@ def test_from_env_anon_quota_error_mentions_registration(monkeypatch, tmp_path):
                         base_url="https://t", catalog=load(), session=FakeSession())
     assert ei.value.code == "anon_quota"
     assert "open.winmale.com" in str(ei.value)
-    assert "demo_client" in str(ei.value)
+    assert "注册免费账号" in str(ei.value)
 
 
 def test_from_env_anon_network_error_maps_to_anon_failed(monkeypatch, tmp_path):

@@ -90,10 +90,7 @@ MarketAction = Literal[
 
 def runtime_from_env() -> MCPRuntime:
     market = credential_values()["WMSHARE_MARKET"] or DEFAULT_MARKET
-    demo = os.getenv("WMSHARE_MCP_DEMO", "0").strip().lower() in {
-        "1", "true", "yes", "on",
-    }
-    return MCPRuntime(market=market, demo=demo)
+    return MCPRuntime(market=market)
 
 
 def build_server(runtime: MCPRuntime | None = None) -> FastMCP:
@@ -726,7 +723,7 @@ def _add_resources(mcp: FastMCP, rt: MCPRuntime) -> None:
     def overview() -> str:
         stats = wmshare.load().stats()
         return (
-            f"{SOURCE} v{wmshare.__version__}；市场 {rt.market}；demo={rt.demo}。"
+            f"{SOURCE} v{wmshare.__version__}；市场 {rt.market}。"
             f"目录：{stats['domains']} 个数据域、{stats['functions']} 个底层函数；"
             f"friendly API {apis.route_count()} 个。先用 search/contract，"
             "再用 task tools / batch / call。"

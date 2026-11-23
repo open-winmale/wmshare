@@ -16,14 +16,12 @@
     cat = wmshare.load()                             # 数据目录（域/函数/参数/返回 schema）
     fn = cat.function("kline.query_bars")
 
-    cli = wmshare.demo_client()                      # 零凭证先试：离线演示数据（固定快照）
-    cli = wmshare.Client.from_env()                  # 接真实数据：读 WMSHARE_CLIENT_ID/SECRET
+    cli = wmshare.Client.from_env()                  # 无凭证自动回落匿名试用（免注册）
     bars = cli.kline.bars("600519", n=30)            # -> DataFrame（date 升序）
     rows = cli.call("kline.query_bars", sym="600519", limit=30)   # 底层行数组
     # _units="native" / native=True 保留上游原单位；_raw=True 返回上游原始行；
     # Client(validate=False) 关闭校验（换算仍执行）
 """
-from wmshare._demo import demo_client
 from wmshare.catalog import Catalog, load
 from wmshare.client import BatchResult, Client, normalize_date, normalize_symbol
 from wmshare.errors import (
@@ -32,12 +30,12 @@ from wmshare.errors import (
 )
 from wmshare.notice_stream import NoticePoller, NoticeStreamEvent
 
-__version__ = "2.9.0"
+__version__ = "3.0.0"
 
 __all__ = [
     "Catalog", "load", "Client", "BatchResult", "normalize_symbol",
     "normalize_date", "__version__",
-    "skill_dir", "demo_client",
+    "skill_dir",
     "NoticePoller", "NoticeStreamEvent",
     "WmshareError", "AuthError", "UsageError", "LimitError", "QuotaError",
     "TransportError", "ServerError", "ApiError", "DataError", "CatalogError",

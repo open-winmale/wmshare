@@ -37,6 +37,14 @@
 | 配额耗尽 | 不重试 | `QuotaError`：换默认应用凭证 / 等周补 / 升级或充值 |
 | 限流耗尽 | 停止并给续跑位置 | 报错含已完成标的数 + `codes[done:]` 切片 |
 
+### 匿名试用（无凭证自动领取）
+
+一次性给足、用完即止（限频对齐正常注册用户免费档），不参与周补满；单 IP 与当日
+发放名额由服务端限流，领满时报 `anon_quota`（次日再试或注册）。凭据独立存放
+`~/.wmshare/anon_credentials.env`（不覆盖付费凭据文件），TTL 7 天失效，
+`Client.anonymous(refresh=True)` 重领；额度余量以服务端 `ec_balance` 为准。
+`WMSHARE_DISABLE_ANON=1` 可关闭自动回落。
+
 ## 4. EC 成本防护
 
 | 项 | 值 | 说明 |

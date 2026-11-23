@@ -278,7 +278,7 @@ def estimate_cost(name: str, params: dict[str, Any] | None = None, *,
                   native_batch_min: int = 3) -> dict:
     """EC 消耗区间估算（纯离线，发不发请求都在此返回）。
 
-    供 ``Client.cost_estimate`` 与 demo 客户端共用；没有成本模型的接口如实
+    ``Client.cost_estimate`` 的模型本体；没有成本模型的接口如实
     返回 ``ec_lo=ec_hi=None``（绝不编造数字）。
     """
     out: dict[str, Any] = {"name": name, "requests": 1,
@@ -714,15 +714,15 @@ class Client:
         if not self.client_id:
             legacy = _legacy_finpipe_hints()
             raise AuthError(
-                "缺少凭证：SDK 不再内置体验 AppID，请先配置自己的开放平台凭证"
+                "缺少凭证：请先配置自己的开放平台凭证"
                 "（构造参数 / WMSHARE_* 环境变量 / ~/.wmshare/credentials.env 任一）。"
                 + (f"\n检测到旧版 finpipe 配置（{legacy}）：本项目已更名 wmshare，"
                    "凭证配置同步改为 WMSHARE_* 环境变量 / ~/.wmshare/credentials.env，"
                    "旧配置不再被读取，请迁移。\n" if legacy else "\n")
-                # 报错即引导（同 README「零凭证先试」口径）：申请凭证前先有
-                # 离线路径跑通调用姿势，别让首次接触停在冷冰冰的报错上。
-                + "零凭证可先试离线演示：wmshare.demo_client()"
-                  "（随包固定快照、不联网、非实时数据）。\n"
+                # 报错即引导：未配置凭证时首选 Client.from_env()——凭据双缺
+                # 会自动回落匿名试用（免注册、真实数据、免费额度）。
+                + "未配置凭证可用 wmshare.Client.from_env() 自动领取匿名试用"
+                  "（免注册、真实数据、免费额度；WMSHARE_DISABLE_ANON=1 可关闭）。\n"
                 + f"{APPID_GUIDANCE}",
                 code="config")
         self.market = market
@@ -847,15 +847,13 @@ class Client:
                 return None  # 服务端未开放该功能：保持既有「缺少凭证」报错口径
             raise AuthError(
                 f"自动领取匿名试用凭据失败：{exc}\n"
-                "可稍后重试；或到 https://open.winmale.com 注册免费账号并配置凭据。"
-                "零凭证也可先试离线演示：wmshare.demo_client()",
+                "可稍后重试；或到 https://open.winmale.com 注册免费账号并配置凭据。",
                 code=getattr(exc, "code", None) or "anon_failed",
             ) from None
         except TransportError as exc:
             raise AuthError(
                 f"自动领取匿名试用凭据失败（网络错误：{exc}）；"
-                "请检查网络后重试，或到 https://open.winmale.com 注册免费账号并配置凭据。"
-                "零凭证也可先试离线演示：wmshare.demo_client()",
+                "请检查网络后重试，或到 https://open.winmale.com 注册免费账号并配置凭据。",
                 code="anon_failed",
             ) from None
         path = save_anon_credentials(
@@ -1743,7 +1741,7 @@ class Client:
         返回 ``{"name", "requests", "ec_lo", "ec_hi", "model", "note"}``；
         没有成本模型的接口如实返回 ``ec_lo=ec_hi=None``（绝不编造数字）。
         估算不含预热缓存的复跑折扣（如 ``kline.snapshot`` 复跑 ≈26 EC）。
-        模型本体是模块级 ``estimate_cost``（demo 客户端共用同一套）。
+        模型本体是模块级 ``estimate_cost``。
         """
         try:
             self._resolve_function(name)  # 目录函数：合同存在性校验

@@ -37,7 +37,6 @@ class MCPRuntime:
     """Process-local runtime.  Clients are created lazily and reused."""
 
     market: str = DEFAULT_MARKET
-    demo: bool = False
     # 单次 MCP 调用的 EC 事后上限。不是 LLM 可传参数，只能由部署方通过
     # WMSHARE_MCP_MAX_EC 收紧/放宽；超限时抛 LimitError(code="ec_budget")。
     max_ec_per_call: int = 200_000
@@ -55,8 +54,6 @@ class MCPRuntime:
 
     def client(self, market: str | None = None) -> Client | Any:
         market = _market(market or self.market)
-        if self.demo:
-            return wmshare.demo_client()
         assert self._clients is not None
         if market not in self._clients:
             client = Client.from_env(market=market)
@@ -79,26 +76,11 @@ def _links() -> dict[str, str]:
     return {"console": CONSOLE_URL, "docs": DOCS_URL}
 
 
-def _demo_as_of() -> str | None:
-    """演示快照的冻结日期；不 import 包以外依赖，失败时返回 None。"""
-    try:
-        from wmshare import _demo
-
-        prov = getattr(_demo, "DEMO_SNAPSHOT_PROVENANCE", {})
-        return prov.get("as_of")
-    except ImportError:  # pragma: no cover - 裁剪安装包场景
-        return None
-
-
 def _provenance(runtime: MCPRuntime | None) -> dict[str, Any]:
-    """LLM 必须能区分「实时数据」与「罐头快照」，避免把 demo 当行情用。"""
-    demo = runtime.demo if runtime is not None else None
+    """返回溯源信息，让调用方知道数据是什么时候取的。"""
     return {
-        "demo": demo,
-        "as_of": _demo_as_of() if demo else None,
         "retrieved_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "data_freshness": ("unknown" if runtime is None
-                           else ("snapshot" if demo else "live")),
+        "data_freshness": ("unknown" if runtime is None else "live"),
     }
 
 

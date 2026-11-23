@@ -18,6 +18,7 @@ from wmshare.errors import (
     UsageError,
 )
 from wmshare.mcp.constants import TOOL_NAMES
+from fake_client import fake_runtime  # noqa: E402
 from wmshare.mcp.core import MCPRuntime, error
 from wmshare.mcp.server import build_server
 from wmshare.mcp import tools
@@ -126,13 +127,13 @@ class FakeClient:
 
 @pytest.fixture()
 def runtime() -> MCPRuntime:
-    rt = MCPRuntime(market="cn", demo=False)
+    rt = MCPRuntime(market="cn")
     rt._clients = {"cn": FakeClient()}
     return rt
 
 
 def test_registry_has_twenty_eight_tools() -> None:
-    server = build_server(MCPRuntime(demo=True))
+    server = build_server(fake_runtime())
     response = server.list_tools()
     if hasattr(response, "__await__"):
         response = __import__("asyncio").run(response)
@@ -296,14 +297,14 @@ def test_real_client_user_agent_is_mcp_attributed(monkeypatch: pytest.MonkeyPatc
         return FakeSdkClient()
 
     monkeypatch.setattr(core.Client, "from_env", fake_from_env)
-    rt = MCPRuntime(market="cn", demo=False)
+    rt = MCPRuntime(market="cn")
     rt.client()
     assert captured["User-Agent"] == f"wmshare-mcp/{wmshare.__version__}"
     assert captured["X-WM-Client"] == f"wmshare-mcp/{wmshare.__version__}"
 
 
 def test_protocol_call_tool_returns_tool_envelope() -> None:
-    server = build_server(MCPRuntime(market="cn", demo=True))
+    server = build_server(fake_runtime())
     result = __import__("asyncio").run(server.call_tool("wmshare_status", {}))
     assert isinstance(result, tuple)
     assert result[1]["ok"] is True

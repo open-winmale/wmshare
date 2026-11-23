@@ -2,29 +2,29 @@
 
 背景：服务端 ``indices.trend`` 返回的 base 序列是 **新→旧**（cursor.ds 原始顺序）。
 早期 SDK 实现用 ``reversed(pts)`` 取当前值，实际取到最旧点，于是把 2020 年的
-分位当今天展示；demo 罐头当时又按升序生成、用 ``pts[-1]``，方向相反，单测全绿
+分位当今天展示；回放罐头当时又按升序生成、用 ``pts[-1]``，方向相反，单测全绿
 也抓不到。以下四条断言锁死方向、基准点与公式。
 """
 from __future__ import annotations
 
 import pytest
 
-from wmshare._demo import demo_client
+from replay_client import replay_client
 
 WEEKS = 120
 
 
 def _trend():
-    return demo_client().index.trend("index.hs300")
+    return replay_client().index.trend("index.hs300")
 
 
 def test_points_are_newest_first():
     """2.0 方向契约：points 按日期升序（旧→新），最新点在末行（iloc[-1]）。"""
     t = _trend()
     dates = list(t["data"]["points"]["date"])
-    assert dates, "demo trend 不应为空"
+    assert dates, "回放 trend 不应为空"
     assert dates == sorted(dates), f"points 必须旧→新（2.0 标准），实际首尾 {dates[0]} / {dates[-1]}"
-    # as_of 是快照日，可能晚于最后一个周频点（demo 罐头即如此），但不得早于它
+    # as_of 是快照日，可能晚于最后一个周频点（回放罐头即如此），但不得早于它
     assert t["as_of"] >= dates[0], f"as_of {t['as_of']} 早于最新点 {dates[0]}"
 
 
@@ -64,7 +64,7 @@ def test_percentile_formula_matches_frontend():
 
 def test_window_and_truncation_flags():
     """窗口与截断标记齐备；sample 不足 10 年时 p10 必须为 None（不拿短窗口冒充）。"""
-    t = demo_client().index.trend("index.hs300", "10y")
+    t = replay_client().index.trend("index.hs300", "10y")
     assert t["data"]["window"] == "10y"
     assert "win_n" in t["data"] and "win_trunc" in t["data"] and "pct" in t["data"]
     assert t["meta"]["pct_source"] in ("server", "client")
@@ -84,21 +84,21 @@ def test_pe_pct_follows_window():
     旧实现直接读 p，于是 ``trend(k,"3y")["pe_pct"]`` 返回的是 5 年分位。live 实测
     hs300 时 p=0.7671、p3=0.6119，差 15.5 个百分点且完全静默。
     """
-    cli = demo_client()
+    cli = replay_client()
     t3 = cli.index.trend("index.hs300", "3y")
     t5 = cli.index.trend("index.hs300", "5y")
     assert t3["data"]["pe_pct"] == pytest.approx(t3["data"]["pct"]["pe"]["p3"]), "3y 必须取 p3"
     assert t5["data"]["pe_pct"] == pytest.approx(t5["data"]["pct"]["pe"]["p5"]), "5y 必须取 p5"
     assert t3["data"]["pe_pct_window"] == "3y" and t5["data"]["pe_pct_window"] == "5y"
-    # demo 三档必须算出不同值，否则这条断言形同虚设（旧 demo 三档全相等）
+    # 回放三档必须算出不同值，否则这条断言形同虚设（旧 回放三档全相等）
     assert t3["data"]["pct"]["pe"]["p3"] != t3["data"]["pct"]["pe"]["p5"], \
-        "demo 三档分位不得相同，否则无法暴露「恒取 5y」的回归"
+        "回放三档分位不得相同，否则无法暴露「恒取 5y」的回归"
     assert t3["data"]["pct"]["pe"]["n3"] < t3["data"]["pct"]["pe"]["n5"], "3y 样本数应少于 5y"
 
 
 def test_pb_pct_follows_window():
-    """``pb_pct`` 与 pe 侧同选择逻辑（旧 demo 让 pb 恒取 p5，掩盖了同类回归）。"""
-    cli = demo_client()
+    """``pb_pct`` 与 pe 侧同选择逻辑（旧回放罐头曾让 pb 恒取 p5，掩盖了同类回归）。"""
+    cli = replay_client()
     t3 = cli.index.trend("index.hs300", "3y")
     t5 = cli.index.trend("index.hs300", "5y")
     assert t3["data"]["pb_pct"] == pytest.approx(t3["data"]["pct"]["pb"]["p3"]), "3y 必须取 pb.p3"
@@ -108,11 +108,11 @@ def test_pb_pct_follows_window():
 def test_industry_keys_have_trend_history():
     """申万一级行业键必须能取到估值历史（行业 PE 历史的唯一入口）。
 
-    live 覆盖 31 个 ``industry.SXX``；demo 取代表键。这条测试锁死「行业可用」这一
-    契约——此前 demo 的 ``universe_keys("industry")`` 返回空，行业路径无法离线验证，
+    live 覆盖 31 个 ``industry.SXX``；回放夹具取代表键。这条测试锁死「行业可用」这一
+    契约——此前 回放罐头的 ``universe_keys("industry")`` 返回空，行业路径无法离线验证，
     用户也无法从文档判断该能力是否存在。
     """
-    cli = demo_client()
+    cli = replay_client()
     keys = cli.index.universe_keys("industry")
     assert keys, "industry 组不得为空"
     for k in keys:
@@ -125,7 +125,7 @@ def test_industry_keys_have_trend_history():
 
 def test_universe_keys_groups():
     """四组 universe_keys 与 live 同构：broad/industry/dividend/all。"""
-    cli = demo_client()
+    cli = replay_client()
     broad = cli.index.universe_keys("broad")
     ind = cli.index.universe_keys("industry")
     div = cli.index.universe_keys("dividend")
@@ -135,8 +135,8 @@ def test_universe_keys_groups():
 
 
 # ---------------------------------------------------------------- 真实逻辑（注入 stub）
-# demo 的 cli.index 是 SimpleNamespace，**完全绕过** IndexApi.trend 的分位选择代码，
-# 因此上面那些 demo 断言抓不到「恒取 p」的回归（已用回滚实验验证）。以下用例直接
+# 回放罐头的 cli.index 是 SimpleNamespace，**完全绕过** IndexApi.trend 的分位选择代码，
+# 因此上面那些 回放断言抓不到「恒取 p」的回归（已用回滚实验验证）。以下用例直接
 # 构造 IndexApi + 可编程 stub client，锁死 SDK 侧真正的取档逻辑。
 class _StubClient:
     """只提供 IndexApi 用到的 .call；返回预置的 indices.trend 原始 MAP。"""
@@ -278,12 +278,12 @@ def test_real_logic_only_usage_error_falls_back():
 
 
 def test_bad_window_falls_back_to_5y():
-    t = demo_client().index.trend("index.hs300", "7y")
+    t = replay_client().index.trend("index.hs300", "7y")
     assert t["data"]["window"] == "5y"
 
 
-def test_demo_direction_matches_live_contract():
-    """demo 与 live 必须同向：2.0 两边都按升序，最新点在末行（iloc[-1]）。"""
+def test_replay_direction_matches_live_contract():
+    """回放夹具与 live 必须同向：2.0 两边都按升序，最新点在末行（iloc[-1]）。"""
     t = _trend()
     dates = list(t["data"]["points"]["date"])
     assert dates[-1] >= dates[0]

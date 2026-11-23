@@ -25,7 +25,6 @@
         "cn": "参考数据"
       }
     ],
-    "demo_covered": 61,
     "test_ready": 150,
     "sampled": 170,
     "samples_provenance": {
@@ -34,12 +33,6 @@
       "total_ec": 2197447.0,
       "ok": 170,
       "total": 171
-    },
-    "demo_snapshot": {
-      "as_of": "2026-11-19",
-      "schema_version": 1,
-      "snapshot_sdk_version": "2.3.1",
-      "snapshot_catalog_rev": "26692375"
     }
   },
   "namespaces": [
@@ -166,125 +159,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": true,
-            "args": {
-              "symbol": "600519"
-            },
-            "as_of": "2026-11-19",
-            "result": [
-              {
-                "amount": 6752970915.0,
-                "close": 1452.0,
-                "date": "2026-11-05",
-                "high": 1466.0,
-                "low": 1430.0,
-                "open": 1446.7,
-                "percent": 0.003844,
-                "sas": "2026:D309",
-                "volume": 4671200.0
-              },
-              {
-                "amount": 6199528289.0,
-                "close": 1453.0,
-                "date": "2026-11-06",
-                "high": 1457.72,
-                "low": 1436.0,
-                "open": 1450.0,
-                "percent": 0.000689,
-                "sas": "2026:D310",
-                "volume": 4284700.0
-              },
-              {
-                "amount": 3578407287.0,
-                "close": 1444.99,
-                "date": "2026-11-09",
-                "high": 1449.99,
-                "low": 1435.08,
-                "open": 1440.06,
-                "percent": -0.0055130000000000005,
-                "sas": "2026:D313",
-                "volume": 2480100.0
-              },
-              {
-                "amount": 3316078849.0,
-                "close": 1439.0,
-                "date": "2026-11-10",
-                "high": 1444.5,
-                "low": 1431.26,
-                "open": 1438.23,
-                "percent": -0.004144999999999999,
-                "sas": "2026:D314",
-                "volume": 2303700.0
-              },
-              {
-                "amount": 5633865699.0,
-                "close": 1402.3,
-                "date": "2026-11-11",
-                "high": 1445.62,
-                "low": 1402.0,
-                "open": 1445.0,
-                "percent": -0.025504,
-                "sas": "2026:D315",
-                "volume": 3984700.0
-              },
-              {
-                "amount": 4536814518.0,
-                "close": 1410.27,
-                "date": "2026-11-12",
-                "high": 1411.0,
-                "low": 1388.11,
-                "open": 1395.13,
-                "percent": 0.005684,
-                "sas": "2026:D316",
-                "volume": 3237200.0
-              },
-              {
-                "amount": 5954834070.0,
-                "close": 1435.26,
-                "date": "2026-11-13",
-                "high": 1437.69,
-                "low": 1394.0,
-                "open": 1404.0,
-                "percent": 0.01772,
-                "sas": "2026:D317",
-                "volume": 4177900.0
-              },
-              {
-                "amount": 5767305714.0,
-                "close": 1453.9,
-                "date": "2026-11-16",
-                "high": 1454.93,
-                "low": 1425.0,
-                "open": 1426.3,
-                "percent": 0.012987,
-                "sas": "2026:D320",
-                "volume": 3996700.0
-              },
-              {
-                "amount": 5094594655.0,
-                "close": 1457.7,
-                "date": "2026-11-17",
-                "high": 1461.6,
-                "low": 1437.71,
-                "open": 1458.88,
-                "percent": 0.002614,
-                "sas": "2026:D321",
-                "volume": 3511600.0
-              },
-              {
-                "amount": 4316023208.0,
-                "close": 1442.66,
-                "date": "2026-11-18",
-                "high": 1456.0,
-                "low": 1431.7,
-                "open": 1450.0,
-                "percent": -0.010318,
-                "sas": "2026:D322",
-                "volume": 2984600.0
-              }
-            ]
           },
           "sample": {
             "key": "kline.bars",
@@ -439,24 +313,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": true,
-            "args": {
-              "symbol": "600519"
-            },
-            "as_of": "2026-11-19",
-            "result": {
-              "amount": 4316023208.0,
-              "close": 1442.66,
-              "date": "2026-11-18",
-              "high": 1456.0,
-              "low": 1431.7,
-              "open": 1450.0,
-              "percent": -0.010318,
-              "sas": "2026:D322",
-              "volume": 2984600.0
-            }
-          },
           "sample": {
             "key": "kline.last",
             "kwargs": {
@@ -557,38 +413,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": true,
-            "args": {
-              "symbol": "600519"
-            },
-            "as_of": "2026-11-19",
-            "result": {
-              "amount": 4408151874,
-              "chg_10d": -0.006432506887052285,
-              "chg_20d": 0.09417591335542937,
-              "chg_5d": 0.02296723322484354,
-              "chg_90d": 0.06816229823782036,
-              "close": 1452.77,
-              "industry": "industry.S34",
-              "is_st": false,
-              "is_suspend": false,
-              "kline_date": "2026-11-19",
-              "kline_sas": "2026:D322",
-              "ma120": 1306.6635833333332,
-              "ma20": 1409.6395,
-              "ma60": 1326.9845000000003,
-              "ma60_up": false,
-              "mv": 1816081047484.77,
-              "mv_free": 1816081047484.77,
-              "name": "贵州茅台",
-              "percent": 0.006999999999999999,
-              "roi_1y": 0.035468568977335746,
-              "symbol": "600519",
-              "vol_ratio_5": 0.833314719678356,
-              "volume": 3046200.0
-            }
-          },
           "sample": {
             "key": "kline.live",
             "kwargs": {
@@ -655,68 +479,6 @@
               "script_files": {},
               "mode": "call",
               "market": "cn"
-            }
-          },
-          "demo": {
-            "covered": true,
-            "args": {
-              "symbols": [
-                "600519",
-                "000001"
-              ]
-            },
-            "as_of": "2026-11-19",
-            "result": {
-              "600519": {
-                "amount": 4408151874,
-                "chg_10d": -0.006432506887052285,
-                "chg_20d": 0.09417591335542937,
-                "chg_5d": 0.02296723322484354,
-                "chg_90d": 0.06816229823782036,
-                "close": 1452.77,
-                "industry": "industry.S34",
-                "is_st": false,
-                "is_suspend": false,
-                "kline_date": "2026-11-19",
-                "kline_sas": "2026:D322",
-                "ma120": 1306.6635833333332,
-                "ma20": 1409.6395,
-                "ma60": 1326.9845000000003,
-                "ma60_up": false,
-                "mv": 1816081047484.77,
-                "mv_free": 1816081047484.77,
-                "name": "贵州茅台",
-                "percent": 0.006999999999999999,
-                "roi_1y": 0.035468568977335746,
-                "symbol": "600519",
-                "vol_ratio_5": 0.833314719678356,
-                "volume": 3046200.0
-              },
-              "000001": {
-                "amount": 1721972228,
-                "chg_10d": 0.048109965635738716,
-                "chg_20d": 0.07964601769911492,
-                "chg_5d": 0.034775233248515704,
-                "chg_90d": 0.1063644042471659,
-                "close": 12.04,
-                "industry": "industry.S48",
-                "is_st": false,
-                "is_suspend": false,
-                "kline_date": "2026-11-19",
-                "kline_sas": "2026:D322",
-                "ma120": 11.420827113976994,
-                "ma20": 11.7165,
-                "ma60": 11.556818927983098,
-                "ma60_up": false,
-                "mv": 233647255103.91998,
-                "mv_free": 233647255103.91998,
-                "name": "平安银行",
-                "percent": -0.0131,
-                "roi_1y": 0.10930532558107409,
-                "symbol": "000001",
-                "vol_ratio_5": 0.7991013454364472,
-                "volume": 142466400.0
-              }
             }
           },
           "sample": {
@@ -803,11 +565,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           },
           "sample": {
             "key": "kline.min1",
@@ -956,38 +713,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": true,
-            "args": {
-              "symbol": "600519"
-            },
-            "as_of": "2026-11-19",
-            "result": {
-              "amount": 4408151874,
-              "chg_10d": -0.006432506887052285,
-              "chg_20d": 0.09417591335542937,
-              "chg_5d": 0.02296723322484354,
-              "chg_90d": 0.06816229823782036,
-              "close": 1452.77,
-              "industry": "industry.S34",
-              "is_st": false,
-              "is_suspend": false,
-              "kline_date": "2026-11-19",
-              "kline_sas": "2026:D322",
-              "ma120": 1306.6635833333332,
-              "ma20": 1409.6395,
-              "ma60": 1326.9845000000003,
-              "ma60_up": false,
-              "mv": 1816081047484.77,
-              "mv_free": 1816081047484.77,
-              "name": "贵州茅台",
-              "percent": 0.006999999999999999,
-              "roi_1y": 0.035468568977335746,
-              "symbol": "600519",
-              "vol_ratio_5": 0.833314719678356,
-              "volume": 3046200.0
-            }
-          },
           "sample": {
             "key": "kline.snapshot",
             "kwargs": {
@@ -1062,11 +787,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           }
         }
       ],
@@ -1129,14 +849,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": true,
-            "args": {
-              "symbol": "600519"
-            },
-            "as_of": "2026-11-19",
-            "result": false
-          },
           "sample": {
             "key": "screener.screen_limit_up",
             "kwargs": {
@@ -1187,11 +899,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           },
           "sample": {
             "key": "screener.screen_limit_down",
@@ -1244,14 +951,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": true,
-            "args": {
-              "symbol": "600519"
-            },
-            "as_of": "2026-11-19",
-            "result": true
-          },
           "sample": {
             "key": "screener.screen_above_ma20",
             "kwargs": {
@@ -1303,11 +1002,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "screener.screen_ma60_up",
             "kwargs": {
@@ -1358,11 +1052,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           },
           "sample": {
             "key": "screener.screen_breakout_ma20",
@@ -1420,11 +1109,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           },
           "sample": {
             "key": "screener.screen_momentum_20d",
@@ -1484,11 +1168,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "screener.screen_pullback_20d",
             "kwargs": {
@@ -1546,14 +1225,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": true,
-            "args": {
-              "symbol": "600519"
-            },
-            "as_of": "2026-11-19",
-            "result": false
           },
           "sample": {
             "key": "screener.screen_volume_spike",
@@ -1626,21 +1297,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": true,
-            "args": {},
-            "as_of": "2026-11-19",
-            "result": {
-              "down": 4909,
-              "down_pct": 0.863,
-              "flat": 99,
-              "flat_pct": 0.017,
-              "median_pct": -0.0245,
-              "total": 5687,
-              "up": 679,
-              "up_pct": 0.11900000000000001
-            }
-          },
           "sample": {
             "key": "screener.index_breadth_summary",
             "kwargs": {},
@@ -1696,58 +1352,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": true,
-            "args": {},
-            "as_of": "2026-11-19",
-            "result": [
-              {
-                "count": 21,
-                "label": "涨停",
-                "pct_of_total": 0.004
-              },
-              {
-                "count": 54,
-                "label": "+5%~10%",
-                "pct_of_total": 0.009000000000000001
-              },
-              {
-                "count": 76,
-                "label": "+3%~5%",
-                "pct_of_total": 0.013000000000000001
-              },
-              {
-                "count": 529,
-                "label": "0%~3%",
-                "pct_of_total": 0.09300000000000001
-              },
-              {
-                "count": 99,
-                "label": "平盘",
-                "pct_of_total": 0.017
-              },
-              {
-                "count": 2677,
-                "label": "-3%~0%",
-                "pct_of_total": 0.47100000000000003
-              },
-              {
-                "count": 1575,
-                "label": "-5%~-3%",
-                "pct_of_total": 0.277
-              },
-              {
-                "count": 595,
-                "label": "-10%~-5%",
-                "pct_of_total": 0.105
-              },
-              {
-                "count": 61,
-                "label": "跌停",
-                "pct_of_total": 0.011000000000000001
-              }
-            ]
           },
           "sample": {
             "key": "screener.index_breadth_bins",
@@ -1826,11 +1430,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           },
           "sample": {
             "key": "screener.index_breadth_bin_industries",
@@ -1935,66 +1534,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": true,
-            "args": {
-              "limit": 10,
-              "desc": true
-            },
-            "as_of": "2026-11-19",
-            "result": [
-              {
-                "name": "*ST仕净",
-                "percent": 0.2,
-                "symbol": "301030"
-              },
-              {
-                "name": "蓝箭电子",
-                "percent": 0.2,
-                "symbol": "301348"
-              },
-              {
-                "name": "卡莱特",
-                "percent": 0.1997,
-                "symbol": "301391"
-              },
-              {
-                "name": "灿芯股份",
-                "percent": 0.1515,
-                "symbol": "688691"
-              },
-              {
-                "name": "耐科装备",
-                "percent": 0.1125,
-                "symbol": "688419"
-              },
-              {
-                "name": "锐翔智能",
-                "percent": 0.10890000000000001,
-                "symbol": "920178"
-              },
-              {
-                "name": "燕东微",
-                "percent": 0.10869999999999999,
-                "symbol": "688172"
-              },
-              {
-                "name": "芯碁微装",
-                "percent": 0.1067,
-                "symbol": "688630"
-              },
-              {
-                "name": "*ST美丽",
-                "percent": 0.10529999999999999,
-                "symbol": "000010"
-              },
-              {
-                "name": "晶合集成",
-                "percent": 0.1015,
-                "symbol": "688249"
-              }
-            ]
           },
           "sample": {
             "key": "screener.index_top_movers",
@@ -2113,11 +1652,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           },
           "variants": [
             {
@@ -2429,153 +1963,6 @@
           "docs_visible": true,
           "example": null,
           "test": null,
-          "demo": {
-            "covered": true,
-            "args": {
-              "symbol": "600519"
-            },
-            "as_of": "2026-11-19",
-            "result": {
-              "rule": "ma_cross(fast=5, slow=20)",
-              "period": {
-                "start": "2026-06-26",
-                "end": "2026-11-18",
-                "bars": 120
-              },
-              "trades": [
-                {
-                  "date": "2026-08-12",
-                  "side": "buy",
-                  "price": 1346.5,
-                  "shares": 700,
-                  "amount": 942550.0,
-                  "fee": 282.76,
-                  "reason": "金叉"
-                },
-                {
-                  "date": "2026-08-18",
-                  "side": "sell",
-                  "price": 1291.0,
-                  "shares": 700,
-                  "amount": 903700.0,
-                  "fee": 722.96,
-                  "pnl": -39855.72,
-                  "ret": -0.042272,
-                  "hold_days": 8,
-                  "reason": "死叉"
-                },
-                {
-                  "date": "2026-09-03",
-                  "side": "buy",
-                  "price": 1297.5,
-                  "shares": 700,
-                  "amount": 908250.0,
-                  "fee": 272.47,
-                  "reason": "金叉"
-                },
-                {
-                  "date": "2026-09-14",
-                  "side": "sell",
-                  "price": 1277.27,
-                  "shares": 700,
-                  "amount": 894089.0,
-                  "fee": 715.27,
-                  "pnl": -15148.75,
-                  "ret": -0.016674,
-                  "hold_days": 7,
-                  "reason": "死叉"
-                },
-                {
-                  "date": "2026-10-14",
-                  "side": "buy",
-                  "price": 1270.1,
-                  "shares": 700,
-                  "amount": 889070.0,
-                  "fee": 266.72,
-                  "reason": "金叉"
-                },
-                {
-                  "date": "2026-11-18",
-                  "side": "sell",
-                  "price": 1442.66,
-                  "shares": 700,
-                  "amount": 1009862.0,
-                  "fee": 807.89,
-                  "pnl": 119717.39,
-                  "ret": 0.134614,
-                  "hold_days": 25,
-                  "reason": "期末平仓"
-                }
-              ],
-              "summary": {
-                "total_return": 0.064713,
-                "cagr": 0.170984,
-                "max_drawdown": -0.061277,
-                "sharpe": 1.054453,
-                "n_trades": 3,
-                "win_rate": 0.333333,
-                "avg_hold_days": 13.333333,
-                "buy_hold_return": 0.234488
-              },
-              "equity": [
-                {
-                  "date": "2026-11-05",
-                  "nav": 1072058.81
-                },
-                {
-                  "date": "2026-11-06",
-                  "nav": 1072758.81
-                },
-                {
-                  "date": "2026-11-09",
-                  "nav": 1067151.81
-                },
-                {
-                  "date": "2026-11-10",
-                  "nav": 1062958.81
-                },
-                {
-                  "date": "2026-11-11",
-                  "nav": 1037268.81
-                },
-                {
-                  "date": "2026-11-12",
-                  "nav": 1042847.81
-                },
-                {
-                  "date": "2026-11-13",
-                  "nav": 1060340.81
-                },
-                {
-                  "date": "2026-11-16",
-                  "nav": 1073388.81
-                },
-                {
-                  "date": "2026-11-17",
-                  "nav": 1076048.81
-                },
-                {
-                  "date": "2026-11-18",
-                  "nav": 1064712.92
-                }
-              ],
-              "caliber": {
-                "execution": "next_open",
-                "t_plus_1": true,
-                "lot_size": 100,
-                "fee_rate": 0.0003,
-                "min_fee": 5.0,
-                "stamp_duty": 0.0005,
-                "skipped": 0,
-                "demo": true,
-                "adj": null
-              },
-              "warnings": [
-                "演示快照：120 根不复权日 K（2026-11-19，非实时），仅用于验证调用形态"
-              ],
-              "symbol": "600519"
-            }
-          },
           "sample": {
             "key": "backtest.run",
             "kwargs": {
@@ -2813,115 +2200,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": true,
-            "args": {
-              "symbol": "600519"
-            },
-            "as_of": "2026-11-19",
-            "result": [
-              {
-                "date": "2026-11-05",
-                "elg_net": -331839300.0,
-                "lg_net": -37434700.0,
-                "md_net": 369349300.0,
-                "net_mf": 403452600.0,
-                "sas": "2026:D309",
-                "sm_net": -75300.0,
-                "source": "store"
-              },
-              {
-                "date": "2026-11-06",
-                "elg_net": -172071900.0,
-                "lg_net": -138856300.0,
-                "md_net": 311054400.0,
-                "net_mf": 438547600.0,
-                "sas": "2026:D310",
-                "sm_net": -126200.0,
-                "source": "store"
-              },
-              {
-                "date": "2026-11-09",
-                "elg_net": 52687600.0,
-                "lg_net": -47845200.0,
-                "md_net": -4833700.0,
-                "net_mf": -52644700.0,
-                "sas": "2026:D313",
-                "sm_net": -8700.0,
-                "source": "store"
-              },
-              {
-                "date": "2026-11-10",
-                "elg_net": -164763200.0,
-                "lg_net": 260858700.00000012,
-                "md_net": -96041000.0,
-                "net_mf": 87831500.0,
-                "sas": "2026:D314",
-                "sm_net": -54600.0,
-                "source": "store"
-              },
-              {
-                "date": "2026-11-11",
-                "elg_net": -316850700.0,
-                "lg_net": -67713299.99999976,
-                "md_net": 384860799.9999995,
-                "net_mf": -265952700.0,
-                "sas": "2026:D315",
-                "sm_net": -296800.0,
-                "source": "store"
-              },
-              {
-                "date": "2026-11-12",
-                "elg_net": 10817599.99999988,
-                "lg_net": -325924200.0,
-                "md_net": 315190200.0,
-                "net_mf": -182650900.0,
-                "sas": "2026:D316",
-                "sm_net": -83500.0,
-                "source": "store"
-              },
-              {
-                "date": "2026-11-13",
-                "elg_net": 177695700.0,
-                "lg_net": 109356400.0,
-                "md_net": -286797600.0,
-                "net_mf": 513034100.00000006,
-                "sas": "2026:D317",
-                "sm_net": -254400.0,
-                "source": "store"
-              },
-              {
-                "date": "2026-11-16",
-                "elg_net": -178305599.99999976,
-                "lg_net": 690353800.0,
-                "md_net": -511731400.0,
-                "net_mf": 922678000.0,
-                "sas": "2026:D320",
-                "sm_net": -316900.0,
-                "source": "store"
-              },
-              {
-                "date": "2026-11-17",
-                "elg_net": -23339000.0,
-                "lg_net": 239433200.00000024,
-                "md_net": -215839400.0,
-                "net_mf": 254594500.0,
-                "sas": "2026:D321",
-                "sm_net": -254900.0,
-                "source": "store"
-              },
-              {
-                "date": "2026-11-18",
-                "elg_net": -201077700.0,
-                "lg_net": -49096500.0,
-                "md_net": 250391100.0,
-                "net_mf": 205014900.00000003,
-                "sas": "2026:D322",
-                "sm_net": -217000.00000000006,
-                "source": "store"
-              }
-            ]
-          },
           "sample": {
             "key": "moneyflow.bars",
             "kwargs": {
@@ -3062,23 +2340,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": true,
-            "args": {
-              "symbol": "600519"
-            },
-            "as_of": "2026-11-19",
-            "result": {
-              "date": "2026-11-18",
-              "elg_net": -201077700,
-              "lg_net": -49096500,
-              "md_net": 250391100,
-              "net_mf": 205014900.00000003,
-              "sas": "2026:D322",
-              "sm_net": -217000.00000000006,
-              "source": "store"
-            }
-          },
           "sample": {
             "key": "moneyflow.last",
             "kwargs": {
@@ -3168,123 +2429,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": true,
-            "args": {},
-            "as_of": "2026-11-19",
-            "result": [
-              {
-                "symbol": "300750",
-                "name": "宁德时代",
-                "net_mf": 795834400.0,
-                "net_mv_ratio": 0.0,
-                "lg_net": 314365400.0,
-                "elg_net": 138817200,
-                "md_net": -257439900.0,
-                "sm_net": -195742700.0,
-                "industry": "industry.S63"
-              },
-              {
-                "symbol": "600900",
-                "name": "长江电力",
-                "net_mf": 208878100.0,
-                "net_mv_ratio": 0.0,
-                "lg_net": -11816900.0,
-                "elg_net": -13241100,
-                "md_net": 14736600.0,
-                "sm_net": 10321300.0,
-                "industry": "industry.S41"
-              },
-              {
-                "symbol": "600519",
-                "name": "贵州茅台",
-                "net_mf": 205014900.00000003,
-                "net_mv_ratio": 0.0,
-                "lg_net": -49096500.0,
-                "elg_net": -201077700,
-                "md_net": 250391100.0,
-                "sm_net": -217000.00000000006,
-                "industry": "industry.S34"
-              },
-              {
-                "symbol": "601088",
-                "name": "中国神华",
-                "net_mf": 111242200.0,
-                "net_mv_ratio": 0.0,
-                "lg_net": -43185000.0,
-                "elg_net": -31297800,
-                "md_net": -25784200.0,
-                "sm_net": 100267000.0,
-                "industry": "industry.S74"
-              },
-              {
-                "symbol": "688981",
-                "name": "中芯国际",
-                "net_mf": 72446700.0,
-                "net_mv_ratio": 0.0,
-                "lg_net": 84468900.00000024,
-                "elg_net": -63105300,
-                "md_net": 87833900.00000024,
-                "sm_net": -109197400.0,
-                "industry": "industry.S27"
-              },
-              {
-                "symbol": "000858",
-                "name": "五粮液",
-                "net_mf": 50267000.0,
-                "net_mv_ratio": 0.0,
-                "lg_net": -92320899.99999994,
-                "elg_net": -77703400,
-                "md_net": 36626700.0,
-                "sm_net": 133397600.0,
-                "industry": "industry.S34"
-              },
-              {
-                "symbol": "601318",
-                "name": "中国平安",
-                "net_mf": -63874000.0,
-                "net_mv_ratio": 0.0,
-                "lg_net": -100861600.0,
-                "elg_net": -107047300,
-                "md_net": 140399399.99999988,
-                "sm_net": 67509500.0,
-                "industry": "industry.S49"
-              },
-              {
-                "symbol": "000333",
-                "name": "美的集团",
-                "net_mf": -67451400.0,
-                "net_mv_ratio": 0.0,
-                "lg_net": -66035699.99999988,
-                "elg_net": 11098800,
-                "md_net": 151630800.0,
-                "sm_net": -96693999.99999988,
-                "industry": "industry.S33"
-              },
-              {
-                "symbol": "000001",
-                "name": "平安银行",
-                "net_mf": -230875900.0,
-                "net_mv_ratio": 0.0,
-                "lg_net": 49939200.00000006,
-                "elg_net": -318901200,
-                "md_net": 80521000.0,
-                "sm_net": 188441100.0,
-                "industry": "industry.S48"
-              },
-              {
-                "symbol": "600036",
-                "name": "招商银行",
-                "net_mf": -252235000.0,
-                "net_mv_ratio": 0.0,
-                "lg_net": 165547700.0,
-                "elg_net": -592144900,
-                "md_net": 158661700.0,
-                "sm_net": 267935400.0,
-                "industry": "industry.S48"
-              }
-            ]
           },
           "sample": {
             "key": "moneyflow.board",
@@ -3429,11 +2573,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "moneyflow.live",
             "kwargs": {
@@ -3543,11 +2682,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           },
           "sample": {
             "key": "margin.query",
@@ -3702,11 +2836,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "margin.latest",
             "kwargs": {
@@ -3800,75 +2929,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": true,
-            "args": {
-              "limit": 6
-            },
-            "as_of": "2026-11-19",
-            "result": [
-              {
-                "exchange": "SZSE",
-                "fin_balance": 1080521000000,
-                "fin_buy_amt": 62052000000,
-                "fin_repay_amt": null,
-                "loan_balance": 1263000000,
-                "loan_repay_vol": null,
-                "loan_sell_vol": 51000000,
-                "trade_date": "2026-11-13"
-              },
-              {
-                "exchange": "SSE",
-                "fin_balance": 1169263907994,
-                "fin_buy_amt": 73820243959,
-                "fin_repay_amt": null,
-                "loan_balance": 3280877896,
-                "loan_repay_vol": null,
-                "loan_sell_vol": 131775250,
-                "trade_date": "2026-11-13"
-              },
-              {
-                "exchange": "SZSE",
-                "fin_balance": 1068562000000,
-                "fin_buy_amt": 49121000000,
-                "fin_repay_amt": null,
-                "loan_balance": 1312000000,
-                "loan_repay_vol": null,
-                "loan_sell_vol": 78000000,
-                "trade_date": "2026-11-16"
-              },
-              {
-                "exchange": "SSE",
-                "fin_balance": 1159812862911,
-                "fin_buy_amt": 63500430796,
-                "fin_repay_amt": null,
-                "loan_balance": 3295376580,
-                "loan_repay_vol": null,
-                "loan_sell_vol": 87301468,
-                "trade_date": "2026-11-16"
-              },
-              {
-                "exchange": "SZSE",
-                "fin_balance": 1057782000000,
-                "fin_buy_amt": 49139000000,
-                "fin_repay_amt": null,
-                "loan_balance": 1330000000,
-                "loan_repay_vol": null,
-                "loan_sell_vol": 41000000,
-                "trade_date": "2026-11-17"
-              },
-              {
-                "exchange": "SSE",
-                "fin_balance": 1151988956740,
-                "fin_buy_amt": 62851354600,
-                "fin_repay_amt": null,
-                "loan_balance": 3310408014,
-                "loan_repay_vol": null,
-                "loan_sell_vol": 74669581,
-                "trade_date": "2026-11-17"
-              }
-            ]
           },
           "sample": {
             "key": "margin.market_summary",
@@ -3993,95 +3053,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": true,
-            "args": {
-              "limit": 20
-            },
-            "as_of": "2026-11-19",
-            "result": [
-              {
-                "effective_date": "2026-11-18",
-                "exchange": "SZSE",
-                "in_date": "",
-                "out_date": "",
-                "security_code": "000029",
-                "security_name": "深深房Ａ"
-              },
-              {
-                "effective_date": "2026-11-18",
-                "exchange": "SZSE",
-                "in_date": "",
-                "out_date": "",
-                "security_code": "000030",
-                "security_name": "富奥股份"
-              },
-              {
-                "effective_date": "2026-11-18",
-                "exchange": "SZSE",
-                "in_date": "",
-                "out_date": "",
-                "security_code": "000031",
-                "security_name": "大悦城"
-              },
-              {
-                "effective_date": "2026-11-18",
-                "exchange": "SZSE",
-                "in_date": "",
-                "out_date": "",
-                "security_code": "000032",
-                "security_name": "深桑达Ａ"
-              },
-              {
-                "effective_date": "2026-11-18",
-                "exchange": "SZSE",
-                "in_date": "",
-                "out_date": "",
-                "security_code": "000034",
-                "security_name": "神州数码"
-              },
-              {
-                "effective_date": "2026-11-18",
-                "exchange": "SZSE",
-                "in_date": "",
-                "out_date": "",
-                "security_code": "000035",
-                "security_name": "中国天楹"
-              },
-              {
-                "effective_date": "2026-11-18",
-                "exchange": "SZSE",
-                "in_date": "",
-                "out_date": "",
-                "security_code": "000036",
-                "security_name": "华联控股"
-              },
-              {
-                "effective_date": "2026-11-18",
-                "exchange": "SZSE",
-                "in_date": "",
-                "out_date": "",
-                "security_code": "000039",
-                "security_name": "中集集团"
-              },
-              {
-                "effective_date": "2026-11-18",
-                "exchange": "SZSE",
-                "in_date": "",
-                "out_date": "",
-                "security_code": "000042",
-                "security_name": "中洲控股"
-              },
-              {
-                "effective_date": "2026-11-18",
-                "exchange": "SZSE",
-                "in_date": "",
-                "out_date": "",
-                "security_code": "000048",
-                "security_name": "京基智农"
-              }
-            ]
           },
           "sample": {
             "key": "margin.universe",
@@ -4219,57 +3190,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": true,
-            "args": {
-              "begin": "2026-01-01",
-              "end": "2026-03-31",
-              "limit": 10
-            },
-            "as_of": "2026-11-19",
-            "result": [
-              {
-                "date": "2026-01-05",
-                "is_open": true
-              },
-              {
-                "date": "2026-01-06",
-                "is_open": true
-              },
-              {
-                "date": "2026-01-07",
-                "is_open": true
-              },
-              {
-                "date": "2026-01-08",
-                "is_open": true
-              },
-              {
-                "date": "2026-01-09",
-                "is_open": true
-              },
-              {
-                "date": "2026-01-12",
-                "is_open": true
-              },
-              {
-                "date": "2026-01-13",
-                "is_open": true
-              },
-              {
-                "date": "2026-01-14",
-                "is_open": true
-              },
-              {
-                "date": "2026-01-15",
-                "is_open": true
-              },
-              {
-                "date": "2026-01-16",
-                "is_open": true
-              }
-            ]
-          },
           "variants": [
             {
               "key": "calendar.is_open",
@@ -4380,14 +3300,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": true,
-            "args": {
-              "date": "2026-01-05"
-            },
-            "as_of": "2026-11-19",
-            "result": true
-          },
           "sample": {
             "key": "calendar.is_open",
             "kwargs": {
@@ -4455,28 +3367,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": true,
-            "args": {
-              "date": "2026-01-30",
-              "n": 3
-            },
-            "as_of": "2026-11-19",
-            "result": [
-              {
-                "date": "2026-11-20",
-                "is_open": true
-              },
-              {
-                "date": "2026-11-23",
-                "is_open": true
-              },
-              {
-                "date": "2026-11-24",
-                "is_open": true
-              }
-            ]
           },
           "sample": {
             "key": "calendar.next",
@@ -4549,103 +3439,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": true,
-            "args": {},
-            "as_of": "2026-11-19",
-            "result": [
-              {
-                "exchange": "sh",
-                "industry": "industry.S340501",
-                "industry_name": "白酒",
-                "is_st": false,
-                "listed": "2001-08-27",
-                "name": "贵州茅台",
-                "symbol": "600519"
-              },
-              {
-                "exchange": "sz",
-                "industry": "industry.S340501",
-                "industry_name": "白酒",
-                "is_st": false,
-                "listed": "1998-04-27",
-                "name": "五粮液",
-                "symbol": "000858"
-              },
-              {
-                "exchange": "sh",
-                "industry": "industry.S740101",
-                "industry_name": "动力煤",
-                "is_st": false,
-                "listed": "2007-10-09",
-                "name": "中国神华",
-                "symbol": "601088"
-              },
-              {
-                "exchange": "sh",
-                "industry": "industry.S410102",
-                "industry_name": "水力发电",
-                "is_st": false,
-                "listed": "2003-11-18",
-                "name": "长江电力",
-                "symbol": "600900"
-              },
-              {
-                "exchange": "sh",
-                "industry": "industry.S490201",
-                "industry_name": "保险",
-                "is_st": false,
-                "listed": "2007-03-01",
-                "name": "中国平安",
-                "symbol": "601318"
-              },
-              {
-                "exchange": "sz",
-                "industry": "industry.S480301",
-                "industry_name": "股份制银行",
-                "is_st": false,
-                "listed": "1991-04-03",
-                "name": "平安银行",
-                "symbol": "000001"
-              },
-              {
-                "exchange": "sh",
-                "industry": "industry.S480301",
-                "industry_name": "股份制银行",
-                "is_st": false,
-                "listed": "2002-04-09",
-                "name": "招商银行",
-                "symbol": "600036"
-              },
-              {
-                "exchange": "sz",
-                "industry": "industry.S330102",
-                "industry_name": "空调",
-                "is_st": false,
-                "listed": "2013-09-18",
-                "name": "美的集团",
-                "symbol": "000333"
-              },
-              {
-                "exchange": "sz",
-                "industry": "industry.S630701",
-                "industry_name": "锂电池",
-                "is_st": false,
-                "listed": "2018-06-11",
-                "name": "宁德时代",
-                "symbol": "300750"
-              },
-              {
-                "exchange": "sh",
-                "industry": "industry.S270106",
-                "industry_name": "集成电路制造",
-                "is_st": false,
-                "listed": "2020-07-16",
-                "name": "中芯国际",
-                "symbol": "688981"
-              }
-            ]
           },
           "sample": {
             "key": "stocks.list",
@@ -4748,73 +3541,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": true,
-            "args": {},
-            "as_of": "2026-11-19",
-            "result": [
-              {
-                "level": 1,
-                "name": "电力设备",
-                "standard": "sw2021",
-                "symbol": "S63"
-              },
-              {
-                "level": 1,
-                "name": "机械设备",
-                "standard": "sw2021",
-                "symbol": "S64"
-              },
-              {
-                "level": 1,
-                "name": "国防军工",
-                "standard": "sw2021",
-                "symbol": "S65"
-              },
-              {
-                "level": 1,
-                "name": "计算机",
-                "standard": "sw2021",
-                "symbol": "S71"
-              },
-              {
-                "level": 1,
-                "name": "传媒",
-                "standard": "sw2021",
-                "symbol": "S72"
-              },
-              {
-                "level": 1,
-                "name": "通信",
-                "standard": "sw2021",
-                "symbol": "S73"
-              },
-              {
-                "level": 1,
-                "name": "煤炭",
-                "standard": "sw2021",
-                "symbol": "S74"
-              },
-              {
-                "level": 1,
-                "name": "石油石化",
-                "standard": "sw2021",
-                "symbol": "S75"
-              },
-              {
-                "level": 1,
-                "name": "环保",
-                "standard": "sw2021",
-                "symbol": "S76"
-              },
-              {
-                "level": 1,
-                "name": "美容护理",
-                "standard": "sw2021",
-                "symbol": "S77"
-              }
-            ]
-          },
           "sample": {
             "key": "stocks.industries",
             "kwargs": {},
@@ -4911,106 +3637,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": true,
-            "args": {
-              "industry": "银行",
-              "top_n": 10
-            },
-            "as_of": "2026-11-19",
-            "result": [
-              {
-                "exchange": "sz",
-                "industry": "industry.S480301",
-                "industry_name": "股份制银行",
-                "is_st": false,
-                "listed": "1991-04-03",
-                "name": "平安银行",
-                "symbol": "000001"
-              },
-              {
-                "exchange": "sz",
-                "industry": "industry.S480401",
-                "industry_name": "城商行",
-                "is_st": false,
-                "listed": "2022-01-17",
-                "name": "兰州银行",
-                "symbol": "001227"
-              },
-              {
-                "exchange": "sz",
-                "industry": "industry.S480401",
-                "industry_name": "城商行",
-                "is_st": false,
-                "listed": "2007-07-19",
-                "name": "宁波银行",
-                "symbol": "002142"
-              },
-              {
-                "exchange": "sz",
-                "industry": "industry.S480501",
-                "industry_name": "农商行",
-                "is_st": false,
-                "listed": "2016-09-02",
-                "name": "江阴银行",
-                "symbol": "002807"
-              },
-              {
-                "exchange": "sz",
-                "industry": "industry.S480501",
-                "industry_name": "农商行",
-                "is_st": false,
-                "listed": "2017-01-24",
-                "name": "张家港行",
-                "symbol": "002839"
-              },
-              {
-                "exchange": "sz",
-                "industry": "industry.S480401",
-                "industry_name": "城商行",
-                "is_st": false,
-                "listed": "2018-09-19",
-                "name": "郑州银行",
-                "symbol": "002936"
-              },
-              {
-                "exchange": "sz",
-                "industry": "industry.S480401",
-                "industry_name": "城商行",
-                "is_st": false,
-                "listed": "2019-01-16",
-                "name": "青岛银行",
-                "symbol": "002948"
-              },
-              {
-                "exchange": "sz",
-                "industry": "industry.S480501",
-                "industry_name": "农商行",
-                "is_st": false,
-                "listed": "2019-03-26",
-                "name": "青农商行",
-                "symbol": "002958"
-              },
-              {
-                "exchange": "sz",
-                "industry": "industry.S480401",
-                "industry_name": "城商行",
-                "is_st": false,
-                "listed": "2019-08-02",
-                "name": "苏州银行",
-                "symbol": "002966"
-              },
-              {
-                "exchange": "sh",
-                "industry": "industry.S480301",
-                "industry_name": "股份制银行",
-                "is_st": false,
-                "listed": "1999-11-10",
-                "name": "浦发银行",
-                "symbol": "600000"
-              }
-            ]
           },
           "sample": {
             "key": "stocks.industry_members",
@@ -5199,186 +3825,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": true,
-            "args": {
-              "trade_date": "2026-11-18",
-              "limit": 10
-            },
-            "as_of": "2026-11-19",
-            "result": [
-              {
-                "amount": 3461003064,
-                "amount_ratio": 0.2173,
-                "close": 12.41,
-                "date": "2026-11-18",
-                "float_mv": 7867658557.25,
-                "name": "冰山冷热",
-                "net_amount": -86687035.37,
-                "net_ratio": -0.025,
-                "pct_chg": 0.047257,
-                "reason": "日振幅值达到15%的前5只证券",
-                "seat_amount": 752028123.35,
-                "seat_buy": 332670543.99,
-                "seat_sell": 419357579.36,
-                "symbol": "000530",
-                "turnover_rate": 0.4725
-              },
-              {
-                "amount": 3461003064,
-                "amount_ratio": 0.2173,
-                "close": 12.41,
-                "date": "2026-11-18",
-                "float_mv": 7867658557.25,
-                "name": "冰山冷热",
-                "net_amount": -86687035.37,
-                "net_ratio": -0.025,
-                "pct_chg": 0.047257,
-                "reason": "日换手率达到20%的前5只证券",
-                "seat_amount": 752028123.35,
-                "seat_buy": 332670543.99,
-                "seat_sell": 419357579.36,
-                "symbol": "000530",
-                "turnover_rate": 0.4725
-              },
-              {
-                "amount": 8507311544,
-                "amount_ratio": 0.15560000000000002,
-                "close": 12.41,
-                "date": "2026-11-18",
-                "float_mv": 7867658557.25,
-                "name": "冰山冷热",
-                "net_amount": 2133987.02,
-                "net_ratio": 0.0003,
-                "pct_chg": 0.047257,
-                "reason": "连续三个交易日内，涨幅偏离值累计达到20%的证券",
-                "seat_amount": 1323667328.2,
-                "seat_buy": 662900657.61,
-                "seat_sell": 660766670.59,
-                "symbol": "000530",
-                "turnover_rate": 0.4725
-              },
-              {
-                "amount": 632079482,
-                "amount_ratio": 0.20559999999999998,
-                "close": 5.76,
-                "date": "2026-11-18",
-                "float_mv": 6558660668.16,
-                "name": "新能股份",
-                "net_amount": -45281225.98,
-                "net_ratio": -0.0716,
-                "pct_chg": 0.053015999999999994,
-                "reason": "日振幅值达到15%的前5只证券",
-                "seat_amount": 129948507.98,
-                "seat_buy": 42333641.0,
-                "seat_sell": 87614866.98,
-                "symbol": "000595",
-                "turnover_rate": 0.0992
-              },
-              {
-                "amount": 593528585,
-                "amount_ratio": 0.3357,
-                "close": 0.93,
-                "date": "2026-11-18",
-                "float_mv": 8728387736.01,
-                "name": "金科股份",
-                "net_amount": 7907643.81,
-                "net_ratio": 0.013300000000000001,
-                "pct_chg": 0.068966,
-                "reason": "日振幅值达到15%的前5只证券",
-                "seat_amount": 199240934.29,
-                "seat_buy": 103574289.05,
-                "seat_sell": 95666645.24,
-                "symbol": "000656",
-                "turnover_rate": 0.07150000000000001
-              },
-              {
-                "amount": 575187308,
-                "amount_ratio": 0.3884,
-                "close": 5.05,
-                "date": "2026-11-18",
-                "float_mv": 2781053124.45,
-                "name": "双环科技",
-                "net_amount": 14889077.2,
-                "net_ratio": 0.0259,
-                "pct_chg": 0.100218,
-                "reason": "连续三个交易日内，涨幅偏离值累计达到20%的证券",
-                "seat_amount": 223400800.8,
-                "seat_buy": 119144939.0,
-                "seat_sell": 104255861.8,
-                "symbol": "000707",
-                "turnover_rate": 0.1494
-              },
-              {
-                "amount": 1386573995,
-                "amount_ratio": 0.2426,
-                "close": 12.03,
-                "date": "2026-11-18",
-                "float_mv": 11616331078.68,
-                "name": "通化金马",
-                "net_amount": -90889211.6,
-                "net_ratio": -0.0655,
-                "pct_chg": -0.100224,
-                "reason": "连续三个交易日内，跌幅偏离值累计达到20%的证券",
-                "seat_amount": 336448006.16,
-                "seat_buy": 122779397.28,
-                "seat_sell": 213668608.88,
-                "symbol": "000766",
-                "turnover_rate": 0.0208
-              },
-              {
-                "amount": 143579741,
-                "amount_ratio": 0.47200000000000003,
-                "close": 1.3,
-                "date": "2026-11-18",
-                "float_mv": 1852699399.2,
-                "name": "*ST启环",
-                "net_amount": -31551939.5,
-                "net_ratio": -0.2198,
-                "pct_chg": -0.097222,
-                "reason": "连续三个交易日内，跌幅偏离值累计达到20%的证券",
-                "seat_amount": 67762517.5,
-                "seat_buy": 18105289.0,
-                "seat_sell": 49657228.5,
-                "symbol": "000826",
-                "turnover_rate": 0.0109
-              },
-              {
-                "amount": 1979638527,
-                "amount_ratio": 0.17629999999999998,
-                "close": 40.34,
-                "date": "2026-11-18",
-                "float_mv": 42809647354.38,
-                "name": "中国稀土",
-                "net_amount": -90024793.11,
-                "net_ratio": -0.0455,
-                "pct_chg": -0.099955,
-                "reason": "日跌幅偏离值达到7%的前5只证券",
-                "seat_amount": 349019908.01,
-                "seat_buy": 129497557.45,
-                "seat_sell": 219522350.56,
-                "symbol": "000831",
-                "turnover_rate": 0.0453
-              },
-              {
-                "amount": 872180838,
-                "amount_ratio": 0.2872,
-                "close": 16.0,
-                "date": "2026-11-18",
-                "float_mv": 2838528000.0,
-                "name": "皇台酒业",
-                "net_amount": 124024602.28,
-                "net_ratio": 0.1422,
-                "pct_chg": -0.053814,
-                "reason": "日换手率达到20%的前5只证券",
-                "seat_amount": 250517941.72,
-                "seat_buy": 187271272.0,
-                "seat_sell": 63246669.72,
-                "symbol": "000995",
-                "turnover_rate": 0.2983
-              }
-            ]
           },
           "sample": {
             "key": "toplist.by_date",
@@ -5602,11 +4048,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_symbol",
-            "as_of": "2026-11-19"
           },
           "sample": {
             "key": "toplist.by_symbol",
@@ -5862,11 +4303,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           },
           "sample": {
             "key": "cbond.board",
@@ -6693,11 +5129,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "cbond.latest_quotes",
             "kwargs": {},
@@ -7356,11 +5787,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "cbond.of_stock",
             "kwargs": {
@@ -7410,11 +5836,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           },
           "sample": {
             "key": "cbond.query",
@@ -7472,11 +5893,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "cbond.call_hits",
             "kwargs": {
@@ -7533,11 +5949,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           },
           "variants": [
             {
@@ -7617,11 +6028,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "cbond.bars",
             "kwargs": {
@@ -7664,11 +6070,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           },
           "sample": {
             "key": "cbond.universe_codes",
@@ -7736,11 +6137,6 @@
           "docs_visible": true,
           "example": null,
           "test": null,
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "cbond.article",
             "kwargs": {
@@ -7789,11 +6185,6 @@
           "docs_visible": true,
           "example": null,
           "test": null,
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "cbond.daily",
             "kwargs": {
@@ -9221,11 +7612,6 @@
           "docs_visible": true,
           "example": null,
           "test": null,
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "cbond.figures",
             "kwargs": {
@@ -9292,23 +7678,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": true,
-            "args": {},
-            "as_of": "2026-11-19",
-            "result": [
-              "index.gz2000",
-              "index.kc200",
-              "industry.S11",
-              "industry.S22",
-              "industry.S23",
-              "industry.S24",
-              "industry.S27",
-              "industry.S28",
-              "index.csidividend",
-              "index.ssedividend"
-            ]
-          },
           "sample": {
             "key": "index.keys",
             "kwargs": {},
@@ -9373,38 +7742,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": true,
-            "args": {
-              "key": "index.hs300",
-              "top_n": 10
-            },
-            "as_of": "2026-11-19",
-            "result": [
-              {
-                "symbol": "600519",
-                "name": "贵州茅台",
-                "mv": 1820000000000.0,
-                "pe_ttm": 21.5,
-                "pb": 7.8,
-                "ps_ttm": 15.0,
-                "roe_ttm": 0.31,
-                "close": 1450.0,
-                "percent": 0.038
-              },
-              {
-                "symbol": "601939",
-                "name": "建设银行",
-                "mv": 3120000000000.0,
-                "pe_ttm": 8.8,
-                "pb": 0.85,
-                "ps_ttm": 3.8,
-                "roe_ttm": 0.1,
-                "close": 11.9,
-                "percent": 0.021
-              }
-            ]
           },
           "sample": {
             "key": "index.members",
@@ -9535,11 +7872,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "index.members_history",
             "kwargs": {
@@ -9613,32 +7945,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": true,
-            "args": {
-              "key": "index.hs300",
-              "top_n": 10
-            },
-            "as_of": "2026-11-19",
-            "result": [
-              {
-                "symbol": "600519",
-                "name": "贵州茅台",
-                "weight": 0.038,
-                "mv": 1820000000000.0,
-                "pe_ttm": 21.5,
-                "roe_ttm": 0.31
-              },
-              {
-                "symbol": "601939",
-                "name": "建设银行",
-                "weight": 0.021,
-                "mv": 3120000000000.0,
-                "pe_ttm": 8.8,
-                "roe_ttm": 0.1
-              }
-            ]
           },
           "sample": {
             "key": "index.weights",
@@ -9754,68 +8060,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": true,
-            "args": {
-              "key": "index.hs300",
-              "points": 8
-            },
-            "as_of": "2026-11-19",
-            "result": {
-              "ok": true,
-              "as_of": "2026-11-19",
-              "data": {
-                "current": {
-                  "pe": 13.42,
-                  "pb": 1.25,
-                  "dv": 0.0231
-                },
-                "series": [
-                  {
-                    "d": "2024-06-07",
-                    "pe": 13.42,
-                    "pb": 1.25
-                  },
-                  {
-                    "d": "2024-06-14",
-                    "pe": 13.3817,
-                    "pb": 1.2464
-                  },
-                  {
-                    "d": "2024-06-21",
-                    "pe": 13.3433,
-                    "pb": 1.2429
-                  },
-                  {
-                    "d": "2024-06-28",
-                    "pe": 13.305,
-                    "pb": 1.2393
-                  },
-                  {
-                    "d": "2024-07-05",
-                    "pe": 13.2666,
-                    "pb": 1.2357
-                  },
-                  {
-                    "d": "2024-07-12",
-                    "pe": 13.2283,
-                    "pb": 1.2321
-                  },
-                  {
-                    "d": "2024-07-19",
-                    "pe": 13.1899,
-                    "pb": 1.2286
-                  },
-                  {
-                    "d": "2024-07-26",
-                    "pe": 13.1516,
-                    "pb": 1.225
-                  }
-                ]
-              },
-              "meta": {}
-            }
-          },
           "sample": {
             "key": "index.valuation",
             "kwargs": {
@@ -9913,112 +8157,6 @@
               "script_files": {},
               "mode": "call",
               "market": "cn"
-            }
-          },
-          "demo": {
-            "covered": true,
-            "args": {
-              "key": "index.hs300",
-              "window": "5y"
-            },
-            "as_of": "2026-11-19",
-            "result": {
-              "ok": true,
-              "as_of": "2026-11-19",
-              "data": {
-                "key": "index.hs300",
-                "density": "weekly",
-                "n": 120,
-                "points": [
-                  {
-                    "date": "2026-07-17",
-                    "pe": 12.4787,
-                    "pb": 1.3747
-                  },
-                  {
-                    "date": "2026-07-24",
-                    "pe": 12.4024,
-                    "pb": 1.3695
-                  },
-                  {
-                    "date": "2026-07-31",
-                    "pe": 12.3296,
-                    "pb": 1.3646
-                  },
-                  {
-                    "date": "2026-08-07",
-                    "pe": 12.2606,
-                    "pb": 1.3601
-                  },
-                  {
-                    "date": "2026-08-14",
-                    "pe": 12.1955,
-                    "pb": 1.356
-                  },
-                  {
-                    "date": "2026-08-21",
-                    "pe": 12.1346,
-                    "pb": 1.3523
-                  },
-                  {
-                    "date": "2026-08-28",
-                    "pe": 12.0779,
-                    "pb": 1.3489
-                  },
-                  {
-                    "date": "2026-09-04",
-                    "pe": 12.0258,
-                    "pb": 1.346
-                  },
-                  {
-                    "date": "2026-09-11",
-                    "pe": 11.9783,
-                    "pb": 1.3435
-                  },
-                  {
-                    "date": "2026-09-18",
-                    "pe": 11.9355,
-                    "pb": 1.3414
-                  }
-                ],
-                "pe_pct": 0.17647058823529413,
-                "pb_pct": 0.3277310924369748,
-                "pe_pct_window": "5y",
-                "pe_missing": false,
-                "pb_missing": false,
-                "med": [],
-                "window": "5y",
-                "win_start": "2024-06-07",
-                "win_n": 120,
-                "win_trunc": true,
-                "pct": {
-                  "pe": {
-                    "p": 0.17647058823529413,
-                    "p3": 0.0,
-                    "p5": 0.17647058823529413,
-                    "p10": null,
-                    "n3": 72,
-                    "n5": 120,
-                    "n10": 120,
-                    "trunc10": true
-                  },
-                  "pb": {
-                    "p": 0.3277310924369748,
-                    "p3": 0.0,
-                    "p5": 0.3277310924369748,
-                    "p10": null,
-                    "n3": 72,
-                    "n5": 120,
-                    "n10": 120,
-                    "trunc10": true
-                  },
-                  "pe_med": {}
-                }
-              },
-              "meta": {
-                "pct_source": "server",
-                "dv_has_history": false
-              }
             }
           },
           "sample": {
@@ -10180,23 +8318,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": true,
-            "args": {},
-            "as_of": "2026-11-19",
-            "result": [
-              "index.csi500",
-              "index.sz50",
-              "index.cybz",
-              "index.star50",
-              "index.shzs",
-              "index.szcz",
-              "index.zx100",
-              "index.szzzs",
-              "index.gz2000",
-              "index.kc200"
-            ]
-          },
           "sample": {
             "key": "index.universe_keys",
             "kwargs": {},
@@ -10281,15 +8402,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": true,
-            "args": {
-              "fut_code": "RB.SHF",
-              "field": "close"
-            },
-            "as_of": "2026-11-19",
-            "result": 3112
-          },
           "sample": {
             "key": "futures.get",
             "kwargs": {
@@ -10344,26 +8456,6 @@
               "script_files": {},
               "mode": "call",
               "market": "cn"
-            }
-          },
-          "demo": {
-            "covered": true,
-            "args": {
-              "fut_code": "RB.SHF"
-            },
-            "as_of": "2026-11-19",
-            "result": {
-              "amount": 1991438.425,
-              "close": 3112,
-              "has_kline": true,
-              "high": 3131,
-              "low": 3108,
-              "oi_chg": -18678,
-              "open": 3111,
-              "open_interest": 1592266,
-              "pre_settle": 3109,
-              "settle": 3116,
-              "volume": 638932
             }
           },
           "sample": {
@@ -10454,11 +8546,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           }
         },
         {
@@ -10526,11 +8613,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_symbol",
-            "as_of": "2026-11-19"
           },
           "sample": {
             "key": "futures.mapping",
@@ -10602,47 +8684,6 @@
               "script_files": {},
               "mode": "call",
               "market": "cn"
-            }
-          },
-          "demo": {
-            "covered": true,
-            "args": {
-              "code": "$CPI",
-              "n": 6
-            },
-            "as_of": "2026-11-19",
-            "result": {
-              "ok": true,
-              "metric": "$CPI",
-              "store": "cpi",
-              "frequency": "month",
-              "periods": 3,
-              "latest": {
-                "sas": "600519:2026:M09",
-                "annual": 2026,
-                "sampling": "M09",
-                "value": 100.9
-              },
-              "series": [
-                {
-                  "sas": "600519:2026:M09",
-                  "annual": 2026,
-                  "sampling": "M09",
-                  "value": 100.9
-                },
-                {
-                  "sas": "600519:2026:M08",
-                  "annual": 2026,
-                  "sampling": "M08",
-                  "value": 100.8
-                },
-                {
-                  "sas": "600519:2026:M07",
-                  "annual": 2026,
-                  "sampling": "M07",
-                  "value": 100.5
-                }
-              ]
             }
           },
           "variants": [
@@ -10851,14 +8892,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": true,
-            "args": {
-              "code": "$CPI"
-            },
-            "as_of": "2026-11-19",
-            "result": 107107120000000
-          },
           "sample": {
             "key": "macro.asof",
             "kwargs": {
@@ -10913,20 +8946,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": true,
-            "args": {
-              "code": "$GDP",
-              "n": 4
-            },
-            "as_of": "2026-11-19",
-            "result": [
-              "2026:Q3",
-              "2026:Q2",
-              "2026:Q1",
-              "2025:Q4"
-            ]
           },
           "sample": {
             "key": "macro.spots",
@@ -10983,14 +9002,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": true,
-            "args": {
-              "code": "$GDP"
-            },
-            "as_of": "2026-11-19",
-            "result": "quarter"
-          },
           "sample": {
             "key": "macro.sampling_of",
             "kwargs": {
@@ -11045,15 +9056,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": true,
-            "args": {
-              "curve_name": "中债国债收益率曲线",
-              "tenor": "10年"
-            },
-            "as_of": "2026-11-19",
-            "result": 0.016822
           },
           "sample": {
             "key": "macro.bond_curve",
@@ -11113,15 +9115,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": true,
-            "args": {
-              "brand": "零跑",
-              "field": "sales"
-            },
-            "as_of": "2026-11-19",
-            "result": 40000
-          },
           "sample": {
             "key": "macro.nev_monthly",
             "kwargs": {
@@ -11179,15 +9172,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": true,
-            "args": {
-              "brand": "零跑",
-              "field": "sales"
-            },
-            "as_of": "2026-11-19",
-            "result": null
           },
           "sample": {
             "key": "macro.nev_weekly",
@@ -11247,15 +9231,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": true,
-            "args": {
-              "category": "消费级摄像头",
-              "field": "volume"
-            },
-            "as_of": "2026-11-19",
-            "result": null
-          },
           "sample": {
             "key": "macro.avc_monthly",
             "kwargs": {
@@ -11313,15 +9288,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": true,
-            "args": {
-              "category": "洗衣机",
-              "field": "volume"
-            },
-            "as_of": "2026-11-19",
-            "result": null
           },
           "sample": {
             "key": "macro.chinaiol_monthly",
@@ -11381,15 +9347,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": true,
-            "args": {
-              "manufacturer": "比亚迪汽车",
-              "field": "wholesale"
-            },
-            "as_of": "2026-11-19",
-            "result": 45.5113
-          },
           "sample": {
             "key": "macro.cpca_top",
             "kwargs": {
@@ -11448,15 +9405,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": true,
-            "args": {
-              "brand": "小米",
-              "field": "share"
-            },
-            "as_of": "2026-11-19",
-            "result": 11
-          },
           "sample": {
             "key": "macro.phone_share",
             "kwargs": {
@@ -11507,43 +9455,6 @@
           "docs_visible": true,
           "example": "cli.statements.audit(\"600519\")",
           "test": null,
-          "demo": {
-            "covered": true,
-            "args": {
-              "symbol": "600519"
-            },
-            "as_of": "2026-11-19",
-            "result": {
-              "1998": "标准无保留意见",
-              "1999": "标准无保留意见",
-              "2000": "标准无保留意见",
-              "2001": "标准无保留意见",
-              "2002": "标准无保留意见",
-              "2003": "标准无保留意见",
-              "2004": "标准无保留意见",
-              "2005": "标准无保留意见",
-              "2006": "标准无保留意见",
-              "2007": "标准无保留意见",
-              "2008": "标准无保留意见",
-              "2009": "标准无保留意见",
-              "2010": "标准无保留意见",
-              "2011": "标准无保留意见",
-              "2012": "标准无保留意见",
-              "2013": "标准无保留意见",
-              "2014": "标准无保留意见",
-              "2015": "标准无保留意见",
-              "2016": "标准无保留意见",
-              "2017": "标准无保留意见",
-              "2018": "标准无保留意见",
-              "2019": "标准无保留意见",
-              "2020": "标准无保留意见",
-              "2021": "标准无保留意见",
-              "2022": "标准无保留意见",
-              "2023": "标准无保留意见",
-              "2024": "标准无保留意见",
-              "2025": "标准无保留意见"
-            }
-          },
           "sample": {
             "key": "statements.audit",
             "kwargs": {
@@ -11617,106 +9528,6 @@
           "docs_visible": true,
           "example": null,
           "test": null,
-          "demo": {
-            "covered": true,
-            "args": {
-              "symbol": "600519",
-              "years": 3
-            },
-            "as_of": "2026-11-19",
-            "result": [
-              {
-                "cn": "deferTaxAsset",
-                "k": "deferTaxAsset",
-                "vals": {
-                  "2023": 4645887425.1,
-                  "2024": 5520006868.83,
-                  "2025": 6602469151.22
-                }
-              },
-              {
-                "cn": "lendFund",
-                "k": "lendFund",
-                "vals": {
-                  "2023": 105553836462.58,
-                  "2024": 127187293298.17,
-                  "2025": 99096188059.75
-                }
-              },
-              {
-                "cn": "unassignRpofit",
-                "k": "unassignRpofit",
-                "vals": {
-                  "2023": 172983178300.09,
-                  "2024": 182787415205.05,
-                  "2025": 191905148832.21
-                }
-              },
-              {
-                "cn": "totalOtherPayable",
-                "k": "totalOtherPayable",
-                "vals": {
-                  "2023": 5213133685.87,
-                  "2024": 5429006700.86,
-                  "2025": 5298261266.22
-                }
-              },
-              {
-                "cn": "userightAsset",
-                "k": "userightAsset",
-                "vals": {
-                  "2023": 314205484.56,
-                  "2024": 410594173.53,
-                  "2025": 221738227.51
-                }
-              },
-              {
-                "cn": "otherCompreIncome",
-                "k": "otherCompreIncome",
-                "vals": {
-                  "2023": -6061727.51,
-                  "2024": -9916224.69,
-                  "2025": -5778843.62
-                }
-              },
-              {
-                "cn": "otherCurrentLiab",
-                "k": "otherCurrentLiab",
-                "vals": {
-                  "2023": 1822498012.3,
-                  "2024": 1222693799.51,
-                  "2025": 994959710.24
-                }
-              },
-              {
-                "cn": "totalAsset",
-                "k": "totalAsset",
-                "vals": {
-                  "2023": 272699660092.25,
-                  "2024": 298944579918.7,
-                  "2025": 303834844021.44
-                }
-              },
-              {
-                "cn": "minorityEquity",
-                "k": "minorityEquity",
-                "vals": {
-                  "2023": 7987897687.39,
-                  "2024": 8905330721.13,
-                  "2025": 9321442876.89
-                }
-              },
-              {
-                "cn": "otherNoncurrentFinasset",
-                "k": "otherNoncurrentFinasset",
-                "vals": {
-                  "2023": 4002439902.57,
-                  "2024": 4028978995.56,
-                  "2025": 4105141593.22
-                }
-              }
-            ]
-          },
           "sample": {
             "key": "statements.balance",
             "kwargs": {
@@ -11815,105 +9626,6 @@
           "docs_visible": true,
           "example": null,
           "test": null,
-          "demo": {
-            "covered": true,
-            "args": {
-              "symbol": "600519",
-              "years": 3
-            },
-            "as_of": "2026-11-19",
-            "result": [
-              {
-                "cn": "payOtherOperating",
-                "k": "payOtherOperating",
-                "vals": {
-                  "2023": 7943709518.14,
-                  "2024": 9015412761.18,
-                  "2025": 9012158197.61
-                }
-              },
-              {
-                "cn": "totalOperatingOutflow",
-                "k": "totalOperatingOutflow",
-                "vals": {
-                  "2023": 101662921234.86,
-                  "2024": 107622642492.13,
-                  "2025": 124606593776.59
-                }
-              },
-              {
-                "cn": "operatePayableAdd",
-                "k": "operatePayableAdd",
-                "vals": {
-                  "2023": -591505967.47,
-                  "2024": 8065959951.08,
-                  "2025": -6806428089.04
-                }
-              },
-              {
-                "cn": "assignDividendPorfit",
-                "k": "assignDividendPorfit",
-                "vals": {
-                  "2023": 58754786730.01,
-                  "2024": 70951027702.94,
-                  "2025": 67241733345.45
-                }
-              },
-              {
-                "cn": "faIrDepr",
-                "k": "faIrDepr",
-                "vals": {
-                  "2023": 1651428992.2,
-                  "2024": 1721165327.14,
-                  "2025": 1893338311.91
-                }
-              },
-              {
-                "cn": "beginCashEquivalents",
-                "k": "beginCashEquivalents",
-                "vals": {
-                  "2024": 3000000000,
-                  "2025": 5672140000
-                }
-              },
-              {
-                "cn": "payInterestCommission",
-                "k": "payInterestCommission",
-                "vals": {
-                  "2023": 142896151.21,
-                  "2024": 97061751.28,
-                  "2025": 141082631.31
-                }
-              },
-              {
-                "cn": "receiveInvestIncome",
-                "k": "receiveInvestIncome",
-                "vals": {
-                  "2023": 140715000,
-                  "2024": 92382151.66,
-                  "2025": 111683655.9
-                }
-              },
-              {
-                "cn": "payAllTax",
-                "k": "payAllTax",
-                "vals": {
-                  "2023": 66683472509.22,
-                  "2024": 77055621533.11,
-                  "2025": 77430597986.28
-                }
-              },
-              {
-                "cn": "payOtherFinance",
-                "k": "payOtherFinance",
-                "vals": {
-                  "2023": 134315261.93,
-                  "2024": 116478781.87,
-                  "2025": 6185347863.42
-                }
-              }
-            ]
-          },
           "sample": {
             "key": "statements.cashflow",
             "kwargs": {
@@ -12012,106 +9724,6 @@
           "docs_visible": true,
           "example": null,
           "test": null,
-          "demo": {
-            "covered": true,
-            "args": {
-              "symbol": "600519",
-              "years": 3
-            },
-            "as_of": "2026-11-19",
-            "result": [
-              {
-                "cn": "operateIncomeBalance",
-                "k": "operateIncomeBalance",
-                "vals": {
-                  "2023": 0,
-                  "2024": 0,
-                  "2025": 0
-                }
-              },
-              {
-                "cn": "minorityInterest",
-                "k": "minorityInterest",
-                "vals": {
-                  "2023": 2787404727.05,
-                  "2024": 3106581604.28,
-                  "2025": 2990257731.99
-                }
-              },
-              {
-                "cn": "otherOperatingExpense",
-                "k": "otherOperatingExpense",
-                "vals": {
-                  "2023": 0,
-                  "2024": 0,
-                  "2025": 0
-                }
-              },
-              {
-                "cn": "interestExpense",
-                "k": "interestExpense",
-                "vals": {
-                  "2023": 113500129.93,
-                  "2024": 105127802.03,
-                  "2025": 175775959.12
-                }
-              },
-              {
-                "cn": "uninsuranceCe",
-                "k": "uninsuranceCe",
-                "vals": {
-                  "2023": 0,
-                  "2024": 0,
-                  "2025": 0
-                }
-              },
-              {
-                "cn": "dilutedEps",
-                "k": "dilutedEps",
-                "vals": {
-                  "2023": 59.49,
-                  "2024": 68.64,
-                  "2025": 65.66
-                }
-              },
-              {
-                "cn": "ableOci",
-                "k": "ableOci",
-                "vals": {
-                  "2023": 4715179.82,
-                  "2024": -3854497.18,
-                  "2025": 4137381.07
-                }
-              },
-              {
-                "cn": "saleExpense",
-                "k": "saleExpense",
-                "vals": {
-                  "2023": 4648613585.82,
-                  "2024": 5639300059.49,
-                  "2025": 7253499600.68
-                }
-              },
-              {
-                "cn": "securityUnderwriteNi",
-                "k": "securityUnderwriteNi",
-                "vals": {
-                  "2023": 0,
-                  "2024": 0,
-                  "2025": 0
-                }
-              },
-              {
-                "cn": "bankInterestNi",
-                "k": "bankInterestNi",
-                "vals": {
-                  "2023": 0,
-                  "2024": 0,
-                  "2025": 0
-                }
-              }
-            ]
-          },
           "sample": {
             "key": "statements.income",
             "kwargs": {
@@ -12210,11 +9822,6 @@
           "docs_visible": true,
           "example": null,
           "test": null,
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "statements.indicators",
             "kwargs": {
@@ -12378,11 +9985,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "segments.products",
             "kwargs": {
@@ -12468,11 +10070,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           },
           "sample": {
             "key": "segments.business",
@@ -12569,11 +10166,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "segments.region",
             "kwargs": {
@@ -12669,11 +10261,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           },
           "sample": {
             "key": "segments.income",
@@ -12795,11 +10382,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           },
           "sample": {
             "key": "segments.snapshot",
@@ -12950,11 +10532,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "segments.coverage",
             "kwargs": {
@@ -13029,11 +10606,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           },
           "sample": {
             "key": "segments.periods",
@@ -13110,74 +10682,6 @@
               "script_files": {},
               "mode": "call",
               "market": "cn"
-            }
-          },
-          "demo": {
-            "covered": true,
-            "args": {
-              "symbol": "600519",
-              "metric": "pe",
-              "window": "3y"
-            },
-            "as_of": "2026-11-19",
-            "result": {
-              "ok": true,
-              "as_of": "2026-11-19",
-              "data": {
-                "avg": 22.57754353634055,
-                "count": 748,
-                "current": 21.950174531585528,
-                "max": 31.61056393232646,
-                "median": 21.47505975009858,
-                "min": 17.661621153011183,
-                "pct": 0.5515394912985274,
-                "series": [
-                  {
-                    "date": "2026-11-05",
-                    "value": 22.092283296038
-                  },
-                  {
-                    "date": "2026-11-06",
-                    "value": 22.107498367178525
-                  },
-                  {
-                    "date": "2026-11-09",
-                    "value": 21.985625647342943
-                  },
-                  {
-                    "date": "2026-11-10",
-                    "value": 21.894487371211216
-                  },
-                  {
-                    "date": "2026-11-11",
-                    "value": 21.336094260354056
-                  },
-                  {
-                    "date": "2026-11-12",
-                    "value": 21.45735837734402
-                  },
-                  {
-                    "date": "2026-11-13",
-                    "value": 21.837583005145664
-                  },
-                  {
-                    "date": "2026-11-16",
-                    "value": 22.121191931204997
-                  },
-                  {
-                    "date": "2026-11-17",
-                    "value": 22.179009201538978
-                  },
-                  {
-                    "date": "2026-11-18",
-                    "value": 21.950174531585528
-                  }
-                ]
-              },
-              "meta": {
-                "metric": "pe",
-                "window": "3y"
-              }
             }
           },
           "sample": {
@@ -13289,11 +10793,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           },
           "sample": {
             "key": "valuation.daily_basic",
@@ -13431,11 +10930,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "valuation.daily_basic_multi",
             "kwargs": {
@@ -13568,11 +11062,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           }
         }
       ],
@@ -13807,11 +11296,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           },
           "sample": {
             "key": "estimates.query_forecast",
@@ -14304,11 +11788,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "estimates.query_forecast_detail",
             "kwargs": {
@@ -14800,11 +12279,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "estimates.query_rating",
             "kwargs": {
@@ -15076,11 +12550,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "estimates.query_reports",
             "kwargs": {
@@ -15160,15 +12629,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": true,
-            "args": {
-              "symbol": "600519",
-              "code": "$PE_TTM_LAST"
-            },
-            "as_of": "2026-11-19",
-            "result": 22.21050439879986
-          },
           "sample": {
             "key": "indicator.get",
             "kwargs": {
@@ -15238,21 +12698,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": true,
-            "args": {
-              "symbol": "600519",
-              "codes": [
-                "$PE_TTM_LAST",
-                "$ROE_TTM_LAST"
-              ]
-            },
-            "as_of": "2026-11-19",
-            "result": {
-              "$PE_TTM_LAST": 22.21050439879986,
-              "$ROE_TTM_LAST": 0.3110531153774236
-            }
-          },
           "sample": {
             "key": "indicator.metrics",
             "kwargs": {
@@ -15309,11 +12754,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "indicator.basic",
             "kwargs": {
@@ -15367,11 +12807,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           },
           "sample": {
             "key": "indicator.financials",
@@ -15498,73 +12933,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": true,
-            "args": {
-              "symbol": "600519",
-              "window": "3m",
-              "keyword": "回购",
-              "limit": 10
-            },
-            "as_of": "2026-11-19",
-            "result": [
-              {
-                "announce_date": "2026-10-31",
-                "available_at": "2026-10-30 18:55:24",
-                "code": "600519",
-                "date": "2026-10-31",
-                "name": "贵州茅台",
-                "pdf_url": "https://pdf.dfcfw.com/pdf/H2_AN202610301831245501_1.pdf?1793385163000.pdf",
-                "title": "贵州茅台:贵州茅台第五届董事会2026年度第七次会议决议公告",
-                "type": "董事会决议公告",
-                "url": "https://data.eastmoney.com/notices/detail/600519/AN202610301831245501.html"
-              },
-              {
-                "announce_date": "2026-10-31",
-                "available_at": "2026-10-30 18:55:24",
-                "code": "600519",
-                "date": "2026-10-31",
-                "name": "贵州茅台",
-                "pdf_url": "https://pdf.dfcfw.com/pdf/H2_AN202610301831245502_1.pdf?1793385163000.pdf",
-                "title": "贵州茅台:贵州茅台2026年第三季度主要经营数据公告",
-                "type": "月度经营情况",
-                "url": "https://data.eastmoney.com/notices/detail/600519/AN202610301831245502.html"
-              },
-              {
-                "announce_date": "2026-10-31",
-                "available_at": "2026-10-30 18:55:24",
-                "code": "600519",
-                "date": "2026-10-31",
-                "name": "贵州茅台",
-                "pdf_url": "https://pdf.dfcfw.com/pdf/H2_AN202610301831245499_1.pdf?1793385219000.pdf",
-                "title": "贵州茅台:贵州茅台关于公司高级管理人员2026年度薪酬兑现方案的公告",
-                "type": "其他",
-                "url": "https://data.eastmoney.com/notices/detail/600519/AN202610301831245499.html"
-              },
-              {
-                "announce_date": "2026-10-31",
-                "available_at": "2026-10-30 18:55:24",
-                "code": "600519",
-                "date": "2026-10-31",
-                "name": "贵州茅台",
-                "pdf_url": "https://pdf.dfcfw.com/pdf/H2_AN202610301831245500_1.pdf?1793385159000.pdf",
-                "title": "贵州茅台:贵州茅台2026年第三季度报告",
-                "type": "三季度报告全文",
-                "url": "https://data.eastmoney.com/notices/detail/600519/AN202610301831245500.html"
-              },
-              {
-                "announce_date": "2026-11-03",
-                "available_at": "2026-11-02 17:01:18",
-                "code": "600519",
-                "date": "2026-11-03",
-                "name": "贵州茅台",
-                "pdf_url": "https://pdf.dfcfw.com/pdf/H2_AN202611021831320924_1.pdf?1793638819000.pdf",
-                "title": "贵州茅台:贵州茅台关于召开2026年第三季度业绩说明会的公告",
-                "type": "其他",
-                "url": "https://data.eastmoney.com/notices/detail/600519/AN202611021831320924.html"
-              }
-            ]
-          },
           "sample": {
             "key": "notice.list",
             "kwargs": {
@@ -15671,11 +13039,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           },
           "sample": {
             "key": "notice.recent",
@@ -15849,11 +13212,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           },
           "sample": {
             "key": "notice.by_category",
@@ -16040,11 +13398,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "notice.find",
             "kwargs": {
@@ -16186,11 +13539,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           },
           "sample": {
             "key": "notice.on_date",
@@ -16353,11 +13701,6 @@
           "docs_visible": true,
           "example": "cli.notice.read_text(\"600519\", date=\"2026-06-30\")",
           "test": null,
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "notice.read_text",
             "kwargs": {
@@ -16426,11 +13769,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "notice.has_buyback",
             "kwargs": {
@@ -16487,11 +13825,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "notice.has_reduction",
             "kwargs": {
@@ -16535,23 +13868,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": true,
-            "args": {},
-            "as_of": "2026-11-19",
-            "result": [
-              "correct",
-              "report",
-              "risk",
-              "suspend",
-              "forecast",
-              "insider_buy",
-              "pledge",
-              "buyback",
-              "contract",
-              "equity_incentive"
-            ]
           },
           "sample": {
             "key": "notice.categories",
@@ -16606,14 +13922,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": true,
-            "args": {
-              "key": "buyback"
-            },
-            "as_of": "2026-11-19",
-            "result": "回购|購回"
           },
           "sample": {
             "key": "notice.category_regex",
@@ -16711,11 +14019,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           },
           "sample": {
             "key": "filings.list",
@@ -16838,11 +14141,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "filings.latest",
             "kwargs": {
@@ -16950,15 +14248,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": true,
-            "args": {
-              "kind": "annual",
-              "limit": 10
-            },
-            "as_of": "2026-11-19",
-            "result": []
           },
           "sample": {
             "key": "pdf_doc.search",
@@ -17212,11 +14501,6 @@
           "docs_visible": true,
           "example": "cli.pdf_doc.read_text()",
           "test": null,
-          "demo": {
-            "covered": false,
-            "reason": "demo_symbol",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "pdf_doc.read_text",
             "kwargs": {},
@@ -17305,24 +14589,6 @@
           "docs_visible": true,
           "example": "cli.pdf_doc.read_markdown()",
           "test": null,
-          "demo": {
-            "covered": true,
-            "args": {},
-            "as_of": "2026-11-19",
-            "result": {
-              "artifacts": {
-                "markdown": {},
-                "pdf_oss": "https://res.winmale.com/pdf_doc/611dac50de0775da189f489a7e1d2777e4a4a286.pdf"
-              },
-              "error": "markdown_not_linked",
-              "file_key": "611dac50de0775da189f489a7e1d2777e4a4a286",
-              "kind": "notice",
-              "note": "未挂接 fin-extract markdown；定期报告结构化仍走 wm-report-extract / 附注用 wm-statements notes",
-              "ok": false,
-              "source_url": "https://pdf.dfcfw.com/pdf/H2_AN202604201821348217_1.pdf?1776713909000.pdf",
-              "status": "ready"
-            }
-          },
           "sample": {
             "key": "pdf_doc.read_markdown",
             "kwargs": {},
@@ -17395,11 +14661,6 @@
           "docs_visible": true,
           "example": "cli.pdf_doc.status()",
           "test": null,
-          "demo": {
-            "covered": false,
-            "reason": "demo_symbol",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "pdf_doc.status",
             "kwargs": {},
@@ -17439,12 +14700,7 @@
           "notes": [],
           "docs_visible": true,
           "example": "cli.pdf_doc.find_by_url(url=\"<公告行 url 字段>\")",
-          "test": null,
-          "demo": {
-            "covered": false,
-            "reason": "TypeError",
-            "as_of": "2026-11-19"
-          }
+          "test": null
         },
         {
           "key": "pdf_doc.find_by_key",
@@ -17469,11 +14725,6 @@
           "docs_visible": true,
           "example": "cli.pdf_doc.find_by_key(file_key=\"<search() 行 file_key 字段>\")",
           "test": null,
-          "demo": {
-            "covered": false,
-            "reason": "TypeError",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "pdf_doc.find_by_key",
             "kwargs": {
@@ -17645,11 +14896,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           },
           "sample": {
             "key": "forecast.yjyg",
@@ -17823,11 +15069,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "forecast.yjyg_latest",
             "kwargs": {
@@ -17952,11 +15193,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "forecast.yjkb",
             "kwargs": {
@@ -18065,11 +15301,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "forecast.yjkb_latest",
             "kwargs": {
@@ -18156,11 +15387,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "forecast.disclosure_history",
             "kwargs": {
@@ -18232,11 +15458,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           },
           "sample": {
             "key": "forecast.next_disclosure",
@@ -18379,165 +15600,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": true,
-            "args": {
-              "symbol": "600519"
-            },
-            "as_of": "2026-11-19",
-            "result": [
-              {
-                "announce": "2022-11-29",
-                "bonus_share": 0.0,
-                "ccy": "CNY",
-                "content": "",
-                "dps": 21.91,
-                "ex_date": "2022-12-27",
-                "ex_div": "2022-12-27",
-                "net_profit": 0,
-                "pay": "2022-12-27",
-                "payout_ratio": 0.0,
-                "record_date": "2022-12-26",
-                "sas": "2022:Q4",
-                "total": 27523293798.000004
-              },
-              {
-                "announce": "2023-03-31",
-                "bonus_share": 0.0,
-                "ccy": "CNY",
-                "content": "",
-                "dps": 25.911,
-                "ex_date": "2023-06-30",
-                "ex_div": "2023-06-30",
-                "net_profit": 62716443738,
-                "pay": "2023-06-30",
-                "payout_ratio": 0.519,
-                "record_date": "2023-06-29",
-                "sas": "2022:Q4",
-                "total": 32549341196.0
-              },
-              {
-                "announce": "2023-11-21",
-                "bonus_share": 0.0,
-                "ccy": "CNY",
-                "content": "",
-                "dps": 19.106,
-                "ex_date": "2023-12-20",
-                "ex_div": "2023-12-20",
-                "net_profit": 0,
-                "pay": "2023-12-20",
-                "payout_ratio": 0.0,
-                "record_date": "2023-12-19",
-                "sas": "2023:Q4",
-                "total": 24000915167.0
-              },
-              {
-                "announce": "2024-04-03",
-                "bonus_share": 0.0,
-                "ccy": "CNY",
-                "content": "",
-                "dps": 30.876,
-                "ex_date": "2024-06-19",
-                "ex_div": "2024-06-19",
-                "net_profit": 74734071551,
-                "pay": "2024-06-19",
-                "payout_ratio": 0.519,
-                "record_date": "2024-06-18",
-                "sas": "2023:Q4",
-                "total": 38786363273.0
-              },
-              {
-                "announce": "2024-11-09",
-                "bonus_share": 0.0,
-                "ccy": "CNY",
-                "content": "",
-                "dps": 23.882,
-                "ex_date": "2024-12-20",
-                "ex_div": "2024-12-20",
-                "net_profit": 0,
-                "pay": "2024-12-20",
-                "payout_ratio": 0.0,
-                "record_date": "2024-12-19",
-                "sas": "2024:Q3",
-                "total": 30000515860.0
-              },
-              {
-                "announce": "2025-04-03",
-                "bonus_share": 0.0,
-                "ccy": "CNY",
-                "content": "",
-                "dps": 27.673,
-                "ex_date": "2025-06-26",
-                "ex_div": "2025-06-26",
-                "net_profit": 86228146422,
-                "pay": "2025-06-26",
-                "payout_ratio": 0.4021,
-                "record_date": "2025-06-25",
-                "sas": "2024:Q4",
-                "total": 34671161737.0
-              },
-              {
-                "announce": "2025-08-13",
-                "bonus_share": 0.0,
-                "ccy": "CNY",
-                "content": "",
-                "dps": 0.0,
-                "ex_date": "2025-06-30",
-                "ex_div": "2025-06-30",
-                "net_profit": 0,
-                "pay": "",
-                "payout_ratio": 0.0,
-                "record_date": "",
-                "sas": "2025:Q2",
-                "total": 0.0
-              },
-              {
-                "announce": "2025-11-06",
-                "bonus_share": 0.0,
-                "ccy": "CNY",
-                "content": "",
-                "dps": 23.957,
-                "ex_date": "2025-12-19",
-                "ex_div": "2025-12-19",
-                "net_profit": 0,
-                "pay": "2025-12-19",
-                "payout_ratio": 0.0,
-                "record_date": "2025-12-18",
-                "sas": "2025:Q3",
-                "total": 30000637541.0
-              },
-              {
-                "announce": "2026-06-22",
-                "bonus_share": 0.0,
-                "ccy": "CNY",
-                "content": "",
-                "dps": 28.02423,
-                "ex_date": "2026-06-26",
-                "ex_div": "2026-06-26",
-                "net_profit": 0,
-                "pay": "2026-06-26",
-                "payout_ratio": 0.0,
-                "record_date": "2026-06-25",
-                "sas": "2025:Q4",
-                "total": 35032574305.19223
-              },
-              {
-                "announce": "2026-08-15",
-                "bonus_share": 0.0,
-                "ccy": "CNY",
-                "content": "",
-                "dps": 0.0,
-                "ex_date": "2026-06-30",
-                "ex_div": "2026-06-30",
-                "net_profit": 0,
-                "pay": "",
-                "payout_ratio": 0.0,
-                "record_date": "",
-                "sas": "2026:Q2",
-                "total": 0.0
-              }
-            ]
-          },
           "sample": {
             "key": "dividend.history",
             "kwargs": {
@@ -18646,28 +15708,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": true,
-            "args": {
-              "symbol": "600519"
-            },
-            "as_of": "2026-11-19",
-            "result": {
-              "announce": "2026-08-15",
-              "bonus_share": 0,
-              "ccy": "CNY",
-              "content": "",
-              "dps": 0,
-              "ex_date": "2026-06-30",
-              "ex_div": "2026-06-30",
-              "net_profit": 0,
-              "pay": "",
-              "payout_ratio": 0,
-              "record_date": "",
-              "sas": "2026:Q2",
-              "total": 0
-            }
-          },
           "sample": {
             "key": "dividend.last",
             "kwargs": {
@@ -18731,11 +15771,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "dividend.dps",
             "kwargs": {
@@ -18793,11 +15828,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "dividend.window_stats",
             "kwargs": {
@@ -18854,14 +15884,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": true,
-            "args": {
-              "symbol": "600519"
-            },
-            "as_of": "2026-11-19",
-            "result": 0.03560358219178082
-          },
           "sample": {
             "key": "dividend.yield_ttm",
             "kwargs": {
@@ -18912,11 +15934,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           },
           "sample": {
             "key": "dividend.payout_ttm",
@@ -18982,14 +15999,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": true,
-            "args": {
-              "symbol": "600519"
-            },
-            "as_of": "2026-11-19",
-            "result": false
-          },
           "sample": {
             "key": "dividend.screen_quality",
             "kwargs": {
@@ -19043,11 +16052,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           },
           "sample": {
             "key": "dividend.screen_high_yield",
@@ -19107,11 +16111,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           },
           "sample": {
             "key": "dividend.screen_undervalued_yield",
@@ -19185,11 +16184,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           },
           "sample": {
             "key": "dividend.rating",
@@ -19311,11 +16305,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "dividend.calendar",
             "kwargs": {
@@ -19398,11 +16387,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           },
           "sample": {
             "key": "dividend.decomp",
@@ -19670,11 +16654,6 @@
           "docs_visible": true,
           "example": null,
           "test": null,
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "dividend.diagnose",
             "kwargs": {
@@ -19900,11 +16879,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "equity.query_holder10",
             "kwargs": {
@@ -20024,11 +16998,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           },
           "sample": {
             "key": "equity.query_holdernum",
@@ -20153,11 +17122,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "equity.query_pledge_detail",
             "kwargs": {
@@ -20231,11 +17195,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           },
           "sample": {
             "key": "equity.query_pledge_summary",
@@ -20400,11 +17359,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "equity.query_pledge_market",
             "kwargs": {
@@ -20529,11 +17483,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "equity.query_pledge_industry",
             "kwargs": {
@@ -20653,11 +17602,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           },
           "sample": {
             "key": "equity.query_pledge_org",
@@ -20805,11 +17749,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "equity.query_institution_detail",
             "kwargs": {
@@ -20954,11 +17893,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           },
           "sample": {
             "key": "equity.query_institution_summary",
@@ -21107,11 +18041,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "equity.query_hgt",
             "kwargs": {
@@ -21257,11 +18186,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "equity.query_national_team",
             "kwargs": {
@@ -21344,11 +18268,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "equity.query_release",
             "kwargs": {
@@ -21422,11 +18341,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           },
           "sample": {
             "key": "equity.query_buyback_plan",
@@ -21525,11 +18439,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "equity.query_buyback_detail",
             "kwargs": {
@@ -21606,21 +18515,6 @@
               "script_files": {},
               "mode": "call",
               "market": "cn"
-            }
-          },
-          "demo": {
-            "covered": true,
-            "args": {
-              "symbol": "600519"
-            },
-            "as_of": "2026-11-19",
-            "result": {
-              "exec_1y": 2999933749.57,
-              "exec_total": 8999919716.52,
-              "plan_1y": 0,
-              "plan_1y_cancel": 0,
-              "plan_total": 9000000000,
-              "plan_total_cancel": 9000000000
             }
           },
           "sample": {
@@ -21737,11 +18631,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           },
           "sample": {
             "key": "equity.query_reorg",
@@ -21898,11 +18787,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "equity.query_related_trade",
             "kwargs": {
@@ -22042,11 +18926,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "equity.query_concert",
             "kwargs": {
@@ -22178,11 +19057,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "equity.query_guarantee",
             "kwargs": {
@@ -22257,11 +19131,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "equity.query_litigation",
             "kwargs": {
@@ -22331,11 +19200,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           },
           "sample": {
             "key": "equity.query_violation",
@@ -22465,11 +19329,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           },
           "sample": {
             "key": "equity.query_executives",
@@ -22611,11 +19470,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "equity.query_exec_change",
             "kwargs": {
@@ -22705,11 +19559,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "equity.query_exec_change_at",
             "kwargs": {
@@ -22770,11 +19619,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           },
           "sample": {
             "key": "equity.query_capital_change",
@@ -22850,11 +19694,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "equity.query_capital_change_at",
             "kwargs": {
@@ -22913,11 +19752,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           },
           "sample": {
             "key": "workout.board",
@@ -23162,11 +19996,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "workout.query",
             "kwargs": {
@@ -23356,11 +20185,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           },
           "sample": {
             "key": "intl.query_ccass",
@@ -23723,11 +20547,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "intl.query_shareholders",
             "kwargs": {
@@ -24088,11 +20907,6 @@
               "mode": "call",
               "market": "cn"
             }
-          },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
           },
           "sample": {
             "key": "intl.query_org_rating",
@@ -24455,11 +21269,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "intl.query_profit_forecast",
             "kwargs": {
@@ -24821,11 +21630,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "intl.query_sellshort",
             "kwargs": {
@@ -25064,11 +21868,6 @@
               "market": "cn"
             }
           },
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "intl.issue_info",
             "kwargs": {
@@ -25132,11 +21931,6 @@
           "docs_visible": true,
           "example": null,
           "test": null,
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "etf.asset",
             "kwargs": {
@@ -25192,11 +21986,6 @@
           "docs_visible": true,
           "example": null,
           "test": null,
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "etf.card",
             "kwargs": {
@@ -25568,11 +22357,6 @@
           "docs_visible": true,
           "example": null,
           "test": null,
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "etf.div",
             "kwargs": {
@@ -25845,12 +22629,7 @@
           "notes": [],
           "docs_visible": true,
           "example": null,
-          "test": null,
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          }
+          "test": null
         },
         {
           "key": "etf.portfolio",
@@ -25880,11 +22659,6 @@
           "docs_visible": true,
           "example": null,
           "test": null,
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "etf.portfolio",
             "kwargs": {
@@ -25980,11 +22754,6 @@
           "docs_visible": true,
           "example": null,
           "test": null,
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "etf.premium",
             "kwargs": {
@@ -26038,11 +22807,6 @@
           "docs_visible": true,
           "example": null,
           "test": null,
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "etf.profile",
             "kwargs": {
@@ -26114,11 +22878,6 @@
           "docs_visible": true,
           "example": null,
           "test": null,
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "etf.rank",
             "kwargs": {
@@ -26176,11 +22935,6 @@
           "docs_visible": true,
           "example": null,
           "test": null,
-          "demo": {
-            "covered": false,
-            "reason": "demo_unsupported",
-            "as_of": "2026-11-19"
-          },
           "sample": {
             "key": "etf.share",
             "kwargs": {
@@ -26260,25 +23014,6 @@
               "script_files": {},
               "mode": "call",
               "market": "cn"
-            }
-          },
-          "demo": {
-            "covered": true,
-            "args": {
-              "symbol": "600519"
-            },
-            "as_of": "2026-11-19",
-            "result": {
-              "business_scope": "茅台酒及系列酒的生产与销售;饮料、食品、包装材料的生产、销售;防伪技术开发、信息产业相关产品的研制、开发;酒店经营管理、住宿、餐饮、娱乐、洗浴及停车场管理服务;车辆运输、维修保养;第二类增值电信业务。(具体内容以工商核定登记为准)",
-              "full_name": "贵州茅台酒股份有限公司",
-              "industry": "industry.S340501",
-              "industry_l1": "industry.S34",
-              "listing_board": "上交所主板",
-              "listing_date": "2001-08-27",
-              "name": "贵州茅台",
-              "name_en": null,
-              "org_type": 1,
-              "style_industry": "大消费"
             }
           },
           "sample": {

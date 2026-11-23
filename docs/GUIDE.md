@@ -6,9 +6,9 @@
 AI 用法看 [AI.md](AI.md)。
 
 > 代码块里的输出注释都是**真实运行结果**（2026-10-29，cn 市场，免费档凭证），
-> 数值会随行情变化，口径与量级不会。README、SKILL 与演示客户端（`demo_client()`）
-> 里的示例值取自更早日期的实测快照，同一指标不同日数值不同（如 TTM 股息率
-> 0.0396→0.0379），属正常漂移。
+> 数值会随行情变化，口径与量级不会。README、SKILL 与各文档示例里的值取自
+> 更早日期的实测，同一指标不同日数值不同（如 TTM 股息率 0.0396→0.0379），
+> 属正常漂移。
 
 ## 1. 安装与凭证
 
@@ -17,13 +17,9 @@ pip install wmshare                  # 基础安装
 python3 -c "import wmshare; print(wmshare.__version__)"   # 验证安装
 ```
 
-不配凭证先试：`cli = wmshare.demo_client()`——随包离线演示客户端（2026-11-19
-真实 API 固定快照；10 只演示宇宙 + 当日真实全市场 screener，
-**非实时数据**），调用面覆盖公开示例（例外：`screener.query` 依赖全市场索引列、
-`backtest` 的 pb/ps/pr 估值规则依赖对应序列，演示快照都没有，均显式报
-`demo_unsupported`；`backtest` 的均线与 pe 规则可用 120 根演示日 K 真跑）；
-examples/ 的凭证示例都支持 `--demo` 旗标零凭证试跑。看真实数据零配置即可——
-`from_env()` 无凭据自动领匿名额度；要长期额度按下节配置凭证（可选）。
+不配凭证先试：`cli = wmshare.Client.from_env()`——无凭据自动免注册领**匿名试用**
+（真实数据、免费额度，需网络；`WMSHARE_DISABLE_ANON=1` 可关闭）。examples/ 的
+示例统一 `main(cli=None)`，无凭证即可跑。要长期额度/更高限频按下节配置凭证（可选）。
 
 凭证在开放平台（`https://open.winmale.com`）控制台的
 「我的 → 开放平台 → 我的应用」页获取，
@@ -537,7 +533,7 @@ poller.start()               # 或切后台：daemon 线程定时轮询；退出
 
 消费进度按 `(group, consumer)` 存服务端，ack 前崩溃会重投（at-least-once）；
 进度超保留期抛 `StreamResetError`，按消息用 `seek_oldest()` 重置。
-完整可运行版：`examples/10_notice_monitor.py`（`--demo` 零凭证演示 ack 语义）。
+完整可运行版：`examples/10_notice_monitor.py`（ack 语义端到端）。
 
 ## 9. 故障排查
 

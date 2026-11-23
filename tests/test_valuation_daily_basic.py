@@ -1,7 +1,7 @@
 """valuation.daily_basic 门面契约（服务端物化 alt.valuation_daily，仅 CN）。
 
 覆盖：字段校验/归一、信封直通、目录注册（units/ranges 可审计）、
-estimate_cost cached_eval 档、demo 显式 demo_unsupported（不伪造）。
+estimate_cost cached_eval 档。
 """
 from __future__ import annotations
 
@@ -118,11 +118,3 @@ def test_daily_basic_estimate_cost_measured():
     assert one["ec_hi"] < est2["ec_hi"], (one, est2)
 
 
-# ---- demo：显式 demo_unsupported（诚实契约，无罐头不伪造） ----
-
-def test_demo_daily_basic_unsupported():
-    from wmshare._demo import demo_client
-
-    c = demo_client()
-    with pytest.raises(UsageError, match="demo_unsupported|demo 快照未收录"):
-        c.valuation.daily_basic("600519")

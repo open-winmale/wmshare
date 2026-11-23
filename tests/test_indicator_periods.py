@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 import wmshare
+from fake_client import fake_client
 from wmshare.indicator_adapter import IndicatorAdapter
 
 REPO = Path(__file__).resolve().parents[1]
@@ -27,7 +28,7 @@ def test_macro_period_is_monthly():
 
 
 def test_ten_year_percentile_has_window_and_min_history():
-    ad = IndicatorAdapter(wmshare.demo_client())
+    ad = IndicatorAdapter(fake_client())
     row = next(r for r in ad.table("600519", ["$PCT_PE_TTM_10Y_LAST"])
                if r["code"] == "$PCT_PE_TTM_10Y_LAST")
     assert row["period"] == "ttm"
@@ -50,7 +51,7 @@ def test_pb_is_latest_report_not_ttm():
 
 
 def test_dividend_yield_and_dps_are_different_groups():
-    ad = IndicatorAdapter(wmshare.demo_client())
+    ad = IndicatorAdapter(fake_client())
     groups = ad.combinable_groups(scope="stock", topic="dividend")["groups"]
     yield_group = next(g for g in groups if "$BONUS_RATE_TTM_LAST" in g["codes"])
     dps_group = next(g for g in groups if "$DPS_TTM_LAST" in g["codes"])
@@ -60,7 +61,7 @@ def test_dividend_yield_and_dps_are_different_groups():
 
 
 def test_pe_and_pb_are_not_in_same_group():
-    ad = IndicatorAdapter(wmshare.demo_client())
+    ad = IndicatorAdapter(fake_client())
     pe = _group_of(ad, "$PE_TTM_LAST")
     pb = _group_of(ad, "$PB_NOGW_LAST")
     assert pe and pb
@@ -70,7 +71,7 @@ def test_pe_and_pb_are_not_in_same_group():
 
 
 def test_pe_and_ps_share_group():
-    ad = IndicatorAdapter(wmshare.demo_client())
+    ad = IndicatorAdapter(fake_client())
     pe = _group_of(ad, "$PE_TTM_LAST")
     ps = _group_of(ad, "$PS_TTM_LAST")
     assert pe and ps
@@ -78,7 +79,7 @@ def test_pe_and_ps_share_group():
 
 
 def test_no_group_mixes_period_or_caliber():
-    ad = IndicatorAdapter(wmshare.demo_client())
+    ad = IndicatorAdapter(fake_client())
     by_code = _by_code()
     for group in ad.combinable_groups()["groups"]:
         periods = {by_code[code]["period"] for code in group["codes"]}

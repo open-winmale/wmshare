@@ -1,11 +1,10 @@
 """红利排雷：市赚率(PRR)+现金流覆盖三维筛选——硬卡点全压一条 screener.query，本地补打分。
 
-前提：需真实凭证（export WMSHARE_CLIENT_ID=... WMSHARE_CLIENT_SECRET=...）；`--demo` 用随包罐头数据走通全流程（非真实行情）
+前提：凭证可选——无凭证自动回落匿名试用（免注册、真实数据、需网络）
 运行：python examples/17_prr_dividend_screen.py
 学到：估值/分红/偿债硬卡点一次压进 where（count=真命中数）；fields 一次带回打分列；本地补行业剔除、现金流覆盖与 CHI 排名
 文档：docs/GUIDE.md（单票菜谱）
 """
-import sys
 from datetime import date
 from typing import Any
 
@@ -30,31 +29,6 @@ COVERAGE_MIN = 1.3         # 维度三：经营现金流 / 分红总额 ≥1.3 �
 PCT_PR_MAX = 0.5           # 维度一：PRR 3 年分位 ≤50%（hist_stats 上限 3 年，逐票补）
 PAYOUT_GOLD_LO, PAYOUT_GOLD_HI = 0.40, 0.60   # 支付率黄金区间（满分），向 30%/75% 线性衰减
 W_VALUATION, W_DIVIDEND, W_CASHFLOW = 0.35, 0.35, 0.30  # CHI 三维权重
-
-# 演示罐头 7 行（非真实行情；方向与 live 一致：PRR 越低 / 覆盖越高得分越高）
-DEMO_ROWS: list[dict[str, Any]] = [
-    dict(symbol="600519", name="贵州茅台", **{"$PR_LAST": 0.55, "$BONUS_RATE_3Y_AVG_LAST": 0.062,
-         "$BONUS_TTM_RATE_LAST": 0.52, "$NCFO_TTM_LAST": 9.2e10, "$BONUS_TTM": 3.4e10,
-         "$IBD_RATE_LAST": 0.12, "$CSRC_INDUSTRY_NAME": "制造业-酒、饮料和精制茶制造业", "_demo_pct": 0.22}),
-    dict(symbol="000333", name="美的集团", **{"$PR_LAST": 0.75, "$BONUS_RATE_3Y_AVG_LAST": 0.055,
-         "$BONUS_TTM_RATE_LAST": 0.48, "$NCFO_TTM_LAST": 4.0e10, "$BONUS_TTM": 1.8e10,
-         "$IBD_RATE_LAST": 0.20, "$CSRC_INDUSTRY_NAME": "制造业-电气机械和器材制造业", "_demo_pct": 0.35}),
-    dict(symbol="601088", name="中国神华", **{"$PR_LAST": 0.90, "$BONUS_RATE_3Y_AVG_LAST": 0.058,
-         "$BONUS_TTM_RATE_LAST": 0.62, "$NCFO_TTM_LAST": 8.0e10, "$BONUS_TTM": 5.0e10,
-         "$IBD_RATE_LAST": 0.18, "$CSRC_INDUSTRY_NAME": "采矿业-煤炭开采和洗选业", "_demo_pct": 0.48}),
-    dict(symbol="600036", name="招商银行", **{"$PR_LAST": 0.60, "$BONUS_RATE_3Y_AVG_LAST": 0.060,
-         "$BONUS_TTM_RATE_LAST": 0.35, "$NCFO_TTM_LAST": 1.0e11, "$BONUS_TTM": 3.0e10,
-         "$IBD_RATE_LAST": 0.50, "$CSRC_INDUSTRY_NAME": "金融业-货币金融服务", "_demo_pct": 0.30}),
-    dict(symbol="601318", name="中国平安", **{"$PR_LAST": 0.50, "$BONUS_RATE_3Y_AVG_LAST": 0.055,
-         "$BONUS_TTM_RATE_LAST": 0.45, "$NCFO_TTM_LAST": 5.0e10, "$BONUS_TTM": 2.0e10,
-         "$IBD_RATE_LAST": 0.40, "$CSRC_INDUSTRY_NAME": "金融业-保险业", "_demo_pct": 0.15}),
-    dict(symbol="000651", name="格力电器", **{"$PR_LAST": 0.70, "$BONUS_RATE_3Y_AVG_LAST": 0.072,
-         "$BONUS_TTM_RATE_LAST": 0.55, "$NCFO_TTM_LAST": 2.0e10, "$BONUS_TTM": 2.5e10,
-         "$IBD_RATE_LAST": 0.30, "$CSRC_INDUSTRY_NAME": "制造业-电气机械和器材制造业", "_demo_pct": 0.40}),
-    dict(symbol="600276", name="恒瑞医药", **{"$PR_LAST": 0.85, "$BONUS_RATE_3Y_AVG_LAST": 0.050,
-         "$BONUS_TTM_RATE_LAST": 0.50, "$NCFO_TTM_LAST": 7.0e10, "$BONUS_TTM": 3.0e10,
-         "$IBD_RATE_LAST": 0.10, "$CSRC_INDUSTRY_NAME": "制造业-医药制造业", "_demo_pct": 0.81}),
-]
 
 
 def payout_score(payout: float) -> float:
@@ -123,9 +97,7 @@ def enrich_percentiles(cli: Any, rows: list[dict[str, Any]]) -> tuple[list[dict[
     kept, dropped, skipped = [], 0, 0
     for r in rows:
         try:
-            pct = r.get("_demo_pct")
-            if pct is None:
-                pct = cli.valuation.hist_stats(r["symbol"], metric="pr", window="3y")["pct"]
+            pct = cli.valuation.hist_stats(r["symbol"], metric="pr", window="3y")["pct"]
         except WmshareError:
             skipped += 1
             continue
@@ -136,26 +108,16 @@ def enrich_percentiles(cli: Any, rows: list[dict[str, Any]]) -> tuple[list[dict[
     return kept, dropped, skipped
 
 
-def main(cli: Any = None, demo: bool = False) -> None:
+def main(cli: Any = None) -> None:
     if cli is None:
-        if demo:
-            cli = wmshare.demo_client()
-            print("(演示模式：随包罐头数据，非真实行情)")
-            print()
-        else:
-            cli = wmshare.Client.from_env()
+        cli = wmshare.Client.from_env()
 
     print("--- 三维硬卡点（服务端一条表达式，count=真命中数，阈值均为小数）---")
     print("  PRR<1.2 · 股息率3Y均值≥4.5% · 支付率30%~75% · 有息负债率≤55% · 剔ST/停牌")
     print(f"  跑批日期：{date.today().isoformat()}（数据为日频 EOD 口径）")
-    try:
-        # 首跑会触发 EC 告警：fields 重列全市场物化是一次性成本，之后命中服务端缓存
-        res = cli.screener.query(WHERE, fields=FIELDS, limit=QUERY_LIMIT)
-        rows, count = res["data"]["rows"], res["data"]["count"]
-    except WmshareError as e:
-        if e.code != "demo_unsupported":       # 演示客户端无全市场索引列，换罐头行
-            raise
-        rows, count = [dict(r) for r in DEMO_ROWS], len(DEMO_ROWS)
+    # 首跑会触发 EC 告警：fields 重列全市场物化是一次性成本，之后命中服务端缓存
+    res = cli.screener.query(WHERE, fields=FIELDS, limit=QUERY_LIMIT)
+    rows, count = res["data"]["rows"], res["data"]["count"]
     print(f"  全市场命中 {count} 只（下面进入本地排雷）")
 
     scored, funnel = local_screen(rows)
@@ -180,7 +142,7 @@ def main(cli: Any = None, demo: bool = False) -> None:
 
 if __name__ == "__main__":
     try:
-        main(demo="--demo" in sys.argv)
+        main()
     except WmshareError as e:
         print(f"取数失败：{e}")   # 错误消息自带修复步骤，打印原文即可
         raise SystemExit(1)

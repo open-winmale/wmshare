@@ -1,7 +1,8 @@
-"""示例冒烟（11/11 全覆盖）：离线示例真实执行；凭证示例用共享 FakeClient 端到端跑。
+"""示例冒烟（22/22 全覆盖）：离线示例真实执行；其余示例用共享 FakeClient 端到端跑。
 
-签名正确性由 test_docs 的 AST 门禁全量把关；本文件保证每个示例在罐头数据上
-真的跑得完、关键输出（含单位口径注释）不回退。
+签名正确性由 test_interface_quality 的签名门禁全量把关；本文件保证每个示例在
+回放夹具（或打桩数据）上真的跑得完、关键输出（含单位口径注释）不回退。
+demo 模式已随 3.0.0 移除——示例统一 `main(cli=None)`，无凭证时 from_env 自动匿名。
 """
 from __future__ import annotations
 
@@ -15,9 +16,10 @@ from pathlib import Path
 import pytest
 
 import wmshare
+from wmshare.errors import UsageError, WmshareError
 
 from fake_client import fake_client
-from wmshare._demo import load_demo_snapshot
+from replay_client import load_replay_snapshot
 
 REPO = Path(__file__).resolve().parents[1]
 SRC = REPO / "src"
@@ -26,14 +28,12 @@ EXAMPLES = REPO / "examples"
 
 @pytest.fixture(scope="module")
 def snapshot():
-    return load_demo_snapshot()
+    return load_replay_snapshot()
 
 
-def _run_example(name: str, demo: bool = False) -> subprocess.CompletedProcess:
+def _run_example(name: str) -> subprocess.CompletedProcess:
     env = {**os.environ, "PYTHONPATH": str(SRC)}
     command = [sys.executable, str(EXAMPLES / name)]
-    if demo:
-        command.append("--demo")
     return subprocess.run(command, capture_output=True, text=True, env=env, timeout=60)
 
 
@@ -77,10 +77,10 @@ def test_offline_example_runs(name, needles):
         assert f"精选 {curated} /" in result.stdout
 
 
-# ---- 凭证示例：注入共享 FakeClient，端到端跑 main() ----
+# ---- 数据示例：注入共享 FakeClient（回放夹具），端到端跑 main() ----
 
 def test_01_quickstart(snapshot, capsys):
-    _load("01_quickstart.py").main(fake_client(), demo=True)
+    _load("01_quickstart.py").main(fake_client())
     out = capsys.readouterr().out
     roe = snapshot["data"]["indicators"]["$ROE_TTM_LAST"]
     dps = snapshot["data"]["dividend"]["last"]["600519"]["dps"]
@@ -90,12 +90,12 @@ def test_01_quickstart(snapshot, capsys):
     assert notice["title"] in out
     assert "DataFrame" not in out
     # 批量段落：必须展示「家数 → 请求数」对比（新手动线，防回退成逐票循环）
-    assert "演示宇宙 10 家：1 次请求" in out
+    assert "全市场 10 家：1 次请求" in out
     assert "逐票需 10 次" in out
 
 
 def test_04_screener(snapshot, capsys):
-    _load("04_screener.py").main(fake_client(), demo=True)
+    _load("04_screener.py").main(fake_client())
     out = capsys.readouterr().out
     assert "站上MA20=True" in out
     summary = snapshot["data"]["screener"]["breadth_summary"]
@@ -106,7 +106,7 @@ def test_04_screener(snapshot, capsys):
 
 
 def test_05_dividend_screener(snapshot, capsys):
-    _load("05_dividend_screener.py").main(fake_client(), demo=True)
+    _load("05_dividend_screener.py").main(fake_client())
     out = capsys.readouterr().out
     expected = snapshot["data"]["dividend"]["yield_ttm"]["600519"]
     assert f"TTM股息率={expected:.4f}" in out
@@ -114,10 +114,10 @@ def test_05_dividend_screener(snapshot, capsys):
 
 
 def test_14_cbond_double_low_needs_credentials(capsys):
-    """演示快照不含 cbond 域：示例应给出明确的「需凭证」提示而非崩溃。"""
+    """回放夹具不含 cbond 域：示例应给出明确的「无数据」提示而非崩溃。"""
     _load("14_cbond_double_low.py").main(fake_client())
     out = capsys.readouterr().out
-    assert "需真实凭证" in out
+    assert "cbond 域不可用" in out
 
 
 def _cb_stub_row(code="110001", **kw):
@@ -185,13 +185,13 @@ def test_14_cbond_double_low_with_facade_shaped_stub(capsys):
 
 
 def test_15_backtest_ma(snapshot, capsys):
-    """单股回测示例：演示数据 120 根跑出成交明细 + 汇总，不回退成空结果。"""
-    _load("15_backtest_ma.py").main(fake_client(), demo=True)
+    """单股回测示例：回放数据 120 根跑出成交明细 + 汇总，不回退成空结果。"""
+    _load("15_backtest_ma.py").main(fake_client())
     out = capsys.readouterr().out
     assert "ma_cross(fast=5, slow=20)" in out
     assert "成交明细" in out and "金叉" in out
     assert "最大回撤" in out
-    assert "演示快照" in out                     # 口径提示必须出现
+    assert "'replay': True" in out               # 口径提示必须出现（回放数据标记）
 
 
 def test_12_futures_macro(capsys):
@@ -206,7 +206,7 @@ def test_12_futures_macro(capsys):
 
 
 def test_06_indicator_tour(snapshot, capsys):
-    _load("06_indicator_tour.py").main(fake_client(), demo=True)
+    _load("06_indicator_tour.py").main(fake_client())
     out = capsys.readouterr().out
     assert "指标组 11 个" in out                  # cat.metric_groups() 真目录
     expected = snapshot["data"]["dividend"]["yield_ttm"]["600519"]
@@ -216,9 +216,9 @@ def test_06_indicator_tour(snapshot, capsys):
 
 def test_07_stocks_industry_batch(capsys):
     pytest.importorskip("pandas")  # call_batch(...).to_df() 需要可选依赖
-    _load("07_stocks_industry_batch.py").main(fake_client(), demo=True)
+    _load("07_stocks_industry_batch.py").main(fake_client())
     out = capsys.readouterr().out
-    assert "演示宇宙共 10 家" in out
+    assert "全市场共 10 家" in out
     assert "批量 1 次请求" in out
     assert "省 10 倍配额" in out
     assert "第 1 批 10 家" in out
@@ -235,7 +235,7 @@ def test_08_pandas_analysis(capsys):
 
 
 def test_10_notice_monitor(snapshot, capsys):
-    _load("10_notice_monitor.py").main(fake_client(), demo=True)
+    _load("10_notice_monitor.py").main(fake_client())
     out = capsys.readouterr().out
     event = snapshot["data"]["notice_event"]
     title = event["title"]
@@ -257,7 +257,7 @@ def test_11_statements_tour(capsys):
 
 def test_16_metric_adapter(snapshot, capsys):
     """适配层示例：分类发现 + 长表 + 多标的小列表，不改变旧接口。"""
-    _load("16_metric_adapter.py").main(fake_client(), demo=True)
+    _load("16_metric_adapter.py").main(fake_client())
     out = capsys.readouterr().out
     assert "指标 scope：" in out
     assert "valuation：可组合组" in out
@@ -266,9 +266,52 @@ def test_16_metric_adapter(snapshot, capsys):
     assert "screener.query(fields=codes" in out
 
 
+# ---- 17：罐头行随 demo 移除迁入测试——桩出 screener 与 hist_stats，锁死漏斗数学 ----
+
+_PRR_ROWS = [
+    dict(symbol="600519", name="贵州茅台", **{"$PR_LAST": 0.55, "$BONUS_RATE_3Y_AVG_LAST": 0.062,
+         "$BONUS_TTM_RATE_LAST": 0.52, "$NCFO_TTM_LAST": 9.2e10, "$BONUS_TTM": 3.4e10,
+         "$IBD_RATE_LAST": 0.12, "$CSRC_INDUSTRY_NAME": "制造业-酒、饮料和精制茶制造业"}),
+    dict(symbol="000333", name="美的集团", **{"$PR_LAST": 0.75, "$BONUS_RATE_3Y_AVG_LAST": 0.055,
+         "$BONUS_TTM_RATE_LAST": 0.48, "$NCFO_TTM_LAST": 4.0e10, "$BONUS_TTM": 1.8e10,
+         "$IBD_RATE_LAST": 0.20, "$CSRC_INDUSTRY_NAME": "制造业-电气机械和器材制造业"}),
+    dict(symbol="601088", name="中国神华", **{"$PR_LAST": 0.90, "$BONUS_RATE_3Y_AVG_LAST": 0.058,
+         "$BONUS_TTM_RATE_LAST": 0.62, "$NCFO_TTM_LAST": 8.0e10, "$BONUS_TTM": 5.0e10,
+         "$IBD_RATE_LAST": 0.18, "$CSRC_INDUSTRY_NAME": "采矿业-煤炭开采和洗选业"}),
+    dict(symbol="600036", name="招商银行", **{"$PR_LAST": 0.60, "$BONUS_RATE_3Y_AVG_LAST": 0.060,
+         "$BONUS_TTM_RATE_LAST": 0.35, "$NCFO_TTM_LAST": 1.0e11, "$BONUS_TTM": 3.0e10,
+         "$IBD_RATE_LAST": 0.50, "$CSRC_INDUSTRY_NAME": "金融业-货币金融服务"}),
+    dict(symbol="601318", name="中国平安", **{"$PR_LAST": 0.50, "$BONUS_RATE_3Y_AVG_LAST": 0.055,
+         "$BONUS_TTM_RATE_LAST": 0.45, "$NCFO_TTM_LAST": 5.0e10, "$BONUS_TTM": 2.0e10,
+         "$IBD_RATE_LAST": 0.40, "$CSRC_INDUSTRY_NAME": "金融业-保险业"}),
+    dict(symbol="000651", name="格力电器", **{"$PR_LAST": 0.70, "$BONUS_RATE_3Y_AVG_LAST": 0.072,
+         "$BONUS_TTM_RATE_LAST": 0.55, "$NCFO_TTM_LAST": 2.0e10, "$BONUS_TTM": 2.5e10,
+         "$IBD_RATE_LAST": 0.30, "$CSRC_INDUSTRY_NAME": "制造业-电气机械和器材制造业"}),
+    dict(symbol="600276", name="恒瑞医药", **{"$PR_LAST": 0.85, "$BONUS_RATE_3Y_AVG_LAST": 0.050,
+         "$BONUS_TTM_RATE_LAST": 0.50, "$NCFO_TTM_LAST": 7.0e10, "$BONUS_TTM": 3.0e10,
+         "$IBD_RATE_LAST": 0.10, "$CSRC_INDUSTRY_NAME": "制造业-医药制造业"}),
+]
+_PRR_PCT = {"600519": 0.22, "000333": 0.35, "601088": 0.48, "600036": 0.30,
+            "601318": 0.15, "000651": 0.40, "600276": 0.81}
+
+
+class _PrrStubCli:
+    """17 号示例的桩：screener.query 返回罐头行；hist_stats 按标的返回罐头分位。"""
+
+    class screener:  # noqa: N999 - 与示例调用面同构
+        @staticmethod
+        def query(where, **kw):
+            return {"data": {"rows": [dict(r) for r in _PRR_ROWS], "count": len(_PRR_ROWS)}}
+
+    class valuation:  # noqa: N999
+        @staticmethod
+        def hist_stats(symbol, metric="pr", window="3y"):
+            return {"pct": _PRR_PCT[symbol]}
+
+
 def test_17_prr_dividend_screen(capsys):
-    """红利排雷：演示客户端无全市场索引 → 罐头行走通本地三步，方向与 live 一致。"""
-    _load("17_prr_dividend_screen.py").main(fake_client(), demo=True)
+    """红利排雷：桩数据走通本地三步，方向与 live 一致（PRR 越低/覆盖越高得分越高）。"""
+    _load("17_prr_dividend_screen.py").main(_PrrStubCli())
     out = capsys.readouterr().out
     assert "全市场命中 7 只" in out
     assert "-2 只 → 5" in out and "-1 只 → 4" in out and "-1 只 → 3" in out
@@ -279,28 +322,38 @@ def test_17_prr_dividend_screen(capsys):
 
 
 def test_18_calendar_margin(capsys):
-    """2.0 新面：FakeClient 注入端到端（demo 下显式降级不伪造）。"""
-    _load("18_calendar_margin.py").main(fake_client(), demo=True)
+    """2.0 新面：FakeClient 注入端到端。"""
+    _load("18_calendar_margin.py").main(fake_client())
     out = capsys.readouterr().out
     assert "交易日历" in out
 
 
-@pytest.mark.parametrize("name", [
-    "01_quickstart.py", "04_screener.py", "05_dividend_screener.py",
-    "06_indicator_tour.py", "07_stocks_industry_batch.py", "08_pandas_analysis.py",
-    "10_notice_monitor.py", "11_statements_tour.py", "15_backtest_ma.py",
-    "16_metric_adapter.py", "17_prr_dividend_screen.py",
-        "18_calendar_margin.py",
-        "19_income_rating.py",
-        "21_cli_export.py",
-        "22_futures_bars.py",
-])
-def test_credential_examples_run_with_demo_snapshot(name):
-    if name in ("07_stocks_industry_batch.py", "08_pandas_analysis.py"):
-        pytest.importorskip("pandas")
-    result = _run_example(name, demo=True)
-    assert result.returncode == 0, result.stderr
-    assert "演示模式" in result.stdout
+def test_19_income_rating(capsys):
+    """收息四接口：回放夹具未拍摄收息面 → 显式降级输出，不崩溃不伪造。"""
+    _load("19_income_rating.py").main(fake_client())
+    out = capsys.readouterr().out
+    assert "== 1. 发现" in out
+    assert "[跳过]" in out
+
+
+def test_21_cli_export(capsys):
+    """成品出口：回放罐头 trend → md/csv/xlsx/bundle 全链路落盘。"""
+    pytest.importorskip("pandas")
+    _load("21_cli_export.py").main(fake_client())
+    out = capsys.readouterr().out
+    assert "to_markdown：指数估值分位" in out
+    assert "trend.md" in out
+    assert "落盘" in out and "manifest" in out
+
+
+def test_22_replay_bars_raises_explicitly(capsys):
+    """期货历史K线：成本预估段先跑；历史序列夹具不回放——显式 replay_unsupported，
+    不返回空 DF 冒充。"""
+    mod = _load("22_futures_bars.py")
+    with pytest.raises(UsageError) as ei:
+        mod.main(fake_client())
+    assert ei.value.code == "replay_unsupported"
+    assert "先估成本" in capsys.readouterr().out
 
 
 def test_20_anonymous_trial_degrades_gracefully():

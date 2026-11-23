@@ -936,8 +936,8 @@ def build_fields_json() -> str:
 API_PACK_OUT = REPO / "docs" / "api_pack.json"
 API_PACK_SAMPLES = REPO / "docs" / "api_pack_samples.json"
 API_PACK_BUDGET = 900_000   # 总量硬预算（字节）：超限即生成失败，防示例响应失控
-DEMO_ROW_CAP = 10           # 每接口示例响应最多保留行数
-DEMO_TEXT_CAP = 400         # 字符串字段截断长度（如公告 PDF 正文）
+ROW_CAP = 10              # 每接口示例响应最多保留行数
+TEXT_CAP = 400             # 字符串字段截断长度（如公告 PDF 正文）
 SAMPLE_ROW_CAP = 6          # 真实拍摄响应保留行数（更紧，控制体积）
 SAMPLE_TEXT_CAP = 200
 
@@ -1075,7 +1075,7 @@ def _capture_eval_payload(ns: str, method: str, attempts: list[dict]) -> dict | 
 
 
 def _json_safe(v: object, depth: int = 0,
-               row_cap: int = DEMO_ROW_CAP, text_cap: int = DEMO_TEXT_CAP) -> object:
+               row_cap: int = ROW_CAP, text_cap: int = TEXT_CAP) -> object:
     """示例响应行 → 可序列化 JSON：NaN/Inf→None、长文本截断、行数封顶。
 
     行列表取**尾部** row_cap 行——SDK 契约是 date 升序(旧→新),头部是最旧行,
@@ -1099,27 +1099,6 @@ def _json_safe(v: object, depth: int = 0,
     if v is None or isinstance(v, (bool, int, str)):
         return v
     return str(v)
-
-
-def _capture_demo(ns: str, method: str, attempts: list[dict]) -> dict:
-    """demo_client() 按示例参数捕获演示快照响应；未覆盖显式标注，不静默缺省。"""
-    from wmshare._demo import DEMO_SNAPSHOT_PROVENANCE, demo_client
-    dcli = demo_client()
-    fn = getattr(getattr(dcli, ns, None), method, None)
-    if fn is None:
-        return {"covered": False, "reason": "demo_namespace_absent",
-                "as_of": DEMO_SNAPSHOT_PROVENANCE["as_of"]}
-    last_code = "no_demo_args"
-    for kw in attempts:
-        try:
-            result = fn(**kw)
-        except Exception as e:  # demo 未覆盖面：显式 code，不静默给假数据
-            last_code = str(getattr(e, "code", "") or type(e).__name__)
-            continue
-        return {"covered": True, "args": kw, "as_of": DEMO_SNAPSHOT_PROVENANCE["as_of"],
-                "result": _json_safe(result)}
-    return {"covered": False, "reason": last_code,
-            "as_of": DEMO_SNAPSHOT_PROVENANCE["as_of"]}
 
 
 _KIND_PREFIX = {"ARR": "array", "MAP": "object", "标量": "scalar", "数值": "scalar"}
@@ -1176,10 +1155,7 @@ def build_api_pack() -> str:
 
     - ``test``：门面真实编译出的 eval 请求体，站点一键测试与 SDK 调用逐字
       等价；组合链路（多次 eval）或参数不可静态确定时显式 ``null``。
-    - ``demo``：``demo_client()`` 按示例参数捕获的演示快照响应（截行截文），
-      未覆盖接口显式 ``demo_unsupported`` 等原因，不静默缺省。
     """
-    from wmshare._demo import DEMO_SNAPSHOT_PROVENANCE
     docs = [yaml.safe_load(p.read_text(encoding="utf-8"))
             for p in sorted(DOMAINS.glob("*.yaml"))]
     merged = {fn["name"]: fn for d in docs for fn in (d.get("functions") or [])}
@@ -1239,7 +1215,6 @@ def build_api_pack() -> str:
         # 组合链路（多次 eval）PlaygroundRun 单次代理不可回放，显式 null；
         # eval 型核心门面（$FUT_*/宿主 spec/档案指标等）同样是单次 eval，可测。
         entry["test"] = None if composite else _capture_eval_payload(ns, method, attempts)
-        entry["demo"] = _capture_demo(ns, method, attempts)
         return entry
 
     namespaces_out: list[dict] = []
@@ -1312,11 +1287,9 @@ def build_api_pack() -> str:
             "variants": sum(1 for i in ifaces if i.get("page")),
             "domains": len(docs),
             "categories": [{"key": c, "cn": CATEGORY_CN[c]} for c in CATEGORY_ORDER],
-            "demo_covered": sum(1 for i in ifaces if (i.get("demo") or {}).get("covered")),
             "test_ready": sum(1 for i in ifaces if i.get("test")),
             "sampled": sampled,
             "samples_provenance": (samples_doc or {}).get("provenance"),
-            "demo_snapshot": DEMO_SNAPSHOT_PROVENANCE,
         },
         "namespaces": namespaces_out,
     }
@@ -1324,7 +1297,7 @@ def build_api_pack() -> str:
     size = len(body.encode("utf-8"))
     if size > API_PACK_BUDGET:
         raise AssertionError(f"api_pack {size}B 超预算 {API_PACK_BUDGET}B——"
-                             "请收紧 DEMO_ROW_CAP/DEMO_TEXT_CAP/SAMPLE_ROW_CAP")
+                             "请收紧 ROW_CAP/TEXT_CAP/SAMPLE_ROW_CAP")
     return body
 
 

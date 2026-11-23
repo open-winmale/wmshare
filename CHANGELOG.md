@@ -9,6 +9,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > MAJOR；弃用至少保留 1 个 MINOR，并在 `Deprecated` 段登记替代写法与移除版本。
 > 升级前请扫一眼 Removed / Changed / Deprecated 段。
 
+## [3.0.0] - 2026-11-23
+
+### Removed
+
+- **demo 模式整体移除**（一次性大版本，参照 2.0.0 先例；匿名试用已覆盖其用户面
+  职责）：
+  - `wmshare.demo_client()` / `DemoClient` 不再随包分发。迁移：
+    `wmshare.Client.from_env()`——凭据双缺自动回落匿名试用（免注册、真实数据、
+    免费额度，2.8.0 起）。
+  - `wmshare` CLI 的 `--demo` 旗标、`wmshare-mcp` 的 `--demo` 与
+    `WMSHARE_MCP_DEMO` 环境变量：去掉该旗标即可（无凭证自动匿名）。
+  - 错误码 `demo_unsupported` / `demo_symbol` / `demo_limit` / `demo_market`：
+    不再存在；CI 离线夹具内部改用 `replay_unsupported` 等（tests/ 私有，
+    不在公开错误表）。
+  - MCP 信封 `meta.demo` / `meta.as_of` / `meta.data_freshness="snapshot"` 溯源键、
+    status 工具的 `demo`/`demo_notice`/`demo_snapshot` 键组：`retrieved_at` 与
+    `data_freshness`（恒 `live`）保留。2.9.0 的「demo 快照不回放历史序列」承诺随
+    demo 一并失效——历史序列直接真实取数（`cli.futures.bars`）。
+  - 打包数据 `_demo_data.json` 与维护者工具 `tools/generate_demo_snapshot.py`。
+- CI 离线测试改由 `tests/replay_client.py` 回放夹具驱动（数据冻结于
+  `tests/fixtures/replay_data.json`，字节级锚定在 `tests/test_replay_fixture.py`）；
+  examples/ 移除全部 `--demo` 分支，统一 `main(cli=None)` + `Client.from_env()`。
+
+### Changed
+
+- README 首屏「零凭证先试」与 GUIDE/AI/SKILL/QUICKSTART_EN 动线全部切匿名试用：
+  无凭证自动匿名成为唯一零凭证路径（真实数据、需网络）。
+- `api_pack.json` 移除逐接口 `demo` 样本字段与 `demo_covered`/`demo_snapshot` 元数据
+  （`test` 一键测试物料与真实拍摄 `sample` 保留）。
+
 ## [2.9.0] - 2026-11-23
 
 ### Added

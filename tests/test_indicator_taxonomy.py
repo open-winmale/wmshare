@@ -7,6 +7,7 @@ from pathlib import Path
 import yaml
 
 import wmshare
+from fake_client import fake_client
 from wmshare.indicator_adapter import IndicatorAdapter
 
 REPO = Path(__file__).resolve().parents[1]
@@ -116,7 +117,7 @@ def test_quality_thresholds():
 
 
 def test_all_codes_are_grouped_or_flat_exactly_once():
-    ad = IndicatorAdapter(wmshare.demo_client())
+    ad = IndicatorAdapter(fake_client())
     result = ad.combinable_groups()
     grouped = [code for group in result["groups"] for code in group["codes"]]
     flat = [row["code"] for row in result["flat"]]
@@ -127,7 +128,7 @@ def test_all_codes_are_grouped_or_flat_exactly_once():
 
 
 def test_unknown_fields_never_enter_groups():
-    ad = IndicatorAdapter(wmshare.demo_client())
+    ad = IndicatorAdapter(fake_client())
     by_code = {r["code"]: r for r in _taxonomy()["metrics"]}
     for group in ad.combinable_groups()["groups"]:
         for code in group["codes"]:
@@ -140,7 +141,7 @@ def test_unknown_fields_never_enter_groups():
 
 
 def test_group_id_is_recomputable():
-    ad = IndicatorAdapter(wmshare.demo_client())
+    ad = IndicatorAdapter(fake_client())
     by_code = {r["code"]: r for r in _taxonomy()["metrics"]}
     for group in ad.combinable_groups()["groups"]:
         example = by_code[group["codes"][0]]
@@ -152,7 +153,7 @@ def test_group_id_is_recomputable():
 
 
 def test_market_restricted_code_is_partitioned_by_market():
-    ad = IndicatorAdapter(wmshare.demo_client())
+    ad = IndicatorAdapter(fake_client())
     cn = ad.combinable_groups(scope="stock", topic="solvency", market="cn")
     hk = ad.combinable_groups(scope="stock", topic="solvency", market="hk")
     cn_codes = {code for group in cn["groups"] for code in group["codes"]}

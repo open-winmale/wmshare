@@ -213,7 +213,8 @@ def test_public_surface_is_cli_facade():
     import wmshare
     import wmshare.backtest as kernel
 
-    cli = wmshare.demo_client()
+    from replay_client import replay_client
+    cli = replay_client()
     assert "backtest" in dir(cli), "cli 命名空间缺 backtest（门面未暴露）"
     sig = inspect.signature(BacktestApi.run)
     assert {"rule", "buy", "sell", "fast", "slow", "begin", "end", "cash", "adj"} <= \

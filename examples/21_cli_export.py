@@ -1,13 +1,12 @@
 """成品出口：把一次调用的结果直接写成 md/csv/xlsx 成品文件，不用再手拼。
 
-前提：凭证（支持 --demo 离线回放指数罐头；xlsx 需 pip install "wmshare[excel]"，
-png 需 "wmshare[figures]"）
-运行：python examples/21_cli_export.py [--demo]
+前提：凭证可选——无凭证自动回落匿名试用（需网络）；xlsx 需 pip install "wmshare[excel]"，
+png 需 "wmshare[figures]"
+运行：python examples/21_cli_export.py
 学到：to_markdown 的口径表头（as_of/单位约定）；write 按扩展名分派；
       write_bundle 一次落一整套文件并附 manifest.json（收稿方按它核对新鲜度）
 文档：README「不写 Python：wmshare 命令行出成品」（命令行版同能力）、docs/API.md·组合接口
 """
-import sys
 import tempfile
 from pathlib import Path
 
@@ -35,7 +34,7 @@ def main(cli=None) -> None:
                      "pe_pct": data.get("pe_pct"), "pb_pct": data.get("pb_pct"),
                      "pe_pct_window": data.get("pe_pct_window")})
     if not rows:
-        print("  无可用键（演示快照仅含部分键）；以下用最小示例继续演示出口能力")
+        print("  无可用键（当前环境无该数据）；以下用最小示例继续演示出口能力")
         rows = [{"key": "index.hs300", "as_of": "2026-11-19",
                  "pe_pct": 0.1765, "pb_pct": 0.3277, "pe_pct_window": "5y"}]
     md = export.to_markdown(rows, title="指数估值分位（5y）",
@@ -69,8 +68,4 @@ def main(cli=None) -> None:
 
 
 if __name__ == "__main__":
-    if "--demo" in sys.argv:
-        print("== 演示模式：离线罐头快照，非实时数据 ==")
-        main(wmshare.demo_client())
-    else:
-        main()
+    main()

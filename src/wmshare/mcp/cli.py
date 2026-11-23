@@ -21,7 +21,6 @@ def parser() -> argparse.ArgumentParser:
         description="wmshare 本地 MCP server 与安装自检工具",
     )
     result.add_argument("--check", action="store_true", help="校验安装与工具注册后退出")
-    result.add_argument("--demo", action="store_true", help="启动离线演示快照模式")
     result.add_argument("--market", choices=MARKETS, help="默认市场")
     sub = result.add_subparsers(dest="command")
     setup_parser = sub.add_parser("setup", help="安全写入开放平台凭证")
@@ -62,10 +61,7 @@ def _serve(args: argparse.Namespace) -> int:
     from wmshare.mcp.server import build_server
 
     market = args.market or credential_values()["WMSHARE_MARKET"] or "cn"
-    demo = args.demo or os.getenv("WMSHARE_MCP_DEMO", "0").strip().lower() in {
-        "1", "true", "yes", "on",
-    }
-    server = build_server(MCPRuntime(market=market, demo=demo))
+    server = build_server(MCPRuntime(market=market))
     server.run("stdio")
     return 0
 
@@ -77,10 +73,7 @@ def _check(args: argparse.Namespace) -> int:
 
     wmshare.load()
     market = args.market or credential_values()["WMSHARE_MARKET"] or "cn"
-    demo = args.demo or os.getenv("WMSHARE_MCP_DEMO", "0").strip().lower() in {
-        "1", "true", "yes", "on",
-    }
-    server = build_server(MCPRuntime(market=market, demo=demo))
+    server = build_server(MCPRuntime(market=market))
 
     async def listed() -> list[str]:
         response = await server.list_tools()
@@ -96,7 +89,6 @@ def _check(args: argparse.Namespace) -> int:
         "version": wmshare.__version__,
         "python": sys.version.split()[0],
         "market": market,
-        "demo": demo,
         "tools": sorted(names),
         "credentials_configured": bool(credential_status()["configured"]),
     }

@@ -1,25 +1,19 @@
 """分红质量：高股息且派息可持续的单票筛选，call_batch 批量 TTM 股息率。
 
-前提：凭证必填（export WMSHARE_CLIENT_ID=... WMSHARE_CLIENT_SECRET=...）；`--demo` 用随包演示数据零凭证试跑
+前提：凭证可选——无凭证自动回落匿名试用（免注册、真实数据、需网络）
 运行：python examples/05_dividend_screener.py
 学到：screen_quality 窗口语义；call_batch 票级批量；底层函数属性直达
 文档：docs/GUIDE.md（单票菜谱、批量取数）
 """
-import sys
 import wmshare
 from wmshare import Client, WmshareError
 
 WATCHLIST = ["600519", "000858", "601088", "600900", "601318"]  # 自选股，换成你的
 
 
-def main(cli=None, demo: bool = False) -> None:
+def main(cli=None) -> None:
     if cli is None:
-        if demo:
-            cli = wmshare.demo_client()
-            print("(演示模式：随包罐头数据，非真实行情)")
-            print()
-        else:
-            cli = wmshare.Client.from_env()
+        cli = wmshare.Client.from_env()
 
     # ---- 单票质量筛选：分红质量优（高股息 + 派息可持续）----
     print("--- 分红质量筛选（质量优 = 通过）---")
@@ -55,4 +49,4 @@ def main(cli=None, demo: bool = False) -> None:
 
 
 if __name__ == "__main__":
-    main(demo="--demo" in sys.argv)
+    main()

@@ -1,25 +1,19 @@
 """选股与全景：全市场条件选股 + 单票筛选器 + 全市场涨跌宽度（服务端索引直出）。
 
-前提：凭证必填（export WMSHARE_CLIENT_ID=... WMSHARE_CLIENT_SECRET=...）；`--demo` 用随包演示数据零凭证试跑
+前提：凭证可选——无凭证自动回落匿名试用（免注册、真实数据、需网络）
 运行：python examples/04_screener.py
 学到：一条表达式全市场选股（count 是真命中数）；涨停/均线/放量单票筛选；全景/分桶/涨跌榜；*_pct 百分数例外口径
 文档：docs/GUIDE.md（单票菜谱）
 """
-import sys
 import wmshare
 from wmshare import Client, WmshareError
 
 WATCHLIST = ["600519", "000858", "601088", "600900", "601318"]  # 自选股，换成你的
 
 
-def main(cli=None, demo: bool = False) -> None:
+def main(cli=None) -> None:
     if cli is None:
-        if demo:
-            cli = wmshare.demo_client()
-            print("(演示模式：随包罐头数据，非真实行情)")
-            print()
-        else:
-            cli = wmshare.Client.from_env()
+        cli = wmshare.Client.from_env()
 
     # ---- 单票一行布尔：涨停 / 站上 MA20 / 放量（停牌恒 False）----
     print("--- 单票筛选器（阈值均为小数：0.10 = 10%）---")
@@ -86,4 +80,4 @@ def main(cli=None, demo: bool = False) -> None:
 
 
 if __name__ == "__main__":
-    main(demo="--demo" in sys.argv)
+    main()
