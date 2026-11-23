@@ -168,18 +168,23 @@ def test_futures_code_validation(cli):
 
 
 def test_futures_snapshot_maps_fields(cli):
-    codes = ["$FUT_OPEN", "$FUT_HIGH", "$FUT_LOW", "$FUT_CLOSE", "$FUT_SETTLE",
-             "$FUT_PRE_SETTLE", "$FUT_VOLUME", "$FUT_AMOUNT", "$FUT_OI",
-             "$FUT_OI_CHG", "$FUT_HAS"]
-    cli.session.result = {c: 1 for c in codes}
+    cli.session.result = [{
+        "date": "2026-11-19", "symbol": "cn.RB.SHF",
+        "open": 1.0, "high": 2.0, "low": 0.5, "close": 1.5, "settle": 1.4,
+        "pre_settle": 1.3, "volume": 100, "amount": 1000.0,
+        "oi": 200, "oi_chg": 5, "percent": 0.001,
+    }]
     snap = cli.futures.snapshot("RB.SHF")
     assert set(snap) == {"open", "high", "low", "close", "settle", "pre_settle",
-                         "volume", "amount", "open_interest", "oi_chg", "has_kline"}
-    # 求值锚点使用 cn 默认锚，fut_symbol 传归一化合约键
+                         "volume", "amount", "open_interest", "oi_chg",
+                         "has_kline", "date"}
+    assert snap["date"] == "2026-11-19"
+    assert snap["open_interest"] == 200 and snap["amount"] == pytest.approx(0.1)
+    # store 直读：sym 经 client.call 归一（cn. 前缀剥离、大写），不再走 $FUT_* eval
     ev = [c for c in cli.session.calls if c["url"].endswith("/xs/eval")][-1]["json"]
-    assert ev["symbol"] == "600519"
-    assert '"cn.RB.SHF"' in json_of(ev)
-    assert any("fut.symbol" in str(a) for a in [ev.get("args") or {}])
+    assert "futures.query_bars" in json_of(ev)
+    assert '"RB.SHF"' in json_of(ev)
+    assert "fut.symbol" not in json_of(ev)
 
 
 def json_of(ev: dict) -> str:
@@ -357,6 +362,10 @@ def test_futures_cffex_codes_addressable(cli):
     assert norm("IF.CFX") == "cn.IF.CFX"
     assert norm("cn.T.CFX") == "cn.T.CFX"
     assert norm("IM.CFX") == "cn.IM.CFX"
+    # 外盘前缀按长度归一（曾把 GLOBAL.CL 切成 gloBAL.CL）
+    assert norm("global.CL") == "global.CL"
+    assert norm("GLOBAL.CL") == "global.CL"
+    assert norm("global.cl") == "global.CL"
     with pytest.raises(UsageError):
         norm("RB.XXX")          # 未知交易所
     with pytest.raises(UsageError):

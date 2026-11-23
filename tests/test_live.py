@@ -341,16 +341,31 @@ def test_futures_mapping(cli):
 
 
 def test_futures_bars(cli):
-    """期货主力连续历史K线：AL.SHF 月频近 6 期（date 升序、字段齐、周期起点口径）"""
+    """期货主力连续历史K线（store 直读）：月频聚合/日频交易日行/快照一致。"""
     df = _call_or_xfail(lambda: cli.futures.bars("AL.SHF", n=6, freq="m"))
     assert len(df) == 6
     assert list(df["date"]) == sorted(df["date"]), "bars 应为 date 升序"
-    assert {"date", "open", "high", "low", "close", "settle",
+    assert {"date", "sas", "open", "high", "low", "close", "settle",
             "volume", "open_interest", "has_kline"} <= set(df.columns)
     assert all(str(d).endswith("-01") for d in df["date"]), "月频 date=当月 1 日"
+    assert bool((df["high"] >= df["low"]).all()) and bool((df["volume"] > 0).all())
     win = _call_or_xfail(
         lambda: cli.futures.bars("AL.SHF", begin="2026-11-01", end="2026-11-20"))
     assert len(win) >= 1 and list(win["date"]) == sorted(win["date"])
+    # 日频只含交易日（无周末占位行）
+    daily = _call_or_xfail(lambda: cli.futures.bars("AL.SHF", n=10, freq="d"))
+    assert len(daily) == 10
+    for value in daily["date"]:
+        dt = datetime.date.fromisoformat(str(value))
+        assert dt.weekday() < 5, f"日线出现非交易日行 {value}"
+    # 快照与日线末根同源（date/close 一致）
+    snap = _call_or_xfail(lambda: cli.futures.snapshot("AL.SHF"))
+    assert snap["date"] == str(daily["date"].iloc[-1])
+    assert snap["close"] == daily["close"].iloc[-1]
+    # 外盘同路径可寻址（曾因 GLOBAL 前缀切错而全不可用）
+    assert isinstance(
+        _call_or_xfail(lambda: cli.futures.get("global.CL", "close")),
+        (int, float))
 
 
 def test_fx_rate_and_history(cli):

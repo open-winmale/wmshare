@@ -115,7 +115,16 @@ class FakeSession:
                 if url.endswith("/v1/oauth/token"):
                     return {"data": {"access_token": "tok", "expires_in": 3600}}
                 lines = (json or {}).get("xs_lines") or []
-                # futures.bars 组合面：sas/vals 两列点读（cursor.* + RANGE）
+                # futures 门面：store 直读行（futures.query_bars）
+                if any("futures.query_bars" in ln for ln in lines):
+                    return {"success": True, "data": {"result": [{
+                        "date": d, "symbol": "cn.AL.SHF",
+                        "open": 1.0, "high": 2.0, "low": 0.5, "close": 1.5,
+                        "settle": 1.4, "pre_settle": 1.3, "volume": 100,
+                        "amount": 1.0e6, "oi": 200, "oi_chg": 5,
+                        "percent": 0.001,
+                    } for d in ("2026-08-31", "2026-09-30", "2026-10-30")]}}
+                # futures.bars 组合面：sas/vals 两列点读（存量桩，保留兼容）
                 if any("RANGE(pts" in ln for ln in lines):
                     return {"success": True, "data": {"result": {
                         "sas": ["2026:M2", "2026:M1"],

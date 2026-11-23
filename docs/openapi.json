@@ -3261,7 +3261,7 @@
       "post": {
         "operationId": "futures_get",
         "summary": "期货连续合约单字段值（价格=元、量=手、金额=万元）。",
-        "description": "（如 ``\"$FUT_SETTLE\"``；传 $ 码时 freq 被忽略）、指标码 $FUT_*（fut_symbol 求值）。SDK 调用：`cli.futures.get(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "description": "取该合约**最新一个周期 bar** 的字段值（国内/外盘同源 store）；``$码``、入参按码后缀判定周期（``_WEEK``/``_MONTH``，无后缀=日频）。、（如 ``\"$FUT_SETTLE\"``）、:returns: 标量（无数据返回 None）、futures.query_bars（store 直读）。SDK 调用：`cli.futures.get(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "市场行情"
         ],
@@ -3313,8 +3313,8 @@
     "/futures/snapshot": {
       "post": {
         "operationId": "futures_snapshot",
-        "summary": "期货连续合约一族字段快照（一次指标批量求值，返回 {字段: 值}）。",
-        "description": "指标码 $FUT_*（fut_symbol 求值）。SDK 调用：`cli.futures.snapshot(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "summary": "期货连续合约一族字段快照（最新一个周期 bar；含 ``date``）。",
+        "description": ":returns: MAP · {字段: 值} + ``date``（周期起点口径；无数据时各字段为 None）、futures.query_bars（store 直读）。SDK 调用：`cli.futures.snapshot(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "市场行情"
         ],
@@ -3327,7 +3327,7 @@
                 "properties": {
                   "fut_code": {
                     "type": "string",
-                    "description": "合约键（同 ``get()``"
+                    "description": "合约键（同 ``get()``）"
                   },
                   "freq": {
                     "type": "string",
@@ -3358,8 +3358,8 @@
     "/futures/bars": {
       "post": {
         "operationId": "futures_bars",
-        "summary": "期货主力连续历史K线（周期序列 × ``$FUT_*`` 点读；date 升序）。",
-        "description": "eval 组合面（``RANGE(cursor.*, ITER($FUT_*…))`` + ``fut.symbol`` 传参），、与 ``kline.bars`` 同形：date 升序、DataFrame 默认、``_raw=True`` 逃生口。、``date`` 为周期起点口径（月=当月 1 日、周=ISO 周一、日=当日）；、非交易日周期沿用上游口径原样返回（``has_kline`` 列可辨）。、长区间建议 ``m``（点数省 20 倍以上）、:raises UsageError: freq 非法 / begin-end 不成对 / 点数超上限、（d 3000 / w 600 / m 300——上游主力连续数据起点约束与成本双重要求）、指标码 $FUT_*（fut_symbol 求值）。SDK 调用：`cli.futures.bars(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "summary": "期货主力连续历史K线（store 直读；date 升序、DataFrame 默认）。",
+        "description": "与 ``kline.bars`` 同形：``date`` 为周期起点口径（月=当月 1 日、周=ISO、周一、日=当日），``n`` 为**交易日根数**（周/月为周期根数）。周/月线为、上游周期 bar 原样透传（成交量为周期合计），SDK 不做二次聚合。、长区间建议 ``m``（行数省 20 倍以上，成本按行计）、:raises UsageError: freq 非法 / begin-end 不成对 / 行数超上限、（d 3000 / w 600 / m 300）、futures.query_bars（store 直读）。SDK 调用：`cli.futures.bars(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "市场行情"
         ],
@@ -3376,7 +3376,7 @@
                   },
                   "n": {
                     "type": "integer",
-                    "description": "取最近 n 个周期（默认 120；与 begin/end 二选一）"
+                    "description": "取最近 n 根（默认 120；与 begin/end 二选一）"
                   },
                   "begin": {
                     "type": "string",

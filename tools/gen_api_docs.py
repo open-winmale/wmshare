@@ -478,19 +478,22 @@ def composite_section(ns: str) -> list[str]:
 
 
 def futures_section() -> list[str]:
-    """期货章：cli.futures 门面（2.0 新面）+ $FUT_* 指标码专题。"""
+    """期货章：cli.futures 门面（store 直读）+ $FUT_* 指标码专题。"""
     rows = [m for m in CAT.metrics["metrics"] if m["code"].startswith("$FUT")]
     out = [
-        "**2.0 新面** `cli.futures`：连续合约快照门面（锚定已内部封装，只需 `fut_code`；"
-        "须 cn 客户端；量=手、金额=万元为期货原生口径）：",
+        "**2.0 新面** `cli.futures`：连续合约 read 面（store 直读 `futures.query_bars`；"
+        "须 cn 客户端；量=手、金额=万元为期货原生口径）。日频只含交易日，最新一根随"
+        "上游日更；周/月线为上游周期 bar（成交量为周期合计），SDK 不做二次聚合；"
+        "外盘仅日线：",
         "",
         "```python",
-        'cli.futures.snapshot("RB.SHF")                 # 日频 11 字段（open/close/volume(手)…）',
+        'cli.futures.snapshot("RB.SHF")                 # 最新日频 11 字段 + date',
         'cli.futures.get("global.CL", "close")          # 外盘 WTI 收盘价',
-        'cli.futures.snapshot("cn.SR.ZCE", freq="w")    # 周频 8 字段',
+        'cli.futures.bars("AL.SHF", n=6, freq="m")      # 月K（date=每月 1 日）',
         "```",
         "",
-        "指标码层等价形态（1.x 兼容姿势；`symbol` 传任意 A 股代码锚定）：",
+        "指标码层（FUT 前缀码）适合自建 eval 序列；**标量求值继承 A 股锚点的报告期"
+        "上下文，会锚到锚点股最新财报期末而不是今天**——取当前值请用上面的门面：",
         "",
         "```python",
         'cli.indicator.get("600519", "$FUT_CLOSE")                          # 缺省合约 cn.SR.ZCE',

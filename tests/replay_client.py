@@ -1083,7 +1083,9 @@ class ReplayClient:
             raise UsageError(
                 f"回放快照未回放 {fut_code}（快照覆盖 {sorted(book)}）",
                 code="replay_unsupported")
-        return dict(snap)
+        out = dict(snap)
+        out.setdefault("date", SNAPSHOT_AS_OF)  # 与 live 的 date 键对齐（快照日）
+        return out
 
     def _futures_get(self, fut_code: str, field: str = "close",
                      freq: str | None = None, native: bool = False) -> Any:

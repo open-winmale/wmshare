@@ -1512,15 +1512,15 @@ cli.index.universe_keys()
 
 ## 期货
 
-**2.0 新面** `cli.futures`：连续合约快照门面（锚定已内部封装，只需 `fut_code`；须 cn 客户端；量=手、金额=万元为期货原生口径）：
+**2.0 新面** `cli.futures`：连续合约 read 面（store 直读 `futures.query_bars`；须 cn 客户端；量=手、金额=万元为期货原生口径）。日频只含交易日，最新一根随上游日更；周/月线为上游周期 bar（成交量为周期合计），SDK 不做二次聚合；外盘仅日线：
 
 ```python
-cli.futures.snapshot("RB.SHF")                 # 日频 11 字段（open/close/volume(手)…）
+cli.futures.snapshot("RB.SHF")                 # 最新日频 11 字段 + date
 cli.futures.get("global.CL", "close")          # 外盘 WTI 收盘价
-cli.futures.snapshot("cn.SR.ZCE", freq="w")    # 周频 8 字段
+cli.futures.bars("AL.SHF", n=6, freq="m")      # 月K（date=每月 1 日）
 ```
 
-指标码层等价形态（1.x 兼容姿势；`symbol` 传任意 A 股代码锚定）：
+指标码层（FUT 前缀码）适合自建 eval 序列；**标量求值继承 A 股锚点的报告期上下文，会锚到锚点股最新财报期末而不是今天**——取当前值请用上面的门面：
 
 ```python
 cli.indicator.get("600519", "$FUT_CLOSE")                          # 缺省合约 cn.SR.ZCE
@@ -1575,7 +1575,7 @@ cli.indicator.get("600519", "$FUT_CLOSE", fut_symbol="cn.RB.SHF")  # 上期所�
 | `freq` | string | 否 | `None` | ``d``（默认）/ ``w`` / ``m``（field 用短名时生效） |
 | `native` | boolean | 否 | `False` | 期货量价已为原生口径，本参数仅为接口一致性保留 |
 
-**输出**：标量 · 连续合约单字段当前值（价=元、量=手、额=万元；`$码` 透传上游口径）
+**输出**：标量 · 最新一根周期 bar 的字段值（价=元、量=手、额=万元；`$码` 透传上游口径）
 
 **示例**
 
@@ -1585,16 +1585,16 @@ cli.futures.get(fut_code="RB.SHF", field="close")
 
 #### `cli.futures.snapshot` — 期货连续合约快照
 
-期货连续合约一族字段快照（一次指标批量求值，返回 {字段: 值}）。
+期货连续合约一族字段快照（最新一个周期 bar；含 ``date``）。
 
 **输入参数**
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `fut_code` | string | 是 | — | 合约键（同 ``get()`` |
+| `fut_code` | string | 是 | — | 合约键（同 ``get()``） |
 | `freq` | string | 否 | `'d'` | ``d``（默认，11 字段）/ ``w`` / ``m``（各 8 字段） |
 
-**输出**：MAP · {字段: 值}（一次指标批量求值；字段集同 ``cli.futures.get`` 可选集）
+**输出**：MAP · {字段: 值, date}（最新一根周期 bar；date=周期起点口径）
 
 **示例**
 
@@ -1604,20 +1604,20 @@ cli.futures.snapshot(fut_code="RB.SHF")
 
 #### `cli.futures.bars` — 期货主力连续历史K线
 
-期货主力连续历史K线（周期序列 × ``$FUT_*`` 点读；date 升序）。
+期货主力连续历史K线（store 直读；date 升序、DataFrame 默认）。
 
 **输入参数**
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
 | `fut_code` | string | 是 | — | 合约键（同 ``get()``；主力连续，非单合约） |
-| `n` | integer | 否 | `None` | 取最近 n 个周期（默认 120；与 begin/end 二选一） |
+| `n` | integer | 否 | `None` | 取最近 n 根（默认 120；与 begin/end 二选一） |
 | `begin` | string | 否 | `None` | 开始日期 YYYY-MM-DD（含当日；须与 end 成对） |
 | `end` | string | 否 | `None` | 结束日期 YYYY-MM-DD（含当日） |
 | `freq` | string | 否 | `None` | ``d``（默认，11 字段）/ ``w``（8 字段）/ ``m``（8 字段）； |
 | `fields` | object | 否 | `None` | 列投影（字段名/``sas`` 列表，如 ``["date", "close"]``） |
 
-**输出**：DF · 历史K线（date 升序；日频 11 字段/周月 8 字段，价=元、量=手、额=万元；date 为周期起点口径：月=当月 1 日、周=ISO 周一、日=当日）
+**输出**：DF · 历史K线（date 升序；日频只含交易日、无周末占位行；日频 11 字段/周月 8 字段，价=元、量=手、额=万元；date 为周期起点口径：月=当月 1 日、周=ISO 周一、日=当日）
 
 **示例**
 
@@ -5078,18 +5078,19 @@ A 股交易日历——区间交易日、是否开市、之后 N 个交易日。
 #### 期货（`market.futures`）
 
 **性质**：原始数据 · **版本**：1.1.0  
-国内期货辅助读面。主力连续行情经 `$FUT_*` 指标码 + `fut_symbol` （cli.futures.get / snapshot，2.0 起）；本域目录函数提供**换月映射**—— 主力连续码 → 当日实际合约（换月追踪，随日线日更）——以及**主力连续 历史 K 线 store 直读**（全历史一次取，含结算/持仓字段）。
+国内期货辅助读面。主力连续行情经 `futures.query_bars`（store 直读， cli.futures.get / snapshot / bars）或 FUT 前缀指标码 + `fut_symbol`（eval 点读）； 本域目录函数提供**换月映射**——主力连续码 → 当日实际合约（换月追踪，随日线日更） ——以及**主力连续历史 K 线 store 直读**（全历史一次取，含结算/持仓字段）。
 数据来源：外部行情源。
 单位口径：date=YYYY-MM-DD。
-- 主力连续码形如 "RB.SHF"（品种.交易所）；82 品种（74 商品 + 8 金融）见 cli.futures.snapshot 的品种寻址
+- 主力连续码形如 "RB.SHF"（品种.交易所）；82 品种（74 商品 + 8 金融）见 cli.futures.snapshot 的品种寻址；外盘键形如 "global.CL"（仅日线有数据）
+- 门面统一走 `futures.query_bars`（store 直读：日频只含交易日、最新一根随上游 日更、同数据版本复跑近零成本）；FUT 前缀标量 eval 会继承 A 股锚点的报告期 上下文（锚到锚点股最新财报期末），只适合显式 cursor 点读
 - 映射行不可变（换月历史固定），fmt_maps 结果按行指纹缓存（36a5de20 范式）
-- 主力连续历史 K 线两个门面：`cli.futures.bars`（组合面点读，2026-11-23 起）与 `futures.query_bars`（store 直读，分工见函数级 notes）；单合约级 K 线仍不在 覆盖面（上游仅主力连续）
-- 成本：全历史一次取数冷 ≈21 万 EC（4287 行 CONOF 逐行计费，2026-11-19 实测）， 建议 `mapping("RB.SHF", begin, end)` 传窗口按需取；复跑走指纹缓存 ≈141 EC
+- 周/月线是上游周期 bar（上游周/月线原样直存，成交量为周期合计），SDK 不做 二次聚合；外盘周/月线上游未提供（返回空）
+- 成本：query_bars 按行计费（≈190+126 EC/行 冷、同日复跑版本键缓存 ≈135 EC）； mapping 全历史冷 ≈21 万 EC，建议传 begin/end 收窄窗口
 
 | 函数 | 中文 | 性质 | 层 | 参数 | 返回 | 单位与守护 |
 |---|---|---|---|---|---|---|
 | `futures.mapping` | 主力换月映射 | 原始数据 | L0 | `sym:string` — 主力连续码（品种.交易所，如 RB.SHF） · `begin:string?` — 开始日期 YYYY-MM-DD（可空=全历史） · `end:string?` — 结束日期 YYYY-MM-DD（可空） | ARR · 映射行（date 升序；换月事件≈每年 4-6 次）；字段 date:string（交易日） / symbol:string（主力连续码（品种.交易所）） / mapping_symbol:string（当日实际合约） | — | 例：`cli.call("futures.mapping", sym='RB.SHF', begin='2026-11-01', end='2026-11-18')`
-| `futures.query_bars` | 主力连续历史 K 线（store 直读） | 原始数据 | L0 | `sym:string` — 主力连续码（品种.交易所，如 RB.SHF；自动补 cn. 前缀；郑商所后缀 .ZCE） · `begin:string?` — 开始日期 YYYY-MM-DD（可空=全历史） · `end:string?` — 结束日期 YYYY-MM-DD（可空） · `limit:int?` — 根数，缺省取满（日 5500/周 1200/月 360） · `period:string="D"` — 周期 D/W/M（也收 day/week/month） | ARR · bars（date 升序；date/symbol/open/high/low/close/settle/pre_settle/volume/amount/oi/oi_chg/percent）；字段 date:string（交易日） / symbol:string（主力连续码（品种.交易所）） / open:float（开） / high:float（高） / low:float（低） / close:float（收） / settle:float（结算价） / pre_settle:float（前结算价） / volume:float（成交量（手）） / amount:float（成交额（元，上游万元×1e4）） / oi:float（持仓量（手）） / oi_chg:float（持仓变化（手）） / percent:float（涨跌幅（小数，对前结算）） | 量级界 `percent`、`volume`、`oi`、`oi_chg`、`amount`；不变量 `date_iso` | 例：`cli.call("futures.query_bars", sym='RB.SHF', begin='', end='', limit=250, period='D')`
+| `futures.query_bars` | 主力连续历史 K 线（store 直读） | 原始数据 | L0 | `sym:string` — 主力连续码（品种.交易所，如 RB.SHF；自动补 cn. 前缀；郑商所后缀 .ZCE；外盘用 global.CL） · `begin:string?` — 开始日期 YYYY-MM-DD（可空=全历史；含） · `end:string?` — 结束日期 YYYY-MM-DD（可空；**开区间**，要含当日请传次日） · `limit:int?` — 根数，缺省取满（日 5500/周 1200/月 360） · `period:string="D"` — 周期 D/W/M（也收 day/week/month） | ARR · bars（date 升序；date/symbol/open/high/low/close/settle/pre_settle/volume/amount/oi/oi_chg/percent）；字段 date:string（交易日） / symbol:string（主力连续码（品种.交易所）） / open:float（开） / high:float（高） / low:float（低） / close:float（收） / settle:float（结算价） / pre_settle:float（前结算价） / volume:float（成交量（手）） / amount:float（成交额（元，上游万元×1e4）） / oi:float（持仓量（手）） / oi_chg:float（持仓变化（手）） / percent:float（涨跌幅（小数，对前结算）） | 量级界 `percent`、`volume`、`oi`、`oi_chg`、`amount`；不变量 `date_iso` | 例：`cli.call("futures.query_bars", sym='RB.SHF', begin='', end='', limit=250, period='D')`
 | `futures.fmt_maps` | 映射行规范化 | 原始数据 | L1 | `rows:any`（签名） | ARR · 规范化映射行 | — |
 
 #### 指数（`market.index`）

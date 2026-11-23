@@ -601,12 +601,12 @@ def build_server(runtime: MCPRuntime | None = None) -> FastMCP:
     @protocol
     def wmshare_futures(
         action: Annotated[FuturesAction, Field(description="get=合约字段取值 / mapping=主力连续映射 / snapshot=合约快照 / bars=主力连续历史K线")],
-        code: Annotated[str | None, Field(description="get/snapshot/bars 需要的合约代码或主力连续，如 RB2605.SHF / AL.SHF")] = None,
+        code: Annotated[str | None, Field(description="get/snapshot/bars 需要的主力连续代码，如 AL.SHF / RB.SHF / global.CL")] = None,
         symbol: Annotated[str | None, Field(description="mapping 需要的品种代码，如 RB")] = None,
         field: Annotated[str, Field(description="get 的字段（close/open/…）")] = "close",
         freq: Annotated[str | None, Field(description="频率 d/w/m；snapshot/bars 缺省 d")] = None,
         native: Annotated[bool, Field(description="get=true 保留上游原值口径")] = False,
-        n: Annotated[int | None, Field(description="bars 取最近 n 个周期（默认 120；与 begin/end 二选一）")] = None,
+        n: Annotated[int | None, Field(description="bars 取最近 n 根（日频为交易日根数；默认 120；与 begin/end 二选一）")] = None,
         begin: DateArg = None,
         end: DateArg = None,
         output: OutputArg = "sample",
@@ -614,9 +614,11 @@ def build_server(runtime: MCPRuntime | None = None) -> FastMCP:
     ) -> dict[str, Any]:
         """期货主力数据（74 商品+8 金融）：合约字段、主力连续映射、合约快照、历史K线。
 
-        mapping 冷查实测 ≈21.4 万 EC、热查 ≈141 EC——先 wmshare_call(mode='cost')
-        预估；begin/end 需成对提供。bars 按「点×码」线性计费（暖态 ≈8-11
-        EC/点·码，点数硬顶 d 3000/w 600/m 300），长区间建议 freq='m'。
+        get/snapshot/bars 走 store 直读（交易日行、最新一根随上游日更；snapshot
+        输出含 date）。mapping 冷查实测 ≈21.4 万 EC、热查 ≈141 EC——先
+        wmshare_call(mode='cost') 预估；begin/end 需成对提供。bars 按行计费
+        （冷 ≈190+126 EC/行、同日复跑版本键缓存 ≈135 EC；行数硬顶 d 3000/w 600/m 300），
+        长区间建议 freq='m'；周/月线为上游周期 bar（不做二次聚合）。
         """
         return tools.futures(rt, action, code=code, symbol=symbol, field=field,
                              freq=freq, native=native, n=n, begin=begin, end=end,

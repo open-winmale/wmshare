@@ -488,19 +488,21 @@ cli.macro.nev_monthly("零跑", "sales")               # 行业情报单值（�
 ```
 
 期货走 `cli.futures` 门面（主力连续，**须 cn 客户端**；合约键 `RB.SHF`/`global.CL`，
-单位为期货原生口径：价格=元、量=手、金额=万元）：
+单位为期货原生口径：价格=元、量=手、金额=万元）。数据统一读 store 直读的
+`futures.query_bars`：**日频只含交易日**、最新一根随上游日更、同数据版本复跑近零成本；
+周/月线是上游周期 bar（成交量为周期合计），SDK 不做二次聚合；外盘仅日线。
 
 ```python
-cli.futures.snapshot("RB.SHF")                       # 日频 11 字段快照 {字段: 值}
+cli.futures.snapshot("RB.SHF")                       # 最新日频 11 字段 + date
 cli.futures.get("AL.SHF", "settle", freq="m")        # 单字段单值（外盘换 global. 前缀）
-cli.futures.bars("AL.SHF", n=6, freq="m")            # 历史K线 DataFrame（date 升序）；
-                                                     # begin/end 与 n 二选一；长区间用
-                                                     # m 频（点数省 20 倍，d 硬顶 3000）
-cli.cost_estimate("futures.bars", n=120)             # 先估成本（点×码线性计费）
+cli.futures.bars("AL.SHF", n=6, freq="m")            # 历史K线 DataFrame（date=周期起点，升序）；
+                                                     # n=根数；begin/end 与 n 二选一（含端点）；
+                                                     # 长区间用 m 频（行数省 20 倍，d 硬顶 3000）
+cli.cost_estimate("futures.bars", n=120)             # 先估成本（按行计费）
 ```
 
-底层指标码层等价形态（`symbol` 传任意 A 股代码绑定期间上下文，合约键经 `fut_symbol`
-指定——国内 `cn.SR.ZCE`（后缀非 .CZCE）/`cn.RB.SHF`，外盘 `global.CL`）：
+指标码层（FUT 前缀码）适合自建 eval 序列；**标量求值继承 A 股锚点的报告期上下文，
+会锚到锚点股最新财报期末而不是今天**——取当前值请用上面的门面：
 
 ```python
 cli.indicator.get("600519", "$FUT_CLOSE")                           # 缺省 cn.SR.ZCE

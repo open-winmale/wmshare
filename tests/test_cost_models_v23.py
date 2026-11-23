@@ -55,6 +55,18 @@ def test_futures_mapping_warns_full_history_cost():
     assert "窗口" in est["note"] and "万" in est["note"]
 
 
+def test_futures_bars_cost_store_rows_and_version_cache():
+    """store 直读：冷 ≈190+126×行、同日复跑版本键缓存 ≈135（2026-11-23 实测）。"""
+    est = _est("futures.bars", {"fut_code": "AL.SHF", "n": 20, "freq": "d"})
+    assert est["ec_lo"] == 135 and est["ec_hi"] == 190 + 126 * 20, est
+    assert "版本键缓存" in est["note"]
+    win = _est("futures.bars", {"fut_code": "AL.SHF", "freq": "m",
+                                "begin": "2026-01-01", "end": "2026-12-31"})
+    assert win["ec_hi"] == 190 + 126 * (365 // 30 + 1), win
+    snap = _est("futures.snapshot", {})
+    assert snap["ec_lo"] == 135 and snap["ec_hi"] == 320, snap
+
+
 def test_pdf_doc_search_scales_with_rows():
     small = _est("pdf_doc.search", {"limit": 5})
     big = _est("pdf_doc.search", {"limit": 40})

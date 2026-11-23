@@ -8376,7 +8376,7 @@
           ],
           "returns": {
             "kind": "scalar",
-            "desc": "连续合约单字段当前值（价=元、量=手、额=万元；`$码` 透传上游口径）",
+            "desc": "最新一根周期 bar 的字段值（价=元、量=手、额=万元；`$码` 透传上游口径）",
             "fields": []
           },
           "notes": [],
@@ -8389,13 +8389,12 @@
             },
             "path": "/v1/analysis/xs/eval",
             "body": {
-              "symbol": "600519",
+              "symbol": "RB.SHF",
               "xs_lines": [
-                "return $FUT_CLOSE"
+                "return futures.query_bars(\"RB.SHF\", nil, nil, 1, \"D\")"
               ],
               "args": {
-                "print.plain": true,
-                "fut.symbol": "cn.RB.SHF"
+                "print.plain": true
               },
               "script_files": {},
               "mode": "call",
@@ -8418,12 +8417,12 @@
           "method": "snapshot",
           "cn": "期货连续合约快照",
           "composite": false,
-          "desc": "期货连续合约一族字段快照（一次指标批量求值，返回 {字段: 值}）。",
+          "desc": "期货连续合约一族字段快照（最新一个周期 bar；含 ``date``）。",
           "params": [
             {
               "name": "fut_code",
               "required": true,
-              "desc": "合约键（同 ``get()``"
+              "desc": "合约键（同 ``get()``）"
             },
             {
               "name": "freq",
@@ -8433,7 +8432,7 @@
           ],
           "returns": {
             "kind": "object",
-            "desc": "{字段: 值}（一次指标批量求值；字段集同 ``cli.futures.get`` 可选集）",
+            "desc": "{字段: 值, date}（最新一根周期 bar；date=周期起点口径）",
             "fields": []
           },
           "notes": [],
@@ -8445,13 +8444,12 @@
             },
             "path": "/v1/analysis/xs/eval",
             "body": {
-              "symbol": "600519",
+              "symbol": "RB.SHF",
               "xs_lines": [
-                "return {\"$FUT_OPEN\": $FUT_OPEN, \"$FUT_HIGH\": $FUT_HIGH, \"$FUT_LOW\": $FUT_LOW, \"$FUT_CLOSE\": $FUT_CLOSE, \"$FUT_SETTLE\": $FUT_SETTLE, \"$FUT_PRE_SETTLE\": $FUT_PRE_SETTLE, \"$FUT_VOLUME\": $FUT_VOLUME, \"$FUT_AMOUNT\": $FUT_AMOUNT, \"$FUT_OI\": $FUT_OI, \"$FUT_OI_CHG\": $FUT_OI_CHG, \"$FUT_HAS\": $FUT_HAS}"
+                "return futures.query_bars(\"RB.SHF\", nil, nil, 1, \"D\")"
               ],
               "args": {
-                "print.plain": true,
-                "fut.symbol": "cn.RB.SHF"
+                "print.plain": true
               },
               "script_files": {},
               "mode": "call",
@@ -8485,7 +8483,7 @@
           "method": "bars",
           "cn": "期货主力连续历史K线",
           "composite": false,
-          "desc": "期货主力连续历史K线（周期序列 × ``$FUT_*`` 点读；date 升序）。",
+          "desc": "期货主力连续历史K线（store 直读；date 升序、DataFrame 默认）。",
           "params": [
             {
               "name": "fut_code",
@@ -8495,7 +8493,7 @@
             {
               "name": "n",
               "required": false,
-              "desc": "取最近 n 个周期（默认 120；与 begin/end 二选一）"
+              "desc": "取最近 n 根（默认 120；与 begin/end 二选一）"
             },
             {
               "name": "begin",
@@ -8520,7 +8518,7 @@
           ],
           "returns": {
             "kind": "text",
-            "desc": "DF · 历史K线（date 升序；日频 11 字段/周月 8 字段，价=元、量=手、额=万元；date 为周期起点口径：月=当月 1 日、周=ISO 周一、日=当日）",
+            "desc": "DF · 历史K线（date 升序；日频只含交易日、无周末占位行；日频 11 字段/周月 8 字段，价=元、量=手、额=万元；date 为周期起点口径：月=当月 1 日、周=ISO 周一、日=当日）",
             "fields": []
           },
           "notes": [],
@@ -8532,15 +8530,12 @@
             },
             "path": "/v1/analysis/xs/eval",
             "body": {
-              "symbol": "600519",
+              "symbol": "AL.SHF",
               "xs_lines": [
-                "pts := cursor.ds(120, \"now\")",
-                "vals := RANGE(pts, ITER($FUT_OPEN, $FUT_HIGH, $FUT_LOW, $FUT_CLOSE, $FUT_SETTLE, $FUT_PRE_SETTLE, $FUT_VOLUME, $FUT_AMOUNT, $FUT_OI, $FUT_OI_CHG, $FUT_HAS))",
-                "return {\"sas\": pts, \"vals\": vals}"
+                "return futures.query_bars(\"AL.SHF\", nil, nil, 120, \"D\")"
               ],
               "args": {
-                "print.plain": true,
-                "fut.symbol": "cn.AL.SHF"
+                "print.plain": true
               },
               "script_files": {},
               "mode": "call",

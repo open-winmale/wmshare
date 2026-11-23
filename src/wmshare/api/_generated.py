@@ -751,9 +751,9 @@ class FuturesNS(_Ns):
     def query_bars(self, sym: str, begin: str | None = None, end: str | None = None, limit: int | None = None, period: str = 'D', _raw: bool = False) -> Any:
         """主力连续历史 K 线（store 直读）
 
-:param sym: 主力连续码（品种.交易所，如 RB.SHF；自动补 cn. 前缀；郑商所后缀 .ZCE）
-:param begin: 开始日期 YYYY-MM-DD（可空=全历史）
-:param end: 结束日期 YYYY-MM-DD（可空）
+:param sym: 主力连续码（品种.交易所，如 RB.SHF；自动补 cn. 前缀；郑商所后缀 .ZCE；外盘用 global.CL）
+:param begin: 开始日期 YYYY-MM-DD（可空=全历史；含）
+:param end: 结束日期 YYYY-MM-DD（可空；**开区间**，要含当日请传次日）
 :param limit: 根数，缺省取满（日 5500/周 1200/月 360）
 :param period: 周期 D/W/M（也收 day/week/month）
 

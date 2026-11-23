@@ -538,6 +538,9 @@ _UNIT_KIND_CN = {
 
 
 def _unit_line(code: str, overrides: dict, unit_kind: str | None = None) -> str:
+    if code.startswith("$FUT"):
+        # 期货原生口径显式豁免全库基础单位（量=手不是股、金额=万元）
+        return "—（期货原生口径：价=元、量/持仓=手、额=万元；不做换算）"
     row = overrides.get(code) or {}
     if row:
         label = f"`{row.get('native_unit')}` → `{row.get('base_unit')}`"

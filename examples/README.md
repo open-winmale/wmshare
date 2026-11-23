@@ -44,7 +44,7 @@ export WMSHARE_CLIENT_ID=... WMSHARE_CLIENT_SECRET=...   # 长期额度：配置
 | 19 | `19_income_rating.py` | 2.5 收息场景 | 匿名/凭证（收息面依赖 cron 物化） | 收息流闭环：全市场排行（四维评分）→ 批量诊断 → 分红日历 → N 年拿息拆解；COLD_CACHE 与批量纪律 | API·disc.income / dividend.rating·diagnose·calendar·decomp |
 | 20 | `20_anonymous_trial.py` | 匿名试用 | 需服务端开启匿名试用（未开启时打印注册指引） | `Client.anonymous()` 免注册取真实数据；匿名额度边界与升级路径 | README「零凭证先试」 |
 | 21 | `21_cli_export.py` | 成品出口 | 匿名/凭证（xlsx 需 `wmshare[excel]`） | `wmshare.export` 三件套：`to_markdown`（as_of+单位口径表头）、`write` 按扩展名分派、`write_bundle` + manifest.json；命令行同能力见 README「不写 Python」节 | README·命令行出成品 |
-| 22 | `22_futures_bars.py` | 2.9 期货新面 | 匿名/凭证 | `futures.bars` 与 kline.bars 同形（date 升序/DF）、freq 三档点数经济学（长区间 m 省 20 倍）、begin/end 与 n 二选一、成本预估先行 | GUIDE·§6.1、API·期货章 |
+| 22 | `22_futures_bars.py` | 2.9 期货新面 | 匿名/凭证 | `futures.bars` 与 kline.bars 同形（date=周期起点/升序/DF）、日频只含交易日、周/月线=上游周期 bar、begin/end 与 n 二选一、按行计费先估后取 | GUIDE·§6.1、API·期货章 |
 | 23 | `23_fx_reserves.py` | 3.0 外汇与储备新面 | 匿名/凭证 | `fx.rate/history/list` 的「每 1 单位外币」口径（上游每 100 外币已 /100）、中间价 vs 中行牌价、`macro.reserves*` 值=美元数值且黄金为市值口径、SDR 无生产者如实标注 | GUIDE·§6.6、API·宏观章 |
 
 ## 约定（新增示例请遵守）

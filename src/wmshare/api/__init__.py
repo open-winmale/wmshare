@@ -226,6 +226,19 @@ def _compact_date(value: str) -> str:
         return s
 
 
+def _iso_to_sas(kind: str, day: "date") -> str:
+    """ISO 日期 → sas 周期戳（周期起点口径，``_sas_to_iso`` 的逆变换）。
+
+    ``kind`` 取 ``d``/``w``/``m``；周用 ISO 年+周（跨年周按 ISO 年标注）。
+    """
+    if kind == "m":
+        return f"{day.year:04d}:M{day.month}"
+    if kind == "w":
+        iso = day.isocalendar()
+        return f"{iso.year:04d}:W{iso.week}"
+    return f"{day.year:04d}:D{day.timetuple().tm_yday}"
+
+
 def _sas_to_iso(value: Any) -> str:
     """sas 周期戳 → ISO 日期（周期起点口径：M=当月 1 日、W=ISO 周一、D=当日）。
 
@@ -3434,18 +3447,20 @@ class FuturesApi(_Api):
                             end=end, _raw=_raw)
         return _out(_sort_rows_by_date(rows), raw=_raw)
 
-    """期货连续合约快照（27 个 ``$FUT_*`` 指标码 × 82 品种，eval 求值）。
+    """期货主力连续 read 面（store 直读，国内/外盘统一）。
 
-    1.x 要「传任意 A 股代码做求值锚定 + fut_symbol 传参」的 hack 已封装：
-    本门面内部固定用 cn 默认锚点求值，用户只传 ``fut_code``。**须 cn 客户端**
-    （求值引擎按 A 股上下文锚定）。``fut_code`` 语法：``RB.SHF``/``cn.RB.SHF``
-    （cn 商品，交易所 SHF/CZCE/DCE/GFEX/INE）或 ``global.CL``（外盘 V2 键）；
-    品种白名单（74 商品 + 8 金融）由上游校验，未命中品种的报错按原样透传。
+    ``fut_code`` 语法：``RB.SHF``/``cn.RB.SHF``（国内商品，交易所
+    SHF/CZCE/DCE/GFEX/INE/CFX）或 ``global.CL``（外盘 V2 键）。行情统一走目录
+    函数 ``futures.query_bars``（store 直读：交易日行、上游日更后即取、同数据
+    版本复跑近零成本），不再经 ``$FUT_*`` 标量 eval——后者继承 A 股锚点的报告期
+    上下文，会把「最新值」锚到锚点股最新财报期末（实测冻结在 2026-09-30）。
 
     单位为**期货原生口径**（显式豁免全库基础单位）：价格=元、量=手（期货一手
     = 合约乘数，换算成「股」无意义）、金额=万元——与交易所披露一致。
 
     ``freq``：``d``（默认，日频 11 字段）/ ``w``（周频 8 字段）/ ``m``（月频 8 字段）。
+    周/月线为上游周期 bar（上游周/月线原样直存，成交量为周期合计），**SDK 不做
+    二次聚合**；外盘仅日线（``global.*`` 的周/月线上游未提供，返回空）。
     """
 
     # CFX=中金所（IF/IH/IC/IM/T/TF/TS/TL 八个金融品种）——漏了它 8 个金融品种
@@ -3482,8 +3497,11 @@ class FuturesApi(_Api):
         # 裸「品种.交易所」补 cn. 前缀（RB.SHF → cn.RB.SHF）
         if re.fullmatch(r"[A-Z]{1,3}\.(SHF|CZCE|DCE|GFEX|INE|CFX)", s):
             s = f"cn.{s}"
-        if s.startswith(("CN.", "GLOBAL.")):
-            s = s[:3].lower() + s[3:]  # 前缀小写约定（cn./global.），品种段大写
+        if s.startswith("CN."):
+            s = "cn." + s[3:]
+        elif s.startswith("GLOBAL."):
+            # global. 是 7 字符前缀：不能按 3 字符切（曾把 GLOBAL.CL 切成 gloBAL.CL）
+            s = "global." + s[7:]
         if not (self._CN_FUT_RE.match(s) or self._GLOBAL_FUT_RE.match(s)):
             raise UsageError(
                 f"fut_code={fut_code!r} 不合法；国内 \"cn.RB.SHF\"（SHF/CZCE/DCE/"
@@ -3500,75 +3518,175 @@ class FuturesApi(_Api):
             freq: str | None = None, native: bool = False) -> Any:
         """期货连续合约单字段值（价格=元、量=手、金额=万元）。
 
+        取该合约**最新一个周期 bar** 的字段值（国内/外盘同源 store）；``$码``
+        入参按码后缀判定周期（``_WEEK``/``_MONTH``，无后缀=日频）。
+
         :param fut_code: 合约键（如 ``"RB.SHF"`` / ``"cn.RB.SHF"`` / ``"global.CL"``）
         :param field: 字段名（``close``/``volume``/``open_interest``…）或 ``$码``
-            （如 ``"$FUT_SETTLE"``；传 $ 码时 freq 被忽略）
+            （如 ``"$FUT_SETTLE"``）
         :param freq: ``d``（默认）/ ``w`` / ``m``（field 用短名时生效）
         :param native: 期货量价已为原生口径，本参数仅为接口一致性保留
+        :returns: 标量（无数据返回 None）
         """
         self._require_cn_client()
         code = self._normalize_fut(fut_code)
         text = str(field or "").strip()
-        xs_code: str | None = None
+        key: str | None
         if text.startswith("$"):
-            if self._c.catalog.metric(text) is None:
-                raise CatalogError(f"未知指标 {text!r}（防编造：code 必须在指标目录内）",
-                                   code="metric")
-            xs_code = text
-        else:
-            f = self._FREQ_ALIAS.get(str(freq or "d").lower(), None)
-            key = "d" if f is None else f
+            key = ("w" if text.endswith("_WEEK")
+                   else "m" if text.endswith("_MONTH") else "d")
             mapping = self._FREQ_CODES[key]
-            rev = {v: k for k, v in mapping.items()}  # 字段名 → $码（freq 域内反查）
-            xs_code = rev.get(text)
-            if xs_code is None:
+            name = mapping.get(text)
+            if name is None:
+                raise UsageError(
+                    f"未知期货指标 {field!r}（{key} 频）；可选 {sorted(mapping)}",
+                    code="params")
+        else:
+            key = self._FREQ_ALIAS.get(str(freq or "d").strip().lower())
+            if key is None:
+                raise UsageError(
+                    f"futures.get: 不支持的 freq={freq!r}；可用 None/\"d\"/"
+                    "\"w\"/\"m\"", code="freq") from None
+            mapping = self._FREQ_CODES[key]
+            rev = {v: k for k, v in mapping.items()}  # 字段名 → $码
+            if text not in rev:
                 raise UsageError(
                     f"未知字段 {field!r}（freq={key}）；可选 {sorted(rev)} 或直接传 $码",
                     code="params")
-        anchor = _DEFAULT_SYMBOLS.get("cn", "600519")
-        return self._c.indicator.get(anchor, xs_code, fut_symbol=code)
+            name = text
+        rows = self._store_rows(code, key, n=1)
+        return None if not rows else rows[-1].get(name)
 
     def snapshot(self, fut_code: str, freq: str = "d") -> dict:
-        """期货连续合约一族字段快照（一次指标批量求值，返回 {字段: 值}）。
+        """期货连续合约一族字段快照（最新一个周期 bar；含 ``date``）。
 
-        :param fut_code: 合约键（同 ``get()``
+        :param fut_code: 合约键（同 ``get()``）
         :param freq: ``d``（默认，11 字段）/ ``w`` / ``m``（各 8 字段）
+        :returns: MAP · {字段: 值} + ``date``（周期起点口径；无数据时各字段为 None）
         """
         self._require_cn_client()
         code = self._normalize_fut(fut_code)
-        key = self._FREQ_ALIAS.get(str(freq or "d").strip().lower(), "d")
+        key = self._FREQ_ALIAS.get(str(freq or "d").strip().lower())
+        if key is None:
+            raise UsageError(
+                f"futures.snapshot: 不支持的 freq={freq!r}；可用 None/\"d\"/"
+                "\"w\"/\"m\"", code="freq") from None
         mapping = self._FREQ_CODES[key]
-        anchor = _DEFAULT_SYMBOLS.get("cn", "600519")
-        values = self._c.indicator.metrics(anchor, list(mapping), fut_symbol=code)
-        if not isinstance(values, dict):
-            return values
-        return {field: values.get(code_) for code_, field in mapping.items()}
+        rows = self._store_rows(code, key, n=1)
+        if not rows:
+            out: dict[str, Any] = {field: None for field in mapping.values()}
+            out["date"] = None
+            return out
+        row = rows[-1]
+        out = {field: row.get(field) for field in mapping.values()}
+        out["date"] = row["date"]
+        return out
 
-    # bars 点数上限：eval 点读按「点 × 码」计费（2026-11-23 实测暖态 ≈8-11 EC/点·码），
-    # 日频全史 ≈25 年 × 250 日 ≈ 6000 点会烧出五位数 EC——硬顶逼调用方选低频或缩窗。
-    _BAR_POINT_CAPS: dict[str, int] = {"d": 3000, "w": 600, "m": 300}
-    _BAR_CURSOR_FN = {"d": "ds", "w": "ws", "m": "ms"}
+    # 行数上限（成本护栏）：store 直读 ≈190 + 126 EC/行（冷），同日复跑命中
+    # 数据版本键缓存 ≈135 EC（与行数基本无关，2026-11-23 live 实测）。
+    _BAR_ROW_CAPS: dict[str, int] = {"d": 3000, "w": 600, "m": 300}
+    _STORE_PERIOD = {"d": "D", "w": "W", "m": "M"}
+
+    @staticmethod
+    def _period_start(key: str, day: "date") -> "date":
+        """交易日 → 周期起点（日=当日、周=ISO 周一、月=1 日）。"""
+        if key == "w":
+            return day - timedelta(days=day.weekday())
+        if key == "m":
+            return day.replace(day=1)
+        return day
+
+    def _store_rows(self, code: str, key: str, n: int | None = None,
+                    begin: "date" | None = None,
+                    end: "date" | None = None) -> list[dict[str, Any]]:
+        """调 ``futures.query_bars`` 并归一化到门面列契约（date=周期起点）。"""
+        kw: dict[str, Any] = {"sym": code, "period": self._STORE_PERIOD[key]}
+        if n is not None:
+            kw["limit"] = int(n)
+        else:
+            assert begin is not None and end is not None
+            kw["begin"] = begin.isoformat()
+            # store 的 end 是开区间（实测 begin=09-01/end=09-30 不含 09-30），补一天
+            kw["end"] = (end + timedelta(days=1)).isoformat()
+        raw = self._c.call("futures.query_bars", **kw)
+        rows: list[dict[str, Any]] = []
+        for item in raw if isinstance(raw, list) else []:
+            trade = date.fromisoformat(str(item.get("date"))[:10])
+            start = self._period_start(key, trade)
+            amount = item.get("amount")
+            row: dict[str, Any] = {
+                "sas": _iso_to_sas(key, start),
+                "date": start.isoformat(),
+                "open": item.get("open"),
+                "high": item.get("high"),
+                "low": item.get("low"),
+                "close": item.get("close"),
+                "settle": item.get("settle"),
+            }
+            if key == "d":
+                row["pre_settle"] = item.get("pre_settle")
+            row["volume"] = item.get("volume")
+            if key == "d":
+                row["amount"] = ((amount / 1e4) if isinstance(amount, (int, float))
+                                 else amount)
+            row["open_interest"] = item.get("oi")
+            if key == "d":
+                row["oi_chg"] = item.get("oi_chg")
+            row["has_kline"] = True
+            rows.append(row)
+        rows.sort(key=lambda r: str(r["date"]))
+        return rows
+
+    def _raw_payload(self, code: str, key: str, n: int | None = None,
+                     begin: "date" | None = None,
+                     end: "date" | None = None) -> dict[str, Any]:
+        """``_raw=True`` 的历史形态：``{sas: [...], vals: [[...]]}``（新→旧）。
+
+        3.0 起数据源换成 store，但 ``_raw`` 契约保持 2.9 的形态不变：``sas`` 为
+        周期戳、``vals`` 按 ``_FREQ_CODES[key]`` 的 ``$码`` 顺序（日频 11 列、
+        周/月 8 列）；行只含交易日。
+        """
+        rows = self._store_rows(code, key, n=n, begin=begin, end=end)
+        if begin is not None and end is not None:
+            rows = [r for r in rows if begin.isoformat() <= r["date"] <= end.isoformat()]
+        sas_list: list[str] = []
+        vals: list[list[Any]] = []
+        for row in reversed(rows):  # 旧 cursor 顺序：新→旧
+            sas_list.append(row["sas"])
+            point = [row.get("open"), row.get("high"), row.get("low"),
+                     row.get("close"), row.get("settle")]
+            if key == "d":
+                point.append(row.get("pre_settle"))
+            point.append(row.get("volume"))
+            if key == "d":
+                point.append(row.get("amount"))
+            point.append(row.get("open_interest"))
+            if key == "d":
+                point.append(row.get("oi_chg"))
+            point.append(row.get("has_kline"))
+            vals.append(point)
+        return {"sas": sas_list, "vals": vals}
 
     def bars(self, fut_code: str, n: int | None = None, begin: str | None = None,
              end: str | None = None, freq: str | None = None,
              fields: Any = None, _raw: bool = False) -> Any:
-        """期货主力连续历史K线（周期序列 × ``$FUT_*`` 点读；date 升序）。
+        """期货主力连续历史K线（store 直读；date 升序、DataFrame 默认）。
 
-        eval 组合面（``RANGE(cursor.*, ITER($FUT_*…))`` + ``fut.symbol`` 传参），
-        与 ``kline.bars`` 同形：date 升序、DataFrame 默认、``_raw=True`` 逃生口。
-        ``date`` 为周期起点口径（月=当月 1 日、周=ISO 周一、日=当日）；
-        非交易日周期沿用上游口径原样返回（``has_kline`` 列可辨）。
+        与 ``kline.bars`` 同形：``date`` 为周期起点口径（月=当月 1 日、周=ISO
+        周一、日=当日），``n`` 为**交易日根数**（周/月为周期根数）。周/月线为
+        上游周期 bar 原样透传（成交量为周期合计），SDK 不做二次聚合。
 
         :param fut_code: 合约键（同 ``get()``；主力连续，非单合约）
-        :param n: 取最近 n 个周期（默认 120；与 begin/end 二选一）
+        :param n: 取最近 n 根（默认 120；与 begin/end 二选一）
         :param begin: 开始日期 YYYY-MM-DD（含当日；须与 end 成对）
         :param end: 结束日期 YYYY-MM-DD（含当日）
         :param freq: ``d``（默认，11 字段）/ ``w``（8 字段）/ ``m``（8 字段）；
-            长区间建议 ``m``（点数省 20 倍以上）
+            长区间建议 ``m``（行数省 20 倍以上，成本按行计）
         :param fields: 列投影（字段名/``sas`` 列表，如 ``["date", "close"]``）
-        :param _raw: True 跳过收口，返回 {sas: [...], vals: [[...]]} 原始形态
-        :raises UsageError: freq 非法 / begin-end 不成对 / 点数超上限
-            （d 3000 / w 600 / m 300——上游主力连续数据起点约束与成本双重要求）
+        :param _raw: True 返回 ``{sas, vals}`` 原始形态（sas=周期戳、vals 按 ``$码``
+            顺序、新→旧；日频只含交易日）
+        :raises UsageError: freq 非法 / begin-end 不成对 / 行数超上限
+            （d 3000 / w 600 / m 300）
         """
         self._require_cn_client()
         code = self._normalize_fut(fut_code)
@@ -3577,13 +3695,11 @@ class FuturesApi(_Api):
             raise UsageError(
                 f"futures.bars: 不支持的 freq={freq!r}；可用 None/\"d\"（日）、"
                 "\"w\"（周）、\"m\"（月）", code="freq") from None
-        mapping = self._FREQ_CODES[key]
         if (begin is not None) != (end is not None):
             raise UsageError("begin 与 end 需同时提供", code="range")
         if n is not None and begin is not None:
             raise UsageError("n 与 begin/end 二选一", code="range")
-
-        today = date.today()
+        cap = self._BAR_ROW_CAPS[key]
         if begin is not None:
             try:
                 b = date.fromisoformat(str(begin)[:10])
@@ -3592,63 +3708,42 @@ class FuturesApi(_Api):
                 raise UsageError(f"begin/end 需为 YYYY-MM-DD：{exc}", code="range") from None
             if b > e:
                 raise UsageError(f"begin={begin} 晚于 end={end}", code="range")
-            n_points = self._periods_back(key, b, today)
+            est = self._estimate_rows(key, b, e)
+            if est > cap:
+                raise UsageError(
+                    f"futures.bars: freq={key} 区间约 {est} 根 超上限 {cap}"
+                    f"（成本按行计，≈126 EC/行）；请缩小区间或改用低频 freq",
+                    code="range")
+            if _raw:
+                return self._raw_payload(code, key, begin=b, end=e)
+            rows = [r for r in self._store_rows(code, key, begin=b, end=e)
+                    if b.isoformat() <= r["date"] <= e.isoformat()]
         else:
             try:
-                n_points = 120 if n is None else int(n)
+                k = 120 if n is None else int(n)
             except (TypeError, ValueError) as exc:
                 raise UsageError(f"n 需为正整数：{n!r}", code="params") from None
-        cap = self._BAR_POINT_CAPS[key]
-        if n_points < 1:
-            raise UsageError(f"点数需 ≥1（freq={key}）", code="range")
-        if n_points > cap:
-            raise UsageError(
-                f"futures.bars: freq={key} 点数 {n_points} 超上限 {cap}（成本按点×码计，"
-                f"2026-11-23 实测 ≈8-11 EC/点·码）；请缩小区间或改用低频 freq",
-                code="range")
-
-        codes = ", ".join(mapping)
-        cur = self._BAR_CURSOR_FN[key]
-        xs = (f'pts := cursor.{cur}({n_points}, "now")\n'
-              f'vals := RANGE(pts, ITER({codes}))\n'
-              'return {"sas": pts, "vals": vals}')
-        anchor = _DEFAULT_SYMBOLS.get("cn", "600519")
-        result = self._c.eval_result(xs, symbol=anchor, args={"fut.symbol": code})
-        if _raw:
-            return result
-        if not (isinstance(result, dict) and isinstance(result.get("sas"), list)
-                and isinstance(result.get("vals"), list)):
-            raise DataError(
-                f"futures.bars: 上游返回形态异常（期望 sas/vals 两列，得到 "
-                f"{type(result).__name__}）", code="response")
-        sas_list: list = result["sas"]
-        vals: list = result["vals"]
-        if len(sas_list) != len(vals):
-            raise DataError(
-                f"futures.bars: sas/vals 行数不一致（{len(sas_list)} vs {len(vals)}）",
-                code="response")
-        rows: list[dict[str, Any]] = []
-        code_names = list(mapping)
-        for sas, point in zip(sas_list, vals):
-            row: dict[str, Any] = {"sas": sas, "date": _sas_to_iso(sas)}
-            for i, name in enumerate(code_names):
-                row[mapping[code_names[i]]] = point[i] if i < len(point) else None
-            rows.append(row)
-        rows.reverse()  # cursor 新→旧 → 2.0 契约 date 升序
-        if begin is not None:
-            b_iso, e_iso = b.isoformat(), e.isoformat()
-            rows = [r for r in rows if b_iso <= str(r["date"])[:10] <= e_iso]
+            if k < 1:
+                raise UsageError(f"n 需 ≥1（freq={key}）", code="range")
+            if k > cap:
+                raise UsageError(
+                    f"futures.bars: freq={key} 根数 {k} 超上限 {cap}"
+                    f"（成本按行计，≈126 EC/行）；请缩小区间或改用低频 freq",
+                    code="range")
+            if _raw:
+                return self._raw_payload(code, key, n=k)
+            rows = self._store_rows(code, key, n=k)
         return _out(rows, raw=_raw, _fields=fields)
 
     @staticmethod
-    def _periods_back(key: str, begin: "date", today: "date") -> int:
-        """begin → 今天的周期数（含缓冲 2 期；begin/end 过滤在客户端收口）。"""
-        days = max(0, (today - begin).days)
-        if key == "d":
-            return days + 2
+    def _estimate_rows(key: str, begin: "date", end: "date") -> int:
+        """区间根数上界（成本护栏；日频按自然日，周/月按周期）。"""
+        days = max(1, (end - begin).days + 1)
         if key == "w":
-            return days // 7 + 2
-        return (today.year - begin.year) * 12 + (today.month - begin.month) + 2
+            return days // 7 + 1
+        if key == "m":
+            return (end.year - begin.year) * 12 + end.month - begin.month + 1
+        return days
 
 
 # 组合接口：跨多个目录函数的研究级封装（取数 → 规则 → 事实包 → 成稿/出图）。
@@ -3749,9 +3844,9 @@ FRIENDLY_INDEX: list[tuple[str, str, str, str, str]] = [
     ("market", "stocks", "list", "全市场证券列表", "stocks.query_list"),
     ("market", "stocks", "industries", "行业目录", "stocks.industry_list"),
     ("market", "stocks", "industry_members", "行业成分股", "stocks.industry_members"),
-    ("market", "futures", "get", "期货连续合约单字段", "指标码 $FUT_*（fut_symbol 求值）"),
-    ("market", "futures", "snapshot", "期货连续合约快照", "指标码 $FUT_*（fut_symbol 求值）"),
-    ("market", "futures", "bars", "期货主力连续历史K线", "指标码 $FUT_*（fut_symbol 求值）"),
+    ("market", "futures", "get", "期货连续合约单字段", "futures.query_bars（store 直读）"),
+    ("market", "futures", "snapshot", "期货连续合约快照", "futures.query_bars（store 直读）"),
+    ("market", "futures", "bars", "期货主力连续历史K线", "futures.query_bars（store 直读）"),
     ("market", "futures", "mapping", "主力换月映射", "futures.mapping"),
     ("fundamentals", "statements", "audit", "审计意见", "rptdom.statement_audit"),
     ("fundamentals", "indicator", "get", "取单个指标", "指标代码直查"),

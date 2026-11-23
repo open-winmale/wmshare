@@ -168,12 +168,12 @@ FALLBACK_RETURNS = {
     ("indicator", "financials"):
         "MAP · {roe_ttm, roe_avg, eps_ttm}（roe_avg=近3年平均；eps_ttm=归母）",
     ("futures", "get"):
-        "标量 · 连续合约单字段当前值（价=元、量=手、额=万元；`$码` 透传上游口径）",
+        "标量 · 最新一根周期 bar 的字段值（价=元、量=手、额=万元；`$码` 透传上游口径）",
     ("futures", "snapshot"):
-        "MAP · {字段: 值}（一次指标批量求值；字段集同 ``cli.futures.get`` 可选集）",
+        "MAP · {字段: 值, date}（最新一根周期 bar；date=周期起点口径）",
     ("futures", "bars"):
-        "DF · 历史K线（date 升序；日频 11 字段/周月 8 字段，价=元、量=手、额=万元；"
-        "date 为周期起点口径：月=当月 1 日、周=ISO 周一、日=当日）",
+        "DF · 历史K线（date 升序；日频只含交易日、无周末占位行；日频 11 字段/周月 8 字段，"
+        "价=元、量=手、额=万元；date 为周期起点口径：月=当月 1 日、周=ISO 周一、日=当日）",
     ("valuation", "daily_basic"):
         "MAP · {ok, as_of, data: [{date, symbol, field, value}], meta}"
         "（8 字段长表，date 升序；as_of=表内最新行日期；"
