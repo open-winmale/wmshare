@@ -9,6 +9,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > MAJOR；弃用至少保留 1 个 MINOR，并在 `Deprecated` 段登记替代写法与移除版本。
 > 升级前请扫一眼 Removed / Changed / Deprecated 段。
 
+## [3.4.0] - 2026-11-24
+
+### Added
+
+- **历史涨跌停价序列**：`cli.stocks.limit_price_history(symbol, n=None, begin=None,
+  end=None)`——逐日 `date/name/close/high/low/percent/basis/limit_up/limit_down/
+  band/rule/is_st`（date 升序）。`basis` 用后复权/不复权因子还原交易所除权参考
+  前收——除权日直接 `close/(1+percent)` 会错（600519 2024-06-19 实测：原始口径
+  1521.5，交易所参考价 1490.62，本接口到分一致），非除权日与当日快照同口径回退。
+  规则表按日期切档：主板 1996-12-16 前无涨跌幅限制、之后 10%（ST 5% 至
+  2026-05-05，2026-05-06 起 10%）；创业板 2020-08-24 前 10%（ST 5%）后 20%；
+  科创板 20%；北交所 2020-07-27 前 `unbounded` 后 30%。IPO 无涨跌幅窗口标
+  `rule=ipo`、缺价 `no_price`、超带宽 `unbounded`，价格为空不猜。`n` 与
+  `begin/end` 二选一（区间切片含 end，逐日锚点翻页有 `LimitError` 快速失败）。
+  MCP `wmshare_market` 新增 `limit_price_history` action；`estimate_cost` 提供
+  实测档位（n=120 冷 ≈1.7 万 EC，2026-11-24 实测）。
+
+### Changed
+
+- **moneyflow 单次行数上限 500**：服务端 `moneyflow.query_bars*` 单次超过 500 行
+  显式拒绝（`LimitError`，拒绝文案全程可读、EC≈0，引导锚点分页）——替换此前
+  单笔最高 ≈5.15M EC 的隐性天花板；`estimate_cost` 与接口文档同步。
+- 目录规模：29 域 / 360 函数 / 181 核心接口 + 18 组合接口 / 30 示例；守护覆盖
+  率下限维持 24.44%；上游锚点前移 `f74b1eed`（script 仓全市场分红物化部署）。
+
 ## [3.3.0] - 2026-11-24
 
 ### Added
