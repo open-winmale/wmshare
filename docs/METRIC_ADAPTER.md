@@ -56,6 +56,12 @@ g["flat"]     # 不能组合：unknown 字段或 dead 码，附 reason
   `status=dead` 的码一律进 `flat`；
 - 不同组之间**不会**被合并成一次 eval。
 
+口径注记：`metrics.json` 的 2,983 个码含 20 个上游 `drop stub`（`status=dead`），
+它们仍计入目录总数，但适配层一律 `flat`/`excluded`，不参与组合或取数；
+残余 `unit_kind=unknown`（约 1.5%，整包 MAP/期货手数/上游万元口径等）在
+`taxonomy.yaml` 的 `unit_unknown_allowlist` 里逐条登记原因，新增未知会被
+`validate_metric_taxonomy` 拦下，不会静默漂移。
+
 `group_id` 是可复算的分隔字符串：`unit_kind|period|window|caliber|market`，
 `caliber` 为空时写 `-`。日常使用不必手写它，用 `period/window/unit_kind` 过滤即可。
 

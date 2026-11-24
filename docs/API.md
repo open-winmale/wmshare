@@ -85,14 +85,14 @@ cat.function("bonus.snapshot_yield_ttm")["params"]   # 函数合同：参数/返
 
 ## Client 方法（批量取数）
 
-服务端按**请求次数**限流（免费档 500 次/小时、5,000 次/日）：逐票取全市场（A 股 5,375 家）必撞 429，批量把请求次数压到 ⌈N/batch_size⌉。
+服务端按**请求次数**限流（免费档 500 次/小时、5,000 次/日）：逐票取全市场（A 股 5,375 家）必撞 429；原生批量路由（`kline.snapshot`）1 次，其余接口按 ⌈N/batch_size⌉（A 股 11 次）。
 
 | 方法 | 说明 |
 |---|---|
 | `cli.call(name, sym, …)` | 单标的按目录合同调用；symbol 传 list 自动转批量 |
 | `cli.call_batch(name, symbols, on_error='raise')` | 单批（≤500）：一次 HTTP 返回 {symbol: 结果}；on_error 为**票级**，勿做容错 |
 | `cli.batch_iter(name, symbols, batch_size=500, on_batch_error='raise')` | 逐批流式：⌈N/batch_size⌉ 次请求，逐批 yield BatchResult（可进度/中断/落盘） |
-| `cli.batch_all(name, symbols, batch_size=500, on_batch_error='raise')` | 一站式分批聚合：请求次数 = ⌈N/batch_size⌉；to_df() 出带 symbol 列的长表 |
+| `cli.batch_all(name, symbols, batch_size=500, on_batch_error='raise')` | 一站式分批聚合：原生批量路由 1 次，其余 ⌈N/batch_size⌉；to_df() 出带 symbol 列的长表 |
 
 **三原则**：① 批次只能同一市场（跨市场混批 SDK 直接报错）；② 容错用批级`on_batch_error="skip"`（跳过失败批继续），**不要**用 `call_batch(on_error="skip")`——它是票级逐票请求，会放大请求数正好制造 429；③ 单批撞 `CALC_LIMIT_EXCEEDED`（算力超限）减小 `batch_size`，遇 429 停止并按消息里的 `codes[done:]` 续跑。
 
@@ -100,8 +100,8 @@ cat.function("bonus.snapshot_yield_ttm")["params"]   # 函数合同：参数/返
 
 ```python
 codes = [r["symbol"] for r in cli.stocks.list()]      # 全市场代码池（A 股 5,375 家）
-res = cli.batch_all("kline.snapshot", codes)          # 11 次请求，不是 5375 次
-print(len(res.results), res.requests)                  # 5375 11
+res = cli.batch_all("kline.snapshot", codes)          # 原生批量路由 1 次，不是 5375 次
+print(len(res.results), res.requests)                  # 5375 1
 
 df = cli.batch_all("kline.snapshot", ["600519", "000001"]).to_df()   # 需 pandas
 ```

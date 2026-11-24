@@ -437,7 +437,7 @@ res.results["600519"]["ma60"]     # 23 字段快照（kline_date/kline_sas 为 N
 - **算力超限**：单批触发 `CALC_LIMIT_EXCEEDED` 时减小 `batch_size`。
 - 三个入口的 `name`/`symbols` 都是位置参数；`_raw=True`/`_units="native"` 通用；
   批量入口的 `results` 恒为行数组/逐票 MAP（长表用 `to_df()`，门面级 DF 见第 4 章）。
-- **`name` 必须是目录函数名**（298 个公开函数，`cat.functions_by_domain()` 可查）；指标码不是
+- **`name` 必须是目录函数名**（`cat.functions_by_domain()` 可查）；指标码不是
   函数名——一票多码用 `cli.indicator.metrics(sym, codes)`（传 `"indicator.get"` 会报
   `CatalogError`）。**全市场按指标条件选股不要逐票批量**：一条表达式交给
   `cli.screener.query(...)`（服务端索引引擎，见第 3 章与 10.1）。

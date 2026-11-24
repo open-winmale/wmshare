@@ -176,6 +176,36 @@ def test_readme_counts_match_catalog():
     assert f"{curated} 个精选常用指标代码" in README
 
 
+def test_examples_count_matches_dir():
+    """示例数按目录真值动态互校（README 与课程表都必须等于实际脚本数）。"""
+    n = len(list((REPO / "examples").glob("[0-9][0-9]_*.py")))
+    assert f"{n} 个编号示例" in README
+    assert f"{n} 个示例" in (REPO / "examples" / "README.md").read_text(encoding="utf-8")
+
+
+def test_readme_documents_mcp_stdio():
+    """MCP 只走 stdio：文档必须写明，且不得出现本地端口号。"""
+    assert "stdio" in README
+    assert "stdio" in AI_MD
+    assert "8765" not in README
+
+
+def test_api_md_batch_example_uses_native_route():
+    """API.md 的批量示例必须写 1 次（kline.snapshot 原生路由），不能回退到 11。"""
+    assert "原生批量路由 1 次" in API_MD
+    assert "5375 1" in API_MD
+
+
+def test_readme_documents_inventory_reconciliation():
+    """用户文档必须解释 inventory 与 catalog 的函数数差额（内部 helper）。"""
+    inv = json.loads((REPO / "src" / "wmshare" / "_catalog" / "generated"
+                      / "inventory.json").read_text(encoding="utf-8"))
+    stats = CAT.stats()
+    helpers = inv["function_count"] - stats["functions"]
+    assert (f"inventory {inv['function_count']} = {stats['functions']} 对外 + "
+            f"{helpers} 个 internal helper") in README
+
+
 def test_docs_no_stale_counts():
     """防回归：过时计数/日期口径不得重现（127 曾滞后两个版本、2,639 滞后一个目录代际）。
 
@@ -188,7 +218,11 @@ def test_docs_no_stale_counts():
              "2,752", "2752", "316 个", "150 个核心接口", "167 个",
              # 2026-11-23：GUIDE FAQ 的「328 个函数」滞后于目录真实值（345），
              # 且 GUIDE 的计数不受 test_counts 动态互校覆盖——只能靠黑名单兜。
-             "328 个")
+             "328 个",
+             # 2026-11-24：示例数（22/29）、两处无门禁函数计数（331/298）
+             # 与 kline.snapshot 批量请求数（11）已清除。
+             "22 个示例", "29 个示例", "331 函数", "298 个公开函数",
+             "5,375 11", "5375 11")
     docs = {
         "README.md": README,
         "docs/GUIDE.md": GUIDE_MD,
@@ -460,8 +494,10 @@ class ReadmeClient:
         return _FakeBatch(self._payload(name, symbols), requests=1)
 
     def batch_all(self, name, symbols, batch_size=None, **kw):
+        # 与真实 Client 一致：原生批量路由（kline.snapshot）不分批，恒 1 次请求。
+        native = name in ("kline.snapshot", "kline.snapshot_batch")
         return _FakeBatch(self._payload(name, symbols),
-                          requests=-(-len(symbols) // 500))
+                          requests=1 if native else -(-len(symbols) // 500))
 
     def batch_iter(self, name, symbols, batch_size=None, **kw):
         step = batch_size or 500

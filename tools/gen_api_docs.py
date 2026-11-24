@@ -619,13 +619,14 @@ def client_batch_section(total_fn: int) -> list[str]:
         ("`cli.batch_iter(name, symbols, batch_size=500, on_batch_error='raise')`",
          "逐批流式：⌈N/batch_size⌉ 次请求，逐批 yield BatchResult（可进度/中断/落盘）"),
         ("`cli.batch_all(name, symbols, batch_size=500, on_batch_error='raise')`",
-         "一站式分批聚合：请求次数 = ⌈N/batch_size⌉；to_df() 出带 symbol 列的长表"),
+         "一站式分批聚合：原生批量路由 1 次，其余 ⌈N/batch_size⌉；to_df() 出带 symbol 列的长表"),
     ]
     out = [
         "## Client 方法（批量取数）",
         "",
         "服务端按**请求次数**限流（免费档 500 次/小时、5,000 次/日）：逐票取全市场"
-        f"（A 股 {n_cn:,} 家）必撞 429，批量把请求次数压到 ⌈N/batch_size⌉。",
+        f"（A 股 {n_cn:,} 家）必撞 429；原生批量路由（`kline.snapshot`）1 次，"
+        f"其余接口按 ⌈N/batch_size⌉（A 股 {batches} 次）。",
         "",
         "| 方法 | 说明 |",
         "|---|---|",
@@ -644,8 +645,8 @@ def client_batch_section(total_fn: int) -> list[str]:
         "",
         "```python",
         f'codes = [r["symbol"] for r in cli.stocks.list()]      # 全市场代码池（A 股 {n_cn:,} 家）',
-        f'res = cli.batch_all("kline.snapshot", codes)          # {batches} 次请求，不是 {n_cn} 次',
-        f"print(len(res.results), res.requests)                  # {n_cn} {batches}",
+        f'res = cli.batch_all("kline.snapshot", codes)          # 原生批量路由 1 次，不是 {n_cn} 次',
+        f"print(len(res.results), res.requests)                  # {n_cn} 1",
         "",
         'df = cli.batch_all("kline.snapshot", ["600519", "000001"]).to_df()   # 需 pandas',
         "```",

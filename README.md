@@ -10,7 +10,7 @@
 > **Install**: `pip install wmshare`. **Full English quickstart**: [docs/QUICKSTART_EN.md](docs/QUICKSTART_EN.md).
 
 给 Python 量化开发者的中文财经数据 SDK：一行接口拿到清洗好的 A股/港股/美股数据——
-估值分位、TTM 股息率等指标**服务端算好直出**，全市场批量 **11 次请求**绕开限流；
+估值分位、TTM 股息率等指标**服务端算好直出**，全市场批量 **11 次请求**（原生批量接口 1 次）绕开限流；
 免注册即可先试（无凭证自动免注册免费试用），长期使用在开放平台（open.winmale.com）配置凭证。
 各市场逐能力明细见[「市场覆盖」](#市场覆盖)。
 
@@ -58,7 +58,7 @@ wmshare screen --where "$ROE_TTM_LAST > 0.15" --order "$BONUS_RATE_3Y_AVG_LAST" 
 wmshare income --top-n 20 --diagnose 600900,600519 --out ./income/     # 收息排行 + 单票诊断
 wmshare index trend --keys index.hs300,index.csi500 --out trend.md     # PE/PB 历史分位
 wmshare cbond daily --out ./cb/                                        # 转债日更图文一条链
-wmshare call kline.query_bars sym=600519 limit=30 --json               # 其余 331 函数透传
+wmshare call kline.query_bars sym=600519 limit=30 --json               # 其余函数透传
 ```
 
 ### 配置凭证（可选）
@@ -100,7 +100,7 @@ for r in res["data"]["rows"][:5]:
 
 ## 基本功能
 
-随包离线目录：**29 个数据域 · 364 个底层函数 · 2983 个指标代码**；友好层 **183 个核心接口**，
+随包离线目录：**29 个数据域 · 364 个底层函数 · 2983 个指标代码**（上游 inventory 377 = 364 对外 + 13 个 internal helper）；友好层 **183 个核心接口**，
 按使用视角组织为（11 个指标组、78 个精选常用指标代码，`cat.search("中文")` 可编程检索）：
 
 | 门面 | 核心能力 | 单位口径 |
@@ -141,7 +141,7 @@ for r in res["data"]["rows"][:5]:
   `$主题+[窗口 3Y/5Y/10Y]+[统计量 TTM/YOY/AVG/MIN/TREND]+[_LAST]`；**全量码表按数据类型分章**
   （概览/股票行情/股票指标/行业/指数及ETF/宏观/期货/可转债/港美）见
   [docs/INDICATORS.md](docs/INDICATORS.md)。
-- **全市场批量**：`cli.batch_all(name, codes)` 把 A 股 5,375 家压成 **11 次请求**绕开限流。
+- **全市场批量**：`cli.batch_all(name, codes)` 把 A 股 5,375 家压成 **11 次请求**（`kline.snapshot` 等原生批量接口 1 次）绕开限流。
 - **全市场筛选服务端直出**：`cli.screener.query("$ROE_TTM_LAST > 0.15")` 一条表达式扫全市场索引
   （`count`=真实命中数）；涨跌全景/分桶/行业分布/涨跌榜同走服务端预计算索引，毫秒级。
 - **离线目录防编造**：364 个底层函数、183 个核心接口、2,983 个指标码离线可查
@@ -153,7 +153,7 @@ for r in res["data"]["rows"][:5]:
 
 - **先查目录再写代码**（一行验证）：
   `python3 -c "import wmshare; print(wmshare.load().search('股息'))"`
-- **本地 MCP server**：29 个 task tools；全部 201 个 friendly API——183 登记 + 18 个组合接口——均可用
+- **本地 MCP server**（stdio，由客户端子进程启动，不监听端口）：29 个 task tools；全部 201 个 friendly API——183 登记 + 18 个组合接口——均可用
   `wmshare_call(target=..., mode="api")` 兜底，macro 域仅此路径。配置：`pip install "wmshare[mcp]"`
   → `wmshare-mcp setup --client-id <AppId> --client-secret-stdin --market cn`（提示后粘贴 API Key，
   `wmshare-mcp doctor` 体检）；客户端最小配置
@@ -266,14 +266,14 @@ df = cli.call_batch("kline.snapshot", ["600519", "000001"]).to_df()   # 带 symb
 ## 批量取数
 
 服务端按**请求次数**限流（免费档当前 500 次/小时、5,000 次/日，以平台为准）：逐票取 A 股 5,375 家
-= 5,375 次请求必然撞 429，批量只需 **11 次**。三入口——一站式、逐批、单批：
+= 5,375 次请求必然撞 429，批量只需 **11 次**（`kline.snapshot` 等原生批量接口 1 次）。三入口——一站式、逐批、单批：
 
 ```python
 import wmshare
 cli = wmshare.Client.from_env()
 codes = [r["symbol"] for r in cli.stocks.list()]      # 全市场代码池（港/美换 market）
-res = cli.batch_all("kline.snapshot", codes)           # ① 一站式：自动分批聚合
-print(len(res.results), res.requests)                  # 5,375 11
+res = cli.batch_all("kline.snapshot", codes)           # ① 一站式：原生路由不分批
+print(len(res.results), res.requests)                  # 5,375 1
 for i, part in enumerate(cli.batch_iter("dividend.history", codes), 1):
     print(f"第 {i} 批 {len(part.results)} 家")          # ② 逐批：可进度、可中断、可落盘
 cli.call_batch("kline.snapshot", ["600519", "000001"]) # ③ 单批（≤500），to_df() 出长表
