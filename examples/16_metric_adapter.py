@@ -1,6 +1,6 @@
 """指标适配层：按分类找码、只组合同口径的码、扁平码单独看。
 
-前提：凭证可选——无凭证自动回落匿名试用（免注册、真实数据、需网络）
+前提：凭证可选——无凭证自动免注册免费试用（真实数据、需网络）
 运行：python examples/16_metric_adapter.py
 学到：scopes/topics 发现、combinable_groups 组合边界、table 长表、many 多标的小列表
 文档：docs/METRIC_ADAPTER.md

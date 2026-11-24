@@ -29,7 +29,7 @@ python3 -c "import wmshare; print(wmshare.__version__)"   # 探测
 pip install -i https://pypi.tuna.tsinghua.edu.cn/simple wmshare
 ```
 
-零配置取数：`cli = wmshare.Client.from_env()`——无凭据自动免注册领匿名试用（真实数据、免费额度、需网络；`WMSHARE_DISABLE_ANON=1` 可关闭）。
+零配置取数：`cli = wmshare.Client.from_env()`——无凭据自动免注册免费试用（真实数据、按来源网络限流、需网络；`WMSHARE_DISABLE_ANON=1` 可关闭）。
 
 MCP 安装与凭证写入：
 
@@ -39,7 +39,7 @@ wmshare-mcp setup --client-id ... --client-secret-stdin --market cn
 wmshare-mcp doctor
 ```
 
-凭证可选（无凭据自动匿名）：要长期额度在开放平台获取 client_id/api-key，
+凭证可选（无凭据时自动免注册免费试用）：要独立、稳定的额度在开放平台获取 client_id/api-key，
 配置其一（构造参数 / WMSHARE_CLIENT_ID+WMSHARE_CLIENT_SECRET 环境变量 /
 ~/.wmshare/credentials.env 凭证文件）：
 

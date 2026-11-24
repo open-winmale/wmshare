@@ -27,14 +27,14 @@ pip install wmshare
 
 ## First call — no sign-up, 3 lines
 
-No registration needed: `Client.from_env()` automatically falls back to an
-anonymous trial (one-shot quota aligned with the free tier) when no credentials
-are configured — real data, network required:
+No registration needed: `Client.from_env()` automatically switches to free
+guest access (metered per network) when no credentials are configured —
+real data, network required:
 
 ```python
 import wmshare
 
-cli = wmshare.Client.from_env()                        # anonymous fallback, no sign-up
+cli = wmshare.Client.from_env()                        # guest access, no sign-up
 print(f"{cli.dividend.yield_ttm('600519'):.2%}")       # 3.96%
 print(cli.screener.index_breadth_summary()["total"])   # 5685
 ```
@@ -106,15 +106,15 @@ The in-depth documentation is in Chinese:
 [GUIDE.md](GUIDE.md) (task recipes, batching, troubleshooting) ·
 [INDICATORS.md](INDICATORS.md) (indicator catalog) ·
 [API.md](API.md) (180 core endpoints) ·
-[examples/](../examples/README.md) (22 runnable numbered examples: anonymous
-trial by default, 4 fully offline) ·
+[examples/](../examples/README.md) (29 runnable numbered examples: guest access
+by default, 4 fully offline) ·
 [AGENTS.md](../AGENTS.md) and
 [SKILL.md](../src/wmshare/skills/wmshare/SKILL.md) for agent integration.
 
 ## Shell first: the `wmshare` CLI
 
 No Python needed for the four job verbs — each writes a finished file (`--out`,
-`.md`/`.csv`/`.xlsx`); falls back to anonymous trial when no credentials are set:
+`.md`/`.csv`/`.xlsx`); uses guest access when no credentials are set:
 
 ```bash
 wmshare screen --where "$ROE_TTM_LAST > 0.15" --out roe.xlsx

@@ -4,10 +4,12 @@
 来源：
 - 异常类层级：`wmshare/errors.py` 的类定义与 docstring 首行；
 - 客户端 code：扫描 `src/wmshare/**/*.py` 的 ``code="..."`` 字面量；
-- 服务端配额码：`wmshare.errors.QUOTA_CODES`。
+- 服务端配额码：`wmshare.errors.QUOTA_CODES`；
+- 保留码：`RESERVED`（源码已不存在、不再触发，为兼容旧程序保留登记）。
 
 每个 code 必须在 `MEANINGS` 中有登记（含义/可重试/处理建议）；源码新增 code 而未
-登记时生成器直接失败——迫使文档与实现同批更新。
+登记时生成器直接失败——迫使文档与实现同批更新。`MEANINGS` 里登记了源码中已不
+存在的 code 同样失败：要么是手滑，要么该功能已下线——后者改登记到 `RESERVED`。
 
 Usage:
   python3 tools/gen_errors.py          # write docs/ERRORS.md
@@ -71,6 +73,11 @@ MEANINGS: dict[str, tuple[str, str, str, str]] = {
                   "调大预算或缩小请求；先 `cli.cost_estimate` 估算"),
     "rate_limited": ("quota", "服务端限流（HTTP 429，按请求次数）", "是",
                      "按 `retry_after`/`Retry-After` 退避；减少请求次数（batch_all/批量原生）"),
+    # 免注册访问（Client.from_env 未配置凭证）的终态拒绝：SDK 不重试
+    "ip_rate_limited": ("quota", "免注册访问：来源网络的请求次数到顶（HTTP 429，IP_RATE_LIMITED）",
+                        "是", "按小时计，稍后重试；批量取数减少请求次数；需要稳定频次请配置凭证"),
+    "pool_unavailable": ("quota", "免注册访问：服务端暂停了免注册额度（HTTP 429，APP_SUSPENDED）",
+                         "是", "稍后重试；需要稳定额度请配置凭证"),
     # 目录与契约
     "catalog_dir": ("catalog", "随包目录缺失或不可读", "否", "重装 wheel / 检查安装完整性"),
     # 数据与守护
@@ -85,15 +92,8 @@ MEANINGS: dict[str, tuple[str, str, str, str]] = {
     "oauth_response": ("env", "OAuth 响应结构异常", "是", "重试；持续失败检查网关版本"),
     "endpoint_unavailable": ("env", "端点不可达或非官方主机未放行", "否",
                              "用官方端点；自定义主机需 `allow_custom_host=True`"),
-    # 匿名试用（Client.anonymous）
-    "anon_unavailable": ("env", "服务端未开放匿名试用（端点 404）", "否",
-                         "到 open.winmale.com 注册免费账号获取凭据"),
-    "anon_quota": ("env", "匿名试用今日名额已满或本网络领取次数超限", "是",
-                    "次日再试；需要稳定额度请注册免费账号"),
-    "anon_failed": ("env", "匿名凭据申领失败（其他 HTTP 错误）", "是",
-                     "稍后重试；持续失败贴消息反馈"),
-    "anon_bad_response": ("env", "匿名凭据响应缺少 client_id/client_secret", "是",
-                           "重试；持续失败反馈网关版本"),
+    "ip_banned": ("env", "免注册访问：来源网络被禁止免注册访问（HTTP 403，IP_BANNED）", "否",
+                  "配置自有应用凭证后不受此限制"),
     "network": ("env", "网络层失败（重试耗尽）", "是", "检查网络/代理后重试"),
     "pandas": ("env", "缺少 pandas（DataFrame 默认路径依赖）", "否",
                "`pip install pandas`（>=1.5）"),
@@ -118,6 +118,21 @@ QUOTA_MEANINGS: dict[str, str] = {
     "DAILY_INSIGHT_CREDIT_CAP_EXCEEDED": "当日洞察点数到顶",
 }
 
+# 保留码：源码里已不存在、不会再触发，但按兼容政策（docs/COMPATIBILITY.md §1，
+# code 取值属公开面，移除只能在 MAJOR）在下一次 MAJOR 之前保留登记——旧程序里的
+# `e.code == "anon_quota"` 分支不因文档先消失而失去依据。新增保留码须经 owner 拍板。
+# code -> (起保留版本, 旧含义, 处理建议)
+RESERVED: dict[str, tuple[str, str, str]] = {
+    "anon_unavailable": ("3.3.0", "服务端未开放匿名试用（端点 404）",
+                         "免注册入口改为 `Client.from_env()`（不再申领凭据）；长期使用请配置凭证"),
+    "anon_quota": ("3.3.0", "匿名试用今日名额已满或本网络领取次数超限",
+                   "免注册访问无发放名额；被拒时看 `ip_rate_limited` / `pool_unavailable`"),
+    "anon_failed": ("3.3.0", "匿名凭据申领失败（其他 HTTP 错误）",
+                    "免注册访问不申领凭据；取数失败按新 code 处理"),
+    "anon_bad_response": ("3.3.0", "匿名凭据响应缺少 client_id/client_secret",
+                          "免注册访问不申领凭据；取数失败按新 code 处理"),
+}
+
 CODE_RE = re.compile(r'code="([a-z][a-z0-9_]*)"')
 
 
@@ -131,7 +146,7 @@ def collect_codes() -> set[str]:
 
 def build() -> str:
     codes = collect_codes()
-    unknown = sorted(codes - set(MEANINGS))
+    unknown = sorted(codes - set(MEANINGS) - set(RESERVED))
     stale = sorted(set(MEANINGS) - codes)
     if unknown:
         raise SystemExit(
@@ -139,12 +154,16 @@ def build() -> str:
     if stale:
         raise SystemExit(
             "gen_errors: MEANINGS 登记了源码中不存在的错误码，请清理：" + ", ".join(stale))
+    revived = sorted(set(RESERVED) & codes)
+    if revived:
+        raise SystemExit(
+            "gen_errors: 保留码重新出现在源码里，请从 RESERVED 移除并改回 MEANINGS：" + ", ".join(revived))
 
     out = [
         "# 错误码与异常处理",
         "",
         "本页由 `tools/gen_errors.py` 从源码扫描生成（禁止手改）：客户端 "
-        "`code=\"...\"` 字面量 + 服务端配额码。异常层级见 "
+        "`code=\"...\"` 字面量 + 服务端配额码 + 保留码。异常层级见 "
         "[`src/wmshare/errors.py`](../src/wmshare/errors.py)。",
         "",
         "## 1. 异常层级",
@@ -188,6 +207,10 @@ def build() -> str:
         out.append(f"| `{code}` | {meaning} | 否 | 换平台默认应用凭证 / 等周补 / 升级或充值 |")
     out += [
         "",
+        "免注册访问（`Client.from_env()` 未配置凭证）下同样的码表示**共享的免注册额度**用完："
+        "没有默认应用可换、也不参与周补，稍后再试或注册免费账号并配置凭证"
+        "（看 `Client.auth_mode` 区分两种情况）。",
+        "",
         "## 4. 处理范式",
         "",
         "```python",
@@ -211,6 +234,20 @@ def build() -> str:
         "程序化分类优先看 `err.code`；`err.status` 仅作辅助（429/5xx 与重试策略相关）。",
         "",
     ]
+    if RESERVED:
+        out += [
+            "## 5. 保留码（不再触发）",
+            "",
+            "以下 `code` 已不会触发（含义为其退役前的口径），仅为兼容旧程序的分支判断而"
+            "保留登记；将在下一个 MAJOR 版本移除。",
+            "",
+            "| `code` | 含义 | 起保留 | 处理建议 |",
+            "|---|---|---|---|",
+        ]
+        for code in sorted(RESERVED):
+            since, meaning, action = RESERVED[code]
+            out.append(f"| `{code}` | {meaning} | {since} | {action} |")
+        out.append("")
     return "\n".join(out)
 
 

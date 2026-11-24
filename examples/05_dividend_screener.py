@@ -1,6 +1,6 @@
 """分红质量：高股息且派息可持续的单票筛选，call_batch 批量 TTM 股息率。
 
-前提：凭证可选——无凭证自动回落匿名试用（免注册、真实数据、需网络）
+前提：凭证可选——无凭证自动免注册免费试用（真实数据、需网络）
 运行：python examples/05_dividend_screener.py
 学到：screen_quality 窗口语义；call_batch 票级批量；底层函数属性直达
 文档：docs/GUIDE.md（单票菜谱、批量取数）

@@ -44,12 +44,20 @@
 | `cli.call(..., _df=True)` | 门面默认 DataFrame；底层用 `_raw=True` 取原始行 | 2.0.0 | 已移除（调用即报 `UsageError`） |
 | `cli.kline.bars(..., _df=False)` | 同上（`_df` 参数已废除） | 2.0.0 | 已移除 |
 | `_units="native"` 之外的原生单位默认 | 默认基础单位（率=小数/额=元/量=股） | 2.0.0 | 已切换（逃生口 `_units="native"` / `native=True`） |
-| `Client.from_env()` 无凭据必报错 | 凭据双缺自动回落匿名试用（一次性额度） | 2.8.0 | 生效（逃生口 `WMSHARE_DISABLE_ANON=1`） |
-| `wmshare.demo_client()` / `--demo`（CLI & MCP）/ `demo_unsupported` 等四个错误码 / MCP 信封 `demo`·`as_of`·`data_freshness` 溯源键 | `wmshare.Client.from_env()`（凭据双缺自动匿名试用，真实数据） | 3.0.0 | 已移除（迁移：删掉 demo 入口即可，匿名试用覆盖同一职责） |
+| `Client.from_env()` 无凭据必报错 | 凭据双缺自动免注册访问（2.8.0～3.2.x 为申领匿名凭据，3.3.0 起见下方各行） | 2.8.0 | 生效（逃生口 `WMSHARE_DISABLE_ANON=1`） |
+| `wmshare.demo_client()` / `--demo`（CLI & MCP）/ `demo_unsupported` 等四个错误码 / MCP 信封 `demo`·`as_of`·`data_freshness` 溯源键 | `wmshare.Client.from_env()`（凭据双缺自动免注册访问，真实数据） | 3.0.0 | 已移除（迁移：删掉 demo 入口即可，免注册试用覆盖同一职责） |
+| `Client.from_env()` 无凭据时申领并落盘匿名凭据（`~/.wmshare/anon_credentials.env`、`WMSHARE_ANON_CREDENTIALS`、动态属性 `anon_credentials_path`） | 同一行 `from_env()`：无凭据时构造免注册客户端（不申领、不落盘凭据，服务端按来源网络记账）；访问方式看 `Client.auth_mode` | 3.3.0 | 生效（行为变更；入口、签名、返回形态不变，`WMSHARE_DISABLE_ANON=1` 语义不变） |
+| CLI `--anonymous`「显式匿名试用（一次性小配额）」 | 同一旗标：强制免注册免费试用（忽略已配置的凭证） | 3.3.0 | 生效（行为变更；旗标不变） |
+| `Client.anonymous(refresh=True)` 重新申领凭据 | `Client.anonymous()`（强制免注册；`refresh` 已无意义） | 3.3.0 | 弃用：仅 `refresh` 参数，计划 4.0.0 移除 |
+| 错误码 `anon_unavailable` / `anon_quota` / `anon_failed` / `anon_bad_response` | 不再触发；免注册被拒改报 `ip_rate_limited` / `pool_unavailable` / `ip_banned` | 3.3.0 | 保留码（仍登记在 [ERRORS.md §5](ERRORS.md)），4.0.0 移除 |
 
 > 2.0.0 与 3.0.0 是无兼容负担的一次性大版本：全部破坏性变更集中在该版本，未做
-> 渐进弃用（2.0.0 拆 `_df` 与单位口径，3.0.0 拆 demo 模式——匿名试用已覆盖其
+> 渐进弃用（2.0.0 拆 `_df` 与单位口径，3.0.0 拆 demo 模式——免注册试用已覆盖其
 > 用户面职责，离线测试夹具迁入 `tests/`）；小版本间按本文流程执行。
+>
+> 3.3.0 把免注册访问从「申领匿名凭据」换成「不带令牌、按来源网络记账」，按本文
+> 流程走 MINOR：入口、旗标、签名与返回形态全部不变，只有 `refresh` 参数进入弃用
+> 窗口、`anon_*` 四个码转为保留码。
 
 ## 5. 变更公告模板（写入 CHANGELOG 对应版本段）
 

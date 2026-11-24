@@ -1,6 +1,6 @@
 """ST/停复牌史：cli.stocks.lifecycle / suspend_history / name_history（2026-11 新面）。
 
-前提：凭证可选——无凭证自动回落匿名试用（免注册、真实数据、需网络）
+前提：凭证可选——无凭证自动免注册免费试用（真实数据、需网络）
 运行：python examples/28_stock_lifecycle.py
 学到：停复牌按交易日（S=停牌 / R=复牌）、简称变更按生效日，两源日期口径不同；
       lifecycle 由两者合并派生（rename/st_enter/st_exit/suspend/resume），

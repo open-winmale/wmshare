@@ -108,7 +108,7 @@ cp -r "$(python3 -c 'import wmshare; print(wmshare.skill_dir())')" ~/.agents/ski
 
 ## 路径 D：报错驱动（零配置兜底）
 
-没有凭证？`Client.from_env()` 无凭据自动免注册领匿名试用（真实数据、免费额度，需网络）——让 AI 直接在真实接口上验证调用形态；服务端未开放匿名时按报错指引配置凭证。
+没有凭证？`Client.from_env()` 无凭据自动免注册免费试用（真实数据，按来源网络限流，需网络）——让 AI 直接在真实接口上验证调用形态；回落被关闭（`WMSHARE_DISABLE_ANON=1`）时按报错指引配置凭证。
 
 错误消息本身就是为了"贴给 AI 能直接修"设计的：
 

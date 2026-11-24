@@ -116,10 +116,72 @@ def test_call_unknown_function_is_catalog_error(replay_cli, capsys):
     assert "未知函数" in err
 
 
-# ---- screen 动词：匿名态成本警告 ----
+# ---- 客户端构造与 screen 动词：免注册访问 ----
 
-def test_screen_fields_on_anon_client_warns_but_proceeds(capsys, monkeypatch):
-    """匿名态 fields 重列打成本警告但不阻断（能力对标，只做透明提示）。"""
+def _clean_env(monkeypatch, tmp_path):
+    """隔离本机凭证：清空环境变量与凭证文件，让 from_env 落到免注册访问。"""
+    monkeypatch.setenv("WMSHARE_CREDENTIALS", str(tmp_path / "absent.env"))
+    monkeypatch.delenv("WMSHARE_DISABLE_ANON", raising=False)
+    for key in ("WMSHARE_CLIENT_ID", "WMSHARE_CLIENT_SECRET",
+                "OPEN_PLATFORM_CLIENT_ID", "OPEN_PLATFORM_CLIENT_SECRET"):
+        monkeypatch.delenv(key, raising=False)
+
+
+def _call_args(*flags):
+    return cli.parser().parse_args([*flags, "call", "kline.query_bars", "sym=600519"])
+
+
+def test_build_client_without_credentials_is_public_pool(monkeypatch, tmp_path, capsys):
+    """无凭证：from_env 落到免注册访问，来源提示如实说明（不提「匿名」「一次性额度」）。"""
+    _clean_env(monkeypatch, tmp_path)
+    client, source = cli._build_client(_call_args())
+    try:
+        assert client.auth_mode == "public_pool" and source.startswith("public_pool")
+    finally:
+        client.close()
+    err = capsys.readouterr().err
+    assert "免注册免费试用" in err and "匿名" not in err
+
+
+def test_build_client_with_credentials_prefers_them(monkeypatch, tmp_path):
+    _clean_env(monkeypatch, tmp_path)
+    monkeypatch.setenv("WMSHARE_CLIENT_ID", "wm_open_test")
+    monkeypatch.setenv("WMSHARE_CLIENT_SECRET", "sec")
+    client, source = cli._build_client(_call_args())
+    try:
+        assert client.auth_mode == "credentials" and source.startswith("credentials")
+    finally:
+        client.close()
+
+
+def test_build_client_anonymous_flag_forces_public_pool(monkeypatch, tmp_path):
+    """--anonymous：已配置凭证仍强制免注册（旧语义保留，3.3.0 起不再申领凭据）。"""
+    _clean_env(monkeypatch, tmp_path)
+    monkeypatch.setenv("WMSHARE_CLIENT_ID", "wm_open_test")
+    monkeypatch.setenv("WMSHARE_CLIENT_SECRET", "sec")
+    # 旗标放在子命令前后必须等价（store_true 继承，见上方旗标继承用例）
+    for args in (_call_args("--anonymous"), cli.parser().parse_args(
+            ["call", "--anonymous", "kline.query_bars", "sym=600519"])):
+        client, source = cli._build_client(args)
+        try:
+            assert client.auth_mode == "public_pool" and source.startswith("public_pool")
+        finally:
+            client.close()
+
+
+def test_build_client_disable_anon_raises_missing_credentials(monkeypatch, tmp_path):
+    """WMSHARE_DISABLE_ANON=1：恢复「缺少凭证」报错（迁移逃生口，语义不变）。"""
+    _clean_env(monkeypatch, tmp_path)
+    monkeypatch.setenv("WMSHARE_DISABLE_ANON", "1")
+    with pytest.raises(cli.wmshare.AuthError, match="缺少凭证"):
+        cli._build_client(_call_args())
+
+
+def test_screen_fields_on_public_client_warns_but_proceeds(capsys, monkeypatch):
+    """免注册访问下 fields 重列打成本警告但不阻断（能力对标，只做透明提示）。
+
+    警告不写具体额度数字：免注册额度由服务端按来源网络统一核算，客户端不知道、
+    也不该编一个数（旧文案写死的「50 万 EC」是匿名凭据时代的口径）。"""
     import types as _t
     from wmshare import WmshareError
 
@@ -130,13 +192,14 @@ def test_screen_fields_on_anon_client_warns_but_proceeds(capsys, monkeypatch):
         raise WmshareError("停止于桩", code="params")
 
     fake = _t.SimpleNamespace(
-        anon_credentials_path="/tmp/anon.env",
+        auth_mode="public_pool",
         screener=_t.SimpleNamespace(query=_fake_query))
     monkeypatch.setattr(cli, "_build_client", lambda args: (fake, "stub"))
     code, _, err = _run(["screen", "--where", "$X > 0.1", "--fields", "$X",
-                         "--out", "/tmp/wm_anon.md"], capsys)
+                         "--out", "/tmp/wm_public_pool.md"], capsys)
     assert calls["fields"] == ["$X"]
-    assert "50 万 EC" in err
+    warning = err.split("警告", 1)[1]
+    assert "免注册" in warning and "50 万 EC" not in warning
 
 
 # ---- income / cbond：回放夹具未拍摄面显式降级 ----

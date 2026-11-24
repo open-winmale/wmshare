@@ -1,6 +1,6 @@
 """成品出口：把一次调用的结果直接写成 md/csv/xlsx 成品文件，不用再手拼。
 
-前提：凭证可选——无凭证自动回落匿名试用（需网络）；xlsx 需 pip install "wmshare[excel]"，
+前提：凭证可选——无凭证自动免注册免费试用（需网络）；xlsx 需 pip install "wmshare[excel]"，
 png 需 "wmshare[figures]"
 运行：python examples/21_cli_export.py
 学到：to_markdown 的口径表头（as_of/单位约定）；write 按扩展名分派；

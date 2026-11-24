@@ -772,11 +772,12 @@ def _add_resources(mcp: FastMCP, rt: MCPRuntime) -> None:
     @mcp.resource("wmshare://setup")
     def setup() -> str:
         return (
-            "真实取数需要开放平台 AppID。打开 open.winmale.com 登录 → "
+            "不配置凭证也能取真实数据：自动走免注册免费试用（按来源网络限流）。"
+            "需要独立、稳定的额度时再配置开放平台 AppID：打开 open.winmale.com 登录 → "
             "右上角「我的」→「开放平台」→「我的应用」，复制 client_id 与 api-key；"
             "然后运行 wmshare-mcp setup --client-id <CLIENT_ID> "
             "--client-secret-stdin --market cn，再运行 wmshare-mcp doctor。"
-            "凭证只写入 ~/.wmshare/credentials.env；零凭证可用 status/search/contract。"
+            "凭证只写入 ~/.wmshare/credentials.env。"
         )
 
     @mcp.resource("wmshare://units")

@@ -114,7 +114,7 @@ CI 另挂独立下限 `guard_coverage.py --min`：阈值以 `tests/test_guard_ba
 | `tests/test_mcp_apis.py` | README「N 个 task tools」== 路由数 |
 
 示例（`examples/`）约定：文件名 `NN_主题.py` 顺延最大编号；docstring 四行元信息
-（前提/运行/学到/文档）；`def main(cli=None)` 统一 `Client.from_env()`（无凭证自动匿名试用）；
+（前提/运行/学到/文档）；`def main(cli=None)` 统一 `Client.from_env()`（无凭证自动免注册免费试用）；
 打印值带单位注释；新增后同步 `examples/README.md` 课程表 +
 `tests/test_examples.py` 基线。**计数用动态打印代替写死字面量**，从根上消除漂移。
 
@@ -123,7 +123,7 @@ README 行数预算：上限以 `tests/test_docs.py::test_readme_is_lean` 断言
 
 ## 7. 离线夹具纪律
 
-demo 模式已随 3.0.0 移除（匿名试用替代其用户面职责）；CI 离线测试由
+demo 模式已随 3.0.0 移除（免注册试用替代其用户面职责）；CI 离线测试由
 `tests/replay_client.py`（冻结回放夹具，数据 `tests/fixtures/replay_data.json`）承担：
 
 - **同形**：live 门面每个形参夹具必须能接收（逐参比对，`tests/test_interface_quality.py`，

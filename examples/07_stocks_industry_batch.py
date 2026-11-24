@@ -1,6 +1,6 @@
 """全市场代码池 → 行业成分 → 批量取数：绕开 429 的一条龙完整链路。
 
-前提：凭证可选——无凭证自动回落匿名试用（免注册、真实数据、需网络）
+前提：凭证可选——无凭证自动免注册免费试用（真实数据、需网络）
 运行：python examples/07_stocks_industry_batch.py
 学到：stocks.list/industries/industry_members；batch_all/batch_iter/call_batch 三入口分工
 文档：docs/GUIDE.md（全市场与行业、批量取数）

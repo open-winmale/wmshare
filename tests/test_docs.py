@@ -520,11 +520,11 @@ def test_readme_example_outputs_documented():
 
 
 def test_readme_zero_credential_snippet_is_anonymous():
-    """首屏「零凭证先试」块必须走 from_env 匿名回落（demo 模式已于 3.0.0 移除）。
+    """首屏「零凭证先试」块必须走 from_env 免注册回落（demo 模式已于 3.0.0 移除）。
 
     demo 曾是首屏钩子（注释值与快照焊死）；3.0.0 起零凭证体验=``from_env()``
-    自动匿名试用（真实数据、免注册、免费额度）。离线环境无法断言真实输出值，
-    这里钉住动线存在性与旧入口清零。
+    自动免注册免费试用（真实数据；3.3.0 起由申领匿名凭据改为不带令牌、按来源网络
+    记账）。离线环境无法断言真实输出值，这里钉住动线存在性与旧入口清零。
     """
     assert "demo_client" not in README, "README 仍有 demo_client 残留"
     surfaces = {"README.md": README,

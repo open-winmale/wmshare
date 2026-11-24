@@ -1,6 +1,6 @@
 """指标码体系漫游：先查目录、再取数、率与分位一律读小数。
 
-前提：凭证可选——无凭证自动回落匿名试用（免注册、真实数据、需网络）
+前提：凭证可选——无凭证自动免注册免费试用（真实数据、需网络）
 运行：python examples/06_indicator_tour.py
 学到：cat.search 检索、指标组浏览、indicator.get 分位、valuation.hist_stats 历史统计
 文档：docs/GUIDE.md（核心概念、故障排查）；docs/AI.md（目录先行纪律）

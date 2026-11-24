@@ -16,7 +16,7 @@
     cat = wmshare.load()                             # 数据目录（域/函数/参数/返回 schema）
     fn = cat.function("kline.query_bars")
 
-    cli = wmshare.Client.from_env()                  # 无凭证自动回落匿名试用（免注册）
+    cli = wmshare.Client.from_env()                  # 无凭证自动免注册免费试用
     bars = cli.kline.bars("600519", n=30)            # -> DataFrame（date 升序）
     rows = cli.call("kline.query_bars", sym="600519", limit=30)   # 底层行数组
     # _units="native" / native=True 保留上游原单位；_raw=True 返回上游原始行；

@@ -1,6 +1,6 @@
 """公告变更订阅：notice_poller 轮询器的手动一轮、ack 语义与进度重置。
 
-前提：凭证可选——无凭证自动回落匿名试用（免注册、真实数据、需网络）
+前提：凭证可选——无凭证自动免注册免费试用（真实数据、需网络）
 运行：python examples/10_notice_monitor.py
 学到：poll_now 手动轮询（探针→拉新→回调→ack）；at-least-once（ack 前崩溃会重投）；StreamResetError→seek_oldest
 文档：docs/GUIDE.md（公告变更订阅）

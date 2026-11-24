@@ -12,11 +12,10 @@
     wmshare cbond daily --out ./cb/
     wmshare call kline.query_bars sym=600519 limit=30 --json
 
-客户端构造顺序（首个成功者生效）：``--anonymous`` 显式免注册匿名试用 →
-``from_env``（配置了凭证用付费凭据；无凭证时 SDK 内部自动回落匿名试用，
-``WMSHARE_DISABLE_ANON=1`` 可关闭，服务端未开放则给注册指引）。匿名额度是
-一次性给足、用完即止（对齐正常注册用户免费档），本命令**不砍量**——只对
-``screen --fields`` 这类首跑物化可达 ~60 万 EC 的用法打成本警告。
+客户端构造顺序（首个成功者生效）：``--anonymous`` 强制免注册（忽略已配置的凭证）→
+``from_env``（配置了凭证用自有应用凭证；无凭证时 SDK 内部自动走免注册免费试用，
+按来源网络限流，``WMSHARE_DISABLE_ANON=1`` 可关闭）。本命令**不砍量**——只对
+``screen --fields`` 这类首跑物化消耗很大的用法打成本警告。
 """
 from __future__ import annotations
 
@@ -30,7 +29,10 @@ from wmshare import export as _export
 
 __all__ = ["main", "parser"]
 
-_ANON_HINT = "[wmshare] 到 https://open.winmale.com 注册免费账号获取稳定额度"
+_REGISTER_HINT = "[wmshare] 到 https://open.winmale.com 注册免费账号获取稳定额度"
+
+# 免注册访问被服务端拒绝的终态码：报错之外再补一行注册指引。
+_REGISTER_HINT_CODES = frozenset({"ip_rate_limited", "ip_banned", "pool_unavailable"})
 
 
 def _common_flags(target: argparse.ArgumentParser, *, top: bool) -> argparse.ArgumentParser:
@@ -41,7 +43,8 @@ def _common_flags(target: argparse.ArgumentParser, *, top: bool) -> argparse.Arg
     会把顶层解析出的旗标覆盖回 False（实测踩过：旗标放在子命令前却走了
     付费凭据客户端）。SUPPRESS 让「子位置未给出」时不写该属性。
     """
-    anon: dict[str, Any] = dict(action="store_true", help="免注册匿名试用（一次性小配额）")
+    anon: dict[str, Any] = dict(action="store_true",
+                                help="强制免注册免费试用（忽略已配置的凭证）")
     market: dict[str, Any] = dict(help="市场 cn/hk/us（默认 cn）")
     js: dict[str, Any] = dict(action="store_true",
                               help="打印原始返回（JSON）；与 --out 组合时落盘照常")
@@ -148,33 +151,32 @@ def main(argv: list[str] | None = None) -> int:
         return handlers[args.command](cli, args)
     except wmshare.WmshareError as e:
         print(f"[wmshare] {type(e).__name__} ({e.code}): {e}", file=sys.stderr)
-        if e.code.startswith("anon_"):
-            print(_ANON_HINT, file=sys.stderr)
+        if e.code in _REGISTER_HINT_CODES:
+            print(_REGISTER_HINT, file=sys.stderr)
         return 2
     except (ValueError, OSError) as e:
         print(f"[wmshare] {e}", file=sys.stderr)
         return 2
 
 
-# ---- 客户端构造：--anonymous 显式匿名 → from_env（无凭据时内部自动回落） ----
+# ---- 客户端构造：--anonymous 强制免注册 → from_env（无凭据时内部自动走免注册） ----
 
 def _build_client(args: argparse.Namespace) -> tuple[Any, str]:
     if args.anonymous:
         cli = wmshare.Client.anonymous(market=args.market)
-        return cli, "anonymous（匿名试用，一次性额度）"
-    # from_env 自带登录墙拆除：凭据双缺时自动回落匿名试用（2.7.0 CLI 曾自建
-    # 回退分支，现收敛到 SDK 单一实现——否则 WMSHARE_DISABLE_ANON 在 CLI 侧
-    # 会被绕过，两条回落链语义漂移）。回落成功时凭 _is_anon 区分来源。
+        return cli, "public_pool（强制免注册，忽略已配置凭证）"
+    # 免注册回落只有 SDK 一条实现（2.7.0 的 CLI 曾自建回退分支：语义漂移，且绕过
+    # WMSHARE_DISABLE_ANON）。这里只读结果，不复制判断。
     cli = wmshare.Client.from_env(market=args.market)
-    if _is_anon(cli):
-        print("[wmshare] 未配置凭证，已自动使用匿名试用（免注册；一次性额度，"
-              "注册免费账号可获长期额度）", file=sys.stderr)
-        return cli, "anonymous（自动匿名试用）"
-    return cli, "credentials（付费凭据）"
+    if _is_public(cli):
+        print("[wmshare] 未配置凭证，已自动使用免注册免费试用（按来源网络限流；"
+              "注册免费账号并配置凭证可获独立额度）", file=sys.stderr)
+        return cli, "public_pool（自动免注册试用）"
+    return cli, "credentials（自有应用凭证）"
 
 
-def _is_anon(cli: Any) -> bool:
-    return getattr(cli, "anon_credentials_path", None) is not None
+def _is_public(cli: Any) -> bool:
+    return getattr(cli, "auth_mode", "credentials") == "public_pool"
 
 
 # ---- 动词实现 ----
@@ -183,9 +185,9 @@ def _cmd_screen(cli: Any, args: argparse.Namespace) -> int:
     from wmshare.api import _rows
 
     fields = [f.strip() for f in args.fields.split(",")] if args.fields else None
-    if fields and _is_anon(cli):
-        print("[wmshare] 警告：匿名额度一次性 50 万 EC；fields 重列首跑物化实测可达"
-              "~60 万 EC，可能直接耗尽配额（介意请注册免费账号后重跑）", file=sys.stderr)
+    if fields and _is_public(cli):
+        print("[wmshare] 警告：当前是免注册访问，试用额度由全体免注册用户共享；fields 重列"
+              "首跑消耗很大，可能一次用完可用额度（介意请注册免费账号后重跑）", file=sys.stderr)
     res = cli.screener.query(args.where, order=args.order, desc=not args.asc,
                              limit=args.limit, offset=args.offset, fields=fields)
     data = _unwrap(res) or {}

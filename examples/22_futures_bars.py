@@ -1,6 +1,6 @@
 """期货主力连续历史K线：cli.futures.bars（store 直读）。
 
-前提：凭证可选——无凭证自动回落匿名试用（免注册、真实数据、需网络）
+前提：凭证可选——无凭证自动免注册免费试用（真实数据、需网络）
 运行：python examples/22_futures_bars.py
 学到：futures.bars 与 kline.bars 同形（date=周期起点、升序、DF 默认）；日频只含
       交易日、n=根数；周/月线是上游周期 bar（成交量=周期合计）；begin/end 与 n

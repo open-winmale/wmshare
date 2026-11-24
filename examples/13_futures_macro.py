@@ -1,6 +1,6 @@
 """期货主力连续与宏观时序：期货指标码（$FUT_CLOSE 等 FUT 前缀码）与 macro 域两个新数据面。
 
-前提：凭证可选——无凭证自动回落匿名试用（免注册、真实数据、需网络）
+前提：凭证可选——无凭证自动免注册免费试用（真实数据、需网络）
 运行：python examples/12_futures_macro.py
 学到：期货指标码姿势（fut_symbol 换合约/外盘 global.*）、macro 时序/as-of/原生频率、中债收益率小数口径
 文档：docs/API.md（期货、宏观两章）；docs/GUIDE.md §6.1

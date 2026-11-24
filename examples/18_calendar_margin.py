@@ -1,6 +1,6 @@
 """交易日历与市场级两融：回测窗口的前置面 + 市场杠杆情绪观测。
 
-前提：凭证可选——无凭证自动回落匿名试用（免注册、真实数据、需网络）
+前提：凭证可选——无凭证自动免注册免费试用（真实数据、需网络）
 运行：python examples/18_calendar_margin.py
 学到：calendar.days/next 供回测与窗口计算取交易日锚（此前靠日 K 存在性隐式判定的坑移除）；
   margin.market_summary 观测全市场融资余额（杠杆情绪）；margin.universe 判定标的资格；

@@ -6,12 +6,12 @@
 > market data: k-line, intraday, money flow, statements, screener, whole-market batch, and
 > **2,983 server-precomputed metrics** (percentile ranks, multi-window averages, industry-relative
 > ranks — no DIY computation). Ships an offline catalog, data guards and AI skill. **No sign-up**
-> needed: `wmshare.Client.from_env()` auto-falls-back to a free anonymous trial (real data).
+> needed: `wmshare.Client.from_env()` auto-falls-back to free guest access (real data).
 > **Install**: `pip install wmshare`. **Full English quickstart**: [docs/QUICKSTART_EN.md](docs/QUICKSTART_EN.md).
 
 给 Python 量化开发者的中文财经数据 SDK：一行接口拿到清洗好的 A股/港股/美股数据——
 估值分位、TTM 股息率等指标**服务端算好直出**，全市场批量 **11 次请求**绕开限流；
-免注册即可先试（无凭证自动匿名试用），长期使用在开放平台（open.winmale.com）配置凭证。
+免注册即可先试（无凭证自动免注册免费试用），长期使用在开放平台（open.winmale.com）配置凭证。
 各市场逐能力明细见[「市场覆盖」](#市场覆盖)。
 
 ## 目录
@@ -24,12 +24,12 @@
 
 ## 零凭证先试
 
-装完就能跑，不用注册（无凭证自动免注册领匿名试用额度，真实数据）：
+装完就能跑，不用注册（无凭证自动免注册免费试用，真实数据）：
 
 ```python
 import wmshare
 
-cli = wmshare.Client.from_env()                        # 无凭证自动匿名试用
+cli = wmshare.Client.from_env()                        # 无凭证自动免注册免费试用
 print(f"{cli.dividend.yield_ttm('600519'):.2%}")       # 3.96%
 print(cli.screener.index_breadth_summary()["total"])   # 5685
 ```
@@ -51,7 +51,7 @@ python3 -c "import wmshare; print(wmshare.__version__)"   # 验证安装
 ### 不写 Python：`wmshare` 命令行出成品
 
 装完即得 `wmshare` 命令：筛选 / 收息 / 指数分位 / 转债图文四个任务动词直出成品文件（`--out` 落 md/csv/xlsx），
-其余目录函数用 `call k=v` 透传；**无凭证时自动用匿名试用**（免注册一次性额度）：
+其余目录函数用 `call k=v` 透传；**无凭证时自动免注册免费试用**（按来源网络限流）：
 
 ```bash
 wmshare screen --where "$ROE_TTM_LAST > 0.15" --order "$BONUS_RATE_3Y_AVG_LAST" --out roe.xlsx
@@ -63,7 +63,7 @@ wmshare call kline.query_bars sym=600519 limit=30 --json               # 其余 
 
 ### 配置凭证（可选）
 
-凭证可选：不配置也能取数（自动匿名试用）。配置正式凭证在 [开放平台](https://open.winmale.com)「我的 → 开放平台 → 我的应用」页获取 `AppId（Client ID）` 与 `API Key（Client Secret）` 两个值（缺一不可），配置方式任选其一：
+凭证可选：不配置也能取数（自动免注册免费试用）。配置正式凭证在 [开放平台](https://open.winmale.com)「我的 → 开放平台 → 我的应用」页获取 `AppId（Client ID）` 与 `API Key（Client Secret）` 两个值（缺一不可），配置方式任选其一：
 
 ```bash
 export WMSHARE_CLIENT_ID=<AppId> WMSHARE_CLIENT_SECRET=<API Key>   # 方式一：环境变量
@@ -96,7 +96,7 @@ for r in res["data"]["rows"][:5]:
 
 返回统一信封 `{ok, as_of, data, meta}`（数据在 `data` 内）；`where` 用 XS 语法
 （`&&` / `||` / `!`，比率一律小数），`$码` 必须是目录内真码；分页续取用 `offset`，
-只要命中数用 `limit=0`。`query` 需真实数据（含匿名试用）。
+只要命中数用 `limit=0`。`query` 需真实数据（免注册试用亦可）。
 
 ## 基本功能
 
@@ -146,7 +146,7 @@ for r in res["data"]["rows"][:5]:
   （`count`=真实命中数）；涨跌全景/分桶/行业分布/涨跌榜同走服务端预计算索引，毫秒级。
 - **离线目录防编造**：360 个底层函数、180 个核心接口、2,983 个指标码离线可查
   （`cat.search("中文")`），目录之外的名字显式报错。
-- **免注册先试**：`Client.from_env()` 无凭证自动回落匿名试用（真实数据、免费额度；`WMSHARE_DISABLE_ANON=1` 可关闭）。
+- **免注册先试**：`Client.from_env()` 无凭证自动免注册免费试用（真实数据，按来源网络限流；`WMSHARE_DISABLE_ANON=1` 可关闭）。
 - **数据守护**：全库统一单位（比率=小数、金额=元、量=股），返回前做单位换算与关键不变量校验；**精选 78 码另带口径与量级守护**（违例抛 `DataError`），其余码只保底不变量，口径以返回值/注释为准。
 
 ## 给 AI / Agent
@@ -293,7 +293,7 @@ TTM 汇总相除（沪深 300 一点 = 300 家汇总；31 个申万一级连起�
 
 ```python
 import wmshare
-cli = wmshare.Client.from_env()                          # 无凭证自动匿名试用；长期额度配凭证
+cli = wmshare.Client.from_env()                          # 无凭证自动免注册免费试用；长期额度配凭证
 t = cli.index.trend("index.hs300", "5y")                          # 统一信封 {ok, as_of, data, meta}
 t["data"]["points"].iloc[-1], t["data"]["n"]                      # 最新点（date 升序，末行）, 点数
 t["data"]["pe_pct"], t["data"]["pe_pct_window"], t["data"]["pct"]["pe"]["p3"]  # 5y 分位, '5y', 3y 分位
@@ -332,7 +332,7 @@ t["data"]["pe_pct"], t["data"]["pe_pct_window"], t["data"]["pct"]["pe"]["p3"]  #
 - **命令行与成品出口**：`wmshare screen/income/index/cbond` 直出 md/csv/xlsx（见「不写 Python」节）；`wmshare.export` 把信封/DataFrame 落成带口径表头的成品（`write_bundle` 附 manifest.json）
 - **文档中心 [docs/](docs/README.md)**：使用指南 GUIDE（单票菜谱/批量/多市场/故障排查）· 指标库 [INDICATORS.md](docs/INDICATORS.md)（全量指标码按数据类型分章）· AI 用法 · llms.txt 索引 · [API 参考](docs/API.md)（按资产类别分章的 180 个核心接口 + 指标组）
 - **可转债日更管线**：`cli.cbond.daily()` → `article()` → `figures()` 一条命令出图文（每个数字带 `sources` 与 `as_of`，缺条目抛错而非补猜测值）；实战 notebook 见 [docs/notebooks/cb_double_low.ipynb](docs/notebooks/cb_double_low.ipynb)（2026-11-07 真实数据）
-- **示例课程 [examples/](examples/README.md)**：29 个编号示例（入门→进阶→生产→AI→成品出口）——无凭证自动匿名试用（需网络），CI 注入离线回放夹具端到端覆盖
+- **示例课程 [examples/](examples/README.md)**：29 个编号示例（入门→进阶→生产→AI→成品出口）——无凭证自动免注册免费试用（需网络），CI 注入离线回放夹具端到端覆盖
 - **问题反馈 / 交流**：使用提问、数据口径与指标码请求走 [Discussions](https://github.com/open-winmale/wmshare/discussions)；可复现的 bug 提 [GitHub Issues](https://github.com/open-winmale/wmshare/issues)；也欢迎加 QQ 群 `1127142074`（搜索「wmshare开源交流群」）
 - **维护者与治理**：[MAINTAINERS.md](MAINTAINERS.md)（响应承诺与发版流程）· [GOVERNANCE.md](GOVERNANCE.md) · [行为准则](CODE_OF_CONDUCT.md)
 

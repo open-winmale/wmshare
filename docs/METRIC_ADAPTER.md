@@ -17,7 +17,7 @@
 import wmshare
 from wmshare.indicator_adapter import IndicatorAdapter
 
-cli = wmshare.Client.from_env()      # 无凭证自动匿名试用；长期额度配凭证
+cli = wmshare.Client.from_env()      # 无凭证自动免注册免费试用；长期额度配凭证
 ad = IndicatorAdapter(cli)
 
 ad.scopes()                          # 股票/行业/指数/宏观/期货/可转债/选股条件

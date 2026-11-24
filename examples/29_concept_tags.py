@@ -1,6 +1,6 @@
 """概念标签：cli.board.concepts_of / concept_members / concept_list（2026-11 新面）。
 
-前提：凭证可选——无凭证自动回落匿名试用（免注册、真实数据、需网络）
+前提：凭证可选——无凭证自动免注册免费试用（真实数据、需网络）
 运行：python examples/29_concept_tags.py
 学到：概念标签是全市场索引里的物化数组（$CONCEPT_TAGS），读面去 "s:" 前缀；
       概念名含指数/风格标签（HS300_/MSCI中国/融资融券），不做概念/风格分流；

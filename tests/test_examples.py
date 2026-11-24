@@ -2,7 +2,7 @@
 
 签名正确性由 test_interface_quality 的签名门禁全量把关；本文件保证每个示例在
 回放夹具（或打桩数据）上真的跑得完、关键输出（含单位口径注释）不回退。
-demo 模式已随 3.0.0 移除——示例统一 `main(cli=None)`，无凭证时 from_env 自动匿名。
+demo 模式已随 3.0.0 移除——示例统一 `main(cli=None)`，无凭证时 from_env 自动免注册免费试用。
 """
 from __future__ import annotations
 
@@ -31,8 +31,8 @@ def snapshot():
     return load_replay_snapshot()
 
 
-def _run_example(name: str) -> subprocess.CompletedProcess:
-    env = {**os.environ, "PYTHONPATH": str(SRC)}
+def _run_example(name: str, extra_env: dict[str, str] | None = None) -> subprocess.CompletedProcess:
+    env = {**os.environ, "PYTHONPATH": str(SRC), **(extra_env or {})}
     command = [sys.executable, str(EXAMPLES / name)]
     return subprocess.run(command, capture_output=True, text=True, env=env, timeout=60)
 
@@ -406,15 +406,51 @@ def test_27_block_trade_replay_raises_explicitly(capsys):
     assert "先估成本" in capsys.readouterr().out
 
 
-def test_20_anonymous_trial_degrades_gracefully():
-    """匿名示例在服务端未开启时应打印注册指引并正常退出（不抛异常）。
+_NO_CREDENTIAL_KEYS = ("WMSHARE_CLIENT_ID", "WMSHARE_CLIENT_SECRET",
+                      "OPEN_PLATFORM_CLIENT_ID", "OPEN_PLATFORM_CLIENT_SECRET")
 
-    该示例的前提是服务端开启匿名试用；CI 无外网也不该失败，
-    因此断言的是「优雅降级」而非取数成功。
+
+def test_20_free_trial_degrades_gracefully(tmp_path):
+    """免注册示例在回落被关闭时打印注册指引并正常退出（不抛异常、不联网）。
+
+    用 WMSHARE_DISABLE_ANON=1 走确定性的降级路径：CI 无外网不会失败，有网的
+    开发机上也不会真的去请求服务端（免注册访问不需要凭证，光清空凭证拦不住）。
     """
-    result = _run_example("20_anonymous_trial.py")
+    env = {"WMSHARE_CREDENTIALS": str(tmp_path / "absent.env"), "WMSHARE_DISABLE_ANON": "1"}
+    for key in _NO_CREDENTIAL_KEYS:
+        env[key] = ""
+    result = _run_example("20_free_trial.py", env)
     assert result.returncode == 0, result.stderr
-    assert ("匿名试用" in result.stdout) or ("注册" in result.stdout)
+    assert "免注册试用不可用" in result.stdout
+    assert "open.winmale.com" in result.stdout
+
+
+def test_20_free_trial_reports_access_mode(capsys):
+    """注入免注册客户端：打印访问方式与取数结果，并说明免注册访问的边界。"""
+    def last(sym):
+        return {"date": "2026-11-23", "close": 1439.0}
+
+    stub = types.SimpleNamespace(auth_mode="public_pool",
+                                 kline=types.SimpleNamespace(last=last),
+                                 dividend=types.SimpleNamespace(yield_ttm=lambda sym: 0.0361))
+    _load("20_free_trial.py").main(stub)
+    out = capsys.readouterr().out
+    assert "public_pool" in out and "1439.0" in out and "3.61%" in out
+    assert "WMSHARE_DISABLE_ANON=1" in out
+
+
+def test_20_free_trial_shows_terminal_rejection_code(capsys):
+    """免注册被拒（终态码）：示例打印 code 与服务端消息，不崩溃。"""
+    from wmshare.errors import LimitError
+
+    def limited(sym):
+        raise LimitError("本网络的免注册请求次数已达上限", code="ip_rate_limited", status=429)
+
+    stub = types.SimpleNamespace(auth_mode="public_pool",
+                                 kline=types.SimpleNamespace(last=limited))
+    _load("20_free_trial.py").main(stub)
+    out = capsys.readouterr().out
+    assert "取数被拒（ip_rate_limited）" in out
 
 
 def test_examples_index_covers_dir():

@@ -94,10 +94,10 @@ CI（`.github/workflows/ci.yml`）在每次 push/PR 上跑同样的门禁。
 
 ```bash
 pip install -e ".[dev,dataframe]"
-python examples/01_quickstart.py       # 无凭证自动匿名试用；长期额度配凭证
+python examples/01_quickstart.py       # 无凭证自动免注册免费试用；长期额度配凭证
 python examples/02_catalog_tour.py     # 离线示例（02/03/09 无需凭证）
-python examples/08_pandas_analysis.py  # DataFrame 分析（需凭证 + pandas）
-# 全部 11 个示例与课程表：examples/README.md
+python examples/08_pandas_analysis.py  # DataFrame 分析（pandas；凭证可选）
+# 全部 29 个示例与课程表：examples/README.md
 ```
 
 ## 许可政策

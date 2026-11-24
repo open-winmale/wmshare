@@ -6,7 +6,7 @@
 页面看到的响应与点「在线测试」会得到的响应同源。
 
 - 凭证：``Client.from_env()``（~/.wmshare/credentials.env / WMSHARE_*），
-  无凭证回落 ``Client.anonymous()``（匿名试用额度）；维护者联网运行。
+  无凭证时自动走免注册免费试用（按来源网络限流）；维护者联网运行。
 - 参数：复用 gen_api_docs 的示例参数表（与页面「示例参数」、test payload 一致）；
   先用完整示例参数，失败回落最小必填参数。
 - 断点续拍：已有样本文件里 result 非空的 key 跳过（``--force`` 全量重拍）。
@@ -37,9 +37,9 @@ CALL_GAP_SEC = 0.3
 
 
 def build_client(market: str = "cn") -> tuple[Client, str]:
-    """from_env 凭据双缺自动回落匿名（anon_open_* 前缀可识别来源）。"""
+    """from_env：有凭证用维护者自己的应用，无凭证走免注册访问（auth_mode 判别来源）。"""
     cli = Client.from_env(market=market)
-    return cli, ("anonymous" if cli.client_id.startswith("anon_open") else "maintainer")
+    return cli, ("anonymous" if cli.auth_mode == "public_pool" else "maintainer")
 
 
 def main() -> int:

@@ -159,6 +159,12 @@ def test_symbol_naming_contract():
                 raise AssertionError(f"cli.{ns}.{method}: 参数 code 需登记 allowlist")
 
 
+# 保留码：3.3.0 起不再触发，仅为旧程序的分支判断保留登记（兼容政策——code 取值
+# 属公开面，移除只能在 MAJOR；见 docs/COMPATIBILITY.md §1 与 gen_errors.RESERVED）。
+# 这里手写名单、不从生成器导入：独立于生成器逻辑正是本用例的价值。
+RESERVED_ERROR_CODES = frozenset({"anon_unavailable", "anon_quota", "anon_failed", "anon_bad_response"})
+
+
 def test_error_codes_bidirectional_documented():
     """源码 `code="..."` 字面量 ↔ docs/ERRORS.md 双向一致（独立于生成器逻辑）。"""
     text = (REPO / "docs" / "ERRORS.md").read_text(encoding="utf-8")
@@ -169,9 +175,16 @@ def test_error_codes_bidirectional_documented():
         scanned |= set(re.findall(r'code="([a-z][a-z0-9_]*)"',
                                   p.read_text(encoding="utf-8", errors="ignore")))
     missing = scanned - documented
-    extra = documented - scanned - set(QUOTA_CODES)
+    extra = documented - scanned - set(QUOTA_CODES) - RESERVED_ERROR_CODES
     assert not missing, f"源码新增错误码未写入 docs/ERRORS.md：{sorted(missing)}"
     assert not extra, f"docs/ERRORS.md 登记了源码中不存在的码：{sorted(extra)}"
+    # 保留码只能待在「保留码」节：不得重新出现在源码里，也不得从文档里先消失
+    assert not (RESERVED_ERROR_CODES & scanned), \
+        "保留码重新出现在源码里：请从保留名单移除并在 gen_errors.MEANINGS 登记"
+    assert "## 5. 保留码" in text, "docs/ERRORS.md 缺少保留码节"
+    live, reserved = text.split("## 5. 保留码", 1)
+    assert RESERVED_ERROR_CODES <= set(re.findall(r"^\| `([a-z][a-z0-9_]*)` \|", reserved, re.M))
+    assert not (RESERVED_ERROR_CODES & set(re.findall(r"^\| `([a-z][a-z0-9_]*)` \|", live, re.M)))
 
 
 def test_relative_links_exist_and_example_count_consistent():

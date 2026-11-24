@@ -3,6 +3,9 @@
   POST {base}/v1/oauth/token        form: grant_type/client_id/client_secret[+scope]
   POST {base}/v1/analysis/xs/eval   JSON: {symbol, xs_lines, args, script_files, market?, mode}
                                     Bearer token；mode=call → 顶层 return 值在 data.result
+
+免注册访问（``_public_pool``，3.3.0 起取代匿名凭据申领）：不换令牌，xs/eval 不带
+Authorization，服务端按来源网络记账；接口、返回形态与凭证模式完全一致。
 """
 from __future__ import annotations
 
@@ -806,6 +809,25 @@ def _legacy_finpipe_hints() -> str:
     return "、".join(found)
 
 
+# 免注册访问的终态 429（服务端码）：持续性拒绝，重试只会再被拒一次。配额耗尽之外，
+# 公开池还有两种特有的拒绝——单 IP 限流、分到的池分片被停用。
+PUBLIC_LIMIT_CODES = frozenset({"IP_RATE_LIMITED", "APP_SUSPENDED"})
+TERMINAL_429_CODES = QUOTA_CODES | PUBLIC_LIMIT_CODES
+
+REGISTER_GUIDANCE = "需要独立、稳定的额度请到 https://open.winmale.com 注册免费账号并配置凭证。"
+PUBLIC_QUOTA_GUIDANCE = f"免注册额度由全体免注册用户共享，重试无效，请稍后再试；{REGISTER_GUIDANCE}"
+PUBLIC_LIMIT_GUIDANCE = (
+    "免注册访问按来源网络限流，请稍后重试（批量取数可减少请求次数）；"
+    "需要更高频次请到 https://open.winmale.com 注册免费账号并配置凭证。"
+)
+
+
+def _public_pool_disabled(env: dict[str, str]) -> bool:
+    """``WMSHARE_DISABLE_ANON`` 为真值时关闭免注册回落（2.8.0 起的迁移逃生口，语义不变）。"""
+    return str(env.get("WMSHARE_DISABLE_ANON", "")).strip().lower() \
+        not in ("", "0", "false", "no", "off")
+
+
 class Client:
     def __init__(
         self,
@@ -826,6 +848,7 @@ class Client:
         allow_custom_host: bool = False,
         native_batch: bool = True,
         native_batch_min: int = 3,
+        _public_pool: bool = False,
     ):
         market = str(market or "cn").strip().lower()
         if market not in ("cn", "hk", "us"):
@@ -854,14 +877,21 @@ class Client:
         if isinstance(native_batch_min, bool) or not isinstance(native_batch_min, int) \
                 or native_batch_min < 1:
             raise UsageError("native_batch_min 必须是正整数", code="config")
+        if not isinstance(_public_pool, bool):
+            raise UsageError("_public_pool 必须是布尔值", code="config")
         self.base_url = (base_url or DEFAULT_BASE_URL).rstrip("/")
         self.client_id = client_id or ""
         self.client_secret = client_secret or ""
+        self._public_pool = _public_pool
+        if self._public_pool and (self.client_id or self.client_secret):
+            raise UsageError(
+                "_public_pool 与 client_id/client_secret 不能同时提供："
+                "免注册访问不带凭证；配置了凭证请去掉 _public_pool", code="config")
         if bool(self.client_id) != bool(self.client_secret):
             raise AuthError(
                 "client_id 与 client_secret 需成对提供。"
                 f"不配置则无法取数——{APPID_GUIDANCE}", code="config")
-        if not self.client_id:
+        if not self.client_id and not self._public_pool:
             legacy = _legacy_finpipe_hints()
             raise AuthError(
                 "缺少凭证：请先配置自己的开放平台凭证"
@@ -869,14 +899,13 @@ class Client:
                 + (f"\n检测到旧版 finpipe 配置（{legacy}）：本项目已更名 wmshare，"
                    "凭证配置同步改为 WMSHARE_* 环境变量 / ~/.wmshare/credentials.env，"
                    "旧配置不再被读取，请迁移。\n" if legacy else "\n")
-                # 报错即引导：未配置凭证时首选 Client.from_env()——凭据双缺
-                # 会自动回落匿名试用（免注册、真实数据、免费额度）。回落不可用
-                # （服务端未开放 / WMSHARE_DISABLE_ANON=1）时 from_env 也会落到
-                # 本错误，故文案必须自解释，不能把「去用 from_env()」当唯一出口。
-                + "未配置凭证可用 wmshare.Client.from_env() 自动领取匿名试用"
-                  "（免注册、真实数据、免费额度）。若已在 from_env() 中仍见本"
-                  "错误，说明该服务端未开放匿名试用、或 WMSHARE_DISABLE_ANON=1"
-                  " 已关闭回落，请直接配置上述凭证。\n"
+                # 报错即引导：未配置凭证时首选 Client.from_env()——凭据双缺时自动
+                # 走免注册免费试用（真实数据、按来源网络限流）。回落被关闭
+                # （WMSHARE_DISABLE_ANON=1）时 from_env 也会落到本错误，故文案必须
+                # 自解释，不能把「去用 from_env()」当唯一出口。
+                + "未配置凭证可改用 wmshare.Client.from_env()：凭据双缺时自动免注册"
+                  "免费试用（真实数据）。若已在 from_env() 中仍见本错误，说明设置了"
+                  " WMSHARE_DISABLE_ANON=1 关闭免注册访问，请直接配置上述凭证。\n"
                 + f"{APPID_GUIDANCE}",
                 code="config")
         self.market = market
@@ -933,11 +962,12 @@ class Client:
     # ---- 凭证 ----
     @classmethod
     def from_env(cls, env: dict[str, str] | None = None, **kw: Any) -> "Client":
-        """从环境解析凭据构造客户端；凭据双缺时自动回落匿名试用（免注册可用）。
+        """从环境解析凭据构造客户端；凭据双缺时走免注册免费试用（无需注册）。
 
         解析顺序：显式参数 > 环境变量（``WMSHARE_*``）> 凭据文件（``WMSHARE_CREDENTIALS``）。
-        双缺时自动申领匿名额度并落盘独立文件（不覆盖付费凭据）；服务端未开放时
-        保持「缺少凭证」报错。``WMSHARE_DISABLE_ANON=1`` 关闭回落。
+        双缺时构造免注册客户端：不申领、不落盘凭据，请求不带访问令牌，由服务端按
+        来源网络记账（3.3.0 起取代匿名凭据申领）。``WMSHARE_DISABLE_ANON=1`` 关闭
+        这一回落，保持「缺少凭证」报错。
         """
         e = dict(os.environ if env is None else env)
         cred_file = Path(e.get("WMSHARE_CREDENTIALS", DEFAULT_CREDENTIAL_PATH))
@@ -954,122 +984,61 @@ class Client:
             kw.setdefault("client_id", cid)
         if sec:
             kw.setdefault("client_secret", sec)
-        # 登录墙拆除（2.7.0）：全部缺省时尝试匿名试用回落——「缺少凭证」报错只在
-        # 回落不可用时触达（服务端未开放该功能，或用户显式 WMSHARE_DISABLE_ANON）。
-        if not str(kw.get("client_id") or "").strip() and not str(kw.get("client_secret") or "").strip():
-            client = cls._anonymous_fallback(e, kw)
-            if client is not None:
-                return client
+        # 凭据双缺：走免注册访问（纯本地构造，零网络、零落盘）。回落被关闭
+        # （WMSHARE_DISABLE_ANON）或调用方显式给了 _public_pool 时原样交给 __init__，
+        # 「缺少凭证」报错只在那条路径上触达。
+        if not str(kw.get("client_id") or "").strip() \
+                and not str(kw.get("client_secret") or "").strip() \
+                and not _public_pool_disabled(e):
+            kw.setdefault("_public_pool", True)
         return cls(**kw)
 
-    @classmethod
-    def _anonymous_fallback(cls, env: dict[str, str], kw: dict[str, Any]) -> "Client | None":
-        """凭据双缺时尝试匿名试用回落；返回 ``None`` 表示不回落（走原报错路径）。
-
-        - 本地已存匿名凭据 → 直接复用（零网络）；
-        - 否则向服务端申领并落盘（独立文件，永不覆盖付费凭据）；
-        - 服务端未开放匿名试用（404 ``anon_unavailable``）→ 返回 ``None``，
-          from_env 落回原「缺少凭证」报错——错误口径与未拆墙时一致；
-        - 名额满 / 网络失败等其他错误 → 抛 ``AuthError`` 合并注册指引。
-        """
-        from wmshare._anon import (  # 局部导入：回落是可选路径，主构造路径不承担其成本
-            anon_credentials_path,
-            load_anon_credentials,
-            request_anon_credentials,
-            save_anon_credentials,
-        )
-
-        if str(env.get("WMSHARE_DISABLE_ANON", "")).strip().lower() not in ("", "0", "false", "no", "off"):
-            return None
-        # 匿名凭据路径跟随 env 字典（与 WMSHARE_CREDENTIALS 同语义，便于测试隔离）。
-        path_override = env.get("WMSHARE_ANON_CREDENTIALS", "").strip() or None
-
-        saved = load_anon_credentials(Path(path_override) if path_override else None)
-        if saved is not None:
-            kw.setdefault("client_id", saved["client_id"])
-            kw.setdefault("client_secret", saved["client_secret"])
-            client = cls(**kw)
-            client.anon_credentials_path = saved.get("path") or str(  # type: ignore[attr-defined]
-                Path(path_override) if path_override else anon_credentials_path())
-            return client
-
-        base = str(kw.get("base_url") or DEFAULT_BASE_URL)
-        try:
-            creds = request_anon_credentials(base)
-        except AuthError as exc:
-            if getattr(exc, "code", "") == "anon_unavailable":
-                return None  # 服务端未开放该功能：保持既有「缺少凭证」报错口径
-            raise AuthError(
-                f"自动领取匿名试用凭据失败：{exc}\n"
-                "可稍后重试；或到 https://open.winmale.com 注册免费账号并配置凭据。",
-                code=getattr(exc, "code", None) or "anon_failed",
-            ) from None
-        except TransportError as exc:
-            raise AuthError(
-                f"自动领取匿名试用凭据失败（网络错误：{exc}）；"
-                "请检查网络后重试，或到 https://open.winmale.com 注册免费账号并配置凭据。",
-                code="anon_failed",
-            ) from None
-        path = save_anon_credentials(
-            creds, Path(path_override) if path_override else anon_credentials_path())
-        kw.setdefault("client_id", creds["client_id"])
-        kw.setdefault("client_secret", creds["client_secret"])
-        client = cls(**kw)
-        # 便于调用方提示用户额度与凭据位置（不参与鉴权）。
-        client.anon_credentials_path = str(path)  # type: ignore[attr-defined]
-        return client
+    @property
+    def auth_mode(self) -> str:
+        """当前访问方式：``"credentials"``（自有应用凭证）或 ``"public_pool"``（免注册访问）。"""
+        return "public_pool" if self._public_pool else "credentials"
 
     @classmethod
     def anonymous(cls, *, refresh: bool = False, **kw: Any) -> "Client":
-        """用匿名试用凭据构造客户端（免注册；一次性额度，对齐正常注册用户免费档）。
+        """强制用免注册方式构造客户端（忽略环境里已配置的凭证）。
 
-        首次调用向服务端申领一份匿名凭据并写入 ``~/.wmshare/anon_credentials.env``
-        （**与付费凭据文件分离**，不会覆盖 ``credentials.env``）。之后直接复用本地
-        凭据，不再消耗申领名额。``Client.from_env()`` 在凭据双缺时会自动走同一条
-        回落链——通常无需显式调用本方法。
+        未配置凭证时 ``Client.from_env()`` 本就走同一条路，通常无需显式调用；
+        本方法的用途是「已配置凭证、但这一次仍要免注册」。
 
-        匿名额度是「一次性给足、用完即止」（额度与限频、单次上限对齐正常注册用户的
-        免费档，具体数值以服务端返回的 ``ec_balance`` 为准）——服务端不会为匿名应用
-        周补满。凭据对应的匿名应用由服务端在创建 7 天后自动清理（TTL）；届时本地凭据
-        会失效（401/配额类错误），用 ``Client.anonymous(refresh=True)`` 重新申领一份
-        即可（受当日发放名额限制）。需要长期额度请到 https://open.winmale.com 注册免费账号。
+        3.3.0 起免注册访问不再申领、落盘凭据：请求不带访问令牌，服务端按来源网络
+        记账，额度与频次由全体免注册用户共享。显式传入成对的 ``client_id`` /
+        ``client_secret`` 时仍按凭证构造（旧语义不变）。
 
-        :param refresh: 忽略本地已存凭据，重新申领一份。
-        :raises AuthError: 服务端未开放匿名试用、今日名额已满，或本网络领取次数超限。
+        :param refresh: 已无意义，仅为兼容旧调用保留。
+        .. deprecated:: 3.3.0
+           ``refresh``——免注册访问不再落盘凭据，无可刷新之物；将在下一个 MAJOR
+           版本移除，调用方删掉该参数即可。
+
+        :raises AuthError: ``client_id`` / ``client_secret`` 只给了一个（需成对提供）。
         """
-        from wmshare._anon import (
-            anon_credentials_path,
-            load_anon_credentials,
-            request_anon_credentials,
-            save_anon_credentials,
-        )
-
-        if not refresh:
-            saved = load_anon_credentials()
-            if saved is not None:
-                kw.setdefault("client_id", saved["client_id"])
-                kw.setdefault("client_secret", saved["client_secret"])
-                return cls(**kw)
-
-        base = kw.get("base_url") or os.environ.get("WMSHARE_BASE_URL") or DEFAULT_BASE_URL
-        creds = request_anon_credentials(base)
-        path = save_anon_credentials(creds, anon_credentials_path())
-        kw.setdefault("client_id", creds["client_id"])
-        kw.setdefault("client_secret", creds["client_secret"])
-        client = cls(**kw)
-        # 便于调用方提示用户额度与凭据位置（不参与鉴权）。
-        client.anon_credentials_path = str(path)  # type: ignore[attr-defined]
-        return client
+        if refresh:
+            warnings.warn(
+                "Client.anonymous(refresh=True) 已无意义：3.3.0 起免注册访问不再申领、"
+                "落盘凭据，refresh 参数将在下一个 MAJOR 版本移除；直接删掉该参数即可。",
+                DeprecationWarning, stacklevel=2)
+        has_id = bool(str(kw.get("client_id") or "").strip())
+        has_secret = bool(str(kw.get("client_secret") or "").strip())
+        if has_id != has_secret:
+            return cls(**kw)  # 只给了一半：交给 __init__ 报「需成对提供」
+        if has_id:
+            return cls(**kw)  # 显式凭证优先（旧语义）
+        kw["_public_pool"] = True
+        return cls(**kw)
 
     # ---- 传输 ----
     RETRY_STATUS = frozenset({429, 500, 502, 503, 504})
 
-    def _quota_code(self, resp: requests.Response) -> str:
-        """429 响应体里的服务端 error.code 若属配额终态则原样返回，否则空串。"""
+    def _terminal_429_code(self, resp: requests.Response) -> str:
+        """429 响应体里的服务端 error.code 若属终态（重试无意义）则原样返回，否则空串。"""
         if resp.status_code != 429:
             return ""
         code, _ = self._error_detail(resp)
-        return code if code in QUOTA_CODES else ""
+        return code if code in TERMINAL_429_CODES else ""
 
     def _retry_after(self, resp: requests.Response | None) -> float | None:
         if resp is None or not hasattr(resp, "headers"):
@@ -1129,8 +1098,9 @@ class Client:
                 continue
             last = resp
             if resp.status_code in self.RETRY_STATUS and i < attempts - 1:
-                if self._quota_code(resp):
-                    # 配额终态（周钱包空/当日到顶）：重试无意义，立即终止本次调用。
+                if self._terminal_429_code(resp):
+                    # 终态 429（配额耗尽 / 免注册单 IP 限流 / 池分片停用）：重试只会
+                    # 再被拒一次，立即终止本次调用。
                     break
                 self._sleep_for_retry(i, resp)
                 continue
@@ -1173,12 +1143,20 @@ class Client:
             )
         return "", self._safe_detail(raw)
 
+    def _quota_guidance(self) -> str:
+        """配额耗尽后的下一步：免注册访问没有「默认应用/周补」可换，只给注册路径。"""
+        return PUBLIC_QUOTA_GUIDANCE if self._public_pool else f"{QUOTA_GUIDANCE}{APPID_GUIDANCE}"
+
     def _raise_http_error(self, resp: requests.Response, *, stage: str) -> NoReturn:
         """把 OAuth/eval 的非 200 响应统一映射为 WmshareError，并附 AppID 引导。"""
         status = resp.status_code
         code, detail = self._error_detail(resp)
         label = f"HTTP {status}" + (f"，{code}" if code else "")
         suffix = f"：{detail}" if detail else ""
+        if self._public_pool and status in (401, 403, 429):
+            # 免注册访问的拒绝与凭证无关（额度、频次按来源网络共享）：文案不能套用
+            # 「检查凭证配置」「换默认应用/等周补」这些自有应用的说法。
+            self._raise_public_pool_error(resp, status=status, code=code, label=label, suffix=suffix)
         if status == 429:
             retry_after = resp.headers.get("Retry-After") if hasattr(resp, "headers") else None
             wait = f"（建议 {retry_after} 秒后重试）" if retry_after else ""
@@ -1186,8 +1164,7 @@ class Client:
                 # 配额终态透传服务端原串（如 EC_BALANCE_EXHAUSTED），便于程序化
                 # except QuotaError 处理；重试已被 _request 抑制。
                 raise QuotaError(
-                    f"配额耗尽（{label}）{wait}{suffix}。{QUOTA_GUIDANCE}"
-                    f"{APPID_GUIDANCE}",
+                    f"配额耗尽（{label}）{wait}{suffix}。{self._quota_guidance()}",
                     code=code, status=status, retry_after=self._retry_after(resp))
             raise LimitError(
                 f"请求被限流（{label}）{wait}{suffix}。请稍后重试，或申请自己的 AppID 提升额度。"
@@ -1218,6 +1195,41 @@ class Client:
                 "若持续出现请携带时间与请求名到项目 issues 反馈。",
                 code=code or "server", status=status)
         raise ApiError(f"HTTP {status}{suffix}", code=code or "http", status=status)
+
+    def _raise_public_pool_error(self, resp: requests.Response, *, status: int, code: str,
+                                 label: str, suffix: str) -> NoReturn:
+        """免注册访问下 401/403/429 的映射；code 取自服务端公开池网关的拒绝原因。"""
+        retry_after = resp.headers.get("Retry-After") if hasattr(resp, "headers") else None
+        wait = f"（建议 {retry_after} 秒后重试）" if retry_after else ""
+        if status == 429:
+            if code in QUOTA_CODES:
+                raise QuotaError(
+                    f"免注册试用额度已用完（{label}）{wait}{suffix}。{PUBLIC_QUOTA_GUIDANCE}",
+                    code=code, status=status, retry_after=self._retry_after(resp))
+            if code == "IP_RATE_LIMITED":
+                raise LimitError(
+                    f"本网络的免注册请求次数已达上限（{label}）{wait}{suffix}。"
+                    f"{PUBLIC_LIMIT_GUIDANCE}",
+                    code="ip_rate_limited", status=status, retry_after=self._retry_after(resp))
+            if code == "APP_SUSPENDED":
+                raise LimitError(
+                    f"免注册访问暂不可用（{label}）{wait}{suffix}：服务端暂停了免注册额度，"
+                    f"请稍后重试。{REGISTER_GUIDANCE}",
+                    code="pool_unavailable", status=status, retry_after=self._retry_after(resp))
+            raise LimitError(
+                f"请求被限流（{label}）{wait}{suffix}。{PUBLIC_LIMIT_GUIDANCE}",
+                code="rate_limited", status=status, retry_after=self._retry_after(resp))
+        if status == 403 and code == "IP_BANNED":
+            raise AuthError(
+                f"本网络已被禁止免注册访问（{label}）{suffix}。"
+                f"配置自有应用凭证后不受此限制。{APPID_GUIDANCE}",
+                code="ip_banned", status=status)
+        raise AuthError(
+            f"免注册访问被拒绝（{label}）{suffix}。"
+            f"该调用可能不在免注册试用范围内，或当前服务端不支持免注册访问；"
+            f"请到 open.winmale.com 注册免费账号并配置凭证后重试。"
+            f"{APPID_GUIDANCE}",
+            code=code or "denied", status=status)
 
     def _get_token(self) -> str:
         if self._token and time.time() < self._token_exp - 60:
@@ -1263,8 +1275,14 @@ class Client:
             return token
 
     def _post_authed(self, path: str, body: dict[str, Any]) -> requests.Response:
-        """带 OAuth Bearer 的 POST；401 清令牌刷新后重试一次（仅一次，避免环路）。"""
+        """带 OAuth Bearer 的 POST；401 清令牌刷新后重试一次（仅一次，避免环路）。
+
+        免注册访问不带 ``Authorization``：没有令牌可换、可刷新，401 不重试，原样
+        交给错误映射（当前服务端不支持免注册访问时会走到这里）。
+        """
         url = f"{self.base_url}{path}"
+        if self._public_pool:
+            return self._request(url, json=body, timeout=self.timeout)
 
         def call_once() -> requests.Response:
             return self._request(url, json=body, timeout=self.timeout,
@@ -1328,8 +1346,8 @@ class Client:
             if code.upper() in QUOTA_CODES:
                 # HTTP 200 信封里的配额终态：同样不重试、透传原串。
                 raise QuotaError(
-                    f"eval 失败：{code} {message}。{QUOTA_GUIDANCE}"
-                    f"{APPID_GUIDANCE}", code=code, status=resp.status_code)
+                    f"eval 失败：{code} {message}。{self._quota_guidance()}",
+                    code=code, status=resp.status_code)
             if "RATE" in code.upper() or "QUOTA" in code.upper():
                 raise LimitError(
                     f"eval 失败：{code} {message}。"

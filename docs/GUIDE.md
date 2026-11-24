@@ -17,8 +17,8 @@ pip install wmshare                  # 基础安装
 python3 -c "import wmshare; print(wmshare.__version__)"   # 验证安装
 ```
 
-不配凭证先试：`cli = wmshare.Client.from_env()`——无凭据自动免注册领**匿名试用**
-（真实数据、免费额度，需网络；`WMSHARE_DISABLE_ANON=1` 可关闭）。examples/ 的
+不配凭证先试：`cli = wmshare.Client.from_env()`——无凭据自动免注册**免费试用**
+（真实数据，按来源网络限流，需网络；`WMSHARE_DISABLE_ANON=1` 可关闭）。examples/ 的
 示例统一 `main(cli=None)`，无凭证即可跑。要长期额度/更高限频按下节配置凭证（可选）。
 
 凭证在开放平台（`https://open.winmale.com`）控制台的

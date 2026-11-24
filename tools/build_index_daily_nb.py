@@ -70,7 +70,7 @@ def load_credentials() -> None:
 
 
 load_credentials()
-# 无凭证时 from_env 自动回落匿名试用（免注册、真实数据、免费额度）
+# 无凭证时 from_env 自动免注册免费试用（真实数据、需网络）
 cli = Client.from_env(max_limit=800)
 print("client ready: live")"""),
     md("""## 一、指数估值榜

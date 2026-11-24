@@ -1,6 +1,6 @@
 # 错误码与异常处理
 
-本页由 `tools/gen_errors.py` 从源码扫描生成（禁止手改）：客户端 `code="..."` 字面量 + 服务端配额码。异常层级见 [`src/wmshare/errors.py`](../src/wmshare/errors.py)。
+本页由 `tools/gen_errors.py` 从源码扫描生成（禁止手改）：客户端 `code="..."` 字面量 + 服务端配额码 + 保留码。异常层级见 [`src/wmshare/errors.py`](../src/wmshare/errors.py)。
 
 ## 1. 异常层级
 
@@ -62,14 +62,11 @@
 
 | `code` | 含义 | 可重试 | 处理建议 |
 |---|---|---|---|
-| `anon_bad_response` | 匿名凭据响应缺少 client_id/client_secret | 是 | 重试；持续失败反馈网关版本 |
-| `anon_failed` | 匿名凭据申领失败（其他 HTTP 错误） | 是 | 稍后重试；持续失败贴消息反馈 |
-| `anon_quota` | 匿名试用今日名额已满或本网络领取次数超限 | 是 | 次日再试；需要稳定额度请注册免费账号 |
-| `anon_unavailable` | 服务端未开放匿名试用（端点 404） | 否 | 到 open.winmale.com 注册免费账号获取凭据 |
 | `config` | 客户端构造参数或凭证配置错误 | 否 | 按消息修正配置 |
 | `credential_mode` | 凭证文件权限过宽且开启严格模式 | 否 | `chmod 600` 后重试 |
 | `endpoint_unavailable` | 端点不可达或非官方主机未放行 | 否 | 用官方端点；自定义主机需 `allow_custom_host=True` |
 | `extra` | 导出格式需要可选依赖（xlsx/png） | 否 | 按消息安装：`pip install "wmshare[excel]"` 或 `"wmshare[figures]"` |
+| `ip_banned` | 免注册访问：来源网络被禁止免注册访问（HTTP 403，IP_BANNED） | 否 | 配置自有应用凭证后不受此限制 |
 | `network` | 网络层失败（重试耗尽） | 是 | 检查网络/代理后重试 |
 | `oauth` | OAuth 取 token 失败 | 是 | 检查 client_id/secret；瞬时失败可重试 |
 | `oauth_response` | OAuth 响应结构异常 | 是 | 重试；持续失败检查网关版本 |
@@ -80,6 +77,8 @@
 | `code` | 含义 | 可重试 | 处理建议 |
 |---|---|---|---|
 | `ec_budget` | 本地 EC 预算保护触发（未发请求） | 否 | 调大预算或缩小请求；先 `cli.cost_estimate` 估算 |
+| `ip_rate_limited` | 免注册访问：来源网络的请求次数到顶（HTTP 429，IP_RATE_LIMITED） | 是 | 按小时计，稍后重试；批量取数减少请求次数；需要稳定频次请配置凭证 |
+| `pool_unavailable` | 免注册访问：服务端暂停了免注册额度（HTTP 429，APP_SUSPENDED） | 是 | 稍后重试；需要稳定额度请配置凭证 |
 | `rate_limited` | 服务端限流（HTTP 429，按请求次数） | 是 | 按 `retry_after`/`Retry-After` 退避；减少请求次数（batch_all/批量原生） |
 
 ### 批量
@@ -105,6 +104,8 @@
 | `EC_BALANCE_EXHAUSTED` | EC 钱包余额耗尽（周额度已空） | 否 | 换平台默认应用凭证 / 等周补 / 升级或充值 |
 | `INSIGHT_CREDIT_EXHAUSTED` | 洞察点数额度耗尽 | 否 | 换平台默认应用凭证 / 等周补 / 升级或充值 |
 
+免注册访问（`Client.from_env()` 未配置凭证）下同样的码表示**共享的免注册额度**用完：没有默认应用可换、也不参与周补，稍后再试或注册免费账号并配置凭证（看 `Client.auth_mode` 区分两种情况）。
+
 ## 4. 处理范式
 
 ```python
@@ -126,3 +127,14 @@ except DataError:             # 数据守护：先核对口径，勿盲目重试
 ```
 
 程序化分类优先看 `err.code`；`err.status` 仅作辅助（429/5xx 与重试策略相关）。
+
+## 5. 保留码（不再触发）
+
+以下 `code` 已不会触发（含义为其退役前的口径），仅为兼容旧程序的分支判断而保留登记；将在下一个 MAJOR 版本移除。
+
+| `code` | 含义 | 起保留 | 处理建议 |
+|---|---|---|---|
+| `anon_bad_response` | 匿名凭据响应缺少 client_id/client_secret | 3.3.0 | 免注册访问不申领凭据；取数失败按新 code 处理 |
+| `anon_failed` | 匿名凭据申领失败（其他 HTTP 错误） | 3.3.0 | 免注册访问不申领凭据；取数失败按新 code 处理 |
+| `anon_quota` | 匿名试用今日名额已满或本网络领取次数超限 | 3.3.0 | 免注册访问无发放名额；被拒时看 `ip_rate_limited` / `pool_unavailable` |
+| `anon_unavailable` | 服务端未开放匿名试用（端点 404） | 3.3.0 | 免注册入口改为 `Client.from_env()`（不再申领凭据）；长期使用请配置凭证 |

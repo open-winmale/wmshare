@@ -1,6 +1,6 @@
 """pandas 分析：门面默认返回 DataFrame，直接做研究计算。
 
-前提：pandas 为 2.0 硬依赖（随包安装）；凭证可选——无凭证自动回落匿名试用（需网络）
+前提：pandas 为 2.0 硬依赖（随包安装）；凭证可选——无凭证自动免注册免费试用（需网络）
 运行：python examples/08_pandas_analysis.py
 学到：门面 DataFrame 默认（date 升序，无需再排序）；MA20/动量/资金流合计/分红历史表
 文档：docs/GUIDE.md（pandas）
