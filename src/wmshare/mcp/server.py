@@ -75,7 +75,7 @@ ValuationAction = Literal[
 ]
 ValuationMetric = Literal["pe", "pb", "ps", "pr"]
 ToplistAction = Literal["by_date", "by_symbol"]
-FuturesAction = Literal["get", "mapping", "snapshot", "bars"]
+FuturesAction = Literal["get", "mapping", "snapshot", "bars", "receipts"]
 PdfAction = Literal["search", "read_markdown", "status"]
 CompanyBlock = Literal[
     "profile", "income", "balance", "cashflow", "indicators", "dividend", "notices"
@@ -613,7 +613,7 @@ def build_server(runtime: MCPRuntime | None = None) -> FastMCP:
     @mcp.tool()
     @protocol
     def wmshare_futures(
-        action: Annotated[FuturesAction, Field(description="get=合约字段取值 / mapping=主力连续映射 / snapshot=合约快照 / bars=主力连续历史K线")],
+        action: Annotated[FuturesAction, Field(description="get=合约字段取值 / mapping=主力连续映射 / snapshot=合约快照 / bars=主力连续历史K线 / receipts=交易所仓单快照（按月）")],
         code: Annotated[str | None, Field(description="get/snapshot/bars 需要的主力连续代码，如 AL.SHF / RB.SHF / global.CL")] = None,
         symbol: Annotated[str | None, Field(description="mapping 需要的品种代码，如 RB")] = None,
         field: Annotated[str, Field(description="get 的字段（close/open/…）")] = "close",

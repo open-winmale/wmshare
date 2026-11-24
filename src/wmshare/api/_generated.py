@@ -930,6 +930,18 @@ class FuturesNS(_Ns):
             kw["period"] = period
         return _out(self._client.call("futures.query_bars", **kw, _raw=_raw), _raw)
 
+    def receipts(self, month: str | None = None, _raw: bool = False) -> Any:
+        """交易所仓单快照（按业务月）
+
+:param month: 业务月 YYYYMM 或 YYYY-MM（空=最新月）
+
+:returns: ARR · 仓单行（按 title 升序）
+        """
+        kw: dict[str, Any] = {}
+        if month is not None:
+            kw["month"] = month
+        return _out(self._client.call("futures.receipts", **kw, _raw=_raw), _raw)
+
 class FxNS(_Ns):
     """外汇汇率（market.fx）"""
 

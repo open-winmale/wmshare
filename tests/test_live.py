@@ -1001,6 +1001,18 @@ def test_board_concept_tags(cli):
     assert syms == sorted(syms), f"成份应代码升序：{syms[:5]}"
 
 
+def test_futures_receipts(cli):
+    """交易所仓单快照：行形齐、unit 非空、title 唯一（按月口径，非逐日历史）。"""
+    df = _call_or_xfail(lambda: cli.futures.receipts())
+    rows = df.to_dict("records") if hasattr(df, "to_dict") else list(df)
+    if not rows:
+        pytest.skip("该月无仓单档（上游按月 REPLACE，月初可能未抓取）")
+    assert all(r["unit"] for r in rows), "每行应有 unit（吨/张）"
+    titles = [r["title"] for r in rows]
+    assert len(titles) == len(set(titles)), "title 应唯一"
+    assert {str(r["exchange"]) for r in rows} <= {"SHFE", "CZCE", "GFEX", "DCE"}
+
+
 def test_board_concept_list(cli):
     """概念板块目录（日更物化档）：行形 name/count/members；count 降序、
     members 升序；与 concept_members 同源互证。"""

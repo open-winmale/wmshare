@@ -1277,6 +1277,9 @@ def futures(
                                 begin=str(begin) if begin else None,
                                 end=str(end) if end else None,
                                 freq=str(freq) if freq else None)
+    elif action == "receipts":
+        # 交易所仓单快照（SHFE/CZCE/GFEX 三所；按业务月，只留当月最后一日）
+        data = cli.futures.receipts(month=str(begin) if begin else None)
     else:
         data = cli.futures.snapshot(_symbol(action, code, allow_empty=False),
                                     freq=str(freq or "d"))

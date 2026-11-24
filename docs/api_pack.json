@@ -2,9 +2,9 @@
   "schema_version": 2,
   "generated_by": "tools/gen_api_docs.py",
   "meta": {
-    "core": 182,
+    "core": 183,
     "composite": 18,
-    "docs_visible": 177,
+    "docs_visible": 178,
     "variants": 21,
     "domains": 29,
     "categories": [
@@ -9567,6 +9567,71 @@
             "ec": 93.0,
             "result": []
           }
+        },
+        {
+          "key": "futures.receipts",
+          "ns": "futures",
+          "method": "receipts",
+          "cn": "交易所仓单快照",
+          "composite": false,
+          "desc": "交易所仓单快照（SHFE/CZCE/GFEX；按业务月，月份空=最新月）。",
+          "params": [
+            {
+              "name": "month",
+              "required": false,
+              "desc": "业务月 ``YYYYMM`` 或 ``YYYY-MM``；None=最新可用月"
+            }
+          ],
+          "returns": {
+            "kind": "array",
+            "desc": null,
+            "fields": [
+              {
+                "name": "period",
+                "desc": "快照日期（ISO）"
+              },
+              {
+                "name": "title",
+                "desc": "{exchange}.{code} 去重键"
+              },
+              {
+                "name": "exchange",
+                "desc": "交易所 SHFE/CZCE/GFEX"
+              },
+              {
+                "name": "variety_code",
+                "desc": "品种代码（上游原文，SHFE 为中文名）"
+              },
+              {
+                "name": "variety_name",
+                "desc": "品种名称"
+              },
+              {
+                "name": "qty",
+                "desc": "仓单量（单位见 unit 字段）"
+              },
+              {
+                "name": "change",
+                "desc": "较上一交易日增减"
+              },
+              {
+                "name": "unit",
+                "desc": "单位（吨/张，逐行）"
+              },
+              {
+                "name": "source_url",
+                "desc": "来源页"
+              }
+            ]
+          },
+          "notes": [
+            "非逐日历史：上游按业务月 REPLACE 写入，只保留当月最后一次抓取那天的快照 （2026-11-24 实测：202610=10-30、202611=11-23，各 61 个品种）；逐日序列需上游改按日分档",
+            "覆盖 SHFE/CZCE/GFEX 三所；DCE 反爬未采（上游如实排除）",
+            "仓单量口径=交易所披露的注册仓单量（吨/张逐行），不是成交量/持仓量"
+          ],
+          "docs_visible": true,
+          "example": "cli.futures.receipts()",
+          "test": null
         }
       ],
       "composites": []

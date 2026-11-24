@@ -1,6 +1,6 @@
 {
  "schema_version": 2,
- "upstream_rev": "c5f02ffa",
+ "upstream_rev": "edcb70e1",
  "domains": {
   "blocktrade": {
    "entry": "sys/blocktrade/init.xs",
@@ -160,7 +160,7 @@
   "toplist",
   "valuation"
  ],
- "function_count": 374,
+ "function_count": 377,
  "functions": [
   {
    "name": "blocktrade.by_date",
@@ -5441,6 +5441,38 @@
      "type": "string"
     }
    ]
+  },
+  {
+   "name": "futures.receipts",
+   "cn": "交易所仓单快照（按业务月）",
+   "example": "futures.receipts(\"202611\")",
+   "returns": "ARR · 仓单行(period/title/exchange/variety_code/variety_name/qty/change/unit)",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": [
+    {
+     "name": "month",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "futures.receipts_latest",
+   "cn": "最新交易所仓单快照",
+   "example": "futures.receipts_latest()",
+   "returns": "ARR · 仓单行（同 futures.receipts）",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": []
+  },
+  {
+   "name": "futures.receipts_months",
+   "cn": "仓单快照可用月份",
+   "example": "futures.receipts_months()",
+   "returns": "ARR · 月份(YYYYMM 升序)",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": []
   },
   {
    "name": "fx.history",

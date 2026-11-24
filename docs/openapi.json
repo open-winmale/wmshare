@@ -3916,6 +3916,99 @@
         }
       }
     },
+    "/futures/receipts": {
+      "post": {
+        "operationId": "futures_receipts",
+        "summary": "交易所仓单快照（SHFE/CZCE/GFEX；按业务月，月份空=最新月）。",
+        "description": "**非逐日历史**：上游按业务月 REPLACE 写入，只保留当月最后一次抓取那天的、快照（实测 2026-10 档=10-30、2026-11 档=11-23，各 61 个品种）。逐日序列、需上游改按日分档，尚未提供。DCE 因反爬未采集。、:returns: DataFrame/行表 · period/title/exchange/variety_code/、variety_name/qty/change/unit/source_url（按 title 升序）、底层目录函数 `futures.receipts`。SDK 调用：`cli.futures.receipts(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "市场行情"
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "month": {
+                    "type": "string",
+                    "description": "业务月 ``YYYYMM`` 或 ``YYYY-MM``；None=最新可用月"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "仓单行",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "period": {
+                        "type": "string",
+                        "description": "快照日期（ISO）"
+                      },
+                      "title": {
+                        "type": "string",
+                        "description": "{exchange}.{code} 去重键"
+                      },
+                      "exchange": {
+                        "type": "string",
+                        "description": "交易所 SHFE/CZCE/GFEX"
+                      },
+                      "variety_code": {
+                        "type": "string",
+                        "description": "品种代码（上游原文，SHFE 为中文名）"
+                      },
+                      "variety_name": {
+                        "type": "string",
+                        "description": "品种名称"
+                      },
+                      "qty": {
+                        "type": "number",
+                        "description": "仓单量（单位见 unit 字段）"
+                      },
+                      "change": {
+                        "type": "number",
+                        "description": "较上一交易日增减"
+                      },
+                      "unit": {
+                        "type": "string",
+                        "description": "单位（吨/张，逐行）"
+                      },
+                      "source_url": {
+                        "type": "string",
+                        "description": "来源页"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "qty": [
+              -1000000000.0,
+              1000000000.0
+            ],
+            "change": [
+              -1000000000.0,
+              1000000000.0
+            ]
+          }
+        }
+      }
+    },
     "/statements/audit": {
       "post": {
         "operationId": "statements_audit",

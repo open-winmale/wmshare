@@ -518,6 +518,11 @@ def estimate_cost(name: str, params: dict[str, Any] | None = None, *,
         out.update(ec_lo=160, ec_hi=5_000, model="measured",
                    note="按窗口行数：13 行冷 ≈833 / 热 ≈160 EC；"
                         "全历史 4,287 行冷 ≈21.4 万 EC——务必传 begin/end 收窄窗口")
+    elif name == "futures.receipts":
+        # 单 doc 点查（按月档，61 行）+ 月键 memo；实测前先给保守区间（2026-11-24 待 probe）。
+        out.update(ec_lo=100, ec_hi=1_500, model="estimate",
+                   note="按月单 doc 点查（≈61 品种），月键 memo 命中后近乎免费；"
+                        "非逐日历史（上游按月 REPLACE 只留当月最后一日）")
     elif name == "futures.bars":
         # 实测（2026-11-23 live，store 直读 futures.query_bars）：
         # 1 行冷 317 / 6 行 947 / 21 行 2,844 / 250 行 31,691 EC

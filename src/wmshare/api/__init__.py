@@ -10,7 +10,7 @@
     ``_raw=True`` 取上游原始行（list[dict]，跳过规范化与换算）——诊断逃生口；
   - 本层是目录合同的薄翻译：高频方法显式包装；目录内其余非内部函数经 ``__getattr__``
     属性直达（如 ``cli.kline.screen_above_ma20``）；目录标 ``internal: true`` 的
-    规范化辅助（fmt_* 等）不再直达，请走 ``cli.call``——361 个底层函数零遮蔽；
+    规范化辅助（fmt_* 等）不再直达，请走 ``cli.call``——364 个底层函数零遮蔽；
   - 选股能力集中在 ``cli.screener``：单票筛选器（bool）、全市场宽度/涨跌榜与
     全市场条件选股 ``query()``（服务端索引直出）显式包装，kline 目录的其余筛选
     函数经属性直达。
@@ -3851,6 +3851,20 @@ class ToplistApi(_Api):
 
 
 class FuturesApi(_Api):
+    def receipts(self, month: str | None = None, _raw: bool = False) -> Any:
+        """交易所仓单快照（SHFE/CZCE/GFEX；按业务月，月份空=最新月）。
+
+        **非逐日历史**：上游按业务月 REPLACE 写入，只保留当月最后一次抓取那天的
+        快照（实测 2026-10 档=10-30、2026-11 档=11-23，各 61 个品种）。逐日序列
+        需上游改按日分档，尚未提供。DCE 因反爬未采集。
+
+        :param month: 业务月 ``YYYYMM`` 或 ``YYYY-MM``；None=最新可用月
+        :returns: DataFrame/行表 · period/title/exchange/variety_code/
+            variety_name/qty/change/unit/source_url（按 title 升序）
+        """
+        rows = self._c.call("futures.receipts", month=month or "", _raw=_raw)
+        return _out(rows, raw=_raw)
+
     def mapping(self, symbol: str, begin: str = "", end: str = "",
                 _raw: bool = False) -> Any:
         """主力换月映射（主力连续码 → 当日实际合约；date 升序）。
@@ -4276,6 +4290,7 @@ FRIENDLY_INDEX: list[tuple[str, str, str, str, str]] = [
     ("market", "futures", "snapshot", "期货连续合约快照", "futures.query_bars（store 直读）"),
     ("market", "futures", "bars", "期货主力连续历史K线", "futures.query_bars（store 直读）"),
     ("market", "futures", "mapping", "主力换月映射", "futures.mapping"),
+    ("market", "futures", "receipts", "交易所仓单快照", "futures.receipts"),
     ("fundamentals", "statements", "audit", "审计意见", "rptdom.statement_audit"),
     ("fundamentals", "indicator", "get", "取单个指标", "指标代码直查"),
     ("fundamentals", "indicator", "metrics", "批量取指标", "指标代码批量直查"),

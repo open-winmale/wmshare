@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "generated_by": "tools/gen_api_docs.py",
-  "count": 289,
+  "count": 290,
   "domains": [
     {
       "id": "corp.equity",
@@ -4576,6 +4576,25 @@
               ]
             }
           ]
+        },
+        {
+          "name": "futures.receipts",
+          "cn": "交易所仓单快照（按业务月）",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "qty": [
+              -1000000000.0,
+              1000000000.0
+            ],
+            "change": [
+              -1000000000.0,
+              1000000000.0
+            ]
+          },
+          "checks": [],
+          "fields": []
         }
       ]
     },

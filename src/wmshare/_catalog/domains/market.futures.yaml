@@ -75,5 +75,40 @@ functions:
       - begin 含、end 为开区间（实测 begin=09-01/end=09-30 不含 09-30）
       - 数据版本键缓存（最新日 K 日期入键）：同日复跑近零成本，跨日自动取到新 bar
       - 外盘 global.* 同样可读，但上游仅日线有数据（周/月为空）
+  - name: futures.receipts
+    cn: 交易所仓单快照（按业务月）
+    kind: raw
+    layer: L0
+    params:
+      - {name: month, type: string, required: false, desc: 业务月 YYYYMM 或 YYYY-MM（空=最新月）}
+    ranges:
+      qty: [-1.0e+9, 1.0e+9]
+      change: [-1.0e+9, 1.0e+9]
+    returns:
+      desc: ARR · 仓单行（按 title 升序）
+      shape:
+        kind: array
+        cn: 仓单行
+        items:
+          kind: object
+          cn: 仓单行
+          fields:
+            - {name: period, type: string, cn: 快照日期（ISO）}
+            - {name: title, type: string, cn: "{exchange}.{code} 去重键"}
+            - {name: exchange, type: string, cn: 交易所 SHFE/CZCE/GFEX}
+            - {name: variety_code, type: string, cn: 品种代码（上游原文，SHFE 为中文名）}
+            - {name: variety_name, type: string, cn: 品种名称}
+            - {name: qty, type: float64, cn: 仓单量（单位见 unit 字段）}
+            - {name: change, type: float64, cn: 较上一交易日增减}
+            - {name: unit, type: string, cn: 单位（吨/张，逐行）}
+            - {name: source_url, type: string, cn: 来源页}
+    example: 'futures.receipts("202611")'
+    notes:
+      - "非逐日历史：上游按业务月 REPLACE 写入，只保留当月最后一次抓取那天的快照
+        （2026-11-24 实测：202610=10-30、202611=11-23，各 61 个品种）；逐日序列需上游改按日分档"
+      - 覆盖 SHFE/CZCE/GFEX 三所；DCE 反爬未采（上游如实排除）
+      - 仓单量口径=交易所披露的注册仓单量（吨/张逐行），不是成交量/持仓量
+  - {name: futures.receipts_latest, cn: 最新仓单快照, kind: raw, layer: L1, internal: true}
+  - {name: futures.receipts_months, cn: 仓单可用月份, kind: raw, layer: L1, internal: true}
   # ---- L1：格式化 ----
   - {name: futures.fmt_maps, cn: 映射行规范化, kind: raw, layer: L1, internal: true}
