@@ -4775,7 +4775,7 @@
           "method": "concept_list",
           "cn": "概念板块目录",
           "composite": false,
-          "desc": "概念板块目录（日更物化档；成员数降序，同数按概念名升序）。",
+          "desc": "概念板块目录（周更物化档；成员数降序，同数按概念名升序）。",
           "params": [
             {
               "name": "limit",
@@ -4802,7 +4802,7 @@
             ]
           },
           "notes": [
-            "日更物化档（读当日 memo 点查，成本以 estimate_cost 为准）；members 物化序无序，SDK 门面本地升序排序",
+            "周更物化档（周六 09:00 分片 / 09:15 merge，TTL 720h；读 memo 点查，成本以 estimate_cost 为准）；members 物化序无序，SDK 门面本地升序排序",
             "与 concepts_of/concept_members 同源（上游概念标签口径），含指数/风格标签不分流；当前截面无 PIT 历史",
             "未物化（首跑前）返回受控错误并引导等 cron，不静默空表"
           ],
@@ -16135,7 +16135,9 @@
             "desc": "命中文档元数据行（file_key/status/text_chars/source_url/oss_url/stock_code/announce_date/title/kind/has_markdown，不含正文）",
             "fields": []
           },
-          "notes": [],
+          "notes": [
+            "text_chars 上限按巨型年报实测放宽（2026-11-24：单篇 1,450 万字符 > 旧上限 1e7）"
+          ],
           "docs_visible": true,
           "example": "cli.pdf_doc.search(kind=\"annual\", limit=10)",
           "test": {
@@ -16407,7 +16409,7 @@
           },
           "notes": [],
           "docs_visible": true,
-          "example": "cli.pdf_doc.read_text()",
+          "example": "cli.pdf_doc.read_text(file_key=\"24ee091286398acebd9c44f354b64b8a73f8522f\")",
           "test": null,
           "sample": {
             "key": "pdf_doc.read_text",
@@ -16495,7 +16497,7 @@
             "优先返回经营评述（rpt_txt_mda，按 stock+period 命中）；全量 report.md 在 财报抽取管线缓存，本接口返回挂接信息"
           ],
           "docs_visible": true,
-          "example": "cli.pdf_doc.read_markdown()",
+          "example": "cli.pdf_doc.read_markdown(file_key=\"24ee091286398acebd9c44f354b64b8a73f8522f\")",
           "test": null,
           "sample": {
             "key": "pdf_doc.read_markdown",
@@ -16567,7 +16569,7 @@
           },
           "notes": [],
           "docs_visible": true,
-          "example": "cli.pdf_doc.status()",
+          "example": "cli.pdf_doc.status(file_key=\"24ee091286398acebd9c44f354b64b8a73f8522f\")",
           "test": null,
           "sample": {
             "key": "pdf_doc.status",

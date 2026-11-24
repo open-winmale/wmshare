@@ -29,6 +29,8 @@ SAMPLES = {
     "fut_code": "cn.RB.SHF", "fut_symbol": "cn.RB.SHF", "field": "close",
     "date": "2026-03-31", "n": 5, "curve_name": "中债国债收益率曲线",
     "tenor": "10年", "brand": "比亚迪", "manufacturer": "比亚迪", "category": "回购",
+    # pdf_doc 读面要求 file_key/source_url 至少给一个（2026-11-24 前置校验）
+    "file_key": "24ee091286398acebd9c44f354b64b8a73f8522f",
     # daily_basic_multi（2026-11-19）显式要求 list/tuple，空数组会被拒
     "symbols": ["600519"],
 }
@@ -109,6 +111,10 @@ def test_core_interface_dispatches(cli, core_id):
         kwargs[name] = sample(name, {"str": "string", "int": "int", "float": "float",
                                      "bool": "bool", "list[str]": "array",
                                      "list": "array", "dict": "object"}.get(ann, "any"))
+    # 全可选签名但业务上需「至少给一个」定位参数（pdf_doc 读面）：
+    # 必填循环拿不到参数时用 file_key 兜底，避免把合法前置校验当成缺陷。
+    if not kwargs and "file_key" in sig.parameters:
+        kwargs["file_key"] = SAMPLES["file_key"]
     getattr(getattr(cli, ns), method)(**kwargs)
     xs = last_xs(cli)
     assert xs and xs[-1].startswith("return"), f"{core_id} 未生成 return 行：{xs}"

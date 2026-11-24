@@ -120,28 +120,30 @@ def test_etf_views(cli, view):
     got = _call_or_xfail(getattr(cli.etf, view), ETF)
     assert isinstance(got, dict), got
     assert got.get("ok") is True, got                    # 未就绪/非 ETF 由门面抛 DataError
-    expected_view = {"asset": "fund_asset", "rank": "etf_rank"}.get(view, view)
-    assert got.get("view") == expected_view, (view, got.get("view"))
+    expected_view = view                                 # meta.view 记 SDK 方法名
+    # 2.0 信封：业务字段在 data，view/mode 在 meta（顶层不再有 view）
+    assert (got.get("meta") or {}).get("view") == expected_view, (view, got.get("meta"))
+    data = got.get("data") or {}
     # 数值锚点：至少有一个该 view 的特征数值字段且量级合理（防 0.25→25 量级错）
     if view == "asset":
-        vals = [got[k] for k in ("stock_ratio", "bond_ratio", "cash_ratio",
-                                 "other_ratio", "fund_ratio") if got.get(k) is not None]
-        assert vals and all(0 <= v <= 100 for v in vals), got
+        vals = [data[k] for k in ("stock_ratio", "bond_ratio", "cash_ratio",
+                                  "other_ratio", "fund_ratio") if data.get(k) is not None]
+        assert vals and all(0 <= v <= 100 for v in vals), data
     elif view == "rank":
         for key in ("chg_w1", "chg_m1", "chg_m3"):
-            if got.get(key) is not None:
-                assert -100 <= got[key] <= 1000, (key, got[key])
+            if data.get(key) is not None:
+                assert -100 <= data[key] <= 1000, (key, data[key])
     elif view == "premium":
-        if got.get("premium_pct") is not None:
-            assert -100 <= got["premium_pct"] <= 1000, got["premium_pct"]
+        if data.get("premium_pct") is not None:
+            assert -100 <= data["premium_pct"] <= 1000, data["premium_pct"]
     elif view == "nav":
-        na = got.get("net_asset")
+        na = data.get("net_asset")
         if isinstance(na, dict):                          # nav 返回 {date, net_asset}
             na = na.get("net_asset")
         if na is not None:
             assert na >= 0, na                            # 亿元非负
     elif view == "card":
-        q = got.get("quote") or {}                        # card 顶层无 net_asset
+        q = data.get("quote") or {}                       # card 顶层无 net_asset
         if q.get("close") is not None:
             assert q["close"] > 0, q["close"]
 
@@ -302,8 +304,9 @@ def test_equity_buyback_snapshot(cli):
 
 def test_pdf_doc_read_surfaces(cli):
     """pdf_doc 纯读面：检索/状态/正文/markdown/定位（正文就绪与否不作断言）。"""
-    rows = _call_or_xfail(lambda: cli.pdf_doc.search(stock_code=MAIN, limit=3))
-    assert isinstance(rows, list)
+    df = _call_or_xfail(lambda: cli.pdf_doc.search(stock_code=MAIN, limit=3))
+    rows = df.to_dict("records") if hasattr(df, "to_dict") else list(df)
+    assert rows, "检索应有结果"
     file_key = rows[0].get("file_key") if rows and isinstance(rows[0], dict) else ""
     st = _call_or_xfail(lambda: cli.pdf_doc.status(file_key or "no-such-key"))
     assert isinstance(st, dict) and "status" in st
@@ -864,6 +867,9 @@ def test_valuation_daily_basic_live(cli):
     win = (r.get("meta") or {}).get("window") or {}
     assert win.get("scan_limit"), "缺 meta.window.scan_limit"
     assert isinstance(win.get("truncated"), bool), "缺 meta.window.truncated"
+    # 2026-11-24：服务端按日期降序返回，门面必须归一为 (date, field) 升序
+    pairs = [(row["date"], row["field"]) for row in r["data"]]
+    assert pairs == sorted(pairs), "长表应按 (date, field) 升序"
 
 
 def test_valuation_daily_basic_multi_live(cli):
@@ -883,6 +889,9 @@ def test_valuation_daily_basic_multi_live(cli):
     for item in per:
         assert isinstance(item.get("count"), int)
         assert isinstance(item.get("truncated"), bool)
+    # 2026-11-24：多票长表按 (symbol, date, field) 升序，每票内 date 升序
+    keys = [(row["symbol"], row["date"], row["field"]) for row in r["data"]]
+    assert keys == sorted(keys), "多票长表应按 (symbol, date, field) 升序"
 
 
 def test_valuation_daily_basic_coverage_live(cli):

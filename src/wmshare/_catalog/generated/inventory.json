@@ -1,6 +1,6 @@
 {
  "schema_version": 2,
- "upstream_rev": "9b4869f6",
+ "upstream_rev": "361c9530",
  "domains": {
   "blocktrade": {
    "entry": "sys/blocktrade/init.xs",
@@ -292,7 +292,7 @@
   },
   {
    "name": "board.concept_list",
-   "cn": "概念板块目录（日更物化档）",
+   "cn": "概念板块目录（周更物化档）",
    "example": "board.concept_list(20)",
    "returns": "ARR · 概念行(name/count/members)",
    "returns_shape": null,

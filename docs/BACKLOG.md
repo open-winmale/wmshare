@@ -55,9 +55,23 @@
 
 ## 已发布面遗留（登记不装死）
 
-- **3.0.1 发布说明漏记外汇/储备**：`[3.0.1]` 段只写期货修复，`cli.fx` 四接口与
-  `cli.macro.reserves*` 三接口零字提及（代码与 `market.fx.yaml` 确在该 tag 内）。
-  处置：**下一个版本的 CHANGELOG 段补记**（不改已发布的 Release 正文）。
+- **数据质量审计 2026-11-24 六项结论**（来源 `.internal/data_quality_report.json`，
+  处置已随 3.7.1 落地）：
+  - `valuation.daily_basic` / `daily_basic_multi` date 非升序：**已修**（门面按
+    `(date, field)` / `(symbol, date, field)` 排序；服务端原生为日期降序）。
+  - `index.members_history` 空窗口 `ok=False`：**非缺陷**——契约写明 `count==0`
+    表示「尚无快照」；物化表快照自 2026-11-20 起，更早窗口空是诚实的（live：
+    11-01..11-20 返 300 行、6 月窗口 0 行）。
+  - `notice.read_text` `no_pdf_url`：**非缺陷**，无 PDF 链接的受控结果（note 引导传 url）。
+  - `pdf_doc.read_text/read_markdown` 空参 `ok=False`：**审计误用**（无参数调用）；
+    门面已补 `UsageError(code="params")` 前置校验，不再打上游。
+  - `pdf_doc.find_by_url` 全失败：**审计用错字段**；实测传 `search` 行的
+    `source_url`（形如 `pdf_doc://filing/600519/2018-12-31`）可命中。
+  - `pdf_doc.search` `text_chars` 超声明：**已修**——上限 1e7→5e7（巨型年报实测
+    1,450 万字符）。
+  - `etf.nav` `net_asset` 差 6 个量级：**上游异常**（2026-11-24 全 ETF 实测 1e18
+    量级，疑管道口径变更）；门面把该字段置空并在 `data.note` 说明，净值/份额
+    照常返回，等上游修复。
 - **汇率/储备未纳入新鲜度看板**：`../airflow/data_monitor/stats_config.py` 的
   `STATS_CHECKS` 无 `currencyrate` 与 `currency.reserve.*` 条目（上游 Go 采集链已
   paused）。故 `docs/DATA_CALENDAR.md` 不含这两项——**不伪造新鲜度条目**，
@@ -87,7 +101,7 @@
 | 4 | FRED 美宏观序列暴露 | **已上线（3.2）**：`cli.us_macro.topics/search/series_meta/points`（精选 88 条 × 11 主题）；单位随序列而变（读 `series_meta().units`）、空值不补 0、需授权序列 `has_data=False` 永不抓取。**遗留**：web 页面读面 `fred.points`/`fred.series` 是「新→旧 + 期间码 year」契约，已标 internal 不进 SDK | wmshare（域 yaml + fred 读面） | 已上线 |
 | 5 | 股东人数历史序列（现仅最新值） | **已上线 3.2**：`cli.equity.query_holdernum_history(symbol, limit)` 读 raw 层单票多期档（600519 实测 108 期、2001-12-31 起），日期升序、比例=小数、与 `query_holdernum` 同口径；单票上限 300 期 | script 历史读面 → wmshare 条目 | 已上线 |
 | 6 | 每日涨跌停价格 | **已上线 3.2（当日快照）+ 已实现历史序列（3.4.0 已发版）**：快照 `cli.stocks.limit_price/limit_prices` 规则价=前收盘×(1±带宽) 四舍五入到分，带宽按代码号段（30x/68x=20%、北交所=30%、其余=10%）；历史 `cli.stocks.limit_price_history` 逐日给 basis/limit_up/limit_down/band/rule，basis 用 hfq/nr 因子还原交易所除权参考价（实测 600519 2024-06-19 得 1490.62），主板 ST 5%（至 2026-05-05）/10%（2026-05-06 起；2026 年样本实测切换日）、创业板 2020-08-24 前 10% 后 20%、科创板 20%、北交所 30%，IPO 前 N 日 rule=ipo。**遗留**：当日快照按板块带宽（主板 ST 10%，与 2026-05-06 起制度一致）且除权日仍用原始前收（全市场索引无 hfq 因子）；历史退市整理期无逐日源 | script 派生 → wmshare 暴露 | 已上线（快照+历史） |
-| 7 | 概念板块（分类/成份/每日行情） | **已上线 3.2 + 3.3 + 3.5**：①资金流 `cli.board.moneyflow/moneyflow_last`（ths 概念/行业 + dc 概念·行业）；②概念标签 `cli.board.concepts_of`（单票 tags，≈90 EC）与 `concept_members`（名称包含匹配，代码升序；冷 ≈8.1 万 EC、当日 memo ≈200）；③目录 `cli.board.concept_list`（3.5：日更物化档 memo 点查 ≈110 EC；members 物化序、门面本地升序）。~~暂缓~~已闭环：物化一次实测 ≈318 万 EC（81,875 对；XS 逐元素 ~5-10 EC/op 是地板，投影 ≈15 万 只占零头），日更 ≈8.8 亿/年不可持续 → **周更 cron**（周六 09:00 片 / 09:15 merge，TTL 720h，年 ≈1.2 亿）——「cron 预算另议」落点，2026-11-24 实测后按推荐默认执行 | 小步暴露 → script cron 物化（airflow 零改动） → wmshare 域 | 已上线（资金流+标签/成份+目录） |
+| 7 | 概念板块（分类/成份/每日行情） | **已上线 3.2 + 3.3 + 3.5**：①资金流 `cli.board.moneyflow/moneyflow_last`（ths 概念/行业 + dc 概念·行业）；②概念标签 `cli.board.concepts_of`（单票 tags，≈90 EC）与 `concept_members`（名称包含匹配，代码升序；冷 ≈8.1 万 EC、当日 memo ≈200）；③目录 `cli.board.concept_list`（3.5：周更物化档 memo 点查 ≈110 EC，周六 09:00 片 / 09:15 merge，最多滞后一周；members 物化序、门面本地升序）。~~暂缓~~已闭环：物化一次实测 ≈318 万 EC（81,875 对；XS 逐元素 ~5-10 EC/op 是地板，投影 ≈15 万 只占零头），日更 ≈8.8 亿/年不可持续 → **周更 cron**（周六 09:00 片 / 09:15 merge，TTL 720h，年 ≈1.2 亿）——「cron 预算另议」落点，2026-11-24 实测后按推荐默认执行 | 小步暴露 → script cron 物化（airflow 零改动） → wmshare 域 | 已上线（资金流+标签/成份+目录） |
 | 8 | 大宗交易 | **已上线 3.3**：`cli.blocktrade.by_date/by_symbol`（额=元/量=股/价=元；单日榜成交额降序、单票 date 升序）；2010 至今全量回补 4,100/4,100 交易日、67.9 万行；B 股 price 为外币、amount 为人民币（口径差已在接口 notes 注明，不做汇率换算） | airflow → script → wmshare | 已上线 |
 | 9 | ST/停复牌变动历史（现仅时点旗标） | **已上线 3.3**：`cli.stocks.suspend_history/name_history/lifecycle`（停复牌按交易日、简称变更按生效日；ST 段由简称含 ST 判定；时间轴 rename/st_enter/st_exit/suspend/resume 日期升序）；采集 1999 起停复牌 644k 行 + 2000 起简称变更 13k 行，单票读面走清洗档点查（≈200-800 EC）；**遗留**：历史涨跌停价（⑥）已由 3.4 历史序列闭环（namechange ST 段 + hfq/nr 因子），无需再续接 | airflow → script → wmshare | 已上线 |
 

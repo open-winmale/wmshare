@@ -63,6 +63,11 @@ METHOD_EXAMPLE_VALUES = {
     ("stocks", "lifecycle"): {},
     ("pdf_doc", "find_by_url"): {"url": '"<公告行 url 字段>"'},
     ("pdf_doc", "find_by_key"): {"file_key": '"<search() 行 file_key 字段>"'},
+    # pdf_doc 读面 2026-11-24 起要求「至少给一个」定位参数，示例必须带真实 file_key
+    ("pdf_doc", "read_text"): {"file_key": '"24ee091286398acebd9c44f354b64b8a73f8522f"'},
+    ("pdf_doc", "read_markdown"): {"file_key": '"24ee091286398acebd9c44f354b64b8a73f8522f"',
+                                   "_skip": ("source_url", "stock_code", "period")},
+    ("pdf_doc", "status"): {"file_key": '"24ee091286398acebd9c44f354b64b8a73f8522f"'},
     ("futures", "snapshot"): {"fut_code": '"RB.SHF"'},
     ("futures", "bars"): {"fut_code": '"AL.SHF"', "freq": '"m"', "_skip": ("n", "begin", "end")},  # 互斥组：示例取 n 缺省形态
     ("calendar", "is_open"): {"date": '"2026-01-05"'},

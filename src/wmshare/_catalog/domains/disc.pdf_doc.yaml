@@ -25,8 +25,10 @@ functions:
     layer: L0
     params:
       - {name: opts, type: object, required: false, desc: '{stock_code/symbol, title, announce_date_from/to, status, kind, limit, skip}'}
-    ranges: {text_chars: [0, 1.0e+7]}
+    ranges: {text_chars: [0, 5.0e+7]}
     returns: {desc: ARR · 命中文档元数据行（file_key/status/text_chars/source_url/oss_url/stock_code/announce_date/title/kind/has_markdown，不含正文）}
+    notes:
+      - text_chars 上限按巨型年报实测放宽（2026-11-24：单篇 1,450 万字符 > 旧上限 1e7）
     example: 'pdf_doc.search({"stock_code": "600519", "limit": 10})'
   - name: pdf_doc.read_text
     cn: 读 PDF 提取正文

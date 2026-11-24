@@ -2,7 +2,7 @@
 
 本页由 `tools/gen_data_calendar.py` 从兄弟仓 `../airflow/data_monitor/stats_config.py` 的 `STATS_CHECKS` 生成（禁止手改）。用途：说明每个数据集**多久没更新算过期**、提前预警阈值与优先级；精确 cron 见 airflow `dag_registry.yaml`。
 
-共 **114** 个监控数据集。`过期阈值` = 最新业务期龄超过即 FAIL（红）；`预警阈值` = 提前降级 WARN（黄）。
+共 **115** 个监控数据集。`过期阈值` = 最新业务期龄超过即 FAIL（红）；`预警阈值` = 提前降级 WARN（黄）。
 
 ## 分组概览
 
@@ -14,7 +14,7 @@
 | 同行比较 | 3 | 0 | 3 | 0 |
 | 回购 | 1 | 0 | 0 | 1 |
 | 大宗交易 | 1 | 0 | 0 | 1 |
-| 宏观 | 81 | 0 | 73 | 8 |
+| 宏观 | 82 | 0 | 73 | 9 |
 | 并购重组 | 1 | 0 | 0 | 1 |
 | 期货 | 2 | 0 | 0 | 2 |
 | 机构持仓 | 3 | 0 | 3 | 0 |
@@ -133,6 +133,7 @@
 | 宏观 | 公募AUM | cn | `cn_macro_amac_fund_nav` | 月 | 70 天 | — | P2 |
 | 宏观 | 原保险保费 | cn | `cn_macro_nfra_insurance` | 月 | 60 天 | — | P2 |
 | 宏观 | 啤酒产量 | cn | `cn_macro_nbs_beer` | 月 | 120 天 | — | P2 |
+| 宏观 | 新势力月交付 | cn | `cn_macro_intel_nev_monthly` | 月 | 70 天 | — | P2 |
 | 宏观 | 生鲜乳周价 | cn | `cn_macro_moa_raw_milk` | weekly | 14 天 | — | P2 |
 | 宏观 | 白酒产量 | cn | `cn_macro_nbs_baijiu` | 月 | 120 天 | — | P2 |
 | 宏观 | 社融存量 | cn | `cn_macro_tsf_stock` | 月 | 60 天 | — | P2 |

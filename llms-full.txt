@@ -96,7 +96,7 @@
 - `margin.market_summary`: {"ranges": {"fin_balance": [0, 10000000000000.0], "fin_buy_amt": [0, 1000000000000.0], "loan_balance": [0, 100000000000.0], "loan_sell_vol": [0, 100000000000.0]}}
 - `moneyflow.board`: {"ranges": {"elg_net": [-100000000000.0, 100000000000.0], "lg_net": [-100000000000.0, 100000000000.0], "md_net": [-100000000000.0, 100000000000.0], "net_mf": [-100000000000.0, 100000000000.0], "net_mv_ratio": [-0.5, 0.5], "sm_net": [-100000000000.0, 100000000000.0]}}
 - `moneyflow.snapshot`: {"ranges": {"elg_net": [-100000000000.0, 100000000000.0], "lg_net": [-100000000000.0, 100000000000.0], "md_net": [-100000000000.0, 100000000000.0], "net_10d": [-300000000000.0, 300000000000.0], "net_20d": [-500000000000.0, 500000000000.0], "net_5d": [-200000000000.0, 200000000000.0], "net_mf": [-100000000000.0, 100000000000.0], "net_mv_ratio": [-0.5, 0.5], "sm_net": [-100000000000.0, 100000000000.0]}}
-- `pdf_doc.search`: {"ranges": {"text_chars": [0, 10000000.0]}}
+- `pdf_doc.search`: {"ranges": {"text_chars": [0, 50000000.0]}}
 - `reserve.asof`: {"ranges": {"value": [0, 1000000000000000]}}
 - `reserve.list`: {"ranges": {"value": [0, 1000000000000000]}}
 - `reserve.query`: {"ranges": {"value": [0, 1000000000000000]}}
@@ -2866,7 +2866,7 @@ cli.board.concept_members(name="白酒", limit=10)
 
 #### `cli.board.concept_list` — 概念板块目录
 
-概念板块目录（日更物化档；成员数降序，同数按概念名升序）。
+概念板块目录（周更物化档；成员数降序，同数按概念名升序）。
 
 **输入参数**
 
@@ -5390,7 +5390,7 @@ cli.pdf_doc.search(kind="annual", limit=10)
 **示例**
 
 ```python
-cli.pdf_doc.read_text()
+cli.pdf_doc.read_text(file_key="24ee091286398acebd9c44f354b64b8a73f8522f")
 ```
 
 #### `cli.pdf_doc.read_markdown` — 读财报 markdown/经营评述
@@ -5422,7 +5422,7 @@ cli.pdf_doc.read_text()
 **示例**
 
 ```python
-cli.pdf_doc.read_markdown()
+cli.pdf_doc.read_markdown(file_key="24ee091286398acebd9c44f354b64b8a73f8522f")
 ```
 
 #### `cli.pdf_doc.status` — PDF 文档状态
@@ -5452,7 +5452,7 @@ cli.pdf_doc.read_markdown()
 **示例**
 
 ```python
-cli.pdf_doc.status()
+cli.pdf_doc.status(file_key="24ee091286398acebd9c44f354b64b8a73f8522f")
 ```
 
 #### `cli.pdf_doc.find_by_url` — 按原文链接定位文档
@@ -7142,6 +7142,7 @@ cli.info.profile("600519")
 - **公告 域**：type_regex 按公告标题/类型正则过滤；market 缺省 cn，港股自动路由
 - `notice.type_keys`（公告类目键列表）：类目表含简繁对照，同一类目可扫 A股 + 港股表；配合 query_* 的 type_regex 参数使用
 - **公告 PDF 全文 域**：短文走 pdftotext 正文（read_text）；财报类走 report.md markdown 与经营评述 （read_markdown）；未就绪时 read_text 不入队（纯读）；submit/ensure 为写面（触发抓取任务，需 ops:pipeline 能力），默认 internal 不进公开门面； 无能力时 submit 返回 submit_unavailable 软失败
+- `pdf_doc.search`（PDF 文档检索）：text_chars 上限按巨型年报实测放宽（2026-11-24：单篇 1,450 万字符 > 旧上限 1e7）
 - `pdf_doc.read_markdown`（读财报 markdown/经营评述）：优先返回经营评述（rpt_txt_mda，按 stock+period 命中）；全量 report.md 在 财报抽取管线缓存，本接口返回挂接信息
 - **契约套利 域**：可用性：仅 A 股（要约收购/换股/现金选择权等沪深披露）；board() 返回 {as_of, deals, quotes} 进行中看板；query(sym) 返回单票规范化条款行；现价 < 公告对价 的折价窗口由调用方自行判定，SDK 不内置收益测算（算法放工具仓）
 - **盈利预测与研报 域**：可用性：仅 A 股（券商研报卖方口径）；year_mark A=实际值 E=预测值；YEAR1..YEAR4 为预测年份序列；研报行含标题/机构/作者/行业/报告链接；研报正文不在接口范围
@@ -7159,13 +7160,13 @@ cli.info.profile("600519")
 - `board.moneyflow_last`（最新交易日板块资金流）：以该来源最新 trade_date 做数据版本键缓存，落库即换键（复跑近乎免费）
 - `board.concepts_of`（单票概念标签）：当前截面（上游只给最新标签，无 PIT 历史）；索引点查 ≈90 EC；概念名含指数/风格标签（HS300_/MSCI中国/融资融券…），不做概念/风格分流
 - `board.concept_members`（概念成份股）：名称包含匹配（"白酒" 命中 白酒/白酒概念 等标签）；无命中返回空数组；索引全表扫描：冷 ≈8 万 EC、当日复跑走 memo ≈200 EC；停牌股也在成份内
-- `board.concept_list`（概念板块目录）：日更物化档（读当日 memo 点查，成本以 estimate_cost 为准）；members 物化序无序，SDK 门面本地升序排序；与 concepts_of/concept_members 同源（上游概念标签口径），含指数/风格标签不分流；当前截面无 PIT 历史；未物化（首跑前）返回受控错误并引导等 cron，不静默空表
+- `board.concept_list`（概念板块目录）：周更物化档（周六 09:00 分片 / 09:15 merge，TTL 720h；读 memo 点查，成本以 estimate_cost 为准）；members 物化序无序，SDK 门面本地升序排序；与 concepts_of/concept_members 同源（上游概念标签口径），含指数/风格标签不分流；当前截面无 PIT 历史；未物化（首跑前）返回受控错误并引导等 cron，不静默空表
 - **交易日历 域**：可用性：仅 A 股日历（无港美交易日历）；days 返回 date 升序（旧→新，2.0 标准）；跨年区间自动合并年档， 年档缺失（如次年历未灌）按空处理——返回行数即覆盖度；next 交易日不足 N 个时如实返回（LEN 判断），绝不静默循环补齐
 - **可转债 域**：可用性：仅 A 股（沪深可转债）；quote_list/latest_quotes/board 为全市场快照（按日更新）；of_stock 按正股取关联债；在市判据用 outstanding 字段（余额>0 且未到期）。仅判 remainSize>0 会把已到期债当在标；callHits 统计正股无复权收盘 ≥ 强赎触发价的近 30 个交易日天数，仅股价已跨线时返回；勿以单日价判定已满足；resetFloor / resetMeeting 等 reset* 字段取自 resetEvent（仍在进行中的下修提议），不是 event；event 是最新一条公告，不分类型——回售/转股结果会挤掉下修提议，取下修信息须用 resetEvent；kline_window 返回 store 列式窗口（open/close/high/low/volume/amount），samplingName 为降序需自行反转；min1_live 为缓存命中制，miss 返回 nil；event_list 深度是 90 个 YEAR_DAY 文档（约 111 自然日），更老的条款公告不在返回内；board 不含 volume/amount——成交额与换手率须经 kline_window 批量取（call_batch，每批 ≤120 只）；board 不含债券信用评级、基金持仓、正股流通市值；需评级时用 notice 域公告原文抽取，勿以其他指标冒充；kline_window 可批量：标的参数名为 code，call_batch 一次 eval 拼 MAP 即覆盖全表（省请求次数，不省 EC）
 - `cbond.board`（转债全市场面板（快照+最新事件+盘中价+callHits+下修地板价））：bondPercent 仅盘中 live 命中时返回；callHits 仅正股收盘已跨触发价时返回
 - `cbond.quote_list`（转债合约快照全表）：量级界与同域 board / latest_quotes / of_stock 对齐（同一快照源）
 - `cbond.count_hits`（正股收盘≥触发价天数（按交易日窗））：窗口按交易日非日历日；序列新→旧须配 $KLINE_HAS 掩码
-- **场内基金（ETF） 域**：与个股日 K 同构的行情走 cli.kline（``cli.kline.bars("510300")``）； ETF 无分时/分钟源（min1/live 拦截），盘中用 cli.kline.snapshot；九视图返回统一信封 {ok, as_of, data, meta}；占比/涨幅/折溢价为小数、 规模（net_asset）为元、份额（fd_share）为份（2.0 标准化换算）；方法名 asset/rank 内部映射，内部映射 script view ``fund_asset``/``etf_rank``；LOF/封闭式/场外/货基不在采集范围（etf_fund_data.py 生产端排除声明）
+- **场内基金（ETF） 域**：与个股日 K 同构的行情走 cli.kline（``cli.kline.bars("510300")``）； ETF 无分时/分钟源（min1/live 拦截），盘中用 cli.kline.snapshot；九视图返回统一信封 {ok, as_of, data, meta}；占比/涨幅/折溢价为小数、 规模（net_asset）为元、份额（fd_share）为份（2.0 标准化换算）；2026-11-24 上游 net_asset 量级异常（全 ETF 实测 1e18 量级，疑管道口径变更）： 门面把该字段置空并在 data.note 说明，净值/份额等其余字段照常返回；方法名 asset/rank 内部映射，内部映射 script view ``fund_asset``/``etf_rank``；LOF/封闭式/场外/货基不在采集范围（etf_fund_data.py 生产端排除声明）
 - **期货 域**：主力连续码形如 "RB.SHF"（品种.交易所）；82 品种（74 商品 + 8 金融）见 cli.futures.snapshot 的品种寻址；外盘键形如 "global.CL"（仅日线有数据）；门面统一走 `futures.query_bars`（store 直读：日频只含交易日、最新一根随上游 日更、同数据版本复跑近零成本）；FUT 前缀标量 eval 会继承 A 股锚点的报告期 上下文（锚到锚点股最新财报期末），只适合显式 cursor 点读；映射行不可变（换月历史固定），fmt_maps 结果按行指纹缓存（36a5de20 范式）；周/月线是上游周期 bar（上游周/月线原样直存，成交量为周期合计），SDK 不做 二次聚合；外盘周/月线上游未提供（返回空）；成本：query_bars 按行计费（≈190+126 EC/行 冷、同日复跑版本键缓存 ≈135 EC）； mapping 全历史冷 ≈21 万 EC，建议传 begin/end 收窄窗口
 - `futures.query_bars`（主力连续历史 K 线（store 直读））：与 cli.futures.bars 分工：门面=本函数的归一化封装（date 换周期起点、 金额万元、补齐 sas）；本函数=原始行（date=交易日、金额=元、含 percent）；郑商所后缀 .ZCE（store 键系），与门面 czce 系口径不同；量/持仓=手、额=元、 percent=小数（对前结算）——期货原生单位，不做 SDK 单位换算；begin 含、end 为开区间（实测 begin=09-01/end=09-30 不含 09-30）；数据版本键缓存（最新日 K 日期入键）：同日复跑近零成本，跨日自动取到新 bar；外盘 global.* 同样可读，但上游仅日线有数据（周/月为空）
 - `futures.receipts`（交易所仓单快照（按业务月））：非逐日历史：上游按业务月 REPLACE 写入，只保留当月最后一次抓取那天的快照 （2026-11-24 实测：202610=10-30、202611=11-23，各 61 个品种）；逐日序列需上游改按日分档；覆盖 SHFE/CZCE/GFEX 三所；DCE 反爬未采（上游如实排除）；仓单量口径=交易所披露的注册仓单量（吨/张逐行），不是成交量/持仓量

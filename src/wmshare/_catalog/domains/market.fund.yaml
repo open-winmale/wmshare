@@ -15,5 +15,7 @@ notes:
     ETF 无分时/分钟源（min1/live 拦截），盘中用 cli.kline.snapshot
   - 九视图返回统一信封 {ok, as_of, data, meta}；占比/涨幅/折溢价为小数、
     规模（net_asset）为元、份额（fd_share）为份（2.0 标准化换算）
+  - 2026-11-24 上游 net_asset 量级异常（全 ETF 实测 1e18 量级，疑管道口径变更）：
+    门面把该字段置空并在 data.note 说明，净值/份额等其余字段照常返回
   - 方法名 asset/rank 内部映射，内部映射 script view ``fund_asset``/``etf_rank``
   - LOF/封闭式/场外/货基不在采集范围（etf_fund_data.py 生产端排除声明）

@@ -127,6 +127,26 @@ def test_guard_rejects_bad_magnitude(bad):
         _api(FakeSession(bad))._guard_etf(bad, view)
 
 
+def test_guard_degrades_oversize_net_asset_instead_of_failing():
+    """net_asset > 1e14（上游量级异常）应置空 + note，不拖垮整次调用。
+
+    2026-11-24 live：510300/510500/159919/588000/512880 等全部返回
+    1e18 量级（疑上游管道口径变更），若直接抛错则 nav 视图完全不可用。
+    """
+    nav = {"ok": True, "view": "nav",
+           "latest": {"unit_nav": 4.21},
+           "net_asset": {"date": "2026-11-20", "net_asset": 9.49e18}}
+    out = _api(FakeSession(nav))._guard_etf(nav, "nav")
+    assert out["net_asset"] == {"date": "2026-11-20", "net_asset": None}
+    assert out["latest"] == {"unit_nav": 4.21}
+    assert "1e14" in out["note"]
+
+    rank = {"ok": True, "view": "etf_rank", "net_asset": 9.49e18}
+    out2 = _api(FakeSession(rank))._guard_etf(rank, "rank")
+    assert out2["net_asset"] is None
+    assert "1e14" in out2["note"]
+
+
 @pytest.mark.parametrize("bad", [
     {"ok": False, "error": "NOT_ETF"},
     {"ok": False, "error": "NO_DATA"},

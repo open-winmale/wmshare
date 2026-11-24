@@ -2160,8 +2160,9 @@ class ValuationApi(_Api):
         :param end: ISO 止日（含），``None``/``""`` = 开区间
         :param fields: list[str] / 逗号字符串 / ``None``（全部 8 个）
         :returns: 统一信封 ``{ok, as_of, data, meta}``；``data`` 为长表
-            ``[{date, symbol, field, value}...]`` 升序；``as_of`` 为表内最新
-            行日期（与过滤区间无关，供调用方判新鲜度）。
+            ``[{date, symbol, field, value}...]``，按 ``(date, field)`` 升序
+            （同一天内按字段名）；``as_of`` 为表内最新行日期（与过滤区间无关，
+            供调用方判新鲜度）。
         """
         req = self._daily_fields(fields)
         b = _normalize_date(begin) if begin else ""
@@ -2198,17 +2199,22 @@ class ValuationApi(_Api):
             page_rows = list(page.get("data") or [])
             if not page_rows:
                 break
-            collected = page_rows + collected      # 更早的在前 → 保持升序
+            collected = page_rows + collected      # 先拼更早的页，最终统一排序
             page_win = (page.get("meta") or {}).get("window") or {}
             win = page_win
+        # 服务端按日期降序返回（2026-11-24 实测：11-13 → 11-10，同日按字段名），
+        # 与 2.0「date 升序」契约相反；分页只负责拼接更早的页，不保证全局有序。
+        # 这里按 (date, field) 统一排序，结果确定可复现。
+        collected.sort(key=lambda r: (str(r.get("date") or ""),
+                                      str(r.get("field") or "")))
         if pages > 1:
             meta["window"] = win
             meta["pages"] = pages
             meta["count"] = len(collected)
             raw = dict(raw)
-            raw["data"] = collected
             raw["meta"] = meta
             raw["ok"] = bool(collected)
+        raw["data"] = collected
         return raw
 
     def daily_basic_multi(
@@ -2226,6 +2232,7 @@ class ValuationApi(_Api):
         :param end: ISO 止日（含），``None``/``""`` = 开区间
         :param fields: list[str] / 逗号字符串 / ``None``（全部 8 个）
         :returns: 统一信封；``data`` 为多票长表 ``[{date, symbol, field, value}]``，
+            按 ``(symbol, date, field)`` 升序（每票内 date 升序、同日按字段名）；
             ``meta.per_symbol`` 给出每票的 ``count/oldest_scanned/truncated``
         """
         if isinstance(symbols, (str, bytes)) or not isinstance(symbols, (list, tuple)):
@@ -2248,6 +2255,15 @@ class ValuationApi(_Api):
             fields=req)
         if not isinstance(raw, dict):
             return _envelope(False, {}, note="上游返回非 MAP")
+        rows = list(raw.get("data") or [])
+        if rows:
+            # 服务端按票分块、每块日期降序（2026-11-24 实测）。统一排序到
+            # (symbol, date, field)，与单票契约「每票内 date 升序」一致。
+            rows.sort(key=lambda r: (str(r.get("symbol") or ""),
+                                     str(r.get("date") or ""),
+                                     str(r.get("field") or "")))
+            raw = dict(raw)
+            raw["data"] = rows
         return raw
 
     def daily_basic_coverage(
@@ -2642,7 +2658,11 @@ class PdfDocApi(_Api):
         :param file_key: 文档键；与 source_url 至少给一个
         :returns: MAP · ok/status/text/text_truncated/file_key/source_url
             （未就绪含 error/note，note 引导改走 read_markdown）
+        :raises UsageError: file_key 与 source_url 都为空
         """
+        if not (file_key or source_url):
+            raise UsageError("read_text: file_key 与 source_url 至少给一个",
+                             code="params")
         return self._c.call("pdf_doc.read_text", file_key=file_key,
                             source_url=source_url)
 
@@ -2654,7 +2674,12 @@ class PdfDocApi(_Api):
         :param source_url: 原文链接
         :param stock_code: 6 位裸码（定期报告传 stock_code+period 优先命中经营评述）
         :param period: 报告期（如 ``2024``）
+        :raises UsageError: file_key/source_url/stock_code 都为空
         """
+        if not (file_key or source_url or stock_code):
+            raise UsageError(
+                "read_markdown: file_key/source_url/stock_code 至少给一个",
+                code="params")
         return self._c.call("pdf_doc.read_markdown", file_key=file_key,
                             source_url=source_url, stock_code=stock_code,
                             period=period)
@@ -2664,6 +2689,9 @@ class PdfDocApi(_Api):
 
         :param file_key: 文档键；与 source_url 至少给一个
         """
+        if not (file_key or source_url):
+            raise UsageError("status: file_key 与 source_url 至少给一个",
+                             code="params")
         return self._c.call("pdf_doc.status", file_key=file_key,
                             source_url=source_url)
 
@@ -3619,9 +3647,24 @@ class EtfApi(_Api):
             raw = result.get(key)
             # nav 视图 net_asset 是 {date, 值} MAP，下探一层再校验。
             if key == "net_asset" and isinstance(raw, dict):
-                raw = raw.get("net_asset")
-            v = cls._num(raw, key)
-            if v is not None and (v < 0 or v > 1e14):
+                inner = raw.get("net_asset")
+            else:
+                inner = raw
+            v = cls._num(inner, key)
+            if v is None:
+                continue
+            if key == "net_asset" and v > 1e14:
+                # 上游规模字段量级异常（2026-11-24 实测全 ETF 为 1e18 量级，疑管道
+                # 口径变更）：置空该字段并在 note 明示，不拖垮净值/份额等可用字段。
+                if isinstance(raw, dict):
+                    result[key] = {**raw, "net_asset": None}
+                else:
+                    result[key] = None
+                note = "net_asset 上游数值超出量级上限 1e14，已置空（净值等其余字段可用）"
+                result["note"] = (f"{result['note']}；{note}"
+                                  if result.get("note") else note)
+                continue
+            if v < 0 or v > 1e14:
                 raise DataError(f"etf.{view} {key}={v} 非非负或超出量级上限 1e14",
                                 code="range")
         # 五类资产占净值比（小数）：各自 0~1，合计不超 1（允许浮点误差 0.005）。
@@ -3770,10 +3813,11 @@ class BoardApi(_Api):
         return _out(self._c.call("board.concept_members", name=name, limit=limit))
 
     def concept_list(self, limit: int = 0) -> Any:
-        """概念板块目录（日更物化档；成员数降序，同数按概念名升序）。
+        """概念板块目录（周更物化档；成员数降序，同数按概念名升序）。
 
-        全市场概念目录由服务端每日 cron 物化（上游概念标签口径），本接口读当日
-        memo 点查，不做索引扫描。行形 ``name/count/members``：服务端 members
+        全市场概念目录由服务端 cron 每周物化（周六 09:00 分片 / 09:15 merge，
+        上游概念标签口径，TTL 720h），本接口读 memo 点查，不做索引扫描——数据
+        最多滞后一周，不是逐日快照。行形 ``name/count/members``：服务端 members
         为物化序（无序），本门面在本地按代码升序排序后返回；``cli.call`` 原始
         口径保持物化序不排序。未物化（首跑前）会收到服务端受控错误并引导等 cron。
 

@@ -175,6 +175,40 @@ def test_dividend_yield_matches_indicator():
     assert math.isclose(float(via_face), float(via_metric), rel_tol=0.02)
 
 
+def test_daily_basic_sorts_long_table_ascending():
+    """服务端按日期降序返回；门面必须按 (date, field) 升序（2.0 契约）。
+
+    2026-11-24 live 实测：服务端返回 11-13 → 11-10（同日按字段），与 docstring
+    「升序」相反；分页拼接也不能保证全局序，故门面必须最终排序。
+    """
+    rows = [
+        {"date": "2026-11-13", "symbol": "600519", "field": "pb", "value": 8.1},
+        {"date": "2026-11-12", "symbol": "600519", "field": "pe_ttm", "value": 21.3},
+        {"date": "2026-11-13", "symbol": "600519", "field": "pe_ttm", "value": 21.5},
+        {"date": "2026-11-12", "symbol": "600519", "field": "pb", "value": 8.0},
+    ]
+    cli = make_client({"valuation.daily_basic": {
+        "ok": True, "as_of": "2026-11-13", "data": rows, "meta": {}}})
+    env = cli.valuation.daily_basic("600519")
+    got = [(r["date"], r["field"]) for r in env["data"]]
+    assert got == sorted(got), got
+
+
+def test_daily_basic_multi_sorts_symbol_date_field():
+    """多票长表按 (symbol, date, field) 升序：每票内 date 升序、块间按代码。"""
+    rows = [
+        {"date": "2026-11-13", "symbol": "000001", "field": "pe_ttm", "value": 5.0},
+        {"date": "2026-11-13", "symbol": "600519", "field": "pe_ttm", "value": 21.5},
+        {"date": "2026-11-12", "symbol": "600519", "field": "pe_ttm", "value": 21.3},
+        {"date": "2026-11-12", "symbol": "000001", "field": "pe_ttm", "value": 4.9},
+    ]
+    cli = make_client({"valuation.daily_basic_multi": {
+        "ok": True, "as_of": "2026-11-13", "data": rows, "meta": {}}})
+    env = cli.valuation.daily_basic_multi(["600519", "000001"])
+    got = [(r["symbol"], r["date"], r["field"]) for r in env["data"]]
+    assert got == sorted(got), got
+
+
 def test_daily_basic_pe_matches_indicator():
     """valuation.daily_basic 的 pe_ttm 与指标 $PE_TTM_LAST 同口径（物化表 vs 现算）。"""
     today = date.today().isoformat()

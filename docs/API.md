@@ -1330,7 +1330,7 @@ cli.board.concept_members(name="白酒", limit=10)
 
 #### `cli.board.concept_list` — 概念板块目录
 
-概念板块目录（日更物化档；成员数降序，同数按概念名升序）。
+概念板块目录（周更物化档；成员数降序，同数按概念名升序）。
 
 **输入参数**
 
@@ -3854,7 +3854,7 @@ cli.pdf_doc.search(kind="annual", limit=10)
 **示例**
 
 ```python
-cli.pdf_doc.read_text()
+cli.pdf_doc.read_text(file_key="24ee091286398acebd9c44f354b64b8a73f8522f")
 ```
 
 #### `cli.pdf_doc.read_markdown` — 读财报 markdown/经营评述
@@ -3886,7 +3886,7 @@ cli.pdf_doc.read_text()
 **示例**
 
 ```python
-cli.pdf_doc.read_markdown()
+cli.pdf_doc.read_markdown(file_key="24ee091286398acebd9c44f354b64b8a73f8522f")
 ```
 
 #### `cli.pdf_doc.status` — PDF 文档状态
@@ -3916,7 +3916,7 @@ cli.pdf_doc.read_markdown()
 **示例**
 
 ```python
-cli.pdf_doc.status()
+cli.pdf_doc.status(file_key="24ee091286398acebd9c44f354b64b8a73f8522f")
 ```
 
 #### `cli.pdf_doc.find_by_url` — 按原文链接定位文档
@@ -5702,6 +5702,7 @@ A 股交易日历——区间交易日、是否开市、之后 N 个交易日。
 数据来源：平台采集。
 - 与个股日 K 同构的行情走 cli.kline（``cli.kline.bars("510300")``）； ETF 无分时/分钟源（min1/live 拦截），盘中用 cli.kline.snapshot
 - 九视图返回统一信封 {ok, as_of, data, meta}；占比/涨幅/折溢价为小数、 规模（net_asset）为元、份额（fd_share）为份（2.0 标准化换算）
+- 2026-11-24 上游 net_asset 量级异常（全 ETF 实测 1e18 量级，疑管道口径变更）： 门面把该字段置空并在 data.note 说明，净值/份额等其余字段照常返回
 - 方法名 asset/rank 内部映射，内部映射 script view ``fund_asset``/``etf_rank``
 - LOF/封闭式/场外/货基不在采集范围（etf_fund_data.py 生产端排除声明）
 

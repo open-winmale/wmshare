@@ -164,7 +164,7 @@ functions:
             - {name: members, type: array, cn: 成员 6 位代码（门面返回升序；底层 cli.call 为物化序）}
     example: 'board.concept_list(20)'
     notes:
-      - 日更物化档（读当日 memo 点查，成本以 estimate_cost 为准）；members 物化序无序，SDK 门面本地升序排序
+      - 周更物化档（周六 09:00 分片 / 09:15 merge，TTL 720h；读 memo 点查，成本以 estimate_cost 为准）；members 物化序无序，SDK 门面本地升序排序
       - 与 concepts_of/concept_members 同源（上游概念标签口径），含指数/风格标签不分流；当前截面无 PIT 历史
       - 未物化（首跑前）返回受控错误并引导等 cron，不静默空表
   - name: board.fmt_maps
