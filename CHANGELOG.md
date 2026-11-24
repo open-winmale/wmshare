@@ -9,6 +9,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > MAJOR；弃用至少保留 1 个 MINOR，并在 `Deprecated` 段登记替代写法与移除版本。
 > 升级前请扫一眼 Removed / Changed / Deprecated 段。
 
+## [3.7.0] - 2026-11-24
+
+### Added
+
+- **期货每日持仓排名**：`cli.futures.holding(date="", contract="", limit=200)`（第 184 个
+  核心接口）——交易所会员成交/多空持仓排名，按成交量降序；单次 `limit` 上限 **500**。
+  读面先按合约过滤再规范化（上游单日约 1 万行，全量规范化曾达 ≈121 万 EC）；
+  上游 pandas NaN 以 BSON NaN 落库，统一归一为 0（此前会让网关返回 HTTP 200 空包）。
+  MCP `wmshare_market` 新增 `holding` action；`examples/33_futures_holding.py`。
+- **期货每日结算参数**：`cli.futures.settle(date="", contract="")`（第 185 个核心接口）——
+  结算价/涨跌停板/保证金率/手续费率，支持品种前缀过滤（如 `CU`）。`fee_rate` 为
+  ‰ 原值，保证金率多为小数（个别品种上游给 50），`settle` 价格单位随合约。
+  MCP `wmshare_market` 新增 `settle` action。
+
+### Changed
+
+- 目录规模：29 域 / 368 函数 / 185 核心接口 + 18 组合接口 / 2,983 指标码 /
+  33 示例；守护覆盖率下限 25.00%（92/368，同步 AGENTS.md、ci.yml、release.yml）。
+- 上游锚点前移 `9b4869f6`（持仓 NaN 归一 + 结算参数过滤下推）。
+- `docs/LIMITS.md` 登记 `futures.holding` 单次 500 行上限，以及
+  `kline.query_bars` / `bonus.query_list` / `cbond.kline_window` / `cbond.query`
+  的服务端单次上限（1000 / 500 / 1000 / 500）。
+
+### Fixed
+
+- live 测试两处既有漂移：`futures.mapping` 断言改吃 DataFrame（2.0 门面形态）；
+  `futures.receipts` 的 title 唯一性放行郑商所红枣CJ/花生PK 的上游重复行
+  （同档同值输出两遍，qty=0）。
+
 ## [3.6.0] - 2026-11-24
 
 ### Added
