@@ -1740,7 +1740,7 @@ class MoneyflowNS(_Ns):
         """资金流向历史
 
 :param sym: 6 位裸码
-:param limit: 根数，默认 20
+:param limit: 根数，默认 20；单次上限 500（超限服务端拒绝，长历史走 bars 区间分页）
 
 :returns: ARR · 资金流行（date/net_mf/elg_net/lg_net/md_net/sm_net）
         """
@@ -1768,6 +1768,8 @@ class MoneyflowNS(_Ns):
 
     def query_valid(self, sym: str, limit: int = 20, _raw: bool = False) -> Any:
         """有效资金流向（过滤空行）
+
+:param limit: 根数，默认 20；单次上限 500（随 query_bars，超限服务端拒绝）
 
 :returns: ARR · 资金流行
         """

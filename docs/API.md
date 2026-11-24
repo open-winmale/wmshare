@@ -641,7 +641,7 @@ res["summary"]["max_drawdown"]                      # 净值汇总（8 个数字
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
 | `symbol` | string | 是 | — | 6 位裸码 |
-| `n` | integer | 否 | `None` | 条数，默认 20。区间查询：显式传 n=只取区间内最近 n 根（不补页）； |
+| `n` | integer | 否 | `None` | 条数，默认 20，单次上限 500（服务端拒绝更大值，超限抛 LimitError |
 | `begin` | string | 否 | `None` | 起始日期（含，YYYY-MM-DD），须与 end 同时提供；区间上限 5 年 |
 | `end` | string | 否 | `None` | 结束日期（含） |
 
@@ -5713,13 +5713,14 @@ A 股交易日历——区间交易日、是否开市、之后 N 个交易日。
 - 日频为 EOD 落库；query_last_live 为外部公开源当日读数（HTTP，短 TTL；非盘中行情）
 - 非 Level2：为单子分级聚合口径，非逐笔委托
 - query_last 上游返回单条 MAP 而非数组，XS normalizer 只吃数组；命中 NotSupportedType:record 属上游返回形态问题，SDK 以 ServerError 透出且 不重试、不静默转空，需要数组口径请用 query_bars(limit=1) / query_valid(limit=1)
+- 单次行数上限 500（2026-11-24 起 store_limit 无条件拒绝超限请求；背景 11-16 limit=10000 全历史单笔 5.15M EC）——更长历史走 cli.moneyflow.bars(begin=, end=) 锚点分页（计费 ≈ 区间实际行数），不做服务端跨段拼接
 
 | 函数 | 中文 | 性质 | 层 | 参数 | 返回 | 单位与守护 |
 |---|---|---|---|---|---|---|
-| `moneyflow.query_bars` | 资金流向历史 | 原始数据 | L0 | `sym:string` — 6 位裸码 · `limit:int=20` — 根数，默认 20 | ARR · 资金流行（date/net_mf/elg_net/lg_net/md_net/sm_net）；字段 sas:string?（SAS） / date:string?（日期） / net_mf:float?（主力净流入） / elg_net:float?（超大单净流入） / lg_net:float?（大单净流入） / md_net:float?（中单净流入） / sm_net:float?（小单净流入） | — | 例：`cli.call("moneyflow.query_bars", sym='600519', limit=20)`
+| `moneyflow.query_bars` | 资金流向历史 | 原始数据 | L0 | `sym:string` — 6 位裸码 · `limit:int=20` — 根数，默认 20；单次上限 500（超限服务端拒绝，长历史走 bars 区间分页） | ARR · 资金流行（date/net_mf/elg_net/lg_net/md_net/sm_net）；字段 sas:string?（SAS） / date:string?（日期） / net_mf:float?（主力净流入） / elg_net:float?（超大单净流入） / lg_net:float?（大单净流入） / md_net:float?（中单净流入） / sm_net:float?（小单净流入） | — | 例：`cli.call("moneyflow.query_bars", sym='600519', limit=20)`
 | `moneyflow.query_bars_anchor` | 锚点前资金流 | 原始数据 | L1 | `sym:string` · `limit:int` · `anchor_date:string`（签名） | ARR · 资金流行（字段与 query_bars 一致）；字段 sas:string?（SAS） / date:string?（日期） / net_mf:float?（主力净流入） / elg_net:float?（超大单净流入） / lg_net:float?（大单净流入） / md_net:float?（中单净流入） / sm_net:float?（小单净流入） | — |
 | `moneyflow.query_last` | 最新资金流向 | 原始数据 | L0 | `sym:string` | MAP · 资金流行；字段 sas:string?（SAS） / date:string?（日期） / net_mf:float?（主力净流入） / elg_net:float?（超大单净流入） / lg_net:float?（大单净流入） / md_net:float?（中单净流入） / sm_net:float?（小单净流入） | — | 例：`cli.call("moneyflow.query_last", sym='600519')`
-| `moneyflow.query_valid` | 有效资金流向（过滤空行） | 原始数据 | L0 | `sym:string` · `limit:int=20` | ARR · 资金流行 | — | 例：`cli.call("moneyflow.query_valid", sym='600519', limit=20)`
+| `moneyflow.query_valid` | 有效资金流向（过滤空行） | 原始数据 | L0 | `sym:string` · `limit:int=20` — 根数，默认 20；单次上限 500（随 query_bars，超限服务端拒绝） | ARR · 资金流行 | — | 例：`cli.call("moneyflow.query_valid", sym='600519', limit=20)`
 | `moneyflow.query_last_live` | 资金流当日读数（外部源） | 原始数据 | L0 | `sym:string` | MAP · 资金流快照 | — | 例：`cli.call("moneyflow.query_last_live", sym='000807')`
 | `moneyflow.snapshot` | 资金流向快照（金额均为元；net_mv_ratio 为小数） | 原始数据 | L0 | `sym:string` | MAP · 快照 | 量级界 `net_mv_ratio`、`net_mf`、`net_5d`、`net_10d`、`net_20d`、`elg_net`、`lg_net`、`md_net`、`sm_net` | 例：`cli.call("moneyflow.snapshot", sym='600519')`
 | `moneyflow.snapshot_net_mf` | 最新主力净流入 | 原始数据 | L0 | `sym:string` | float · 主力净流入（元） | — | 例：`cli.call("moneyflow.snapshot_net_mf", sym='600519')`

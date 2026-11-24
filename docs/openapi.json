@@ -631,7 +631,7 @@
       "post": {
         "operationId": "moneyflow_bars",
         "summary": "资金流历史（DataFrame：date/net_mf/elg_net/lg_net/md_net/sm_net，date 升序）。",
-        "description": "不传 n=自动锚点切片补齐（每片 ≤ max_limit，覆盖 begin 即停）、区间完整性（不传 n）：与 ``kline.bars`` 同款锚点切片——每片走、``moneyflow.query_bars_anchor``（窗口右端锚在已取最早一根），只物化、≤ end 的行、覆盖 begin 即停；任意区间完整返回、计费 ≈ 区间实际行数。、显式传 n 为单次请求，超出单次上限显式报错（不静默截断）。、底层目录函数 `moneyflow.query_bars`。SDK 调用：`cli.moneyflow.bars(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "description": "引导分页）。区间查询：显式传 n=只取区间内最近 n 根（不补页）；、不传 n=自动锚点切片补齐（每片 ≤ min(max_limit, 500)，覆盖 begin 即停）、区间完整性（不传 n）：与 ``kline.bars`` 同款锚点切片——每片走、``moneyflow.query_bars_anchor``（窗口右端锚在已取最早一根），只物化、≤ end 的行、覆盖 begin 即停；任意区间完整返回、计费 ≈ 区间实际行数。、显式传 n 为单次请求，超出单次上限显式报错（不静默截断）。、底层目录函数 `moneyflow.query_bars`。SDK 调用：`cli.moneyflow.bars(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "市场行情"
         ],
@@ -647,7 +647,7 @@
                   },
                   "n": {
                     "type": "integer",
-                    "description": "条数，默认 20。区间查询：显式传 n=只取区间内最近 n 根（不补页）；"
+                    "description": "条数，默认 20，单次上限 500（服务端拒绝更大值，超限抛 LimitError"
                   },
                   "begin": {
                     "type": "string",

@@ -2171,7 +2171,7 @@ res["summary"]["max_drawdown"]                      # 净值汇总（8 个数字
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
 | `symbol` | string | 是 | — | 6 位裸码 |
-| `n` | integer | 否 | `None` | 条数，默认 20。区间查询：显式传 n=只取区间内最近 n 根（不补页）； |
+| `n` | integer | 否 | `None` | 条数，默认 20，单次上限 500（服务端拒绝更大值，超限抛 LimitError |
 | `begin` | string | 否 | `None` | 起始日期（含，YYYY-MM-DD），须与 end 同时提供；区间上限 5 年 |
 | `end` | string | 否 | `None` | 结束日期（含） |
 
@@ -7045,7 +7045,7 @@ cli.info.profile("600519")
 - `reserve.list`（储备项清单）：forex/gold 有数据；sdr/total 上游无生产者，如实标注 available=false 而不是返回空冒充
 - `reserve.query`（储备时序）：value 为美元数值（forex 约 3.4e12 量级、gold 约 3e11 量级）；月频，末值可能滞后
 - **融资融券 域**：可用性：仅 A 股（沪深交易所两融披露口径，无港美形态）；1.1.0 起含市场级面：market_summary（沪深两融汇总日表，BSE 无公开口径缺席） 与 universe（当前可两融标的 ≈4,010 行；源为沪深保证金比例表，不含调入调出 日期故 in_date/out_date 为空）——采集腿 airflow tasks/cn_margin_summary.py 与 tasks/cn_margin_universe.py；此前「上游无独立数据集」声明就此移除；latest(sym) 返回最新一日单行；市场级 EC（2026-11-17 live 实测）：逐行物化 ≈100~115 EC/行—— market_summary 默认 60 行 ≈6 千 EC；universe 不传 limit = 全量 ≈4,010 行 ≈45 万 EC，按需传 limit 线性降低（cli.cost_estimate 可先估）；market_summary 源无 融资偿还额/融券偿还量 两列（交易所未披露），对应字段 返回 null，不造假填充
-- **资金流向 域**：可用性：仅 A 股（EOD 日频，不含停牌）——bars/last/live 的 symbol 为 6 位 A 股裸码；日频为 EOD 落库；query_last_live 为外部公开源当日读数（HTTP，短 TTL；非盘中行情）；非 Level2：为单子分级聚合口径，非逐笔委托；query_last 上游返回单条 MAP 而非数组，XS normalizer 只吃数组；命中 NotSupportedType:record 属上游返回形态问题，SDK 以 ServerError 透出且 不重试、不静默转空，需要数组口径请用 query_bars(limit=1) / query_valid(limit=1)
+- **资金流向 域**：可用性：仅 A 股（EOD 日频，不含停牌）——bars/last/live 的 symbol 为 6 位 A 股裸码；日频为 EOD 落库；query_last_live 为外部公开源当日读数（HTTP，短 TTL；非盘中行情）；非 Level2：为单子分级聚合口径，非逐笔委托；query_last 上游返回单条 MAP 而非数组，XS normalizer 只吃数组；命中 NotSupportedType:record 属上游返回形态问题，SDK 以 ServerError 透出且 不重试、不静默转空，需要数组口径请用 query_bars(limit=1) / query_valid(limit=1)；单次行数上限 500（2026-11-24 起 store_limit 无条件拒绝超限请求；背景 11-16 limit=10000 全历史单笔 5.15M EC）——更长历史走 cli.moneyflow.bars(begin=, end=) 锚点分页（计费 ≈ 区间实际行数），不做服务端跨段拼接
 - `moneyflow.query_bars_anchor`（锚点前资金流）：行合同与 query_bars 完全一致，只是窗口右端锚在 anchor_date（store.query anchorTs 能力，与 kline.store_window_anchor 同款 opts）；参数取 inventory 合同 [sym, limit, anchor_date]；moneyflow.bars 区间查询的锚点分页切片入口——只物化 ≤end 的行、覆盖 begin 即停，计费 ≈ 区间实际行数；守护声明随 query_bars（金额=元已为基础单位；range 界须实测分布，不猜界）
 - `moneyflow.query_last`（最新资金流向）：上游返回单条 MAP 而非数组；XS normalizer 只吃数组，命中 NotSupportedType:record 属上游返回形态问题，不是参数或凭证错误；SDK 以 ServerError 透出，不重试、不静默转空；需要数组口径请用 moneyflow.query_bars(limit=1) 或 moneyflow.query_valid(limit=1)
 - `moneyflow.board`（全市场资金流快照（金额均为元；net_mv_ratio 为小数））：服务端索引一次取数（免逐票批量）；日频 EOD 口径，非交易日数据不变；仅 A 股（不含停牌）
