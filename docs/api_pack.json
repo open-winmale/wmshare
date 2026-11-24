@@ -2,9 +2,9 @@
   "schema_version": 2,
   "generated_by": "tools/gen_api_docs.py",
   "meta": {
-    "core": 181,
+    "core": 182,
     "composite": 18,
-    "docs_visible": 176,
+    "docs_visible": 177,
     "variants": 21,
     "domains": 29,
     "categories": [
@@ -25,7 +25,7 @@
         "cn": "参考数据"
       }
     ],
-    "test_ready": 173,
+    "test_ready": 174,
     "sampled": 170,
     "samples_provenance": {
       "captured_at": "2026-11-23",
@@ -4759,6 +4759,65 @@
               "xs_lines": [
                 "xs.require(\"sys/board/init.xs\")",
                 "return board.concept_members(\"白酒\", 10)"
+              ],
+              "args": {
+                "print.plain": true
+              },
+              "script_files": {},
+              "mode": "call",
+              "market": "cn"
+            }
+          }
+        },
+        {
+          "key": "board.concept_list",
+          "ns": "board",
+          "method": "concept_list",
+          "cn": "概念板块目录",
+          "composite": false,
+          "desc": "概念板块目录（日更物化档；成员数降序，同数按概念名升序）。",
+          "params": [
+            {
+              "name": "limit",
+              "required": false,
+              "desc": "返回前 N 个概念（按成员数降序）；0 或缺省=全量；默认 0"
+            }
+          ],
+          "returns": {
+            "kind": "array",
+            "desc": null,
+            "fields": [
+              {
+                "name": "name",
+                "desc": "概念名（上游原文，个别标签含尾随空格）"
+              },
+              {
+                "name": "count",
+                "desc": "成员数"
+              },
+              {
+                "name": "members",
+                "desc": "成员 6 位代码（门面返回升序；底层 cli.call 为物化序）"
+              }
+            ]
+          },
+          "notes": [
+            "日更物化档（读当日 memo 点查，成本以 estimate_cost 为准）；members 物化序无序，SDK 门面本地升序排序",
+            "与 concepts_of/concept_members 同源（上游概念标签口径），含指数/风格标签不分流；当前截面无 PIT 历史",
+            "未物化（首跑前）返回受控错误并引导等 cron，不静默空表"
+          ],
+          "docs_visible": true,
+          "example": "cli.board.concept_list(limit=20)",
+          "test": {
+            "kwargs": {
+              "limit": 20
+            },
+            "path": "/v1/analysis/xs/eval",
+            "body": {
+              "symbol": "600519",
+              "xs_lines": [
+                "xs.require(\"sys/board/init.xs\")",
+                "return board.concept_list(20)"
               ],
               "args": {
                 "print.plain": true

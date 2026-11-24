@@ -475,6 +475,12 @@ def estimate_cost(name: str, params: dict[str, Any] | None = None, *,
         out.update(ec_lo=200, ec_hi=85_000, model="measured",
                    note="索引全表扫描：冷 ≈8.1 万 EC、当日复跑走 memo ≈200 EC；"
                         "limit 只影响返回行数不影响冷态成本")
+    elif name == "board.concept_list":
+        # 实测（2026-11-24 live）：日更物化档 memo 点查 109~113 EC（limit 不影响，
+        # memo 整读）；物化的投影+聚合冷态由服务端 cron 承担，不经本接口。
+        out.update(ec_lo=100, ec_hi=150, model="measured",
+                   note="日更物化档 memo 点查 ≈110 EC（2026-11-24 实测）；"
+                        "未物化时段受控报错（EC≈0）")
     elif name == "blocktrade.by_date":
         # 实测（2026-11-23 live，全量回补后 4,100 日 / 68 万行）：
         # 单日档点查 1,272~1,703 EC（按当日行数浮动，档内行数即读取量）。

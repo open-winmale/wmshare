@@ -44,6 +44,7 @@ PANEL: list[tuple[str, str, dict]] = [
      {"sym": "600519", "metric": "pe", "window": "3y"}),
     ("每日估值（物化表）", "valuation.daily_basic",
      {"sym": "600519", "begin": "2026-11-01", "end": "2026-11-17"}),
+    ("概念目录（物化档点查）", "board.concept_list", {"limit": 20}),
 ]
 
 # 高成本面板（--heavy）：单次 ≥ 5 万 EC，合计可能 ≥ 30 万 EC

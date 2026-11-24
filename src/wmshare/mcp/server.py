@@ -91,7 +91,7 @@ MarketAction = Literal[
     "limit_price", "limit_prices", "limit_price_history", "moneyflow",
     "moneyflow_last",
     "by_date", "by_symbol", "suspend_history", "name_history", "lifecycle",
-    "concepts_of", "concept_members",
+    "concepts_of", "concept_members", "concept_list",
 ]
 
 

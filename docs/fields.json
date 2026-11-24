@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "generated_by": "tools/gen_api_docs.py",
-  "count": 288,
+  "count": 289,
   "domains": [
     {
       "id": "corp.equity",
@@ -3270,6 +3270,21 @@
             "percent": [
               -2,
               2
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "board.concept_list",
+          "cn": "概念板块目录",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "count": [
+              0,
+              5000
             ]
           },
           "checks": [],

@@ -7685,6 +7685,70 @@
         }
       }
     },
+    "/board/concept_list": {
+      "post": {
+        "operationId": "board_concept_list",
+        "summary": "概念板块目录（日更物化档；成员数降序，同数按概念名升序）。",
+        "description": "全市场概念目录由服务端每日 cron 物化（上游概念标签口径），本接口读当日、memo 点查，不做索引扫描。行形 ``name/count/members``：服务端 members、为物化序（无序），本门面在本地按代码升序排序后返回；``cli.call`` 原始、口径保持物化序不排序。未物化（首跑前）会收到服务端受控错误并引导等 cron。、:returns: DataFrame/行表 · name/count/members（members 代码升序）、底层目录函数 `board.concept_list`。SDK 调用：`cli.board.concept_list(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "市场行情"
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "limit": {
+                    "type": "integer",
+                    "description": "返回前 N 个概念（按成员数降序）；0 或缺省=全量"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "概念行",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "description": "概念名（上游原文，个别标签含尾随空格）"
+                      },
+                      "count": {
+                        "type": "integer",
+                        "description": "成员数"
+                      },
+                      "members": {
+                        "description": "成员 6 位代码（门面返回升序；底层 cli.call 为物化序）"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "count": [
+              0,
+              5000
+            ]
+          }
+        }
+      }
+    },
     "/blocktrade/by_date": {
       "post": {
         "operationId": "blocktrade_by_date",

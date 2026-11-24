@@ -10,7 +10,7 @@
     ``_raw=True`` 取上游原始行（list[dict]，跳过规范化与换算）——诊断逃生口；
   - 本层是目录合同的薄翻译：高频方法显式包装；目录内其余非内部函数经 ``__getattr__``
     属性直达（如 ``cli.kline.screen_above_ma20``）；目录标 ``internal: true`` 的
-    规范化辅助（fmt_* 等）不再直达，请走 ``cli.call``——360 个底层函数零遮蔽；
+    规范化辅助（fmt_* 等）不再直达，请走 ``cli.call``——361 个底层函数零遮蔽；
   - 选股能力集中在 ``cli.screener``：单票筛选器（bool）、全市场宽度/涨跌榜与
     全市场条件选股 ``query()``（服务端索引直出）显式包装，kline 目录的其余筛选
     函数经属性直达。
@@ -3722,6 +3722,24 @@ class BoardApi(_Api):
         """
         return _out(self._c.call("board.concept_members", name=name, limit=limit))
 
+    def concept_list(self, limit: int = 0) -> Any:
+        """概念板块目录（日更物化档；成员数降序，同数按概念名升序）。
+
+        全市场概念目录由服务端每日 cron 物化（上游概念标签口径），本接口读当日
+        memo 点查，不做索引扫描。行形 ``name/count/members``：服务端 members
+        为物化序（无序），本门面在本地按代码升序排序后返回；``cli.call`` 原始
+        口径保持物化序不排序。未物化（首跑前）会收到服务端受控错误并引导等 cron。
+
+        :param limit: 返回前 N 个概念（按成员数降序）；0 或缺省=全量
+        :returns: DataFrame/行表 · name/count/members（members 代码升序）
+        """
+        rows = self._c.call("board.concept_list", limit=limit)
+        if isinstance(rows, list) and rows and isinstance(rows[0], dict) \
+                and isinstance(rows[0].get("members"), list):
+            for r in rows:
+                r["members"] = sorted(r["members"])
+        return _out(rows)
+
 
 class BlocktradeApi(_Api):
     """A 股大宗交易（日频全市场，成交额降序；额=元/量=股/价=元）。
@@ -4259,6 +4277,7 @@ FRIENDLY_INDEX: list[tuple[str, str, str, str, str]] = [
      "board.moneyflow_last"),
     ("market", "board", "concepts_of", "单票概念标签", "board.concepts_of"),
     ("market", "board", "concept_members", "概念成份股", "board.concept_members"),
+    ("market", "board", "concept_list", "概念板块目录", "board.concept_list"),
     ("market", "blocktrade", "by_date", "指定交易日大宗交易", "blocktrade.by_date"),
     ("market", "blocktrade", "by_symbol", "单票大宗交易历史",
      "blocktrade.by_symbol"),

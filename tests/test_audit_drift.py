@@ -58,8 +58,8 @@ def test_drift_default_is_green_and_machine_readable(capsys):
     info = result["info"]
     # guarded 87 = 85 + suspend_history/lifecycle 的 date_iso 不变量（2026-11-23 停复牌史）；
     # functions 358 = 355 + 3（两读面 + 简称史）
-    assert info["guard_declared"] == 88
-    assert info["functions"] == 360  # +3 停复牌史 +2 概念（2026-11-23）
+    assert info["guard_declared"] == 89  # 88 + concept_list count ranges（2026-11-24 概念目录）
+    assert info["functions"] == 361  # +3 停复牌史 +2 概念 +1 概念目录（2026-11-24）
     assert info["markets"]["total"] == 2983
     assert info["markets"]["declared"] == 728
     assert info["markets"]["undeclared"] == 2255

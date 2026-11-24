@@ -1,6 +1,6 @@
 {
  "schema_version": 2,
- "upstream_rev": "f74b1eed",
+ "upstream_rev": "150b53e7",
  "domains": {
   "blocktrade": {
    "entry": "sys/blocktrade/init.xs",
@@ -160,7 +160,7 @@
   "toplist",
   "valuation"
  ],
- "function_count": 370,
+ "function_count": 374,
  "functions": [
   {
    "name": "blocktrade.by_date",
@@ -255,6 +255,52 @@
     {
      "name": "rows",
      "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "board.cl_merge",
+   "cn": "概念目录 memo 合并（把 built_for=今日的片合并排序写 m_board_concept_list:v1:all；缺片且旧表健在时不覆盖）",
+   "example": "board.cl_merge(6)",
+   "returns": "MAP · 合并摘要（ok/step/count/covered/missing_slices）",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": [
+    {
+     "name": "ns",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "board.cl_slice",
+   "cn": "概念目录 memo 分片聚合（cron 用；片 si 聚合写 m_board_concept_list:v1:part:si）",
+   "example": "board.cl_slice(0, 6)",
+   "returns": "MAP · 片摘要（ok/step/slice/covered/tags）",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": [
+    {
+     "name": "si",
+     "type": "any"
+    },
+    {
+     "name": "ns",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "board.concept_list",
+   "cn": "概念板块目录（日更物化档）",
+   "example": "board.concept_list(20)",
+   "returns": "ARR · 概念行(name/count/members)",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": [
+    {
+     "name": "limit",
+     "type": "int"
     }
    ]
   },
@@ -419,6 +465,24 @@
    "params": [
     {
      "name": "rows",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "board.materialize",
+   "cn": "概念目录 memo 物化统一入口（cl_slice=\"merge\" 合并，其余为片号；cron 用）",
+   "example": "board.materialize(0, 6)",
+   "returns": "MAP · 片/合并摘要",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": [
+    {
+     "name": "cl_slice",
+     "type": "any"
+    },
+    {
+     "name": "cl_slices",
      "type": "any"
     }
    ]

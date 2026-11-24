@@ -869,6 +869,8 @@ def market(
         if not name:
             raise ValueError("board.concept_members 需要 name（概念名，如 白酒）")
         data = cli.board.concept_members(name, limit=n or 100)
+    elif domain == "board" and action == "concept_list":
+        data = cli.board.concept_list(limit=n or 0)
     elif domain == "board":
         board_src = src or "ths_concept"
         if board_src not in ("ths_concept", "ths_industry", "dc"):

@@ -1001,6 +1001,26 @@ def test_board_concept_tags(cli):
     assert syms == sorted(syms), f"成份应代码升序：{syms[:5]}"
 
 
+def test_board_concept_list(cli):
+    """概念板块目录（日更物化档）：行形 name/count/members；count 降序、
+    members 升序；与 concept_members 同源互证。"""
+    df = _call_or_xfail(lambda: cli.board.concept_list())
+    rows = df.to_dict("records") if hasattr(df, "to_dict") else list(df)
+    assert rows, "概念目录应为非空（未物化会受控报错而非空表）"
+    counts = [int(r["count"]) for r in rows]
+    assert counts == sorted(counts, reverse=True), "应按成员数降序"
+    top = rows[0]
+    assert top["members"] == sorted(top["members"]), "members 应代码升序"
+    assert int(top["count"]) == len(top["members"]), "count 应等于成员数"
+    # 同源互证：任取一个真实概念名，concept_members 的代码应落在目录并集内
+    probe = next((r for r in rows if r["name"].strip() == "白酒"), None)
+    if probe is not None:
+        ms = _call_or_xfail(lambda: cli.board.concept_members("白酒", 300))
+        mrows = ms.to_dict("records") if hasattr(ms, "to_dict") else list(ms)
+        in_list = {str(r["symbol"]) for r in mrows} & set(probe["members"])
+        assert in_list, "concept_members 成员应与目录同源"
+
+
 
 def test_board_moneyflow_three_sources(cli):
     """板块资金流：三源同口径（额=元、率=小数），指定日与最新日逐行一致。"""

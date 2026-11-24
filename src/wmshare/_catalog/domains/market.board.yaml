@@ -1,5 +1,5 @@
 id: market.board
-version: 1.1.0
+version: 1.2.0
 cn: 板块资金流
 kind: raw
 category: market
@@ -142,6 +142,31 @@ functions:
     notes:
       - 名称包含匹配（"白酒" 命中 白酒/白酒概念 等标签）；无命中返回空数组
       - 索引全表扫描：冷 ≈8 万 EC、当日复跑走 memo ≈200 EC；停牌股也在成份内
+  - name: board.concept_list
+    cn: 概念板块目录
+    kind: computed
+    layer: L0
+    params:
+      - {name: limit, type: int, required: false, default: 0, desc: 返回前 N 个概念（按成员数降序）；0 或缺省=全量}
+    ranges:
+      count: [0, 5000]
+    returns:
+      desc: ARR · 概念行（成员数降序，同数按概念名升序）
+      shape:
+        kind: array
+        cn: 概念行
+        items:
+          kind: object
+          cn: 概念行
+          fields:
+            - {name: name, type: string, cn: 概念名（上游原文，个别标签含尾随空格）}
+            - {name: count, type: int, cn: 成员数}
+            - {name: members, type: array, cn: 成员 6 位代码（门面返回升序；底层 cli.call 为物化序）}
+    example: 'board.concept_list(20)'
+    notes:
+      - 日更物化档（读当日 memo 点查，成本以 estimate_cost 为准）；members 物化序无序，SDK 门面本地升序排序
+      - 与 concepts_of/concept_members 同源（上游概念标签口径），含指数/风格标签不分流；当前截面无 PIT 历史
+      - 未物化（首跑前）返回受控错误并引导等 cron，不静默空表
   - name: board.fmt_maps
     internal: true
     cn: 板块资金流行规范化

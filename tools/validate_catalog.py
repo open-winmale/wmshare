@@ -48,6 +48,11 @@ INTERNAL_HELPERS = {
     "income.materialize",
     "income.materialize_merge",
     "income.materialize_slice",
+    # 概念板块目录 memo 物化编排（cron 专用，同 income.materialize* 纪律）：
+    # 读面只暴露 board.concept_list（只读 memo），编排不进 board 公开域。
+    "board.materialize",
+    "board.cl_merge",
+    "board.cl_slice",
     # 美宏观日期校验：纯字符级判断（DATE()/INT() 遇非法串会抛宿主异常 → HTTP 500），
     # 仅供 fred.points_asc 内部调用，不暴露给 SDK 用户。
     "fred.iso_date",

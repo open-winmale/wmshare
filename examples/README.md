@@ -53,6 +53,7 @@ export WMSHARE_CLIENT_ID=... WMSHARE_CLIENT_SECRET=...   # 长期额度：配置
 | 28 | `28_stock_lifecycle.py` | 3.3 ST/停复牌史新面 | 免注册/凭证 | 停复牌按交易日（S/R）、简称变更按生效日；ST 判定=简称含 ST（覆盖 *ST/SST）；lifecycle 合并派生 rename/st_enter/st_exit/suspend/resume，日期升序；不含上市/退市事件 | GUIDE·§6.1、API·证券与行业基础章 |
 | 29 | `29_concept_tags.py` | 3.3 概念标签新面 | 免注册/凭证 | 概念标签=索引物化数组（$CONCEPT_TAGS，去 s: 前缀）；含指数/风格标签不做分流；concept_members 名称包含匹配、代码升序；当前截面无 PIT 历史，不能回测历史成份 | GUIDE·§6.1、API·板块章 |
 | 30 | `30_limit_price_history.py` | 3.4 历史涨跌停价新面 | 免注册/凭证 | 逐日规则价：basis=除权参考前收（hfq/nr 因子还原，除权日不能用原始前收）；主板 ST 5%（2026-05-06 前）/10%（之后）、创业板 2020-08-24 前 10% 后 20%；rule=ipo/unbounded/no_price 时价格为空；n 与 begin/end 二选一 | GUIDE·§6.1、API·证券与行业基础章 |
+| 31 | `31_board_concept_list.py` | 3.5 概念板块目录新面 | 免注册/凭证 | 目录=日更物化档（读当日 memo，不做索引扫描）；行形 name/count/members、成员数降序；与 concept_members/concepts_of 同源（上游概念口径，含指数/风格标签不分流）；当前截面无 PIT 历史 | GUIDE·§6.1、API·板块章 |
 
 ## 约定（新增示例请遵守）
 
