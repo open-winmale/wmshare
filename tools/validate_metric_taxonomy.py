@@ -6,8 +6,9 @@
   2. 七个分类字段的枚举合法性
   3. status=dead 恰为 cn == "drop stub" 的码
   4. 74 个 curated 码的 scope/topic 与 fund.indicators.yaml 的组映射一致
-  5. other / caliber_unknown 比例不超过 taxonomy.yaml 的 quality 阈值
-  6. stats 与逐条统计一致
+  5. other / caliber_unknown / unit_unknown 比例不超过 taxonomy.yaml 的 quality 阈值
+  6. unit_unknown 与 taxonomy.yaml 的 unit_unknown_allowlist 严格 1:1（每条带原因）
+  7. stats 与逐条统计一致
 
 用法:
   python tools/validate_metric_taxonomy.py
@@ -119,16 +120,35 @@ def validate(sidecar_path: Path = SIDECAR, metrics_path: Path = METRICS,
     other_ratio = sum(1 for r in rows if r.get("topic") == "other") / n
     caliber_unknown_ratio = sum(
         1 for r in rows if "unknown" in (r.get("caliber") or [])) / n
+    unit_unknown_ratio = sum(
+        1 for r in rows if r.get("unit_kind") == "unknown") / n
     quality = cfg.get("quality") or {}
     if other_ratio > float(quality.get("other_max", 0.05)):
         errors.append(f"topic=other 占比 {other_ratio:.2%} 超过阈值")
     if caliber_unknown_ratio > float(quality.get("caliber_unknown_max", 0.30)):
         errors.append(f"caliber=unknown 占比 {caliber_unknown_ratio:.2%} 超过阈值")
+    if unit_unknown_ratio > float(quality.get("unit_unknown_max", 0.05)):
+        errors.append(
+            f"unit_kind=unknown 占比 {unit_unknown_ratio:.2%} 超过阈值 "
+            f"{float(quality.get('unit_unknown_max', 0.05)):.2%}")
+
+    # unknown 与白名单严格 1:1：新增未知必须显式登记原因，已归类项必须移出白名单。
+    allowlist = cfg.get("unit_unknown_allowlist") or {}
+    unknown_codes = {r["code"] for r in rows if r.get("unit_kind") == "unknown"}
+    if unknown_codes != set(allowlist):
+        errors.append(
+            "unit_unknown_allowlist 与 unknown 集合不一致；"
+            f"未登记 {sorted(unknown_codes - set(allowlist))[:10]}；"
+            f"已失效 {sorted(set(allowlist) - unknown_codes)[:10]}")
+    for code, reason in allowlist.items():
+        if not str(reason or "").strip():
+            errors.append(f"unit_unknown_allowlist[{code}] 缺少原因")
 
     stats = tax.get("stats") or {}
     recomputed = {
         "other": round(other_ratio, 6),
         "caliber_unknown": round(caliber_unknown_ratio, 6),
+        "unit_unknown": round(unit_unknown_ratio, 6),
         "dead": len(dead_actual),
     }
     for key, value in recomputed.items():

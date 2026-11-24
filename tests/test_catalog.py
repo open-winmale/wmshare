@@ -6,10 +6,10 @@ from wmshare.catalog import load
 def test_load_and_stats():
     cat = load()
     s = cat.stats()
-    assert s["domains"] == 18, s
-    assert s["functions"] == 288, s
-    assert s["raw"] == 206 and s["computed"] == 82, s
-    assert s["metric_catalog_total"] == 2752, s
+    assert s["domains"] == 29, s  # +market.board（板块资金流）+ market.blocktrade（大宗交易，2026-11-23）
+    assert s["functions"] == 368, s  # +概念目录1/仓单3/持仓2/结算2（2026-11-24）
+    assert s["raw"] == 264 and s["computed"] == 104, s  # 持仓/结算 4（raw +4，2026-11-24）
+    assert s["metric_catalog_total"] == 2983, s
     assert s["upstream_rev"], "inventory 应锚定 upstream rev"
 
 
@@ -18,7 +18,7 @@ def test_macro_domain_contract():
     cat = load()
     dom = cat.domain("market.macro")
     assert dom["kind"] == "raw" and dom["category"] == "reference"
-    assert len(dom["functions"]) == 11
+    assert len(dom["functions"]) == 14  # +3 reserve（2026-11-23）
     fn = cat.function("macro.query")
     assert [p["name"] for p in fn["params"]] == ["code", "n"]
     assert fn["params"][1]["default"] == 4
@@ -77,9 +77,12 @@ def test_normalized_function_shapes_follow_fmt_maps():
 
 def test_namespaces_and_metrics():
     cat = load()
-    assert {"kline", "moneyflow", "notice", "filings", "forecast",
+    assert {"kline", "moneyflow", "notice", "filings", "pdf_doc", "forecast",
             "bonus", "rptdom", "segments", "equity", "margin", "estimates",
-            "cbond", "workout", "indices", "intl", "stocks", "macro"} == cat.namespaces()
+            "cbond", "workout", "indices", "intl", "stocks", "macro",
+            "valuation",
+            "calendar", "buyback", "toplist", "futures",
+            "income", "fx", "reserve", "fred", "board", "blocktrade"} == cat.namespaces()  # 2.5 income + 3.0 fx/reserve + 3.1 fred + 3.2 board + 3.3 blocktrade
     m = cat.metric("$PE_TTM_LAST")
     assert m and m["cn"]
     assert cat.metric("$NOT_EXIST") is None
@@ -94,7 +97,7 @@ def test_scope_and_categories():
     # 股本股东（v1.5 起具备函数面；requires 指向 sys/equity 预载链）
     assert cat.domain("corp.equity")["stores"] == ["biz.equity", "ref.info"]
     assert cat.domain("corp.equity")["requires"]["path"] == "sys/equity/init.xs"
-    assert len(cat.domain("corp.equity")["functions"]) == 49
+    assert len(cat.domain("corp.equity")["functions"]) == 52  # +buyback.snapshot；+户数历史（查询+规范化）
 
 
 def test_curated_metric_groups_exist():
@@ -144,6 +147,6 @@ def test_catalog_shipped_inside_package():
     cdir = catmod.catalog_dir()
     assert cdir == pkg_root / "_catalog"
     assert (cdir / "schema" / "domain.schema.json").is_file()
-    assert len(list((cdir / "domains").glob("*.yaml"))) == 18
+    assert len(list((cdir / "domains").glob("*.yaml"))) == 29  # +market.us_macro / board / blocktrade（2026-11-23）
     for g in ("inventory.json", "metrics.json"):
         assert (cdir / "generated" / g).is_file()

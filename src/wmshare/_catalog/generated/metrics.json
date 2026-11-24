@@ -1,11 +1,11 @@
 {
  "schema_version": 2,
- "upstream_rev": "d77f0354",
- "count": 2752,
+ "upstream_rev": "bb486fce",
+ "count": 2983,
  "metrics": [
   {
    "code": "$ACC",
-   "cn": "合同款以及预收款",
+   "cn": "预收/合同负债及合同资产",
    "markets": [
     "cn"
    ]
@@ -23,6 +23,13 @@
    "cn": "TTM预付账款周转天数(D)"
   },
   {
+   "code": "$ADV",
+   "cn": "预收款项及合同负债(最新准则口径)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
    "code": "$AEEX",
    "cn": "行政开支",
    "markets": [
@@ -30,8 +37,50 @@
    ]
   },
   {
+   "code": "$AH_PX_AGENCY",
+   "cn": "安徽电网代购价(元/MWh)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
    "code": "$ALPHA_HS300",
    "cn": "相对沪深300 Alpha(日频)"
+  },
+  {
+   "code": "$AMAC_NAV_BOND",
+   "cn": "债券型基金净值(元)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$AMAC_NAV_EQUITY",
+   "cn": "股票型基金净值(元)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$AMAC_NAV_HYBRID",
+   "cn": "混合型基金净值(元)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$AMAC_NAV_MONEY",
+   "cn": "货币基金净值(元)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$AMAC_NAV_TOTAL",
+   "cn": "公募基金净值合计(元)",
+   "markets": [
+    "cn"
+   ]
   },
   {
    "code": "$AMOUNT",
@@ -122,6 +171,14 @@
    "cn": "最新买入评级家数"
   },
   {
+   "code": "$ANALYST_PACK",
+   "cn": "分析师评级整包(SAS MAP)"
+  },
+  {
+   "code": "$ANALYST_PACK_LAST",
+   "cn": "分析师评级整包-最新"
+  },
+  {
    "code": "$ANALYST_RATING",
    "cn": "综合评级(买入/增持/中性/减持/卖出)"
   },
@@ -184,6 +241,13 @@
    ]
   },
   {
+   "code": "$AVC_CAT_VOLUME",
+   "cn": "奥维家电品类零售量-消费级摄像头(台)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
    "code": "$AVG_AR_DAY",
    "cn": "/ 2"
   },
@@ -226,6 +290,62 @@
   {
    "code": "$AVG_NR_DAY",
    "cn": "/ 2"
+  },
+  {
+   "code": "$BAIJIU_MONTH",
+   "cn": "规上白酒产量-当月(万千升)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$BAIJIU_MONTH_YOY",
+   "cn": "规上白酒产量-当月同比",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$BAIJIU_YTD",
+   "cn": "规上白酒产量-累计(万千升)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$BAIJIU_YTD_YOY",
+   "cn": "规上白酒产量-累计同比",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$BEER_MONTH",
+   "cn": "啤酒产量-当月(升)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$BEER_MONTH_YOY",
+   "cn": "啤酒产量-当月同比",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$BEER_YTD",
+   "cn": "啤酒产量-累计(升)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$BEER_YTD_YOY",
+   "cn": "啤酒产量-累计同比",
+   "markets": [
+    "cn"
+   ]
   },
   {
    "code": "$BENCH_DEFAULT_SYMS",
@@ -318,6 +438,34 @@
    ]
   },
   {
+   "code": "$BJ_FT_CASE",
+   "cn": "飞天原箱批价(元/瓶)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$BJ_FT_LOOSE",
+   "cn": "飞天散瓶批价(元/瓶)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$BJ_GJ1573",
+   "cn": "国窖1573批价(元/瓶)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$BJ_WLY8",
+   "cn": "普五批价(元/瓶)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
    "code": "$BLGAINIAN",
    "cn": "概念板块标签(逗号串)"
   },
@@ -355,7 +503,7 @@
   },
   {
    "code": "$BOLL_WIDTH_20",
-   "cn": "/ $BOLL_MID_20"
+   "cn": "BOLL带宽(20日)"
   },
   {
    "code": "$BOLL_WIDTH_20_LAST",
@@ -666,6 +814,14 @@
    "cn": "近5年分红(TTM)最低"
   },
   {
+   "code": "$BONUS_CASH",
+   "cn": "现金窗口分红总额(亿)"
+  },
+  {
+   "code": "$BONUS_CASH_LAST",
+   "cn": "现金窗口分红总额(亿)"
+  },
+  {
    "code": "$BONUS_CR",
    "cn": "股息货币转换为报价货币"
   },
@@ -786,32 +942,63 @@
    "cn": "近5年股息率(TTM)最低"
   },
   {
+   "code": "$BONUS_RATE_CASH",
+   "cn": "现金窗口股息率(%)"
+  },
+  {
+   "code": "$BONUS_RATE_CASH_LAST",
+   "cn": "现金窗口股息率(%)"
+  },
+  {
+   "code": "$BONUS_RATE_FC_LAST",
+   "cn": "前瞻股息率",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
    "code": "$BONUS_RATE_LYR",
-   "cn": "静态股息率(%)"
+   "cn": "静态股息率(LYR·报告期)(%)"
   },
   {
    "code": "$BONUS_RATE_LYR_LAST",
-   "cn": "静态股息率(%)"
+   "cn": "静态股息率(LYR·报告期)(%)"
   },
   {
    "code": "$BONUS_RATE_LYR_LIVE",
    "cn": "drop stub"
   },
   {
+   "code": "$BONUS_RATE_RPT",
+   "cn": "财报期股息率(%)"
+  },
+  {
+   "code": "$BONUS_RATE_RPT_LAST",
+   "cn": "财报期股息率(%)"
+  },
+  {
    "code": "$BONUS_RATE_TTM",
-   "cn": "股息率(%)"
+   "cn": "股息率(LTM·报告期)(%)"
   },
   {
    "code": "$BONUS_RATE_TTM_LAST",
-   "cn": "分红股息率TTM(%)"
+   "cn": "股息率(LTM·报告期)(%)"
   },
   {
    "code": "$BONUS_RATE_TTM_LAST_REAL",
-   "cn": "最新分红股息率TTM(%)"
+   "cn": "股息率(LTM)(%)"
   },
   {
    "code": "$BONUS_RATE_TTM_LIVE",
    "cn": "drop stub"
+  },
+  {
+   "code": "$BONUS_RPT",
+   "cn": "财报期分红总额(亿)"
+  },
+  {
+   "code": "$BONUS_RPT_LAST",
+   "cn": "财报期分红总额(亿)"
   },
   {
    "code": "$BONUS_TOTAL",
@@ -819,15 +1006,15 @@
   },
   {
    "code": "$BONUS_TTM",
-   "cn": "分红股息TTM(亿)"
+   "cn": "分红总额(LTM·报告期)(亿)"
   },
   {
    "code": "$BONUS_TTM_LAST",
-   "cn": "最近一年预测的分红股息TTM(亿)"
+   "cn": "分红总额(LTM·报告期)(亿)"
   },
   {
    "code": "$BONUS_TTM_LAST_REAL",
-   "cn": "最近一年的分红股息TTM(亿)"
+   "cn": "分红总额(LTM)(亿)"
   },
   {
    "code": "$BONUS_TTM_RATE",
@@ -871,6 +1058,38 @@
    "cn": "拆入资金及卖出回购金融资产款净增加额"
   },
   {
+   "code": "$BUYBACK_AMT_EXEC_1Y_LAST",
+   "cn": "近1年回购金额(已实施)"
+  },
+  {
+   "code": "$BUYBACK_AMT_EXEC_TOTAL_LAST",
+   "cn": "累计回购金额(已实施)"
+  },
+  {
+   "code": "$BUYBACK_AMT_PLAN_1Y_CANCEL_LAST",
+   "cn": "近1年注销式回购金额(公告上限)"
+  },
+  {
+   "code": "$BUYBACK_AMT_PLAN_1Y_LAST",
+   "cn": "近1年回购金额(公告上限)"
+  },
+  {
+   "code": "$BUYBACK_AMT_PLAN_TOTAL_CANCEL_LAST",
+   "cn": "累计注销式回购金额(公告上限)"
+  },
+  {
+   "code": "$BUYBACK_AMT_PLAN_TOTAL_LAST",
+   "cn": "累计回购金额(公告上限)"
+  },
+  {
+   "code": "$BUYBACK_EXEC_1Y_MV_PCT_LAST",
+   "cn": "近1年回购总额占市值比"
+  },
+  {
+   "code": "$BUYBACK_EXEC_TOTAL_MV_PCT_LAST",
+   "cn": "累计回购总额占市值比"
+  },
+  {
    "code": "$CAIBAO_NOTICE_DATE",
    "cn": "发布时间"
   },
@@ -908,7 +1127,7 @@
   },
   {
    "code": "$CAP_SOLAR",
-   "cn": "太阳能发电装机容量(亿千瓦)",
+   "cn": "太阳能发电装机容量(千瓦)",
    "markets": [
     "cn"
    ]
@@ -922,7 +1141,7 @@
   },
   {
    "code": "$CAP_TOTAL",
-   "cn": "全国发电装机容量(亿千瓦)",
+   "cn": "全国发电装机容量(千瓦)",
    "markets": [
     "cn"
    ]
@@ -950,7 +1169,7 @@
   },
   {
    "code": "$CAP_WIND",
-   "cn": "风电装机容量(亿千瓦)",
+   "cn": "风电装机容量(千瓦)",
    "markets": [
     "cn"
    ]
@@ -1020,6 +1239,13 @@
   {
    "code": "$CCY_AFTER",
    "cn": "公司财报的货币单位"
+  },
+  {
+   "code": "$CCY_FIN",
+   "cn": "财报计量货币",
+   "markets": [
+    "hk"
+   ]
   },
   {
    "code": "$CCY_LASTQ4",
@@ -1154,7 +1380,7 @@
   },
   {
    "code": "$CHG_10D",
-   "cn": "/ m_kline20[\"close\"][9]"
+   "cn": "10日涨跌幅"
   },
   {
    "code": "$CHG_10D_LAST",
@@ -1162,7 +1388,7 @@
   },
   {
    "code": "$CHG_1D",
-   "cn": "/ m_kline20[\"close\"][1]"
+   "cn": "日K1日涨跌(EOD)"
   },
   {
    "code": "$CHG_1D_LAST",
@@ -1170,7 +1396,7 @@
   },
   {
    "code": "$CHG_20D",
-   "cn": "/ m_kline20[\"close\"][19]"
+   "cn": "20日涨跌幅"
   },
   {
    "code": "$CHG_20D_LAST",
@@ -1178,7 +1404,7 @@
   },
   {
    "code": "$CHG_30D",
-   "cn": "/ m_kline60[\"close\"][29]"
+   "cn": "30日涨跌幅"
   },
   {
    "code": "$CHG_30D_LAST",
@@ -1186,7 +1412,7 @@
   },
   {
    "code": "$CHG_3D",
-   "cn": "/ m_kline20[\"close\"][2]"
+   "cn": "3日涨跌幅"
   },
   {
    "code": "$CHG_3D_LAST",
@@ -1194,7 +1420,7 @@
   },
   {
    "code": "$CHG_5D",
-   "cn": "/ m_kline20[\"close\"][4]"
+   "cn": "5日涨跌幅"
   },
   {
    "code": "$CHG_5D_LAST",
@@ -1202,7 +1428,7 @@
   },
   {
    "code": "$CHG_60D",
-   "cn": "/ m_kline60[\"close\"][59]"
+   "cn": "60日涨跌幅"
   },
   {
    "code": "$CHG_60D_LAST",
@@ -1210,7 +1436,7 @@
   },
   {
    "code": "$CHG_90D",
-   "cn": "/ m_kline150[\"close\"][89]"
+   "cn": "90日涨跌幅"
   },
   {
    "code": "$CHG_90D_LAST",
@@ -1223,6 +1449,48 @@
   {
    "code": "$CHG_YTD_LAST",
    "cn": "年初至今涨跌幅-最新"
+  },
+  {
+   "code": "$CIOL_CAC_VALUE",
+   "cn": "商用空调内销额(亿元)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$CIOL_HAAC_VOLUME",
+   "cn": "家用空调内销量(万台)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$CIOL_HAAC_YOY",
+   "cn": "家用空调内销量同比",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$CIOL_TV_VOLUME",
+   "cn": "电视内销量(万台)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$CIOL_WASH_VOLUME",
+   "cn": "洗衣机内销量(万台)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$CIOL_WASH_YOY",
+   "cn": "洗衣机内销量同比",
+   "markets": [
+    "cn"
+   ]
   },
   {
    "code": "$CLBDR",
@@ -1286,6 +1554,10 @@
   {
    "code": "$CODEH",
    "cn": "H股代码"
+  },
+  {
+   "code": "$CODEU",
+   "cn": "美股代码"
   },
   {
    "code": "$COG",
@@ -1863,6 +2135,20 @@
    ]
   },
   {
+   "code": "$CPI_FOOD_YOY",
+   "cn": "食品烟酒-当月同比",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$CPI_FOOD_YTD_YOY",
+   "cn": "食品烟酒-累计同比",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
    "code": "$CPI_KEY_QOQ",
    "cn": "核心消费者物价指数月率(%)",
    "markets": [
@@ -1902,6 +2188,13 @@
    "cn": "消费者物价指数年率(%)",
    "markets": [
     "us"
+   ]
+  },
+  {
+   "code": "$CQ_PX_AGENCY",
+   "cn": "重庆电网代购价(元/MWh)",
+   "markets": [
+    "cn"
    ]
   },
   {
@@ -2945,28 +3238,28 @@
   },
   {
    "code": "$CUSTOMS_EXPORT",
-   "cn": "出口额-月(亿)(美元)",
+   "cn": "出口额-月(美元)",
    "markets": [
     "cn"
    ]
   },
   {
    "code": "$CUSTOMS_EXPORT_ACCUMULATE",
-   "cn": "出口额-累计(亿)(美元)",
+   "cn": "出口额-累计(美元)",
    "markets": [
     "cn"
    ]
   },
   {
    "code": "$CUSTOMS_IMPORT",
-   "cn": "进口额-月(亿)(美元)",
+   "cn": "进口额-月(美元)",
    "markets": [
     "cn"
    ]
   },
   {
    "code": "$CUSTOMS_IMPORT_ACCUMULATE",
-   "cn": "进口额-累计(亿)(美元)",
+   "cn": "进口额-累计(美元)",
    "markets": [
     "cn"
    ]
@@ -3298,16 +3591,32 @@
    ]
   },
   {
+   "code": "$DPS_CASH",
+   "cn": "现金窗口每股分红(元)"
+  },
+  {
+   "code": "$DPS_CASH_LAST",
+   "cn": "现金窗口每股分红(元)"
+  },
+  {
+   "code": "$DPS_RPT",
+   "cn": "财报期每股分红(元)"
+  },
+  {
+   "code": "$DPS_RPT_LAST",
+   "cn": "财报期每股分红(元)"
+  },
+  {
    "code": "$DPS_TTM",
-   "cn": "年度每股分红总额(元)"
+   "cn": "每股分红(LTM·报告期)(元)"
   },
   {
    "code": "$DPS_TTM_LAST",
-   "cn": "最近一年预测的每股分红总额(元)"
+   "cn": "每股分红(LTM·报告期)(元)"
   },
   {
    "code": "$DPS_TTM_LAST_REAL",
-   "cn": "最近一年的每股分红总额(元)"
+   "cn": "每股分红(LTM)(元)"
   },
   {
    "code": "$DR",
@@ -3342,7 +3651,7 @@
   },
   {
    "code": "$ELEC_EV_CHARGE",
-   "cn": "充换电服务业用电量(亿千瓦时)",
+   "cn": "充换电服务业用电量(千瓦时)",
    "markets": [
     "cn"
    ]
@@ -3356,14 +3665,14 @@
   },
   {
    "code": "$ELEC_FEB_EST",
-   "cn": "2月用电量-模型估算(亿千瓦时)",
+   "cn": "2月用电量-模型估算(千瓦时)",
    "markets": [
     "cn"
    ]
   },
   {
    "code": "$ELEC_HI_TECH",
-   "cn": "高技术及装备制造业用电量(亿千瓦时)",
+   "cn": "高技术及装备制造业用电量(千瓦时)",
    "markets": [
     "cn"
    ]
@@ -3377,7 +3686,7 @@
   },
   {
    "code": "$ELEC_IDC",
-   "cn": "互联网数据服务用电量(亿千瓦时)",
+   "cn": "互联网数据服务用电量(千瓦时)",
    "markets": [
     "cn"
    ]
@@ -3391,7 +3700,7 @@
   },
   {
    "code": "$ELEC_INDUSTRY",
-   "cn": "工业用电量(亿千瓦时)",
+   "cn": "工业用电量(千瓦时)",
    "markets": [
     "cn"
    ]
@@ -3405,14 +3714,14 @@
   },
   {
    "code": "$ELEC_JAN_EST",
-   "cn": "1月用电量-模型估算(亿千瓦时)",
+   "cn": "1月用电量-模型估算(千瓦时)",
    "markets": [
     "cn"
    ]
   },
   {
    "code": "$ELEC_JAN_FEB",
-   "cn": "全社会用电量-1-2月合计(亿千瓦时)",
+   "cn": "全社会用电量-1-2月合计(千瓦时)",
    "markets": [
     "cn"
    ]
@@ -3426,7 +3735,7 @@
   },
   {
    "code": "$ELEC_PRIMARY",
-   "cn": "第一产业用电量(亿千瓦时)",
+   "cn": "第一产业用电量(千瓦时)",
    "markets": [
     "cn"
    ]
@@ -3440,7 +3749,7 @@
   },
   {
    "code": "$ELEC_RESIDENTIAL",
-   "cn": "城乡居民生活用电量(亿千瓦时)",
+   "cn": "城乡居民生活用电量(千瓦时)",
    "markets": [
     "cn"
    ]
@@ -3454,7 +3763,7 @@
   },
   {
    "code": "$ELEC_SECONDARY",
-   "cn": "第二产业用电量(亿千瓦时)",
+   "cn": "第二产业用电量(千瓦时)",
    "markets": [
     "cn"
    ]
@@ -3468,7 +3777,7 @@
   },
   {
    "code": "$ELEC_TERTIARY",
-   "cn": "第三产业用电量(亿千瓦时)",
+   "cn": "第三产业用电量(千瓦时)",
    "markets": [
     "cn"
    ]
@@ -3482,7 +3791,7 @@
   },
   {
    "code": "$ELEC_TOTAL",
-   "cn": "全社会用电量(亿千瓦时，2月合并期为估算)",
+   "cn": "全社会用电量(千瓦时，2月合并期为估算)",
    "markets": [
     "cn"
    ]
@@ -3557,6 +3866,10 @@
   {
    "code": "$EMP_NUM_WEIGHTED",
    "cn": "加权员工数"
+  },
+  {
+   "code": "$EOD_LEFTOVER",
+   "cn": "EOD leftover PCT包(MAP)"
   },
   {
    "code": "$EOD_TECH_TIP",
@@ -3667,10 +3980,7 @@
   },
   {
    "code": "$EQUITY_FREE_SHARES",
-   "cn": "自由流通股(亿)",
-   "markets": [
-    "us"
-   ]
+   "cn": "自由流通股(亿)"
   },
   {
    "code": "$EQUITY_FREE_SHARES_LAST",
@@ -3682,17 +3992,11 @@
   },
   {
    "code": "$EQUITY_LISTED_A_SHARES",
-   "cn": "上市A股(亿)",
-   "markets": [
-    "us"
-   ]
+   "cn": "上市A股(亿)"
   },
   {
    "code": "$EQUITY_NON_FREE_SHARES",
-   "cn": "非自由流通股(亿)",
-   "markets": [
-    "us"
-   ]
+   "cn": "非自由流通股(亿)"
   },
   {
    "code": "$EQUITY_NUM_DAY",
@@ -3711,7 +4015,10 @@
   },
   {
    "code": "$EQUITY_TOTAL_SHARES_LAST",
-   "cn": "总股本ADS(亿)"
+   "cn": "总股本ADS(亿)",
+   "markets": [
+    "us"
+   ]
   },
   {
    "code": "$EV",
@@ -3785,6 +4092,10 @@
   {
    "code": "$EXCHANGEHOLD_TRADE_WAY",
    "cn": "交易方式"
+  },
+  {
+   "code": "$EXCHANGE_NAME",
+   "cn": "交易所"
   },
   {
    "code": "$EXECUTIVE_AGE",
@@ -3911,6 +4222,13 @@
    ]
   },
   {
+   "code": "$FC_NP_CAGR3",
+   "cn": "未来3年归母净利润复合增长率(预测中位数)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
    "code": "$FC_NP_COUNT",
    "cn": "预测覆盖机构数（<5家代表样本不足，预测信度低）",
    "markets": [
@@ -4026,6 +4344,97 @@
   {
    "code": "$FISCAL_TAX",
    "cn": "税收-累计(万亿)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$FJ_PX_AGENCY",
+   "cn": "福建电网代购价(元/MWh)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$FLOOR_EY_RAW",
+   "cn": "保底率·扣非盈利收益率(小数,微利门过滤)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$FLOOR_EY_RAW_LAST",
+   "cn": "保底率·扣非盈利收益率(小数)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$FLOOR_PE_GATE",
+   "cn": "保底率·PE分位门系数",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$FLOOR_PE_GATE_LAST",
+   "cn": "保底率·PE分位门系数",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$FLOOR_PROFIT_GATE",
+   "cn": "保底率·盈利持续门(0/1,行业类三档)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$FLOOR_PROFIT_GATE_LAST",
+   "cn": "保底率·盈利持续门(0/1)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$FLOOR_YIELD",
+   "cn": "静态保底收益率(小数)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$FLOOR_YIELD_DY",
+   "cn": "保底率·可持续股息腿(小数)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$FLOOR_YIELD_DY_LAST",
+   "cn": "保底率·可持续股息腿(小数)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$FLOOR_YIELD_EY",
+   "cn": "保底率·扣非盈利收益腿(小数)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$FLOOR_YIELD_EY_LAST",
+   "cn": "保底率·扣非盈利收益腿(小数)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$FLOOR_YIELD_LAST",
+   "cn": "静态保底收益率(小数)",
    "markets": [
     "cn"
    ]
@@ -4346,7 +4755,10 @@
   },
   {
    "code": "$FY",
-   "cn": "财年截止日"
+   "cn": "财年截止日",
+   "markets": [
+    "cn"
+   ]
   },
   {
    "code": "$FY_LAST",
@@ -4391,6 +4803,27 @@
   {
    "code": "$GDP_THIRD",
    "cn": "第三产业(万亿)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$GD_PX_AGENCY",
+   "cn": "广东电网代购价(元/MWh)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$GD_PX_BID",
+   "cn": "广东月竞综合价(元/MWh)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$GD_PX_MIDLONG",
+   "cn": "广东中长期综合价(元/MWh)",
    "markets": [
     "cn"
    ]
@@ -4465,7 +4898,7 @@
   },
   {
    "code": "$GMR_GEOMEAN1",
-   "cn": "近1年毛利率几何增速"
+   "cn": "近1年毛利率几何增速(同比口径)"
   },
   {
    "code": "$GMR_GEOMEAN1_LAST",
@@ -4692,6 +5125,13 @@
   {
    "code": "$HEAVY_ASSET",
    "cn": "重资产(亿)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$HE_PX_AGENCY",
+   "cn": "河北电网代购价(元/MWh)",
    "markets": [
     "cn"
    ]
@@ -5481,6 +5921,10 @@
    "cn": "归母每股收益(元)"
   },
   {
+   "code": "$ID_EQUITY_TOTAL_SHARES",
+   "cn": "总股本"
+  },
+  {
    "code": "$ID_EV",
    "cn": "企业账面价值"
   },
@@ -6049,7 +6493,7 @@
   },
   {
    "code": "$ID_PIC",
-   "cn": "股本"
+   "cn": "股本(元)"
   },
   {
    "code": "$ID_PPE",
@@ -6437,14 +6881,17 @@
   },
   {
    "code": "$ID_TFAN",
-   "cn": "交易性金融资产(非FVT)",
+   "cn": "交易性金融资产",
    "markets": [
     "cn"
    ]
   },
   {
    "code": "$ID_TFAS",
-   "cn": "交易性金融资产"
+   "cn": "交易性金融资产",
+   "markets": [
+    "cn"
+   ]
   },
   {
    "code": "$ID_TL",
@@ -6493,6 +6940,20 @@
   {
    "code": "$IGDL",
    "cn": "清算扣除资产(亿)"
+  },
+  {
+   "code": "$IMPA",
+   "cn": "资产减值损失(最新准则口径,正数=损失)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$IMPC",
+   "cn": "信用减值损失(最新准则口径,正数=损失)",
+   "markets": [
+    "cn"
+   ]
   },
   {
    "code": "$INCOME_BANK",
@@ -7065,11 +7526,39 @@
   },
   {
    "code": "$INSURANCE_HOLD_RATIO",
-   "cn": "保险持仓占股本比例"
+   "cn": "保险持仓占流通股本比例"
   },
   {
    "code": "$INSURANCE_HOLD_RATIO_LAST",
-   "cn": "最新保险持仓占股本比例"
+   "cn": "最新保险持仓占流通股本比例"
+  },
+  {
+   "code": "$INS_LIFE",
+   "cn": "人身险保费(元)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$INS_PREMIUM_TOTAL",
+   "cn": "原保险保费收入(元)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$INS_PREMIUM_YOY",
+   "cn": "原保险保费-同比",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$INS_PROPERTY",
+   "cn": "财产险保费(元)",
+   "markets": [
+    "cn"
+   ]
   },
   {
    "code": "$IOFA",
@@ -7246,6 +7735,14 @@
    "cn": "是否停牌"
   },
   {
+   "code": "$JGCG_PACK",
+   "cn": "机构持仓整包(SAS MAP)"
+  },
+  {
+   "code": "$JGCG_PACK_LAST",
+   "cn": "机构持仓整包-最新"
+  },
+  {
    "code": "$JOB_ADD",
    "cn": "非农就业人数变化(万)",
    "markets": [
@@ -7257,6 +7754,13 @@
    "cn": "失业率(月)(%)",
    "markets": [
     "hk"
+   ]
+  },
+  {
+   "code": "$JX_PX_AGENCY",
+   "cn": "江西电网代购价(元/MWh)",
+   "markets": [
+    "cn"
    ]
   },
   {
@@ -7300,6 +7804,18 @@
    "cn": "KDJ K值-最新"
   },
   {
+   "code": "$KLINE150_TECH",
+   "cn": "K线150技术面整包(SAS MAP)"
+  },
+  {
+   "code": "$KLINE20_TECH",
+   "cn": "K线20技术面整包(SAS MAP)"
+  },
+  {
+   "code": "$KLINE20_TECH_LAST",
+   "cn": "K线20技术面整包-最新"
+  },
+  {
    "code": "$KLINE_DATE",
    "cn": "日K线采样日期"
   },
@@ -7309,7 +7825,7 @@
   },
   {
    "code": "$KLINE_DAY",
-   "cn": "日K线(F)"
+   "cn": "+ STRING($DATE_SAS) + \"\\n市值:\" + STRING($MV_DAY) + \"\\n收盘价:\" + STRING($CLOSE_DAY) +\n  \"\\n采样日:\" + STRING($SAMPLING_DAY) +\n  \"\\n陆股通持股比例:\" + STRING($HOLD_RATIO_DAY) + \"\\n陆股通持股数量:\" + STRING($HOLD_VOL_DAY)"
   },
   {
    "code": "$KLINE_HAS",
@@ -7465,6 +7981,13 @@
    "cn": "二审判决日期"
   },
   {
+   "code": "$LN_PX_AGENCY",
+   "cn": "辽宁电网代购价(元/MWh)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
    "code": "$LOWER_SHADOW",
    "cn": "下影线比例"
   },
@@ -7495,6 +8018,20 @@
   {
    "code": "$LPCA",
    "cn": "向中央银行借款净增加额"
+  },
+  {
+   "code": "$LPR_1Y",
+   "cn": "1年期LPR(小数)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$LPR_5Y",
+   "cn": "5年期LPR(小数)",
+   "markets": [
+    "cn"
+   ]
   },
   {
    "code": "$LV",
@@ -7758,6 +8295,14 @@
    "cn": "最新融资净买入"
   },
   {
+   "code": "$MARGIN_PACK",
+   "cn": "融资融券整包(SAS MAP)"
+  },
+  {
+   "code": "$MARGIN_PACK_LAST",
+   "cn": "融资融券整包-最新"
+  },
+  {
    "code": "$MAXPROFIT_PRODUCT",
    "cn": "最盈利产品(原文)"
   },
@@ -7842,6 +8387,10 @@
    "cn": "240日收盘价均线(前复权)"
   },
   {
+   "code": "$MA_CLOSE_240_LAST",
+   "cn": "240日收盘价均线-最新"
+  },
+  {
    "code": "$MA_CLOSE_26",
    "cn": "26日收盘价均线(前复权)"
   },
@@ -7884,6 +8433,14 @@
   {
    "code": "$MFNS_TCL",
    "cn": "货币资金占流动负债比率(%)"
+  },
+  {
+   "code": "$MF_DAY_PACK",
+   "cn": "日资金流向整包(SAS MAP)"
+  },
+  {
+   "code": "$MF_DAY_PACK_LAST",
+   "cn": "日资金流向整包-最新"
   },
   {
    "code": "$MF_ELG_NET",
@@ -8018,12 +8575,24 @@
    "cn": "最新小单净流入额(元)"
   },
   {
+   "code": "$MF_WIN20_PACK",
+   "cn": "20日资金流向整包(SAS MAP)"
+  },
+  {
+   "code": "$MF_WIN20_PACK_LAST",
+   "cn": "20日资金流向整包-最新"
+  },
+  {
    "code": "$MIN_DAY_10",
    "cn": "10日最低价(前复权)"
   },
   {
    "code": "$MIN_DAY_120",
    "cn": "120日最低价(前复权)"
+  },
+  {
+   "code": "$MIN_DAY_120_LAST",
+   "cn": "120日最低价-最新"
   },
   {
    "code": "$MIN_DAY_14",
@@ -8157,8 +8726,36 @@
    "cn": "最新净资产(加权)"
   },
   {
+   "code": "$NBSFOOD_BEV_MONTH",
+   "cn": "软饮料产量-当月(吨)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$NBSFOOD_BEV_YTD",
+   "cn": "软饮料产量-累计(吨)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$NBSFOOD_DAIRY_MONTH",
+   "cn": "乳制品产量-当月(吨)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$NBSFOOD_DAIRY_YTD",
+   "cn": "乳制品产量-累计(吨)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
    "code": "$NBS_BEV",
-   "cn": "限额以上饮料类-当月(亿元)",
+   "cn": "限额以上饮料类-当月(元)",
    "markets": [
     "cn"
    ]
@@ -8171,8 +8768,36 @@
    ]
   },
   {
+   "code": "$NBS_COAL_YOY",
+   "cn": "原煤产量同比(%)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$NBS_COKE_YOY",
+   "cn": "焦炭产量同比(%)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$NBS_CRUDE_YOY",
+   "cn": "原油产量同比(%)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$NBS_DIESEL_YOY",
+   "cn": "柴油产量同比(%)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
    "code": "$NBS_FOOD",
-   "cn": "限额以上粮油食品类-当月(亿元)",
+   "cn": "限额以上粮油食品类-当月(元)",
    "markets": [
     "cn"
    ]
@@ -8185,8 +8810,85 @@
    ]
   },
   {
+   "code": "$NBS_GASO_YOY",
+   "cn": "汽油产量同比(%)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$NBS_GAS_YOY",
+   "cn": "天然气产量同比(%)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$NBS_LNG_YOY",
+   "cn": "液化天然气产量同比(%)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$NBS_LPG_YOY",
+   "cn": "液化石油气产量同比(%)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$NBS_PG_ABS",
+   "cn": "发电量-当月(千瓦时)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$NBS_PG_HY_YOY",
+   "cn": "水电同比(%)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$NBS_PG_NU_YOY",
+   "cn": "核电同比(%)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$NBS_PG_SO_YOY",
+   "cn": "太阳能发电同比(%)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$NBS_PG_TH_YOY",
+   "cn": "火电同比(%)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$NBS_PG_WI_YOY",
+   "cn": "风电同比(%)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$NBS_PG_YOY",
+   "cn": "发电量同比(%)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
    "code": "$NBS_RETAIL",
-   "cn": "社零总额-当月(亿元)",
+   "cn": "社零总额-当月(元)",
    "markets": [
     "cn"
    ]
@@ -8200,7 +8902,7 @@
   },
   {
    "code": "$NBS_RETAIL_YTD",
-   "cn": "社零总额-年初累计(亿元)",
+   "cn": "社零总额-年初累计(元)",
    "markets": [
     "cn"
    ]
@@ -8214,7 +8916,7 @@
   },
   {
    "code": "$NBS_TOBACCO",
-   "cn": "限额以上烟酒类-当月(亿元)",
+   "cn": "限额以上烟酒类-当月(元)",
    "markets": [
     "cn"
    ]
@@ -8322,6 +9024,167 @@
    "cn": "营业外净收入",
    "markets": [
     "hk"
+   ]
+  },
+  {
+   "code": "$NEVM_HARMONY",
+   "cn": "鸿蒙智行新势力月交付(辆)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$NEVM_IDEAL",
+   "cn": "理想新势力月交付(辆)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$NEVM_LEAPMOTOR",
+   "cn": "零跑新势力月交付(辆)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$NEVM_NIO",
+   "cn": "蔚来新势力月交付(辆)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$NEVM_XIAOMI",
+   "cn": "小米新势力月交付(辆)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$NEVM_XPENG",
+   "cn": "小鹏新势力月交付(辆)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$NEVW_AITO",
+   "cn": "问界新势力周销量(辆)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$NEVW_IDEAL",
+   "cn": "理想新势力周销量(辆)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$NEVW_LEAPMOTOR",
+   "cn": "零跑新势力周销量(辆)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$NEVW_NIO",
+   "cn": "蔚来新势力周销量(辆)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$NEVW_XIAOMI",
+   "cn": "小米新势力周销量(辆)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$NEVW_XPENG",
+   "cn": "小鹏新势力周销量(辆)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$NF_ABS",
+   "cn": "十种有色产量-当月(吨)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$NF_ALPROD_YOY",
+   "cn": "铝材产量同比(%)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$NF_ALUMINA_YOY",
+   "cn": "氧化铝产量同比(%)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$NF_AL_YOY",
+   "cn": "原铝产量同比(%)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$NF_CUPROD_YOY",
+   "cn": "铜材产量同比(%)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$NF_CU_YOY",
+   "cn": "精炼铜产量同比(%)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$NF_INV_MIN_YOY",
+   "cn": "有色矿采选固投累计增长(%)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$NF_INV_YOY",
+   "cn": "有色冶炼固投累计增长(%)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$NF_MINING_PPI",
+   "cn": "有色矿采选PPI(上年同月=100)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$NF_SMELT_PPI",
+   "cn": "有色冶炼压延PPI(上年同月=100)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$NF_YOY",
+   "cn": "十种有色产量同比(%)",
+   "markets": [
+    "cn"
    ]
   },
   {
@@ -9040,7 +9903,7 @@
   },
   {
    "code": "$N_DY_D",
-   "cn": "股息率修正系数(D)"
+   "cn": "股利支付率修正系数(D)"
   },
   {
    "code": "$OBIH",
@@ -9433,7 +10296,7 @@
   },
   {
    "code": "$ORG_INDUSTRY_INDEX",
-   "cn": "+ $ORG_INDUSTRIES[-1].Symbol"
+   "cn": "+ m_ref_info.industry_l3_symbol"
   },
   {
    "code": "$ORG_INDUSTRY_INDEX_SYMS",
@@ -9446,6 +10309,10 @@
   {
    "code": "$ORG_INDUSTRY_TAGS",
    "cn": "所属行业标签"
+  },
+  {
+   "code": "$ORG_IR_WEB",
+   "cn": "投资者关系网"
   },
   {
    "code": "$ORG_ISSUEPRICE",
@@ -9478,6 +10345,10 @@
   {
    "code": "$ORG_ORGTYPE",
    "cn": "组织类型"
+  },
+  {
+   "code": "$ORG_PAR_VALUE",
+   "cn": "每股面值"
   },
   {
    "code": "$ORG_PROFILE",
@@ -9532,6 +10403,13 @@
    "cn": "机构网站"
   },
   {
+   "code": "$ORNET",
+   "cn": "其他应收款(最新准则口径,不含利息股利)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
    "code": "$ORTR",
    "cn": "其他经营收益",
    "markets": [
@@ -9546,6 +10424,14 @@
    ]
   },
   {
+   "code": "$OWID_FERT_HA_CN",
+   "cn": "化肥用量-中国(千克/公顷)"
+  },
+  {
+   "code": "$OWID_FERT_HA_WRL",
+   "cn": "化肥用量-世界(千克/公顷)"
+  },
+  {
    "code": "$O_DAYS",
    "cn": "营业周转天数(D)"
   },
@@ -9556,6 +10442,10 @@
   {
    "code": "$PB",
    "cn": "市净率"
+  },
+  {
+   "code": "$PB_LAST",
+   "cn": "PB"
   },
   {
    "code": "$PB_LIVE",
@@ -9614,6 +10504,54 @@
    "cn": "股息率(TTM) 5年分位"
   },
   {
+   "code": "$PCT_HOLDERNUM_10Y",
+   "cn": "股东户数 10年分位"
+  },
+  {
+   "code": "$PCT_HOLDERNUM_10Y_LAST",
+   "cn": "股东户数 10年分位"
+  },
+  {
+   "code": "$PCT_HOLDERNUM_3Y",
+   "cn": "股东户数 3年分位"
+  },
+  {
+   "code": "$PCT_HOLDERNUM_3Y_LAST",
+   "cn": "股东户数 3年分位"
+  },
+  {
+   "code": "$PCT_HOLDERNUM_5Y",
+   "cn": "股东户数 5年分位"
+  },
+  {
+   "code": "$PCT_HOLDERNUM_5Y_LAST",
+   "cn": "股东户数 5年分位"
+  },
+  {
+   "code": "$PCT_INST_HOLD_10Y",
+   "cn": "机构持仓 10年分位"
+  },
+  {
+   "code": "$PCT_INST_HOLD_10Y_LAST",
+   "cn": "机构持仓 10年分位"
+  },
+  {
+   "code": "$PCT_INST_HOLD_3Y",
+   "cn": "机构持仓 3年分位"
+  },
+  {
+   "code": "$PCT_INST_HOLD_3Y_LAST",
+   "cn": "机构持仓 3年分位"
+  },
+  {
+   "code": "$PCT_INST_HOLD_5Y",
+   "cn": "机构持仓 5年分位"
+  },
+  {
+   "code": "$PCT_INST_HOLD_5Y_LAST",
+   "cn": "机构持仓 5年分位"
+  },
+  {
    "code": "$PCT_PB_TTM_10Y",
    "cn": "PB(TTM) 10年分位"
   },
@@ -9660,6 +10598,22 @@
   {
    "code": "$PCT_PE_TTM_5Y_LAST",
    "cn": "PE(TTM) 5年分位"
+  },
+  {
+   "code": "$PCT_PR_BASE_3Y",
+   "cn": "市赚率 3年分位"
+  },
+  {
+   "code": "$PCT_PR_BASE_3Y_LAST",
+   "cn": "市赚率 3年分位"
+  },
+  {
+   "code": "$PCT_PS_TTM_3Y",
+   "cn": "市销率(TTM) 3年分位"
+  },
+  {
+   "code": "$PCT_PS_TTM_3Y_LAST",
+   "cn": "市销率(TTM) 3年分位"
   },
   {
    "code": "$PE",
@@ -9718,6 +10672,13 @@
    "cn": "drop stub"
   },
   {
+   "code": "$PE_FC_LAST",
+   "cn": "前瞻市盈率",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
    "code": "$PE_TTM",
    "cn": "PE"
   },
@@ -9736,6 +10697,56 @@
   {
    "code": "$PE_TTM_LIVE",
    "cn": "drop stub"
+  },
+  {
+   "code": "$PHONE_SH_APPLE",
+   "cn": "苹果手机周份额(%)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$PHONE_SH_HONOR",
+   "cn": "荣耀手机周份额(%)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$PHONE_SH_HUAWEI",
+   "cn": "华为手机周份额(%)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$PHONE_SH_OPPO",
+   "cn": "OPPO手机周份额(%)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$PHONE_SH_VIVO",
+   "cn": "vivo手机周份额(%)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$PHONE_SH_XIAOMI",
+   "cn": "小米手机周份额(%)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$PIC",
+   "cn": "股本(元)"
+  },
+  {
+   "code": "$PIC0",
+   "cn": "股本-期初(元)"
   },
   {
    "code": "$PMI",
@@ -9894,6 +10905,209 @@
   {
    "code": "$POPULATION_YEAR_END_TOTAL",
    "cn": "年末总人口(亿)(人)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$POSTAL_DE_KEP",
+   "cn": "德国KEP市场收入(亿欧,年)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$POSTAL_DE_KEP_EXPRESS",
+   "cn": "德国KEP收入-Express(亿欧,年)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$POSTAL_DE_KEP_KURIER",
+   "cn": "德国KEP收入-Kurier(亿欧,年)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$POSTAL_DE_KEP_PAKET",
+   "cn": "德国KEP收入-Paket(亿欧,年)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$POSTAL_DE_PARCEL",
+   "cn": "德国包裹件量(亿件,年,全市场)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$POSTAL_DE_PARCEL_AUSLAND",
+   "cn": "德国包裹件量-国际(亿件,年)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$POSTAL_DE_PARCEL_INLAND",
+   "cn": "德国包裹件量-国内(亿件,年)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$POSTAL_DE_PEX",
+   "cn": "德国Paket+Express件量(亿件,年)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$POSTAL_DE_REVENUE",
+   "cn": "德国包裹市场收入(亿欧,年)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$POSTAL_FR_DOM",
+   "cn": "法国包裹量-国内投递(亿件,年,全市场)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$POSTAL_FR_EXP",
+   "cn": "法国包裹量-出口(亿件,年)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$POSTAL_FR_REV",
+   "cn": "/ 100",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$POSTAL_JPA_MAIL",
+   "cn": "日本メール便取扱数(亿件,财年)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$POSTAL_JPA_TOTAL",
+   "cn": "日本宅配便取扱個数(亿件,财年4-3,全市场)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$POSTAL_JPA_TRUCK",
+   "cn": "日本宅配便-トラック(亿件,财年)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$POSTAL_JPA_YAMATO",
+   "cn": "日本宅急便(ヤマト)取扱個数(亿件,财年)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$POSTAL_JP_PARCEL",
+   "cn": "日本宅配便取扱個数(亿件,月,大手3社)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$POSTAL_JP_PARCEL_YOY",
+   "cn": "日本宅配便取扱個数-同比",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$POSTAL_KR_PARCEL",
+   "cn": "韩国택배件量(亿件,月,全市场)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$POSTAL_UK_LETTERS",
+   "cn": "英国信件量(亿件,财年4-3,Letters+Large letters)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$POSTAL_UK_LETTERS_REV",
+   "cn": "英国信件收入(亿英镑,财年)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$POSTAL_UK_PARCELS",
+   "cn": "英国包裹量(亿件,财年4-3,持证运营商口径)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$POSTAL_UK_PARCELS_REV",
+   "cn": "英国包裹市场收入(亿英镑,财年)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$POSTAL_US_CMP_REVENUE",
+   "cn": "美国Competitive Mail收入(亿美元,季)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$POSTAL_US_COMPETITIVE",
+   "cn": "美国Competitive Mail件量(亿件,季)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$POSTAL_US_FC_REVENUE",
+   "cn": "美国First-Class Mail收入(亿美元,季)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$POSTAL_US_FIRST_CLASS",
+   "cn": "美国First-Class Mail件量(亿件,季)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$POSTAL_US_MD",
+   "cn": "美国Market Dominant件量(亿件,季,财年10-9)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$POSTAL_US_MD_REVENUE",
+   "cn": "美国Market Dominant收入(亿美元,季)",
    "markets": [
     "cn"
    ]
@@ -10228,6 +11442,27 @@
    "cn": "上市以来的平均税后净利率(除去亏损)"
   },
   {
+   "code": "$PV_CENTRAL_NEW",
+   "cn": "集中式光伏新增(千瓦)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$PV_DIST_NEW",
+   "cn": "分布式光伏新增(千瓦)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$PV_NEW_INSTALL",
+   "cn": "光伏新增并网-纯光伏(千瓦)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
    "code": "$QFII_HOLD_RATIO",
    "cn": "QFII持仓占股本比例"
   },
@@ -10284,6 +11519,27 @@
    ]
   },
   {
+   "code": "$RAWMILK_PRICE",
+   "cn": "主产省生鲜乳均价(元/公斤)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$RAWMILK_WOW",
+   "cn": "生鲜乳均价-环比",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$RAWMILK_YOY",
+   "cn": "生鲜乳均价-同比",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
    "code": "$RDATE_LAST",
    "cn": "最新报表期末日"
   },
@@ -10325,7 +11581,7 @@
   },
   {
    "code": "$REG_CAPITAL",
-   "cn": "注册资本(万元)"
+   "cn": "注册资本"
   },
   {
    "code": "$REPORT_PERIOD",
@@ -10850,6 +12106,13 @@
    "cn": "最新财报披露季"
   },
   {
+   "code": "$SC_PX_AGENCY",
+   "cn": "四川电网代购价(元/MWh)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
    "code": "$SD",
    "cn": "速动比率(%)"
   },
@@ -10945,6 +12208,10 @@
    "cn": "最新股东权益(加权)"
   },
   {
+   "code": "$SHARE_PAR",
+   "cn": "每股面值(元)"
+  },
+  {
    "code": "$SHIP_BCI",
    "cn": "BCI 波罗的海海岬型指数(点)",
    "markets": [
@@ -10973,12 +12240,26 @@
    ]
   },
   {
+   "code": "$SNX_PX_AGENCY",
+   "cn": "陕西电网代购价(元/MWh)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
    "code": "$SOCIAL_SECURITY_HOLD_RATIO",
-   "cn": "社保持仓占股本比例"
+   "cn": "社保持仓占流通股本比例"
   },
   {
    "code": "$SOCIAL_SECURITY_HOLD_RATIO_LAST",
-   "cn": "最新社保持仓占股本比例"
+   "cn": "最新社保持仓占流通股本比例"
+  },
+  {
+   "code": "$SOLAR_NEW_INSTALL",
+   "cn": "太阳能发电新增并网-含光热(千瓦)",
+   "markets": [
+    "cn"
+   ]
   },
   {
    "code": "$SSE_CCFI",
@@ -11104,6 +12385,27 @@
    ]
   },
   {
+   "code": "$STOCK_TURNOVER_SH",
+   "cn": "上海成交金额(元)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$STOCK_TURNOVER_SZ",
+   "cn": "深圳成交金额(元)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$STOCK_TURNOVER_TOTAL",
+   "cn": "沪深成交金额合计(元)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
    "code": "$STYLE_CLUSTER_NOTE",
    "cn": "聚类(仅容器/KMEANS语境)"
   },
@@ -11160,6 +12462,13 @@
    "cn": "停牌类型"
   },
   {
+   "code": "$SX_PX_AGENCY",
+   "cn": "山西电网代购价(元/MWh)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
    "code": "$SYM",
    "cn": "符号"
   },
@@ -11170,6 +12479,10 @@
   {
    "code": "$SYMBOL_B",
    "cn": "B股代码"
+  },
+  {
+   "code": "$SYMBOL_CANON",
+   "cn": "归一符号(换码后)"
   },
   {
    "code": "$SYMBOL_H",
@@ -11285,6 +12598,13 @@
    "cn": "/ 2"
   },
   {
+   "code": "$TFA",
+   "cn": "交易性金融资产(最新准则口径)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
    "code": "$TFAS",
    "cn": "交易性金融资产",
    "markets": [
@@ -11306,8 +12626,22 @@
    ]
   },
   {
+   "code": "$TFLX",
+   "cn": "交易性金融负债(最新准则口径)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
    "code": "$TIP",
    "cn": "提示"
+  },
+  {
+   "code": "$TJ_PX_AGENCY",
+   "cn": "天津电网代购价(元/MWh)",
+   "markets": [
+    "cn"
+   ]
   },
   {
    "code": "$TL_RATE",
@@ -11436,6 +12770,22 @@
   {
    "code": "$TOPTEN_OTHER_INST_RATIO_LAST",
    "cn": "最新十大流通-其他机构持股比例"
+  },
+  {
+   "code": "$TOPTEN_PACK",
+   "cn": "十大流通分类整包(SAS MAP)"
+  },
+  {
+   "code": "$TOPTEN_PACK_LAST",
+   "cn": "十大流通分类整包-最新"
+  },
+  {
+   "code": "$TOPTEN_SOCIAL_SECURITY_RATIO",
+   "cn": "十大流通-社保养老持股比例"
+  },
+  {
+   "code": "$TOPTEN_SOCIAL_SECURITY_RATIO_LAST",
+   "cn": "最新十大流通-社保养老持股比例"
   },
   {
    "code": "$TOTAL_NUM",
@@ -11618,7 +12968,7 @@
   },
   {
    "code": "$TR_GEOMEAN1",
-   "cn": "近1年营收几何增速"
+   "cn": "近1年营收几何增速(同比口径)"
   },
   {
    "code": "$TR_GEOMEAN1_LAST",
@@ -11739,6 +13089,41 @@
   {
    "code": "$TR_YOY_PREV_Q_LAST",
    "cn": "最新上季营收同比增长率"
+  },
+  {
+   "code": "$TSF_CORP_BOND",
+   "cn": "社融-企业债券余额(元)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$TSF_EQUITY",
+   "cn": "社融-非金融企业境内股票余额(元)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$TSF_GOV_BOND",
+   "cn": "社融-政府债券余额(元)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$TSF_STOCK",
+   "cn": "社会融资规模存量(元)",
+   "markets": [
+    "cn"
+   ]
+  },
+  {
+   "code": "$TSF_STOCK_YOY",
+   "cn": "社融存量-同比",
+   "markets": [
+    "cn"
+   ]
   },
   {
    "code": "$TTAX",
@@ -12536,7 +13921,7 @@
   },
   {
    "code": "$hTORE",
-   "cn": "其他应收款合计",
+   "cn": "应收利息及应收股利",
    "markets": [
     "cn"
    ]
@@ -12561,6 +13946,22 @@
    "markets": [
     "cn"
    ]
+  },
+  {
+   "code": "$holdings13f_book",
+   "cn": "13F单季账本"
+  },
+  {
+   "code": "$holdings13f_holders",
+   "cn": "13F按股票找人"
+  },
+  {
+   "code": "$holdings13f_roster",
+   "cn": "13F名单"
+  },
+  {
+   "code": "$holdings13f_track",
+   "cn": "13F持仓轨迹"
   },
   {
    "code": "$rNT",

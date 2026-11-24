@@ -1,24 +1,18 @@
 """指标适配层：按分类找码、只组合同口径的码、扁平码单独看。
 
-前提：凭证必填（export WMSHARE_CLIENT_ID=... WMSHARE_CLIENT_SECRET=...）；`--demo` 用随包演示数据零凭证试跑
+前提：凭证可选——无凭证自动免注册免费试用（真实数据、需网络）
 运行：python examples/16_metric_adapter.py
 学到：scopes/topics 发现、combinable_groups 组合边界、table 长表、many 多标的小列表
 文档：docs/METRIC_ADAPTER.md
 """
-import sys
 
 import wmshare
 from wmshare.indicator_adapter import IndicatorAdapter
 
 
-def main(cli=None, demo: bool = False) -> None:
+def main(cli=None) -> None:
     if cli is None:
-        if demo:
-            cli = wmshare.demo_client()
-            print("(演示模式：随包罐头数据，非真实行情)")
-            print()
-        else:
-            cli = wmshare.Client.from_env()
+        cli = wmshare.Client.from_env()
     ad = IndicatorAdapter(cli)
     SYM = "600519"
 
@@ -57,13 +51,13 @@ def main(cli=None, demo: bool = False) -> None:
         print(f"  {symbol}: {values}")
 
     # ---- ⑤ 全市场截面不走 many：交给 screener.query 一次查完 ----
-    print("\n全市场截面：cli.screener.query(fields=codes, _df=True)"
+    print("\n全市场截面：cli.screener.query(fields=codes)"
           "（服务端索引，不是逐票 many）")
 
 
 if __name__ == "__main__":
     try:
-        main(demo="--demo" in sys.argv)
+        main()
     except wmshare.WmshareError as e:
         print(f"取数失败：{e}")
         raise SystemExit(1)

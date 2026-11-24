@@ -62,29 +62,29 @@ def _is_num(v):
 # ---------------------------------------------------------------- 行情 market
 @pytest.mark.parametrize("symbol", SYMBOLS)
 def test_kline_bars_multi_symbol(cli, symbol):
-    bars = cli.kline.bars(symbol, n=5)
-    assert isinstance(bars, list) and len(bars) == 5
-    for bar in bars:
-        assert {"date", "close", "open", "high", "low"} <= set(bar)
+    bars = cli.kline.bars(symbol, n=5)  # 2.0：门面默认 DataFrame
+    assert len(bars) == 5
+    for _, bar in bars.iterrows():
+        assert {"date", "close", "open", "high", "low"} <= set(bars.columns)
         assert _is_num(bar["close"]) and bar["close"] > 0
         assert bar["low"] <= bar["high"]
-    dates = [b["date"] for b in bars]
-    assert dates == sorted(dates, reverse=True), "日 K 应按日期降序"
+    dates = [str(d) for d in bars["date"]]
+    assert dates == sorted(dates), "日 K 应按日期升序（2.0：旧→新）"
 
 
 def test_kline_bars_adj_variants(cli):
     nr = cli.kline.bars(MAIN, n=3)
     qfq = cli.kline.bars(MAIN, n=3, adj="qfq")
-    assert [b["date"] for b in nr] == [b["date"] for b in qfq]
-    assert all(_is_num(b["close"]) and b["close"] > 0 for b in qfq)
+    assert list(nr["date"]) == list(qfq["date"])
+    assert all(_is_num(v) and v > 0 for v in qfq["close"])
 
 
 def test_kline_bars_date_range(cli):
     rows = cli.kline.bars(MAIN, begin="2026-09-01", end="2026-09-30")
-    assert isinstance(rows, list) and rows
-    assert all("2026-09-01" <= b["date"] <= "2026-09-30" for b in rows)
+    assert rows is not None and len(rows) > 0
+    assert all("2026-09-01" <= str(d) <= "2026-09-30" for d in rows["date"])
     money = cli.moneyflow.bars(MAIN, begin="2026-09-01", end="2026-09-30")
-    assert all("2026-09-01" <= r["date"] <= "2026-09-30" for r in money)
+    assert all("2026-09-01" <= str(d) <= "2026-09-30" for d in money["date"])
 
 
 def test_kline_last(cli):
@@ -102,6 +102,50 @@ def test_kline_live(cli):
 
 def test_kline_is_etf(cli):
     assert isinstance(_call_or_xfail(cli.kline.is_etf, MAIN), bool)
+
+
+# ---- ETF 九视图组合门面（W3 护栏 5：每 view 一个 live 调用点）----
+ETF = "510300"  # 沪深300ETF，真实宽基，九视图均有采集
+
+
+@pytest.mark.parametrize("view", [
+    "card", "nav", "share", "div", "portfolio", "profile", "premium", "asset", "rank",
+])
+def test_etf_views(cli, view):
+    """九视图 live 冒烟：返回 MAP、view 字段与请求一致、数值锚点合理。
+
+    组合门面不进 FRIENDLY_INDEX（不触发 CORE_COUNT 提醒），故在此显式全覆盖，
+    由 tests/test_live_coverage.py 的静态扫描守护不被删。
+    """
+    got = _call_or_xfail(getattr(cli.etf, view), ETF)
+    assert isinstance(got, dict), got
+    assert got.get("ok") is True, got                    # 未就绪/非 ETF 由门面抛 DataError
+    expected_view = view                                 # meta.view 记 SDK 方法名
+    # 2.0 信封：业务字段在 data，view/mode 在 meta（顶层不再有 view）
+    assert (got.get("meta") or {}).get("view") == expected_view, (view, got.get("meta"))
+    data = got.get("data") or {}
+    # 数值锚点：至少有一个该 view 的特征数值字段且量级合理（防 0.25→25 量级错）
+    if view == "asset":
+        vals = [data[k] for k in ("stock_ratio", "bond_ratio", "cash_ratio",
+                                  "other_ratio", "fund_ratio") if data.get(k) is not None]
+        assert vals and all(0 <= v <= 100 for v in vals), data
+    elif view == "rank":
+        for key in ("chg_w1", "chg_m1", "chg_m3"):
+            if data.get(key) is not None:
+                assert -100 <= data[key] <= 1000, (key, data[key])
+    elif view == "premium":
+        if data.get("premium_pct") is not None:
+            assert -100 <= data["premium_pct"] <= 1000, data["premium_pct"]
+    elif view == "nav":
+        na = data.get("net_asset")
+        if isinstance(na, dict):                          # nav 返回 {date, net_asset}
+            na = na.get("net_asset")
+        if na is not None:
+            assert na >= 0, na                            # 亿元非负
+    elif view == "card":
+        q = data.get("quote") or {}                       # card 顶层无 net_asset
+        if q.get("close") is not None:
+            assert q["close"] > 0, q["close"]
 
 
 def test_kline_snapshot(cli):
@@ -123,12 +167,11 @@ def test_kline_batch_live(cli):
 
 def test_moneyflow_bars(cli):
     rows = cli.moneyflow.bars(MAIN, n=5)
-    assert isinstance(rows, list) and len(rows) == 5
-    for r in rows:
-        assert {"date", "net_mf"} <= set(r)
-        assert _is_num(r["net_mf"])
-    dates = [r["date"] for r in rows]
-    assert dates == sorted(dates, reverse=True)
+    assert len(rows) == 5
+    assert {"date", "net_mf"} <= set(rows.columns)
+    assert all(_is_num(v) for v in rows["net_mf"])
+    dates = [str(d) for d in rows["date"]]
+    assert dates == sorted(dates), "资金流应按日期升序（2.0：旧→新）"
 
 
 def test_moneyflow_last_and_live(cli):
@@ -162,30 +205,6 @@ def test_statements_audit(cli):
     assert isinstance(doc, dict) and doc
     assert all(str(k).isdigit() for k in doc)
 
-
-def test_statements_compare_tree_years(cli):
-    cmp_rows = cli.statements.compare(MAIN, "balance", years=2)
-    assert isinstance(cmp_rows, list) and cmp_rows
-    assert {"c", "p", "diff", "diffp", "k"} <= set(cmp_rows[0])
-    diff_rows = [r for r in cmp_rows if r.get("diff")]
-    assert diff_rows, "资产负债表应有部分科目可比出差额"
-    # 差额占比为小数：diffp = diff / 合并值（SDK 已由脚本百分数自动 ÷100）
-    r = diff_rows[0]
-    year = sorted(r["diff"])[0]
-    assert abs(r["diffp"][year] - r["diff"][year] / r["c"][year]) < 1e-6
-
-    tree = cli.statements.tree(MAIN, "balance", years=2)
-    assert isinstance(tree, list) and tree
-    assert {"k", "cn", "vals"} <= set(tree[0])
-    # 树视图派生行保留原生口径：pct 行为百分数（如 DART 16.4 = 16.4%）
-    dart = next((x for x in tree if x.get("k") == "DART" and x.get("vals")), None)
-    if dart:
-        v = next(iter(dart["vals"].values()))
-        assert v > 1, f"资产负债率 pct 行应为百分数口径，实际 {v}"
-
-    years = cli.statements.years(MAIN, "income")
-    assert isinstance(years, list) and years
-    assert all(isinstance(y, (int, str)) for y in years)
 
 
 def test_indicator_get_and_metrics(cli):
@@ -266,6 +285,237 @@ def test_notice_recent_and_on_date(cli):
     assert all({"date", "title"} <= set(r) for r in on)
 
 
+def test_notice_categories_and_regex(cli):
+    keys = cli.notice.categories()
+    assert isinstance(keys, list) and "buyback" in keys
+    assert "回购" in cli.notice.category_regex("buyback")
+    # 未知键原样透传（自定义正则入口）
+    assert cli.notice.category_regex("业绩说明") == "业绩说明"
+
+
+def test_equity_buyback_snapshot(cli):
+    snap = _call_or_xfail(lambda: cli.equity.buyback_snapshot("600519"))
+    assert isinstance(snap, dict)
+    assert {"exec_1y", "exec_total", "plan_1y", "plan_total",
+            "plan_1y_cancel", "plan_total_cancel"} <= set(snap)
+    exec_total = snap.get("exec_total")
+    assert exec_total is None or exec_total >= 0
+
+
+def test_pdf_doc_read_surfaces(cli):
+    """pdf_doc 纯读面：检索/状态/正文/markdown/定位（正文就绪与否不作断言）。"""
+    df = _call_or_xfail(lambda: cli.pdf_doc.search(stock_code=MAIN, limit=3))
+    rows = df.to_dict("records") if hasattr(df, "to_dict") else list(df)
+    assert rows, "检索应有结果"
+    file_key = rows[0].get("file_key") if rows and isinstance(rows[0], dict) else ""
+    st = _call_or_xfail(lambda: cli.pdf_doc.status(file_key or "no-such-key"))
+    assert isinstance(st, dict) and "status" in st
+    body = _call_or_xfail(lambda: cli.pdf_doc.read_text(file_key or "no-such-key"))
+    assert isinstance(body, dict) and "ok" in body
+    md = _call_or_xfail(lambda: cli.pdf_doc.read_markdown(stock_code=MAIN, period="2024"))
+    assert isinstance(md, dict)
+    assert not cli.pdf_doc.find_by_key("no-such-key")
+    assert not cli.pdf_doc.find_by_url("https://")
+
+
+def test_toplist_by_date_and_symbol(cli):
+    """龙虎榜：单日榜单 + 单票事件（行合同与守护声明）"""
+    rows = _call_or_xfail(lambda: cli.toplist.by_date("2026-11-18", 10))
+    assert isinstance(rows, list) and rows
+    r0 = rows[0]
+    assert {"date", "symbol", "name", "close", "pct_chg", "net_amount",
+            "reason"} <= set(r0), "toplist 行合同 15 字段"
+    assert -1 <= r0["pct_chg"] <= 1, "涨跌幅应为小数"
+    hits = _call_or_xfail(lambda: cli.toplist.by_symbol("000530", 10))
+    assert isinstance(hits, list) and hits
+    assert all(h["symbol"] == "000530" for h in hits)
+
+
+def test_futures_mapping(cli):
+    """期货换月映射：RB.SHF 全历史行合同（date/symbol/mapping_symbol 升序）"""
+    df = _call_or_xfail(lambda: cli.futures.mapping("RB.SHF"))
+    rows = df.to_dict("records") if hasattr(df, "to_dict") else list(df)
+    assert rows
+    dates = [str(r["date"]) for r in rows]
+    assert dates == sorted(dates), "mapping 应为 date 升序"
+    assert all(r["symbol"] == "RB.SHF" and r["mapping_symbol"] for r in rows)
+    win = _call_or_xfail(
+        lambda: cli.futures.mapping("RB.SHF", "2026-11-01", "2026-11-18"))
+    assert len(win) <= len(rows), "窗口行数不超过全历史"
+
+
+def test_futures_bars(cli):
+    """期货主力连续历史K线（store 直读）：月频聚合/日频交易日行/快照一致。"""
+    df = _call_or_xfail(lambda: cli.futures.bars("AL.SHF", n=6, freq="m"))
+    assert len(df) == 6
+    assert list(df["date"]) == sorted(df["date"]), "bars 应为 date 升序"
+    assert {"date", "sas", "open", "high", "low", "close", "settle",
+            "volume", "open_interest", "has_kline"} <= set(df.columns)
+    assert all(str(d).endswith("-01") for d in df["date"]), "月频 date=当月 1 日"
+    assert bool((df["high"] >= df["low"]).all()) and bool((df["volume"] > 0).all())
+    win = _call_or_xfail(
+        lambda: cli.futures.bars("AL.SHF", begin="2026-11-01", end="2026-11-20"))
+    assert len(win) >= 1 and list(win["date"]) == sorted(win["date"])
+    # 日频只含交易日（无周末占位行）
+    daily = _call_or_xfail(lambda: cli.futures.bars("AL.SHF", n=10, freq="d"))
+    assert len(daily) == 10
+    for value in daily["date"]:
+        dt = datetime.date.fromisoformat(str(value))
+        assert dt.weekday() < 5, f"日线出现非交易日行 {value}"
+    # 快照与日线末根同源（date/close 一致）
+    snap = _call_or_xfail(lambda: cli.futures.snapshot("AL.SHF"))
+    assert snap["date"] == str(daily["date"].iloc[-1])
+    assert snap["close"] == daily["close"].iloc[-1]
+    # 外盘同路径可寻址（曾因 GLOBAL 前缀切错而全不可用）
+    assert isinstance(
+        _call_or_xfail(lambda: cli.futures.get("global.CL", "close")),
+        (int, float))
+
+
+def test_fx_rate_and_history(cli):
+    """外汇：美元中间价量级归一（每 1 单位≈7.1，非每 100 外币≈700）+ 日线升序"""
+    snap = _call_or_xfail(lambda: cli.fx.rate("USD"))
+    assert snap and snap.get("middle") is not None
+    # 硬断言：USD/CNY 必在 5~10 区间；若退化成每 100 外币原值（≈700）立即暴露
+    assert 5.0 <= float(snap["middle"]) <= 10.0, f"USD 中间价量级异常：{snap['middle']}"
+    assert len(str(snap.get("date", ""))) == 10, "date 应为 ISO YYYY-MM-DD"
+
+    df = _call_or_xfail(lambda: cli.fx.history("USD", n=10))
+    assert len(df) >= 1
+    assert list(df["date"]) == sorted(df["date"]), "history 应为 date 升序"
+    assert {"date", "ccy", "middle", "buy"} <= set(df.columns)
+    vals = [v for v in df["middle"].tolist() if v is not None]
+    assert vals and all(5.0 <= float(v) <= 10.0 for v in vals), "USD 日线全量级异常"
+
+    win = _call_or_xfail(
+        lambda: cli.fx.bars("USD", begin="2026-11-01", end="2026-11-21"))
+    assert list(win["date"]) == sorted(win["date"])
+
+    lst = _call_or_xfail(lambda: cli.fx.list())
+    assert len(lst) >= 3 and "USD" in set(lst["ccy"])
+
+
+def test_macro_reserves(cli):
+    """储备：值=美元数值（外汇≈3e12、黄金≈3e11 量级），SDR 无生产者返回 None"""
+    items = _call_or_xfail(lambda: cli.macro.reserves())
+    assert {"kind", "label", "available", "value"} <= set(items.columns)
+    kinds = set(items["kind"])
+    assert {"forex", "gold", "sdr"} <= kinds
+    avail = {row["kind"]: row["available"] for row in items.to_dict("records")}
+    assert avail["forex"] is True and avail["gold"] is True
+    assert avail["sdr"] is False, "SDR 上游无生产者，应如实标 False"
+
+    snap = _call_or_xfail(lambda: cli.macro.reserves_asof("forex"))
+    # 硬断言：外汇储备约 3~4 万亿美元 = 3~4e12；若变成 亿美元(≈3e4) 或 元(≈2e13+) 立即暴露
+    assert 2.5e12 <= float(snap["value"]) <= 5.0e12, f"外汇储备量级异常：{snap['value']}"
+    assert len(str(snap.get("date", ""))) == 7, "储备期次应为 YYYY-MM"
+
+    hist = _call_or_xfail(lambda: cli.macro.reserves_history("forex", n=6))
+    assert len(hist) >= 1 and list(hist["date"]) == sorted(hist["date"])
+
+    assert cli.macro.reserves_asof("sdr") is None, "SDR 无数据应返回 None（不返回 0）"
+
+
+def test_us_macro_series(cli):
+    """美宏观：升序合同 + 单位随序列而变 + 需授权序列如实无数据。
+
+    量纲硬断言（本域最易错处）：GDP 是十亿美元口径（≈3e4），UNRATE 是百分数
+    （0~30）。若有人把单位当元来归一，GDP 会掉到 3e4 以外的量级立即暴露。
+    """
+    topics = _call_or_xfail(lambda: cli.us_macro.topics())
+    assert len(topics) == 11, f"精选主题应 11 个，实际 {len(topics)}"
+    assert {"topic", "name", "series"} <= set(topics.columns)
+    total_series = sum(len(list(s)) for s in topics["series"])
+    assert total_series == 88, f"精选序列应 88 条，实际 {total_series}"
+
+    hits = _call_or_xfail(lambda: cli.us_macro.search("GDP", 5))
+    assert len(hits) >= 1 and "GDP" in set(hits["id"])
+    assert all(hits["title_zh"]), "精选中文名应齐（88 条均有中文名）"
+
+    meta = _call_or_xfail(lambda: cli.us_macro.series_meta("GDP"))
+    assert meta["units"] == "Billions of Dollars", f"GDP 单位应为十亿美元：{meta['units']}"
+    assert meta["has_data"] is True
+    assert meta["citation"].startswith("FRED"), "引用字段原文应保留"
+
+    pts = _call_or_xfail(lambda: cli.us_macro.points("GDP", limit=20))
+    assert len(pts) >= 1
+    assert list(pts["date"]) == sorted(pts["date"]), "点序列应 date 升序（旧→新）"
+    assert {"id", "date", "value"} <= set(pts.columns)
+    last = float(pts["value"].iloc[-1])
+    # 十亿美元口径：名义 GDP 万亿美元级 → 2e4~4e4；若误当元/百万分立即暴露
+    assert 1e3 <= last <= 1e5, f"GDP 末值量级异常（应为十亿美元）：{last}"
+
+    # 百分数序列：不同单位必须共存于同一读面（证明无统一换算）
+    unrate = _call_or_xfail(lambda: cli.us_macro.points("UNRATE", limit=10))
+    if len(unrate) >= 1:
+        v = float(unrate["value"].iloc[-1])
+        assert 0.0 <= v <= 30.0, f"UNRATE 应为百分数（0~30），实际 {v}"
+
+    # 需授权序列：如实标 has_data=False，不伪造数据
+    locked = _call_or_xfail(lambda: cli.us_macro.series_meta("CSUSHPINSA"))
+    if locked and locked.get("status") == "pre_approval_required":
+        assert locked["has_data"] is False, "需授权序列不应有数据"
+
+    # 参数健壮性：非法日期曾使 DATE() 抛宿主异常（HTTP 500）。现应视为未提供该端。
+    bad = _call_or_xfail(lambda: cli.us_macro.points("GDP", begin="not-a-date",
+                                                     end="also-bad", limit=5))
+    assert len(bad) >= 1, "非法日期应退化为「不设窗口」而不是抛异常或空集"
+
+    # 单次硬顶：limit 超过 store 上限（10000）时不得静默超领，也不得报错
+    big = _call_or_xfail(lambda: cli.us_macro.points("DGS10", limit=12000))
+    assert len(big) <= 10_000, f"store 单次硬顶 10000 行，实际返回 {len(big)}"
+
+
+def test_notice_read_text(cli):
+    """公告正文读取：取一条有 PDF 的公告，预览路径应返回纯读 MAP。
+
+    覆盖四个锚点：① 预览 text_chars<=4000 且 text_truncated 与之一致；
+    ② status/title/source_url 等 11 字段齐全；③ 纯读不触发入队（ok=false 时
+    status 为 not_ready/no_pdf_url 等非 ready 态）；④ 港股 5 位码定位路径。
+    """
+    FIELDS = {"ok", "status", "text", "text_chars", "text_truncated", "file_key",
+              "source_url", "announce_date", "title", "error", "note"}
+    rows = cli.notice.list(MAIN, window="1y", limit=20)
+    assert rows
+    picked = None
+    for r in rows:
+        url = r.get("pdf_url") or r.get("url")
+        if url:
+            picked = r
+            break
+    assert picked, "近一年公告里应有带 PDF 链接的行"
+    date = str(picked.get("date", ""))[:10]
+    got = cli.notice.read_text(MAIN, date, picked.get("pdf_url") or picked.get("url", ""),
+                               full=False)
+    assert isinstance(got, dict) and FIELDS <= set(got), (FIELDS - set(got), got)
+    assert isinstance(got["text_chars"], int) and got["text_chars"] >= 0
+    if got["ok"]:
+        assert got["text_chars"] <= 4000 and got["text_truncated"] in (True, False)
+        assert len(got["text"]) == got["text_chars"]
+    # 全量路径：正文应包含预览或更长（同一文档，不张冠李戴）
+    full = cli.notice.read_text(MAIN, date, picked.get("pdf_url") or picked.get("url", ""),
+                                full=True)
+    assert isinstance(full, dict) and full["source_url"] == got["source_url"]
+
+
+def test_notice_read_text_empty_date_returns_business_failure(cli):
+    """review P1-1 回归：date 为空串（契约允许）不得抛 ServerError。
+
+    script 侧修复前，空串切片在远程沙箱返回 null，使 `_date != ""` 守卫失效，
+    query_find → DATE(null) 触发 HTTP 500；修复后应直接返回可预期的
+    no_pdf_url 业务失败包，且 announce_date 为 str 空串。
+
+    该用例依赖 script 修复已发布；未发布时会如实失败，不用 xfail 吞掉 500。
+    """
+    got = cli.notice.read_text(MAIN, "", "", full=False)
+    assert isinstance(got, dict)
+    assert got.get("ok") is False, got
+    assert got.get("status") == "no_pdf_url", got
+    assert got.get("error") == "no_pdf_url", got
+    assert isinstance(got.get("announce_date"), str), got
+    assert got.get("announce_date") == "", got
+
+
 def test_filings_list_and_latest(cli):
     rows = cli.filings.list(MAIN, kind="annual", limit=3)
     assert isinstance(rows, list) and rows
@@ -339,6 +589,60 @@ def test_dividend_history_fields_and_range(cli):
     ranged = cli.dividend.history(MAIN, begin="2024-01-01", end="2026-10-22")
     assert isinstance(ranged, list)
     assert all("2024-01-01" <= str(r.get("ex_div"))[:10] <= "2026-10-22" for r in ranged)
+
+
+# ---- 2.5 收息场景闭环（sys/income：榜单 memo 直读 / 原生批量诊断 / 日历 / 拆解）----
+
+def test_income_rating_smoke(cli):
+    env = cli.dividend.rating(top_n=3)
+    if not env.get("ok"):
+        assert env.get("meta", {}).get("error") == "COLD_CACHE"
+        pytest.skip("收息榜 memo 未就绪（cron 未跑），稍后重试")
+    rows = env["data"]["rows"]
+    assert rows and rows[0]["rank"] == 1
+    top = rows[0]
+    assert isinstance(top["score"]["total"], int) and top["score"]["grade"] in (
+        "strong", "good", "watch", "avoid")
+    assert isinstance(top["gate_pass"], bool)
+    # 批量档对账：同一 memo 下 batch 诊断的评分口径与榜单行一致（found 票必有档位）
+    assert isinstance(env["meta"].get("universe"), int) and env["meta"]["universe"] > 0
+
+
+def test_income_diagnose_batch_smoke(cli):
+    env = cli.dividend.diagnose([MAIN, "600900"])
+    assert env.get("ok") is True
+    items = env["data"]["items"]
+    assert len(items) == 2
+    for it in items:
+        assert it.get("found") is True
+        sc = it.get("score") or {}
+        assert isinstance(sc.get("total"), int)
+        assert set(sc.get("flags") or []) <= {
+            "payout_danger", "decaying_high_yield", "verify_data", "floor_blind"}
+
+
+def test_income_calendar_smoke(cli):
+    today = date.today()
+    env = cli.dividend.calendar(today.strftime("%Y-%m-01"), today.strftime("%Y-%m-%d"))
+    assert env.get("ok") is True
+    assert isinstance(env["data"].get("count"), int)
+
+
+def test_income_decomp_smoke(cli):
+    env = cli.dividend.decomp(MAIN, years=3)
+    assert env.get("ok") is True
+    item = env["data"]["items"][0]
+    assert item.get("ok") is True
+    for key in ("total_return", "price_return", "dividend_return"):
+        v = item.get(key)
+        assert v is None or -1 <= v <= 50
+
+
+def test_index_members_history_smoke(cli):
+    # 2.5 并发会话新面（indices.members_daily 前向 PIT）：上游刚部署，宽松冒烟
+    env = _call_or_xfail(cli.index.members_history, "index.hs300", begin="2026-11-01")
+    if isinstance(env, dict) and "ok" in env:
+        assert env.get("ok") is True
 
 
 def test_kline_query_bars_live(cli):
@@ -548,6 +852,59 @@ def test_valuation_hist_stats_live(cli):
     assert dates == sorted(dates), "估值序列应按时间升序"
 
 
+# ---------------------------------------------------------------- 每日估值宽表
+def test_valuation_daily_basic_live(cli):
+    """600519 近 60 日：信封形 + 长表字段合法 + as_of 新鲜（服务端物化表就绪后转真）。"""
+    r = _call_or_xfail(
+        lambda: cli.valuation.daily_basic("600519", begin="2026-09-01", end="2026-11-16",
+                                          fields=["pe_ttm", "total_mv"]))
+    assert r.get("ok") is True and isinstance(r.get("data"), list)
+    assert r.get("as_of"), "缺 as_of（表内最新行日期）"
+    for row in r["data"]:
+        assert row["symbol"] == "600519" and row["field"] in ("pe_ttm", "total_mv")
+        assert isinstance(row["value"], (int, float))
+    # 2026-11-19 新增：meta.window 段暴露读窗口截断（BACKLOG 缺口闭环）
+    win = (r.get("meta") or {}).get("window") or {}
+    assert win.get("scan_limit"), "缺 meta.window.scan_limit"
+    assert isinstance(win.get("truncated"), bool), "缺 meta.window.truncated"
+    # 2026-11-24：服务端按日期降序返回，门面必须归一为 (date, field) 升序
+    pairs = [(row["date"], row["field"]) for row in r["data"]]
+    assert pairs == sorted(pairs), "长表应按 (date, field) 升序"
+
+
+def test_valuation_daily_basic_multi_live(cli):
+    """多票估值序列：一次 eval 两票，行合同与单票一致 + per_symbol 明细。"""
+    r = _call_or_xfail(
+        lambda: cli.valuation.daily_basic_multi(
+            ["600519", "000001"], begin="2026-10-01", end="2026-11-16",
+            fields=["pe_ttm"]))
+    assert r.get("ok") is True and isinstance(r.get("data"), list)
+    syms = {row["symbol"] for row in r["data"]}
+    assert syms == {"600519", "000001"}, syms
+    for row in r["data"]:
+        assert row["field"] == "pe_ttm"
+        assert isinstance(row["value"], (int, float))
+    per = (r.get("meta") or {}).get("per_symbol") or []
+    assert {p["symbol"] for p in per} == {"600519", "000001"}, per
+    for item in per:
+        assert isinstance(item.get("count"), int)
+        assert isinstance(item.get("truncated"), bool)
+    # 2026-11-24：多票长表按 (symbol, date, field) 升序，每票内 date 升序
+    keys = [(row["symbol"], row["date"], row["field"]) for row in r["data"]]
+    assert keys == sorted(keys), "多票长表应按 (symbol, date, field) 升序"
+
+
+def test_valuation_daily_basic_coverage_live(cli):
+    """可用范围发现：不拉序列，只回 window 元数据。"""
+    r = _call_or_xfail(lambda: cli.valuation.daily_basic_coverage(
+        "600519", begin="2023-01-01", end="2026-11-16"))
+    assert r.get("ok") is True
+    data = r.get("data") or {}
+    assert data.get("as_of"), "缺 as_of"
+    assert isinstance(data.get("truncated"), bool)
+    assert int(data.get("scan_limit") or 0) > 0
+
+
 
 # ------------------------------------------------- v1.5.0 七域冒烟（2026-10-27 起上游已部署，转真）
 
@@ -588,6 +945,265 @@ def test_equity_domain_smoke(cli):
         assert r is None or isinstance(r, dict)
 
 
+def test_blocktrade_read_face(cli):
+    """大宗交易：单票历史 date 升序、成交额≈价×量；单日榜成交额降序。"""
+    out = _call_or_xfail(lambda: cli.blocktrade.by_symbol("000001", 5))
+    rows = out.to_dict("records") if hasattr(out, "to_dict") else list(out)
+    assert rows, "000001 应有大宗交易历史（2010 至今全量已回补，4,100 个交易日）"
+    dates = [str(r["date"]) for r in rows]
+    assert dates == sorted(dates), f"单票历史必须 date 升序：{dates}"
+    for r in rows:
+        assert float(r["volume"]) > 0 and float(r["amount"]) > 0
+        implied = float(r["price"]) * float(r["volume"])
+        assert abs(float(r["amount"]) - implied) / max(implied, 1) < 0.01, (
+            f"amount 与 price×volume 偏离过大：{r}")
+    day = _call_or_xfail(lambda: cli.blocktrade.by_date(dates[-1], 5))
+    day_rows = day.to_dict("records") if hasattr(day, "to_dict") else list(day)
+    assert day_rows, "最新一笔所在交易日应有全市场榜"
+    amounts = [float(r["amount"]) for r in day_rows]
+    assert amounts == sorted(amounts, reverse=True), "单日榜必须成交额降序"
+
+
+def test_st_lifecycle_read_face(cli):
+    """ST/停复牌史：简称段按生效日升序、is_st 与简称一致；时间轴严格升序。"""
+    out = _call_or_xfail(lambda: cli.stocks.name_history("000001"))
+    rows = out.to_dict("records") if hasattr(out, "to_dict") else list(out)
+    if not rows:
+        pytest.skip("namechange 尚未回补（采集部署后解除此跳过）")
+    starts = [str(r["start_date"]) for r in rows]
+    assert starts == sorted(starts), f"简称段必须 start_date 升序：{starts}"
+    for r in rows:
+        assert bool(r["is_st"]) == ("ST" in str(r["name"]).upper()), r
+
+    susp = _call_or_xfail(
+        lambda: cli.stocks.suspend_history("600519", "2026-01-01", "2026-11-23"))
+    susp_rows = susp.to_dict("records") if hasattr(susp, "to_dict") else list(susp)
+    if susp_rows:
+        sdates = [str(r["date"]) for r in susp_rows]
+        assert sdates == sorted(sdates), f"停复牌必须 date 升序：{sdates[:3]}…"
+        assert {str(r["type"]) for r in susp_rows} <= {"S", "R"}
+        for r in susp_rows:
+            assert len(str(r["date"])) == 10, r  # ISO YYYY-MM-DD
+
+    lc = _call_or_xfail(lambda: cli.stocks.lifecycle("000001"))
+    events = lc.to_dict("records") if hasattr(lc, "to_dict") else list(lc)
+    assert events, "时间轴不应为空"
+    dates = [str(e["date"]) for e in events]
+    assert dates == sorted(dates), f"时间轴必须 date 升序：{dates[:3]}…"
+    kinds = {str(e["kind"]) for e in events}
+    assert kinds <= {"rename", "st_enter", "st_exit", "suspend", "resume"}, kinds
+    assert "rename" in kinds, "000001 应有简称变更事件"
+
+
+def test_board_concept_tags(cli):
+    """概念标签：单票 tags 非空且去 s: 前缀；成份按代码升序。"""
+    info = _call_or_xfail(lambda: cli.board.concepts_of("600519"))
+    if info is None:
+        pytest.skip("概念索引未物化（$CONCEPT_TAGS 为空）")
+    tags = info.get("tags") or []
+    assert tags, "600519 应有概念标签"
+    assert not any(str(t).startswith("s:") for t in tags), f"tags 应去前缀：{tags[:3]}"
+
+    members = _call_or_xfail(lambda: cli.board.concept_members("白酒", 50))
+    rows = members.to_dict("records") if hasattr(members, "to_dict") else list(members)
+    assert rows, "白酒概念应有成份股"
+    syms = [str(r["symbol"]) for r in rows]
+    assert syms == sorted(syms), f"成份应代码升序：{syms[:5]}"
+
+
+def test_futures_receipts(cli):
+    """交易所仓单快照：行形齐、unit 非空、title 基本唯一（按月口径，非逐日历史）。"""
+    df = _call_or_xfail(lambda: cli.futures.receipts())
+    rows = df.to_dict("records") if hasattr(df, "to_dict") else list(df)
+    if not rows:
+        pytest.skip("该月无仓单档（上游按月 REPLACE，月初可能未抓取）")
+    assert all(r["unit"] for r in rows), "每行应有 unit（吨/张）"
+    titles = [r["title"] for r in rows]
+    # 郑商所仓单表对红枣CJ/花生PK 会把同一行输出两遍（qty=0，2026-11-23 档实测），
+    # 属上游原样数据；除这两项外重复即说明读面拼档出错。
+    dup = {t for t in titles if titles.count(t) > 1}
+    assert dup <= {"CZCE.红枣CJ", "CZCE.花生PK"}, f"非预期重复 title：{sorted(dup)}"
+    assert {str(r["exchange"]) for r in rows} <= {"SHFE", "CZCE", "GFEX", "DCE"}
+
+
+def test_futures_holding(cli):
+    """每日持仓排名：按合约返回会员排名，vol 降序、合约一致。"""
+    dates = _call_or_xfail(lambda: cli.call("futures.holding_dates"))
+    if not dates:
+        pytest.skip("无持仓排名档（采集器未跑）")
+    probe = _call_or_xfail(lambda: cli.futures.holding(limit=1))
+    rows0 = probe.to_dict("records") if hasattr(probe, "to_dict") else list(probe)
+    if not rows0:
+        pytest.skip("最新交易日无持仓行")
+    contract = str(rows0[0]["contract"])
+    df = _call_or_xfail(lambda: cli.futures.holding(contract=contract, limit=10))
+    rows = df.to_dict("records") if hasattr(df, "to_dict") else list(df)
+    assert rows, f"{contract} 应有会员排名行"
+    assert all(str(r["contract"]) == contract for r in rows)
+    vols = [float(r["vol"]) for r in rows]
+    assert vols == sorted(vols, reverse=True), "应按成交量降序"
+    assert {"broker", "long_hld", "short_hld"} <= set(rows[0])
+
+
+def test_futures_settle(cli):
+    """每日结算参数：品种前缀过滤生效、合约升序、结算价为正。"""
+    dates = _call_or_xfail(lambda: cli.call("futures.settle_dates"))
+    if not dates:
+        pytest.skip("无结算参数档（采集器未跑）")
+    df = _call_or_xfail(lambda: cli.futures.settle(contract="CU"))
+    rows = df.to_dict("records") if hasattr(df, "to_dict") else list(df)
+    if not rows:
+        pytest.skip("最新交易日无 CU 结算参数")
+    contracts = [str(r["contract"]) for r in rows]
+    assert all(c.startswith("CU") for c in contracts), "品种前缀过滤应生效"
+    assert contracts == sorted(contracts), "应按合约升序"
+    assert all(float(r["settle"]) > 0 for r in rows)
+
+
+def test_board_concept_list(cli):
+    """概念板块目录（日更物化档）：行形 name/count/members；count 降序、
+    members 升序；与 concept_members 同源互证。"""
+    df = _call_or_xfail(lambda: cli.board.concept_list())
+    rows = df.to_dict("records") if hasattr(df, "to_dict") else list(df)
+    assert rows, "概念目录应为非空（未物化会受控报错而非空表）"
+    counts = [int(r["count"]) for r in rows]
+    assert counts == sorted(counts, reverse=True), "应按成员数降序"
+    top = rows[0]
+    assert top["members"] == sorted(top["members"]), "members 应代码升序"
+    assert int(top["count"]) == len(top["members"]), "count 应等于成员数"
+    # 同源互证：任取一个真实概念名，concept_members 的代码应落在目录并集内
+    probe = next((r for r in rows if r["name"].strip() == "白酒"), None)
+    if probe is not None:
+        ms = _call_or_xfail(lambda: cli.board.concept_members("白酒", 300))
+        mrows = ms.to_dict("records") if hasattr(ms, "to_dict") else list(ms)
+        in_list = {str(r["symbol"]) for r in mrows} & set(probe["members"])
+        assert in_list, "concept_members 成员应与目录同源"
+
+
+
+def test_board_moneyflow_three_sources(cli):
+    """板块资金流：三源同口径（额=元、率=小数），指定日与最新日逐行一致。"""
+    for src, min_rows in (("ths_concept", 300), ("ths_industry", 80), ("dc", 900)):
+        out = _call_or_xfail(lambda: cli.board.moneyflow_last(src, 5))
+        rows = out.to_dict("records") if hasattr(out, "to_dict") else list(out)
+        assert len(rows) == 5, f"{src} 应返回 5 行，实际 {len(rows)}"
+        first = rows[0]
+        assert first["source"] == src
+        assert abs(float(first["net_amount"])) > 1e6, f"{src} 净额应为元量级"
+        assert -1 < float(first["pct_change"]) < 1, f"{src} 涨跌幅应为小数"
+    # 指定交易日回查与最新榜一致（同排序、同截断）
+    last = _call_or_xfail(lambda: cli.board.moneyflow_last("ths_concept", 5))
+    rows = last.to_dict("records") if hasattr(last, "to_dict") else list(last)
+    day = rows[0]["date"]
+    back = _call_or_xfail(lambda: cli.board.moneyflow("ths_concept", day, 5))
+    back_rows = back.to_dict("records") if hasattr(back, "to_dict") else list(back)
+    assert [r["code"] for r in rows] == [r["code"] for r in back_rows]
+
+
+def test_limit_prices_snapshot(cli):
+    """每日涨跌停价：全市场快照的规则价必须与当日封板收盘精确相等。"""
+    out = _call_or_xfail(lambda: cli.stocks.limit_prices())
+    rows = out.to_dict("records") if hasattr(out, "to_dict") else list(out)
+    assert len(rows) > 4000, f"非停牌全市场应 >4000 行，实际 {len(rows)}"
+
+    def band(sym: str) -> float:
+        p2 = str(sym)[:2]
+        if p2 in ("30", "68"):
+            return 0.20
+        if p2 in ("43", "83", "87", "88", "92"):
+            return 0.30
+        return 0.10
+
+    near = mism = 0
+    for r in rows:
+        if r["rule"] not in ("main10", "gem20", "star20", "bse30"):
+            continue
+        pct = float(r["percent"] or 0)
+        if abs(pct) >= band(r["symbol"]) - 0.001:
+            near += 1
+            want = r["limit_up"] if pct >= 0 else r["limit_down"]
+            if want != r["close"]:
+                mism += 1
+    assert near > 0, "当日应存在贴近涨跌停的样本"
+    assert mism == 0, f"规则价与封板收盘不等：{mism}/{near}"
+
+    one = _call_or_xfail(lambda: cli.stocks.limit_price("600519"))
+    assert one is not None
+    if one["limit_up"] is not None:
+        assert float(one["limit_up"]) > float(one["limit_down"]) > 0
+
+
+def test_limit_price_history_series(cli):
+    """历史涨跌停价：逐日规则价、ST 5%、创业板改革、IPO 与除权参考价。"""
+    out = _call_or_xfail(lambda: cli.stocks.limit_price_history("600519", n=60))
+    rows = out.to_dict("records") if hasattr(out, "to_dict") else list(out)
+    assert len(rows) >= 20, f"600519 近 60 日应返回足量行，实际 {len(rows)}"
+    dates = [str(r["date"]) for r in rows]
+    assert dates == sorted(dates), f"date 必须升序：{dates[:3]}…"
+    for r in rows:
+        if r["rule"] in {"main10", "main5", "gem10", "gem5",
+                         "gem20", "star20", "bse30"}:
+            assert float(r["limit_up"]) > float(r["limit_down"]) > 0
+
+    # 主板 ST 5%：*ST天龙 2003-05-12/13 连续跌停（不是 10%）
+    st = _call_or_xfail(lambda: cli.stocks.limit_price_history(
+        "600234", begin="2003-05-12", end="2003-05-13"))
+    st_rows = st.to_dict("records") if hasattr(st, "to_dict") else list(st)
+    assert [r["rule"] for r in st_rows] == ["main5", "main5"]
+    assert float(st_rows[0]["close"]) == float(st_rows[0]["limit_down"])
+    assert float(st_rows[0]["low"]) == float(st_rows[0]["close"])
+
+    # 主板 ST 制度切换：2026-05-06 起 5% → 10%（603021 ST华鹏/*ST华鹏）
+    cut = _call_or_xfail(lambda: cli.stocks.limit_price_history(
+        "603021", begin="2026-04-29", end="2026-05-08"))
+    cut_rows = cut.to_dict("records") if hasattr(cut, "to_dict") else list(cut)
+    pre = [r for r in cut_rows if str(r["date"]) < "2026-05-06"]
+    post = [r for r in cut_rows if str(r["date"]) >= "2026-05-06"]
+    assert pre and post, f"603021 应同时有 5/6 前后行：{cut_rows}"
+    assert all(r["band"] == 0.05 and r["rule"] == "main5" for r in pre)
+    assert all(r["band"] == 0.10 and r["rule"] == "main10" for r in post)
+
+    # 创业板改革：2020-08-24 起 10% → 20%
+    gem = _call_or_xfail(lambda: cli.stocks.limit_price_history(
+        "300750", begin="2020-08-21", end="2020-08-24"))
+    gem_rows = gem.to_dict("records") if hasattr(gem, "to_dict") else list(gem)
+    assert [r["band"] for r in gem_rows] == [0.10, 0.20]
+    assert float(gem_rows[-1]["basis"]) == 192.23
+
+    # 科创板 IPO 前 5 个交易日无涨跌幅（rule=ipo，价格为空）
+    ipo = _call_or_xfail(lambda: cli.stocks.limit_price_history(
+        "688981", begin="2020-07-16", end="2020-07-24"))
+    ipo_rows = ipo.to_dict("records") if hasattr(ipo, "to_dict") else list(ipo)
+    assert [r["rule"] for r in ipo_rows[:5]] == ["ipo"] * 5
+    assert all(r["limit_up"] is None or r["limit_up"] != r["limit_up"]
+               for r in ipo_rows[:5])
+
+    # 除权参考价：600519 2024-06-19 除息 30.876 元，前收 1490.62（非 1521.5）
+    ex = _call_or_xfail(lambda: cli.stocks.limit_price_history(
+        "600519", begin="2024-06-19", end="2024-06-19"))
+    ex_rows = ex.to_dict("records") if hasattr(ex, "to_dict") else list(ex)
+    assert len(ex_rows) == 1 and str(ex_rows[0]["date"]) == "2024-06-19"
+    assert abs(float(ex_rows[0]["basis"]) - 1490.62) < 0.01
+    assert float(ex_rows[0]["limit_up"]) == 1639.68
+
+
+def test_holdernum_history_series(cli):
+    """股东户数历史（raw 多期档）：日期升序、末期与快照同值、比例=小数。"""
+    out = _call_or_xfail(lambda: cli.equity.query_holdernum_history("600519", 8))
+    rows = out.to_dict("records") if hasattr(out, "to_dict") else out
+    assert rows, "600519 应有股东户数历史"
+    dates = [str(r["end_date"]) for r in rows]
+    assert dates == sorted(dates), f"end_date 必须升序：{dates[:3]}…"
+    assert len(set(dates)) == len(dates), "end_date 不得重复"
+    last = rows[-1]
+    assert int(last["holder_total_num"]) > 0
+    assert 0 <= float(last["hold_ratio_total"]) <= 1, "比例必须已归一为小数"
+    snap = _call_or_xfail(lambda: cli.equity.query_holdernum("600519"))
+    assert snap is not None
+    assert str(snap["end_date"])[:10] == str(last["end_date"])
+    assert int(snap["holder_total_num"]) == int(last["holder_total_num"])
+
+
 def test_margin_domain_smoke(cli):
     rows = _call_or_xfail(lambda: cli.margin.query("600519", 5))
     assert rows is None or isinstance(rows, list)
@@ -620,14 +1236,14 @@ def test_cbond_domain_smoke(cli):
 
 
 def test_cbond_bars_row_shape(cli):
-    """转债日线表：列转行后字段齐全、日期降序、OHLC 关系成立、无缺失结构。"""
+    """转债日线表：列转行后字段齐全、日期升序（2.0）、OHLC 关系成立、无缺失结构。"""
     rows = _call_or_xfail(cli.cbond.bars, "113050", n=5)
-    if not rows:
+    if rows is None or len(rows) == 0:
         pytest.xfail("样本转债该窗口无数据")
-    assert all({"date", "open", "high", "low", "close"} <= set(r) for r in rows)
-    dates = [r["date"] for r in rows]
-    assert dates == sorted(dates, reverse=True), "转债日线应按日期降序"
-    for r in rows:
+    assert {"date", "open", "high", "low", "close"} <= set(rows.columns)
+    dates = [str(d) for d in rows["date"]]
+    assert dates == sorted(dates), "转债日线应按日期升序（2.0：旧→新）"
+    for _, r in rows.iterrows():
         if all(_is_num(r.get(k)) for k in ("open", "high", "low", "close")):
             assert r["low"] <= min(r["open"], r["close"])
             assert r["high"] >= max(r["open"], r["close"])
@@ -657,14 +1273,15 @@ def test_index_trend_long_history_and_industries(cli):
     # ① 宽基：序列应覆盖 10 年以上（周频约 700+ 点）；分位必须按窗口取档
     t3 = _call_or_xfail(lambda: cli.index.trend("index.hs300", "3y"))
     assert isinstance(t3, dict) and t3.get("ok") is True, "hs300 应有预热缓存"
-    assert t3["n"] >= 500, f"宽基估值序列应覆盖 10 年（周频），实际 {t3['n']} 点"
-    dates = [p["date"] for p in t3["points"]]
-    assert dates == sorted(dates, reverse=True), "points 必须新→旧"
-    node = t3["pct"]["pe"]
-    assert t3["pe_pct"] == pytest.approx(node["p3"]), \
+    points = t3["data"]["points"]
+    assert len(points) >= 500, f"宽基估值序列应覆盖 10 年（周频），实际 {len(points)} 点"
+    dates = [str(d) for d in points["date"]]
+    assert dates == sorted(dates), "points 必须升序（2.0：旧→新）"
+    node = t3["data"]["pct"]["pe"]
+    assert t3["data"]["pe_pct"] == pytest.approx(node["p3"]), \
         "3y 分位必须取 p3（服务端 p 恒为 5y，读 p 会静默错值）"
     t5 = _call_or_xfail(lambda: cli.index.trend("index.hs300", "5y"))
-    assert t5["pe_pct"] == pytest.approx(t5["pct"]["pe"]["p5"])
+    assert t5["data"]["pe_pct"] == pytest.approx(t5["data"]["pct"]["pe"]["p5"])
     assert t3["pe_pct"] != pytest.approx(t5["pe_pct"]), \
         "3y 与 5y 分位不应相同（相同说明没按窗口取档）"
 
@@ -766,17 +1383,17 @@ def test_us_kline_daily_bars():
     """美股日 K（上游 us_kline_daily 管线已落库）：合同级断言。
 
     调度已转正（2026-11-09 daily DAG 启用 + us_dayk_eod 翻闸）：
-    新鲜度门禁收紧为末根 ≥ 今天-5 自然日（容忍长周末），另锁结构与降序。
+    新鲜度门禁收紧为末根 ≥ 今天-5 自然日（容忍长周末），另锁结构与升序（2.0）。
     """
     us = Client.from_env(market="us")
     bars = _call_or_xfail(lambda: us.kline.bars("AAPL", n=5))
-    assert isinstance(bars, list) and len(bars) == 5
-    assert {"date", "close", "volume"} <= set(bars[0].keys())
-    dates = [b["date"] for b in bars]
-    assert dates == sorted(dates, reverse=True), "bars 应按日期降序（最新在前）"
-    last = datetime.date.fromisoformat(dates[0])
+    assert len(bars) == 5
+    assert {"date", "close", "volume"} <= set(bars.columns)
+    dates = [str(d) for d in bars["date"]]
+    assert dates == sorted(dates), "bars 应按日期升序（2.0：旧→新）"
+    last = datetime.date.fromisoformat(dates[-1])
     assert last >= datetime.date.today() - datetime.timedelta(days=5), (
-        f"美股日K末根 {dates[0]} 落后超过 5 个自然日（调度已转正）"
+        f"美股日K末根 {dates[-1]} 落后超过 5 个自然日（调度已转正）"
     )
 
 
@@ -789,26 +1406,26 @@ def test_us_kline_week_month_bars():
     us = Client.from_env(market="us")
     weekly = _call_or_xfail(lambda: us.kline.bars("AAPL", n=5, freq="W"))
     monthly = _call_or_xfail(lambda: us.kline.bars("AAPL", n=3, freq="M"))
-    assert isinstance(weekly, list) and len(weekly) == 5
-    assert isinstance(monthly, list) and len(monthly) == 3
+    assert len(weekly) == 5
+    assert len(monthly) == 3
     for bars, span in ((weekly, 12), (monthly, 45)):
-        dates = [b["date"] for b in bars]
-        assert dates == sorted(dates, reverse=True), "周期 K 应按日期降序（最新在前）"
-        for b in bars:
-            assert {"date", "open", "high", "low", "close", "volume"} <= set(b)
-            assert b["low"] <= min(b["open"], b["close"]) and b["high"] >= max(
-                b["open"], b["close"]), "OHLC 关系违例"
-        last = datetime.date.fromisoformat(dates[0])
+        dates = [str(d) for d in bars["date"]]
+        assert dates == sorted(dates), "周期 K 应按日期升序（2.0：旧→新）"
+        assert {"date", "open", "high", "low", "close", "volume"} <= set(bars.columns)
+        assert all(bars["low"] <= bars[["open", "close"]].min(axis=1))
+        assert all(bars["high"] >= bars[["open", "close"]].max(axis=1))
+        last = datetime.date.fromisoformat(dates[-1])
         assert last >= datetime.date.today() - datetime.timedelta(days=span), (
-            f"美股周期K末根 {dates[0]} 落后超过 {span} 天（派生链未跑或滞后）"
+            f"美股周期K末根 {dates[-1]} 落后超过 {span} 天（派生链未跑或滞后）"
         )
     # 同日一致性：周期末日的 close == 当日日 K 的 close（聚合规则 close=末日收）
     daily = _call_or_xfail(lambda: us.kline.bars("AAPL", n=60))
-    close_by_date = {b["date"]: b["close"] for b in daily}
-    for w in weekly:
-        if w["date"] in close_by_date:
-            assert abs(w["close"] - close_by_date[w["date"]]) < 1e-6, (
-                f"周K {w['date']} 收盘 {w['close']} ≠ 日K {close_by_date[w['date']]}")
+    close_by_date = dict(zip(daily["date"], daily["close"]))
+    for _, w in weekly.iterrows():
+        wdate = str(w["date"])
+        if wdate in close_by_date:
+            assert abs(float(w["close"]) - float(close_by_date[wdate])) < 1e-6, (
+                f"周K {wdate} 收盘 {w['close']} ≠ 日K {close_by_date[wdate]}")
 
 
 def test_kline_week_month_cn_hk():
@@ -836,3 +1453,16 @@ def test_all_core_interfaces_are_exercised_here():
         if f".{ns}.{method}(" not in src and f".{ns}.{method}," not in src:
             missing.append(f"{ns}.{method}")
     assert not missing, f"live 冒烟未覆盖：{missing}（共 {CORE_COUNT} 个核心接口）"
+
+
+def test_v2_new_faces_smoke(cli):
+    """2.0 P1/P2 新面 live 冒烟：calendar / margin 市场面 / futures。"""
+    days = _call_or_xfail(lambda: cli.calendar.days("2026-01-01", "2026-03-31"))
+    assert days is not None and len(days) > 0
+    _call_or_xfail(lambda: cli.calendar.is_open("2026-01-05"))
+    _call_or_xfail(lambda: cli.calendar.next("2026-01-30", 3))
+    _call_or_xfail(lambda: cli.margin.market_summary(5))
+    _call_or_xfail(lambda: cli.margin.universe(20))
+    _call_or_xfail(lambda: cli.futures.get("RB.SHF", "close"))
+    snap = _call_or_xfail(lambda: cli.futures.snapshot("RB.SHF"))
+    assert snap is None or isinstance(snap, dict)

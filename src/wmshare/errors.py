@@ -38,9 +38,10 @@ class WmshareError(RuntimeError):
 class AuthError(WmshareError):
     """凭证缺失/无效/被拒（OAuth 400/401/403 或 eval 401/403）。
 
-    凭证缺失、无效、被撤销都会落到这里；缺凭证路径的消息附零凭证
-    离线演示入口（``wmshare.demo_client()``），所有路径都含申请与
-    配置自己 AppID 的步骤，程序可用 ``code`` / ``status`` 分类。
+    凭证缺失、无效、被撤销都会落到这里；缺凭证路径的消息附免注册回落指引
+    （``Client.from_env()`` 凭据双缺时走免注册免费试用），所有路径都含
+    申请与配置自己 AppID 的步骤，程序可用 ``code`` / ``status`` 分类。免注册
+    访问下来源网络被封禁时为 ``code="ip_banned"``。
     """
 
 
@@ -53,7 +54,9 @@ class LimitError(WmshareError):
 
     客户端 ``max_limit``/日期区间用 ``code="limit"``/``"range"``；
     服务端限流用 ``code="rate_limited"`` 且 ``status=429``，消息包含
-    重试建议和申请自己的 AppID 的步骤。
+    重试建议和申请自己的 AppID 的步骤。免注册访问（``Client.from_env()``
+    无凭证）下另有两个终态码，SDK 不重试：来源网络频次到顶
+    ``code="ip_rate_limited"``、服务端暂停免注册额度 ``code="pool_unavailable"``。
     """
 
     def __init__(self, message: str, *, code: str = "", status: int | None = None,

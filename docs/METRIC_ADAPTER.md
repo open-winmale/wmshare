@@ -8,7 +8,7 @@
   `_catalog/generated/metric_taxonomy.json`；
 - 适配层只调用现有 `indicator.metrics`，不新增服务端能力。
 
-它的用途是把 2,752 个指标码按“数据对象 / 主题 / 周期 / 口径 / 单位”分类，并明确
+它的用途是把 2,983 个指标码按“数据对象 / 主题 / 周期 / 口径 / 单位”分类，并明确
 **哪些码可以确定性组合、哪些只能扁平地一个个取**。
 
 ## 1. 三步找码
@@ -17,7 +17,7 @@
 import wmshare
 from wmshare.indicator_adapter import IndicatorAdapter
 
-cli = wmshare.demo_client()          # 演示数据；真实数据用 Client.from_env()
+cli = wmshare.Client.from_env()      # 无凭证自动免注册免费试用；长期额度配凭证
 ad = IndicatorAdapter(cli)
 
 ad.scopes()                          # 股票/行业/指数/宏观/期货/可转债/选股条件
@@ -55,6 +55,12 @@ g["flat"]     # 不能组合：unknown 字段或 dead 码，附 reason
 - `period=unknown`、`window=unknown`、`unit_kind=unknown`、`caliber=[unknown]` 或
   `status=dead` 的码一律进 `flat`；
 - 不同组之间**不会**被合并成一次 eval。
+
+口径注记：`metrics.json` 的 2,983 个码含 20 个上游 `drop stub`（`status=dead`），
+它们仍计入目录总数，但适配层一律 `flat`/`excluded`，不参与组合或取数；
+残余 `unit_kind=unknown`（约 1.5%，整包 MAP/期货手数/上游万元口径等）在
+`taxonomy.yaml` 的 `unit_unknown_allowlist` 里逐条登记原因，新增未知会被
+`validate_metric_taxonomy` 拦下，不会静默漂移。
 
 `group_id` 是可复算的分隔字符串：`unit_kind|period|window|caliber|market`，
 `caliber` 为空时写 `-`。日常使用不必手写它，用 `period/window/unit_kind` 过滤即可。

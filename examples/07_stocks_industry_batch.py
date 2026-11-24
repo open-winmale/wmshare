@@ -1,7 +1,6 @@
 """全市场代码池 → 行业成分 → 批量取数：绕开 429 的一条龙完整链路。
 
-前提：凭证必填（export WMSHARE_CLIENT_ID=... WMSHARE_CLIENT_SECRET=...）；；`--demo` 用随包演示数据零凭证试跑
-      本示例对全市场遍历两遍（batch_all + batch_iter），约消耗 25 次请求、十几秒
+前提：凭证可选——无凭证自动免注册免费试用（真实数据、需网络）
 运行：python examples/07_stocks_industry_batch.py
 学到：stocks.list/industries/industry_members；batch_all/batch_iter/call_batch 三入口分工
 文档：docs/GUIDE.md（全市场与行业、批量取数）
@@ -16,27 +15,25 @@ import sys
 import wmshare
 
 
-def main(cli=None, demo: bool = False) -> None:
+def main(cli=None) -> None:
     if cli is None:
-        if demo:
-            cli = wmshare.demo_client()
-            print("(演示模式：随包罐头数据，非真实行情)")
-            print()
-        else:
-            cli = wmshare.Client.from_env()
+        cli = wmshare.Client.from_env()
 
-    # ---- 1) 证券列表（真实 Client 全市场；demo 为演示宇宙） ----
+    # ---- 1) 证券列表（全市场） ----
     rows = cli.stocks.list()
-    scope = "演示宇宙" if demo else "全市场"
-    print(f"{scope}共 {len(rows)} 家（字段：{sorted(rows[0].keys())}）")
+    scope = "全市场"
+    first = rows.iloc[0].to_dict() if hasattr(rows, "iloc") else rows[0]
+    print(f"{scope}共 {len(rows)} 家（字段：{sorted(first.keys())}）")
 
     # ---- 2) 行业目录 + 行业成分（中文名/代码皆可） ----
     hint = os.environ.get("BANK_HINT", "银行")
-    l1 = cli.stocks.industries(1)
+    l1_df = cli.stocks.industries(1)
+    l1 = l1_df.to_dict("records")
     print(f"一级行业 {len(l1)} 个，如："
           + "、".join(f"{r['symbol']} {r['name']}" for r in l1[:5]) + " …")
     try:
-        members = cli.stocks.industry_members(hint)
+        members_df = cli.stocks.industry_members(hint)
+        members = members_df.to_dict("records")
         print(f"「{hint}」成分 {len(members)} 家，前 5 家：")
         for r in members[:5]:
             print(f"  {r['symbol']}  {r['name']}  {r.get('industry_name', '')}"
@@ -46,8 +43,8 @@ def main(cli=None, demo: bool = False) -> None:
         print(f"行业解析失败：{e}")
         return
 
-    # ---- 3) 批量取数：真实全市场分批；demo 是演示宇宙一次批量 ----
-    all_codes = [r["symbol"] for r in rows]
+    # ---- 3) 批量取数：全市场分批 ----
+    all_codes = list(rows["symbol"]) if hasattr(rows, "columns") else [r["symbol"] for r in rows]
     res = cli.batch_all("kline.snapshot", all_codes)
     naive = len(all_codes)
     print(f"{scope} {len(res.results)} 家：批量 {res.requests} 次请求"
@@ -63,10 +60,10 @@ def main(cli=None, demo: bool = False) -> None:
     # ---- 5) 行业维度聚合（单批 ≤500 也可直接用 call_batch） ----
     codes = [r["symbol"] for r in members[: min(500, len(members))]]
     one = cli.call_batch("kline.snapshot", codes)
-    df = one.to_df()  # 需要 pandas（pip install "wmshare[dataframe]"）
+    df = one.to_df()  # 需要 pandas（2.0 起为核心依赖）
     print(f"「{hint}」{len(df)} 行快照（symbol 列在前）：")
     print(df.head().to_string(index=False))
 
 
 if __name__ == "__main__":
-    main(demo="--demo" in sys.argv)
+    main()

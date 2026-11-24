@@ -11,6 +11,7 @@ units:
   date: YYYY-MM-DD
 requires: {path: sys/filings/init.xs, preloaded: true}
 notes:
+  - 可用性：仅 A 股（交易所定期报告披露）
   - 'type_key 取值：all | annual(年报) | semi(半年报) | quarter(季报)'
 functions:
   - name: filings.query
@@ -34,6 +35,6 @@ functions:
     example: 'filings.latest("600519", "annual")'
   # ---- L1：辅助 ----
   - {name: filings.type_zh, cn: type_key 转中文, kind: raw, layer: L1}
-  - {name: filings.fmt_maps, cn: 报告行规范化列表, kind: raw, layer: L1}
-  - {name: filings.fmt_map, cn: 单条报告规范化, kind: raw, layer: L1}
-  - {name: filings.fmt_date_short, cn: 日期缩短 YYYY-MM-DD, kind: raw, layer: L1}
+  - {name: filings.fmt_maps, cn: 报告行规范化列表, kind: raw, layer: L1, internal: true}
+  - {name: filings.fmt_map, cn: 单条报告规范化, kind: raw, layer: L1, internal: true}
+  - {name: filings.fmt_date_short, cn: 日期缩短 YYYY-MM-DD, kind: raw, layer: L1, internal: true}

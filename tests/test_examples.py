@@ -1,7 +1,8 @@
-"""示例冒烟（11/11 全覆盖）：离线示例真实执行；凭证示例用共享 FakeClient 端到端跑。
+"""示例冒烟（全量覆盖）：离线示例真实执行；其余示例用共享 FakeClient 端到端跑。
 
-签名正确性由 test_docs 的 AST 门禁全量把关；本文件保证每个示例在罐头数据上
-真的跑得完、关键输出（含单位口径注释）不回退。
+签名正确性由 test_interface_quality 的签名门禁全量把关；本文件保证每个示例在
+回放夹具（或打桩数据）上真的跑得完、关键输出（含单位口径注释）不回退。
+demo 模式已随 3.0.0 移除——示例统一 `main(cli=None)`，无凭证时 from_env 自动免注册免费试用。
 """
 from __future__ import annotations
 
@@ -9,14 +10,16 @@ import importlib.util
 import os
 import subprocess
 import sys
+import types
 from pathlib import Path
 
 import pytest
 
 import wmshare
+from wmshare.errors import UsageError
 
 from fake_client import fake_client
-from wmshare._demo import load_demo_snapshot
+from replay_client import load_replay_snapshot
 
 REPO = Path(__file__).resolve().parents[1]
 SRC = REPO / "src"
@@ -25,14 +28,12 @@ EXAMPLES = REPO / "examples"
 
 @pytest.fixture(scope="module")
 def snapshot():
-    return load_demo_snapshot()
+    return load_replay_snapshot()
 
 
-def _run_example(name: str, demo: bool = False) -> subprocess.CompletedProcess:
-    env = {**os.environ, "PYTHONPATH": str(SRC)}
+def _run_example(name: str, extra_env: dict[str, str] | None = None) -> subprocess.CompletedProcess:
+    env = {**os.environ, "PYTHONPATH": str(SRC), **(extra_env or {})}
     command = [sys.executable, str(EXAMPLES / name)]
-    if demo:
-        command.append("--demo")
     return subprocess.run(command, capture_output=True, text=True, env=env, timeout=60)
 
 
@@ -47,9 +48,17 @@ def _load(name: str):
 
 # ---- 离线示例：子进程真实执行（不联网、零凭证） ----
 
+def _catalog_counts_needles() -> list[str]:
+    """02 示例计数从目录动态派生（2.0 起新域随上游增减，不再手写死数）。"""
+    from wmshare.catalog import load
+    s = load().stats()
+    return [f"数据域：{s['domains']}", "指标代码：精选 ",
+            f"/ 目录全量 {s['metric_catalog_total']}"]
+
+
 @pytest.mark.parametrize("name,needles", [
     # 计数从目录派生（精选码数会随 curated 组增减），只锁结构不锁数字。
-    ("02_catalog_tour.py", ["数据域：18", "指标代码：精选 ", "/ 目录全量 2752"]),
+    ("02_catalog_tour.py", _catalog_counts_needles()),
     ("03_error_handling.py", ["[auth]", "[limit]", "open.winmale.com",
                               "WMSHARE_CLIENT_ID"]),
     ("09_ai_skill_setup.py", ["skill 位置", "skill 自检", "cat.search"]),
@@ -68,10 +77,10 @@ def test_offline_example_runs(name, needles):
         assert f"精选 {curated} /" in result.stdout
 
 
-# ---- 凭证示例：注入共享 FakeClient，端到端跑 main() ----
+# ---- 数据示例：注入共享 FakeClient（回放夹具），端到端跑 main() ----
 
 def test_01_quickstart(snapshot, capsys):
-    _load("01_quickstart.py").main(fake_client(), demo=True)
+    _load("01_quickstart.py").main(fake_client())
     out = capsys.readouterr().out
     roe = snapshot["data"]["indicators"]["$ROE_TTM_LAST"]
     dps = snapshot["data"]["dividend"]["last"]["600519"]["dps"]
@@ -81,12 +90,12 @@ def test_01_quickstart(snapshot, capsys):
     assert notice["title"] in out
     assert "DataFrame" not in out
     # 批量段落：必须展示「家数 → 请求数」对比（新手动线，防回退成逐票循环）
-    assert "演示宇宙 10 家：1 次请求" in out
+    assert "全市场 10 家：1 次请求" in out
     assert "逐票需 10 次" in out
 
 
 def test_04_screener(snapshot, capsys):
-    _load("04_screener.py").main(fake_client(), demo=True)
+    _load("04_screener.py").main(fake_client())
     out = capsys.readouterr().out
     assert "站上MA20=True" in out
     summary = snapshot["data"]["screener"]["breadth_summary"]
@@ -97,7 +106,7 @@ def test_04_screener(snapshot, capsys):
 
 
 def test_05_dividend_screener(snapshot, capsys):
-    _load("05_dividend_screener.py").main(fake_client(), demo=True)
+    _load("05_dividend_screener.py").main(fake_client())
     out = capsys.readouterr().out
     expected = snapshot["data"]["dividend"]["yield_ttm"]["600519"]
     assert f"TTM股息率={expected:.4f}" in out
@@ -105,20 +114,84 @@ def test_05_dividend_screener(snapshot, capsys):
 
 
 def test_14_cbond_double_low_needs_credentials(capsys):
-    """演示快照不含 cbond 域：示例应给出明确的「需凭证」提示而非崩溃。"""
+    """回放夹具不含 cbond 域：示例应给出明确的「无数据」提示而非崩溃。"""
     _load("14_cbond_double_low.py").main(fake_client())
     out = capsys.readouterr().out
-    assert "需真实凭证" in out
+    assert "cbond 域不可用" in out
+
+
+def _cb_stub_row(code="110001", **kw):
+    """最小可用转债面板行（与 tests/test_cb_daily.py 的 _row 同构）。"""
+    row = {
+        "bondCode": code, "bondName": f"债{code}", "stockCode": "600000",
+        "stockName": "浦发银行", "bondPrice": 100.0, "premiumRatio": 0.05,
+        "remainSize": 5.0e9, "issueScale": 6.0e9, "expireDate": "2029-11-06",
+        "redeemTrig": 13.0, "stockPrice": 10.0, "convertPrice": 10.0,
+        "redeemValue": 110.0, "couponIr": 0.015, "asOf": "2026-11-06",
+    }
+    row.update(kw)
+    return row
+
+
+def test_14_cbond_double_low_with_facade_shaped_stub(capsys):
+    """示例 14 管线段端到端：桩按 2.0 门面形态（DataFrame 面板）出数。
+
+    曾用 ``rows.get("rows", [])`` 兜底——对 DataFrame 恒得 []，示例静默 0 行
+    而测试不红。此用例把「cbond 成品链在门面收口下仍可用」锁进 CI。
+    """
+    pytest.importorskip("pandas")
+    import pandas as pd
+
+    from wmshare.api import CbondApi
+    from wmshare.cb import DailyConfig, run_daily
+
+    rows = [_cb_stub_row("110001"), _cb_stub_row("110002")]
+
+    class _StubCli:
+        """最小客户端桩：board 返回 DataFrame（复刻真实门面收口形态）。"""
+
+        def __init__(self):
+            self.macro = types.SimpleNamespace(bond_curve=lambda name, tenor: 0.02)
+            self._api = CbondApi(self)        # article/figures 是纯计算，不用 self._c
+
+        def call_batch(self, name, symbols, **kw):
+            class _R:
+                results: dict[str, dict] = {}
+            return _R()
+
+        @property
+        def cbond(self):
+            outer = self
+
+            class _Ns:
+                board = staticmethod(lambda: pd.DataFrame(rows))
+                event_list = staticmethod(lambda: [])
+                kline_window = staticmethod(
+                    lambda code, n: {"samplingName": ["2026-11-06"], "close": [100.0]})
+                daily = staticmethod(
+                    lambda top_n=20: run_daily(
+                        outer, config=DailyConfig(top_n=top_n, enrich=False, curves=False)))
+                article = outer._api.article
+                figures = outer._api.figures
+
+            return _Ns()
+
+    _load("14_cbond_double_low.py").main(_StubCli())
+    out = capsys.readouterr().out
+    assert "board 全表 2 行 · 在市 2 只" in out
+    assert "债110001" in out and "双低=" in out
+    assert "快照日 2026-11-06" in out                    # 管线段跑通（非「返回空」降级）
+    assert "cli.cbond.article()" in out                 # 成稿段也跑通
 
 
 def test_15_backtest_ma(snapshot, capsys):
-    """单股回测示例：演示数据 120 根跑出成交明细 + 汇总，不回退成空结果。"""
-    _load("15_backtest_ma.py").main(fake_client(), demo=True)
+    """单股回测示例：回放数据 120 根跑出成交明细 + 汇总，不回退成空结果。"""
+    _load("15_backtest_ma.py").main(fake_client())
     out = capsys.readouterr().out
     assert "ma_cross(fast=5, slow=20)" in out
     assert "成交明细" in out and "金叉" in out
     assert "最大回撤" in out
-    assert "演示快照" in out                     # 口径提示必须出现
+    assert "'replay': True" in out               # 口径提示必须出现（回放数据标记）
 
 
 def test_12_futures_macro(capsys):
@@ -133,7 +206,7 @@ def test_12_futures_macro(capsys):
 
 
 def test_06_indicator_tour(snapshot, capsys):
-    _load("06_indicator_tour.py").main(fake_client(), demo=True)
+    _load("06_indicator_tour.py").main(fake_client())
     out = capsys.readouterr().out
     assert "指标组 11 个" in out                  # cat.metric_groups() 真目录
     expected = snapshot["data"]["dividend"]["yield_ttm"]["600519"]
@@ -143,9 +216,9 @@ def test_06_indicator_tour(snapshot, capsys):
 
 def test_07_stocks_industry_batch(capsys):
     pytest.importorskip("pandas")  # call_batch(...).to_df() 需要可选依赖
-    _load("07_stocks_industry_batch.py").main(fake_client(), demo=True)
+    _load("07_stocks_industry_batch.py").main(fake_client())
     out = capsys.readouterr().out
-    assert "演示宇宙共 10 家" in out
+    assert "全市场共 10 家" in out
     assert "批量 1 次请求" in out
     assert "省 10 倍配额" in out
     assert "第 1 批 10 家" in out
@@ -162,7 +235,7 @@ def test_08_pandas_analysis(capsys):
 
 
 def test_10_notice_monitor(snapshot, capsys):
-    _load("10_notice_monitor.py").main(fake_client(), demo=True)
+    _load("10_notice_monitor.py").main(fake_client())
     out = capsys.readouterr().out
     event = snapshot["data"]["notice_event"]
     title = event["title"]
@@ -176,15 +249,15 @@ def test_10_notice_monitor(snapshot, capsys):
 def test_11_statements_tour(capsys):
     _load("11_statements_tour.py").main(fake_client())
     out = capsys.readouterr().out
-    assert "利润表可用年报：[2025, 2024" in out   # 年份降序
+    assert "利润表：" in out and "审计意见" in out   # 三表 + 审计意见
     assert "资产负债表：" in out and "行科目；如「" in out
-    assert "差额占比 " in out                     # diffp 小数 → 百分比展示
+    assert "季报档" in out                       # period=quarter 季报全档
     assert "2024 年审计意见：标准无保留意见" in out
 
 
 def test_16_metric_adapter(snapshot, capsys):
     """适配层示例：分类发现 + 长表 + 多标的小列表，不改变旧接口。"""
-    _load("16_metric_adapter.py").main(fake_client(), demo=True)
+    _load("16_metric_adapter.py").main(fake_client())
     out = capsys.readouterr().out
     assert "指标 scope：" in out
     assert "valuation：可组合组" in out
@@ -193,24 +266,235 @@ def test_16_metric_adapter(snapshot, capsys):
     assert "screener.query(fields=codes" in out
 
 
+# ---- 17：罐头行随 demo 移除迁入测试——桩出 screener 与 hist_stats，锁死漏斗数学 ----
+
+_PRR_ROWS = [
+    dict(symbol="600519", name="贵州茅台", **{"$PR_LAST": 0.55, "$BONUS_RATE_3Y_AVG_LAST": 0.062,
+         "$BONUS_TTM_RATE_LAST": 0.52, "$NCFO_TTM_LAST": 9.2e10, "$BONUS_TTM": 3.4e10,
+         "$IBD_RATE_LAST": 0.12, "$CSRC_INDUSTRY_NAME": "制造业-酒、饮料和精制茶制造业"}),
+    dict(symbol="000333", name="美的集团", **{"$PR_LAST": 0.75, "$BONUS_RATE_3Y_AVG_LAST": 0.055,
+         "$BONUS_TTM_RATE_LAST": 0.48, "$NCFO_TTM_LAST": 4.0e10, "$BONUS_TTM": 1.8e10,
+         "$IBD_RATE_LAST": 0.20, "$CSRC_INDUSTRY_NAME": "制造业-电气机械和器材制造业"}),
+    dict(symbol="601088", name="中国神华", **{"$PR_LAST": 0.90, "$BONUS_RATE_3Y_AVG_LAST": 0.058,
+         "$BONUS_TTM_RATE_LAST": 0.62, "$NCFO_TTM_LAST": 8.0e10, "$BONUS_TTM": 5.0e10,
+         "$IBD_RATE_LAST": 0.18, "$CSRC_INDUSTRY_NAME": "采矿业-煤炭开采和洗选业"}),
+    dict(symbol="600036", name="招商银行", **{"$PR_LAST": 0.60, "$BONUS_RATE_3Y_AVG_LAST": 0.060,
+         "$BONUS_TTM_RATE_LAST": 0.35, "$NCFO_TTM_LAST": 1.0e11, "$BONUS_TTM": 3.0e10,
+         "$IBD_RATE_LAST": 0.50, "$CSRC_INDUSTRY_NAME": "金融业-货币金融服务"}),
+    dict(symbol="601318", name="中国平安", **{"$PR_LAST": 0.50, "$BONUS_RATE_3Y_AVG_LAST": 0.055,
+         "$BONUS_TTM_RATE_LAST": 0.45, "$NCFO_TTM_LAST": 5.0e10, "$BONUS_TTM": 2.0e10,
+         "$IBD_RATE_LAST": 0.40, "$CSRC_INDUSTRY_NAME": "金融业-保险业"}),
+    dict(symbol="000651", name="格力电器", **{"$PR_LAST": 0.70, "$BONUS_RATE_3Y_AVG_LAST": 0.072,
+         "$BONUS_TTM_RATE_LAST": 0.55, "$NCFO_TTM_LAST": 2.0e10, "$BONUS_TTM": 2.5e10,
+         "$IBD_RATE_LAST": 0.30, "$CSRC_INDUSTRY_NAME": "制造业-电气机械和器材制造业"}),
+    dict(symbol="600276", name="恒瑞医药", **{"$PR_LAST": 0.85, "$BONUS_RATE_3Y_AVG_LAST": 0.050,
+         "$BONUS_TTM_RATE_LAST": 0.50, "$NCFO_TTM_LAST": 7.0e10, "$BONUS_TTM": 3.0e10,
+         "$IBD_RATE_LAST": 0.10, "$CSRC_INDUSTRY_NAME": "制造业-医药制造业"}),
+]
+_PRR_PCT = {"600519": 0.22, "000333": 0.35, "601088": 0.48, "600036": 0.30,
+            "601318": 0.15, "000651": 0.40, "600276": 0.81}
+
+
+class _PrrStubCli:
+    """17 号示例的桩：screener.query 返回罐头行；hist_stats 按标的返回罐头分位。"""
+
+    class screener:  # noqa: N999 - 与示例调用面同构
+        @staticmethod
+        def query(where, **kw):
+            return {"data": {"rows": [dict(r) for r in _PRR_ROWS], "count": len(_PRR_ROWS)}}
+
+    class valuation:  # noqa: N999
+        @staticmethod
+        def hist_stats(symbol, metric="pr", window="3y"):
+            return {"pct": _PRR_PCT[symbol]}
+
+
+def test_17_prr_dividend_screen(capsys):
+    """红利排雷：桩数据走通本地三步，方向与 live 一致（PRR 越低/覆盖越高得分越高）。"""
+    _load("17_prr_dividend_screen.py").main(_PrrStubCli())
+    out = capsys.readouterr().out
+    assert "全市场命中 7 只" in out
+    assert "-2 只 → 5" in out and "-1 只 → 4" in out and "-1 只 → 3" in out
+    # 方向锁死（AGENTS.md 防坑 4）：PRR 最低、覆盖最高的罐头票必须排第一且 CHI=1.00
+    top = [line for line in out.splitlines() if "600519" in line]
+    assert top and "1.00" in top[0]
+    assert "取数失败跳过 0 只" in out          # 失败显式计数，不静默
+
+
+def test_18_calendar_margin(capsys):
+    """2.0 新面：FakeClient 注入端到端。"""
+    _load("18_calendar_margin.py").main(fake_client())
+    out = capsys.readouterr().out
+    assert "交易日历" in out
+
+
+def test_19_income_rating(capsys):
+    """收息四接口：回放夹具未拍摄收息面 → 显式降级输出，不崩溃不伪造。"""
+    _load("19_income_rating.py").main(fake_client())
+    out = capsys.readouterr().out
+    assert "== 1. 发现" in out
+    assert "[跳过]" in out
+
+
+def test_21_cli_export(capsys):
+    """成品出口：回放罐头 trend → md/csv/xlsx/bundle 全链路落盘。"""
+    pytest.importorskip("pandas")
+    _load("21_cli_export.py").main(fake_client())
+    out = capsys.readouterr().out
+    assert "to_markdown：指数估值分位" in out
+    assert "trend.md" in out
+    assert "落盘" in out and "manifest" in out
+
+
+def test_22_replay_bars_raises_explicitly(capsys):
+    """期货历史K线：成本预估段先跑；历史序列夹具不回放——显式 replay_unsupported，
+    不返回空 DF 冒充。"""
+    mod = _load("22_futures_bars.py")
+    with pytest.raises(UsageError) as ei:
+        mod.main(fake_client())
+    assert ei.value.code == "replay_unsupported"
+    assert "先估成本" in capsys.readouterr().out
+
+
+def test_23_fx_reserves_replay_raises_explicitly(capsys):
+    """外汇/储备：成本预估段先跑；fx 命名空间未回放——显式 replay_unsupported，
+    不返回空 DF 冒充。"""
+    mod = _load("23_fx_reserves.py")
+    with pytest.raises(UsageError) as ei:
+        mod.main(fake_client())
+    assert ei.value.code == "replay_unsupported"
+    assert "先估成本" in capsys.readouterr().out
+
+
+def test_24_us_macro_replay_raises_explicitly(capsys):
+    """美宏观：成本预估段先跑；us_macro 命名空间未回放——显式 replay_unsupported，
+    不返回空 DF 冒充。"""
+    mod = _load("24_us_macro.py")
+    with pytest.raises(UsageError) as ei:
+        mod.main(fake_client())
+    assert ei.value.code == "replay_unsupported"
+    assert "先估成本" in capsys.readouterr().out
+
+
+def test_25_limit_price_replay_raises_explicitly(capsys):
+    """涨跌停价：成本预估段先跑；stocks 快照未回放——显式 replay_unsupported，
+    不返回空 DF 冒充。"""
+    mod = _load("25_limit_price.py")
+    with pytest.raises(UsageError) as ei:
+        mod.main(fake_client())
+    assert ei.value.code == "replay_unsupported"
+    assert "先估成本" in capsys.readouterr().out
+
+
+def test_26_board_moneyflow_replay_raises_explicitly(capsys):
+    """板块资金流：成本预估段先跑；board 命名空间未回放——显式 replay_unsupported，
+    不返回空 DF 冒充。"""
+    mod = _load("26_board_moneyflow.py")
+    with pytest.raises(UsageError) as ei:
+        mod.main(fake_client())
+    assert ei.value.code == "replay_unsupported"
+    assert "先估成本" in capsys.readouterr().out
+
+
+def test_27_block_trade_replay_raises_explicitly(capsys):
+    """大宗交易：成本预估段先跑；blocktrade 命名空间未回放——显式
+    replay_unsupported，不返回空 DF 冒充。"""
+    mod = _load("27_block_trade.py")
+    with pytest.raises(UsageError) as ei:
+        mod.main(fake_client())
+    assert ei.value.code == "replay_unsupported"
+    assert "先估成本" in capsys.readouterr().out
+
+
+def test_30_limit_price_history_replay_raises_explicitly(capsys):
+    """历史涨跌停价：成本预估段先跑；stocks 快照未回放——显式
+    replay_unsupported，不返回空 DF 冒充。"""
+    mod = _load("30_limit_price_history.py")
+    with pytest.raises(UsageError) as ei:
+        mod.main(fake_client())
+    assert ei.value.code == "replay_unsupported"
+    assert "先估成本" in capsys.readouterr().out
+
+
+def test_32_futures_receipts_replay_raises_explicitly(capsys):
+    """仓单快照：成本预估段先跑；futures 域未回放——显式 replay_unsupported。"""
+    mod = _load("32_futures_receipts.py")
+    with pytest.raises(UsageError) as ei:
+        mod.main(fake_client())
+    assert ei.value.code == "replay_unsupported"
+    assert "先估成本" in capsys.readouterr().out
+
+
+def test_33_futures_holding_replay_raises_explicitly(capsys):
+    """持仓排名/结算参数：成本预估段先跑；futures 域未回放——显式 replay_unsupported。"""
+    mod = _load("33_futures_holding.py")
+    with pytest.raises(UsageError) as ei:
+        mod.main(fake_client())
+    assert ei.value.code == "replay_unsupported"
+    assert "先估成本" in capsys.readouterr().out
+
+
+def test_31_board_concept_list_replay_raises_explicitly(capsys):
+    """概念板块目录：成本预估段先跑；board 域未回放——显式
+    replay_unsupported，不返回空 DF 冒充。"""
+    mod = _load("31_board_concept_list.py")
+    with pytest.raises(UsageError) as ei:
+        mod.main(fake_client())
+    assert ei.value.code == "replay_unsupported"
+    assert "先估成本" in capsys.readouterr().out
+
+
+_NO_CREDENTIAL_KEYS = ("WMSHARE_CLIENT_ID", "WMSHARE_CLIENT_SECRET",
+                      "OPEN_PLATFORM_CLIENT_ID", "OPEN_PLATFORM_CLIENT_SECRET")
+
+
+def test_20_free_trial_degrades_gracefully(tmp_path):
+    """免注册示例在回落被关闭时打印注册指引并正常退出（不抛异常、不联网）。
+
+    用 WMSHARE_DISABLE_ANON=1 走确定性的降级路径：CI 无外网不会失败，有网的
+    开发机上也不会真的去请求服务端（免注册访问不需要凭证，光清空凭证拦不住）。
+    """
+    env = {"WMSHARE_CREDENTIALS": str(tmp_path / "absent.env"), "WMSHARE_DISABLE_ANON": "1"}
+    for key in _NO_CREDENTIAL_KEYS:
+        env[key] = ""
+    result = _run_example("20_free_trial.py", env)
+    assert result.returncode == 0, result.stderr
+    assert "免注册试用不可用" in result.stdout
+    assert "open.winmale.com" in result.stdout
+
+
+def test_20_free_trial_reports_access_mode(capsys):
+    """注入免注册客户端：打印访问方式与取数结果，并说明免注册访问的边界。"""
+    def last(sym):
+        return {"date": "2026-11-23", "close": 1439.0}
+
+    stub = types.SimpleNamespace(auth_mode="public_pool",
+                                 kline=types.SimpleNamespace(last=last),
+                                 dividend=types.SimpleNamespace(yield_ttm=lambda sym: 0.0361))
+    _load("20_free_trial.py").main(stub)
+    out = capsys.readouterr().out
+    assert "public_pool" in out and "1439.0" in out and "3.61%" in out
+    assert "WMSHARE_DISABLE_ANON=1" in out
+
+
+def test_20_free_trial_shows_terminal_rejection_code(capsys):
+    """免注册被拒（终态码）：示例打印 code 与服务端消息，不崩溃。"""
+    from wmshare.errors import LimitError
+
+    def limited(sym):
+        raise LimitError("本网络的免注册请求次数已达上限", code="ip_rate_limited", status=429)
+
+    stub = types.SimpleNamespace(auth_mode="public_pool",
+                                 kline=types.SimpleNamespace(last=limited))
+    _load("20_free_trial.py").main(stub)
+    out = capsys.readouterr().out
+    assert "取数被拒（ip_rate_limited）" in out
+
+
 def test_examples_index_covers_dir():
     """examples/README.md 课程表必须覆盖目录里每个脚本（防孤儿示例）。"""
     index = (EXAMPLES / "README.md").read_text(encoding="utf-8")
     scripts = sorted(p.name for p in EXAMPLES.glob("*.py"))
-    assert len(scripts) == 16, f"示例应恰为 16 个（编号课程），实际 {len(scripts)}：{scripts}"
+    assert len(scripts) == 33, f"示例应恰为 33 个（编号课程），实际 {len(scripts)}：{scripts}"
     for name in scripts:
         assert f"`{name}`" in index, f"examples/README.md 缺 {name} 的索引行"
-
-
-@pytest.mark.parametrize("name", [
-    "01_quickstart.py", "04_screener.py", "05_dividend_screener.py",
-    "06_indicator_tour.py", "07_stocks_industry_batch.py", "08_pandas_analysis.py",
-    "10_notice_monitor.py", "11_statements_tour.py", "15_backtest_ma.py",
-    "16_metric_adapter.py",
-])
-def test_credential_examples_run_with_demo_snapshot(name):
-    if name in ("07_stocks_industry_batch.py", "08_pandas_analysis.py"):
-        pytest.importorskip("pandas")
-    result = _run_example(name, demo=True)
-    assert result.returncode == 0, result.stderr
-    assert "演示模式" in result.stdout

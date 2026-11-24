@@ -1,5 +1,5 @@
 id: market.macro
-version: 1.0.0
+version: 1.1.0
 cn: 宏观
 kind: raw
 category: reference
@@ -13,6 +13,7 @@ units:
   value: 上游原值（宏观指标为原生口径，非全库小数比率口径；见 notes）
 requires: {path: sys/macro/init.xs, preloaded: true}
 notes:
+  - 可用性：中国内地宏观口径
   - '宏观数值为上游原生口径不做换算：$CPI 等价格指数=点（上年同期=100，实测 100.9），
     $GDP/$M2 等流量存量=元（asof 实测 $GDP 107107120000000 ≈ 107.1 万亿元）；使用时
     按指标含义解读，勿套用全库小数比率口径'
@@ -25,6 +26,12 @@ notes:
     share/rank 为披露原值（小米 share=11、rank=4）'
   - '指标码层等价物：cli.indicator.get(sym, "$CPI") 与宏观 as-of 同源（指标码层走
     单位换算管线，本域返回上游原值）'
+  - '官方储备（reserve.*）：forex/gold 有数据、sdr/total 上游无生产者（reserve.list 以
+    available=false 如实标注）；返回美元数值（实测 forex=3.405e12=3.4 万亿美元、
+    gold=3.064e11=3064 亿美元），不是亿元也不是亿美元——上游 Base=亿美元×1e8，
+    展示层 /1e8 还原成亿美元；黄金为美元市值口径（非吨数/盎司）'
+  - '储备数据来自已停摆的采集链，末值可能滞后（实测 forex/gold 最新期 2026-10）；
+    reserve.asof/query 返回真实期次，调用方自行判断新鲜度，勿假定当月'
 functions:
   - name: macro.query
     cn: 宏观时序
@@ -111,4 +118,42 @@ functions:
       - {name: brand, type: string, required: true, desc: 品牌披露名（如「小米」）}
       - {name: field, type: string, required: false, default: share, desc: 取值列（share/rank）}
     returns: {desc: 当周单值（掉榜返回 nil）}
-    example: 'macro.phone_share("小米", "share")'
+    example: 'macro.phone_share("小米", "share")'  # ---- 官方储备（reserve.*，跨命名空间条目；数据在 alt.bssaa cn.currency.reserve.*） ----
+  - name: reserve.list
+    cn: 储备项清单
+    kind: raw
+    layer: L0
+    params: []
+    returns:
+      desc: ARR · 储备项（kind/label/available/date/value/unit；缺生产者项 available=false）
+      shape_ref: inventory
+    example: 'reserve.list()'
+    ranges:
+      value: [0, 1000000000000000]
+    notes: ['forex/gold 有数据；sdr/total 上游无生产者，如实标注 available=false 而不是返回空冒充']
+  - name: reserve.query
+    cn: 储备时序
+    kind: raw
+    layer: L0
+    params:
+      - {name: kind, type: string, required: true, desc: 储备项（forex=国家外汇储备 / gold=黄金储备）}
+      - {name: n, type: int, required: false, default: 12, desc: 期数（1..48，月频）}
+    returns:
+      desc: ARR · 储备时序（date 升序 YYYY-MM；date/kind/value）
+      shape_ref: inventory
+    example: 'reserve.query("forex", 12)'
+    ranges:
+      value: [0, 1000000000000000]
+    notes: ['value 为美元数值（forex 约 3.4e12 量级、gold 约 3e11 量级）；月频，末值可能滞后']
+  - name: reserve.asof
+    cn: 储备最新值
+    kind: raw
+    layer: L0
+    params:
+      - {name: kind, type: string, required: true, desc: 储备项（forex / gold；sdr 无数据返回 nil）}
+    returns:
+      desc: MAP · 储备快照（kind/date/value/unit；无数据返回 nil）
+      shape_ref: inventory
+    example: 'reserve.asof("forex")'
+    ranges:
+      value: [0, 1000000000000000]

@@ -16,10 +16,17 @@
   function 级 ranges:  {字段: [lo, hi]}             宽松量级界，只拦 ×100 类量级错
   function 级 checks:  [不变量 id]                   引用 CHECKS 注册表（Python 函数）
   metric 级 unit/range: 精选指标同语义（IndicatorApi 消费）
+  units.yaml overrides: 指标码级换算台账（native_unit token）——2.0 起是**运行时
+    换算源**：精选组未声明 unit 的码（$VOLUME 手→股、$RE_* 亿元→元、$ROC_TTM
+    百分数→小数）由此默认换算，`native=True` 逃生口可取原始口径
 """
 from __future__ import annotations
 
+import re
+from pathlib import Path
 from typing import Any
+
+import yaml
 
 from wmshare.errors import CatalogError, DataError
 
@@ -31,7 +38,103 @@ CONVERSIONS: dict[str, float] = {
 }
 
 ESCAPE_HINT = ('如需原始口径：_raw=True（上游原始行）或 _units="native"（保留上游原单位）；'
-               '或 Client(validate=False) 关闭校验。')
+               '指标层可传 native=True；或 Client(validate=False) 关闭校验。')
+
+# ---- 指标码换算台账（units.yaml overrides → 运行时换算源）----
+# 2.0 语义翻转：台账不再是「纯文档」，登记的码默认换算到基础单位。
+# 精选组显式声明 unit 的码以声明为准（不叠加，防双重换算）；
+# 其余登记码（$VOLUME 手→股、$RE_* 亿元→元、$ROC_TTM 百分数→小数）由此兜底。
+_LEDGER_TOKENS: dict[str, str] | None = None
+
+
+def _ledger_tokens() -> dict[str, str]:
+    """units.yaml overrides → {指标码: 换算 token}（进程内缓存）。
+
+    只收录 CONVERSIONS 词表内的 token；目录文件缺失/损坏时返回空表
+    （降级为不换算，与 1.x 行为一致，不因台账异常阻断取数）。
+    """
+    global _LEDGER_TOKENS
+    if _LEDGER_TOKENS is None:
+        out: dict[str, str] = {}
+        path = Path(__file__).resolve().parent / "_catalog" / "units.yaml"
+        try:
+            doc = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+            for code, spec in (doc.get("overrides") or {}).items():
+                token = (spec or {}).get("native_unit")
+                if token in CONVERSIONS:
+                    out[str(code)] = str(token)
+        except Exception:  # noqa: BLE001 - 台账异常降级为不换算，不阻断取数
+            out = {}
+        _LEDGER_TOKENS = out
+    return _LEDGER_TOKENS
+
+
+def ledger_convert(code: str, value: Any) -> Any:
+    """按台账把一个指标码的值换算到基础单位；未登记/None/非数值原样返回。
+
+    供 macro/screener 等不经 finish_metric 的取数面复用，保证同一指标码
+    在 indicator / macro / screener 三条链路上口径一致。
+    """
+    token = _ledger_tokens().get(_ledger_key(code))
+    return convert_field(token, value) if token else value
+
+
+def _ledger_key(code: str) -> str:
+    """指标码归一：大小写与 $ 前缀可省（macro 域惯例），台账键一律 $大写。"""
+    s = str(code or "").strip().upper()
+    return s if s.startswith("$") else f"${s}"
+
+
+# ---- 组合门面单位声明（units.yaml facades → 运行时换算）----
+_FACADE_CACHE: dict[str, dict[str, str]] | None = None
+
+
+def _facades_units() -> dict[str, dict[str, str]]:
+    """units.yaml facades → {门面名: {字段: 换算 token}}（进程内缓存）。
+
+    只收录 CONVERSIONS 词表内 token（percent/yi_yuan/lot）；price/zhang 等
+    原生口径声明不换算、仅供文档与审计。文件缺失/损坏时空表降级。
+    """
+    global _FACADE_CACHE
+    if _FACADE_CACHE is None:
+        out: dict[str, dict[str, str]] = {}
+        path = Path(__file__).resolve().parent / "_catalog" / "units.yaml"
+        try:
+            doc = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+            for fname, spec in (doc.get("facades") or {}).items():
+                fields = (spec or {}).get("fields") or {}
+                out[str(fname)] = {str(k): str(v) for k, v in fields.items()
+                                   if v in CONVERSIONS}
+        except Exception:  # noqa: BLE001 - 声明异常降级为不换算
+            out = {}
+        _FACADE_CACHE = out
+    return _FACADE_CACHE
+
+
+def apply_facade_units(name: str, payload: Any) -> Any:
+    """按 facades 声明换算组合门面载荷（就地修改并返回）。
+
+    递归 dict/list：声明过的字段在任意嵌套层都换算（如 nav mode=series 的
+    序列行与顶层同口径）；声明外字段原样。供绕过目录函数的组合门面
+    （etf 九视图等）补齐「目录层单位换算」，2.0 起全库单一口径。
+    """
+    fields = _facades_units().get(name)
+    if not fields:
+        return payload
+
+    def walk(node: Any) -> Any:
+        if isinstance(node, dict):
+            for k, tok in fields.items():
+                if k in node:
+                    node[k] = convert_field(tok, node[k])
+            for v in node.values():
+                walk(v)
+        elif isinstance(node, list):
+            for x in node:
+                walk(x)
+        return node
+
+    return walk(payload)
 
 
 def _is_num(v: Any) -> bool:
@@ -131,10 +234,14 @@ def _check_diffp_ratio(row: dict, fname: str, path: str) -> None:
 
 
 def _check_volume_amount(row: dict, fname: str, path: str) -> None:
-    """K 线行：volume（已换算为股）× close ≈ amount（元），容 close≠VWAP 的偏离。"""
+    """K 线行：volume（已换算为股）× close ≈ amount（元），容 close≠VWAP 的偏离。
+
+    ``volume == 0`` 时无法验算，跳过：上游部分期次只有 amount 没有 volume
+    （A 股 2001-08~2016-08 的月线，180/302 行如此），把它当违例会误杀整条调用。
+    """
     f_v, f_close, f_amt = (_num(row.get("volume")), _num(row.get("close")),
                            _num(row.get("amount")))
-    if f_v is None or f_close is None or f_amt is None or f_amt == 0 or f_close <= 0:
+    if f_v is None or f_close is None or f_amt is None or f_amt == 0 or f_close <= 0 or f_v == 0:
         return
     ratio = f_v * f_close / f_amt
     if not 0.4 <= ratio <= 2.5:
@@ -144,9 +251,29 @@ def _check_volume_amount(row: dict, fname: str, path: str) -> None:
             code="invariant")
 
 
+def _check_date_iso(row: dict, fname: str, path: str) -> None:
+    """交易日历行：date 字段必须为 ISO YYYY-MM-DD（10 位、合法日期）。"""
+    d = row.get("date")
+    if d is None:
+        return
+    s = str(d)
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", s):
+        raise DataError(
+            f"{fname}: 不变量 date_iso 违例（{path or '行'}）：date={d!r} 非 ISO YYYY-MM-DD。"
+            f"{ESCAPE_HINT}", code="invariant")
+    try:
+        import datetime as _dt
+        _dt.date.fromisoformat(s)
+    except ValueError as e:
+        raise DataError(
+            f"{fname}: 不变量 date_iso 违例（{path or '行'}）：date={d!r} 不是合法日期。"
+            f"{ESCAPE_HINT}", code="invariant") from e
+
+
 CHECKS: dict[str, Any] = {
     "diffp_ratio": _check_diffp_ratio,
     "volume_amount": _check_volume_amount,
+    "date_iso": _check_date_iso,
 }
 
 
@@ -182,16 +309,31 @@ def _metric_meta_valid(meta: dict, code: str) -> None:
 
 
 def finish_metric(value: Any, meta: dict | None, *, code: str,
-                  validate: bool = True) -> Any:
-    """精选指标单值：按声明换算单位并做范围守护；None 原样返回。"""
+                  validate: bool = True, native: bool = False) -> Any:
+    """精选指标单值：按声明换算单位并做范围守护；None 原样返回。
+
+    换算来源两级：精选组显式 ``unit`` 声明优先；未声明时按 units.yaml 台账
+    （overrides.native_unit）兜底——2.0 起登记码默认换算（$VOLUME 手→股、
+    $RE_* 亿元→元、$ROC_TTM 百分数→小数）。台账兜底换算时，curated range
+    是按原生单位标注的，同步缩放后再校验。``native=True`` 跳过全部换算
+    （返回上游原值；量级守护一并跳过——原值口径下的区间声明不适用）。
+    """
     if value is None:
         return value
     meta = meta or {}
-    unit = meta.get("unit")
-    if unit:
-        value = convert_field(unit, value)
-    if validate and meta.get("range"):
-        _check_bounds(value, meta["range"], fname="indicator", where=code)
+    token = meta.get("unit")
+    bounds = meta.get("range")
+    if token is None and not native:
+        token = _ledger_tokens().get(_ledger_key(code))
+        if token and bounds:
+            factor = CONVERSIONS[token]
+            bounds = [b * factor if _is_num(b) else b for b in bounds]
+    if native:
+        token = None
+    if token:
+        value = convert_field(token, value)
+    if validate and bounds:
+        _check_bounds(value, bounds, fname="indicator", where=code)
     return value
 
 

@@ -1,5 +1,5 @@
 id: fund.estimates
-version: 1.1.0
+version: 1.1.1
 cn: 盈利预测与研报
 kind: raw
 category: fundamentals
@@ -14,6 +14,7 @@ units:
   pe: 倍（预测市盈率）
 requires: {path: sys/estimates/init.xs, preloaded: true}
 notes:
+  - 可用性：仅 A 股（券商研报卖方口径）
   - 'year_mark A=实际值 E=预测值；YEAR1..YEAR4 为预测年份序列'
   - '研报行含标题/机构/作者/行业/报告链接；研报正文不在接口范围'
 functions:
@@ -21,4 +22,57 @@ functions:
   - {name: estimates.query_forecast_detail, cn: 盈利预测明细, layer: L0, normalize_with: estimates.fmt_maps, ranges: {eps1: [0, 1.0e+4], eps2: [0, 1.0e+4], eps3: [0, 1.0e+4], eps4: [0, 1.0e+4], pe1: [0, 1.0e+4], pe2: [0, 1.0e+4], pe3: [0, 1.0e+4], pe4: [0, 1.0e+4]}}
   - {name: estimates.query_rating, cn: 评级统计, layer: L0, normalize_with: estimates.fmt_maps}
   - {name: estimates.query_reports, cn: 个股研报, layer: L0, normalize_with: estimates.fmt_maps}
-  - {name: estimates.fmt_maps, cn: 预测行规范化, layer: L1}
+  - name: estimates.fmt_maps
+    internal: true
+    cn: 预测行规范化
+    layer: L1
+    returns:
+      desc: ARR · 规范化预测/研报行（字段并集按行取，缺字段为空）
+      shape:
+        kind: array
+        items:
+          kind: object
+          cn: 预测行
+          fields:
+            - {name: security_code, type: string, cn: 证券代码}
+            - {name: security_name, type: string, cn: 证券简称, optional: true}
+            - {name: publish_date, type: string, cn: 报告发布日, optional: true}
+            - {name: org_name, type: string, cn: 机构名称, optional: true}
+            - {name: org_code, type: string, cn: 机构代码, optional: true}
+            - {name: researcher, type: string, cn: 分析师, optional: true}
+            - {name: date_type, type: string, cn: 预测年度口径, optional: true}
+            - {name: year1, type: float64, cn: 预测年度1, optional: true}
+            - {name: year_mark1, type: string, cn: 年度1标记, optional: true}
+            - {name: eps1, type: float64, cn: 每股收益1（元）, optional: true}
+            - {name: pe1, type: float64, cn: 市盈率1（倍）, optional: true}
+            - {name: parent_netprofit1, type: float64, cn: 归母净利1（元）, optional: true}
+            - {name: year2, type: float64, cn: 预测年度2, optional: true}
+            - {name: year_mark2, type: string, cn: 年度2标记, optional: true}
+            - {name: eps2, type: float64, cn: 每股收益2（元）, optional: true}
+            - {name: pe2, type: float64, cn: 市盈率2（倍）, optional: true}
+            - {name: parent_netprofit2, type: float64, cn: 归母净利2（元）, optional: true}
+            - {name: year3, type: float64, cn: 预测年度3, optional: true}
+            - {name: year_mark3, type: string, cn: 年度3标记, optional: true}
+            - {name: eps3, type: float64, cn: 每股收益3（元）, optional: true}
+            - {name: pe3, type: float64, cn: 市盈率3（倍）, optional: true}
+            - {name: parent_netprofit3, type: float64, cn: 归母净利3（元）, optional: true}
+            - {name: year4, type: float64, cn: 预测年度4, optional: true}
+            - {name: year_mark4, type: string, cn: 年度4标记, optional: true}
+            - {name: eps4, type: float64, cn: 每股收益4（元）, optional: true}
+            - {name: pe4, type: float64, cn: 市盈率4（倍）, optional: true}
+            - {name: parent_netprofit4, type: float64, cn: 归母净利4（元）, optional: true}
+            - {name: rating, type: string, cn: 评级, optional: true}
+            - {name: compre_rating, type: string, cn: 综合评级, optional: true}
+            - {name: compre_rating_num, type: float64, cn: 综合评级数值, optional: true}
+            - {name: rating_org_num, type: float64, cn: 评级机构家数, optional: true}
+            - {name: rating_buy_num, type: float64, cn: 买入家数, optional: true}
+            - {name: rating_add_num, type: float64, cn: 增持家数, optional: true}
+            - {name: rating_neutral_num, type: float64, cn: 中性家数, optional: true}
+            - {name: rating_reduce_num, type: float64, cn: 减持家数, optional: true}
+            - {name: rating_sale_num, type: float64, cn: 卖出家数, optional: true}
+            - {name: title, type: string, cn: 报告标题, optional: true}
+            - {name: org_sname, type: string, cn: 机构简称, optional: true}
+            - {name: author, type: string, cn: 作者, optional: true}
+            - {name: info_code, type: string, cn: 报告编码, optional: true}
+            - {name: industry, type: string, cn: 行业, optional: true}
+            - {name: report_url, type: string, cn: 报告链接, optional: true}

@@ -30,7 +30,8 @@ HEADER = '''# -*- coding: utf-8 -*-
 
 由 tools/gen_typed_api.py 从数据目录生成；方法签名与 docstring 来自目录合同，
 运行时统一委托 ``client.call()``（参数校验、max_limit 上限、normalize_with
-规范化均在该层生效）。重新生成：
+规范化均在该层生效）。2.0 返回契约：行数组默认经 ``to_output_frame`` 转
+DataFrame（``_raw=True`` 透传原始行）。重新生成：
 
   python3 tools/gen_typed_api.py
 
@@ -39,6 +40,14 @@ HEADER = '''# -*- coding: utf-8 -*-
 from __future__ import annotations
 
 from typing import Any
+
+
+def _out(value: Any, raw: bool) -> Any:
+    """2.0 返回收口：行数组默认转 DataFrame（与友好门面同一函数）。"""
+    if raw:
+        return value
+    from wmshare.client import to_output_frame
+    return to_output_frame(value)
 '''
 
 BASE = '''
@@ -100,7 +109,7 @@ def render_method(cat: Catalog, fn: dict) -> list[str]:
         else:
             sig.append(f"{p['name']}: {a} | None = None")
             opt.append(p)
-    sig += ["_raw: bool = False", "_df: bool = False"]
+    sig += ["_raw: bool = False"]
 
     lines = [f"    def {short}({', '.join(sig)}) -> Any:"]
     doc = render_doc(fn, params)
@@ -112,24 +121,30 @@ def render_method(cat: Catalog, fn: dict) -> list[str]:
 
     fixed_kw = ", ".join(f'"{p["name"]}": {p["name"]}' for p in fixed)
     if not opt:
-        head = f'        return self._client.call("{name}"'
+        head = f'        return _out(self._client.call("{name}"'
         if fixed:
             head += ", " + ", ".join(f"{p['name']}={p['name']}" for p in fixed)
-        lines.append(head + ", _raw=_raw, _df=_df)")
+        lines.append(head + ", _raw=_raw), _raw)")
     else:
         lines.append(f"        kw: dict[str, Any] = {{{fixed_kw}}}")
         for p in opt:
             lines.append(f"        if {p['name']} is not None:")
             lines.append(f'            kw["{p["name"]}"] = {p["name"]}')
-        lines.append(f'        return self._client.call("{name}", **kw, _raw=_raw, _df=_df)')
+        lines.append(f'        return _out(self._client.call("{name}", **kw, _raw=_raw), _raw)')
     return lines
 
 
 def generate() -> str:
     cat = load()
     per_ns: dict[str, list[dict]] = {}
+    skipped_internal = 0
     for dom_id in sorted(cat.domains):
         for fn in cat.domains[dom_id].get("functions") or []:
+            # 2.0 命名空间净化：internal: true（fmt_* 规范化辅助等内部函数）
+            # 不再进类型化门面——属性直达噪音下架，仍可经 ``cli.call`` 调用。
+            if fn.get("internal"):
+                skipped_internal += 1
+                continue
             ns = fn["name"].split(".", 1)[0]
             per_ns.setdefault(ns, []).append(cat.function(fn["name"]))
 

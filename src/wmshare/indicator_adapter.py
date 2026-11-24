@@ -11,10 +11,10 @@
 
 典型用法::
 
-    from wmshare import demo_client
+    from wmshare import Client
     from wmshare.indicator_adapter import IndicatorAdapter
 
-    ad = IndicatorAdapter(demo_client())
+    ad = IndicatorAdapter(Client.from_env())
     g = ad.combinable_groups(scope="stock", topic="valuation")
     rows = ad.table("600519", g["groups"][0]["codes"])
 

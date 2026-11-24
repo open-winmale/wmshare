@@ -1,9 +1,25 @@
 {
  "schema_version": 2,
- "upstream_rev": "d77f0354",
+ "upstream_rev": "bb486fce",
  "domains": {
+  "blocktrade": {
+   "entry": "sys/blocktrade/init.xs",
+   "exports": []
+  },
+  "board": {
+   "entry": "sys/board/init.xs",
+   "exports": []
+  },
   "bonus": {
    "entry": "sys/bonus/init.xs",
+   "exports": []
+  },
+  "buyback": {
+   "entry": "sys/buyback/init.xs",
+   "exports": []
+  },
+  "calendar": {
+   "entry": "sys/calendar/init.xs",
    "exports": []
   },
   "cbond": {
@@ -24,6 +40,22 @@
   },
   "forecast": {
    "entry": "sys/forecast/init.xs",
+   "exports": []
+  },
+  "fred": {
+   "entry": "sys/fred/init.xs",
+   "exports": []
+  },
+  "futures": {
+   "entry": "sys/futures/init.xs",
+   "exports": []
+  },
+  "fx": {
+   "entry": "sys/fx/init.xs",
+   "exports": []
+  },
+  "income": {
+   "entry": "sys/income/init.xs",
    "exports": []
   },
   "indices": {
@@ -73,6 +105,14 @@
    "entry": "sys/notice/init.xs",
    "exports": []
   },
+  "pdf_doc": {
+   "entry": "sys/pdf_doc/init.xs",
+   "exports": []
+  },
+  "reserve": {
+   "entry": "sys/reserve/init.xs",
+   "exports": []
+  },
   "rptdom": {
    "entry": "sys/rptdom/init.xs",
    "exports": []
@@ -85,6 +125,14 @@
    "entry": "sys/stocks/init.xs",
    "exports": []
   },
+  "toplist": {
+   "entry": "sys/toplist/init.xs",
+   "exports": []
+  },
+  "valuation": {
+   "entry": "sys/valuation/init.xs",
+   "exports": []
+  },
   "workout": {
    "entry": "sys/workout/init.xs",
    "exports": []
@@ -92,9 +140,13 @@
  },
  "preloaded_libs": [
   "bonus",
+  "buyback",
   "equity",
   "estimates",
   "filings",
+  "fred",
+  "futures",
+  "fx",
   "indices",
   "intl",
   "kline",
@@ -102,10 +154,379 @@
   "margin",
   "moneyflow",
   "notice",
-  "segments"
+  "pdf_doc",
+  "reserve",
+  "segments",
+  "toplist",
+  "valuation"
  ],
- "function_count": 294,
+ "function_count": 381,
  "functions": [
+  {
+   "name": "blocktrade.by_date",
+   "cn": "指定交易日大宗交易",
+   "example": "blocktrade.by_date(\"2026-11-20\", 50)",
+   "returns": "ARR · 大宗行",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "trade_date",
+     "type": "string"
+    },
+    {
+     "name": "limit",
+     "type": "int"
+    }
+   ]
+  },
+  {
+   "name": "blocktrade.by_symbol",
+   "cn": "单票大宗交易历史",
+   "example": "blocktrade.by_symbol(\"000530\", 20)",
+   "returns": "ARR · 大宗事件行",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "sym",
+     "type": "string"
+    },
+    {
+     "name": "limit",
+     "type": "int"
+    }
+   ]
+  },
+  {
+   "name": "blocktrade.fmt_maps",
+   "cn": "大宗交易行规范化",
+   "example": "blocktrade.fmt_maps(blocktrade.by_date(\"2026-11-20\", 10))",
+   "returns": "ARR · 规范化大宗行",
+   "returns_shape": {
+    "kind": "array",
+    "cn": "大宗交易行",
+    "items": {
+     "kind": "object",
+     "cn": "大宗行",
+     "fields": [
+      {
+       "name": "date",
+       "type": "string",
+       "cn": "交易日"
+      },
+      {
+       "name": "symbol",
+       "type": "string",
+       "cn": "6位裸码"
+      },
+      {
+       "name": "price",
+       "type": "float64",
+       "cn": "成交价(元)"
+      },
+      {
+       "name": "volume",
+       "type": "float64",
+       "cn": "成交量(股)"
+      },
+      {
+       "name": "amount",
+       "type": "float64",
+       "cn": "成交额(元)"
+      },
+      {
+       "name": "buyer",
+       "type": "string",
+       "cn": "买方营业部",
+       "optional": true
+      },
+      {
+       "name": "seller",
+       "type": "string",
+       "cn": "卖方营业部",
+       "optional": true
+      }
+     ]
+    }
+   },
+   "min_args": null,
+   "params": [
+    {
+     "name": "rows",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "board.cl_merge",
+   "cn": "概念目录 memo 合并（把 built_for=今日的片合并排序写 m_board_concept_list:v1:all；缺片且旧表健在时不覆盖）",
+   "example": "board.cl_merge(6)",
+   "returns": "MAP · 合并摘要（ok/step/count/covered/missing_slices）",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": [
+    {
+     "name": "ns",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "board.cl_slice",
+   "cn": "概念目录 memo 分片聚合（cron 用；片 si 聚合写 m_board_concept_list:v1:part:si）",
+   "example": "board.cl_slice(0, 6)",
+   "returns": "MAP · 片摘要（ok/step/slice/covered/tags）",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": [
+    {
+     "name": "si",
+     "type": "any"
+    },
+    {
+     "name": "ns",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "board.concept_list",
+   "cn": "概念板块目录（周更物化档）",
+   "example": "board.concept_list(20)",
+   "returns": "ARR · 概念行(name/count/members)",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": [
+    {
+     "name": "limit",
+     "type": "int"
+    }
+   ]
+  },
+  {
+   "name": "board.concept_members",
+   "cn": "概念成份股",
+   "example": "board.concept_members(\"白酒\", 10)",
+   "returns": "ARR · 成份行(symbol/name/close/percent)",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "name",
+     "type": "string"
+    },
+    {
+     "name": "limit",
+     "type": "int"
+    }
+   ]
+  },
+  {
+   "name": "board.concepts_of",
+   "cn": "单票概念标签",
+   "example": "board.concepts_of(\"600519\")",
+   "returns": "MAP · symbol/name/tags",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "sym",
+     "type": "string"
+    }
+   ]
+  },
+  {
+   "name": "board.fmt_maps",
+   "cn": "板块资金流行规范化",
+   "example": "board.fmt_maps(board.moneyflow_last(\"ths_concept\", 10))",
+   "returns": "ARR · 规范化板块行",
+   "returns_shape": {
+    "kind": "array",
+    "cn": "板块资金流行",
+    "items": {
+     "kind": "object",
+     "cn": "板块行",
+     "fields": [
+      {
+       "name": "date",
+       "type": "string",
+       "cn": "交易日"
+      },
+      {
+       "name": "code",
+       "type": "string",
+       "cn": "板块代码"
+      },
+      {
+       "name": "name",
+       "type": "string",
+       "cn": "板块名称"
+      },
+      {
+       "name": "source",
+       "type": "string",
+       "cn": "来源 ths_concept/ths_industry/dc"
+      },
+      {
+       "name": "net_amount",
+       "type": "float64",
+       "cn": "主力净流入(元)",
+       "optional": true
+      },
+      {
+       "name": "net_amount_ratio",
+       "type": "float64",
+       "cn": "净流入占比(小数,仅dc)",
+       "optional": true
+      },
+      {
+       "name": "net_buy",
+       "type": "float64",
+       "cn": "流入额(元,仅ths)",
+       "optional": true
+      },
+      {
+       "name": "net_sell",
+       "type": "float64",
+       "cn": "流出额(元,仅ths)",
+       "optional": true
+      },
+      {
+       "name": "pct_change",
+       "type": "float64",
+       "cn": "板块涨跌幅(小数)",
+       "optional": true
+      },
+      {
+       "name": "pct_change_stock",
+       "type": "float64",
+       "cn": "领涨股涨跌幅(小数,仅ths)",
+       "optional": true
+      },
+      {
+       "name": "company_num",
+       "type": "int",
+       "cn": "成分股数",
+       "optional": true
+      },
+      {
+       "name": "lead_stock",
+       "type": "string",
+       "cn": "领涨股",
+       "optional": true
+      },
+      {
+       "name": "index_close",
+       "type": "float64",
+       "cn": "板块指数点位",
+       "optional": true
+      },
+      {
+       "name": "content_type",
+       "type": "string",
+       "cn": "概念/行业(仅dc)",
+       "optional": true
+      },
+      {
+       "name": "rank",
+       "type": "int",
+       "cn": "排名(仅dc)",
+       "optional": true
+      },
+      {
+       "name": "buy_elg",
+       "type": "float64",
+       "cn": "超大单净额(元,仅dc)",
+       "optional": true
+      },
+      {
+       "name": "buy_lg",
+       "type": "float64",
+       "cn": "大单净额(元,仅dc)",
+       "optional": true
+      },
+      {
+       "name": "buy_md",
+       "type": "float64",
+       "cn": "中单净额(元,仅dc)",
+       "optional": true
+      },
+      {
+       "name": "buy_sm",
+       "type": "float64",
+       "cn": "小单净额(元,仅dc)",
+       "optional": true
+      }
+     ]
+    }
+   },
+   "min_args": null,
+   "params": [
+    {
+     "name": "rows",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "board.materialize",
+   "cn": "概念目录 memo 物化统一入口（cl_slice=\"merge\" 合并，其余为片号；cron 用）",
+   "example": "board.materialize(0, 6)",
+   "returns": "MAP · 片/合并摘要",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": [
+    {
+     "name": "cl_slice",
+     "type": "any"
+    },
+    {
+     "name": "cl_slices",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "board.moneyflow",
+   "cn": "指定交易日板块资金流",
+   "example": "board.moneyflow(\"ths_concept\", \"2026-11-20\", 20)",
+   "returns": "ARR · 板块行",
+   "returns_shape": null,
+   "min_args": 2,
+   "params": [
+    {
+     "name": "src",
+     "type": "string"
+    },
+    {
+     "name": "trade_date",
+     "type": "string"
+    },
+    {
+     "name": "limit",
+     "type": "int"
+    }
+   ]
+  },
+  {
+   "name": "board.moneyflow_last",
+   "cn": "最新交易日板块资金流",
+   "example": "board.moneyflow_last(\"ths_concept\", 20)",
+   "returns": "ARR · 板块行",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "src",
+     "type": "string"
+    },
+    {
+     "name": "limit",
+     "type": "int"
+    }
+   ]
+  },
   {
    "name": "bonus.dps_rpt",
    "cn": "财报期每股分红",
@@ -1048,6 +1469,126 @@
    ]
   },
   {
+   "name": "buyback.snapshot",
+   "cn": "回购六口径快照",
+   "example": "buyback.snapshot(\"600519\")",
+   "returns": "MAP · market + exec/plan 是否有源 + 六口径金额（元/原币；无源为 nil）",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "sym",
+     "type": "string"
+    }
+   ]
+  },
+  {
+   "name": "calendar.days",
+   "cn": "交易日历区间",
+   "example": "calendar.days(\"2026-01-01\", \"2026-03-31\")",
+   "returns": "ARR · 交易日行（date 升序）",
+   "returns_shape": {
+    "kind": "array",
+    "items": {
+     "kind": "object",
+     "cn": "交易日行",
+     "fields": [
+      {
+       "name": "date",
+       "type": "string",
+       "cn": "交易日期"
+      },
+      {
+       "name": "is_open",
+       "type": "bool",
+       "cn": "是否开市"
+      }
+     ],
+     "name": ""
+    }
+   },
+   "min_args": 2,
+   "params": [
+    {
+     "name": "begin",
+     "type": "string"
+    },
+    {
+     "name": "end",
+     "type": "string"
+    },
+    {
+     "name": "limit",
+     "type": "int"
+    }
+   ]
+  },
+  {
+   "name": "calendar.fmt_maps",
+   "cn": "交易日行规范化",
+   "example": "calendar.fmt_maps(calendar.days(\"2026-01-01\", \"2026-03-31\"))",
+   "returns": "ARR · 规范化行（MAP 输入返回单行 MAP）",
+   "returns_shape": {
+    "kind": "array",
+    "items": {
+     "kind": "object",
+     "cn": "交易日行",
+     "fields": [
+      {
+       "name": "date",
+       "type": "string",
+       "cn": "交易日期"
+      },
+      {
+       "name": "is_open",
+       "type": "bool",
+       "cn": "是否开市"
+      }
+     ],
+     "name": ""
+    }
+   },
+   "min_args": null,
+   "params": [
+    {
+     "name": "rows",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "calendar.is_open",
+   "cn": "是否交易日",
+   "example": "calendar.is_open(\"2026-10-01\")",
+   "returns": "bool",
+   "returns_shape": null,
+   "min_args": null,
+   "params": [
+    {
+     "name": "date",
+     "type": "string"
+    }
+   ]
+  },
+  {
+   "name": "calendar.next",
+   "cn": "之后 N 个交易日",
+   "example": "calendar.next(\"2026-11-17\", 5)",
+   "returns": "ARR · 交易日行",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "date",
+     "type": "string"
+    },
+    {
+     "name": "n",
+     "type": "int"
+    }
+   ]
+  },
+  {
    "name": "cbond.board",
    "cn": "转债全市场面板（快照行+最新条款事件+盘中价+强赎触发计数+下修地板价；缓存读，cron 预热）",
    "example": "cbond.board()",
@@ -1370,7 +1911,7 @@
    "name": "cbond.card",
    "cn": "转债个券详情",
    "example": "cbond.card(\"127119\")",
-   "returns": "MAP · {quote, terms, counts, region}",
+   "returns": "MAP · {quote, terms, counts, region, concepts, projects, share, holders, institution}",
    "returns_shape": null,
    "min_args": 1,
    "params": [
@@ -2209,13 +2750,17 @@
   {
    "name": "cbond.query",
    "cn": "按标的查条款事件",
-   "example": "cbond.query(\"600519\")",
+   "example": "cbond.query(\"600519\", 100)",
    "returns": "ARR · 规范化事件行",
    "returns_shape": null,
    "min_args": 1,
    "params": [
     {
      "name": "sym",
+     "type": "any"
+    },
+    {
+     "name": "limit",
      "type": "any"
     }
    ]
@@ -2650,15 +3195,57 @@
       "optional": true
      },
      {
-      "name": "hold_focus",
+      "name": "holder_total_num",
       "type": "float64",
-      "cn": "持股集中度",
+      "cn": "股东户数（户）",
+      "optional": true
+     },
+     {
+      "name": "total_num_ratio",
+      "type": "float64",
+      "cn": "户数环比（小数）",
+      "optional": true
+     },
+     {
+      "name": "avg_free_shares",
+      "type": "float64",
+      "cn": "户均流通持股（股）",
+      "optional": true
+     },
+     {
+      "name": "avg_freeshares_ratio",
+      "type": "float64",
+      "cn": "户均流通占比（小数）",
+      "optional": true
+     },
+     {
+      "name": "hold_focus",
+      "type": "string",
+      "cn": "持股集中度描述",
+      "optional": true
+     },
+     {
+      "name": "price",
+      "type": "float64",
+      "cn": "最新价（元）",
       "optional": true
      },
      {
       "name": "avg_hold_amt",
       "type": "float64",
-      "cn": "平均持股金额",
+      "cn": "户均持股市值（元）",
+      "optional": true
+     },
+     {
+      "name": "hold_ratio_total",
+      "type": "float64",
+      "cn": "持股比例合计（小数）",
+      "optional": true
+     },
+     {
+      "name": "freehold_ratio_total",
+      "type": "float64",
+      "cn": "流通股持股比例合计（小数）",
       "optional": true
      }
     ]
@@ -2668,6 +3255,88 @@
     {
      "name": "props",
      "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "equity.fmt_holdernum_history",
+   "cn": "股东户数历史规范化",
+   "example": "equity.fmt_holdernum_history(equity.query_holdernum_history(\"600519\", 8))",
+   "returns": "ARR · 户数行（日期升序）",
+   "returns_shape": {
+    "kind": "array",
+    "cn": "户数历史行（日期升序）",
+    "items": {
+     "kind": "object",
+     "cn": "户数行",
+     "fields": [
+      {
+       "name": "end_date",
+       "type": "string",
+       "cn": "截止日期"
+      },
+      {
+       "name": "holder_total_num",
+       "type": "float64",
+       "cn": "股东户数（户）",
+       "optional": true
+      },
+      {
+       "name": "total_num_ratio",
+       "type": "float64",
+       "cn": "户数环比（小数）",
+       "optional": true
+      },
+      {
+       "name": "avg_free_shares",
+       "type": "float64",
+       "cn": "户均流通持股（股）",
+       "optional": true
+      },
+      {
+       "name": "avg_freeshares_ratio",
+       "type": "float64",
+       "cn": "户均流通占比（小数）",
+       "optional": true
+      },
+      {
+       "name": "hold_focus",
+       "type": "string",
+       "cn": "持股集中度描述",
+       "optional": true
+      },
+      {
+       "name": "price",
+       "type": "float64",
+       "cn": "最新价（元）",
+       "optional": true
+      },
+      {
+       "name": "avg_hold_amt",
+       "type": "float64",
+       "cn": "户均持股市值（元）",
+       "optional": true
+      },
+      {
+       "name": "hold_ratio_total",
+       "type": "float64",
+       "cn": "持股比例合计（小数）",
+       "optional": true
+      },
+      {
+       "name": "freehold_ratio_total",
+       "type": "float64",
+       "cn": "流通股持股比例合计（小数）",
+       "optional": true
+      }
+     ]
+    }
+   },
+   "min_args": null,
+   "params": [
+    {
+     "name": "rows",
+     "type": "array"
     }
    ]
   },
@@ -3455,6 +4124,24 @@
     {
      "name": "sym",
      "type": "string"
+    }
+   ]
+  },
+  {
+   "name": "equity.query_holdernum_history",
+   "cn": "股东户数历史",
+   "example": "equity.query_holdernum_history(\"600519\", 8)",
+   "returns": "ARR · 户数行",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "sym",
+     "type": "string"
+    },
+    {
+     "name": "limit",
+     "type": "int"
     }
    ]
   },
@@ -4339,6 +5026,1015 @@
    ]
   },
   {
+   "name": "fred.iso_date",
+   "cn": "ISO 日期校验（YYYY-MM-DD）",
+   "example": "fred.iso_date(\"2026-11-19\")",
+   "returns": "bool",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "s",
+     "type": "string"
+    }
+   ]
+  },
+  {
+   "name": "fred.points",
+   "cn": "折线点（web 读面，新→旧）",
+   "example": "fred.points(\"GDP\")",
+   "returns": "ARR · 点",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "id",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "fred.points_asc",
+   "cn": "序列点（date 升序）",
+   "example": "fred.points_asc(\"GDP\", \"\", \"\", 200)",
+   "returns": "ARR · 点",
+   "returns_shape": {
+    "kind": "array",
+    "cn": "点序列",
+    "items": {
+     "kind": "object",
+     "cn": "观测点",
+     "fields": [
+      {
+       "name": "id",
+       "type": "string",
+       "cn": "序列 id"
+      },
+      {
+       "name": "date",
+       "type": "string",
+       "cn": "观测日期 YYYY-MM-DD"
+      },
+      {
+       "name": "value",
+       "type": "float64",
+       "cn": "观测值（单位见 fred.series_meta 的 units）"
+      }
+     ]
+    }
+   },
+   "min_args": 1,
+   "params": [
+    {
+     "name": "id",
+     "type": "string"
+    },
+    {
+     "name": "begin",
+     "type": "string"
+    },
+    {
+     "name": "end",
+     "type": "string"
+    },
+    {
+     "name": "limit",
+     "type": "int"
+    }
+   ]
+  },
+  {
+   "name": "fred.search",
+   "cn": "精选序列检索（id/中文名/说明）",
+   "example": "fred.search(\"GDP\", 10)",
+   "returns": "ARR · 命中行",
+   "returns_shape": {
+    "kind": "array",
+    "cn": "命中行",
+    "items": {
+     "kind": "object",
+     "cn": "命中",
+     "fields": [
+      {
+       "name": "id",
+       "type": "string",
+       "cn": "序列 id（如 GDP）"
+      },
+      {
+       "name": "title_zh",
+       "type": "string",
+       "cn": "精选中文名"
+      },
+      {
+       "name": "blurb_zh",
+       "type": "string",
+       "cn": "精选一句话说明"
+      },
+      {
+       "name": "topic",
+       "type": "string",
+       "cn": "所属主题 id"
+      }
+     ]
+    }
+   },
+   "min_args": 1,
+   "params": [
+    {
+     "name": "keyword",
+     "type": "string"
+    },
+    {
+     "name": "limit",
+     "type": "int"
+    }
+   ]
+  },
+  {
+   "name": "fred.series",
+   "cn": "已入库包（web 读面）",
+   "example": "fred.series(\"GDP\")",
+   "returns": "MAP · 序列包",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "id",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "fred.series_meta",
+   "cn": "序列元信息（单位/频率/状态）",
+   "example": "fred.series_meta(\"GDP\")",
+   "returns": "MAP · 元信息",
+   "returns_shape": {
+    "kind": "object",
+    "cn": "序列元信息",
+    "fields": [
+     {
+      "name": "id",
+      "type": "string",
+      "cn": "序列 id"
+     },
+     {
+      "name": "title",
+      "type": "string",
+      "cn": "原英文标题"
+     },
+     {
+      "name": "title_zh",
+      "type": "string",
+      "cn": "精选中文名"
+     },
+     {
+      "name": "blurb_zh",
+      "type": "string",
+      "cn": "精选一句话说明"
+     },
+     {
+      "name": "units",
+      "type": "string",
+      "cn": "单位（随序列而变：Percent/Billions of Dollars/Thousands of Persons…）"
+     },
+     {
+      "name": "frequency_short",
+      "type": "string",
+      "cn": "原生频率（Q/M/W/D…）"
+     },
+     {
+      "name": "release_name",
+      "type": "string",
+      "cn": "所属发布（如 Gross Domestic Product）"
+     },
+     {
+      "name": "status",
+      "type": "string",
+      "cn": "入库状态（fetched/not_fetched/pre_approval_required…）"
+     },
+     {
+      "name": "has_data",
+      "type": "bool",
+      "cn": "库里是否有观测（true/false）"
+     },
+     {
+      "name": "series_url",
+      "type": "string",
+      "cn": "上游序列页 URL"
+     },
+     {
+      "name": "citation",
+      "type": "string",
+      "cn": "引用要求"
+     },
+     {
+      "name": "hint",
+      "type": "string",
+      "cn": "无数据时的说明"
+     }
+    ]
+   },
+   "min_args": 1,
+   "params": [
+    {
+     "name": "id",
+     "type": "string"
+    }
+   ]
+  },
+  {
+   "name": "fred.topics",
+   "cn": "精选主题树（11 主题 × 88 序列）",
+   "example": "fred.topics()",
+   "returns": "ARR · 主题行",
+   "returns_shape": {
+    "kind": "array",
+    "cn": "主题行",
+    "items": {
+     "kind": "object",
+     "cn": "主题",
+     "fields": [
+      {
+       "name": "topic",
+       "type": "string",
+       "cn": "主题 id（如 growth）"
+      },
+      {
+       "name": "name",
+       "type": "string",
+       "cn": "主题中文名（如 增长）"
+      },
+      {
+       "name": "series",
+       "type": "array",
+       "cn": "该主题下的序列 id 清单"
+      }
+     ]
+    }
+   },
+   "min_args": 0,
+   "params": []
+  },
+  {
+   "name": "futures.fmt_maps",
+   "cn": "映射行规范化",
+   "example": "futures.fmt_maps(futures.mapping(\"RB.SHF\", \"\", \"\"))",
+   "returns": "ARR · 规范化映射行",
+   "returns_shape": {
+    "kind": "array",
+    "cn": "映射行",
+    "items": {
+     "kind": "object",
+     "cn": "换月映射行",
+     "fields": [
+      {
+       "name": "date",
+       "type": "string",
+       "cn": "交易日"
+      },
+      {
+       "name": "symbol",
+       "type": "string",
+       "cn": "主力连续码(品种.交易所)"
+      },
+      {
+       "name": "mapping_symbol",
+       "type": "string",
+       "cn": "当日实际合约"
+      }
+     ],
+     "name": ""
+    }
+   },
+   "min_args": null,
+   "params": [
+    {
+     "name": "rows",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "futures.holding",
+   "cn": "期货每日持仓排名（按合约查会员排名）",
+   "example": "futures.holding(\"\", \"A2701\", 20)",
+   "returns": "ARR · 持仓行(date/contract/broker/vol/vol_chg/long_hld/long_chg/short_hld/short_chg)",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": [
+    {
+     "name": "date",
+     "type": "any"
+    },
+    {
+     "name": "contract",
+     "type": "any"
+    },
+    {
+     "name": "limit",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "futures.holding_dates",
+   "cn": "持仓排名可用交易日",
+   "example": "futures.holding_dates()",
+   "returns": "ARR · 日期(YYYYMMDD 升序)",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": []
+  },
+  {
+   "name": "futures.mapping",
+   "cn": "主力换月映射",
+   "example": "futures.mapping(\"RB.SHF\", \"\", \"\")",
+   "returns": "ARR · 映射行",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "sym",
+     "type": "string"
+    },
+    {
+     "name": "begin",
+     "type": "string"
+    },
+    {
+     "name": "end",
+     "type": "string"
+    }
+   ]
+  },
+  {
+   "name": "futures.query_bars",
+   "cn": "期货主力连续 K 线",
+   "example": "futures.query_bars(\"RB.SHF\", \"\", \"\", 250, \"D\")",
+   "returns": "ARR · bars",
+   "returns_shape": {
+    "kind": "array",
+    "cn": "期货 K 线序列",
+    "items": {
+     "kind": "object",
+     "cn": "期货 bar",
+     "fields": [
+      {
+       "name": "date",
+       "type": "string",
+       "cn": "交易日"
+      },
+      {
+       "name": "symbol",
+       "type": "string",
+       "cn": "主力连续码（品种.交易所）"
+      },
+      {
+       "name": "open",
+       "type": "float64",
+       "cn": "开"
+      },
+      {
+       "name": "high",
+       "type": "float64",
+       "cn": "高"
+      },
+      {
+       "name": "low",
+       "type": "float64",
+       "cn": "低"
+      },
+      {
+       "name": "close",
+       "type": "float64",
+       "cn": "收"
+      },
+      {
+       "name": "settle",
+       "type": "float64",
+       "cn": "结算价"
+      },
+      {
+       "name": "pre_settle",
+       "type": "float64",
+       "cn": "前结算价"
+      },
+      {
+       "name": "volume",
+       "type": "float64",
+       "cn": "成交量（手）"
+      },
+      {
+       "name": "amount",
+       "type": "float64",
+       "cn": "成交额（元，上游万元×1e4）"
+      },
+      {
+       "name": "oi",
+       "type": "float64",
+       "cn": "持仓量（手）"
+      },
+      {
+       "name": "oi_chg",
+       "type": "float64",
+       "cn": "持仓变化（手）"
+      },
+      {
+       "name": "percent",
+       "type": "float64",
+       "cn": "涨跌幅（小数，对前结算）"
+      }
+     ],
+     "name": ""
+    }
+   },
+   "min_args": 1,
+   "params": [
+    {
+     "name": "sym",
+     "type": "string"
+    },
+    {
+     "name": "begin",
+     "type": "string"
+    },
+    {
+     "name": "end",
+     "type": "string"
+    },
+    {
+     "name": "limit",
+     "type": "int"
+    },
+    {
+     "name": "period",
+     "type": "string"
+    }
+   ]
+  },
+  {
+   "name": "futures.receipts",
+   "cn": "交易所仓单快照（按业务月）",
+   "example": "futures.receipts(\"202611\")",
+   "returns": "ARR · 仓单行(period/title/exchange/variety_code/variety_name/qty/change/unit)",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": [
+    {
+     "name": "month",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "futures.receipts_latest",
+   "cn": "最新交易所仓单快照",
+   "example": "futures.receipts_latest()",
+   "returns": "ARR · 仓单行（同 futures.receipts）",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": []
+  },
+  {
+   "name": "futures.receipts_months",
+   "cn": "仓单快照可用月份",
+   "example": "futures.receipts_months()",
+   "returns": "ARR · 月份(YYYYMM 升序)",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": []
+  },
+  {
+   "name": "futures.settle",
+   "cn": "期货每日结算参数",
+   "example": "futures.settle(\"\", \"CU\")",
+   "returns": "ARR · 结算行(date/contract/settle/fee_rate/fee/delivery_fee/*margin_rate)",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": [
+    {
+     "name": "date",
+     "type": "any"
+    },
+    {
+     "name": "contract",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "futures.settle_dates",
+   "cn": "结算参数可用交易日",
+   "example": "futures.settle_dates()",
+   "returns": "ARR · 日期(YYYYMMDD 升序)",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": []
+  },
+  {
+   "name": "fx.history",
+   "cn": "汇率日线序列",
+   "example": "fx.history(\"USD\", 30)",
+   "returns": "ARR",
+   "returns_shape": {
+    "kind": "array",
+    "cn": "汇率日线",
+    "items": {
+     "kind": "object",
+     "cn": "汇率行",
+     "fields": [
+      {
+       "name": "date",
+       "type": "string",
+       "cn": "日期 YYYY-MM-DD"
+      },
+      {
+       "name": "ccy",
+       "type": "string",
+       "cn": "币种 ISO 代码"
+      },
+      {
+       "name": "middle",
+       "type": "float64",
+       "cn": "央行中间价（每 1 单位外币折人民币）"
+      },
+      {
+       "name": "buy",
+       "type": "float64",
+       "cn": "中行汇买价（同上口径）"
+      }
+     ]
+    }
+   },
+   "min_args": 1,
+   "params": [
+    {
+     "name": "ccy",
+     "type": "string"
+    },
+    {
+     "name": "n",
+     "type": "int"
+    }
+   ]
+  },
+  {
+   "name": "fx.list",
+   "cn": "在库币种清单",
+   "example": "fx.list()",
+   "returns": "ARR",
+   "returns_shape": {
+    "kind": "array",
+    "cn": "币种清单",
+    "items": {
+     "kind": "object",
+     "cn": "币种",
+     "fields": [
+      {
+       "name": "ccy",
+       "type": "string",
+       "cn": "币种 ISO 代码"
+      },
+      {
+       "name": "date",
+       "type": "string",
+       "cn": "最新数据日期 YYYY-MM-DD"
+      },
+      {
+       "name": "middle",
+       "type": "float64",
+       "cn": "最新中间价（每 1 单位外币折人民币）"
+      }
+     ]
+    }
+   },
+   "min_args": null,
+   "params": []
+  },
+  {
+   "name": "fx.query_bars",
+   "cn": "汇率区间日线",
+   "example": "fx.query_bars(\"USD\", \"2026-09-01\", \"2026-09-30\", 100)",
+   "returns": "ARR",
+   "returns_shape": {
+    "kind": "array",
+    "cn": "汇率日线",
+    "items": {
+     "kind": "object",
+     "cn": "汇率行",
+     "fields": [
+      {
+       "name": "date",
+       "type": "string",
+       "cn": "日期 YYYY-MM-DD"
+      },
+      {
+       "name": "ccy",
+       "type": "string",
+       "cn": "币种 ISO 代码"
+      },
+      {
+       "name": "middle",
+       "type": "float64",
+       "cn": "央行中间价（每 1 单位外币折人民币）"
+      },
+      {
+       "name": "buy",
+       "type": "float64",
+       "cn": "中行汇买价（同上口径）"
+      }
+     ]
+    }
+   },
+   "min_args": 1,
+   "params": [
+    {
+     "name": "ccy",
+     "type": "string"
+    },
+    {
+     "name": "begin",
+     "type": "string"
+    },
+    {
+     "name": "end",
+     "type": "string"
+    },
+    {
+     "name": "limit",
+     "type": "int"
+    }
+   ]
+  },
+  {
+   "name": "fx.rate",
+   "cn": "最新汇率（每 1 单位外币折人民币）",
+   "example": "fx.rate(\"USD\")",
+   "returns": "MAP",
+   "returns_shape": {
+    "kind": "object",
+    "cn": "汇率快照",
+    "fields": [
+     {
+      "name": "ccy",
+      "type": "string",
+      "cn": "币种 ISO 代码"
+     },
+     {
+      "name": "date",
+      "type": "string",
+      "cn": "数据日期 YYYY-MM-DD"
+     },
+     {
+      "name": "middle",
+      "type": "float64",
+      "cn": "央行中间价（每 1 单位外币折人民币）"
+     },
+     {
+      "name": "buy",
+      "type": "float64",
+      "cn": "中行汇买价（同上口径）"
+     },
+     {
+      "name": "cash_buy",
+      "type": "float64",
+      "cn": "中行钞买价（同上口径）"
+     },
+     {
+      "name": "currency",
+      "type": "string",
+      "cn": "币种原值（上游披露）"
+     }
+    ]
+   },
+   "min_args": 1,
+   "params": [
+    {
+     "name": "ccy",
+     "type": "string"
+    }
+   ]
+  },
+  {
+   "name": "income.calendar_events",
+   "cn": "分红日历（日期窗口查全市场分红事件：公告/登记/除息/到账任一命中即返回）",
+   "example": "income.calendar_events(\"2026-11-01\", \"2026-11-30\", ARR{\"600900\"})",
+   "returns": "MAP · 日历（events/stocks enrich）",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": [
+    {
+     "name": "cal_from",
+     "type": "string"
+    },
+    {
+     "name": "cal_to",
+     "type": "string"
+    },
+    {
+     "name": "cal_codes",
+     "type": "array"
+    }
+   ]
+  },
+  {
+   "name": "income.decomp",
+   "cn": "多票N年持有收益拆解（≤10，一次eval逐票计价；总=价格+股息贡献）",
+   "example": "income.decomp(ARR{\"600900\", \"601088\"}, 10)",
+   "returns": "MAP · 批量拆解（items/count/mode）",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "symbols",
+     "type": "any"
+    },
+    {
+     "name": "years",
+     "type": "int"
+    }
+   ]
+  },
+  {
+   "name": "income.decomp_one",
+   "cn": "单票N年持有收益拆解（总=价格+股息贡献，月K hfq−nr 差值）",
+   "example": "income.decomp_one(\"600900\", 10)",
+   "returns": "MAP · 拆解包",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "sym",
+     "type": "any"
+    },
+    {
+     "name": "years",
+     "type": "int"
+    }
+   ]
+  },
+  {
+   "name": "income.diag_fields",
+   "cn": "收息取数字段包（27 字段，评分/下限复原/榜单共用；字符串形态供 SPEC）",
+   "example": "income.diag_fields()",
+   "returns": "ARR · 字段名数组",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": []
+  },
+  {
+   "name": "income.diagnose",
+   "cn": "收息诊断（原生批量：四维评分逐项解释+静态下限复原+榜内位置；include_history 才带分红史/方案）",
+   "example": "income.diagnose(ARR{\"600519\", \"600900\"}, false)",
+   "returns": "MAP · 批量诊断（items[]）",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "symbols",
+     "type": "any"
+    },
+    {
+     "name": "include_history",
+     "type": "bool"
+    }
+   ]
+  },
+  {
+   "name": "income.dividend_score",
+   "cn": "股息分=0.6×TTM股息率+0.4×近3年最低（缺项重归一，双缺nil）",
+   "example": "income.dividend_score(row.values)",
+   "returns": "number|null",
+   "returns_shape": null,
+   "min_args": null,
+   "params": [
+    {
+     "name": "v",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "income.floor_explain",
+   "cn": "静态收益下限双腿复原（扣非盈利腿×PE分位门 + 可持续股息腿×质量门，残差如实）；入参兼容原始 $FIELD 行与 memo 紧凑行（dp/pd/q5/b5/r5/fy）",
+   "example": "income.floor_explain(row.values)",
+   "returns": "map",
+   "returns_shape": null,
+   "min_args": null,
+   "params": [
+    {
+     "name": "v",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "income.gate",
+   "cn": "股息分五资格门（连续分红/流动性/可交易/支付率/盈利连续）",
+   "example": "income.gate(row.values)",
+   "returns": "map",
+   "returns_shape": {
+    "kind": "object",
+    "cn": "各门布尔+pass",
+    "fields": [
+     {
+      "name": "pass",
+      "type": "bool",
+      "cn": "五门全过"
+     }
+    ]
+   },
+   "min_args": null,
+   "params": [
+    {
+     "name": "v",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "income.grade_of",
+   "cn": "总分→档位（≥75 strong/≥60 good/≥45 watch/else avoid）",
+   "example": "income.grade_of(78)",
+   "returns": "string",
+   "returns_shape": null,
+   "min_args": null,
+   "params": [
+    {
+     "name": "total",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "income.materialize",
+   "cn": "收息榜 memo 物化统一入口（rt_slice=\"merge\" 合并，其余为片号；cron 用）",
+   "example": "income.materialize(0, 5)",
+   "returns": "MAP · 片/合并摘要",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": [
+    {
+     "name": "rt_slice",
+     "type": "any"
+    },
+    {
+     "name": "rt_slices",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "income.materialize_merge",
+   "cn": "收息榜 memo 合并（把 built_for=今日的片合并排序写 m_income_rating:v1:all；缺片且旧表健在时不覆盖）",
+   "example": "income.materialize_merge(5)",
+   "returns": "MAP · 合并摘要（mode=merge/merge_skipped/count）",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": [
+    {
+     "name": "rt_slices",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "income.materialize_slice",
+   "cn": "收息榜 memo 分片评分（cron 用；片 i 评分写 m_income_rating:v1:part:i）",
+   "example": "income.materialize_slice(0, 5)",
+   "returns": "MAP · 片摘要（mode=memo_slice/count）",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": [
+    {
+     "name": "rt_slice",
+     "type": "any"
+    },
+    {
+     "name": "rt_slices",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "income.rating_all",
+   "cn": "全市场收息排行·全量（无 top_n 上限，供 web 收息佬整表浏览；skill/SDK 用 rating_rows 限流）",
+   "example": "income.rating_all(\"\", \"\", nil, true)",
+   "returns": "MAP · 全量榜（rows 全量/facets/元数据）",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": [
+    {
+     "name": "grade",
+     "type": "string"
+    },
+    {
+     "name": "industry",
+     "type": "string"
+    },
+    {
+     "name": "min_yield",
+     "type": "any"
+    },
+    {
+     "name": "gates",
+     "type": "bool"
+    }
+   ]
+  },
+  {
+   "name": "income.rating_rows",
+   "cn": "全市场收息排行（memo 直读零冷算；四维评分+档位+股息分排序）",
+   "example": "income.rating_rows(20, \"strong\", \"industry.S48\", 0.04, true)",
+   "returns": "MAP · 收息榜（rows/facets/元数据）",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": [
+    {
+     "name": "top_n",
+     "type": "int"
+    },
+    {
+     "name": "grade",
+     "type": "string"
+    },
+    {
+     "name": "industry",
+     "type": "string"
+    },
+    {
+     "name": "min_yield",
+     "type": "any"
+    },
+    {
+     "name": "gates",
+     "type": "bool"
+    }
+   ]
+  },
+  {
+   "name": "income.score",
+   "cn": "四维收息评分（紧凑）：tot/gr/dims[收益,持续,稳定,成长]/fl 硬修正标记",
+   "example": "income.score(row.values, 0.018)",
+   "returns": "map",
+   "returns_shape": {
+    "kind": "object",
+    "cn": "紧凑评分",
+    "fields": [
+     {
+      "name": "tot",
+      "type": "number",
+      "cn": "总分0~100"
+     },
+     {
+      "name": "gr",
+      "type": "string",
+      "cn": "档位 strong|good|watch|avoid"
+     },
+     {
+      "name": "dims",
+      "type": "ARR",
+      "cn": "四维分"
+     },
+     {
+      "name": "fl",
+      "type": "ARR",
+      "cn": "硬修正标记"
+     }
+    ]
+   },
+   "min_args": null,
+   "params": [
+    {
+     "name": "v",
+     "type": "any"
+    },
+    {
+     "name": "bond",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "income.score_explain",
+   "cn": "四维收息评分（含 parts 逐项加减分解释，诊断用；tot/gr/dims 与 income.score 完全一致）",
+   "example": "income.score_explain(row.values, 0.018)",
+   "returns": "MAP · 评分+parts（dim/score/max/items）",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "v",
+     "type": "any"
+    },
+    {
+     "name": "bond",
+     "type": "any"
+    }
+   ]
+  },
+  {
    "name": "indices.keys",
    "cn": "指数键列表",
    "example": "indices.keys()",
@@ -4366,6 +6062,28 @@
     {
      "name": "top_n",
      "type": "int"
+    }
+   ]
+  },
+  {
+   "name": "indices.members_daily",
+   "cn": "指数成分日快照（前向PIT）",
+   "example": "indices.members_daily(\"index.hs300\", \"2026-11-01\", \"\")",
+   "returns": "MAP · 成分快照信封",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "key",
+     "type": "string"
+    },
+    {
+     "name": "begin",
+     "type": "string"
+    },
+    {
+     "name": "end",
+     "type": "string"
     }
    ]
   },
@@ -6522,6 +8240,38 @@
    ]
   },
   {
+   "name": "kline.snapshot_batch",
+   "cn": "多标的行情快照（索引按量投影，60~90 EC/票）",
+   "example": "kline.snapshot_batch([\"600519\",\"000001\"])",
+   "returns": "ARR · 索引行（values 内为 $指标→值）",
+   "returns_shape": {
+    "kind": "array",
+    "items": {
+     "kind": "object",
+     "cn": "索引行",
+     "fields": [
+      {
+       "name": "row",
+       "type": "int",
+       "cn": "行号（索引行≥0；ETF/新上市回退行=-1）"
+      },
+      {
+       "name": "values",
+       "type": "object",
+       "cn": "指标值映射（键为 $SYMBOL/$CLOSE_LAST 等）"
+      }
+     ]
+    }
+   },
+   "min_args": 0,
+   "params": [
+    {
+     "name": "codes",
+     "type": "array"
+    }
+   ]
+  },
+  {
    "name": "kline.snapshot_chg_20d",
    "cn": "近 20 日涨跌幅",
    "example": "kline.snapshot_chg_20d(\"600519\")",
@@ -6832,6 +8582,114 @@
    ]
   },
   {
+   "name": "margin.fmt_summary_maps",
+   "cn": "市场两融汇总行规范化",
+   "example": "margin.fmt_summary_maps(margin.market_summary(5))",
+   "returns": "ARR · 规范化行（MAP 输入返回单行 MAP）",
+   "returns_shape": {
+    "kind": "array",
+    "items": {
+     "kind": "object",
+     "cn": "市场两融汇总行",
+     "fields": [
+      {
+       "name": "trade_date",
+       "type": "string",
+       "cn": "交易日期"
+      },
+      {
+       "name": "exchange",
+       "type": "string",
+       "cn": "交易所(SSE/SZSE)"
+      },
+      {
+       "name": "fin_buy_amt",
+       "type": "float64",
+       "cn": "融资买入额(元)",
+       "optional": true
+      },
+      {
+       "name": "fin_repay_amt",
+       "type": "float64",
+       "cn": "融资偿还额(元)",
+       "optional": true
+      },
+      {
+       "name": "fin_balance",
+       "type": "float64",
+       "cn": "融资余额(元)",
+       "optional": true
+      },
+      {
+       "name": "loan_sell_vol",
+       "type": "float64",
+       "cn": "融券卖出量(股)",
+       "optional": true
+      },
+      {
+       "name": "loan_repay_vol",
+       "type": "float64",
+       "cn": "融券偿还量(股)",
+       "optional": true
+      },
+      {
+       "name": "loan_balance",
+       "type": "float64",
+       "cn": "融券余量(股)",
+       "optional": true
+      }
+     ],
+     "name": ""
+    }
+   },
+   "min_args": null,
+   "params": [
+    {
+     "name": "rows",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "margin.fmt_universe_maps",
+   "cn": "两融标的行规范化",
+   "example": "margin.fmt_universe_maps(margin.universe(20))",
+   "returns": "ARR · 规范化行（MAP 输入返回单行 MAP）",
+   "returns_shape": {
+    "kind": "array",
+    "items": {
+     "kind": "object",
+     "cn": "两融标的行",
+     "fields": [
+      {
+       "name": "security_code",
+       "type": "string",
+       "cn": "标的代码"
+      },
+      {
+       "name": "exchange",
+       "type": "string",
+       "cn": "交易所"
+      },
+      {
+       "name": "out_date",
+       "type": "string",
+       "cn": "调出日期(空=生效)",
+       "optional": true
+      }
+     ],
+     "name": ""
+    }
+   },
+   "min_args": null,
+   "params": [
+    {
+     "name": "rows",
+     "type": "any"
+    }
+   ]
+  },
+  {
    "name": "margin.latest",
    "cn": "最新两融",
    "example": "margin.latest(\"000568\")",
@@ -6842,6 +8700,75 @@
     {
      "name": "sym",
      "type": "string"
+    }
+   ]
+  },
+  {
+   "name": "margin.market_summary",
+   "cn": "市场级两融汇总",
+   "example": "margin.market_summary(20)",
+   "returns": "ARR · 市场两融汇总行",
+   "returns_shape": {
+    "kind": "array",
+    "items": {
+     "kind": "object",
+     "cn": "市场两融汇总行",
+     "fields": [
+      {
+       "name": "trade_date",
+       "type": "string",
+       "cn": "交易日期"
+      },
+      {
+       "name": "exchange",
+       "type": "string",
+       "cn": "交易所(SSE/SZSE/BSE)"
+      },
+      {
+       "name": "fin_buy_amt",
+       "type": "float64",
+       "cn": "融资买入额(元)",
+       "optional": true
+      },
+      {
+       "name": "fin_repay_amt",
+       "type": "float64",
+       "cn": "融资偿还额(元)",
+       "optional": true
+      },
+      {
+       "name": "fin_balance",
+       "type": "float64",
+       "cn": "融资余额(元)",
+       "optional": true
+      },
+      {
+       "name": "loan_sell_vol",
+       "type": "float64",
+       "cn": "融券卖出量(股)",
+       "optional": true
+      },
+      {
+       "name": "loan_repay_vol",
+       "type": "float64",
+       "cn": "融券偿还量(股)",
+       "optional": true
+      },
+      {
+       "name": "loan_balance",
+       "type": "float64",
+       "cn": "融券余量(股)",
+       "optional": true
+      }
+     ],
+     "name": ""
+    }
+   },
+   "min_args": 0,
+   "params": [
+    {
+     "name": "limit",
+     "type": "int"
     }
    ]
   },
@@ -6860,6 +8787,62 @@
     {
      "name": "limit",
      "type": "int"
+    }
+   ]
+  },
+  {
+   "name": "margin.universe",
+   "cn": "两融标的名单",
+   "example": "margin.universe(2000)",
+   "returns": "ARR · 两融标的行",
+   "returns_shape": {
+    "kind": "array",
+    "items": {
+     "kind": "object",
+     "cn": "两融标的行",
+     "fields": [
+      {
+       "name": "security_code",
+       "type": "string",
+       "cn": "标的代码"
+      },
+      {
+       "name": "security_name",
+       "type": "string",
+       "cn": "标的简称"
+      },
+      {
+       "name": "exchange",
+       "type": "string",
+       "cn": "交易所(SSE/SZSE/BSE)"
+      },
+      {
+       "name": "in_date",
+       "type": "string",
+       "cn": "纳入日期",
+       "optional": true
+      },
+      {
+       "name": "out_date",
+       "type": "string",
+       "cn": "调出日期",
+       "optional": true
+      },
+      {
+       "name": "effective_date",
+       "type": "string",
+       "cn": "名单生效日",
+       "optional": true
+      }
+     ],
+     "name": ""
+    }
+   },
+   "min_args": 0,
+   "params": [
+    {
+     "name": "limit",
+     "type": "any"
     }
    ]
   },
@@ -7111,6 +9094,79 @@
     {
      "name": "limit",
      "type": "int"
+    }
+   ]
+  },
+  {
+   "name": "moneyflow.query_bars_anchor",
+   "cn": "锚点前资金流",
+   "example": "moneyflow.query_bars_anchor(\"600519\", 20, anchor.date())",
+   "returns": "ARR · 资金流行",
+   "returns_shape": {
+    "kind": "array",
+    "items": {
+     "kind": "object",
+     "cn": "资金流行",
+     "fields": [
+      {
+       "name": "sas",
+       "type": "string",
+       "cn": "SAS",
+       "optional": true
+      },
+      {
+       "name": "date",
+       "type": "string",
+       "cn": "日期",
+       "optional": true
+      },
+      {
+       "name": "net_mf",
+       "type": "float64",
+       "cn": "主力净流入",
+       "optional": true
+      },
+      {
+       "name": "elg_net",
+       "type": "float64",
+       "cn": "超大单净流入",
+       "optional": true
+      },
+      {
+       "name": "lg_net",
+       "type": "float64",
+       "cn": "大单净流入",
+       "optional": true
+      },
+      {
+       "name": "md_net",
+       "type": "float64",
+       "cn": "中单净流入",
+       "optional": true
+      },
+      {
+       "name": "sm_net",
+       "type": "float64",
+       "cn": "小单净流入",
+       "optional": true
+      }
+     ],
+     "name": ""
+    }
+   },
+   "min_args": 2,
+   "params": [
+    {
+     "name": "sym",
+     "type": "string"
+    },
+    {
+     "name": "limit",
+     "type": "int"
+    },
+    {
+     "name": "anchor_date",
+     "type": "string"
     }
    ]
   },
@@ -7582,15 +9638,15 @@
     },
     {
      "name": "window",
-     "type": "string"
+     "type": "any"
     },
     {
      "name": "type_regex",
-     "type": "string"
+     "type": "any"
     },
     {
      "name": "limit",
-     "type": "int"
+     "type": "any"
     }
    ]
   },
@@ -7834,6 +9890,92 @@
     {
      "name": "to_date",
      "type": "string"
+    }
+   ]
+  },
+  {
+   "name": "notice.read_text",
+   "cn": "公告正文读取",
+   "example": "notice.read_text(\"600519\", \"2026-03-15\", \"\", false)",
+   "returns": "MAP · 正文与状态",
+   "returns_shape": {
+    "kind": "object",
+    "cn": "正文读取结果",
+    "fields": [
+     {
+      "name": "ok",
+      "type": "bool",
+      "cn": "是否取到正文"
+     },
+     {
+      "name": "status",
+      "type": "string",
+      "cn": "文档状态"
+     },
+     {
+      "name": "text",
+      "type": "string",
+      "cn": "正文"
+     },
+     {
+      "name": "text_chars",
+      "type": "int",
+      "cn": "实际字符数"
+     },
+     {
+      "name": "text_truncated",
+      "type": "bool",
+      "cn": "是否截断"
+     },
+     {
+      "name": "file_key",
+      "type": "string",
+      "cn": "文档键"
+     },
+     {
+      "name": "source_url",
+      "type": "string",
+      "cn": "PDF链接"
+     },
+     {
+      "name": "announce_date",
+      "type": "string",
+      "cn": "披露日"
+     },
+     {
+      "name": "title",
+      "type": "string",
+      "cn": "标题"
+     },
+     {
+      "name": "error",
+      "type": "string",
+      "cn": "错误码"
+     },
+     {
+      "name": "note",
+      "type": "string",
+      "cn": "说明"
+     }
+    ]
+   },
+   "min_args": 2,
+   "params": [
+    {
+     "name": "sym",
+     "type": "string"
+    },
+    {
+     "name": "date",
+     "type": "string"
+    },
+    {
+     "name": "url",
+     "type": "string"
+    },
+    {
+     "name": "full",
+     "type": "bool"
     }
    ]
   },
@@ -8227,8 +10369,312 @@
    ]
   },
   {
+   "name": "notice.type_keys",
+   "cn": "公告类目键列表",
+   "example": "notice.type_keys()",
+   "returns": "ARR · 类目键列表",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": []
+  },
+  {
+   "name": "notice.type_regex",
+   "cn": "公告类目正则",
+   "example": "notice.type_regex(\"buyback\")",
+   "returns": "string · 类目匹配正则（未知键原样透传）",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "key",
+     "type": "string"
+    }
+   ]
+  },
+  {
+   "name": "pdf_doc.ensure",
+   "cn": "确保正文就绪（查即提交）",
+   "example": "pdf_doc.ensure(\"600519\", \"年报\", \"\", \"\", {})",
+   "returns": "MAP · 正文行（就绪即返回，未就绪挂任务）",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": [
+    {
+     "name": "stock_code",
+     "type": "any"
+    },
+    {
+     "name": "title",
+     "type": "any"
+    },
+    {
+     "name": "announce_date",
+     "type": "any"
+    },
+    {
+     "name": "source_url",
+     "type": "any"
+    },
+    {
+     "name": "meta",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "pdf_doc.find_by_key",
+   "cn": "按 file_key 找 PDF 文档",
+   "example": "pdf_doc.find_by_key(\"xxx\")",
+   "returns": "MAP · 文档行或 nil",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "file_key",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "pdf_doc.find_by_url",
+   "cn": "按原文链接找 PDF 文档",
+   "example": "pdf_doc.find_by_url(\"https://\")",
+   "returns": "MAP · 文档行或 nil",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "url",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "pdf_doc.read_markdown",
+   "cn": "读财报 markdown/经营评述",
+   "example": "pdf_doc.read_markdown(\"\", \"\", \"600519\", \"2024\")",
+   "returns": "MAP · markdown 正文或经营评述挂接",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": [
+    {
+     "name": "file_key",
+     "type": "any"
+    },
+    {
+     "name": "source_url",
+     "type": "any"
+    },
+    {
+     "name": "stock_code",
+     "type": "any"
+    },
+    {
+     "name": "period",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "pdf_doc.read_text",
+   "cn": "读 PDF 提取正文",
+   "example": "pdf_doc.read_text(\"xxx\", \"\")",
+   "returns": "MAP · {ok, status, file_key, text, text_truncated, source_url}",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "file_key",
+     "type": "any"
+    },
+    {
+     "name": "source_url",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "pdf_doc.search",
+   "cn": "PDF 文档检索",
+   "example": "pdf_doc.search({\"stock_code\":\"600519\",\"limit\":10})",
+   "returns": "ARR · 命中文档元数据行（不含正文）",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": [
+    {
+     "name": "opts",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "pdf_doc.status",
+   "cn": "PDF 文档状态",
+   "example": "pdf_doc.status(\"xxx\", \"\")",
+   "returns": "MAP · {status, kind, has_markdown, task}",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "file_key",
+     "type": "any"
+    },
+    {
+     "name": "source_url",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "pdf_doc.submit",
+   "cn": "提交 PDF 抓取任务",
+   "example": "pdf_doc.submit(\"https://\", {})",
+   "returns": "MAP · {ok, item, note/via}（需 ops:pipeline 能力）",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "source_url",
+     "type": "any"
+    },
+    {
+     "name": "meta",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "reserve.asof",
+   "cn": "储备最新值",
+   "example": "reserve.asof(\"forex\")",
+   "returns": "MAP",
+   "returns_shape": {
+    "kind": "object",
+    "cn": "储备快照",
+    "fields": [
+     {
+      "name": "kind",
+      "type": "string",
+      "cn": "储备项代码"
+     },
+     {
+      "name": "date",
+      "type": "string",
+      "cn": "最新数据期 YYYY-MM"
+     },
+     {
+      "name": "value",
+      "type": "float64",
+      "cn": "美元数值"
+     },
+     {
+      "name": "unit",
+      "type": "string",
+      "cn": "量纲说明"
+     }
+    ]
+   },
+   "min_args": 1,
+   "params": [
+    {
+     "name": "kind",
+     "type": "string"
+    }
+   ]
+  },
+  {
+   "name": "reserve.list",
+   "cn": "储备项清单",
+   "example": "reserve.list()",
+   "returns": "ARR",
+   "returns_shape": {
+    "kind": "array",
+    "cn": "储备项",
+    "items": {
+     "kind": "object",
+     "cn": "储备项信息",
+     "fields": [
+      {
+       "name": "kind",
+       "type": "string",
+       "cn": "储备项代码 forex/gold/sdr/total"
+      },
+      {
+       "name": "label",
+       "type": "string",
+       "cn": "中文标签"
+      },
+      {
+       "name": "available",
+       "type": "bool",
+       "cn": "是否已有数据"
+      },
+      {
+       "name": "date",
+       "type": "string",
+       "cn": "最新数据期 YYYY-MM，无数据为空"
+      },
+      {
+       "name": "value",
+       "type": "float64",
+       "cn": "最新值，美元数值；无数据为 nil"
+      },
+      {
+       "name": "unit",
+       "type": "string",
+       "cn": "量纲说明"
+      }
+     ]
+    }
+   },
+   "min_args": 0,
+   "params": []
+  },
+  {
+   "name": "reserve.query",
+   "cn": "储备时序",
+   "example": "reserve.query(\"forex\", 12)",
+   "returns": "ARR",
+   "returns_shape": {
+    "kind": "array",
+    "cn": "储备时序",
+    "items": {
+     "kind": "object",
+     "cn": "储备行",
+     "fields": [
+      {
+       "name": "date",
+       "type": "string",
+       "cn": "期次 YYYY-MM"
+      },
+      {
+       "name": "kind",
+       "type": "string",
+       "cn": "储备项代码"
+      },
+      {
+       "name": "value",
+       "type": "float64",
+       "cn": "美元数值"
+      }
+     ]
+    }
+   },
+   "min_args": 1,
+   "params": [
+    {
+     "name": "kind",
+     "type": "string"
+    },
+    {
+     "name": "n",
+     "type": "int"
+    }
+   ]
+  },
+  {
    "name": "rptdom.statement",
-   "cn": "三报表科目×期次透视（合并/母公司）",
+   "cn": "三报表科目×期次透视（合并/母公司；opts.sampling=Q1..Q4，缺省 Q4 年报档）",
    "example": "rptdom.statement(\"600519\", \"fin.income_statement\", {\"scope\": \"合并\", \"n\": 5})",
    "returns": "ARR",
    "returns_shape": null,
@@ -8838,6 +11284,57 @@
    ]
   },
   {
+   "name": "stocks.lifecycle",
+   "cn": "单票 ST/停复牌变动时间轴",
+   "example": "stocks.lifecycle(\"000001\")",
+   "returns": "ARR · 时间轴事件行(date/kind/detail)",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "sym",
+     "type": "string"
+    }
+   ]
+  },
+  {
+   "name": "stocks.limit_price",
+   "cn": "单票涨跌停价（当日快照）",
+   "example": "stocks.limit_price(\"600519\")",
+   "returns": "MAP · 涨跌停价行",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "sym",
+     "type": "string"
+    }
+   ]
+  },
+  {
+   "name": "stocks.limit_prices",
+   "cn": "全市场涨跌停价（当日快照）",
+   "example": "stocks.limit_prices()",
+   "returns": "ARR · 涨跌停价行(symbol/name/board/close/percent/basis/limit_up/limit_down/rule/is_st)",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": []
+  },
+  {
+   "name": "stocks.name_history",
+   "cn": "单票简称变更史",
+   "example": "stocks.name_history(\"000001\")",
+   "returns": "ARR · 简称段行",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "sym",
+     "type": "string"
+    }
+   ]
+  },
+  {
    "name": "stocks.query_list",
    "cn": "全市场证券列表",
    "example": "stocks.query_list()",
@@ -8845,6 +11342,215 @@
    "returns_shape": null,
    "min_args": 0,
    "params": []
+  },
+  {
+   "name": "stocks.suspend_history",
+   "cn": "单票停复牌事件",
+   "example": "stocks.suspend_history(\"600519\", \"2026-01-01\", \"2026-11-23\")",
+   "returns": "ARR · 停复牌事件行(date ISO/type S|R/timing)",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "sym",
+     "type": "string"
+    },
+    {
+     "name": "begin",
+     "type": "string"
+    },
+    {
+     "name": "end",
+     "type": "string"
+    }
+   ]
+  },
+  {
+   "name": "toplist.by_date",
+   "cn": "指定交易日龙虎榜",
+   "example": "toplist.by_date(\"2026-11-18\", 50)",
+   "returns": "ARR · 榜单行",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "trade_date",
+     "type": "string"
+    },
+    {
+     "name": "limit",
+     "type": "int"
+    }
+   ]
+  },
+  {
+   "name": "toplist.by_symbol",
+   "cn": "单票上榜历史",
+   "example": "toplist.by_symbol(\"000530\", 20)",
+   "returns": "ARR · 上榜事件行",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "sym",
+     "type": "string"
+    },
+    {
+     "name": "limit",
+     "type": "int"
+    }
+   ]
+  },
+  {
+   "name": "toplist.fmt_maps",
+   "cn": "龙虎榜行规范化",
+   "example": "toplist.fmt_maps(toplist.by_date(\"2026-11-18\", 10))",
+   "returns": "ARR · 规范化榜单行",
+   "returns_shape": {
+    "kind": "array",
+    "cn": "榜单行",
+    "items": {
+     "kind": "object",
+     "cn": "龙虎榜行",
+     "fields": [
+      {
+       "name": "date",
+       "type": "string",
+       "cn": "交易日"
+      },
+      {
+       "name": "symbol",
+       "type": "string",
+       "cn": "6位裸码"
+      },
+      {
+       "name": "name",
+       "type": "string",
+       "cn": "简称"
+      },
+      {
+       "name": "close",
+       "type": "float64",
+       "cn": "收盘价(元)"
+      },
+      {
+       "name": "pct_chg",
+       "type": "float64",
+       "cn": "涨跌幅(小数)"
+      },
+      {
+       "name": "turnover_rate",
+       "type": "float64",
+       "cn": "换手率(小数)"
+      },
+      {
+       "name": "amount",
+       "type": "float64",
+       "cn": "当日成交额(元)"
+      },
+      {
+       "name": "amount_ratio",
+       "type": "float64",
+       "cn": "成交额占流通比(小数)"
+      },
+      {
+       "name": "float_mv",
+       "type": "float64",
+       "cn": "流通市值(元)"
+      },
+      {
+       "name": "seat_buy",
+       "type": "float64",
+       "cn": "榜单席位买入额(元)"
+      },
+      {
+       "name": "seat_sell",
+       "type": "float64",
+       "cn": "榜单席位卖出额(元)"
+      },
+      {
+       "name": "seat_amount",
+       "type": "float64",
+       "cn": "榜单席位成交额(元)"
+      },
+      {
+       "name": "net_amount",
+       "type": "float64",
+       "cn": "席位净买入额(元)"
+      },
+      {
+       "name": "net_ratio",
+       "type": "float64",
+       "cn": "净买入额/流通市值(小数)"
+      },
+      {
+       "name": "reason",
+       "type": "string",
+       "cn": "上榜原因"
+      }
+     ],
+     "name": ""
+    }
+   },
+   "min_args": null,
+   "params": [
+    {
+     "name": "rows",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "valuation.daily_basic",
+   "cn": "个股每日估值序列",
+   "example": "valuation.daily_basic(\"600519\", \"2025-01-01\", \"\", ARR{\"pe_ttm\", \"total_mv\"})",
+   "returns": "MAP · 估值信封",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "sym",
+     "type": "string"
+    },
+    {
+     "name": "begin",
+     "type": "string"
+    },
+    {
+     "name": "end",
+     "type": "string"
+    },
+    {
+     "name": "fields",
+     "type": "array"
+    }
+   ]
+  },
+  {
+   "name": "valuation.daily_basic_multi",
+   "cn": "多票每日估值序列",
+   "example": "valuation.daily_basic_multi(ARR{\"600519\", \"000001\"}, \"\", \"\", ARR{\"pe_ttm\"})",
+   "returns": "MAP · 估值信封（多票长表）",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "syms",
+     "type": "array"
+    },
+    {
+     "name": "begin",
+     "type": "string"
+    },
+    {
+     "name": "end",
+     "type": "string"
+    },
+    {
+     "name": "fields",
+     "type": "array"
+    }
+   ]
   },
   {
    "name": "workout.board",

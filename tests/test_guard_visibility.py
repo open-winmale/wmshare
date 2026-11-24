@@ -30,7 +30,7 @@ class _FakeCli:
 @pytest.fixture
 def runtime(monkeypatch):
     monkeypatch.setattr(MCPRuntime, "client", lambda self, market=None: _FakeCli())
-    return MCPRuntime(demo=False)
+    return MCPRuntime()
 
 
 def test_guards_off_is_visible_for_raw(runtime):
@@ -53,9 +53,9 @@ def test_guards_off_is_visible_for_native_units(runtime):
 def test_default_envelope_stays_byte_compatible(runtime):
     meta = tools.call(runtime, "kline.bars", mode="api")["meta"]
     assert "guards_off" not in meta and "guard_note" not in meta
-    # 旧信封键一个都不能少
+    # 旧信封键一个都不能少（demo/as_of 溯源键已随 3.0.0 移除）
     assert {"market", "source", "units", "row_count", "rows_total", "truncated",
-            "next_action", "demo", "as_of", "retrieved_at", "data_freshness",
+            "next_action", "retrieved_at", "data_freshness",
             "target", "mode", "raw", "ec_cost"} <= set(meta)
 
 
@@ -74,7 +74,7 @@ def test_validate_false_warns_exactly_once():
 
 
 def test_units_resource_documents_raw_and_guards_off():
-    server = build_server(MCPRuntime(market="cn", demo=True))
+    server = build_server(MCPRuntime(market="cn"))
     resource = server._resource_manager._resources["wmshare://units"]
     text = asyncio.run(resource.read())
     assert "_raw" in text and "guards_off" in text and "禁止" in text

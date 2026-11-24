@@ -1,0 +1,21 @@
+id: market.fund
+version: 1.0.0
+cn: 场内基金（ETF）
+kind: computed
+category: market
+priority: P1
+description: 场内交易基金（ETF）的产品档案、净值、份额、分红、持仓、资产配置、折溢价与
+  榜单九视图。数据由平台 airflow 每日 22:30 灌库（LOF/封闭/场外/货基为生产端明确排除，
+  不是欠账）；读取走 skillhub 脚本 skhub.etf_build，SDK 门面为 cli.etf 九方法，
+  单位与量级守护经 units.yaml facades."etf.views" 声明接入全库单一口径。
+data_origin: [平台采集]
+requires: {path: xs/skillhub/lib, preloaded: false}
+notes:
+  - 与个股日 K 同构的行情走 cli.kline（``cli.kline.bars("510300")``）；
+    ETF 无分时/分钟源（min1/live 拦截），盘中用 cli.kline.snapshot
+  - 九视图返回统一信封 {ok, as_of, data, meta}；占比/涨幅/折溢价为小数、
+    规模（net_asset）为元、份额（fd_share）为份（2.0 标准化换算）
+  - 2026-11-24 上游 net_asset 量级异常（全 ETF 实测 1e18 量级，疑管道口径变更）：
+    门面把该字段置空并在 data.note 说明，净值/份额等其余字段照常返回
+  - 方法名 asset/rank 内部映射，内部映射 script view ``fund_asset``/``etf_rank``
+  - LOF/封闭式/场外/货基不在采集范围（etf_fund_data.py 生产端排除声明）

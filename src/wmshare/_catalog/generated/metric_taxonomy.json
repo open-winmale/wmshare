@@ -1,75 +1,76 @@
 {
   "schema_version": 1,
-  "upstream_rev": "d77f0354",
-  "taxonomy_version": "2026-11-13",
+  "upstream_rev": "bb486fce",
+  "taxonomy_version": "2026-11-24",
   "stats": {
-    "count": 2752,
-    "other": 0.005814,
+    "count": 2983,
+    "other": 0.00704,
     "caliber_unknown": 0.0,
-    "unit_unknown": 0.086846,
+    "unit_unknown": 0.019108,
     "dead": 20,
     "scopes": {
       "cbond": 24,
       "futures": 27,
       "index": 125,
-      "industry": 524,
-      "macro": 272,
+      "industry": 525,
+      "macro": 409,
       "screener": 86,
-      "stock": 1694
+      "stock": 1787
     },
     "topics": {
       "cashflow": 78,
       "disclosure": 13,
-      "dividend": 111,
+      "dividend": 124,
       "efficiency": 107,
-      "estimates": 23,
-      "growth": 223,
-      "macro": 272,
-      "other": 16,
-      "ownership": 136,
-      "profile": 165,
-      "profitability": 197,
-      "quote": 475,
+      "estimates": 26,
+      "growth": 249,
+      "macro": 409,
+      "other": 21,
+      "ownership": 144,
+      "profile": 169,
+      "profitability": 199,
+      "quote": 488,
       "scale": 261,
       "screener": 86,
       "solvency": 74,
-      "statements": 382,
+      "statements": 398,
       "terms": 24,
-      "valuation": 109
+      "valuation": 113
     },
     "periods": {
       "annual": 1,
-      "daily": 75,
-      "latest_report": 947,
-      "monthly": 270,
-      "multi_year": 440,
+      "daily": 78,
+      "latest_report": 1004,
+      "monthly": 407,
+      "multi_year": 458,
       "quarterly": 2,
-      "snapshot": 707,
-      "ttm": 310
+      "snapshot": 726,
+      "ttm": 307
     },
     "windows": {
-      "10y": 127,
-      "1y": 3,
+      "10y": 131,
+      "1y": 8,
       "3q": 64,
-      "3y": 192,
-      "5y": 127,
-      "none": 2232,
-      "ytd": 7
+      "3y": 200,
+      "5y": 132,
+      "none": 2434,
+      "ytd": 14
     },
     "unit_kinds": {
-      "bool": 80,
-      "count": 27,
+      "bool": 117,
+      "count": 29,
       "days": 70,
-      "index_point": 103,
-      "money": 707,
-      "multiple": 99,
-      "per_share": 44,
-      "percentile": 35,
-      "price": 142,
-      "ratio": 1017,
-      "shares": 18,
-      "text": 171,
-      "unknown": 239
+      "index_point": 167,
+      "money": 787,
+      "multiple": 106,
+      "per_share": 50,
+      "percentile": 55,
+      "price": 148,
+      "ratio": 1079,
+      "shares": 27,
+      "text": 285,
+      "unknown": 57,
+      "usd_amount": 6
     }
   },
   "metrics": [
@@ -114,10 +115,30 @@
       "status": "active"
     },
     {
+      "code": "$ADV",
+      "scope": "stock",
+      "topic": "statements",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
       "code": "$AEEX",
       "scope": "stock",
       "topic": "statements",
       "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$AH_PX_AGENCY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
       "window": "none",
       "caliber": [],
       "unit_kind": "money",
@@ -131,6 +152,56 @@
       "window": "none",
       "caliber": [],
       "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$AMAC_NAV_BOND",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$AMAC_NAV_EQUITY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$AMAC_NAV_HYBRID",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$AMAC_NAV_MONEY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$AMAC_NAV_TOTAL",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -362,6 +433,26 @@
       "status": "active"
     },
     {
+      "code": "$ANALYST_PACK",
+      "scope": "stock",
+      "topic": "estimates",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "text",
+      "status": "active"
+    },
+    {
+      "code": "$ANALYST_PACK_LAST",
+      "scope": "stock",
+      "topic": "estimates",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "text",
+      "status": "active"
+    },
+    {
       "code": "$ANALYST_RATING",
       "scope": "stock",
       "topic": "estimates",
@@ -502,6 +593,16 @@
       "status": "active"
     },
     {
+      "code": "$AVC_CAT_VOLUME",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
       "code": "$AVG_AR_DAY",
       "scope": "stock",
       "topic": "growth",
@@ -625,6 +726,86 @@
       "window": "none",
       "caliber": [],
       "unit_kind": "unknown",
+      "status": "active"
+    },
+    {
+      "code": "$BAIJIU_MONTH",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$BAIJIU_MONTH_YOY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$BAIJIU_YTD",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "ytd",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$BAIJIU_YTD_YOY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "ytd",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$BEER_MONTH",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$BEER_MONTH_YOY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$BEER_YTD",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "ytd",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$BEER_YTD_YOY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "ytd",
+      "caliber": [],
+      "unit_kind": "ratio",
       "status": "active"
     },
     {
@@ -802,6 +983,46 @@
       "scope": "stock",
       "topic": "statements",
       "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$BJ_FT_CASE",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$BJ_FT_LOOSE",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$BJ_GJ1573",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$BJ_WLY8",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
       "window": "none",
       "caliber": [],
       "unit_kind": "money",
@@ -1528,6 +1749,26 @@
       "status": "active"
     },
     {
+      "code": "$BONUS_CASH",
+      "scope": "stock",
+      "topic": "dividend",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$BONUS_CASH_LAST",
+      "scope": "stock",
+      "topic": "dividend",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
       "code": "$BONUS_CR",
       "scope": "stock",
       "topic": "dividend",
@@ -1828,6 +2069,36 @@
       "status": "active"
     },
     {
+      "code": "$BONUS_RATE_CASH",
+      "scope": "stock",
+      "topic": "dividend",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$BONUS_RATE_CASH_LAST",
+      "scope": "stock",
+      "topic": "dividend",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$BONUS_RATE_FC_LAST",
+      "scope": "stock",
+      "topic": "dividend",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
       "code": "$BONUS_RATE_LYR",
       "scope": "stock",
       "topic": "dividend",
@@ -1858,10 +2129,30 @@
       "status": "dead"
     },
     {
+      "code": "$BONUS_RATE_RPT",
+      "scope": "stock",
+      "topic": "dividend",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$BONUS_RATE_RPT_LAST",
+      "scope": "stock",
+      "topic": "dividend",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
       "code": "$BONUS_RATE_TTM",
       "scope": "stock",
       "topic": "dividend",
-      "period": "ttm",
+      "period": "latest_report",
       "window": "none",
       "caliber": [],
       "unit_kind": "ratio",
@@ -1871,7 +2162,7 @@
       "code": "$BONUS_RATE_TTM_LAST",
       "scope": "stock",
       "topic": "dividend",
-      "period": "ttm",
+      "period": "latest_report",
       "window": "none",
       "caliber": [],
       "unit_kind": "ratio",
@@ -1898,6 +2189,26 @@
       "status": "dead"
     },
     {
+      "code": "$BONUS_RPT",
+      "scope": "stock",
+      "topic": "dividend",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$BONUS_RPT_LAST",
+      "scope": "stock",
+      "topic": "dividend",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
       "code": "$BONUS_TOTAL",
       "scope": "stock",
       "topic": "dividend",
@@ -1911,7 +2222,7 @@
       "code": "$BONUS_TTM",
       "scope": "stock",
       "topic": "dividend",
-      "period": "ttm",
+      "period": "latest_report",
       "window": "none",
       "caliber": [],
       "unit_kind": "money",
@@ -1921,7 +2232,7 @@
       "code": "$BONUS_TTM_LAST",
       "scope": "stock",
       "topic": "dividend",
-      "period": "ttm",
+      "period": "latest_report",
       "window": "none",
       "caliber": [],
       "unit_kind": "money",
@@ -2020,6 +2331,86 @@
       "status": "active"
     },
     {
+      "code": "$BUYBACK_AMT_EXEC_1Y_LAST",
+      "scope": "stock",
+      "topic": "ownership",
+      "period": "multi_year",
+      "window": "1y",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$BUYBACK_AMT_EXEC_TOTAL_LAST",
+      "scope": "stock",
+      "topic": "ownership",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$BUYBACK_AMT_PLAN_1Y_CANCEL_LAST",
+      "scope": "stock",
+      "topic": "ownership",
+      "period": "multi_year",
+      "window": "1y",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$BUYBACK_AMT_PLAN_1Y_LAST",
+      "scope": "stock",
+      "topic": "ownership",
+      "period": "multi_year",
+      "window": "1y",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$BUYBACK_AMT_PLAN_TOTAL_CANCEL_LAST",
+      "scope": "stock",
+      "topic": "ownership",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$BUYBACK_AMT_PLAN_TOTAL_LAST",
+      "scope": "stock",
+      "topic": "ownership",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$BUYBACK_EXEC_1Y_MV_PCT_LAST",
+      "scope": "stock",
+      "topic": "ownership",
+      "period": "multi_year",
+      "window": "1y",
+      "caliber": [],
+      "unit_kind": "percentile",
+      "status": "active"
+    },
+    {
+      "code": "$BUYBACK_EXEC_TOTAL_MV_PCT_LAST",
+      "scope": "stock",
+      "topic": "ownership",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "percentile",
+      "status": "active"
+    },
+    {
       "code": "$CAIBAO_NOTICE_DATE",
       "scope": "stock",
       "topic": "disclosure",
@@ -2096,7 +2487,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -2106,7 +2497,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -2325,6 +2716,16 @@
     },
     {
       "code": "$CCY_AFTER",
+      "scope": "stock",
+      "topic": "profile",
+      "period": "snapshot",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "text",
+      "status": "active"
+    },
+    {
+      "code": "$CCY_FIN",
       "scope": "stock",
       "topic": "profile",
       "period": "snapshot",
@@ -2837,6 +3238,66 @@
       "status": "active"
     },
     {
+      "code": "$CIOL_CAC_VALUE",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$CIOL_HAAC_VOLUME",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$CIOL_HAAC_YOY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$CIOL_TV_VOLUME",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$CIOL_WASH_VOLUME",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$CIOL_WASH_YOY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
       "code": "$CLBDR",
       "scope": "stock",
       "topic": "statements",
@@ -2993,6 +3454,16 @@
       "status": "active"
     },
     {
+      "code": "$CODEU",
+      "scope": "stock",
+      "topic": "profile",
+      "period": "snapshot",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "text",
+      "status": "active"
+    },
+    {
       "code": "$COG",
       "scope": "stock",
       "topic": "statements",
@@ -3069,7 +3540,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -3109,7 +3580,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -3883,6 +4354,26 @@
       "status": "active"
     },
     {
+      "code": "$CPI_FOOD_YOY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$CPI_FOOD_YTD_YOY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "ytd",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
       "code": "$CPI_KEY_QOQ",
       "scope": "macro",
       "topic": "macro",
@@ -3940,6 +4431,16 @@
       "window": "none",
       "caliber": [],
       "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$CQ_PX_AGENCY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -4219,7 +4720,7 @@
       "period": "monthly",
       "window": "none",
       "caliber": [],
-      "unit_kind": "money",
+      "unit_kind": "usd_amount",
       "status": "active"
     },
     {
@@ -4229,7 +4730,7 @@
       "period": "monthly",
       "window": "none",
       "caliber": [],
-      "unit_kind": "money",
+      "unit_kind": "usd_amount",
       "status": "active"
     },
     {
@@ -6447,7 +6948,7 @@
       "caliber": [
         "overall"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -6459,7 +6960,7 @@
       "caliber": [
         "overall"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -6471,7 +6972,7 @@
       "caliber": [
         "overall"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -6483,7 +6984,7 @@
       "caliber": [
         "overall"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -6495,7 +6996,7 @@
       "caliber": [
         "overall"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -6507,7 +7008,7 @@
       "caliber": [
         "overall"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -6519,7 +7020,7 @@
       "caliber": [
         "overall"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -6531,7 +7032,7 @@
       "caliber": [
         "overall"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -6543,7 +7044,7 @@
       "caliber": [
         "overall"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -6555,7 +7056,7 @@
       "caliber": [
         "overall"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -6567,7 +7068,7 @@
       "caliber": [
         "overall"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -6579,7 +7080,7 @@
       "caliber": [
         "overall"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -6759,7 +7260,7 @@
       "caliber": [
         "overall"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "ratio",
       "status": "active"
     },
     {
@@ -6771,7 +7272,7 @@
       "caliber": [
         "overall"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "ratio",
       "status": "active"
     },
     {
@@ -6829,7 +7330,7 @@
       "period": "monthly",
       "window": "none",
       "caliber": [],
-      "unit_kind": "money",
+      "unit_kind": "usd_amount",
       "status": "active"
     },
     {
@@ -6839,7 +7340,7 @@
       "period": "monthly",
       "window": "none",
       "caliber": [],
-      "unit_kind": "money",
+      "unit_kind": "usd_amount",
       "status": "active"
     },
     {
@@ -6849,7 +7350,7 @@
       "period": "monthly",
       "window": "none",
       "caliber": [],
-      "unit_kind": "money",
+      "unit_kind": "usd_amount",
       "status": "active"
     },
     {
@@ -6859,7 +7360,7 @@
       "period": "monthly",
       "window": "none",
       "caliber": [],
-      "unit_kind": "money",
+      "unit_kind": "usd_amount",
       "status": "active"
     },
     {
@@ -7612,10 +8113,50 @@
       "status": "active"
     },
     {
+      "code": "$DPS_CASH",
+      "scope": "stock",
+      "topic": "dividend",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "per_share",
+      "status": "active"
+    },
+    {
+      "code": "$DPS_CASH_LAST",
+      "scope": "stock",
+      "topic": "dividend",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "per_share",
+      "status": "active"
+    },
+    {
+      "code": "$DPS_RPT",
+      "scope": "stock",
+      "topic": "dividend",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "per_share",
+      "status": "active"
+    },
+    {
+      "code": "$DPS_RPT_LAST",
+      "scope": "stock",
+      "topic": "dividend",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "per_share",
+      "status": "active"
+    },
+    {
       "code": "$DPS_TTM",
       "scope": "stock",
       "topic": "dividend",
-      "period": "ttm",
+      "period": "latest_report",
       "window": "none",
       "caliber": [],
       "unit_kind": "per_share",
@@ -7625,7 +8166,7 @@
       "code": "$DPS_TTM_LAST",
       "scope": "stock",
       "topic": "dividend",
-      "period": "ttm",
+      "period": "latest_report",
       "window": "none",
       "caliber": [],
       "unit_kind": "per_share",
@@ -8100,6 +8641,16 @@
       "status": "active"
     },
     {
+      "code": "$EOD_LEFTOVER",
+      "scope": "stock",
+      "topic": "other",
+      "period": "snapshot",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "unknown",
+      "status": "active"
+    },
+    {
       "code": "$EOD_TECH_TIP",
       "scope": "stock",
       "topic": "quote",
@@ -8268,7 +8819,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -8278,7 +8829,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -8298,7 +8849,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -8328,7 +8879,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -8338,7 +8889,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -8358,7 +8909,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -8574,7 +9125,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -8584,7 +9135,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -8594,7 +9145,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -8604,7 +9155,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -8614,7 +9165,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -8624,7 +9175,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -8644,7 +9195,17 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
+      "status": "active"
+    },
+    {
+      "code": "$EXCHANGE_NAME",
+      "scope": "stock",
+      "topic": "statements",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -8654,7 +9215,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "count",
       "status": "active"
     },
     {
@@ -8664,7 +9225,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "count",
       "status": "active"
     },
     {
@@ -8674,7 +9235,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -8714,7 +9275,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -8734,7 +9295,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -8744,7 +9305,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -8754,7 +9315,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -8764,7 +9325,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -8774,7 +9335,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -8794,7 +9355,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -8895,6 +9456,19 @@
       "window": "none",
       "caliber": [],
       "unit_kind": "text",
+      "status": "active"
+    },
+    {
+      "code": "$FC_NP_CAGR3",
+      "scope": "stock",
+      "topic": "estimates",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [
+        "parent",
+        "median"
+      ],
+      "unit_kind": "ratio",
       "status": "active"
     },
     {
@@ -9089,13 +9663,151 @@
       "status": "active"
     },
     {
+      "code": "$FJ_PX_AGENCY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$FLOOR_EY_RAW",
+      "scope": "stock",
+      "topic": "growth",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [
+        "deducted"
+      ],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$FLOOR_EY_RAW_LAST",
+      "scope": "stock",
+      "topic": "growth",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [
+        "deducted"
+      ],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$FLOOR_PE_GATE",
+      "scope": "stock",
+      "topic": "growth",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "percentile",
+      "status": "active"
+    },
+    {
+      "code": "$FLOOR_PE_GATE_LAST",
+      "scope": "stock",
+      "topic": "growth",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "percentile",
+      "status": "active"
+    },
+    {
+      "code": "$FLOOR_PROFIT_GATE",
+      "scope": "stock",
+      "topic": "growth",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$FLOOR_PROFIT_GATE_LAST",
+      "scope": "stock",
+      "topic": "growth",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$FLOOR_YIELD",
+      "scope": "stock",
+      "topic": "growth",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$FLOOR_YIELD_DY",
+      "scope": "stock",
+      "topic": "growth",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$FLOOR_YIELD_DY_LAST",
+      "scope": "stock",
+      "topic": "growth",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$FLOOR_YIELD_EY",
+      "scope": "stock",
+      "topic": "growth",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [
+        "deducted"
+      ],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$FLOOR_YIELD_EY_LAST",
+      "scope": "stock",
+      "topic": "growth",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [
+        "deducted"
+      ],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$FLOOR_YIELD_LAST",
+      "scope": "stock",
+      "topic": "growth",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
       "code": "$FREE_HOLDER_0",
       "scope": "stock",
       "topic": "ownership",
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -9105,7 +9817,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -9115,7 +9827,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -9125,7 +9837,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -9135,7 +9847,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -9145,7 +9857,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -9155,7 +9867,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -9165,7 +9877,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -9175,7 +9887,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -9185,7 +9897,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -9245,7 +9957,7 @@
       "caliber": [
         "free_float"
       ],
-      "unit_kind": "ratio",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -9295,7 +10007,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -9505,7 +10217,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "price",
       "status": "active"
     },
     {
@@ -9515,7 +10227,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "price",
       "status": "active"
     },
     {
@@ -9525,7 +10237,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "price",
       "status": "active"
     },
     {
@@ -9535,7 +10247,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "price",
       "status": "active"
     },
     {
@@ -9650,6 +10362,36 @@
     },
     {
       "code": "$GDP_THIRD",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$GD_PX_AGENCY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$GD_PX_BID",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$GD_PX_MIDLONG",
       "scope": "macro",
       "topic": "macro",
       "period": "monthly",
@@ -10045,7 +10787,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -10055,7 +10797,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -10075,7 +10817,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -10085,7 +10827,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -10095,7 +10837,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -10105,7 +10847,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -10115,7 +10857,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -10125,7 +10867,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -10155,7 +10897,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -10165,7 +10907,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -10175,7 +10917,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -10185,7 +10927,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -10329,6 +11071,16 @@
       "status": "active"
     },
     {
+      "code": "$HE_PX_AGENCY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
       "code": "$HIGH_AR_DAY",
       "scope": "stock",
       "topic": "growth",
@@ -10405,7 +11157,7 @@
       "caliber": [
         "free_float"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -10435,7 +11187,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -10445,7 +11197,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -10477,7 +11229,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -10487,7 +11239,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -10547,7 +11299,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -10557,7 +11309,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -10627,7 +11379,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "shares",
       "status": "active"
     },
     {
@@ -10637,7 +11389,7 @@
       "period": "daily",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "shares",
       "status": "active"
     },
     {
@@ -10647,7 +11399,7 @@
       "period": "daily",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "shares",
       "status": "active"
     },
     {
@@ -10657,7 +11409,7 @@
       "period": "daily",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "shares",
       "status": "active"
     },
     {
@@ -10667,7 +11419,7 @@
       "period": "daily",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "shares",
       "status": "active"
     },
     {
@@ -10677,7 +11429,7 @@
       "period": "daily",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "shares",
       "status": "active"
     },
     {
@@ -10687,7 +11439,7 @@
       "period": "daily",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "shares",
       "status": "active"
     },
     {
@@ -10942,7 +11694,7 @@
       "caliber": [
         "weighted"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "ratio",
       "status": "active"
     },
     {
@@ -10954,7 +11706,7 @@
       "caliber": [
         "weighted"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "multiple",
       "status": "active"
     },
     {
@@ -11187,7 +11939,7 @@
       "caliber": [
         "weighted"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -11200,7 +11952,7 @@
         "weighted",
         "equal_weight"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -12475,6 +13227,19 @@
       "status": "active"
     },
     {
+      "code": "$ID_EQUITY_TOTAL_SHARES",
+      "scope": "industry",
+      "topic": "quote",
+      "period": "snapshot",
+      "window": "none",
+      "caliber": [
+        "total",
+        "overall"
+      ],
+      "unit_kind": "shares",
+      "status": "active"
+    },
+    {
       "code": "$ID_EV",
       "scope": "industry",
       "topic": "scale",
@@ -12483,7 +13248,7 @@
       "caliber": [
         "overall"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -12738,7 +13503,7 @@
       "caliber": [
         "overall"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "shares",
       "status": "active"
     },
     {
@@ -13650,7 +14415,7 @@
       "caliber": [
         "overall"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -13686,7 +14451,7 @@
       "caliber": [
         "overall"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -15485,6 +16250,26 @@
       "status": "active"
     },
     {
+      "code": "$IMPA",
+      "scope": "stock",
+      "topic": "statements",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$IMPC",
+      "scope": "stock",
+      "topic": "statements",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
       "code": "$INCOME_BANK",
       "scope": "stock",
       "topic": "scale",
@@ -15521,7 +16306,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -15551,7 +16336,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -15561,7 +16346,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -15571,7 +16356,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -15581,7 +16366,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "money",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -15591,7 +16376,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "index_point",
       "status": "active"
     },
     {
@@ -15601,7 +16386,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "index_point",
       "status": "active"
     },
     {
@@ -15611,7 +16396,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "index_point",
       "status": "active"
     },
     {
@@ -15621,7 +16406,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "index_point",
       "status": "active"
     },
     {
@@ -15631,7 +16416,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "index_point",
       "status": "active"
     },
     {
@@ -15641,7 +16426,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "index_point",
       "status": "active"
     },
     {
@@ -15651,7 +16436,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "index_point",
       "status": "active"
     },
     {
@@ -15661,7 +16446,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "index_point",
       "status": "active"
     },
     {
@@ -15671,7 +16456,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "index_point",
       "status": "active"
     },
     {
@@ -15681,7 +16466,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "index_point",
       "status": "active"
     },
     {
@@ -15691,7 +16476,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "index_point",
       "status": "active"
     },
     {
@@ -16431,7 +17216,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "money",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -16440,7 +17225,9 @@
       "topic": "statements",
       "period": "latest_report",
       "window": "none",
-      "caliber": [],
+      "caliber": [
+        "free_float"
+      ],
       "unit_kind": "ratio",
       "status": "active"
     },
@@ -16450,8 +17237,50 @@
       "topic": "statements",
       "period": "latest_report",
       "window": "none",
+      "caliber": [
+        "free_float"
+      ],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$INS_LIFE",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$INS_PREMIUM_TOTAL",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$INS_PREMIUM_YOY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
       "caliber": [],
       "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$INS_PROPERTY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -16815,6 +17644,26 @@
       "status": "active"
     },
     {
+      "code": "$JGCG_PACK",
+      "scope": "stock",
+      "topic": "statements",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$JGCG_PACK_LAST",
+      "scope": "stock",
+      "topic": "statements",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
       "code": "$JOB_ADD",
       "scope": "macro",
       "topic": "macro",
@@ -16832,6 +17681,16 @@
       "window": "none",
       "caliber": [],
       "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$JX_PX_AGENCY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -16935,13 +17794,43 @@
       "status": "active"
     },
     {
-      "code": "$KLINE_DATE",
+      "code": "$KLINE150_TECH",
       "scope": "stock",
       "topic": "quote",
       "period": "snapshot",
       "window": "none",
       "caliber": [],
       "unit_kind": "unknown",
+      "status": "active"
+    },
+    {
+      "code": "$KLINE20_TECH",
+      "scope": "stock",
+      "topic": "quote",
+      "period": "snapshot",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "unknown",
+      "status": "active"
+    },
+    {
+      "code": "$KLINE20_TECH_LAST",
+      "scope": "stock",
+      "topic": "quote",
+      "period": "snapshot",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "unknown",
+      "status": "active"
+    },
+    {
+      "code": "$KLINE_DATE",
+      "scope": "stock",
+      "topic": "quote",
+      "period": "snapshot",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -16951,7 +17840,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -16961,7 +17850,7 @@
       "period": "daily",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "ratio",
       "status": "active"
     },
     {
@@ -16981,7 +17870,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -17011,7 +17900,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -17021,7 +17910,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -17101,7 +17990,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -17111,7 +18000,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -17161,7 +18050,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -17171,7 +18060,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -17181,7 +18070,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -17191,7 +18080,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -17201,7 +18090,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -17211,7 +18100,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -17231,7 +18120,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -17241,7 +18130,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -17251,7 +18140,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -17261,7 +18150,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -17271,7 +18160,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -17281,7 +18170,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -17291,7 +18180,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -17301,7 +18190,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -17311,7 +18200,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -17321,7 +18210,17 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
+      "status": "active"
+    },
+    {
+      "code": "$LN_PX_AGENCY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -17411,6 +18310,26 @@
       "status": "active"
     },
     {
+      "code": "$LPR_1Y",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "1y",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$LPR_5Y",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "5y",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
       "code": "$LV",
       "scope": "stock",
       "topic": "statements",
@@ -17479,7 +18398,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -17489,7 +18408,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -17499,7 +18418,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -17509,7 +18428,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -17519,7 +18438,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -17529,7 +18448,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -17561,7 +18480,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -17571,7 +18490,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -17581,7 +18500,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -17591,7 +18510,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -17601,7 +18520,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -17611,7 +18530,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -17621,7 +18540,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -17631,7 +18550,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -17641,7 +18560,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -17651,7 +18570,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -17661,7 +18580,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -17671,7 +18590,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -17681,7 +18600,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -17691,7 +18610,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -17701,7 +18620,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -17711,7 +18630,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -17721,7 +18640,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -17731,7 +18650,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -17741,7 +18660,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -17751,7 +18670,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -17761,7 +18680,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -17771,7 +18690,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -17781,7 +18700,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -17791,7 +18710,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -17831,7 +18750,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "ratio",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -17931,7 +18850,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -17941,7 +18860,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -17951,7 +18870,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -17961,7 +18880,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -17971,7 +18890,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -17981,7 +18900,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -18036,6 +18955,26 @@
     },
     {
       "code": "$MARGIN_NET_BUY_LAST",
+      "scope": "stock",
+      "topic": "profitability",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$MARGIN_PACK",
+      "scope": "stock",
+      "topic": "profitability",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$MARGIN_PACK_LAST",
       "scope": "stock",
       "topic": "profitability",
       "period": "latest_report",
@@ -18287,6 +19226,16 @@
       "status": "active"
     },
     {
+      "code": "$MA_CLOSE_240_LAST",
+      "scope": "stock",
+      "topic": "quote",
+      "period": "snapshot",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "price",
+      "status": "active"
+    },
+    {
       "code": "$MA_CLOSE_26",
       "scope": "stock",
       "topic": "quote",
@@ -18404,6 +19353,26 @@
       "window": "none",
       "caliber": [],
       "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$MF_DAY_PACK",
+      "scope": "stock",
+      "topic": "quote",
+      "period": "daily",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$MF_DAY_PACK_LAST",
+      "scope": "stock",
+      "topic": "quote",
+      "period": "daily",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -18741,6 +19710,26 @@
       "status": "active"
     },
     {
+      "code": "$MF_WIN20_PACK",
+      "scope": "stock",
+      "topic": "quote",
+      "period": "snapshot",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$MF_WIN20_PACK_LAST",
+      "scope": "stock",
+      "topic": "quote",
+      "period": "snapshot",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
       "code": "$MIN_DAY_10",
       "scope": "stock",
       "topic": "quote",
@@ -18761,6 +19750,16 @@
       "caliber": [
         "adjusted"
       ],
+      "unit_kind": "price",
+      "status": "active"
+    },
+    {
+      "code": "$MIN_DAY_120_LAST",
+      "scope": "stock",
+      "topic": "quote",
+      "period": "daily",
+      "window": "none",
+      "caliber": [],
       "unit_kind": "price",
       "status": "active"
     },
@@ -19121,6 +20120,46 @@
       "status": "active"
     },
     {
+      "code": "$NBSFOOD_BEV_MONTH",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$NBSFOOD_BEV_YTD",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "ytd",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$NBSFOOD_DAIRY_MONTH",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$NBSFOOD_DAIRY_YTD",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "ytd",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
       "code": "$NBS_BEV",
       "scope": "macro",
       "topic": "macro",
@@ -19141,6 +20180,46 @@
       "status": "active"
     },
     {
+      "code": "$NBS_COAL_YOY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$NBS_COKE_YOY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$NBS_CRUDE_YOY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$NBS_DIESEL_YOY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
       "code": "$NBS_FOOD",
       "scope": "macro",
       "topic": "macro",
@@ -19152,6 +20231,116 @@
     },
     {
       "code": "$NBS_FOOD_YOY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$NBS_GASO_YOY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$NBS_GAS_YOY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$NBS_LNG_YOY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$NBS_LPG_YOY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$NBS_PG_ABS",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$NBS_PG_HY_YOY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$NBS_PG_NU_YOY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$NBS_PG_SO_YOY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$NBS_PG_TH_YOY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$NBS_PG_WI_YOY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$NBS_PG_YOY",
       "scope": "macro",
       "topic": "macro",
       "period": "monthly",
@@ -19421,6 +20610,236 @@
       "status": "active"
     },
     {
+      "code": "$NEVM_HARMONY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$NEVM_IDEAL",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$NEVM_LEAPMOTOR",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$NEVM_NIO",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$NEVM_XIAOMI",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$NEVM_XPENG",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$NEVW_AITO",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$NEVW_IDEAL",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$NEVW_LEAPMOTOR",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$NEVW_NIO",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$NEVW_XIAOMI",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$NEVW_XPENG",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$NF_ABS",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$NF_ALPROD_YOY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$NF_ALUMINA_YOY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$NF_AL_YOY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$NF_CUPROD_YOY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$NF_CU_YOY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$NF_INV_MIN_YOY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$NF_INV_YOY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$NF_MINING_PPI",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$NF_SMELT_PPI",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$NF_YOY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
       "code": "$NIBD",
       "scope": "stock",
       "topic": "solvency",
@@ -19489,7 +20908,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "money",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -22225,6 +23644,16 @@
       "status": "active"
     },
     {
+      "code": "$ORG_IR_WEB",
+      "scope": "stock",
+      "topic": "profile",
+      "period": "snapshot",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "text",
+      "status": "active"
+    },
+    {
       "code": "$ORG_ISSUEPRICE",
       "scope": "stock",
       "topic": "profile",
@@ -22302,6 +23731,16 @@
       "window": "none",
       "caliber": [],
       "unit_kind": "text",
+      "status": "active"
+    },
+    {
+      "code": "$ORG_PAR_VALUE",
+      "scope": "stock",
+      "topic": "profile",
+      "period": "snapshot",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "per_share",
       "status": "active"
     },
     {
@@ -22435,6 +23874,16 @@
       "status": "active"
     },
     {
+      "code": "$ORNET",
+      "scope": "stock",
+      "topic": "statements",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
       "code": "$ORTR",
       "scope": "stock",
       "topic": "statements",
@@ -22446,6 +23895,26 @@
     },
     {
       "code": "$OTOI",
+      "scope": "stock",
+      "topic": "statements",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$OWID_FERT_HA_CN",
+      "scope": "stock",
+      "topic": "statements",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$OWID_FERT_HA_WRL",
       "scope": "stock",
       "topic": "statements",
       "period": "latest_report",
@@ -22476,6 +23945,16 @@
     },
     {
       "code": "$PB",
+      "scope": "stock",
+      "topic": "valuation",
+      "period": "ttm",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "multiple",
+      "status": "active"
+    },
+    {
+      "code": "$PB_LAST",
       "scope": "stock",
       "topic": "valuation",
       "period": "ttm",
@@ -22627,6 +24106,126 @@
       "status": "active"
     },
     {
+      "code": "$PCT_HOLDERNUM_10Y",
+      "scope": "stock",
+      "topic": "growth",
+      "period": "multi_year",
+      "window": "10y",
+      "caliber": [],
+      "unit_kind": "percentile",
+      "status": "active"
+    },
+    {
+      "code": "$PCT_HOLDERNUM_10Y_LAST",
+      "scope": "stock",
+      "topic": "growth",
+      "period": "multi_year",
+      "window": "10y",
+      "caliber": [],
+      "unit_kind": "percentile",
+      "status": "active"
+    },
+    {
+      "code": "$PCT_HOLDERNUM_3Y",
+      "scope": "stock",
+      "topic": "growth",
+      "period": "multi_year",
+      "window": "3y",
+      "caliber": [],
+      "unit_kind": "percentile",
+      "status": "active"
+    },
+    {
+      "code": "$PCT_HOLDERNUM_3Y_LAST",
+      "scope": "stock",
+      "topic": "growth",
+      "period": "multi_year",
+      "window": "3y",
+      "caliber": [],
+      "unit_kind": "percentile",
+      "status": "active"
+    },
+    {
+      "code": "$PCT_HOLDERNUM_5Y",
+      "scope": "stock",
+      "topic": "growth",
+      "period": "multi_year",
+      "window": "5y",
+      "caliber": [],
+      "unit_kind": "percentile",
+      "status": "active"
+    },
+    {
+      "code": "$PCT_HOLDERNUM_5Y_LAST",
+      "scope": "stock",
+      "topic": "growth",
+      "period": "multi_year",
+      "window": "5y",
+      "caliber": [],
+      "unit_kind": "percentile",
+      "status": "active"
+    },
+    {
+      "code": "$PCT_INST_HOLD_10Y",
+      "scope": "stock",
+      "topic": "growth",
+      "period": "multi_year",
+      "window": "10y",
+      "caliber": [],
+      "unit_kind": "percentile",
+      "status": "active"
+    },
+    {
+      "code": "$PCT_INST_HOLD_10Y_LAST",
+      "scope": "stock",
+      "topic": "growth",
+      "period": "multi_year",
+      "window": "10y",
+      "caliber": [],
+      "unit_kind": "percentile",
+      "status": "active"
+    },
+    {
+      "code": "$PCT_INST_HOLD_3Y",
+      "scope": "stock",
+      "topic": "growth",
+      "period": "multi_year",
+      "window": "3y",
+      "caliber": [],
+      "unit_kind": "percentile",
+      "status": "active"
+    },
+    {
+      "code": "$PCT_INST_HOLD_3Y_LAST",
+      "scope": "stock",
+      "topic": "growth",
+      "period": "multi_year",
+      "window": "3y",
+      "caliber": [],
+      "unit_kind": "percentile",
+      "status": "active"
+    },
+    {
+      "code": "$PCT_INST_HOLD_5Y",
+      "scope": "stock",
+      "topic": "growth",
+      "period": "multi_year",
+      "window": "5y",
+      "caliber": [],
+      "unit_kind": "percentile",
+      "status": "active"
+    },
+    {
+      "code": "$PCT_INST_HOLD_5Y_LAST",
+      "scope": "stock",
+      "topic": "growth",
+      "period": "multi_year",
+      "window": "5y",
+      "caliber": [],
+      "unit_kind": "percentile",
+      "status": "active"
+    },
+    {
       "code": "$PCT_PB_TTM_10Y",
       "scope": "stock",
       "topic": "valuation",
@@ -22742,6 +24341,46 @@
       "topic": "valuation",
       "period": "ttm",
       "window": "5y",
+      "caliber": [],
+      "unit_kind": "percentile",
+      "status": "active"
+    },
+    {
+      "code": "$PCT_PR_BASE_3Y",
+      "scope": "stock",
+      "topic": "growth",
+      "period": "multi_year",
+      "window": "3y",
+      "caliber": [],
+      "unit_kind": "percentile",
+      "status": "active"
+    },
+    {
+      "code": "$PCT_PR_BASE_3Y_LAST",
+      "scope": "stock",
+      "topic": "growth",
+      "period": "multi_year",
+      "window": "3y",
+      "caliber": [],
+      "unit_kind": "percentile",
+      "status": "active"
+    },
+    {
+      "code": "$PCT_PS_TTM_3Y",
+      "scope": "stock",
+      "topic": "valuation",
+      "period": "ttm",
+      "window": "3y",
+      "caliber": [],
+      "unit_kind": "percentile",
+      "status": "active"
+    },
+    {
+      "code": "$PCT_PS_TTM_3Y_LAST",
+      "scope": "stock",
+      "topic": "valuation",
+      "period": "ttm",
+      "window": "3y",
       "caliber": [],
       "unit_kind": "percentile",
       "status": "active"
@@ -22895,6 +24534,16 @@
       "status": "dead"
     },
     {
+      "code": "$PE_FC_LAST",
+      "scope": "stock",
+      "topic": "valuation",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "multiple",
+      "status": "active"
+    },
+    {
       "code": "$PE_TTM",
       "scope": "stock",
       "topic": "valuation",
@@ -22947,6 +24596,86 @@
       "caliber": [],
       "unit_kind": "multiple",
       "status": "dead"
+    },
+    {
+      "code": "$PHONE_SH_APPLE",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$PHONE_SH_HONOR",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$PHONE_SH_HUAWEI",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$PHONE_SH_OPPO",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$PHONE_SH_VIVO",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$PHONE_SH_XIAOMI",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$PIC",
+      "scope": "stock",
+      "topic": "quote",
+      "period": "snapshot",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$PIC0",
+      "scope": "stock",
+      "topic": "quote",
+      "period": "snapshot",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
     },
     {
       "code": "$PMI",
@@ -23170,6 +24899,296 @@
     },
     {
       "code": "$POPULATION_YEAR_END_TOTAL",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$POSTAL_DE_KEP",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$POSTAL_DE_KEP_EXPRESS",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$POSTAL_DE_KEP_KURIER",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$POSTAL_DE_KEP_PAKET",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$POSTAL_DE_PARCEL",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$POSTAL_DE_PARCEL_AUSLAND",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$POSTAL_DE_PARCEL_INLAND",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$POSTAL_DE_PEX",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$POSTAL_DE_REVENUE",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$POSTAL_FR_DOM",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$POSTAL_FR_EXP",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$POSTAL_FR_REV",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$POSTAL_JPA_MAIL",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$POSTAL_JPA_TOTAL",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$POSTAL_JPA_TRUCK",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$POSTAL_JPA_YAMATO",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$POSTAL_JP_PARCEL",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$POSTAL_JP_PARCEL_YOY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$POSTAL_KR_PARCEL",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$POSTAL_UK_LETTERS",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$POSTAL_UK_LETTERS_REV",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$POSTAL_UK_PARCELS",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$POSTAL_UK_PARCELS_REV",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$POSTAL_US_CMP_REVENUE",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$POSTAL_US_COMPETITIVE",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$POSTAL_US_FC_REVENUE",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$POSTAL_US_FIRST_CLASS",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$POSTAL_US_MD",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$POSTAL_US_MD_REVENUE",
       "scope": "macro",
       "topic": "macro",
       "period": "monthly",
@@ -23549,7 +25568,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "money",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -23719,7 +25738,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "money",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -23959,6 +25978,36 @@
       "status": "active"
     },
     {
+      "code": "$PV_CENTRAL_NEW",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$PV_DIST_NEW",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$PV_NEW_INSTALL",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
       "code": "$QFII_HOLD_RATIO",
       "scope": "stock",
       "topic": "statements",
@@ -24069,6 +26118,36 @@
       "status": "active"
     },
     {
+      "code": "$RAWMILK_PRICE",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$RAWMILK_WOW",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
+      "status": "active"
+    },
+    {
+      "code": "$RAWMILK_YOY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
       "code": "$RDATE_LAST",
       "scope": "stock",
       "topic": "profile",
@@ -24105,7 +26184,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "money",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -25333,6 +27412,16 @@
       "status": "active"
     },
     {
+      "code": "$SC_PX_AGENCY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
       "code": "$SD",
       "scope": "stock",
       "topic": "solvency",
@@ -25575,6 +27664,16 @@
       "status": "active"
     },
     {
+      "code": "$SHARE_PAR",
+      "scope": "stock",
+      "topic": "quote",
+      "period": "snapshot",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "per_share",
+      "status": "active"
+    },
+    {
       "code": "$SHIP_BCI",
       "scope": "macro",
       "topic": "macro",
@@ -25615,12 +27714,24 @@
       "status": "active"
     },
     {
+      "code": "$SNX_PX_AGENCY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
       "code": "$SOCIAL_SECURITY_HOLD_RATIO",
       "scope": "stock",
       "topic": "statements",
       "period": "latest_report",
       "window": "none",
-      "caliber": [],
+      "caliber": [
+        "free_float"
+      ],
       "unit_kind": "ratio",
       "status": "active"
     },
@@ -25630,8 +27741,20 @@
       "topic": "statements",
       "period": "latest_report",
       "window": "none",
-      "caliber": [],
+      "caliber": [
+        "free_float"
+      ],
       "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$SOLAR_NEW_INSTALL",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "index_point",
       "status": "active"
     },
     {
@@ -25827,6 +27950,36 @@
       "status": "active"
     },
     {
+      "code": "$STOCK_TURNOVER_SH",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$STOCK_TURNOVER_SZ",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$STOCK_TURNOVER_TOTAL",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
       "code": "$STYLE_CLUSTER_NOTE",
       "scope": "stock",
       "topic": "profile",
@@ -25953,7 +28106,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "money",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -25961,6 +28114,16 @@
       "scope": "stock",
       "topic": "statements",
       "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$SX_PX_AGENCY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
       "window": "none",
       "caliber": [],
       "unit_kind": "money",
@@ -25988,6 +28151,16 @@
     },
     {
       "code": "$SYMBOL_B",
+      "scope": "stock",
+      "topic": "statements",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$SYMBOL_CANON",
       "scope": "stock",
       "topic": "statements",
       "period": "latest_report",
@@ -26274,6 +28447,16 @@
       "status": "active"
     },
     {
+      "code": "$TFA",
+      "scope": "stock",
+      "topic": "statements",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
       "code": "$TFAS",
       "scope": "stock",
       "topic": "statements",
@@ -26304,10 +28487,30 @@
       "status": "active"
     },
     {
+      "code": "$TFLX",
+      "scope": "stock",
+      "topic": "statements",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
       "code": "$TIP",
       "scope": "stock",
       "topic": "statements",
       "period": "latest_report",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$TJ_PX_AGENCY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
       "window": "none",
       "caliber": [],
       "unit_kind": "money",
@@ -26647,6 +28850,54 @@
     },
     {
       "code": "$TOPTEN_OTHER_INST_RATIO_LAST",
+      "scope": "stock",
+      "topic": "statements",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [
+        "free_float"
+      ],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$TOPTEN_PACK",
+      "scope": "stock",
+      "topic": "statements",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [
+        "free_float"
+      ],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$TOPTEN_PACK_LAST",
+      "scope": "stock",
+      "topic": "statements",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [
+        "free_float"
+      ],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$TOPTEN_SOCIAL_SECURITY_RATIO",
+      "scope": "stock",
+      "topic": "statements",
+      "period": "latest_report",
+      "window": "none",
+      "caliber": [
+        "free_float"
+      ],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
+      "code": "$TOPTEN_SOCIAL_SECURITY_RATIO_LAST",
       "scope": "stock",
       "topic": "statements",
       "period": "latest_report",
@@ -27408,6 +29659,56 @@
       "status": "active"
     },
     {
+      "code": "$TSF_CORP_BOND",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$TSF_EQUITY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$TSF_GOV_BOND",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$TSF_STOCK",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$TSF_STOCK_YOY",
+      "scope": "macro",
+      "topic": "macro",
+      "period": "monthly",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "ratio",
+      "status": "active"
+    },
+    {
       "code": "$TTAX",
       "scope": "stock",
       "topic": "statements",
@@ -27598,7 +29899,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -27608,7 +29909,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -27618,7 +29919,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -27638,7 +29939,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -27648,7 +29949,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -27658,7 +29959,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -27668,7 +29969,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -27678,7 +29979,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -27688,7 +29989,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -27790,7 +30091,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -27800,7 +30101,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -27810,7 +30111,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "multiple",
       "status": "active"
     },
     {
@@ -27820,7 +30121,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "multiple",
       "status": "active"
     },
     {
@@ -27830,7 +30131,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "multiple",
       "status": "active"
     },
     {
@@ -27840,7 +30141,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "multiple",
       "status": "active"
     },
     {
@@ -27850,7 +30151,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -27860,7 +30161,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -27870,7 +30171,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -27880,7 +30181,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -27890,7 +30191,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -27900,7 +30201,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -27910,7 +30211,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -27920,7 +30221,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -27930,7 +30231,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -27940,7 +30241,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -29143,6 +31444,46 @@
       "window": "none",
       "caliber": [],
       "unit_kind": "money",
+      "status": "active"
+    },
+    {
+      "code": "$holdings13f_book",
+      "scope": "stock",
+      "topic": "other",
+      "period": "snapshot",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "unknown",
+      "status": "active"
+    },
+    {
+      "code": "$holdings13f_holders",
+      "scope": "stock",
+      "topic": "other",
+      "period": "snapshot",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "unknown",
+      "status": "active"
+    },
+    {
+      "code": "$holdings13f_roster",
+      "scope": "stock",
+      "topic": "other",
+      "period": "snapshot",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "unknown",
+      "status": "active"
+    },
+    {
+      "code": "$holdings13f_track",
+      "scope": "stock",
+      "topic": "other",
+      "period": "snapshot",
+      "window": "none",
+      "caliber": [],
+      "unit_kind": "unknown",
       "status": "active"
     },
     {

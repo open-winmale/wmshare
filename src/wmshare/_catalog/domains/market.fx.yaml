@@ -1,0 +1,84 @@
+id: market.fx
+version: 1.0.0
+cn: 外汇汇率
+kind: raw
+category: reference
+priority: P2
+description: 人民币外汇汇率——央行中间价与中行牌价日线。数据由平台日更入库
+  （17 币种中行牌价 + 外管局/央行中间价，中间价缺失按前值填充），本域提供
+  最新汇率、日线序列与区间查询三个读面。
+data_origin: [外部行情源]
+units:
+  date: YYYY-MM-DD
+requires: {path: sys/fx/init.xs, preloaded: true}
+notes:
+  - '口径：middle/buy 均为「每 1 单位外币折人民币」（已由上游 /100 归一；原始央行
+    中间价是每 100 外币口径，美元≈673.5、日元≈4.2，直接使用会差 100 倍）'
+  - '中间价（央行授权外汇交易中心发布）与中行牌价（汇买价/钞买价）是两个口径：
+    middle=中间价，buy=中行汇买价，cash_buy=中行钞买价，勿混用'
+  - '在库币种由 fx.list 枚举（2026-11-23 实测 16 个：美元/欧元/日元/港币/英镑/澳元/
+    加元/新加坡元/瑞士法郎/林吉特/泰铢/韩元/新西兰元/瑞典克朗/挪威克朗/丹麦克朗；
+    新台币与人民币不在库）；探测不到的币种不出现、不造 0'
+  - '中间价按交易日发布且缺失时前向填充（上游 common_fill_forward）；牌价仅在发布日写入
+    ——因此 buy 可能有缺口而 middle 连续'
+functions:
+  - name: fx.rate
+    cn: 最新汇率
+    kind: raw
+    layer: L0
+    params:
+      - {name: ccy, type: string, required: true, desc: 币种 ISO 代码（USD/EUR/JPY/HKD；RMB/CNH 归一为 CNY）}
+    returns:
+      desc: MAP · 汇率快照（ccy/date/middle/buy/cash_buy/currency；无数据返回 nil）
+      shape_ref: inventory
+    example: 'fx.rate("USD")'
+    ranges:
+      middle: [0.00001, 2000]
+      buy: [0.00001, 2000]
+      cash_buy: [0.00001, 2000]
+    notes: [量级界覆盖日元/韩元（每单位约 0.005-0.05）到英镑/欧元（约 8-10）；越界即疑似未归一的每 100 外币原值]
+  - name: fx.history
+    cn: 汇率日线序列
+    kind: raw
+    layer: L0
+    params:
+      - {name: ccy, type: string, required: true, desc: 币种 ISO 代码（同 rate）}
+      - {name: n, type: int, required: false, default: 30, desc: 根数（1..2000；n<=0 归一到 30——不是「取全部」，全历史请用 query_bars 的 begin/end）}
+    returns:
+      desc: ARR · 汇率日线（date 升序；date/ccy/middle/buy）
+      shape_ref: inventory
+    example: 'fx.history("USD", 30)'
+    ranges:
+      middle: [0.00001, 2000]
+      buy: [0.00001, 2000]
+    checks: [date_iso]
+    notes: [数据版本键缓存——最新入库日期变化即换键，日内复跑命中缓存]
+  - name: fx.list
+    cn: 在库币种清单
+    kind: raw
+    layer: L0
+    params: []
+    returns:
+      desc: ARR · 在库币种（ccy/date/middle；按候选清单探测，无数据的币种不出现）
+      shape_ref: inventory
+    example: 'fx.list()'
+    ranges:
+      middle: [0.00001, 2000]
+  - name: fx.query_bars
+    cn: 汇率区间日线
+    kind: raw
+    layer: L0
+    params:
+      - {name: ccy, type: string, required: true, desc: 币种 ISO 代码}
+      - {name: begin, type: string, required: false, desc: 开始日期 YYYY-MM-DD（可空）}
+      - {name: end, type: string, required: false, desc: 结束日期 YYYY-MM-DD（可空）}
+      - {name: limit, type: int, required: false, default: 500, desc: 根数上限（1..500，Client 单次上限）}
+    returns:
+      desc: ARR · 汇率日线（date 升序；date/ccy/middle/buy）
+      shape_ref: inventory
+    example: 'fx.query_bars("USD", "2026-09-01", "2026-09-30", 100)'
+    ranges:
+      middle: [0.00001, 2000]
+      buy: [0.00001, 2000]
+    checks: [date_iso]
+    notes: ['begin/end 通过服务端 startTs/endTs 下推（不客户端过滤）；区间无数据返回空数组']

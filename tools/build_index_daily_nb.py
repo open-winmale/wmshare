@@ -53,7 +53,7 @@ plt.rcParams["axes.unicode_minus"] = False
 plt.rcParams["font.sans-serif"] = ["Hiragino Sans GB", "PingFang SC",
                                    "Arial Unicode MS", "SimHei", "sans-serif"]
 
-from wmshare import Client, demo_client
+from wmshare import Client
 
 
 def load_credentials() -> None:
@@ -69,14 +69,10 @@ def load_credentials() -> None:
                 os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
 
 
-DEMO = False  # True = 离线演示数据（零凭证零请求）
-if DEMO:
-    cli = demo_client()
-else:
-    load_credentials()
-    # 3 年日频 760 根 > 默认单次上限 500，拨测场景放宽
-    cli = Client.from_env(max_limit=800)
-print("client ready:", "demo" if DEMO else "live")"""),
+load_credentials()
+# 无凭证时 from_env 自动免注册免费试用（真实数据、需网络）
+cli = Client.from_env(max_limit=800)
+print("client ready: live")"""),
     md("""## 一、指数估值榜
 
 每键一次 `valuation`（当前值）+ 一次 `trend`（周频序列分位）。`trend` 依赖平台预热缓存
@@ -108,7 +104,7 @@ CN = {"HS300": "沪深300", "CSI500": "中证500", "SZ50": "上证50", "CYBZ": "
       "SSESOESDIVIDEND": "上国红利", "SSEPOESDIVIDEND": "上民红利",
       "SSECENTRALSOESDIVIDEND": "上央红利"}
 
-try:  # 行业名录是运行时数据，不硬编码；demo / 旧服务端无此接口则空
+try:  # 行业名录是运行时数据，不硬编码；旧服务端无此接口则空
     IND_ROWS = cli.stocks.industry_list(1) or []
 except Exception as _e:
     print("[industry] 名录不可用：", str(_e)[:60])

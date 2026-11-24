@@ -1,0 +1,173 @@
+id: disc.income
+version: 1.0.0
+cn: 收息
+kind: computed
+category: disclosure
+priority: P1
+description: 收息流投研闭环——全市场收息排行（四维评分+档位+股息分）、单票收息诊断
+  （评分逐项解释+静态下限双腿复原+榜内位置）、分红日历、N 年持有收益拆解。
+  与 web 应用台「收息佬」、开放平台 wm-income 技能共享同一评分 SoT
+  （sys/income/score.xs，golden-sample 对照守护）；真值在服务端，SDK 不重算。
+data_origin: [公司公告披露, 指标层物化列, 行情月K]
+units:
+  rate: 小数（0.05 = 5%；股息率/支付率/分位/国债收益率同口径）
+  score: 分（0~100，档位 ≥75 strong / ≥60 good / ≥45 watch / <45 avoid）
+  mv: 亿元
+  amount: 元
+  dps: 元/股
+requires: {path: sys/income/init.xs, preloaded: false}
+notes:
+  - '可用性：仅 A 股。收息榜依赖 cron 物化 memo（每交易日 16:50 EOD / 19:40 晚间补跑），
+    未就绪时 income.rating_rows 显式返回 COLD_CACHE——如实告知稍后重试，绝不现场重算全市场评分'
+  - '硬修正 flags 必须透传不静默：payout_danger（支付率>100% 档位封顶观察）/
+    decaying_high_yield（衰退式高息降一档）/ verify_data（TTM>12% 复核）/
+    floor_blind（静态下限双缺数据盲区）'
+  - 'diagnose 的 bond_yield_10y 依赖 $BOND_YIELD_GOV_10Y 指标码（服务端可用，
+    指标目录暂未收录——同 $BUYBACK_AMT* 先例，缺失时该字段为 nil）'
+  - '收益拆解股息贡献为差值口径（hfq 后复权 − nr 不复权），含分红再投效应，
+    非精确现金分红率；AT 锚点指标序列首查有冷物化惩罚（单票可达 20 万 EC 量级），
+    复查热态 ≈1 万 EC/票'
+functions:
+  - name: income.rating_rows
+    cn: 全市场收息排行（四维评分+档位+股息分排序）
+    kind: computed
+    layer: L0
+    params:
+      - {name: top_n, type: int, required: false, desc: '返回条数，默认 20，上限 100'}
+      - {name: grade, type: string, required: false, desc: '档位过滤 strong/good/watch/avoid'}
+      - {name: industry, type: string, required: false, desc: '行业：industry.SXX / SXX / 申万一级中文名'}
+      - {name: min_yield, type: float, required: false, desc: 'TTM 股息率下限（小数 0.04=4%）'}
+      - {name: gates, type: bool, required: false, desc: '资格门开关，默认 true'}
+    returns: {desc: 'MAP · 收息榜（rows 含 rank/symbol/name/industry/四维 score/dividend_score/gate_pass，facets_industries 全集，asof/universe/missing_slices 元数据；COLD_CACHE 时 ok=false）'}
+    ranges:
+      'rows[].yield_ttm': [0, 0.5]
+      'rows[].score.total': [0, 100]
+      'rows[].dividend_score': [0, 0.5]
+      'rows[].payout': [0, 20]
+      universe: [0, 1.0e+5]
+    example: 'income.rating_rows(20, "strong", "industry.S48", 0.04, true)'
+    notes: ['排序 = 股息分(0.6×TTM+0.4×近3年最低) 降序，过资格门块在前、未过块沉底',
+            'memo 直读零冷算（全市场评分循环在 cron 物化侧，分 5 片防 fuel 顶）']
+  - name: income.diagnose
+    cn: 收息诊断（原生批量：评分逐项解释+静态下限复原+榜内位置）
+    kind: computed
+    layer: L0
+    params:
+      - {name: symbols, type: array, required: true, desc: 'A 股代码数组（原生批量，一次 eval 按票计价；也接受单码带后缀写法）'}
+      - {name: include_history, type: bool, required: false, desc: '默认 false 只回评分/档位/flags/榜内 rank；true 才逐票带分红史+方案（批量不要开）'}
+    returns: {desc: 'MAP · items[]（symbol/found/score{total,grade,dimensions,max,flags,parts}/floor_explain/rank/bond_yield_10y；include_history 时另带 dividend_history/dps_rpt）'}
+    ranges:
+      'items[].score.total': [0, 100]
+      'items[].bond_yield_10y': [0, 0.2]
+    example: 'income.diagnose(ARR{"600900", "600519"}, false)'
+    notes: ['评分解释 parts 按收益30/持续25/稳定25/成长20 四维逐项加减分',
+            'floor_explain 复原 $FLOOR_YIELD 双腿（残差 |residual|>0.002 标 gate_uncertain）']
+  - name: income.calendar_events
+    cn: 分红日历（窗口查全市场分红事件）
+    kind: raw
+    layer: L0
+    params:
+      - {name: cal_from, type: string, required: false, desc: 'YYYY-MM-DD，缺省当月 1 日'}
+      - {name: cal_to, type: string, required: false, desc: 'YYYY-MM-DD，缺省当月末'}
+      - {name: cal_codes, type: array, required: false, desc: '可选代码过滤'}
+    returns: {desc: 'MAP · events（一个事件含公告/登记/除息/到账四日期，窗口内任一命中即返回；stocks 为名称/股息率/市值 enrich）'}
+    example: 'income.calendar_events("2026-11-01", "2026-11-30", ARR{"600900"})'
+    notes: ['预告行无确定除息日不入库（清洗层过滤）；ex_date 升序单键排序，二级排序调用方补']
+  - name: income.decomp
+    cn: 收益拆解（≤10 票批量：总收益=价格+股息贡献）
+    kind: computed
+    layer: L0
+    params:
+      - {name: symbols, type: array, required: true, desc: 'A 股代码数组，≤10（超出截断并标 truncated）'}
+      - {name: years, type: int, required: false, desc: '持有年限 3/5/10，默认 10'}
+    returns: {desc: 'MAP · items[]（total_return/price_return/dividend_return/cagr_*/monthly 月末累计序列/yearly 逐年表/attribution EPS×PE 归因；ok=false 为 K 线覆盖不足）'}
+    ranges:
+      'items[].total_return': [-1, 50]
+      'items[].dividend_return': [-0.5, 10]
+    example: 'income.decomp(ARR{"600900", "601088"}, 10)'
+    notes: ['全部小数；股息贡献 = hfq 后复权 − nr 不复权（差值口径，含再投效应）',
+            'monthly 行带 close_nr/close_hfq/yield_ttm 供阈值触达判定']
+  - name: income.decomp_one
+    cn: 收益拆解（单票）
+    kind: computed
+    layer: L0
+    params:
+      - {name: sym, type: string, required: true}
+      - {name: years, type: int, required: false, desc: '3/5/10，默认 10'}
+    returns: {desc: 'MAP · 单票拆解包（同 income.decomp items[] 元素）'}
+    example: 'income.decomp_one("600900", 10)'
+  # ---- L1：评分原语（组合层/诊断解释的构件，公开只读）----
+  - name: income.dividend_score
+    cn: 股息分 = 0.6×TTM 股息率 + 0.4×近 3 年最低（缺项重归一，双缺 nil）
+    kind: computed
+    layer: L1
+    params:
+      - {name: v, type: object, required: true, desc: 指标字段行（$FIELD 键或 memo 紧凑行）}
+    returns: {desc: 'float · 小数排序分（非股息率，勿当收益率表述）'}
+    example: 'income.dividend_score(row.values)'
+    notes: ['这是复合排序分：0.6×TTM + 0.4×近3年最低——不得表述为股息率']
+  - name: income.gate
+    cn: 资格门五条（连续分红/流动性≥5000万/可交易/支付率(0,1]/近5年扣非ROE>0）
+    kind: computed
+    layer: L1
+    params:
+      - {name: v, type: object, required: true}
+    returns: {desc: 'MAP · 各门布尔 + pass（缺失不拦：缺数据 ≠ 危险）'}
+    example: 'income.gate(row.values)'
+  - name: income.grade_of
+    cn: 总分→档位
+    kind: computed
+    layer: L1
+    params:
+      - {name: total, type: int, required: true}
+    returns: {desc: 'string · strong(≥75)/good(≥60)/watch(≥45)/avoid'}
+    example: 'income.grade_of(78)'
+  - name: income.score
+    cn: 四维收息评分（紧凑：tot/gr/dims/fl 硬修正标记）
+    kind: computed
+    layer: L1
+    params:
+      - {name: v, type: object, required: true, desc: 指标字段行}
+      - {name: bond, type: float, required: false, desc: '十年国债收益率（小数，利差腿参照）'}
+    returns: {desc: 'MAP · tot 0~100 / gr 档位 / dims[收益,持续,稳定,成长] / fl 硬修正'}
+    example: 'income.score(row.values, 0.018)'
+  - name: income.score_explain
+    cn: 四维收息评分（含 parts 逐项加减分解释，诊断用）
+    kind: computed
+    layer: L0
+    params:
+      - {name: v, type: object, required: true, desc: 指标字段行}
+      - {name: bond, type: float, required: false, desc: '十年国债收益率（小数，利差腿参照）'}
+    returns: {desc: 'MAP · tot/gr/dims 同 income.score，另带 parts[4]（dim/score/max/items[{label,delta}]）'}
+    example: 'income.score_explain(row.values, 0.018)'
+    notes: ['tot 与 income.score 完全一致；parts 只加解释不改分（诊断页逐项展开用）']
+  - name: income.rating_all
+    cn: 全市场收息排行·全量（无 top_n 上限）
+    kind: computed
+    layer: L1
+    params:
+      - {name: grade, type: string, required: false, desc: '档位过滤 strong/good/watch/avoid'}
+      - {name: industry, type: string, required: false, desc: '行业：industry.SXX / SXX / 申万一级中文名'}
+      - {name: min_yield, type: float, required: false, desc: 'TTM 股息率下限（小数 0.04=4%）'}
+      - {name: gates, type: bool, required: false, desc: '资格门开关，默认 true'}
+    returns: {desc: 'MAP · 与 rating_rows 同结构，rows 为全量不截断；facets_industries/facets_grades 为全集计数'}
+    example: 'income.rating_all("", "", nil, true)'
+    notes: ['供整表浏览场景（web 收息佬）；SDK 常规取数请用 rating_rows 限流',
+            '全量 append 成本显著高于 rating_rows（后者够数即停），别在大批量循环里反复调']
+  - name: income.diag_fields
+    cn: 收息取数字段包（27 字段）
+    kind: raw
+    layer: L1
+    params: []
+    returns: {desc: 'ARR · 字段名数组（$FIELD 形态，供 INDEX_ROW_VALUES_MANY_SPEC）'}
+    example: 'income.diag_fields()'
+    notes: ['单一事实源：评分/下限复原/榜单取数共用同一字段清单，改字段只改这一处']
+  - name: income.floor_explain
+    cn: 静态收益下限双腿复原（扣非盈利腿×PE 分位门 + 可持续股息腿×质量门）
+    kind: computed
+    layer: L1
+    params:
+      - {name: v, type: object, required: true, desc: 兼容原始 $FIELD 行与 memo 紧凑行（dp/pd/q5/b5/r5/fy）}
+    returns: {desc: 'MAP · ey_raw/pe_gate/ey_leg/dy_leg/composite/actual/residual/gate_uncertain'}
+    example: 'income.floor_explain(row.values)'
+    notes: ['残差 |residual|>0.002 = 复原走了通用档而实际是行业档（周期/金融），如实标注']

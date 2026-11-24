@@ -3,6 +3,9 @@
 核心目标守护：批量接口的**存在理由是绕开 429 限流**——服务端按请求次数限流
 （免费档 500 次/小时、5000 次/日），因此「N 个标的 = ⌈N/batch_size⌉ 次请求」
 必须是可执行的断言，而不是文档里的口号。
+
+本文件统一 ``native_batch=False``：分批器语义与批量原生路由
+（kline.snapshot → kline.snapshot_batch）正交，路由行为见 test_native_batch.py。
 """
 import pytest
 
@@ -54,6 +57,7 @@ class CountingSession:
 
 
 def make_client(session=None, **kw):
+    kw.setdefault("native_batch", False)   # 分批器契约测试与原生路由正交
     return Client(base_url="https://t", client_id="i", client_secret="s",
                   catalog=load(), session=session or CountingSession(), **kw)
 

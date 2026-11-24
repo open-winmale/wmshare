@@ -115,6 +115,20 @@ class FakeSession:
                 if url.endswith("/v1/oauth/token"):
                     return {"data": {"access_token": "tok", "expires_in": 3600}}
                 lines = (json or {}).get("xs_lines") or []
+                # futures 门面：store 直读行（futures.query_bars）
+                if any("futures.query_bars" in ln for ln in lines):
+                    return {"success": True, "data": {"result": [{
+                        "date": d, "symbol": "cn.AL.SHF",
+                        "open": 1.0, "high": 2.0, "low": 0.5, "close": 1.5,
+                        "settle": 1.4, "pre_settle": 1.3, "volume": 100,
+                        "amount": 1.0e6, "oi": 200, "oi_chg": 5,
+                        "percent": 0.001,
+                    } for d in ("2026-08-31", "2026-09-30", "2026-10-30")]}}
+                # futures.bars 组合面：sas/vals 两列点读（存量桩，保留兼容）
+                if any("RANGE(pts" in ln for ln in lines):
+                    return {"success": True, "data": {"result": {
+                        "sas": ["2026:M2", "2026:M1"],
+                        "vals": [[1.0] * 8, [2.0] * 8]}}}
                 # window_stats 的脚本显式返回 MAP（rows/dps/total）
                 if any("bonus.query_list" in ln for ln in lines) and \
                         any('"rows"' in ln for ln in lines):
@@ -162,19 +176,78 @@ def test_readme_counts_match_catalog():
     assert f"{curated} 个精选常用指标代码" in README
 
 
+def test_examples_count_matches_dir():
+    """示例数按目录真值动态互校（README 与课程表都必须等于实际脚本数）。"""
+    n = len(list((REPO / "examples").glob("[0-9][0-9]_*.py")))
+    assert f"{n} 个编号示例" in README
+    assert f"{n} 个示例" in (REPO / "examples" / "README.md").read_text(encoding="utf-8")
+
+
+def test_readme_documents_mcp_stdio():
+    """MCP 只走 stdio：文档必须写明，且不得出现本地端口号。"""
+    assert "stdio" in README
+    assert "stdio" in AI_MD
+    assert "8765" not in README
+
+
+def test_api_md_batch_example_uses_native_route():
+    """API.md 的批量示例必须写 1 次（kline.snapshot 原生路由），不能回退到 11。"""
+    assert "原生批量路由 1 次" in API_MD
+    assert "5375 1" in API_MD
+
+
+def test_readme_documents_inventory_reconciliation():
+    """用户文档必须解释 inventory 与 catalog 的函数数差额（内部 helper）。"""
+    inv = json.loads((REPO / "src" / "wmshare" / "_catalog" / "generated"
+                      / "inventory.json").read_text(encoding="utf-8"))
+    stats = CAT.stats()
+    helpers = inv["function_count"] - stats["functions"]
+    assert (f"inventory {inv['function_count']} = {stats['functions']} 对外 + "
+            f"{helpers} 个 internal helper") in README
+
+
 def test_docs_no_stale_counts():
-    """防回归：过时计数口径不得重现（127 曾滞后两个版本、2,639 滞后一个目录代际）。"""
+    """防回归：过时计数/日期口径不得重现（127 曾滞后两个版本、2,639 滞后一个目录代际）。
+
+    2026-11-19 扩围：扫描面此前只含 README/GUIDE/AI/docs-README，漏掉
+    QUICKSTART_EN、METRIC_ADAPTER、examples/README 与 server.json——而这三类
+    恰好是对外推广最先被引用的地方（server.json 是 MCP Registry 的机器可读描述）。
+    """
     stale = ("2,639", "2639", "2197", "263 个", "116 个核心接口",
-             "127 个 friendly", "12 个编号示例", "130 个核心接口")
+             "127 个 friendly", "12 个编号示例", "129 个核心接口",
+             "2,752", "2752", "316 个", "150 个核心接口", "167 个",
+             # 2026-11-23：GUIDE FAQ 的「328 个函数」滞后于目录真实值（345），
+             # 且 GUIDE 的计数不受 test_counts 动态互校覆盖——只能靠黑名单兜。
+             "328 个",
+             # 2026-11-24：示例数（22/29）、两处无门禁函数计数（331/298）
+             # 与 kline.snapshot 批量请求数（11）已清除。
+             "22 个示例", "29 个示例", "331 函数", "298 个公开函数",
+             "5,375 11", "5375 11")
     docs = {
         "README.md": README,
         "docs/GUIDE.md": GUIDE_MD,
         "docs/AI.md": AI_MD,
         "docs/README.md": (REPO / "docs" / "README.md").read_text(encoding="utf-8"),
+        "docs/QUICKSTART_EN.md": (REPO / "docs" / "QUICKSTART_EN.md").read_text(
+            encoding="utf-8"),
+        "docs/METRIC_ADAPTER.md": (REPO / "docs" / "METRIC_ADAPTER.md").read_text(
+            encoding="utf-8"),
+        "examples/README.md": (REPO / "examples" / "README.md").read_text(encoding="utf-8"),
+        "server.json": (REPO / "server.json").read_text(encoding="utf-8"),
     }
     for name, text in docs.items():
         hit = [s for s in stale if s in text]
         assert not hit, f"{name} 残留过时计数：{hit}"
+
+    # 快照日期：只拦「当成当前快照发布日期」的写法。带日期的历史实测引用
+    #（如「实测（2026-10-30，免费档，当时全市场 5,691 家）」）是允许的——那类
+    # 记录的是当时的事实，抹掉日期反而更糟。
+    stale_snapshot = re.compile(
+        r"(?:快照[^。\n]{0,12}2026-10-30|captured 2026-10-30|"
+        r"2026-10-30[^。\n]{0,6}(?:固定快照|快照))")
+    for name, text in docs.items():
+        m = stale_snapshot.search(text)
+        assert m is None, f"{name} 仍把 2026-10-30 写成当前快照日：{m.group(0)!r}"
 
 
 def test_api_module_docstring_counts_match_catalog():
@@ -277,14 +350,18 @@ def test_api_md_metric_groups_match_catalog():
 
 
 def visible_catalog_functions(cat) -> list[str]:
-    """与 gen_api_docs.doc_hidden 同规则：排除内部/索引积木类函数。"""
+    """直接复用 gen_api_docs.doc_hidden，避免两处隐藏规则各自漂移。
+
+    隐藏规则含内部命名空间（用户侧只见 cli.statements.* 等友好门面）与
+    索引积木类辅助函数；被隐藏的函数仍留在目录里，cli.call 可调。
+    """
+    import sys
+    sys.path.insert(0, str(REPO / "tools"))
+    from gen_api_docs import doc_hidden  # noqa: E402
     out = []
     for names in cat.functions_by_domain().values():
         for name in names:
-            short = name.split(".", 1)[1]
-            if cat.function(name).get("status") == "internal":
-                continue
-            if short.startswith(("index_where_", "index_field")) or short.endswith("_bin_expr"):
+            if doc_hidden(cat.function(name)):
                 continue
             out.append(name)
     return out
@@ -330,6 +407,20 @@ class ReadmeClient:
 
     def __init__(self):
         import types
+
+        class _IL:
+            def __getitem__(self, i):
+                return ("2026-10-24", 1331.88)
+
+        class _Pts:
+            iloc = _IL()
+
+        self.index = types.SimpleNamespace(
+            # 指数节示例罐头：与 GUIDE 同日真实 probe 同量级（5y 分位）
+            trend=lambda key, window: {"ok": True, "as_of": "2026-10-24", "data": {
+                "points": _Pts(), "n": 5, "pe_pct": 0.42, "pe_pct_window": "5y",
+                "pct": {"pe": {"p3": 0.51, "p5": 0.42, "p10": 0.33}}}, "meta": {}},
+        )
         self.kline = types.SimpleNamespace(
             bars=lambda *a, **k: [{"date": "2026-10-20", "close": 1331.88,
                                    "volume": 3413500.0, "amount": 4525398959.0,
@@ -342,24 +433,28 @@ class ReadmeClient:
             screen_above_ma20=lambda *a, **k: True,
             screen_momentum_20d=lambda *a, **k: False,
             screen_volume_spike=lambda *a, **k: True,
-            # 数值取自 2026-10-24 真实 probe（A 股全市场截面）
+            # 数值取自 2026-10-24 真实 probe（A 股全市场截面），2.0 起 *_pct 统一小数：
+            # 上游 80.3% → 0.803。罐头必须与文档示例同口径，否则示例写错也能绿。
             index_breadth_summary=lambda *a, **k: {"total": 5685, "up": 4567, "down": 934,
-                                                   "flat": 184, "up_pct": 80.3,
-                                                   "down_pct": 16.4, "flat_pct": 3.2,
+                                                   "flat": 184, "up_pct": 0.803,
+                                                   "down_pct": 0.164, "flat_pct": 0.032,
                                                    "median_pct": 0.015363},
             index_breadth_bins=lambda *a, **k: [
-                {"label": "涨停", "count": 109, "pct_of_total": 1.9},
-                {"label": "+5%~10%", "count": 464, "pct_of_total": 8.2},
-                {"label": "+3%~5%", "count": 829, "pct_of_total": 14.6},
+                {"label": "涨停", "count": 109, "pct_of_total": 0.019},
+                {"label": "+5%~10%", "count": 464, "pct_of_total": 0.082},
+                {"label": "+3%~5%", "count": 829, "pct_of_total": 0.146},
             ],
             index_top_movers=lambda *a, **k: [
                 {"symbol": "600519", "name": "贵州茅台", "percent": 0.0052},
             ],
-            # 全市场条件选股：罐头值取 2026-11-10 真实 probe（命中 108，首行伊泰B股）
-            query=lambda *a, **k: {"count": 108, "rows": [
+            # 全市场条件选股：罐头值取 2026-11-10 真实 probe（命中 108，首行伊泰B股）。
+            # 返回形态必须与真实门面一致（统一信封）——曾返扁平 {count, rows}，
+            # 把 README 的 res["count"] 旧写法焊成绿色，live 一跑就 KeyError。
+            query=lambda *a, **k: {"ok": True, "as_of": "2026-11-10",
+                                   "data": {"count": 108, "rows": [
                 {"symbol": "900948", "name": "伊泰B股",
                  "$BONUS_RATE_3Y_AVG_LAST": 0.2104, "$ROE_TTM_LAST": 0.1631},
-            ]},
+            ]}, "meta": {}},
         )
         self.dividend = types.SimpleNamespace(
             yield_ttm=lambda *a, **k: 0.0396,
@@ -399,8 +494,10 @@ class ReadmeClient:
         return _FakeBatch(self._payload(name, symbols), requests=1)
 
     def batch_all(self, name, symbols, batch_size=None, **kw):
+        # 与真实 Client 一致：原生批量路由（kline.snapshot）不分批，恒 1 次请求。
+        native = name in ("kline.snapshot", "kline.snapshot_batch")
         return _FakeBatch(self._payload(name, symbols),
-                          requests=-(-len(symbols) // 500))
+                          requests=1 if native else -(-len(symbols) // 500))
 
     def batch_iter(self, name, symbols, batch_size=None, **kw):
         step = batch_size or 500
@@ -458,19 +555,70 @@ def test_readme_example_outputs_documented():
         assert line is not None, f"README 示例缺少 {call} 与预期输出 {value} 的对应注释"
 
 
-def test_readme_zero_credential_snippet_matches_snapshot():
-    """首屏「零凭证先试」块的注释值必须等于真实快照回放值。
+def test_readme_zero_credential_snippet_is_anonymous():
+    """首屏「零凭证先试」块必须走 from_env 免注册回落（demo 模式已于 3.0.0 移除）。
 
-    首屏是唯一给未注册用户的钩子：值一旦与 ``_demo_data.json`` 漂移，陌生人照抄就跑出
-    不同数字。这里直接打真快照（不 patch），把注释与快照焊死。
+    demo 曾是首屏钩子（注释值与快照焊死）；3.0.0 起零凭证体验=``from_env()``
+    自动免注册免费试用（真实数据；3.3.0 起由申领匿名凭据改为不带令牌、按来源网络
+    记账）。离线环境无法断言真实输出值，这里钉住动线存在性与旧入口清零。
+    """
+    assert "demo_client" not in README, "README 仍有 demo_client 残留"
+    surfaces = {"README.md": README,
+                "docs/QUICKSTART_EN.md": (REPO / "docs" / "QUICKSTART_EN.md").read_text(
+                    encoding="utf-8")}
+    for name, text in surfaces.items():
+        assert "wmshare.Client.from_env()" in text, f"{name} 缺少零凭证匿名试跑入口"
+        assert "demo_client" not in text, f"{name} 仍有 demo_client 残留"
+
+
+def test_quickstart_en_matches_runtime():
+    """英文 Quickstart 的计数与计费口径必须与运行时/代码一致。
+
+    2026-11-19 实测的三类漂移：指标码写 2,752（实际 2,983）、快照日期写
+    2026-10-30（快照已随 3.0.0 移除）、以及最危险的一处——把计费写成
+    「billed per request, not per row」，与 EC 按服务端物化行计费相反，
+    会直接诱导用户批量跑全市场后超额消耗 EC。
     """
     import wmshare
 
-    assert "wmshare.demo_client()" in README, "首屏缺少零凭证试跑入口"
-    demo = wmshare.demo_client()
-    for label, value in (("yield", f"{demo.dividend.yield_ttm('600519'):.2%}"),
-                         ("total", str(demo.screener.index_breadth_summary()["total"]))):
-        assert value in README, f"首屏注释的 {label} 值 {value} 与快照回放不符"
+    text = (REPO / "docs" / "QUICKSTART_EN.md").read_text(encoding="utf-8")
+    stats = wmshare.load().stats()
+    assert f"{stats['metric_catalog_total']:,} precomputed indicator codes" in text, \
+        "QUICKSTART_EN 的指标码计数与运行时目录不符"
+    assert f"all {stats['metric_catalog_total']:,} codes" in text, \
+        "QUICKSTART_EN 的指标码全量计数与运行时目录不符"
+    assert f"({len(FRIENDLY_INDEX)} core endpoints)" in text, \
+        "QUICKSTART_EN 的核心接口计数与 FRIENDLY_INDEX 不符"
+
+    # 计费口径：不得再出现「按请求而非按行计费」的相反表述
+    flat = " ".join(text.split())
+    assert "billed **per request**, not per row" not in flat, \
+        "QUICKSTART_EN 仍写着「按请求计费」——EC 按服务端物化行计，批量不省 EC"
+    assert "cost_estimate" in text, "QUICKSTART_EN 缺少 cost_estimate 先估后取入口"
+    assert "does not cut EC" in flat or "not cut EC" in flat, \
+        "QUICKSTART_EN 必须写明批量省请求不省 EC"
+
+
+def test_pct_example_values_are_decimals():
+    """文档里 ``*_pct`` 的示例注释值必须是小数（2.0 契约：0.803 = 80.3%）。
+
+    2026-11-19 实测：README 与 GUIDE 曾把 ``up_pct`` 示例写成 80.3 / 9.5，与
+    "全库统一小数" 的 2.0 契约相反；更糟的是 ``test_readme_python_blocks_execute``
+    的 FakeClient 直接返回 80.3，把错误示例"焊死"成绿色。两处都要守，否则文档
+    会持续教出 100 倍误读。
+    """
+    pattern = re.compile(r"['\"]?([a-z_]*_pct)['\"]?\s*:\s*(-?[\d.]+)")
+    surfaces = {"README.md": README, "docs/GUIDE.md": GUIDE_MD}
+    violations = []
+    for name, text in surfaces.items():
+        for lineno, line in enumerate(text.splitlines(), 1):
+            for field, raw in pattern.findall(line):
+                value = float(raw)
+                if abs(value) > 1.0:
+                    violations.append(f"{name}:{lineno} {field}={raw}")
+    assert not violations, (
+        "文档示例把 *_pct 写成百分数（2.0 契约是小数，0.803 = 80.3%）：\n"
+        + "\n".join(violations))
 
 
 def test_readme_units_and_guards_documented():
@@ -524,9 +672,14 @@ def test_readme_is_lean():
     2026-11-12 提至 330：新增「主站、开放平台与 SkillHub」节——同一套数据的三层入口
     此前在店面完全缺失（投研/SkillHub/主站 0 处），读者无从知道有现成工具站与 AI
     技能库；主站按投资者类型列应用（指数定投/可转债/财报专业版/抄作业等）。
+    2026-11-21 提至 339：新增「不写 Python：wmshare 命令行出成品」节（screen/income/
+    index/cbond 四动词 + call 透传 + 无凭证匿名回退——命令行是「不折腾 SDK」的关键
+    上手动线）+ 意图表补收息排行/ETF 一览 + 更多区补 CLI/export 入口。先删 10 行：
+    匿名说明压缩（3→2）、定位段与目录各并 1 行、分工 quote 2→1、主站 bullet 合并
+    （7→6）、where 语法段压缩（4→2，删与零凭证节重复的 demo 句）。
     """
-    assert len(README.splitlines()) <= 330, \
-        f"README 膨胀到 {len(README.splitlines())} 行（上限 330）；长内容下沉 docs/ 或删除"
+    assert len(README.splitlines()) <= 339, \
+        f"README 膨胀到 {len(README.splitlines())} 行（上限 339）；长内容下沉 docs/ 或删除"
 
 
 def test_readme_no_stale_trial_promises():
@@ -641,8 +794,12 @@ def test_docstring_params_exist_in_signature():
         fn = getattr(FRIENDLY_NAMESPACES[ns], method)
         doc = inspect.getdoc(fn) or ""
         params = set(re.findall(r"^:param (\w+):", doc, re.M))
-        sig = set(inspect.signature(fn).parameters) - {"self", "_raw", "_df"}
-        assert params <= sig, f"{ns}.{method} docstring 参数 {params - sig} 不在签名中"
+        sig = set(inspect.signature(fn).parameters) - {"self"}
+        # _raw/_df 等逃生口可以入 doc（2.0 仅剩 _raw）；其余 docstring 参数必须在签名里
+        assert params - {"_raw", "_df"} <= sig, \
+            f"{ns}.{method} docstring 参数 {params - sig} 不在签名中"
+        unknown = params & ({"_df"} - {"_raw"})
+        assert not unknown, f"{ns}.{method} docstring 仍引用已废除的 _df"
 
 
 def test_unit_wording_matches_catalog():
@@ -754,6 +911,84 @@ def test_openapi_matches_signatures_and_returns():
         container = resp.get("items", resp) if resp.get("type") == "array" else resp
         assert set(container.get("properties") or {}) == {f["name"] for f in fields}, \
             f"{ns}.{method} 响应字段与目录 returns_shape 不一致"
+
+
+def test_api_pack_contract():
+    """api_pack.json（开放平台接口文档站数据源）合同：覆盖 1:1、参数对签名、物料显式。
+
+    独立复刻生成器口径防同错：键集合与 FRIENDLY_INDEX/COMPOSITE_METHODS 精确
+    对齐；test 物料缺省必须是显式 null（防「静默没数据」假文档）。
+    DOC_META（api/__init__）决定文档站暴露面：隐藏接口 SDK 仍可调，只是不成页。
+    """
+    from wmshare.api import DOC_META
+    pack = json.loads((REPO / "docs" / "api_pack.json").read_text(encoding="utf-8"))
+    assert pack["schema_version"] == 2
+    entries = {i["key"]: i
+               for n in pack["namespaces"]
+               for i in (*n["interfaces"], *n["composites"])}
+    # 覆盖 1:1：核心 + 组合，一个不多一个不少（隐藏/变体只是元数据，条目仍在）
+    assert set(entries) == ({f"{ns}.{m}" for _, ns, m, _, _ in FRIENDLY_INDEX}
+                            | {f"{ns}.{m}" for ns, ms in COMPOSITE_METHODS.items() for m in ms})
+    assert pack["meta"]["core"] == len(FRIENDLY_INDEX)
+    assert pack["meta"]["composite"] == sum(len(v) for v in COMPOSITE_METHODS.values())
+    assert pack["meta"]["domains"] == len(CAT.domains)
+
+    for _, ns, method, _, _ in FRIENDLY_INDEX:
+        e = entries[f"{ns}.{method}"]
+        assert not e["composite"] and e["example"].startswith(f"cli.{ns}.{method}(")
+        sig = [n for n, p in inspect.signature(getattr(FRIENDLY_NAMESPACES[ns], method))
+               .parameters.items() if n != "self" and not n.startswith("_")]
+        assert [p["name"] for p in e["params"]] == sig, f"{ns}.{method} 参数表漂移"
+        for p in e["params"]:
+            # TickDB 式三字段：name/required/desc；必填 ⇔ 该参数签名无默认值
+            assert set(p) == {"name", "required", "desc"} and p["desc"], \
+                f"{ns}.{method}.{p['name']} 参数行结构漂移或缺说明"
+            assert p["desc"] != "—", f"{ns}.{method}.{p['name']} 参数说明缺失"
+        # 字段表 TickDB 式两字段：name/desc（类型/守护/可空标记不上用户面）
+        for f in e["returns"]["fields"]:
+            assert set(f) == {"name", "desc"}, f"{ns}.{method} 返回字段行结构漂移"
+        # 返回说明不得泄漏「ARR ·/MAP ·」等内部形态前缀（kind 字段单独表达）
+        rd = e["returns"]["desc"] or ""
+        assert not rd.startswith(("ARR · ", "MAP · ", "标量 · ", "数值 · ")), \
+            f"{ns}.{method} 返回说明泄漏形态前缀"
+        t = e["test"]
+        if t is not None:
+            assert t["path"] == "/v1/analysis/xs/eval"
+            body = t["body"]
+            assert body.get("symbol") and body.get("xs_lines") and body.get("mode") == "call"
+            assert any(ln.lstrip().startswith("return") for ln in body["xs_lines"]), \
+                f"{ns}.{method} eval payload 缺 return 行"
+        assert "demo" not in e, f"{ns}.{method} api_pack 仍有 demo 字段残留"
+        # DOC_META 与 pack 条目互证：隐藏/变体标记必须精确一致
+        meta = DOC_META.get((ns, method))
+        if meta is None:
+            assert e["docs_visible"] and "page" not in e, \
+                f"{ns}.{method} 不应有隐藏/变体标记"
+        elif "page" in meta:
+            assert e["docs_visible"] is False and e.get("page") == meta["page"], \
+                f"{ns}.{method} 变体归属漂移"
+            assert e["key"] in {v["key"] for v in entries[meta["page"]].get("variants", [])}, \
+                f"{ns}.{method} 未挂到宿主页 variants"
+        else:
+            assert e["docs_visible"] is False, f"{ns}.{method} 应隐藏"
+
+    for ns, methods in COMPOSITE_METHODS.items():
+        for method in methods:
+            e = entries[f"{ns}.{method}"]
+            assert e["composite"] and e["test"] is None and e["example"] is None, \
+                f"组合接口 cli.{ns}.{method} 不应带一键测试/单行示例"
+    # meta 计数与实体一致（防计数行拍脑袋）
+    assert pack["meta"]["test_ready"] == sum(1 for e in entries.values() if e["test"])
+    assert pack["meta"]["docs_visible"] == sum(1 for e in entries.values()
+                                               if e["docs_visible"])
+    assert pack["meta"]["variants"] == sum(1 for e in entries.values() if e.get("page"))
+    # 变体宿主必须自身可见（隐藏接口不能当组页宿主）
+    for e in entries.values():
+        for v in e.get("variants") or []:
+            assert e["docs_visible"], f"{e['key']} 是隐藏接口却挂着变体 {v['key']}"
+    # 已拍样本：result 键存在即计入（None 也是真实响应=标的无数据）
+    sampled = {i["key"] for i in entries.values() if "result" in (i.get("sample") or {})}
+    assert pack["meta"]["sampled"] == len(sampled)
 
 
 def test_llms_lists_composite_interfaces():

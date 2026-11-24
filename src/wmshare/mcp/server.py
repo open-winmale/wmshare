@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import functools
 import json
-import os
 from collections.abc import Callable
 from typing import Annotated, Any, Literal
 
@@ -26,7 +25,7 @@ LimitArg = Annotated[int, Field(ge=1, le=100, description="返回条数上限")]
 DateArg = Annotated[str | None, Field(description="日期，格式 YYYY-MM-DD")]
 
 StatementAction = Literal[
-    "income", "balance", "cashflow", "audit", "compare", "tree", "years"
+    "income", "balance", "cashflow", "indicators", "audit"
 ]
 SegmentAction = Literal[
     "business", "products", "region", "income", "coverage", "periods", "snapshot"
@@ -43,14 +42,16 @@ CorporateAction = Literal[
     "query_buyback_detail", "query_buyback_plan", "query_capital_change",
     "query_capital_change_at", "query_concert", "query_exec_change",
     "query_exec_change_at", "query_executives", "query_guarantee", "query_hgt",
-    "query_holder10", "query_holdernum", "query_institution_detail",
+    "query_holder10", "query_holdernum", "query_holdernum_history",
+    "query_institution_detail",
     "query_institution_summary", "query_litigation", "query_national_team",
     "query_pledge_detail", "query_pledge_industry", "query_pledge_market",
     "query_pledge_org", "query_pledge_summary", "query_related_trade",
     "query_release", "query_reorg", "query_violation",
 ]
 MarketDomain = Literal[
-    "kline", "moneyflow", "margin", "cbond", "index", "valuation", "stocks"
+    "kline", "moneyflow", "margin", "cbond", "index", "valuation", "stocks",
+    "board", "blocktrade",
 ]
 IntlAction = Literal[
     "query_ccass", "query_shareholders", "query_org_rating",
@@ -60,6 +61,22 @@ NoticeAction = Literal[
     "list", "recent", "find", "by_category", "on_date",
     "has_buyback", "has_reduction",
 ]
+IncomeAction = Literal["rating", "diagnose", "calendar", "decomp"]
+BacktestRule = Literal["ma_cross", "pe", "pb", "ps", "pr"]
+EtfAction = Literal[
+    "card", "nav", "share", "div", "portfolio",
+    "profile", "premium", "asset", "rank",
+]
+MacroAction = Literal["query", "asof", "sampling", "reserve", "reserve_history",
+                      "us_topics", "us_search", "us_series"]
+FxAction = Literal["rate", "history", "bars", "list"]
+ValuationAction = Literal[
+    "hist_stats", "daily_basic", "daily_basic_multi", "daily_basic_coverage"
+]
+ValuationMetric = Literal["pe", "pb", "ps", "pr"]
+ToplistAction = Literal["by_date", "by_symbol"]
+FuturesAction = Literal["get", "mapping", "snapshot", "bars", "receipts", "holding", "settle"]
+PdfAction = Literal["search", "read_markdown", "status"]
 CompanyBlock = Literal[
     "profile", "income", "balance", "cashflow", "indicators", "dividend", "notices"
 ]
@@ -71,15 +88,16 @@ MarketAction = Literal[
     "minute", "is_etf", "bars", "last", "live", "query", "latest", "universe",
     "latest_quotes", "of_stock", "call_hits", "kline_window", "keys", "members",
     "weights", "valuation", "hist_stats", "list", "trend", "universe_keys",
+    "limit_price", "limit_prices", "limit_price_history", "moneyflow",
+    "moneyflow_last",
+    "by_date", "by_symbol", "suspend_history", "name_history", "lifecycle",
+    "concepts_of", "concept_members", "concept_list",
 ]
 
 
 def runtime_from_env() -> MCPRuntime:
     market = credential_values()["WMSHARE_MARKET"] or DEFAULT_MARKET
-    demo = os.getenv("WMSHARE_MCP_DEMO", "0").strip().lower() in {
-        "1", "true", "yes", "on",
-    }
-    return MCPRuntime(market=market, demo=demo)
+    return MCPRuntime(market=market)
 
 
 def build_server(runtime: MCPRuntime | None = None) -> FastMCP:
@@ -88,9 +106,17 @@ def build_server(runtime: MCPRuntime | None = None) -> FastMCP:
     mcp = FastMCP(
         "wmshare",
         instructions=(
-            f"{SOURCE}：20 个 task tools 覆盖高频数据面；长尾 friendly API 用 "
+            f"{SOURCE}：29 个 task tools 覆盖高频与结论级数据面；长尾 friendly API 用 "
             "wmshare_call(mode='api')，目录函数批量用 wmshare_batch(params=...)。"
             "先离线 search/contract，再取数；多标的不要逐票循环。"
+            "按意图选工具：估值分位→wmshare_metrics($PCT_*)或 "
+            "wmshare_valuation(action='hist_stats')；指数估值→wmshare_market"
+            "(domain='index')；全市场选股→wmshare_screen(action='query')；"
+            "收息排行/诊断→wmshare_income；单股回测→wmshare_backtest；"
+            "ETF 净值/溢价/持仓→wmshare_etf；宏观时序→wmshare_macro；"
+            "龙虎榜→wmshare_toplist；期货主力→wmshare_futures；"
+            "公告 PDF 结构化→wmshare_pdf；名字/代码不确定→先 "
+            "wmshare_search/wmshare_symbols。"
             "比率/涨跌幅/分位默认小数（0.0396=3.96%），金额=元，量=股；"
             "screener 宽度接口的 *_pct 字段是百分数数值（80.3=80.3%）。"
             "DataError 是数据守护报警，不要静默忽略。"
@@ -244,7 +270,11 @@ def build_server(runtime: MCPRuntime | None = None) -> FastMCP:
         output: OutputArg = "sample",
         max_rows: MaxRowsArg = 100,
     ) -> dict[str, Any]:
-        """取单票筛选、全市场条件选股、宽度、行业分布、涨跌榜或行业成分。"""
+        """取单票筛选、全市场条件选股、宽度、行业分布、涨跌榜或行业成分。
+
+        示例：action='query', where='$ROE_TTM_LAST>0.15', limit=20（全市场条件选股，
+        data.count=真实命中数）；action='breadth_summary'（涨跌全景）；
+        action='boolean', symbol='600519', test='above_ma20'（单票筛选）。"""
         return tools.screen(rt, action, symbol=symbol, test=test, params=params,
                             idx=idx, industry=industry, limit=limit, desc=desc,
                             where=where, output=output, max_rows=max_rows)
@@ -266,7 +296,11 @@ def build_server(runtime: MCPRuntime | None = None) -> FastMCP:
         output: OutputArg = "sample",
         max_rows: MaxRowsArg = 100,
     ) -> dict[str, Any]:
-        """取公告、定期报告、业绩事件、分红历史或契约套利事件。"""
+        """取公告、定期报告、业绩事件、分红历史或契约套利事件。
+
+        示例：kind='notice', symbol='600519', window='3m'（近三个月公告）；
+        kind='filing'（定期报告清单）；kind='dividend', symbol='600519'（分红历史）。
+        公告 PDF 正文结构化请用 wmshare_pdf。"""
         return tools.disclosures(rt, kind, symbol=symbol, market=market,
                                  window=window, keyword=keyword, begin=begin,
                                  end=end, limit=limit, output=output,
@@ -278,22 +312,13 @@ def build_server(runtime: MCPRuntime | None = None) -> FastMCP:
         action: Annotated[StatementAction, Field(description="报表动作")],
         symbol: Annotated[str | None, Field(description="标的代码；所有 action 都需要")] = None,
         market: MarketArg = None,
-        kind: Annotated[
-            Literal["income", "balance", "cashflow"] | None,
-            Field(description="compare/tree/years 使用的报表类型"),
-        ] = "income",
         years: Annotated[int, Field(ge=1, le=10, description="报表期数")] = 5,
-        scope: Annotated[
-            Literal["合并", "母公司"],
-            Field(description="报表口径：合并或母公司"),
-        ] = "合并",
         output: OutputArg = "sample",
         max_rows: MaxRowsArg = MAX_ROWS,
     ) -> dict[str, Any]:
-        """取三大报表、审计意见、合并/母公司对比、报表树或可用年份。"""
+        """取三大报表（cn/hk/us 宽表）或审计意见。"""
         return tools.statement(rt, action, symbol=symbol, market=market,
-                               kind=kind or "income", years=years, scope=scope,
-                               output=output, max_rows=max_rows)
+                               years=years, output=output, max_rows=max_rows)
 
     @mcp.tool()
     @protocol
@@ -331,12 +356,43 @@ def build_server(runtime: MCPRuntime | None = None) -> FastMCP:
         output: OutputArg = "sample",
         max_rows: MaxRowsArg = MAX_ROWS,
     ) -> dict[str, Any]:
-        """取分红历史、DPS、TTM 指标、窗口统计和质量筛选；率值均为小数。"""
+        """取分红历史、DPS、TTM 指标、窗口统计和质量筛选；率值均为小数。
+
+        示例：action='yield_ttm', symbol='600519'（TTM 股息率 0.0396=3.96%）；
+        action='screen_quality', symbol='600519'（单票质量筛选）。
+        全市场收息排行/单票诊断请用 wmshare_income。"""
         return tools.dividend(rt, action, symbol=symbol, market=market,
                               limit=limit, begin=begin, end=end, window=window,
                               min_yield=min_yield, payout_min=payout_min,
                               payout_max=payout_max, min_pct=min_pct,
                               output=output, max_rows=max_rows)
+
+    @mcp.tool()
+    @protocol
+    def wmshare_income(
+        action: Annotated[IncomeAction, Field(description="rating=全市场排行 / diagnose=批量诊断 / calendar=分红日历 / decomp=N 年持有收益拆解")],
+        symbols: Annotated[list[str] | None, Field(description="diagnose/decomp 需要的标的列表（decomp ≤10 只）")] = None,
+        top_n: Annotated[int, Field(ge=1, le=200, description="rating 排行条数")] = 20,
+        grade: Annotated[str | None, Field(description="rating 评级过滤（如 strong）")] = None,
+        industry: Annotated[str | None, Field(description="rating 行业过滤")] = None,
+        min_yield: Annotated[float | None, Field(description="rating 最低股息率，小数；0.04=4%")] = None,
+        begin: DateArg = None,
+        end: DateArg = None,
+        years: Annotated[int, Field(ge=1, le=10, description="decomp 持有年数（口径 3/5/10）")] = 10,
+        include_history: Annotated[bool, Field(description="diagnose deep 档：带分红史与方案（+18k EC/票）")] = False,
+        output: OutputArg = "sample",
+        max_rows: MaxRowsArg = MAX_ROWS,
+    ) -> dict[str, Any]:
+        """收息闭环（仅 A 股）：全市场排行、批量诊断、分红日历、N 年持有收益拆解。
+
+        rating ≈15k~70k EC 且榜单由 cron 物化（16:50/19:40）——冷缓存返回
+        ok=false 时如实转述稍后重试，勿现场重算全市场评分。
+        """
+        return tools.income(rt, action, symbols=symbols, top_n=top_n,
+                            grade=grade, industry=industry, min_yield=min_yield,
+                            begin=begin, end=end, years=years,
+                            include_history=include_history,
+                            output=output, max_rows=max_rows)
 
     @mcp.tool()
     @protocol
@@ -348,7 +404,11 @@ def build_server(runtime: MCPRuntime | None = None) -> FastMCP:
         output: OutputArg = "sample",
         max_rows: MaxRowsArg = MAX_ROWS,
     ) -> dict[str, Any]:
-        """取机构盈利预测、预测明细、评级、研报和财报披露日程。"""
+        """取机构盈利预测、预测明细、评级、研报和财报披露日程。
+
+        示例：action='forecast', symbol='600519'（逐年 EPS/PE）；
+        action='next_disclosure', symbol='600519'（下次披露日）；
+        action='yjkb_latest'（最新业绩快报）。"""
         return tools.estimates(rt, action, symbol=symbol, market=market,
                                limit=limit, output=output, max_rows=max_rows)
 
@@ -364,7 +424,11 @@ def build_server(runtime: MCPRuntime | None = None) -> FastMCP:
         output: OutputArg = "sample",
         max_rows: MaxRowsArg = MAX_ROWS,
     ) -> dict[str, Any]:
-        """取股东、股本、增减持、质押、回购、高管、担保、诉讼、违规和机构持仓。"""
+        """取股东、股本、增减持、质押、回购、高管、担保、诉讼、违规和机构持仓。
+
+        示例：action='query_holder10', symbol='600519'（十大股东）；
+        action='query_pledge_summary', symbol='600519'（质押汇总）；
+        action='query_release', symbol='600519'（解禁排期）。"""
         return tools.corporate(rt, action, symbol=symbol, market=market,
                                limit=limit, annual=annual, sampling=sampling,
                                output=output, max_rows=max_rows)
@@ -393,15 +457,217 @@ def build_server(runtime: MCPRuntime | None = None) -> FastMCP:
         window: Annotated[str, Field(description="估值历史窗口，最大 3y")] = "3y",
         level: Annotated[int | None, Field(ge=1, le=3, description="行业目录层级")] = None,
         trig: Annotated[float | None, Field(description="可转债强赎触发价，元")] = None,
+        src: Annotated[
+            str | None,
+            Field(description="板块资金流来源 ths_concept/ths_industry/dc（domain='board'）"),
+        ] = None,
+        date: DateArg = None,
         output: OutputArg = "sample",
         max_rows: MaxRowsArg = MAX_ROWS,
     ) -> dict[str, Any]:
-        """取 1 分钟分时、资金流、两融、可转债、指数、估值历史和证券全集。"""
+        """取 1 分钟分时、资金流、两融、可转债、指数、估值历史、证券全集与板块资金流。
+
+        示例：domain='index', action='trend', key='index.hs300'（PE/PB 历史分位）；
+        domain='board', action='moneyflow_last', src='ths_concept'（概念板块资金流）；
+        domain='moneyflow', action='bars', symbol='600519', n=20（主力资金流）。"""
         return tools.market(rt, domain, action, symbol=symbol, market=market,
                             key=key, n=n, begin=begin, end=end, points=points,
                             sort_by=sort_by, top_n=top_n, metric=metric,
                             window=window, level=level, trig=trig,
+                            src=src, date=date,
                             output=output, max_rows=max_rows)
+
+    @mcp.tool()
+    @protocol
+    def wmshare_valuation(
+        action: Annotated[ValuationAction, Field(description="hist_stats=历史分位统计 / daily_basic=单票基础指标 / daily_basic_multi=多票 / daily_basic_coverage=覆盖面")],
+        symbol: Annotated[str | None, Field(description="标的代码；daily_basic_multi 用 symbols")] = None,
+        symbols: Annotated[list[str] | None, Field(description="daily_basic_multi 需要的标的列表")] = None,
+        metric: Annotated[ValuationMetric, Field(description="hist_stats 指标；金融/亏损股建议 pb")] = "pe",
+        window: Annotated[str, Field(description="hist_stats 窗口 3y/5y/10y（未知窗口显式报错）")] = "3y",
+        begin: DateArg = None,
+        end: DateArg = None,
+        fields: Annotated[str | None, Field(description="daily_basic 列投影，逗号分隔")] = None,
+        output: OutputArg = "sample",
+        max_rows: MaxRowsArg = MAX_ROWS,
+    ) -> dict[str, Any]:
+        """估值历史统计与基础指标（仅 A 股）：PE/PB/PS/PR 的均值/中位/分位与多日多票面板。
+
+        示例：action='hist_stats', symbol='600519', metric='pe', window='5y'；
+        action='daily_basic_multi', symbols=['600519','000001'], begin=..., end=...。
+        指数/行业的估值分位走 wmshare_market(domain='index', action='trend')。
+        """
+        return tools.valuation(rt, action, symbol=symbol, symbols=symbols,
+                               metric=metric, window=window, begin=begin,
+                               end=end, fields=fields, output=output,
+                               max_rows=max_rows)
+
+    @mcp.tool()
+    @protocol
+    def wmshare_etf(
+        action: Annotated[EtfAction, Field(description="card=一页档案 / nav=净值 / share=份额 / div=分红 / portfolio=持仓 / profile=产品档案 / premium=折溢价 / asset=资产配置 / rank=榜单指标")],
+        symbol: Annotated[str, Field(description="ETF 场内代码，如 510300.SH 或裸码")],
+        mode: Annotated[
+            Literal["latest", "series"],
+            Field(description="latest=当前值；series=时序（card/nav/share/premium 支持）"),
+        ] = "latest",
+        limit: Annotated[int | None, Field(ge=1, le=200, description="rank 返回条数")] = None,
+        output: OutputArg = "sample",
+        max_rows: MaxRowsArg = MAX_ROWS,
+    ) -> dict[str, Any]:
+        """ETF 九视图（仅 A 股场内）：档案/净值/份额/分红/持仓/折溢价/资产配置/榜单一次取齐。
+
+        示例：action='card', symbol='510300'（九路数据合一页）；
+        action='premium', symbol='510300', mode='series'（折溢价时序）；
+        action='portfolio', symbol='510300'（最新季前十大持仓）。
+        """
+        return tools.etf(rt, action, symbol=symbol, mode=mode, limit=limit,
+                         output=output, max_rows=max_rows)
+
+    @mcp.tool()
+    @protocol
+    def wmshare_backtest(
+        symbol: Annotated[str, Field(description="标的代码（仅 A 股）")],
+        rule: Annotated[BacktestRule, Field(description="ma_cross=均线金叉/死叉；pe/pb/ps/pr=估值阈值")] = "ma_cross",
+        fast: Annotated[int | None, Field(ge=2, le=250, description="ma_cross 快线周期")] = None,
+        slow: Annotated[int | None, Field(ge=2, le=250, description="ma_cross 慢线周期")] = None,
+        buy: Annotated[float | None, Field(description="估值规则买入阈值（pe/pb 为倍数）")] = None,
+        sell: Annotated[float | None, Field(description="估值规则卖出阈值")] = None,
+        begin: DateArg = None,
+        end: DateArg = None,
+        adj: Annotated[str | None, Field(description="复权 qfq/hfq；缺省 qfq")] = None,
+        output: OutputArg = "sample",
+        max_rows: MaxRowsArg = 100,
+    ) -> dict[str, Any]:
+        """单股买卖点回测（仅 A 股）：成交明细 + 净值/回撤/胜率，固定口径次日开盘、T+1、整手。
+
+        固定参数不可调：初始资金 100 万、佣金/印花固定、100 股整手。
+        全历史估值回测可达 ~40 万 EC——先用 wmshare_call(mode='cost') 预估再跑。
+        """
+        return tools.backtest(rt, symbol, rule=rule, fast=fast, slow=slow,
+                              buy=buy, sell=sell, begin=begin, end=end,
+                              adj=adj, output=output, max_rows=max_rows)
+
+    @mcp.tool()
+    @protocol
+    def wmshare_macro(
+        action: Annotated[MacroAction, Field(description="query=近 n 期时序 / asof=最新一期值 / sampling=采样频率 / reserve=储备项清单 / reserve_history=储备时序（code 传 forex 或 gold） / us_topics=美宏观主题树 / us_search=美宏观序列检索（code 传关键词）/ us_series=美宏观序列点（code 传序列 id 如 GDP）")],
+        code: Annotated[str, Field(description="宏观指标码，如 $CPI/$GDP/$M2；先 wmshare_search 查码。us_* 系列传美宏观序列 id 或关键词（如 GDP/DGS10/通胀）")],
+        n: Annotated[int, Field(ge=1, le=100, description="query 返回期数")] = 6,
+        output: OutputArg = "sample",
+        max_rows: MaxRowsArg = MAX_ROWS,
+    ) -> dict[str, Any]:
+        """宏观指标时序/最新值/采样频率（上游原值口径：价格指数=点、流量存量=元、收益率=小数）。
+
+        示例：action='query', code='$CPI', n=6（近 6 个月 CPI）；
+        action='asof', code='$GDP'（最新一期 GDP）；action='sampling', code='$CPI'；
+        action='reserve', code='forex'（储备项清单，含 sdr 不可用标注）；
+        action='reserve_history', code='forex', n=12（近 12 个月储备时序）。
+        储备值单位：美元数值（外汇≈3.4e12、黄金≈3.1e11），非亿元/非亿美元。
+        """
+        return tools.macro(rt, action, code=code, n=n, output=output,
+                           max_rows=max_rows)
+
+    @mcp.tool()
+    @protocol
+    def wmshare_fx(
+        action: Annotated[FxAction, Field(description="rate=最新汇率 / history=日线 / bars=区间日线 / list=在库币种")],
+        ccy: Annotated[str, Field(description="币种 ISO 代码，如 USD/EUR/JPY/HKD；list 时可留空")] = "USD",
+        n: Annotated[int, Field(ge=1, le=500, description="history 返回根数")] = 30,
+        begin: Annotated[str | None, Field(description="bars 起始日 YYYY-MM-DD")] = None,
+        end: Annotated[str | None, Field(description="bars 结束日 YYYY-MM-DD")] = None,
+        output: OutputArg = "sample",
+        max_rows: MaxRowsArg = MAX_ROWS,
+    ) -> dict[str, Any]:
+        """人民币外汇汇率（央行中间价 + 中行牌价，日频；每 1 单位外币折人民币）。
+
+        middle/buy 均为「每 1 单位外币折人民币」（USD≈7.1、JPY≈0.042、HKD≈0.86）；
+        上游原始中间价是每 100 外币口径（美元≈710），SDK 已统一 /100 归一。
+        middle=央行中间价（缺失前向填充、连续）；buy=中行汇买价（仅发布日写入、可能有缺口）。
+
+        示例：action='rate', ccy='USD'（最新美元中间价）；
+        action='history', ccy='USD', n=30（近 30 个交易日）；action='list'（在库币种）。
+        """
+        return tools.fx(rt, action, ccy=ccy, n=n, begin=begin, end=end,
+                        output=output, max_rows=max_rows)
+
+    @mcp.tool()
+    @protocol
+    def wmshare_toplist(
+        action: Annotated[ToplistAction, Field(description="by_date=按交易日全榜 / by_symbol=按标的上榜历史")],
+        symbol: Annotated[str | None, Field(description="by_symbol 需要的标的代码")] = None,
+        trade_date: Annotated[str | None, Field(description="by_date 需要的交易日 YYYY-MM-DD")] = None,
+        limit: Annotated[int, Field(ge=1, le=200, description="返回条数")] = 100,
+        output: OutputArg = "sample",
+        max_rows: MaxRowsArg = MAX_ROWS,
+    ) -> dict[str, Any]:
+        """龙虎榜（仅 A 股）：按交易日取全榜或按标的取上榜历史。
+
+        成本实测：冷查 ≈12,837 EC、热查 ≈154 EC——用近期交易日更省。
+        示例：action='by_date', trade_date='2026-11-20'；
+        action='by_symbol', symbol='600519'。
+        """
+        return tools.toplist(rt, action, symbol=symbol, trade_date=trade_date,
+                             limit=limit, output=output, max_rows=max_rows)
+
+    @mcp.tool()
+    @protocol
+    def wmshare_futures(
+        action: Annotated[FuturesAction, Field(description="get=合约字段取值 / mapping=主力连续映射 / snapshot=合约快照 / bars=主力连续历史K线 / receipts=交易所仓单快照（按月） / holding=每日持仓排名（按合约） / settle=每日结算参数")],
+        code: Annotated[str | None, Field(description="get/snapshot/bars 需要的主力连续代码，如 AL.SHF / RB.SHF / global.CL")] = None,
+        symbol: Annotated[str | None, Field(description="mapping 需要的品种代码，如 RB")] = None,
+        field: Annotated[str, Field(description="get 的字段（close/open/…）")] = "close",
+        freq: Annotated[str | None, Field(description="频率 d/w/m；snapshot/bars 缺省 d")] = None,
+        native: Annotated[bool, Field(description="get=true 保留上游原值口径")] = False,
+        n: Annotated[int | None, Field(description="bars 取最近 n 根（日频为交易日根数；默认 120；与 begin/end 二选一）；holding 时为行数上限（默认 200，上限 500）")] = None,
+        begin: DateArg = None,
+        end: DateArg = None,
+        output: OutputArg = "sample",
+        max_rows: MaxRowsArg = MAX_ROWS,
+    ) -> dict[str, Any]:
+        """期货主力数据（74 商品+8 金融）：合约字段、主力连续映射、合约快照、历史K线。
+
+        get/snapshot/bars 走 store 直读（交易日行、最新一根随上游日更；snapshot
+        输出含 date）。mapping 冷查实测 ≈21.4 万 EC、热查 ≈141 EC——先
+        wmshare_call(mode='cost') 预估；begin/end 需成对提供。bars 按行计费
+        （冷 ≈190+126 EC/行、同日复跑版本键缓存 ≈135 EC；行数硬顶 d 3000/w 600/m 300），
+        长区间建议 freq='m'；周/月线为上游周期 bar（不做二次聚合）。
+
+        holding=每日持仓排名（code=合约如 A2701，begin=交易日，n=行数上限；
+        按成交量降序）；settle=每日结算参数（code=合约代码或品种前缀如 CU，
+        begin=交易日）。
+        """
+        return tools.futures(rt, action, code=code, symbol=symbol, field=field,
+                             freq=freq, native=native, n=n, begin=begin, end=end,
+                             output=output, max_rows=max_rows)
+
+    @mcp.tool()
+    @protocol
+    def wmshare_pdf(
+        action: Annotated[PdfAction, Field(description="search=检索公告文件 / read_markdown=正文结构化为 Markdown / status=解析状态")],
+        stock_code: Annotated[str | None, Field(description="search/read_markdown 的标的代码")] = None,
+        title: Annotated[str | None, Field(description="search 的标题关键词")] = None,
+        begin: DateArg = None,
+        end: DateArg = None,
+        kind: Annotated[str | None, Field(description="search 的公告类别过滤")] = None,
+        file_key: Annotated[str | None, Field(description="read_markdown/status 的文件键（search 结果里拿）")] = None,
+        source_url: Annotated[str | None, Field(description="read_markdown/status 的公告原文 URL")] = None,
+        period: Annotated[str | None, Field(description="read_markdown 的报告期，如 2025-12-31（配 stock_code 直取定期报告）")] = None,
+        limit: Annotated[int, Field(ge=1, le=100, description="search 返回条数")] = 20,
+        output: OutputArg = "sample",
+        max_rows: MaxRowsArg = MAX_ROWS,
+    ) -> dict[str, Any]:
+        """公告 PDF 结构化（仅 A 股，wmshare 独有面）：检索→状态→正文 Markdown。
+
+        示例：action='search', stock_code='600519'（该司可解析公告）；
+        action='read_markdown', stock_code='600519', period='2025-12-31'
+        （年报正文结构化）；action='read_markdown', file_key=...。
+        报告正文结构化走这里，不要用 wmshare_notice 拿原文链接。
+        """
+        return tools.pdf(rt, action, stock_code=stock_code, title=title,
+                         begin=begin, end=end, kind=kind, file_key=file_key,
+                         source_url=source_url, period=period, limit=limit,
+                         output=output, max_rows=max_rows)
 
     @mcp.tool()
     @protocol
@@ -472,8 +738,8 @@ def build_server(runtime: MCPRuntime | None = None) -> FastMCP:
         arguments: Annotated[dict[str, Any] | None, Field(description="目标函数/method 的公开参数")] = None,
         market: MarketArg = None,
         mode: Annotated[
-            Literal["catalog", "api"],
-            Field(description="catalog=目录函数；api=SDK friendly API"),
+            Literal["catalog", "api", "cost"],
+            Field(description="catalog=目录函数；api=SDK friendly API；cost=成本估算（不发请求）"),
         ] = "catalog",
         raw: Annotated[bool, Field(description="true 跳过单位规范化，仅诊断用")] = False,
         units: Annotated[
@@ -502,7 +768,7 @@ def _add_resources(mcp: FastMCP, rt: MCPRuntime) -> None:
     def overview() -> str:
         stats = wmshare.load().stats()
         return (
-            f"{SOURCE} v{wmshare.__version__}；市场 {rt.market}；demo={rt.demo}。"
+            f"{SOURCE} v{wmshare.__version__}；市场 {rt.market}。"
             f"目录：{stats['domains']} 个数据域、{stats['functions']} 个底层函数；"
             f"friendly API {apis.route_count()} 个。先用 search/contract，"
             "再用 task tools / batch / call。"
@@ -511,11 +777,12 @@ def _add_resources(mcp: FastMCP, rt: MCPRuntime) -> None:
     @mcp.resource("wmshare://setup")
     def setup() -> str:
         return (
-            "真实取数需要开放平台 AppID。打开 open.winmale.com 登录 → "
+            "不配置凭证也能取真实数据：自动走免注册免费试用（按来源网络限流）。"
+            "需要独立、稳定的额度时再配置开放平台 AppID：打开 open.winmale.com 登录 → "
             "右上角「我的」→「开放平台」→「我的应用」，复制 client_id 与 api-key；"
             "然后运行 wmshare-mcp setup --client-id <CLIENT_ID> "
             "--client-secret-stdin --market cn，再运行 wmshare-mcp doctor。"
-            "凭证只写入 ~/.wmshare/credentials.env；零凭证可用 status/search/contract。"
+            "凭证只写入 ~/.wmshare/credentials.env。"
         )
 
     @mcp.resource("wmshare://units")
@@ -535,7 +802,8 @@ def _add_resources(mcp: FastMCP, rt: MCPRuntime) -> None:
             "429 返回 partial=true、error.kind=LimitError、retry_after_seconds、"
             "completed、resume_start 和 resume_symbols；不要重试已完成部分。"
             "等待限流窗口后用 symbols[resume_start:] 或 resume_symbols 续跑。"
-            "单次 MCP 输出最多 200 行，超限时用 summary/count 或缩小范围。"
+            "单次 MCP 输出最多 200 行，超限时用 summary/count 或缩小范围；"
+            "时间序列（date/sas 升序）超限保留最新段，其余列表保留头部。"
         )
 
     @mcp.resource("wmshare://coverage")
@@ -551,8 +819,9 @@ def _add_resources(mcp: FastMCP, rt: MCPRuntime) -> None:
             "first_class_tools": len(TOOL_NAMES),
             "api_gateway": "wmshare_call(mode='api')",
             "catalog_gateway": "wmshare_call(mode='catalog')",
+            "cost_gateway": "wmshare_call(mode='cost')",
             "batchable_catalog_functions": len(apis.batchable_catalog_functions()),
-            "excluded_from_mcp": ["pandas DataFrame / _df=True", "notice_poller", "长驻订阅"],
+            "excluded_from_mcp": ["notice_poller", "长驻订阅"],
             "contract_paths": [
                 "wmshare_search(kind='api')",
                 "wmshare_contract(kind='api')",
@@ -568,7 +837,8 @@ def _add_resources(mcp: FastMCP, rt: MCPRuntime) -> None:
                 "wmshare_symbols/wmshare_search 解析标的、函数、指标或 API",
                 "wmshare_contract 查参数与单位",
                 "优先用 task tool；多标的用 wmshare_batch",
-                "长尾用 wmshare_call(mode='catalog' 或 'api')",
+                "长尾用 wmshare_call(mode='catalog' 或 'api')；"
+                "调用前估算 EC 用 wmshare_call(mode='cost', target=..., arguments={...})",
             ],
             "task_tools": list(TOOL_NAMES),
             "generic_modes": {

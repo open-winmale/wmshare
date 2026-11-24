@@ -17,8 +17,10 @@ notes:
   - 指标层比率统一为小数（0.332=33.2%），金额统一为元（上游 cn 名偶带 "(%)"/"(亿)" 后缀，
     是命名遗留、不代表数值口径）；业绩预告的同比/幅度字段 SDK 已换算为小数（disc.events 域）
   - 新旧会计准则适配在指标计算内部完成，输出口径已归一
-  - 精选指标中声明 range 的代码由 SDK 在返回前做量级守护（违例抛 DataError）；
-    非精选代码不做换算与守护，口径以返回值/cn 注释为准
+  - 精选指标中声明 range 的代码由 SDK 在返回前做量级守护（违例抛 DataError）
+  - units.yaml 台账登记的码（成交量族=手、宏观房地产=亿元、$ROC_TTM 族=百分数）
+    由 SDK 默认换算到基础单位；非登记且未精选的代码按上游原值返回。
+    原始口径逃生口：indicator.get/metrics(native=True)、cli.call(_units="native")
 metric_groups:
   - id: valuation
     cn: 估值
@@ -141,10 +143,11 @@ metric_groups:
       - {code: '$AMOUNT_LAST', cn: 最新成交额, range: [0, 1.0e+12]}
       - {code: '$ROI_3', cn: 3年的年化投资收益率, range: [-1, 100]}
       - {code: '$TURNOVER_RATE_LAST', cn: 最新换手率(流通股本口径), range: [0, 1]}
-      # 成交量族：上游为「手」，与 kline 层「股」不同（$VOLUME_DAY*100/free == 换手率）。
-      # 这里只声明量级守护、不声明 unit（保持脚本原始单位 = 手），换算交给调用方。
-      - {code: '$VOLUME_LAST', cn: 最新成交量(手), range: [0, 1.0e+12]}
-      - {code: '$VOLUME_DAY', cn: 当日成交量(手), range: [0, 1.0e+12]}
+      # 成交量族：上游为「手」，SDK 按 units.yaml 台账默认换算为「股」
+      # （$VOLUME_DAY*100/流通股本 == 换手率，10 位全等）；range 按换算后口径（股）标注，
+      # finish_metric 会在台账兜底换算时同步缩放原生标注。原始口径走 native=True。
+      - {code: '$VOLUME_LAST', cn: 最新成交量, range: [0, 1.0e+14]}
+      - {code: '$VOLUME_DAY', cn: 当日成交量, range: [0, 1.0e+14]}
   - id: profile
     cn: 公司信息（档案直读）
     caliber: '性质注：本组为 ref.info 档案字段的指标化引用，非计算值（raw 透传）'

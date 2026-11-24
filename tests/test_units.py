@@ -91,6 +91,38 @@ def test_volume_amount_invariant_passes_and_violates():
         c2.call("kline.query_bars", sym="600519", limit=1)
 
 
+def test_volume_amount_skips_zero_volume_rows():
+    """volume=0 无从验算，跳过而不是误判（日线入口直接验守卫行为）。
+
+    A 股 2001-08~2016-08 月线只有 amount 没有 volume（实测 180/302 行），
+    守卫按 [0.4, 2.5] 判会算出 ratio=0 → 整条调用被误杀。
+    """
+    c, _ = make([dict(BAR, volume=0)])
+    out = c.call("kline.query_bars", sym="600519", limit=1)
+    assert out[0]["volume"] == 0  # 未换算、未拦下
+
+
+def test_period_bars_carry_no_volume_amount_check():
+    """聚合周期不套 volume_amount：ratio 恒等于「期末价/期内均价」，天然偏离。
+
+    月线实测 2,269 样本落在 [0.07, 2.59]（拆股月与早年 amount 口径差异放大），
+    套个股日线带 [0.4, 2.5] 会把正常序列判成单位漂移。
+    """
+    cat = load()
+    assert "volume_amount" not in (cat.function("kline.query_bars_period").get("checks") or [])
+    # 极端偏离的行不该被拦（这里 close/amount 比例远离 1）
+    c, _ = make([dict(BAR, volume=0), dict(BAR, volume=3413500.0)])
+    out = c.call("kline.query_bars_period", sym="600519", limit=2, period="M")
+    assert len(out) == 2
+
+
+def test_volume_amount_zero_skip_does_not_relax_daily_bars():
+    """日线同源守卫不受影响：坏行照旧抛。"""
+    c, _ = make([dict(BAR, volume=3413500.0)])
+    with pytest.raises(DataError, match="volume_amount"):
+        c.call("kline.query_bars", sym="600519", limit=1)
+
+
 def test_invariant_message_carries_escape_hatch():
     c, _ = make([dict(BAR, volume=3413500.0)])
     with pytest.raises(DataError) as ei:
@@ -107,16 +139,6 @@ def test_range_guard_raises_data_error():
     assert ei.value.code == "range"
 
 
-def test_diffp_converted_to_decimal_and_invariant():
-    c, _ = make([dict(COMPARE_ROW)])
-    out = c.statements.compare("600519", kind="income", years=1)
-    assert out[0]["diffp"]["2025"] == pytest.approx(-0.07765824564397575)
-    # 同源数据必然满足 diffp ≈ diff/c（不变量在换算后执行）
-
-    wrong = dict(COMPARE_ROW, diffp={"2025": -1.5})
-    c2, _ = make([wrong])
-    with pytest.raises(DataError, match="diffp_ratio"):
-        c2.statements.compare("600519", kind="income", years=1)
 
 
 def test_yjyg_amp_percent_converted():
@@ -261,9 +283,9 @@ SEG_ROW = {"name": "茅台酒", "tr": 77724437925.48, "tr_text": "",
 
 def test_segments_rows_pass_through_with_guards():
     c, _ = make([dict(SEG_ROW)])
-    out = c.segments.business("600519")
-    assert out[0]["tr"] == 77724437925.48                        # 元，原样
-    assert out[0]["margin"] == pytest.approx(0.922792825668891)  # 小数，原样
+    out = c.segments.business("600519")           # 2.0：门面默认 DataFrame
+    assert float(out.loc[0, "tr"]) == 77724437925.48                        # 元，原样
+    assert float(out.loc[0, "margin"]) == pytest.approx(0.922792825668891)  # 小数，原样
 
     c2, _ = make([dict(SEG_ROW, margin=92.28)])  # 百分数口径混入 → 超界
     with pytest.raises(DataError, match="margin"):
@@ -285,6 +307,29 @@ def test_segments_snapshot_nested_guard():
     c2, _ = make(bad)
     with pytest.raises(DataError, match="pct"):
         c2.segments.snapshot("600519")
+
+
+def test_forecast_snapshot_nested_shape_covers_guards():
+    """批 B 回归：snapshot 的守护字段须能在 returns_shape 嵌套层找到。
+
+    drift 曾把这些嵌套守护误报为「上游 shape 声明滞后」；声明补全后，
+    嵌套换算（百分数→小数）与量级守护必须照常生效。
+    """
+    snap = {"symbol": "688008",
+            "yjyg": dict(YJYG_ROW),
+            "yjkb": dict(YJKB_ROW),
+            "next_disclosure": {"report_date": "2026-09-30"}}
+    c, _ = make(dict(snap))
+    out = c.forecast.snapshot("688008")
+    assert out["yjyg"]["rev_amp_upper"] == pytest.approx(0.46)
+    assert out["yjkb"]["roe"] == pytest.approx(0.1128)
+
+    bad = dict(snap)
+    # percent 换算先于 ranges：roe=1128（原生百分数）换算后 11.28，超 [-2, 5] 上界
+    bad["yjkb"] = dict(YJKB_ROW, roe=1128)
+    c2, _ = make(bad)
+    with pytest.raises(DataError, match="roe"):
+        c2.forecast.snapshot("688008")
 
 
 # ---- 目录透传与声明自检 ----
@@ -332,13 +377,113 @@ HIST = {"avg": 3.027, "current": 3.334, "median": 3.032, "min": 2.473,
 
 
 def test_valuation_hist_stats_passthrough_and_validation():
+    """2.0：hist_stats 返回统一信封；series 为 DataFrame（date ISO 升序）。"""
     c, _ = make(dict(HIST))
     out = c.valuation.hist_stats("600900", metric="pb", window="3y")
-    assert out["avg"] == 3.027 and out["pct"] == 0.889  # 引擎结果原样透传
+    assert out["ok"] is True
+    assert out["data"]["avg"] == 3.027 and out["data"]["pct"] == 0.889
+    ser = out["data"]["series"]
+    assert list(ser["date"]) == ["2023-10-24", "2026-10-23"]  # unix+8h → ISO 升序
+    assert list(ser["value"]) == [2.55, 3.33]
+    assert out["meta"] == {"metric": "pb", "window": "3y"}
 
     with pytest.raises(Exception, match="metric"):
         c.valuation.hist_stats("600900", metric="roe")
+    # 5b5f781 起白名单放开 5y/10y（引擎 parseWindow 本无年限封顶）；白名单外仍拦
+    out5 = c.valuation.hist_stats("600900", metric="pb", window="5y")
+    assert out5["ok"] is True and out5["meta"] == {"metric": "pb", "window": "5y"}
     with pytest.raises(Exception, match="window"):
-        c.valuation.hist_stats("600900", window="5y")  # 上限 3 年
+        c.valuation.hist_stats("600900", window="7y")
     out6 = c.valuation.hist_stats("600900", metric="pb", window="6m")  # 半年窗口
-    assert out6["current"] == 3.334  # 引擎结果原样透传
+    assert out6["data"]["current"] == 3.334
+
+
+def test_normalized_query_shapes_cover_guards():
+    """批 C 回归：normalize_with 继承链上的守护字段必须落在 returns_shape 里。
+
+    catalog returns_shape 优先级是 YAML shape → normalize_with 目标 shape →
+    inventory shape；fmt 行规范化的 shape 曾滞后于守护声明，导致 openapi
+    文档少列字段（query_hgt 只列 3 个，实际返回 7 个）。
+    """
+    import wmshare as m
+
+    cat = m.load()
+    cases = {
+        "equity.query_hgt": {"add_shares_pct", "free_shares_ratio", "total_shares_ratio"},
+        "equity.query_holdernum": {"total_num_ratio", "avg_free_shares",
+                                   "hold_ratio_total", "freehold_ratio_total"},
+        "equity.query_institution_detail": {"total_shares_ratio", "free_shares_ratio"},
+        "equity.query_institution_summary": {"all_shares_ratio", "total_shares_ratio"},
+        "equity.query_national_team": {"shares_ratio", "shares_ratio_change"},
+        "equity.query_pledge_detail": {"accum_pledge_tsr", "pf_hold_ratio"},
+        "equity.query_pledge_market": {"csi300_chg", "pledge_market_value",
+                                       "total_pledged_shares"},
+        "equity.query_release": {"unlimited_ratio"},
+        "equity.query_reorg": {"transfer_ratio"},
+        "estimates.query_forecast": {"eps2", "eps3", "eps4", "pe2", "pe3", "pe4"},
+        "estimates.query_forecast_detail": {"eps2", "eps3", "eps4", "pe2", "pe3", "pe4"},
+        "intl.query_ccass": {"pct_of_issued"},
+        "intl.query_shareholders": {"total_shares_ratio"},
+    }
+    for name, guarded in cases.items():
+        shape = cat.function(name).get("returns_shape") or {}
+        items = shape.get("items") if isinstance(shape.get("items"), dict) else shape
+        fields = {f.get("name") for f in (items or {}).get("fields") or []
+                  if isinstance(f, dict)}
+        missing = guarded - fields
+        assert not missing, f"{name}: 守护字段 {sorted(missing)} 不在 returns_shape"
+
+
+# ---- 零守护域合同化 · 第一批（ranges 量级守护生效锚） ----
+
+# 基线行 = live 实测 600519 / 000001 的合规值（ranges 内）
+BONUS_SNAPSHOT = {
+    "symbol": "600519", "name": "贵州茅台", "industry": "industry.S34",
+    "quote_date": "2026-11-16", "is_suspend": False,
+    "yield_ttm": 0.0362, "yield_lyr": 0.0362, "yield_3y_avg": 0.0437,
+    "yield_3y_min": 0.0384, "yield_3y_trend": "valley",
+    "pct_yield_3y": 0.554, "payout_ttm": 0.79, "dps_ttm": 51.98,
+    "pe_ttm": 21.86, "mv": 1.796e12, "bonus_ttm": 6.503e10,
+    "bonus_total": 4.011e11, "bonus_3y_trend": "valley",
+    "bonus_npts_rate": 0.591,
+}
+MF_BOARD_ROW = {
+    "symbol": "000001", "name": "平安银行", "industry": "industry.S48",
+    "net_mf": 8.125e8, "elg_net": 3.941e7, "lg_net": 1.742e8,
+    "md_net": 2.362e7, "sm_net": -2.372e8, "net_mv_ratio": 0.00347,
+}
+
+
+def test_zero_guard_domain_ranges_take_effect():
+    """A 档第一批：bonus 聚合快照的 ranges 量级守护。
+
+    这些接口此前零守护（guard_coverage 0%），本批登记 ranges 后，
+    ×100 类量级错必须在 SDK 层拦截（percent 先换算后守护——
+    本接口比率已是小数，负例直接取超界值）。
+    """
+    c, _ = make([dict(BONUS_SNAPSHOT, yield_ttm=3.62)])  # 百分数口径混入 → 超界
+    with pytest.raises(DataError, match="yield_ttm"):
+        c.bonus.snapshot("600519")
+
+    c2, _ = make([{**BONUS_SNAPSHOT, "payout_ttm": 98.76}])
+    with pytest.raises(DataError, match="payout_ttm"):
+        c2.bonus.snapshot("600519")
+
+
+def test_moneyflow_board_row_wise_guard():
+    """board 全市场逐行守护：任一行超界即拦。"""
+    rows = [dict(MF_BOARD_ROW), dict(MF_BOARD_ROW, net_mv_ratio=1.5)]
+    c, _ = make(rows)
+    with pytest.raises(DataError, match="net_mv_ratio"):
+        c.moneyflow.board()
+
+
+def test_moneyflow_snapshot_guard_ok():
+    """合规基线正常通过（守护不误伤实测值）。"""
+    c, _ = make([{**MF_BOARD_ROW, "quote_date": "2026-11-16",
+                  "mf_date": "2026-11-13", "source": "store",
+                  "net_5d": 9.96e7, "net_10d": 5.687e9,
+                  "net_20d": 1.121e10, "trend_5d": "rising_volatile",
+                  "trend_20d": "falling_volatile"}])
+    out = c.moneyflow.snapshot("600519")
+    assert out[0]["net_mv_ratio"] == 0.00347

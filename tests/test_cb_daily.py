@@ -160,6 +160,40 @@ def test_empty_board_refuses_to_publish():
         D.fetch_snapshot(FakeCli(FakeCbond([])))
 
 
+def test_run_daily_via_facade_dataframe_board():
+    """回归：2.0 门面把行数组收口成 DataFrame，取数编排不得误判「返回空」。
+
+    fetch_snapshot 是 SDK 内部消费方，曾按 ``isinstance(list)`` 判定面板——
+    门面转 DF 后 live 每次必抛「cbond.board() 返回空」，而本文件其余用例的
+    桩直接返 list 绕过收口点，全绿但没拦住。此用例让桩按真实门面形态
+    （DataFrame）出数，锁死这条链路。
+    """
+    pytest.importorskip("pandas")
+    import pandas as pd
+
+    codes = ("110001", "110002", "110003")
+    cb = FakeCbond([_row(c) for c in codes],
+                   windows={c: _window(["2026-11-06"], [100.0]) for c in codes})
+    cli = FakeCli(cb)
+    real_board = cb.board
+    cb.board = lambda: pd.DataFrame(real_board())     # 只把 board 换成门面收口形态
+    payload = D.run_daily(cli, config=D.DailyConfig(curves=False))
+    assert payload["snapshot_asOf"] == "2026-11-06"
+    assert payload["coverage"]["rows"] == 3
+    assert payload["coverage"]["kline_rows"] == 3     # 富化走 call_batch，不经门面
+
+
+def test_empty_dataframe_board_still_refuses_to_publish():
+    """门面形态的空面板（空 DataFrame）同样拒绝出稿，不绕过空值判定。"""
+    pytest.importorskip("pandas")
+    import pandas as pd
+
+    cb = FakeCbond([])
+    cb.board = lambda: pd.DataFrame([])
+    with pytest.raises(RuntimeError, match="返回空"):
+        D.fetch_snapshot(FakeCli(cb), config=D.DailyConfig(enrich=False, curves=False))
+
+
 def test_as_of_far_from_snapshot_is_rejected():
     cb = FakeCbond([_row()])
     with pytest.raises(RuntimeError, match="相差超过 1 天"):

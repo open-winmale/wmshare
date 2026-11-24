@@ -1,22 +1,16 @@
 """期货主力连续与宏观时序：期货指标码（$FUT_CLOSE 等 FUT 前缀码）与 macro 域两个新数据面。
 
-前提：凭证必填（export WMSHARE_CLIENT_ID=... WMSHARE_CLIENT_SECRET=...）；`--demo` 用随包演示数据零凭证试跑
+前提：凭证可选——无凭证自动免注册免费试用（真实数据、需网络）
 运行：python examples/12_futures_macro.py
 学到：期货指标码姿势（fut_symbol 换合约/外盘 global.*）、macro 时序/as-of/原生频率、中债收益率小数口径
 文档：docs/API.md（期货、宏观两章）；docs/GUIDE.md §6.1
 """
-import sys
 import wmshare
 
 
-def main(cli=None, demo: bool = False) -> None:
+def main(cli=None) -> None:
     if cli is None:
-        if demo:
-            cli = wmshare.demo_client()
-            print("(演示模式：随包罐头数据，非真实行情)")
-            print()
-        else:
-            cli = wmshare.Client.from_env()
+        cli = wmshare.Client.from_env()
 
     # ---- ① 期货主力连续：FUT 前缀指标码（symbol 传任意 A 股代码绑定期间上下文） ----
     close = cli.indicator.get("600519", "$FUT_CLOSE")   # 缺省合约 cn.SR.ZCE（郑糖）
@@ -48,7 +42,7 @@ def main(cli=None, demo: bool = False) -> None:
 
 if __name__ == "__main__":
     try:
-        main(demo="--demo" in sys.argv)
+        main()
     except wmshare.WmshareError as e:
         # 错误消息自带修复步骤（凭证/限流/参数合同），打印原文即可定位
         print(f"取数失败：{e}")

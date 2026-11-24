@@ -27,17 +27,27 @@ from wmshare.mcp.apis import (
     route_count,
 )
 from wmshare.mcp.constants import (
+    BACKTEST_RULES,
     CORPORATE_ACTIONS,
     DIVIDEND_ACTIONS,
     ESTIMATE_ACTIONS,
+    ETF_ACTIONS,
+    FUTURES_ACTIONS,
+    INCOME_ACTIONS,
     INTL_ACTIONS,
+    MACRO_ACTIONS,
     MARKET_ACTIONS,
     MARKET_DOMAINS,
     NOTICE_ACTIONS,
+    PDF_ACTIONS,
     SEGMENT_ACTIONS,
     STATEMENT_ACTIONS,
+    TOPLIST_ACTIONS,
     TOOL_NAMES,
+    VALUATION_ACTIONS,
+    VALUATION_METRICS,
 )
+from fake_client import fake_runtime  # noqa: E402
 from wmshare.mcp.core import MCPRuntime
 from wmshare.mcp.server import build_server
 from wmshare.mcp import tools
@@ -81,7 +91,7 @@ def routes() -> tuple[Any, ...]:
 
 @pytest.fixture()
 def runtime() -> MCPRuntime:
-    rt = MCPRuntime(market="cn", demo=False)
+    rt = MCPRuntime(market="cn")
     rt._clients = {"cn": GatewayFakeClient()}
     return rt
 
@@ -120,13 +130,41 @@ def test_search_and_contract_friendly_api(runtime: Any) -> None:
     assert contract["data"]["recommended_tool"] == "wmshare_segments"
 
 
+def test_recommended_tool_can_actually_serve_the_route() -> None:
+    """推荐工具必须真能服务该路由，而不是「是个工具名」就算过。
+
+    曾经的缺陷：``_recommended_tool`` 把 futures 归进 wmshare_market 那一组，
+    但 ``MARKET_DOMAINS`` 不含 futures——模型照着 recommended_tool 去调，
+    直接吃「domain 只支持 …」。旧断言只校验「在 TOOL_NAMES 里」，拦不住。
+    """
+    market_domains = set(MARKET_ACTIONS)
+    for route in api_routes():
+        if route.recommended_tool == "wmshare_market":
+            assert route.domain in market_domains, (
+                f"{route.target} 推荐到 wmshare_market，但 {route.domain} "
+                f"不在 MARKET_DOMAINS（{sorted(market_domains)}）")
+        if route.recommended_tool == "wmshare_futures":
+            assert route.domain == "futures"
+    futures_routes = [route for route in api_routes() if route.domain == "futures"]
+    assert futures_routes, "futures 域应至少有一条 friendly 路由"
+    for route in futures_routes:
+        assert route.recommended_tool == "wmshare_futures"
+
+    # 推荐工具的 action 枚举必须覆盖该路由的方法名（direct 工具无 action 的除外）
+    futures_actions = set(FUTURES_ACTIONS)
+    for route in futures_routes:
+        assert route.method in futures_actions, (
+            f"{route.target} 的方法不在 FUTURES_ACTIONS={sorted(futures_actions)}，"
+            "推荐到 wmshare_futures 也调不到")
+
+
 def test_status_reports_capability_coverage(runtime: Any) -> None:
     status = tools.status(runtime)
     caps = status["data"]["capabilities"]
     assert caps["friendly_apis"] == route_count()
-    assert caps["first_class_tools"] == 20
+    assert caps["first_class_tools"] == 29
     assert caps["batchable_catalog_functions"] > 100
-    assert "pandas/_df" in caps["excluded_from_mcp"][0]
+    assert caps["excluded_from_mcp"] == ["notice_poller", "长驻订阅"]
 
 
 def test_catalog_contract_surface_is_complete() -> None:
@@ -138,7 +176,7 @@ def test_catalog_contract_surface_is_complete() -> None:
         for domain in cat.domains.values()
         for function in domain.get("functions", [])
     }
-    assert len(names) == cat.stats()["functions"] == 288
+    assert len(names) == cat.stats()["functions"] == 368
     for name in names:
         assert cat.function(name)
     assert len(batchable_catalog_functions()) >= 100
@@ -163,7 +201,7 @@ def test_generic_api_gateway_invokes_and_guards(runtime: Any) -> None:
 
 
 def test_generic_catalog_gateway_supports_raw_units() -> None:
-    rt = MCPRuntime(market="cn", demo=False)
+    rt = MCPRuntime(market="cn")
     rt._clients = {"cn": CatalogFakeClient()}
     result = tools.call(rt, "segments.snapshot", {"sym": "600519"}, raw=True, units="native")
     assert result["ok"] is True
@@ -182,7 +220,7 @@ class BatchFakeClient:
 
 
 def test_batch_params_are_forwarded() -> None:
-    rt = MCPRuntime(market="cn", demo=False)
+    rt = MCPRuntime(market="cn")
     rt._clients = {"cn": BatchFakeClient()}
     runtime = rt
     result = tools.batch(
@@ -195,7 +233,7 @@ def test_batch_params_are_forwarded() -> None:
 
 
 def test_every_friendly_route_is_invokable() -> None:
-    rt = MCPRuntime(market="cn", demo=False)
+    rt = MCPRuntime(market="cn")
     client = GatewayFakeClient()
     for route in api_routes():
         # 有文件系统副作用的路由仍在 registry（SDK 层可用），但 MCP 网关
@@ -230,7 +268,7 @@ def test_every_friendly_route_is_invokable() -> None:
 
 
 def test_intl_requires_non_cn_market() -> None:
-    rt = MCPRuntime(market="cn", demo=False)
+    rt = MCPRuntime(market="cn")
     rt._clients = {"cn": GatewayFakeClient(), "hk": GatewayFakeClient()}
     with pytest.raises(ValueError, match="hk/us"):
         tools.intl(rt, "query_ccass", "00700")
@@ -239,7 +277,7 @@ def test_intl_requires_non_cn_market() -> None:
 
 
 def test_mcp_registry_schema_and_resources() -> None:
-    server = build_server(MCPRuntime(market="cn", demo=True))
+    server = build_server(fake_runtime())
     async def inspect_server() -> tuple[list[str], dict[str, Any]]:
         listed = await server.list_tools()
         schema = {tool.name: tool.inputSchema for tool in listed}
@@ -253,12 +291,12 @@ def test_mcp_registry_schema_and_resources() -> None:
             "limits": limits,
         }
     names, facts = asyncio.run(inspect_server())
-    assert set(names) == set(TOOL_NAMES) and len(names) == 20
+    assert set(names) == set(TOOL_NAMES) and len(names) == 29
     coverage = facts["coverage"]
     assert coverage["friendly_apis"] == route_count()
-    assert coverage["first_class_tools"] == 20
+    assert coverage["first_class_tools"] == 29
     assert coverage["batchable_catalog_functions"] >= 100
-    assert "pandas DataFrame / _df=True" in coverage["excluded_from_mcp"]
+    assert coverage["excluded_from_mcp"] == ["notice_poller", "长驻订阅"]
     assert "--client-secret-stdin" in facts["setup"]
     assert "--client-secret " not in facts["setup"]
     for phrase in ("partial=true", "resume_start", "resume_symbols", "retry_after_seconds"):
@@ -279,7 +317,7 @@ def test_mcp_registry_schema_and_resources() -> None:
 
 
 def test_function_and_api_resources_emit_json() -> None:
-    server = build_server(MCPRuntime(market="cn", demo=True))
+    server = build_server(fake_runtime())
     async def read_resources() -> tuple[dict[str, Any], dict[str, Any]]:
         fn_template = server._resource_manager._templates["wmshare://catalog/function/{name}"]
         resource = await fn_template.create_resource(
@@ -296,7 +334,7 @@ def test_function_and_api_resources_emit_json() -> None:
 
 
 def _domain_runtime() -> MCPRuntime:
-    rt = MCPRuntime(market="cn", demo=False)
+    rt = MCPRuntime(market="cn")
     rt._clients = {"cn": GatewayFakeClient(), "hk": GatewayFakeClient()}
     return rt
 
@@ -385,7 +423,7 @@ def test_docs_mcp_numbers_match_routes() -> None:
 
 
 def test_tool_schemas_have_enums_and_descriptions() -> None:
-    server = build_server(MCPRuntime(market="cn", demo=True))
+    server = build_server(fake_runtime())
     async def schemas() -> dict[str, dict[str, Any]]:
         listed = await server.list_tools()
         return {tool.name: tool.inputSchema for tool in listed}
@@ -398,13 +436,15 @@ def test_tool_schemas_have_enums_and_descriptions() -> None:
     search = facts["wmshare_search"]["properties"]["kind"]
     assert {"all", "function", "metric", "symbol", "api"} <= set(search["enum"])
     call = facts["wmshare_call"]["properties"]
-    assert set(call["mode"]["enum"]) == {"catalog", "api"}
+    # mode="cost" 已在 tools 层实现（成本估算不发请求）；Literal 曾漏登记，
+    # 经 MCP 协议传 mode="cost" 会被 schema 拒绝而文档宣称支持——三层对齐。
+    assert set(call["mode"]["enum"]) == {"catalog", "api", "cost"}
     assert set(call["units"]["enum"]) == {"base", "native"}
     assert set(facts["wmshare_history"]["properties"]["adj"]["anyOf"][0]["enum"]) == {"qfq", "hfq"}
 
 
 def test_domain_action_enums_are_machine_readable() -> None:
-    server = build_server(MCPRuntime(market="cn", demo=True))
+    server = build_server(fake_runtime())
     async def schemas() -> dict[str, dict[str, Any]]:
         listed = await server.list_tools()
         return {tool.name: tool.inputSchema for tool in listed}
@@ -413,13 +453,22 @@ def test_domain_action_enums_are_machine_readable() -> None:
         "wmshare_statement": set(STATEMENT_ACTIONS),
         "wmshare_segments": set(SEGMENT_ACTIONS),
         "wmshare_dividend": set(DIVIDEND_ACTIONS),
+        "wmshare_income": set(INCOME_ACTIONS),
         "wmshare_estimates": set(ESTIMATE_ACTIONS),
         "wmshare_corporate": set(CORPORATE_ACTIONS),
         "wmshare_intl": set(INTL_ACTIONS),
         "wmshare_notice": set(NOTICE_ACTIONS),
+        "wmshare_etf": set(ETF_ACTIONS),
+        "wmshare_macro": set(MACRO_ACTIONS),
+        "wmshare_valuation": set(VALUATION_ACTIONS),
+        "wmshare_toplist": set(TOPLIST_ACTIONS),
+        "wmshare_futures": set(FUTURES_ACTIONS),
+        "wmshare_pdf": set(PDF_ACTIONS),
     }
     for name, values in expected.items():
         assert set(facts[name]["properties"]["action"]["enum"]) == values
+    assert set(facts["wmshare_backtest"]["properties"]["rule"]["enum"]) == set(BACKTEST_RULES)
+    assert set(facts["wmshare_valuation"]["properties"]["metric"]["enum"]) == set(VALUATION_METRICS)
     market_domain = facts["wmshare_market"]["properties"]["domain"]
     market_action = facts["wmshare_market"]["properties"]["action"]
     assert set(market_domain["enum"]) == set(MARKET_DOMAINS)

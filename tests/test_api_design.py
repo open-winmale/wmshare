@@ -1,6 +1,8 @@
 """API 设计新增能力：标的归一、批量调用、错误分类、目录检索、会话生命周期。"""
 from __future__ import annotations
 
+import re
+
 import pytest
 
 import wmshare
@@ -174,12 +176,6 @@ def test_catalog_error_message_has_no_keyerror_quotes():
     assert str(err) == "未知函数 'x'"
 
 
-def test_statement_compare_supports_native_units(cli):
-    cli.statements.compare("600519", "income", years=2, _units="native")
-    body = last_ev(cli)
-    assert body["args"]["print.plain"] is True
-    assert "_units" not in body["xs_lines"][-1]
-
 
 def test_error_hierarchy_and_exports():
     for cls in (AuthError, UsageError, LimitError, TransportError, ApiError, CatalogError):
@@ -266,12 +262,13 @@ def test_context_manager_owns_only_internal_session():
 
 
 def test_df_on_list_interfaces(cli):
+    """2.0 契约：门面行表默认 DataFrame；_raw=True 才是行数组。"""
     pd = pytest.importorskip("pandas")
     cli.session.result = [{"date": "2026-10-21", "close": 1.0}]
-    df = cli.notice.list("600519", _df=True)
+    df = cli.notice.list("600519")
     assert isinstance(df, pd.DataFrame) and list(df.columns) == ["date", "close"]
-    df2 = cli.statements.income("600519", _df=True)
-    assert isinstance(df2, pd.DataFrame)
+    raw = cli.notice.list("600519", _raw=True)
+    assert isinstance(raw, list) and raw[0]["date"] == "2026-10-21"
 
 
 # ---------------------------------------------------------------- 日期区间
@@ -282,17 +279,165 @@ def test_kline_range_filters_within_bounds(cli):
         {"date": "2026-08-31", "close": 3.0},
     ]
     out = cli.kline.bars("600519", begin="2026-09-01", end="2026-09-30")
-    assert [r["date"] for r in out] == ["2026-09-30", "2026-09-01"]
-    # 区间查询默认按 max_limit 取数（默认 500）
-    assert 'kline.query_bars("600519", 500)' in last_ev(cli)["xs_lines"][0]
+    assert list(out["date"]) == ["2026-09-01", "2026-09-30"]  # 2.0 升序
+    # 日 K 区间走锚点切片（窗口右端锚在 end），每片 ≤ max_limit（默认 500）
+    assert 'kline.query_at_anchor("600519", 500, "2026-09-30")' \
+        in last_ev(cli)["xs_lines"][0]
 
 
 def test_moneyflow_range_filters(cli):
     cli.session.result = [{"date": "2026-09-30", "net_mf": 1},
                           {"date": "2026-08-01", "net_mf": 2}]
     out = cli.moneyflow.bars("600519", begin="2026-09-01", end="2026-09-30")
-    assert [r["date"] for r in out] == ["2026-09-30"]
-    assert 'moneyflow.query_bars("600519", 500)' in last_ev(cli)["xs_lines"][0]
+    assert list(out["date"]) == ["2026-09-30"]
+    # 资金流区间与日 K 同款锚点切片（query_bars_anchor，窗口右端锚在 end）
+    assert 'moneyflow.query_bars_anchor("600519", 500, "2026-09-30")' \
+        in last_ev(cli)["xs_lines"][0]
+
+
+def test_moneyflow_range_pagination_slices_until_covered():
+    """资金流区间不传 n：锚点切片自动补齐（与 kline.bars 同款结构保证）。"""
+    cli = Client(base_url="https://t", client_id="i", client_secret="s",
+                 catalog=load(),
+                 session=_SeqSession([
+                     # 片1（锚 2026-09-30）：2 根（饱和），最早 06-01 > begin → 续切
+                     [{"date": "2026-09-30", "net_mf": 1},
+                      {"date": "2026-06-01", "net_mf": 2}],
+                     # 片2（锚 2026-06-01）：含锚当日重复行 + 覆盖 begin → 停
+                     [{"date": "2026-06-01", "net_mf": 2},
+                      {"date": "2026-01-05", "net_mf": 3}],
+                 ]), max_limit=2)
+    out = cli.moneyflow.bars("600519", begin="2026-01-05", end="2026-09-30")
+    assert list(out["date"]) == ["2026-01-05", "2026-06-01", "2026-09-30"]
+    evals = [c for c in cli.session.calls if c["url"].endswith("/xs/eval")]
+    assert len(evals) == 2
+    assert 'moneyflow.query_bars_anchor("600519", 2, "2026-06-01")' \
+        in evals[1]["json"]["xs_lines"][0]
+
+
+def test_moneyflow_n_over_server_cap_raises():
+    """moneyflow 单次行数上限 500（2026-11-16 单笔 5.15M EC 事故治理，2026-11-24 起
+    script store_limit 无条件拒绝）：门面预检拦截并引导锚点分页，即使 max_limit 放开。"""
+    cli = Client(base_url="https://t", client_id="i", client_secret="s",
+                 catalog=load(), max_limit=None)
+    with pytest.raises(LimitError) as ei:
+        cli.moneyflow.bars("600519", n=501)
+    msg = str(ei.value)
+    assert "500" in msg and "begin=" in msg  # 上限值 + 分页引导
+
+
+def test_moneyflow_range_slice_clamped_to_server_cap():
+    """max_limit 调大只增加片数：moneyflow 锚点切片单片钳到服务端上限 500
+    （服务端对单片 >500 无条件拒绝，2026-11-24 起）。"""
+    cli = Client(base_url="https://t", client_id="i", client_secret="s",
+                 catalog=load(), max_limit=2000,
+                 session=_SeqSession([[{"date": "2026-09-30", "net_mf": 1},
+                                       {"date": "2026-01-05", "net_mf": 2}]]))
+    cli.session.result = [{"date": "2026-09-30", "net_mf": 1},
+                          {"date": "2026-01-05", "net_mf": 2}]  # 不饱和 → 一片即停
+    cli.moneyflow.bars("600519", begin="2026-01-05", end="2026-09-30")
+    assert 'moneyflow.query_bars_anchor("600519", 500, "2026-09-30")' \
+        in last_ev(cli)["xs_lines"][0]
+
+
+def test_kline_n_over_server_cap_raises():
+    """kline 单次窗口上限 1000（2026-11-24 起，script kline.store_window_limit）：
+    门面预检拦截并引导 begin/end 区间分页；即使 max_limit=None 也拦。"""
+    cli = Client(base_url="https://t", client_id="i", client_secret="s",
+                 catalog=load(), max_limit=None)
+    with pytest.raises(LimitError) as ei:
+        cli.kline.bars("600519", n=1001)
+    msg = str(ei.value)
+    assert "1000" in msg and "begin=" in msg
+
+
+def test_kline_n_at_cap_passes_precheck():
+    """边界值 1000 不拦（放行到服务端）。"""
+    cli = Client(base_url="https://t", client_id="i", client_secret="s",
+                 catalog=load(), max_limit=None, session=FakeSession([]))
+    cli.kline.bars("600519", n=1000)
+    assert "kline.query_bars(" in last_ev(cli)["xs_lines"][0]
+
+
+def test_cbond_n_param_is_caught_by_max_limit_fuse():
+    """cbond 的 n 参数此前完全绕过通用保险丝（只认 limit/lim）——2026-11-24 修。
+    直接走 client.call 验证保险丝本体（门面另有服务端上限预检会先命中）。"""
+    cli = Client(base_url="https://t", client_id="i", client_secret="s",
+                 catalog=load(), session=FakeSession())  # 默认 max_limit=500
+    with pytest.raises(LimitError) as ei:
+        cli.call("cbond.kline_window", code="113050", n=10**9)
+    assert "n=" in str(ei.value) and "500" in str(ei.value)
+    # 门面层：超大 n 先被服务端上限预检拦（消息带 1000）
+    with pytest.raises(LimitError):
+        cli.cbond.bars("113050", n=10**9)
+    with pytest.raises(LimitError):
+        cli.cbond.kline_window("113050", 10**9)
+
+
+def test_cbond_n_over_server_cap_raises_even_without_max_limit():
+    """cbond 服务端上限 1000：max_limit=None 时门面仍拦。"""
+    cli = Client(base_url="https://t", client_id="i", client_secret="s",
+                 catalog=load(), max_limit=None)
+    with pytest.raises(LimitError) as ei:
+        cli.cbond.bars("113050", n=1001)
+    assert "1000" in str(ei.value)
+    with pytest.raises(LimitError):
+        cli.cbond.query("113050", limit=501)
+
+
+def test_dividend_history_limit_over_server_cap_raises():
+    """分红历史服务端上限 500（十年≈80 条）：门面预检拦截。"""
+    cli = Client(base_url="https://t", client_id="i", client_secret="s",
+                 catalog=load(), max_limit=None)
+    with pytest.raises(LimitError) as ei:
+        cli.dividend.history("600519", limit=501)
+    assert "500" in str(ei.value)
+
+
+class _SeqSession(FakeSession):
+    """按调用次序依次返回不同结果（锚点切片用）。"""
+
+    def __init__(self, results):
+        super().__init__()
+        self._results = list(results)
+
+    def post(self, url, json=None, data=None, headers=None, timeout=None):
+        resp = super().post(url, json=json, data=data, headers=headers,
+                            timeout=timeout)
+        if url.endswith("/xs/eval"):
+            self.result = self._results.pop(0) if self._results else self.result
+        return resp
+
+
+def test_kline_range_pagination_slices_until_covered():
+    """区间不传 n：锚点切片自动补齐——覆盖 begin 即停、跨片去重、升序完整。"""
+    cli = Client(base_url="https://t", client_id="i", client_secret="s",
+                 catalog=load(),
+                 session=_SeqSession([
+                     # 片1（锚 2026-09-30）：2 根（饱和），最早 09-29 > begin → 续切
+                     [{"date": "2026-09-30", "close": 1.0},
+                      {"date": "2026-09-29", "close": 2.0}],
+                     # 片2（锚 2026-09-29）：含锚当日重复行 + 已覆盖 begin → 停
+                     [{"date": "2026-09-29", "close": 2.0},
+                      {"date": "2026-08-01", "close": 3.0}],
+                 ]), max_limit=2)
+    out = cli.kline.bars("600519", begin="2026-08-01", end="2026-09-30")
+    assert list(out["date"]) == ["2026-08-01", "2026-09-29", "2026-09-30"]
+    evals = [c for c in cli.session.calls if c["url"].endswith("/xs/eval")]
+    assert len(evals) == 2  # 两片，锚点前移
+    assert 'kline.query_at_anchor("600519", 2, "2026-09-30")' \
+        in evals[0]["json"]["xs_lines"][0]
+    assert 'kline.query_at_anchor("600519", 2, "2026-09-29")' \
+        in evals[1]["json"]["xs_lines"][0]
+
+
+def test_kline_range_explicit_n_keeps_single_call(cli):
+    """显式传 n=「区间内最近 n 根」语义：单次 query_bars，不补页（覆盖守护兜底）。"""
+    cli.session.result = [{"date": "2026-09-30", "close": 1.0},
+                          {"date": "2026-06-01", "close": 2.0}]
+    out = cli.kline.bars("600519", n=2, begin="2026-07-01", end="2026-09-30")
+    assert list(out["date"]) == ["2026-09-30"]  # 区间内最近 2 根 → 过滤后 1 根
+    assert 'kline.query_bars("600519", 2)' in last_ev(cli)["xs_lines"][0]
 
 
 def test_range_guards(cli):
@@ -302,8 +447,6 @@ def test_range_guards(cli):
         cli.kline.bars("600519", begin="2026-09-30", end="2026-09-01")
     with pytest.raises(UsageError, match="YYYY-MM-DD"):
         cli.kline.bars("600519", begin="bad", end="2026-01-01")
-    with pytest.raises(LimitError, match="超过上限"):
-        cli.kline.bars("600519", begin="2010-01-01", end="2026-01-01")
 
 
 def test_range_coverage_error_when_truncated(cli):
@@ -318,7 +461,7 @@ def test_dividend_history_normalized_and_ranged(cli):
         {"ex_div": "2023-06-26", "dps": 20.0, "total": 1, "announce": "2023-06-22"},
     ]
     out = cli.dividend.history("600519", begin="2025-01-01", end="2026-12-31")
-    assert len(out) == 1 and out[0]["ex_div"] == "2026-06-26"
+    assert len(out) == 1 and list(out["ex_div"]) == ["2026-06-26"]
     with pytest.raises(UsageError, match="_raw=True"):
         cli.dividend.history("600519", begin="2025-01-01", end="2026-01-01", _raw=True)
 
@@ -345,3 +488,75 @@ def test_window_token_validation(cli):
         cli.dividend.window_stats("600519", 2000)
     cli.session.result = {"rows": [], "dps": 0.0, "total": 0.0}
     assert cli.dividend.window_stats("600519", 30)["count"] == 0
+
+
+def test_kline_range_uses_adj_anchor_when_adjusted():
+    """复权区间走 query_at_anchor_adj（不带 volume_amount 不变量的同族函数）。"""
+    cli = Client(base_url="https://t", client_id="i", client_secret="s",
+                 catalog=load(), session=_SeqSession([
+                     [{"date": "2026-03-02", "close": 10.0}],
+                 ]))
+    cli.kline.bars("600519", adj="qfq", begin="2026-01-01", end="2026-03-02")
+    xs = last_ev(cli)["xs_lines"][0]
+    assert 'kline.query_at_anchor_adj("600519", 500, "2026-03-02"' in xs
+
+
+def test_kline_range_slices_for_index_symbols():
+    """指数键同样切片（服务端 index_window_anchor 语义与个股一致）。"""
+    cli = Client(base_url="https://t", client_id="i", client_secret="s",
+                 catalog=load(), session=_SeqSession([
+                     [{"date": "2026-09-30", "close": 3800.0},
+                      {"date": "2026-09-29", "close": 3810.0}],
+                     # 片2 覆盖到 begin 之前一根即停（锚点含当日 → 前移去重）
+                     [{"date": "2026-08-03", "close": 3700.0},
+                      {"date": "2026-07-30", "close": 3690.0}],
+                 ]), max_limit=2)
+    out = cli.kline.bars("000300.SH", begin="2026-08-01", end="2026-09-30")
+    assert list(out["date"]) == ["2026-08-03", "2026-09-29", "2026-09-30"]
+    evals = [c for c in cli.session.calls if c["url"].endswith("/xs/eval")]
+    assert len(evals) == 2
+
+
+def test_kline_range_anchor_stall_fails_fast():
+    """服务端不按锚点收窄窗口时必须立刻停，不能重复切片白烧 100 次 EC。"""
+    class _Stalled(FakeSession):
+        """永远返回同一片（且占满一片）：模拟「anchor_date 被忽略」的病态实现。"""
+
+        def post(self, url, json=None, data=None, headers=None, timeout=None):
+            resp = super().post(url, json=json, data=data, headers=headers,
+                                timeout=timeout)
+            if url.endswith("/xs/eval"):
+                self.result = [{"date": "2026-09-30", "close": 1.0},
+                               {"date": "2026-09-29", "close": 1.0}]
+            return resp
+
+    cli = Client(base_url="https://t", client_id="i", client_secret="s",
+                 catalog=load(), session=_Stalled(), max_limit=2)
+    with pytest.raises(LimitError, match="锚点未前移"):
+        cli.kline.bars("600519", begin="2020-01-01", end="2026-09-30")
+    # 只在第 2 片就发现并停止（不是打满 100 片）
+    assert len([c for c in cli.session.calls if c["url"].endswith("/xs/eval")]) == 2
+
+
+def test_kline_range_slice_cap_raises_after_max_slices():
+    """锚点正常前移但每片都只 1 行时，由片数上限兜底显式报错（不静默截断）。"""
+
+    class _SlowForward(FakeSession):
+        """锚点每次只前移一天（合法但不饱和）：100 片走不完 2020 起的区间。"""
+
+        def post(self, url, json=None, data=None, headers=None, timeout=None):
+            resp = super().post(url, json=json, data=data, headers=headers,
+                                timeout=timeout)
+            if url.endswith("/xs/eval"):
+                from datetime import date, timedelta
+                line = self.calls[-1]["json"]["xs_lines"][0]
+                found = re.findall(r"\d{4}-\d{2}-\d{2}", line)
+                d = date.fromisoformat(found[-1]) if found else date(2026, 9, 30)
+                self.result = [{"date": d.isoformat(), "close": 1.0},
+                               {"date": (d - timedelta(days=1)).isoformat(), "close": 1.0}]
+            return resp
+
+    cli = Client(base_url="https://t", client_id="i", client_secret="s",
+                 catalog=load(), session=_SlowForward(), max_limit=2)
+    with pytest.raises(LimitError, match="切了 100 片"):
+        cli.kline.bars("600519", begin="2020-01-01", end="2026-09-30")

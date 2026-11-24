@@ -15,6 +15,35 @@ from typing import Any, Callable
 from wmshare.api import FRIENDLY_NAMESPACES
 
 _SYMBOL_NAMES = {"symbol", "sym", "stk", "code"}
+
+# 必选参数无自然字面值的方法走手工示例（占位描述指向取值来源，禁 <REQUIRED>）。
+_HAND_EXAMPLES: dict[str, str] = {
+    "notice.category_regex": 'cli.notice.category_regex("buyback")',
+    "pdf_doc.find_by_url": 'cli.pdf_doc.find_by_url("<公告行 url 字段>")',
+    "pdf_doc.find_by_key": 'cli.pdf_doc.find_by_key("<search() 行 file_key 字段>")',
+    "toplist.by_date": 'cli.toplist.by_date("2026-11-18", limit=10)',
+    "board.moneyflow": 'cli.board.moneyflow("ths_concept", "2026-11-20", limit=10)',
+    "board.moneyflow_last": 'cli.board.moneyflow_last("ths_concept", limit=10)',
+    "blocktrade.by_date": 'cli.blocktrade.by_date("2026-11-20", limit=10)',
+    "blocktrade.by_symbol": 'cli.blocktrade.by_symbol("000530", limit=10)',
+    "stocks.suspend_history": 'cli.stocks.suspend_history("600519", "2026-01-01", "2026-11-23")',
+    "stocks.name_history": 'cli.stocks.name_history("000001")',
+    "stocks.lifecycle": 'cli.stocks.lifecycle("000001")',
+    "stocks.limit_price_history": 'cli.stocks.limit_price_history("600519", n=120)',
+    "board.concepts_of": 'cli.board.concepts_of("600519")',
+    "board.concept_members": 'cli.board.concept_members("白酒", limit=10)',
+    "toplist.by_symbol": 'cli.toplist.by_symbol("000530", limit=10)',
+    "futures.bars": 'cli.futures.bars("AL.SHF", n=12, freq="m")',
+    "valuation.daily_basic_multi":
+        'cli.valuation.daily_basic_multi(["600519", "000001"], fields=["pe_ttm"])',
+    "valuation.daily_basic_coverage": 'cli.valuation.daily_basic_coverage("600519")',
+    # 2.5：收息场景闭环（批量优先——symbols 一次调用，勿逐票循环）
+    "dividend.rating": 'cli.dividend.rating(top_n=20, grade="strong")',
+    "dividend.diagnose": 'cli.dividend.diagnose(["600900", "600519"])',
+    "dividend.calendar": 'cli.dividend.calendar("2026-11-01", "2026-11-30")',
+    "dividend.decomp": 'cli.dividend.decomp(["600900", "601088"], years=3)',
+    "index.members_history": 'cli.index.members_history("index.hs300", begin="2026-11-01")',
+}
 _SPECIAL_CATALOG: dict[tuple[str, str], str | None] = {
     ("valuation", "hist_stats"): None,
     ("screener", "index_top_movers"): "kline.index_top_movers",
@@ -86,10 +115,23 @@ def _recommended_tool(domain: str, method: str) -> str:
         return "wmshare_market"
     if domain == "screener":
         return "wmshare_screen"
-    if domain in {"moneyflow", "margin", "cbond", "index", "valuation"}:
+    if domain in {"moneyflow", "margin", "cbond", "index", "valuation", "board",
+                  "blocktrade"}:
         return "wmshare_market"
+    # futures / calendar 必须显式分流：MARKET_DOMAINS 都不含它们，推荐到
+    # wmshare_market 会让调用方按推荐直接吃「domain 只支持…」。
+    if domain == "futures":
+        return "wmshare_futures"
+    if domain == "calendar":
+        return "wmshare_call"
     if domain == "stocks":
-        return "wmshare_market" if method == "list" else "wmshare_screen"
+        # limit_price/limit_prices/停复牌与简称史由 wmshare_market 的 stocks 域
+        # 直接服务；只有行业成分/宽度类走 screen。
+        return ("wmshare_market"
+                if method in {"list", "limit_price", "limit_prices",
+                              "limit_price_history",
+                              "suspend_history", "name_history", "lifecycle"}
+                else "wmshare_screen")
     if domain == "statements":
         return "wmshare_statement"
     if domain == "segments":
@@ -116,6 +158,8 @@ def _recommended_tool(domain: str, method: str) -> str:
 
 
 def _example(target: str, params: list[inspect.Parameter]) -> str:
+    if target in _HAND_EXAMPLES:
+        return _HAND_EXAMPLES[target]
     parts: list[str] = []
     for param in params:
         if param.name in _SYMBOL_NAMES:

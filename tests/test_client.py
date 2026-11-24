@@ -7,6 +7,7 @@ FakeSession 复现 OpenAPI 合同：
 import json
 import threading
 
+import pandas as pd
 import pytest
 
 from wmshare.catalog import load
@@ -102,10 +103,10 @@ def test_missing_middle_param_fills_nil(client):
 
 
 def test_auto_require_for_unpreloaded_ns(client):
-    client.call("rptdom.statement_years", sym="600519", domain="fin.income_statement")
+    client.call("rptdom.statement", sym="600519", domain="fin.income_statement")
     lines = last_eval(client)["json"]["xs_lines"]
     assert lines[0] == 'xs.require("sys/rptdom/init.xs")'
-    assert lines[-1] == ('return rptdom.statement_years("600519", "fin.income_statement")')
+    assert lines[-1] == ('return rptdom.statement("600519", "fin.income_statement")')
     # 预载域不补 require
     client.call("kline.query_last", sym="600519")
     lines = last_eval(client)["json"]["xs_lines"]
@@ -150,8 +151,9 @@ def test_client_without_credentials_rejected():
         Client(base_url="https://t", catalog=load(), session=FakeSession())
     assert ei.value.code == "config"
     assert "open.winmale.com" in str(ei.value)
-    # 报错即引导：零凭证离线演示入口必须随错误给出（同 README 首屏口径）
-    assert "wmshare.demo_client()" in str(ei.value)
+    # 报错即引导：免注册入口必须随错误给出（from_env 凭据双缺自动走免注册免费试用）
+    assert "Client.from_env()" in str(ei.value)
+    assert "免注册" in str(ei.value)
 
 
 def test_missing_credentials_mention_legacy_finpipe(monkeypatch, tmp_path):
@@ -233,29 +235,21 @@ def test_from_env_open_platform_fallback(tmp_path):
     assert c.client_id == "pid"
 
 
-def test_from_env_empty_raises_with_guidance(tmp_path):
-    # 隔离本机凭证文件（维护者/用户可能已配置 ~/.wmshare/credentials.env），
-    # 确保测的是「无任何配置 → 构造期报错并附申请指引」这条路径
-    with pytest.raises(WmshareError, match="缺少凭证"):
-        Client.from_env(env={"WMSHARE_CREDENTIALS": str(tmp_path / "absent.env")},
-                        base_url="https://t", catalog=load(), session=FakeSession())
-
-
 def test_object_param_serialized(client):
     client.call("rptdom.statement", sym="600519", domain="fin.income_statement",
-                opts={"scope": "合并", "n": 5})
+                opts={"n": 5})
     xs = last_eval(client)["json"]["xs_lines"][-1]
     assert xs == ('return rptdom.statement("600519", "fin.income_statement", '
-                  '{"scope": "合并", "n": 5})')
+                  '{"n": 5})')
 
 
 def test_namespace_facade(client):
     # 通用门面（非友好命名空间）：rptdom 仍走底层函数直调
-    out = client.rptdom.statement_years(sym="600519", domain="fin.income_statement")
+    out = client.rptdom.statement(sym="600519", domain="fin.income_statement")
     assert out == {"ok": True}
     xs = last_eval(client)["json"]["xs_lines"]
     assert xs[0] == 'xs.require("sys/rptdom/init.xs")'
-    assert xs[-1] == 'return rptdom.statement_years("600519", "fin.income_statement")'
+    assert xs[-1] == 'return rptdom.statement("600519", "fin.income_statement")'
     with pytest.raises(AttributeError, match="不在目录中"):
         client.no_such_ns.query(sym="1")
     # L1 精简条目：回退 inventory 签名参数，可直接调用
@@ -276,10 +270,15 @@ def test_inventory_min_args_optional(client):
 
 
 def test_dataframe_option(client):
-    pytest.importorskip("pandas")
+    """2.0：底层 call() 保持行数组；DataFrame 默认转换在门面层（to_output_frame）。"""
+    pd = pytest.importorskip("pandas")
     client.session.eval_result = [{"date": "2026-10-21", "close": 1309.69}]
-    df = client.call("kline.query_bars", sym="600519", limit=1, _df=True)
-    assert list(df.columns) == ["date", "close"] and len(df) == 1
+    rows = client.call("kline.query_bars", sym="600519", limit=1)
+    assert isinstance(rows, list) and rows[0]["date"] == "2026-10-21"
+    df = client.kline.last  # noqa: B018 - 属性存在性
+    from wmshare.client import to_output_frame
+    df = to_output_frame(rows)
+    assert isinstance(df, pd.DataFrame) and list(df.columns) == ["date", "close"]
 
 
 def test_token_cached(client):
@@ -446,7 +445,7 @@ def test_eval_default_anchor_follows_market():
 def test_stocks_list_routes_with_require(client):
     client.session.eval_result = [{"symbol": "600519", "name": "贵州茅台"}]
     rows = client.stocks.list()
-    assert rows and rows[0]["symbol"] == "600519"
+    assert not rows.empty and rows.iloc[0]["symbol"] == "600519"
     lines = last_eval(client)["json"]["xs_lines"]
     assert any("stocks.query_list()" in ln for ln in lines)
     assert any('xs.require("sys/stocks/init.xs")' in ln for ln in lines)
@@ -455,7 +454,8 @@ def test_stocks_list_routes_with_require(client):
 def test_stocks_industry_members_and_fuzzy(client):
     client.session.eval_result = [{"symbol": "600519", "name": "贵州茅台"}]
     rows = client.stocks.industry_members("S48", top_n=1)
-    assert rows == [{"symbol": "600519", "name": "贵州茅台"}]
+    assert isinstance(rows, pd.DataFrame)
+    assert rows.iloc[0].to_dict() == {"symbol": "600519", "name": "贵州茅台"}
     assert last_eval(client)["json"]["xs_lines"][-1] == \
         'return stocks.industry_members("S48")'
 

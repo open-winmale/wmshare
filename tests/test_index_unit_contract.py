@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import os
 
+import pandas as pd
 import pytest
 
 import wmshare
@@ -263,7 +264,11 @@ def test_catalog_declarations_intact():
     lot = {n for n in LOT_FUNCS
            if (cat.function(n).get("units") or {}).get("volume") == "lot"}
     assert lot == LOT_FUNCS, f"声明被删或新增未同步：{LOT_FUNCS ^ lot}"
-    for n in ("kline.query_bars", "kline.query_bars_period", "kline.query_last"):
+    # kline.query_bars_period 刻意不在列：volume×close/amount 恒等于「期末价/
+    # 期内成交均价」，日线两者近似相等，聚合周期天然偏离（月线实测 2,269
+    # 样本落在 [0.07, 2.59]），套 [0.4, 2.5] 会把正常序列判成单位漂移。
+    # 与 query_bars_period_adj 同理不套；这是语义修正，不是绕过问题。
+    for n in ("kline.query_bars", "kline.query_last"):
         assert "volume_amount" in (cat.function(n).get("checks") or []), n
 
 
@@ -314,7 +319,9 @@ def test_kline_last_and_bars_high_level_api(client):
     assert last["percent"] == pytest.approx(-0.007798)
 
     client.session.eval_result = [dict(INDEX_BAR)]
-    assert client.kline.bars(IDX, n=1)[0]["volume"] == INDEX_BAR["volume"]
+    bars = client.kline.bars(IDX, n=1)
+    assert isinstance(bars, pd.DataFrame)
+    assert float(bars.iloc[0]["volume"]) == INDEX_BAR["volume"]
 
 
 def test_batch_live_mixed_container(client):

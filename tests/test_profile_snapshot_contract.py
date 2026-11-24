@@ -32,12 +32,18 @@ from wmshare.client import Client
 LIVE_SMOKE = pytest.mark.skipif(os.getenv("WMSHARE_LIVE_SMOKE") != "1",
                                 reason="设置 WMSHARE_LIVE_SMOKE=1 才联网")
 
-PROFILE_KEYS = {"name", "industry", "style_industry", "org_type", "listing_date"}
-CN_XS = ('return {"name": $NAME, "industry": $INDUSTRY_CUR, '
+PROFILE_KEYS = {"name", "full_name", "name_en", "industry_l1", "industry",
+                "style_industry", "org_type", "listing_date", "listing_board",
+                "business_scope"}  # 2.0 扩列：10 字段档案摘要
+CN_XS = ('return {"name": $NAME, "full_name": $ORG_FULLNAME, "name_en": $NAMEEN, '
+         '"industry_l1": $INDUSTRY_CUR_1, "industry": $INDUSTRY_CUR, '
          '"style_industry": $STYLE_INDUSTRY, "org_type": $ORG_ORGTYPE, '
-         '"listing_date": $ORG_LISTINGDATE}')
-US_XS = ('return {"name": $NAME, "industry": $INDUSTRY_CUR, '
-         '"org_type": $ORG_ORGTYPE, "listing_date": $ORG_LISTINGDATE}')
+         '"listing_date": $ORG_LISTINGDATE, "listing_board": $LISTING_BOARD, '
+         '"business_scope": $ORG_BUSINESSSCOPE}')
+US_XS = ('return {"name": $NAME, "full_name": $ORG_FULLNAME, "name_en": $NAMEEN, '
+         '"industry_l1": $INDUSTRY_CUR_1, "industry": $INDUSTRY_CUR, '
+         '"org_type": $ORG_ORGTYPE, "listing_date": $ORG_LISTINGDATE, '
+         '"listing_board": $LISTING_BOARD, "business_scope": $ORG_BUSINESSSCOPE}')
 
 # 上游 sys/kline/snapshot.xs 函数体的真实返回键（2026-11-14 live 实测）
 SNAPSHOT_FIELDS = {

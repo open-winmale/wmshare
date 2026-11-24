@@ -55,6 +55,37 @@ INCLUDED_NS = frozenset({
     "stocks",
     # v1.11.0：宏观时序域（中债曲线/宏观指标采样/行业月度）
     "macro",
+    # 2.0：交易日历域（P1 数据面：回测/窗口计算的前置面）
+    "calendar",
+    # 2.x：每日估值宽表域（alt.valuation_daily 物化表的读面）。
+    # inventory.json 已随 fund.valuation 域手工同步该函数（2026-11-17，
+    # 与 _catalog/domains/valuation.yaml 同源）；下次对上游重跑提取时本白名单保证不被丢弃。
+    "valuation",
+    # 2.3：回购六口径聚合（buyback.snapshot，随 corp.equity 域暴露）与
+    # 公告 PDF 全文库（pdf_doc 检索/读面，disc.pdf_doc 域；submit/ensure 在
+    # SDK 侧标 internal，写面不进公开门面）。
+    "buyback",
+    "pdf_doc",
+    # 2.3：龙虎榜（外部行情源 cn_top_list 直读，market.toplist 域）
+    "toplist",
+    # 2.3：期货换月映射（cn/futures_mapping 直读，随 cli.futures 门面暴露）
+    "futures",
+    # 2.5：收息库（四维评分/资格门/静态下限复原 + 收息榜/收息诊断/分红日历/收益拆解，
+    # disc.income 域；与 web 收息佬、skillhub wm-income 三面共享同一 SoT）
+    "income",
+    # 2.9/3.0：外汇汇率（eco.macro currencyrate.PROPS 直读，market.fx 域）
+    "fx",
+    # 2.9/3.0：官方储备（alt.bssaa cn.currency.reserve.* 直读，market.macro 域储备条目）
+    "reserve",
+    # 3.1：美宏观序列（eco.macro fred.LIST.{id} 直读，market.us_macro 域；
+    # 精选 88 条 × 11 主题。web 页面用的 fred.points/fred.series 标 internal 不进目录，
+    # SDK 读面是 fred.topics/search/points_asc/series_meta 四个）
+    "fred",
+    # 3.2：板块资金流（上游日频全市场榜单直读，market.board 域；
+    # ths 概念/行业 + dc 概念·行业，额统一元、率统一小数）
+    "board",
+    # 3.3：A股大宗交易（上游日频全市场明细直读，market.blocktrade 域）
+    "blocktrade",
 })
 # rptdom 只保留三表透视族（年报 PDF 提取类 rows/notes/note_index 不发布）
 RPTDOM_KEEP = frozenset({"statement", "statement_years", "statement_compare", "statement_tree", "statement_audit"})

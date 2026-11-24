@@ -1,22 +1,16 @@
 """公告变更订阅：notice_poller 轮询器的手动一轮、ack 语义与进度重置。
 
-前提：凭证必填（export WMSHARE_CLIENT_ID=... WMSHARE_CLIENT_SECRET=...）；`--demo` 用随包演示数据零凭证试跑
+前提：凭证可选——无凭证自动免注册免费试用（真实数据、需网络）
 运行：python examples/10_notice_monitor.py
 学到：poll_now 手动轮询（探针→拉新→回调→ack）；at-least-once（ack 前崩溃会重投）；StreamResetError→seek_oldest
 文档：docs/GUIDE.md（公告变更订阅）
 """
-import sys
 import wmshare
 
 
-def main(cli=None, demo: bool = False) -> None:
+def main(cli=None) -> None:
     if cli is None:
-        if demo:
-            cli = wmshare.demo_client()
-            print("(演示模式：随包罐头数据，非真实行情)")
-            print()
-        else:
-            cli = wmshare.Client.from_env()
+        cli = wmshare.Client.from_env()
 
     def on_events(events) -> None:
         for ev in events:
@@ -45,7 +39,7 @@ def main(cli=None, demo: bool = False) -> None:
 
 if __name__ == "__main__":
     try:
-        main(demo="--demo" in sys.argv)
+        main()
     except wmshare.WmshareError as e:
         print(f"订阅失败：{e}")
         raise SystemExit(1)

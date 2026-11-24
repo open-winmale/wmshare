@@ -11,6 +11,7 @@ units:
   price: 元（公告对价/现价）
 requires: {path: sys/workout/init.xs, preloaded: false}
 notes:
+  - 可用性：仅 A 股（要约收购/换股/现金选择权等沪深披露）
   - 'board() 返回 {as_of, deals, quotes} 进行中看板；query(sym) 返回单票规范化条款行'
   - '现价 < 公告对价 的折价窗口由调用方自行判定，SDK 不内置收益测算（算法放工具仓）'
 functions:

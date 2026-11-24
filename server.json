@@ -1,17 +1,17 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.open-winmale/wmshare",
-  "description": "Python SDK MCP server: offline catalog + 2,752 precomputed A-share/HK/US metrics for AI agents.",
+  "description": "Python SDK MCP server: offline catalog + 2,983 precomputed A-share/HK/US metrics for AI agents.",
   "repository": {
     "url": "https://github.com/open-winmale/wmshare",
     "source": "github"
   },
-  "version": "1.20.4",
+  "version": "3.7.1",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "wmshare",
-      "version": "1.20.4",
+      "version": "3.7.1",
       "transport": {
         "type": "stdio"
       },

@@ -373,12 +373,28 @@ def run_matrix(cli: wmshare.Client, rep: Report, only: str | None, refresh: bool
 # ---- drift：离线静态漂移（目录声明 vs 上游 inventory / 指标 markets / checks 注册） ----
 
 def _shape_fields(shape: dict | None) -> set[str]:
-    """returns_shape 的字段名集合（兼容 array.items.fields / object.fields）。"""
+    """returns_shape 的字段名集合（兼容 array.items.fields / object.fields）。
+
+    递归收集嵌套字段的子 fields：运行时守护 ``walk`` 会下探未声明键的嵌套
+    容器（``units.py`` apply_fields 只匹配字段名），``segments.query_region``
+    这类 ``{domestic: {tr, pct, ...}}`` 的守护字段只出现在嵌套层——声明语义
+    上它们就是 shape 的一部分，不递归会把合法嵌套守护误报为声明滞后。
+    """
+    out: set[str] = set()
+
+    def walk_fields(fields: Any) -> None:
+        for f in fields or []:
+            if not isinstance(f, dict) or not f.get("name"):
+                continue
+            out.add(f["name"])
+            nested = f.get("items") if isinstance(f.get("items"), dict) else f
+            walk_fields(nested.get("fields"))
+
     if not isinstance(shape, dict):
-        return set()
+        return out
     items = shape.get("items") if isinstance(shape.get("items"), dict) else shape
-    fields = (items or {}).get("fields") or []
-    return {f["name"] for f in fields if isinstance(f, dict) and f.get("name")}
+    walk_fields((items or {}).get("fields"))
+    return out
 
 
 def collect_drift(cat, inventory_doc: dict, metrics_doc: dict,

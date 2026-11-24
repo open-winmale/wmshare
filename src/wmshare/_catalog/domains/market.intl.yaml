@@ -1,5 +1,5 @@
 id: market.intl
-version: 1.2.0
+version: 1.2.1
 cn: 港美股披露
 kind: raw
 category: reference
@@ -27,5 +27,45 @@ functions:
   - {name: intl.query_profit_forecast, cn: 港股盈利预测, layer: L0, normalize_with: intl.fmt_maps}
   - {name: intl.query_sellshort, cn: 港美沽空, layer: L0, normalize_with: intl.fmt_maps}
   - {name: intl.issue_info, cn: 美股发行信息, layer: L0, normalize_with: intl.fmt_issue}
-  - {name: intl.fmt_maps, cn: 港美股行规范化, layer: L1}
-  - {name: intl.fmt_issue, cn: 发行行规范化, layer: L1}
+  - name: intl.fmt_maps
+    internal: true
+    cn: 港美股行规范化
+    layer: L1
+    returns:
+      desc: ARR · 规范化港美股行（字段并集按行取，缺字段为空）
+      shape:
+        kind: array
+        items:
+          kind: object
+          cn: 港美股行
+          fields:
+            - {name: query_date, type: string, cn: 查询日期, optional: true}
+            - {name: participant_id, type: string, cn: 参与者ID, optional: true}
+            - {name: participant_name, type: string, cn: 参与者名称, optional: true}
+            - {name: shareholding, type: float64, cn: 持股数（股）, optional: true}
+            - {name: pct_of_issued, type: float64, cn: 占已发行股份比（小数）, optional: true}
+            - {name: holder_name, type: string, cn: 股东名称, optional: true}
+            - {name: hold_identity, type: string, cn: 权益身份, optional: true}
+            - {name: report_date, type: string, cn: 报告期, optional: true}
+            - {name: total_shares, type: float64, cn: 总股本（股）, optional: true}
+            - {name: shares_type, type: string, cn: 股份类型, optional: true}
+            - {name: equity_type, type: string, cn: 权益类型, optional: true}
+            - {name: total_shares_ratio, type: float64, cn: 占总股本比（小数）, optional: true}
+            - {name: notice_date, type: string, cn: 申报日期, optional: true}
+            - {name: publish_date, type: string, cn: 发布日期, optional: true}
+            - {name: org_name, type: string, cn: 券商机构, optional: true}
+            - {name: rating_name, type: string, cn: 评级, optional: true}
+            - {name: target_price, type: float64, cn: 目标价, optional: true}
+            - {name: pre_rating_name, type: string, cn: 前次评级, optional: true}
+            - {name: pre_target_price, type: float64, cn: 前次目标价, optional: true}
+            - {name: settle_date, type: string, cn: 结算日期, optional: true}
+            - {name: short_selling_shares, type: float64, cn: 未平仓做空股数（股）, optional: true}
+            - {name: cover_days, type: float64, cn: 回补天数, optional: true}
+            - {name: fiscal_year, type: string, cn: 财政年度, optional: true}
+            - {name: net_profit, type: float64, cn: 纯利（港币）, optional: true}
+            - {name: eps, type: float64, cn: 每股盈利（港币）, optional: true}
+            - {name: dps, type: float64, cn: 每股派息（港币）, optional: true}
+            - {name: nav, type: float64, cn: 每股资产净值（港币）, optional: true}
+            - {name: high, type: float64, cn: 最高价, optional: true}
+            - {name: low, type: float64, cn: 最低价, optional: true}
+  - {name: intl.fmt_issue, cn: 发行行规范化, layer: L1, internal: true}

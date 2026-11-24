@@ -205,6 +205,17 @@ def _caliber_of(code: str, cn: str, cfg: dict[str, Any]) -> list[str]:
 def _unit_kind_of(code: str, cn: str, topic: str, group_unit: str) -> str:
     if "PCT" in code or "分位" in cn:
         return "percentile"
+    # 名称/日期类先判：$INCOME_STRU_MAX_RATIO_NAME 含「占比」、$KLINE_DATE 含「日期」，
+    # 若走后面的「率/比例」或「元」规则会被误标成数值。
+    if code.endswith("_NAME") or "名称" in cn:
+        return "text"
+    if code.endswith(("_DATE", "_ASOF", "_ASOF_LAST", "_REFRESHED_AT", "_TIME")) \
+            or "日期" in cn or "时间点" in cn:
+        return "text"
+    # 布尔族在「率/额」之前判：cn 的「(1是0否)」是明确信号；_LAST 变体
+    # 的 cn 只写「-最新」，按码名补一条（$MA5_UP / $MA10_CROSS5D 等）。
+    if "1是0否" in cn or re.match(r"\$MA\d+_(?:UP|CROSS)", code):
+        return "bool"
     # 成交量族先判：$VOLUME_AR_DAY 的 "AR" 是「后复权」后缀，不是年化收益。
     if code.startswith("$VOLUME") or re.search(r"\((?:股|万股|亿股)\)", cn) \
             or code.startswith(("$SHARES", "$TOTAL_SHARE", "$FLOAT_SHARE", "$FREE_SHARE")):
@@ -262,10 +273,43 @@ def _unit_kind_of(code: str, cn: str, topic: str, group_unit: str) -> str:
             return "index_point"
         if re.search(r"率|同比|增长|占比", cn):
             return "ratio"
+        # 美元计价必须先判（"亿美元" 含「元」字，会被下面的 money 规则误吞）：
+        # 值已是美元数值（上游 Base=亿美元×1e8），标 money(元) 违反 SDK 金额契约。
+        if re.search(r"美元", cn):
+            return "usd_amount"
         if re.search(r"金额|亿元|万亿|元", cn):
             return "money"
         return "index_point"
     if topic == "quote":
+        # 指数族：成交额=元、均价/涨跌额=指数点、成交量=股。
+        if code.startswith("$INDEX_AMOUNT"):
+            return "money"
+        if code.startswith(("$INDEX_AVG", "$INDEX_CHG")):
+            return "index_point"
+        # 指数成交量/均量读 kline volume（指标层为手），无基础单位换算声明，
+        # 不标 shares；登记 unit_unknown_allowlist。
+        # 持股/股本族（含陆股通持股量）。
+        if code.startswith(("$HOLD_VOL", "$ID_HOLD_VOL", "$ID_EQUITY_TOTAL_SHARES")):
+            return "shares"
+        # 指数相对系数。
+        if code.startswith("$IDW_ALPHA"):
+            return "ratio"
+        if code.startswith("$IDW_BETA"):
+            return "multiple"
+        # 量能族：量比=倍数、趋势类型=文本、上穿/放大=布尔；均量同 kline volume
+        # （手），保留 unknown 并登记 allowlist。
+        if code.startswith("$VOL_RATIO"):
+            return "multiple"
+        if code.startswith("$VOL_TREND_TYPE"):
+            return "text"
+        if code.startswith(("$VOL_MA5_GT", "$VOL_UPTREND")):
+            return "bool"
+        # 增发信息：类型/起始日（起始日已被日期规则拦下）。
+        if code.startswith("$CAPITAL_"):
+            return "text"
+        # 期货结算价（持仓量/成交量是「手」，无基础单位，保留 unknown）。
+        if code.startswith(("$FUT_SETTLE", "$FUT_PRE_SETTLE")):
+            return "price"
         if re.search(r"BOLL_(LOWER|MID|UPPER)", code):
             return "price"
         if re.search(r"BOLL_(WIDTH|POSITION)", code):
@@ -274,6 +318,15 @@ def _unit_kind_of(code: str, cn: str, topic: str, group_unit: str) -> str:
                      r"DPO|AROON|BBI|ENV|ASI|EMV|FI|VWAP", code):
             return "ratio"
         return "unknown"
+    if topic == "ownership":
+        # 年龄/出生年是计数；薪酬/增减持总额/持股人总数上游是「万」口径且台账
+        # 未登记换算，保留 unknown（登记 allowlist），不猜成 money/text。
+        if code in ("$EXECUTIVE_AGE", "$EXECUTIVE_BIRTH_YEAR"):
+            return "count"
+        if code in ("$EXECUTIVE_SALARY", "$EXCHANGEHOLD_TOTAL",
+                    "$ID_EXCHANGEHOLD_TOTAL", "$ID_HOLDERNUM_HOLDER_TOTAL"):
+            return "unknown"
+        return "text"
     if topic in ("profile", "disclosure"):
         return "text"
     if topic == "estimates":
@@ -290,6 +343,11 @@ def _unit_kind_of(code: str, cn: str, topic: str, group_unit: str) -> str:
         if "倍" in group_unit:
             return "multiple"
         return "ratio"
+    # 行业营收/成本族：份额=比率，营收均值/最低、营业成本、企业价值=金额。
+    if code.startswith("$CUR_IND_TR_"):
+        return "ratio" if "_SHARE" in code else "money"
+    if code.startswith(("$IDW_OC", "$ID_EV", "$ID_OC")):
+        return "money"
     if "元/股" in group_unit:
         return "per_share"
     if "元" in group_unit:

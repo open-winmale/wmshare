@@ -17,12 +17,16 @@ GUARD_TOOL = REPO / "tools" / "guard_coverage.py"
 AUDIT_TOOL = REPO / "tools" / "audit_units.py"
 AUDIT_REPORT = REPO / ".internal" / "UNIT_AUDIT.md"
 
-# 实测（2026-11-14）：8 个有函数但 guarded=0 的域；fund.indicators 为 0 函数域，不计。
+# 实测（2026-11-18 收紧）：5 个有函数但 guarded=0 的域；fund.indicators 为 0 函数域，不计。
+# 此前基线含 disc.bonus/market.margin/market.moneyflow——三者已补 ranges，从基线移除，
+# 回退为零守护即红（2026-11-18 数据质量收紧）。
+# market.futures：query_bars 补 ranges/checks（2026-11-23），按预告从基线移除——
+# mapping 行仍是字符串字段无数值语义，但域已不再零守护。
+# market.macro：储备三函数带 ranges（2026-11-23），同样移除（基线不得登记不实项）。
 ZERO_GUARD_BASELINE = {
-    "disc.bonus", "disc.filings", "disc.notice", "disc.workout",
-    "market.macro", "market.margin", "market.moneyflow", "market.stocks",
+    "disc.filings", "disc.notice", "disc.workout",
 }
-DRIFT_WARN_BASELINE = 29
+DRIFT_WARN_BASELINE = 0
 
 
 def _load(path: Path, name: str):
@@ -36,9 +40,13 @@ def _load(path: Path, name: str):
 def test_guard_coverage_cannot_regress():
     mod = _load(GUARD_TOOL, "guard_coverage_baseline")
     result = mod.collect(mod.DEFAULT_DOMAINS)
-    assert result["functions"] == 288
-    assert result["guarded"] >= 50
-    assert result["ratio"] >= 0.173611
+    assert result["functions"] == 368  # +概念目录1 +仓单3 +持仓2 +结算2（2026-11-24）
+    assert result["guarded"] >= 90
+    # 分子 85 = 83（板块资金流）+ blocktrade.by_date/by_symbol（价格/量/额 ranges）。
+    # 分母 355 的稀释项均为无数值守护语义的检索/工具函数（批次1 9 条 + mapping/
+    # fmt_maps/notice 类目等——audit_units 的函数级 units 仅接受换算词
+    # lot/percent/yi_yuan，字符串返回值无 ranges 语义）。
+    assert result["ratio"] >= 0.25  # 持仓/结算后 92/368=0.25（只许变好；此前 90/364=0.24725）
     zero = {name for name, stat in result["per_domain"].items()
             if stat["functions"] > 0 and stat["guarded"] == 0}
     assert zero <= ZERO_GUARD_BASELINE, f"新增零守护域：{sorted(zero - ZERO_GUARD_BASELINE)}"

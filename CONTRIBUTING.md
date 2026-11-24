@@ -2,6 +2,20 @@
 
 感谢关注 wmshare。本文件同时是**内容规范**：违反任一条会被 CI 门禁拦截。
 
+## 2.0 接口契约（改接口前必读，破坏性变更已定版）
+
+- **返回形态**：门面（`cli.ns.method`）行表/序列默认 pandas DataFrame（date 升序=旧→新，
+  统一经 `to_output_frame` 收口）；面板/时序组合面用统一信封 `{ok, as_of, data, meta}`；
+  底层 `cli.call` 保持规范化行数组。`_df` 参数已废除；`_raw=True` 是唯一原始口径逃生口。
+- **单位**：率=小数/额=元/量=股全库默认。`units.yaml` 的 overrides/facades 是**运行时
+  换算声明**（`ledger_convert` / `apply_facade_units` 消费），不是纯文档；新增偏离口径
+  的码必须登记台账 + `test_units_ledger` 锚点。
+- **内部函数**：目录标 `internal: true` 的辅助（fmt_* 等）不进任何门面属性直达；
+  新增内部辅助默认标 internal。
+- **新接口验收**：目录 yaml（units/ranges/checks 非空）→ FRIENDLY_INDEX → 六 gen 再生成
+  → INDICATORS 锚点 → examples 课程表条目 → 离线夹具同步（DF/升序/信封；未拍摄面显式
+  `replay_unsupported`）→ 计数级联（README/AI/GUIDE/SKILL/llms/docs/README）。
+
 ## 提交前门禁（全部必须通过）
 
 ```bash
@@ -11,12 +25,15 @@ python3 tools/extract_metric_taxonomy.py --check  # 指标适配层 sidecar 漂�
 python3 tools/validate_metric_taxonomy.py         # sidecar 与 metrics.json 1:1
 python3 tools/validate_units.py                   # 单位台账（手/亿元/百分数）
 python3 tools/check_version.py --check  # 六处版本声明互校（含 SECURITY.md 表头）
-python3 tools/guard_coverage.py --min 0.156  # 守护声明覆盖率下限（防回退）
-python3 tools/gen_api_docs.py       # 重生成 docs/API.md（改了目录必须重跑）
+python3 tools/guard_coverage.py --min 0.2260  # 守护声明覆盖率下限（防回退；阈值以 tests/test_guard_baseline.py 基线为准）
+python3 tools/gen_api_docs.py       # 重生成 docs/API.md + docs/fields.json（改了目录必须重跑）
 python3 tools/gen_typed_api.py      # 重生成类型化门面 docs 同源
 python3 tools/gen_openapi.py        # 重生成 docs/openapi.json + swagger.html
 python3 tools/gen_llms.py           # 重生成 llms.txt / llms-full.txt（AI 分发面）
-python3 tools/gen_indicators.py     # 重生成 docs/INDICATORS.md（指标码导航）
+python3 tools/gen_indicators.py     # 重生成 docs/INDICATORS.md + docs/indicators/（逐码单页）
+python3 tools/gen_errors.py         # 重生成 docs/ERRORS.md（错误码字典）
+python3 tools/gen_data_calendar.py  # 重生成 docs/DATA_CALENDAR.md（需兄弟仓 airflow）
+python3 tools/gen_changelog_feed.py # 重生成 docs/changelog.xml（RSS 变更公告）
 pytest --cov=wmshare --cov-branch --cov-fail-under=85   # 全部测试（不联网）+ 行/分支覆盖率门禁
 python3 -m mypy                     # 类型检查
 ```
@@ -61,6 +78,13 @@ CI（`.github/workflows/ci.yml`）在每次 push/PR 上跑同样的门禁。
   `tools/extract_from_scripts.py` 从上游同步（含命名空间白名单与文本净化策略）。
 - 友好 API（`src/wmshare/api/` 包）改动必须同步 `FRIENDLY_INDEX` 注册表
   （`tests/test_api.py` 强制两者一致），方法首参统一 `symbol`。
+  **例外**：组合门面（`COMPOSITE_METHODS`，如 `etf`/`cbond`/`backtest`/`statements`）
+  底层是跨接口封装、无单一目录函数，不进 `FRIENDLY_INDEX`。
+- **组合门面准入规则**（护栏 6）：仅当能力**不在目录且无法经维护者同步**时才用
+  组合门面；**数值口径类必须配套本地守护**（量级/不变量校验抛 `DataError`），
+  并补文档注册（签名/返回说明/示例）与每 view 的离线 + live 测试。
+  当前 `etf` 门面是过渡态（`etf_build` 九视图在 `xs/skillhub/`，不在 catalog 扫描面），
+  满足目录化条件（能力进 `sys/` 目录或组合门面纳入门禁）后应迁回目录函数。
 - 命名空间映射：友好层的 `statements`/`dividend` 对应目录命名空间
   `rptdom`/`bonus`（见 `src/wmshare/api/__init__.py` 的 `_FRIENDLY_NS_TO_CATALOG`）；
   未显式包装的目录函数经 `_Api.__getattr__` 目录感知委托直达，
@@ -70,16 +94,38 @@ CI（`.github/workflows/ci.yml`）在每次 push/PR 上跑同样的门禁。
 
 ```bash
 pip install -e ".[dev,dataframe]"
-python examples/01_quickstart.py       # 需要已配置的凭证；--demo 零凭证试跑
+python examples/01_quickstart.py       # 无凭证自动免注册免费试用；长期额度配凭证
 python examples/02_catalog_tour.py     # 离线示例（02/03/09 无需凭证）
-python examples/08_pandas_analysis.py  # DataFrame 分析（需凭证 + pandas）
-# 全部 11 个示例与课程表：examples/README.md
+python examples/08_pandas_analysis.py  # DataFrame 分析（pandas；凭证可选）
+# 全部示例与课程表：examples/README.md
 ```
 
 ## 许可政策
 
 - 整项目采用 **BSD-3-Clause**（见 LICENSE）：贡献即同意以该许可发布。
 - 不得引入与 BSD-3-Clause 不兼容的第三方代码。
+
+## 兼容与弃用
+
+公开面（门面签名、返回字段、单位、信封、异常 `code`）的变更按
+[docs/COMPATIBILITY.md](docs/COMPATIBILITY.md) 执行：破坏性变更只能在 MAJOR；
+弃用至少保留 1 个 MINOR，并在 CHANGELOG 的 `Deprecated` 段登记替代写法与移除版本。
+
+## 接口质量标准
+
+新增/修改接口必须过 `tests/test_interface_quality.py` 与 `tests/test_data_contract.py`
+（ratchet：存量债务只许减少，新增缺口即红）：
+
+- **规范性**：一句话 summary + 可绑定示例（无省略号占位）；参数说明/返回说明不得为
+  `—`；有标的语义的参数必须叫 `symbol` 且排第一（禁 `sym/stk`）；错误码必须登记
+  `docs/ERRORS.md`（双向一致）。
+- **易用性**：MCP description 不得退化为兜底文案、示例不得含 `<REQUIRED>`；
+  文档相对链接不悬空；示例数在 README/docs/README/仓库保持一致。
+- **可理解性**：字段级返回表只增不减（`FIELD_TABLE_MIN`）；方法级 `:param` 债务
+  ratchet（`PARAM_DOC_DEBT`）；单位/守护范围随目录声明进字段表。
+
+新增/修改接口的完整操作步骤（三条落地路线、文件级联、基线索引、验收 checklist）见
+[docs/INTERFACE_SPEC.md](docs/INTERFACE_SPEC.md)。
 
 ## 提交信息
 

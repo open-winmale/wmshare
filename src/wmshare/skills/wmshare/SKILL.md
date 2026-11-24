@@ -1,6 +1,6 @@
 ---
 name: wmshare
-description: 用 wmshare Python SDK 或本地 MCP server 取 A 股数据：K 线（三种复权）、盘中快照、1 分钟分时、资金流、三大报表、2752 个指标码、选股筛选与全市场涨跌全景、分红、公告、公司档案。配置开放平台凭证后即可取数；随包离线目录可编程查询，指标码/函数名先查目录、禁止臆造。用户要 A 股行情/财务/指标/选股/分红/公告数据时用本 skill，即使用户没点名 wmshare。
+description: 用 wmshare Python SDK 或本地 MCP server 取 A 股数据：K 线（三种复权）、盘中快照、1 分钟分时、资金流、三大报表、2983 个指标码、选股筛选与全市场涨跌全景、分红、公告、公司档案。配置开放平台凭证后即可取数；随包离线目录可编程查询，指标码/函数名先查目录、禁止臆造。用户要 A 股行情/财务/指标/选股/分红/公告数据时用本 skill，即使用户没点名 wmshare。
 when_to_use: 用户需要 A 股个股或全市场数据（价格、财务、指标、筛选、分红、公告）来回答问题、做分析或写代码时。
 ---
 
@@ -10,15 +10,16 @@ wmshare 是覆盖 A 股、港股、美股的 Python 财经数据 SDK（BSD-3-Cla
 用对：先装好、先查目录、按单位铁律读数、按决策树选接口。
 
 **MCP 优先级**：如果当前 AI 客户端已连接 `wmshare` MCP server，先用 `wmshare_search` /
-`wmshare_contract` 发现合同，再优先用 20 个 task tools（quote/history/metrics/company/screen/
-disclosures/statement/segments/dividend/estimates/corporate/market/intl/notice 等）；
+`wmshare_contract` 发现合同，再优先用 29 个 task tools（quote/history/metrics/company/screen/
+disclosures/statement/segments/dividend/income/estimates/corporate/market/valuation/etf/
+backtest/macro/toplist/futures/pdf/intl/notice 等）；
 多标的用 `wmshare_batch(params=...)`。长尾目录函数和 friendly API 分别用
 `wmshare_call(mode="catalog")` / `wmshare_call(mode="api")`。没有 MCP 时继续按下面的 SDK 决策树写代码。
 
 **它不是**：撮合级/组合级回测引擎（单股均线买卖点回测用 `cli.backtest.run`：次日开盘成交、
 T+1、整手、佣金/印花固定，不复现盘口排队与分红税）；数据库（数据经云端 API 运行时获取，
-不随包分发）；全品类数据超市（18 个数据域，覆盖 A 股个股常用研究数据、宏观时序与期货主力连续指标码，
-基金净值/期权/债券未覆盖）。
+不随包分发）；全品类数据超市（29 个数据域，覆盖 A 股个股常用研究数据、宏观时序与期货主力连续指标码，
+场外/LOF/货基基金（仅场内 ETF 九视图）、期权、债券（可转债除外）未覆盖）。
 
 ## 1. 环境前置
 
@@ -28,7 +29,7 @@ python3 -c "import wmshare; print(wmshare.__version__)"   # 探测
 pip install -i https://pypi.tuna.tsinghua.edu.cn/simple wmshare
 ```
 
-零凭证语法试跑：`cli = wmshare.demo_client()`（2026-10-30 真实 API 固定快照；10 只演示宇宙 + 当日全市场 screener，**非实时数据**），调用面覆盖公开示例，用于无凭证时验证代码形态；真实取数必须配置下方凭证。
+零配置取数：`cli = wmshare.Client.from_env()`——无凭据自动免注册免费试用（真实数据、按来源网络限流、需网络；`WMSHARE_DISABLE_ANON=1` 可关闭）。
 
 MCP 安装与凭证写入：
 
@@ -38,9 +39,9 @@ wmshare-mcp setup --client-id ... --client-secret-stdin --market cn
 wmshare-mcp doctor
 ```
 
-凭证必填（SDK 不再内置体验 AppID）：在开放平台获取 client_id/api-key，
+凭证可选（无凭据时自动免注册免费试用）：要独立、稳定的额度在开放平台获取 client_id/api-key，
 配置其一（构造参数 / WMSHARE_CLIENT_ID+WMSHARE_CLIENT_SECRET 环境变量 /
-~/.wmshare/credentials.env 凭证文件）即可取数：
+~/.wmshare/credentials.env 凭证文件）：
 
 
 1. 打开 open.winmale.com，登录后在「我的 → 开放平台 → 我的应用」获取凭证；
@@ -60,7 +61,7 @@ wmshare-mcp doctor
 | 股数 / 成交量 | 股 | — |
 
 例外要在读数时留意：`cli.screener` 宽度接口（全景/分桶）的 `up_pct`/`down_pct`/
-`pct_of_total` 是**百分数数值**（80.3 = 80.3%），同返回里的 `median_pct` 与
+`pct_of_total` 与 `median_pct` 均为**小数**（2.0 统一；1.x pct_of_total 曾是百分数）
 涨跌幅仍是小数——字段级口径以各方法 docstring 为准。
 
 每次返回前 SDK 做量级守护与关系不变量校验，违例抛 `DataError`（含字段/实际值/
@@ -93,7 +94,7 @@ cat.metrics_in_group("dividend")                         # 指标组内全部精
 | 某股最近 N 根日 K | `cli.kline.bars("600519", n=30)`（`adj="qfq"/"hfq"` 复权） |
 | 周 K / 月 K | `cli.kline.bars("600519", n=20, freq="W")`（`freq="M"` 月 K；服务端预派生） |
 | 某股日期区间 K 线 | `cli.kline.bars("600519", begin="2026-01-01", end="2026-06-30")` |
-| **全市场 / 上百只取数（避免 429）** | `cli.batch_all("kline.snapshot", [r["symbol"] for r in cli.stocks.list()])`——自动分批，A 股 5,691 家只发 **12 次请求**；**绝不要写 `for code in codes: cli.kline.bars(code)`（5,691 次请求必撞限流）** |
+| **全市场 / 上百只取数（避免 429）** | `cli.batch_all("kline.snapshot", [r["symbol"] for r in cli.stocks.list()])`——原生批量路由 **1 次**；其余接口按 500/批（A 股 5,375 家 11 次）；**绝不要写 `for code in codes: cli.kline.bars(code)`（5,375 次请求必撞限流）** |
 | 最新价 / 盘中快照 | `cli.kline.last("600519")`；盘中实时用 `cli.kline.live("600519")` 或 `cli.kline.batch_live(["600519"])`；`cli.kline.snapshot(...)` 是行情摘要（收盘/涨跌幅），不是盘中 tip |
 | 当日 1 分钟分时 | `cli.kline.min1("600519")`（有损合成采样，非逐笔） |
 | 今日涨停了吗 / 全市场涨停梯队 | `cli.screener.screen_limit_up("600519")` |
@@ -104,44 +105,52 @@ cat.metrics_in_group("dividend")                         # 指标组内全部精
 | 站上 20 日线了吗 / 放量了吗 | `cli.screener.screen_above_ma20(sym)` / `screen_volume_spike(sym)` |
 | 资金流 | `cli.moneyflow.last(sym)` / `cli.moneyflow.bars(sym, n=20)` |
 | 利润表 / 资产负债表 / 现金流 | `cli.statements.income(sym, years=5)` / `balance` / `cashflow` |
-| 合并 vs 母公司 | `cli.statements.compare(sym)` |
 | 估值指标当前值 | `cli.indicator.get(sym, "$PE_TTM_LAST")`（码先查目录） |
 | 估值历史分位 | `cli.valuation.hist_stats(sym, metric="pe", window="3y")` |
 | TTM 股息率 / 分红历史 | `cli.dividend.yield_ttm(sym)` / `cli.dividend.history(sym)` |
 | 分红质量筛选 | `cli.dividend.screen_quality(sym)`（默认精品窗口：股息率>3% 且派息率 30%–70%；窗口不合适就显式传 min_yield/payout_min/payout_max） |
+| 哪些股票适合收息 / 高股息排行 / 帮我筛一批能拿息的 | `cli.dividend.rating(top_n=20, grade="strong")`（全市场一次取数：四维评分+档位+资格门，industry/min_yield 过滤；COLD_CACHE=榜单 cron 未就绪，如实告知勿重算） |
+| 这票股息可持续吗 / 一批票的分红体检（评分解释+榜内位置） | `cli.dividend.diagnose(["600900", "600519"])`——**原生批量一次调用，勿逐票循环**；include_history=True 才带分红史/方案（批量不要开） |
+| 最近/下个月谁分红 / 除息日历 | `cli.dividend.calendar("2026-11-01", "2026-11-30", codes=[...])`（窗口内任一日期命中即返回） |
+| 这票拿 N 年总收益多少 / 股息贡献 vs 价格贡献 | `cli.dividend.decomp(["600900"], years=10)`（≤10 票批量；差值口径 hfq−nr；**首次查某票有冷物化尖刺 ~20 万 EC，复查即热**） |
 | 公告 / 有无回购 | `cli.notice.list(sym, window="3m")` / `cli.notice.has_buyback(sym, "6m")` |
 | 业绩预告 | `cli.forecast.yjyg_latest(sym)` |
 | 公司档案 | `cli.info.profile(sym)` |
 | 可转债双低榜 / 强赎下修观测 | `cli.cbond.daily()`（全市场面板一次取数 → 三层口径 + 三道闸 + 状态机 + 事件日历，返回带 `sources` 的事实包）；只要原始面板用 `cli.cbond.board()` |
 | 可转债图文成稿 / 出图 | `cli.cbond.article(payload, date="20261107")` / `cli.cbond.figures(payload, "/tmp/cb", date="20261107")`（后者需 `pip install "wmshare[figures]"`） |
 | 宏观时序 / 最新单值 | `cli.macro.query("$CPI", 6)`（价格指数=点）/ `cli.macro.asof("$GDP")`（元） |
+| 人民币汇率 / 外汇与黄金储备 | `cli.fx.rate("USD")`（每 1 单位外币，USD≈7.1）/ `cli.macro.reserves_asof("forex")`（美元数值 ≈3.4e12，除 1e12 得万亿美元） |
+| 美国宏观（GDP/失业率/利率…） | `cli.us_macro.search("通胀")` → `cli.us_macro.series_meta(id)` 读 units → `cli.us_macro.points(id)`；**单位随序列而变**（百分数/十亿美元/千人），不换算直接读 |
 | 期货主力连续 | `cli.indicator.get("600519", "$FUT_CLOSE", fut_symbol="cn.RB.SHF")`（symbol 传任意 A 股码；外盘 global.CL） |
 | 全市场代码池（A/港/美全表） | `cli.stocks.list()`（行含 symbol/name/exchange/industry/listed；港/美换 `Client(market=...)`） |
 | 行业目录 / 行业成分 | `cli.stocks.industries(1)`（申万/恒生；美股目录树暂缺）/ `cli.stocks.industry_members("银行")`（中文名或代码 S48） |
 | 少量标的单批（≤500） | `cli.call_batch("kline.snapshot", ["600519", "000001"])` 或任意单标的接口传 list：`cli.kline.last(["600519", "000001"])`；`to_df()` 出每标的一行长表 |
 
-完整 135 个核心接口 + 4 个组合接口（可转债 3 + 回测 1）与全部底层函数：仓库用户看 docs/GUIDE.md（上手）与
+完整 185 个核心接口 + 18 个组合接口（可转债 3 + 回测 1 + 报表 4 + ETF 9 + 收息诊断 1）与全部底层函数：仓库用户看 docs/GUIDE.md（上手）与
 docs/API.md（参考）；pip 用户用 `cat.search(...)` / `cat.function(...)` 查（同一份合同）。
-全量指标码（2752 个）按数据类型分章的导航、命名语法与死码清单见 docs/INDICATORS.md（生成物）。
+全量指标码（2983 个）按数据类型分章的导航、命名语法与死码清单见 docs/INDICATORS.md（生成物）。
 
 ## 5. 工作流示例（返回长这样，从这些字段读）
+
+> 场景深流程按需读（渐进披露）：收息闭环全流程（发现→研判→跟踪→验证 + 口径红线 +
+> 成本速查）见 `scenes/income.md`——只有用户问题命中该场景才加载，平时不占上下文。
 
 ```python
 import wmshare
 
 cli = wmshare.Client.from_env()
 
-# 日 K：按日期降序；percent 为小数（0.005215 = 0.52%）、volume 为股
+# 日 K：date 升序（旧→新，2.0 标准）；percent 为小数（0.005215 = 0.52%）、volume 为股
 bars = cli.kline.bars("600519", n=5)
 print(bars[0])
 # {'date': '2026-10-20', 'close': 1331.88, 'volume': 3413500.0,
 #  'amount': 4525398959.0, 'percent': 0.005215, 'open': ..., 'high': ..., 'low': ...}
 
-# 全市场涨跌全景：服务端预计算索引直出；*_pct 是百分数数值、median_pct 是小数
+# 全市场涨跌全景：服务端预计算索引直出；*_pct 与 median_pct 均为小数（2.0）
 s = cli.screener.index_breadth_summary()
 print(s)
 # {'total': 5685, 'up': 4567, 'down': 934, 'flat': 184,
-#  'up_pct': 80.3, 'down_pct': 16.4, 'flat_pct': 3.2, 'median_pct': 0.015363}
+#  'up_pct': 0.803, 'down_pct': 0.164, 'flat_pct': 0.032, 'median_pct': 0.015363}
 
 # TTM 股息率：小数，0.0396 = 3.96%
 print(cli.dividend.yield_ttm("600519"))        # 0.0396
@@ -156,7 +165,7 @@ print(cli.dividend.window_stats("600519", "3y"))   # {'dps': ..., 'total': ..., 
 ## 6. 坑位清单
 
 - **率与涨跌幅都是小数**（0.04 = 4%）；业绩预告的同比才是百分数口径换算后的小数。
-  唯一例外是 `cli.screener` 宽度接口的 `*_pct`/`pct_of_total`（百分数数值）。
+  无例外（宽度接口 `*_pct` 1.x 曾为百分数，2.0 起统一小数）。
 - **window 白名单**：`"7d"/"1m"/"3m"/"6m"/"1y"/"3y"/"5y"` 或天数整数；未知 token
   显式报错（不会静默按 30 天处理）。
 - **日期区间上限 5 年**（`begin/end` 含端点）；数据覆盖不足抛 `LimitError`，
@@ -166,7 +175,7 @@ print(cli.dividend.window_stats("600519", "3y"))   # {'dps': ..., 'total': ..., 
 - **限流按请求次数计**（免费档 500 次/小时、5,000 次/日），所以：
   ①大批量一律走 `batch_all`/`batch_iter`（N 家 = ⌈N/500⌉ 次请求），不要自己逐票循环；
   ②**容错用 `batch_all(on_batch_error="skip")`（批级），绝不能用 `call_batch(on_error="skip")`**
-  ——后者逐票发请求，12 批会放大成 5,691 次，正好制造 429；两个参数名不同是刻意的
+  ——后者逐票发请求，11 批会放大成 5,375 次，正好制造 429；两个参数名不同是刻意的
   （`on_batch_error` 跳过整批，`on_error` 逐票请求）；批量入口也无 `_df`，长表用 `to_df()`；
   ③遇 429 会停止并给 `codes[done:]` 续跑位置，按提示稍后续跑，不要无脑重试；
   ④单批撞 `CALC_LIMIT_EXCEEDED`（算力超限）时减小 `batch_size`。
@@ -195,7 +204,7 @@ print(cli.dividend.window_stats("600519", "3y"))   # {'dps': ..., 'total': ..., 
   `cli.dividend.yield_ttm(sym)` 与 `cli.indicator.get(sym, "$BONUS_TTM_RATE_LAST")`。
 - **宽度接口的 `idx` 不要传臆造键**：不传 = 服务端自动解析 A 股最新查询索引。
 - **空结果 ≠ 市场为空**：先核对 symbol 与窗口再下结论。
-- `_df=True` 转 DataFrame 需要安装 pandas（可选依赖）。
+- 门面默认 DataFrame（pandas 为硬依赖）；`_df` 参数已移除，`_raw=True` 取原始行。
 - ETF 用 6 位码直接查（如 `510300`）；`cli.kline.is_etf(sym)` 可判断。
 
 ## 7. 错误处理速查（都是 `WmshareError` 子类）

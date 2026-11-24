@@ -16,18 +16,28 @@ from wmshare.mcp.apis import (
     search_routes,
 )
 from wmshare.mcp.constants import (
+    BACKTEST_RULES,
     COMPANY_BLOCKS,
     CORPORATE_ACTIONS,
     DIVIDEND_ACTIONS,
     ESTIMATE_ACTIONS,
+    ETF_ACTIONS,
+    FUTURES_ACTIONS,
+    INCOME_ACTIONS,
     INTL_ACTIONS,
+    FX_ACTIONS,
+    MACRO_ACTIONS,
     MARKET_ACTIONS,
     MARKET_DOMAINS,
     MAX_ROWS,
     NOTICE_ACTIONS,
+    PDF_ACTIONS,
     SEGMENT_ACTIONS,
+    TOPLIST_ACTIONS,
     TOOL_NAMES,
     STATEMENT_ACTIONS,
+    VALUATION_ACTIONS,
+    VALUATION_METRICS,
 )
 from wmshare.mcp.core import (
     MCPRuntime,
@@ -47,28 +57,18 @@ def status(
     """Return runtime, credentials, and catalog facts without reading secrets."""
     creds = credential_status()
     stats = wmshare.load().stats()
-    # 快照版本与当前包/上游版本分开列，避免 LLM 把 1.11.0 的罐头当成本版数据。
-    from wmshare._demo import DEMO_SNAPSHOT_PROVENANCE
     data = {
         "server_version": wmshare.__version__,
         "market": runtime.market,
-        "demo": runtime.demo,
-        "demo_notice": "非实时、固定快照，仅用于调用面验证" if runtime.demo else None,
-        "demo_snapshot": {
-            "snapshot_as_of": DEMO_SNAPSHOT_PROVENANCE["as_of"],
-            "snapshot_sdk_version": DEMO_SNAPSHOT_PROVENANCE["snapshot_sdk_version"],
-            "snapshot_catalog_rev": DEMO_SNAPSHOT_PROVENANCE["snapshot_catalog_rev"],
-            "current_sdk_version": wmshare.__version__,
-            "current_upstream_rev": stats.get("upstream_rev"),
-        },
         "credentials": creds,
         "catalog": stats,
         "capabilities": {
             "friendly_apis": route_count(),
             "api_gateway": "wmshare_call(mode='api')",
+            "cost_gateway": "wmshare_call(mode='cost', target=…, arguments={…})",
             "batchable_catalog_functions": len(batchable_catalog_functions()),
             "first_class_tools": len(TOOL_NAMES),
-            "excluded_from_mcp": ["pandas/_df", "notice_poller", "长驻订阅"],
+            "excluded_from_mcp": ["notice_poller", "长驻订阅"],
         },
         "setup": {
             "console": "open.winmale.com 开放平台 → 我的应用",
@@ -108,6 +108,17 @@ def search(
                                       limit=int(limit)):
             hits.append({"kind": "symbol", **row})
     hits = hits[:int(limit)]
+    # 指标命中行并入目录元数据（group/markets/量级界/unit）——「检索即带口径」：
+    # 模型拿到码的同时拿到量级界，省一次 contract 往返（字段缺失留空不伪造）。
+    for row in hits:
+        if isinstance(row, dict) and row.get("kind") == "metric" and "group" not in row:
+            meta = cat.metric(str(row.get("code") or ""))
+            if meta:
+                row["group"] = meta.get("group")
+                row["markets"] = meta.get("markets")
+                row["range"] = meta.get("range")
+                if meta.get("unit"):
+                    row["unit"] = meta["unit"]
     return success(runtime, hits, output=output, max_rows=max_rows,
                    query=query, kind=kind, market=selected_market)
 
@@ -513,8 +524,13 @@ def call(
         return success(runtime, data, output=output, max_rows=max_rows,
                        target=str(target), mode=mode, raw=raw, units=units,
                        market=selected_market, ec_cost=ec_cost)
+    if mode == "cost":
+        # 2.0 计费透明度：调用前预估 EC 区间（估算值；不发起取数请求）。
+        est = runtime.client(market).cost_estimate(str(target), **args)
+        return success(runtime, est, output="sample", max_rows=100,
+                       target=str(target), mode=mode, market=selected_market)
     if mode != "catalog":
-        raise ValueError("mode 只支持 catalog/api")
+        raise ValueError("mode 只支持 catalog/api/cost")
     fn = wmshare.load().function(str(target))
     allowed = {
         item["name"] for item in (
@@ -555,25 +571,18 @@ def statement(
     market: str | None = None,
     kind: str = "income",
     years: int = 5,
-    scope: str = "合并",
     output: str = "sample",
     max_rows: int = MAX_ROWS,
 ) -> dict[str, Any]:
-    """Fetch curated statement views: three statements, audit, compare, tree, years."""
+    """Fetch curated statement views: three statements + audit (fin_* wide tables)."""
     if action not in STATEMENT_ACTIONS:
         raise ValueError(f"action 只支持 {'/'.join(STATEMENT_ACTIONS)}")
     selected_market = _market(market or runtime.market)
     cli = runtime.client(market)
-    if action in {"income", "balance", "cashflow"}:
-        data = getattr(cli.statements, action)(str(symbol), years=int(years), scope=scope)
-    elif action == "audit":
-        data = cli.statements.audit(_symbol(action, symbol))
-    elif action in {"compare", "tree"}:
-        data = getattr(cli.statements, action)(
-            _symbol(action, symbol), kind=kind, years=int(years), scope=scope
-        )
+    if action in {"income", "balance", "cashflow", "indicators"}:
+        data = getattr(cli.statements, action)(str(symbol), years=int(years))
     else:
-        data = cli.statements.years(_symbol(action, symbol), kind=kind)
+        data = cli.statements.audit(_symbol(action, symbol))
     return success(runtime, data, output=output, max_rows=max_rows,
                    action=action, kind=kind, symbol=symbol,
                    market=selected_market)
@@ -776,6 +785,9 @@ def market(
     window: str = "3y",
     level: int | None = None,
     trig: float | None = None,
+    src: str | None = None,
+    date: str | None = None,
+    name: str | None = None,
     output: str = "sample",
     max_rows: int = MAX_ROWS,
 ) -> dict[str, Any]:
@@ -837,6 +849,44 @@ def market(
         data = cli.valuation.hist_stats(
             _symbol(action, symbol), metric=metric, window=window
         )
+    elif domain == "stocks" and action == "limit_price":
+        data = cli.stocks.limit_price(_symbol(action, symbol))
+    elif domain == "stocks" and action == "limit_prices":
+        data = cli.stocks.limit_prices()
+    elif domain == "stocks" and action == "limit_price_history":
+        data = cli.stocks.limit_price_history(
+            _symbol(action, symbol), n=n, begin=begin, end=end)
+    elif domain == "stocks" and action == "suspend_history":
+        data = cli.stocks.suspend_history(_symbol(action, symbol),
+                                          begin=begin or "", end=end or "")
+    elif domain == "stocks" and action == "name_history":
+        data = cli.stocks.name_history(_symbol(action, symbol))
+    elif domain == "stocks" and action == "lifecycle":
+        data = cli.stocks.lifecycle(_symbol(action, symbol))
+    elif domain == "board" and action == "concepts_of":
+        data = cli.board.concepts_of(_symbol(action, symbol))
+    elif domain == "board" and action == "concept_members":
+        if not name:
+            raise ValueError("board.concept_members 需要 name（概念名，如 白酒）")
+        data = cli.board.concept_members(name, limit=n or 100)
+    elif domain == "board" and action == "concept_list":
+        data = cli.board.concept_list(limit=n or 0)
+    elif domain == "board":
+        board_src = src or "ths_concept"
+        if board_src not in ("ths_concept", "ths_industry", "dc"):
+            raise ValueError("src 只支持 ths_concept/ths_industry/dc")
+        if action == "moneyflow":
+            if not date:
+                raise ValueError("board.moneyflow 需要 date（交易日 YYYY-MM-DD）")
+            data = cli.board.moneyflow(board_src, date, limit=n or 100)
+        else:
+            data = cli.board.moneyflow_last(board_src, limit=n or 100)
+    elif domain == "blocktrade" and action == "by_date":
+        if not date:
+            raise ValueError("blocktrade.by_date 需要 date（交易日 YYYY-MM-DD）")
+        data = cli.blocktrade.by_date(date, limit=n or 100)
+    elif domain == "blocktrade":
+        data = cli.blocktrade.by_symbol(_symbol(action, symbol), limit=n or 100)
     else:
         data = cli.stocks.list()
     return success(runtime, data, output=output, max_rows=max_rows,
@@ -919,6 +969,382 @@ def notice(
                    market=selected_market)
 
 
+def income(
+    runtime: MCPRuntime,
+    action: str,
+    symbols: Sequence[str] | None = None,
+    top_n: int = 20,
+    grade: str | None = None,
+    industry: str | None = None,
+    min_yield: float | None = None,
+    begin: str | None = None,
+    end: str | None = None,
+    years: int = 10,
+    include_history: bool = False,
+    output: str = "sample",
+    max_rows: int = MAX_ROWS,
+) -> dict[str, Any]:
+    """收息闭环（仅 A 股）：全市场排行、批量诊断、分红日历、N 年持有收益拆解。
+
+    rating ≈15k~70k EC，榜单由 cron 物化（16:50/19:40）——冷缓存返回 ok=false
+    时如实转述稍后重试，勿现场重算全市场评分；diagnose 原生批量 ≈10k EC/票，
+    include_history=True 是 deep 档（+18k EC/票）。
+    """
+    if action not in INCOME_ACTIONS:
+        raise ValueError(f"action 只支持 {'/'.join(INCOME_ACTIONS)}")
+    cli = runtime.client("cn")           # disc.income 仅 A 股
+    top_n = _optional_limit(top_n, 200)
+    if action == "rating":
+        data = cli.dividend.rating(top_n=top_n, grade=grade,
+                                   industry=industry, min_yield=min_yield)
+    elif action == "diagnose":
+        data = cli.dividend.diagnose(_unique_symbols(symbols or []),
+                                     include_history=bool(include_history))
+    elif action == "calendar":
+        data = cli.dividend.calendar(begin, end)
+    else:
+        if not 1 <= int(years) <= 10:
+            raise ValueError("years 只支持 1~10（口径 3/5/10 年）")
+        data = cli.dividend.decomp(_unique_symbols(symbols or []), years=int(years))
+    return success(runtime, data, output=output, max_rows=max_rows,
+                   action=action, market="cn")
+
+
+def backtest(
+    runtime: MCPRuntime,
+    symbol: str,
+    rule: str = "ma_cross",
+    fast: int | None = None,
+    slow: int | None = None,
+    buy: float | None = None,
+    sell: float | None = None,
+    begin: str | None = None,
+    end: str | None = None,
+    adj: str | None = None,
+    output: str = "sample",
+    max_rows: int = 100,
+) -> dict[str, Any]:
+    """单股买卖点回测（仅 A 股）：均线金叉/死叉或估值阈值 → 成交明细+净值/回撤/胜率。
+
+    固定口径：次日开盘成交、T+1、100 股整手、佣金/印花固定、初始资金 100 万；
+    全历史估值回测可达 ~40 万 EC——先用 wmshare_call(mode='cost') 预估再跑。
+    """
+    if rule not in BACKTEST_RULES:
+        raise ValueError(f"rule 只支持 {'/'.join(BACKTEST_RULES)}")
+    begin, end = _required_date_pair(begin, end)
+    cli = runtime.client("cn")
+    kwargs: dict[str, Any] = {"rule": str(rule)}
+    if fast is not None:
+        kwargs["fast"] = int(fast)
+    if slow is not None:
+        kwargs["slow"] = int(slow)
+    if buy is not None:
+        kwargs["buy"] = float(buy)
+    if sell is not None:
+        kwargs["sell"] = float(sell)
+    if adj is not None:
+        kwargs["adj"] = str(adj)
+    if begin:
+        kwargs["begin"], kwargs["end"] = begin, end
+    data = cli.backtest.run(_symbol("backtest", symbol), **kwargs)
+    return success(runtime, data, output=output, max_rows=max_rows,
+                   symbol=_symbol("backtest", symbol), rule=str(rule), market="cn")
+
+
+def etf(
+    runtime: MCPRuntime,
+    action: str,
+    symbol: str,
+    mode: str = "latest",
+    limit: int | None = None,
+    output: str = "sample",
+    max_rows: int = MAX_ROWS,
+) -> dict[str, Any]:
+    """ETF 九视图（仅 A 股场内）：一页档案/净值/份额/分红/持仓/溢价/资产配置/榜单。
+
+    mode='series' 取时序（card/nav/share/premium 支持）；rank 是单票榜单指标。
+    """
+    if action not in ETF_ACTIONS:
+        raise ValueError(f"action 只支持 {'/'.join(ETF_ACTIONS)}")
+    cli = runtime.client("cn")
+    fn = getattr(cli.etf, action)
+    kwargs: dict[str, Any] = {"mode": str(mode)}
+    if action == "rank" and limit is not None:
+        kwargs["limit"] = _optional_limit(limit, 200)
+    data = fn(_symbol(action, symbol), **kwargs)
+    return success(runtime, data, output=output, max_rows=max_rows,
+                   action=action, symbol=_symbol(action, symbol), mode=str(mode),
+                   market="cn")
+
+
+def macro(
+    runtime: MCPRuntime,
+    action: str,
+    code: str,
+    n: int = 6,
+    output: str = "sample",
+    max_rows: int = MAX_ROWS,
+) -> dict[str, Any]:
+    """宏观指标时序/最新值/采样频率（$CPI/$GDP/$M2 …；码先 wmshare_search 查）。
+
+    query 取近 n 期时序（date 升序），asof 取最新一期值，sampling 查该码的
+    采样频率——返回值是上游原值口径（价格指数=点、流量存量=元、收益率=小数）。
+    reserve 列储备项、reserve_history 取储备时序（元/美元数值，见返回 units）。
+    us_topics/us_search/us_series 走美宏观序列（code 传序列 id 如 GDP/DGS10）：
+    **单位随序列而变**，先 us_series 读 units 再解读数值。
+    实测成本（2026-11-23）：us_topics ≈408 EC、us_search ≈1,324 EC；
+    us_series 冷态 ≈150 EC/行（323 行约 4.7 万、10000 行约 46.8 万），
+    **复跑恒定 ≈92 EC**——长历史先读一次再复算，或缩小 n。
+    n 受 Client 默认 max_limit=500 约束（要更多须 Client(max_limit=None)），
+    服务端 store 硬顶 10000；更长历史用 cli.us_macro.points(begin/end) 分段取。
+    """
+    if action not in MACRO_ACTIONS:
+        raise ValueError(f"action 只支持 {'/'.join(MACRO_ACTIONS)}")
+    cli = runtime.client("cn")
+    # 美宏观三 action 走 fred 命名空间（code 是序列 id，不是指标码）
+    if action in ("us_topics", "us_search", "us_series"):
+        if action == "us_topics":
+            data = cli.us_macro.topics()
+            return success(runtime, data, output=output, max_rows=max_rows,
+                           action=action, market="cn")
+        code_value = _symbol(action, code, allow_empty=False)
+        if action == "us_search":
+            data = cli.us_macro.search(code_value, limit=_optional_limit(n, 88))
+        else:
+            data = cli.us_macro.points(code_value, limit=_optional_limit(n, 500))
+        return success(runtime, data, output=output, max_rows=max_rows,
+                       action=action, code=code_value, market="cn")
+    # 储备两 action 不消费 code（用 kind），先分流
+    if action in ("reserve", "reserve_history"):
+        kind = _symbol(action, code, allow_empty=False)
+        if action == "reserve":
+            data = cli.macro.reserves()
+        else:
+            data = cli.macro.reserves_history(kind, n=_optional_limit(n, 48))
+        return success(runtime, data, output=output, max_rows=max_rows,
+                       action=action, kind=kind, market="cn")
+    code_value = _symbol(action, code, allow_empty=False)
+    if action == "query":
+        data = cli.macro.query(code_value, n=_optional_limit(n, 100))
+    elif action == "asof":
+        data = cli.macro.asof(code_value)
+    else:
+        data = cli.macro.sampling_of(code_value)
+    return success(runtime, data, output=output, max_rows=max_rows,
+                   action=action, code=code_value, market="cn")
+
+
+def fx(
+    runtime: MCPRuntime,
+    action: str,
+    ccy: str = "USD",
+    n: int = 30,
+    begin: str | None = None,
+    end: str | None = None,
+    output: str = "sample",
+    max_rows: int = MAX_ROWS,
+) -> dict[str, Any]:
+    """人民币外汇汇率（央行中间价 + 中行牌价，日频）。
+
+    rate=最新汇率快照（ccy/date/middle/buy/cash_buy），history=日线（date 升序），
+    bars=区间日线（begin/end），list=在库币种清单。
+    **口径**：middle/buy 均为「每 1 单位外币折人民币」（USD≈7.1、JPY≈0.042）；
+    上游原始中间价是每 100 外币口径，SDK 已统一 /100 归一。
+    """
+    if action not in FX_ACTIONS:
+        raise ValueError(f"action 只支持 {'/'.join(FX_ACTIONS)}")
+    cli = runtime.client("cn")
+    code = _symbol(action, ccy, allow_empty=False)
+    if action == "rate":
+        data = cli.fx.rate(code)
+    elif action == "history":
+        data = cli.fx.history(code, n=_optional_limit(n, 500))
+    elif action == "bars":
+        data = cli.fx.bars(code, begin=begin, end=end)
+    else:
+        data = cli.fx.list()
+    return success(runtime, data, output=output, max_rows=max_rows,
+                   action=action, ccy=code, market="cn")
+
+
+def valuation(
+    runtime: MCPRuntime,
+    action: str,
+    symbol: str | None = None,
+    symbols: Sequence[str] | None = None,
+    metric: str = "pe",
+    window: str = "3y",
+    begin: str | None = None,
+    end: str | None = None,
+    fields: str | None = None,
+    output: str = "sample",
+    max_rows: int = MAX_ROWS,
+) -> dict[str, Any]:
+    """估值历史统计与基础指标：hist_stats 分位、daily_basic 多日/多票/覆盖面。
+
+    hist_stats(metric=pe/pb/ps/pr, window=3y/5y/10y) 返回均值/中位/分位；
+    daily_basic_* 的 fields 用逗号分隔列名；窗口上限与覆盖面以返回的
+    coverage/窗口白名单为准（未知窗口显式报错，不静默降 30 天）。
+    """
+    if action not in VALUATION_ACTIONS:
+        raise ValueError(f"action 只支持 {'/'.join(VALUATION_ACTIONS)}")
+    if str(metric) not in VALUATION_METRICS:
+        raise ValueError(f"metric 只支持 {'/'.join(VALUATION_METRICS)}")
+    cli = runtime.client("cn")
+    begin, end = _required_date_pair(begin, end)
+    if action == "hist_stats":
+        data = cli.valuation.hist_stats(_symbol(action, symbol),
+                                        metric=str(metric), window=str(window))
+    elif action == "daily_basic":
+        data = cli.valuation.daily_basic(_symbol(action, symbol), begin=begin,
+                                         end=end, fields=fields)
+    elif action == "daily_basic_multi":
+        data = cli.valuation.daily_basic_multi(_unique_symbols(symbols or []),
+                                               begin=begin, end=end, fields=fields)
+    else:
+        data = cli.valuation.daily_basic_coverage(_symbol(action, symbol),
+                                                  begin=begin, end=end)
+    return success(runtime, data, output=output, max_rows=max_rows,
+                   action=action, symbol=symbol, metric=str(metric),
+                   window=str(window), market="cn")
+
+
+def toplist(
+    runtime: MCPRuntime,
+    action: str,
+    symbol: str | None = None,
+    trade_date: str | None = None,
+    limit: int = 100,
+    output: str = "sample",
+    max_rows: int = MAX_ROWS,
+) -> dict[str, Any]:
+    """龙虎榜（仅 A 股）：按交易日取全榜，或按标的取上榜历史。
+
+    成本实测：冷查 ≈12,837 EC、热查 ≈154 EC——日期用近期交易日更省。
+    """
+    if action not in TOPLIST_ACTIONS:
+        raise ValueError(f"action 只支持 {'/'.join(TOPLIST_ACTIONS)}")
+    limit = _optional_limit(limit, 200)
+    cli = runtime.client("cn")
+    if action == "by_date":
+        if not trade_date:
+            raise ValueError("toplist.by_date 需要 trade_date（YYYY-MM-DD）")
+        data = cli.toplist.by_date(str(trade_date), limit=limit)
+    else:
+        data = cli.toplist.by_symbol(_symbol(action, symbol), limit=limit)
+    return success(runtime, data, output=output, max_rows=max_rows,
+                   action=action, symbol=symbol, trade_date=trade_date, market="cn")
+
+
+def futures(
+    runtime: MCPRuntime,
+    action: str,
+    code: str | None = None,
+    symbol: str | None = None,
+    field: str = "close",
+    freq: str | None = None,
+    native: bool = False,
+    n: int | None = None,
+    begin: str | None = None,
+    end: str | None = None,
+    output: str = "sample",
+    max_rows: int = MAX_ROWS,
+) -> dict[str, Any]:
+    """期货主力：合约字段取值、主力连续映射、合约快照、历史K线（74 商品+8 金融）。
+
+    code 是合约代码（如 RB2605.SHF）或主力连续；field 取 close/open/…；
+    freq=d/w/m。mapping 冷查实测 ≈21.4 万 EC、热查 ≈141 EC——先 cost 预估。
+    bars 走 store 直读，按**行数**计费（冷 ≈190+126 EC/行、同日复跑命中数据版本键
+    缓存 ≈135 EC），长区间建议 freq='m'（行数省约 20 倍）。snapshot/get 单行 ≈135~320 EC。
+    holding=每日持仓排名（code=合约如 A2701、begin=交易日、n=行数上限；单合约
+    ≈200~3 千 EC）；settle=每日结算参数（code=合约代码或品种前缀；前缀过滤后
+    数千 EC，全市场 ≈8.2 万 EC）。
+    """
+    if action not in FUTURES_ACTIONS:
+        raise ValueError(f"action 只支持 {'/'.join(FUTURES_ACTIONS)}")
+    cli = runtime.client("cn")
+    if action == "get":
+        data = cli.futures.get(_symbol(action, code, allow_empty=False),
+                               field=str(field),
+                               freq=str(freq) if freq else None,
+                               native=bool(native))
+    elif action == "mapping":
+        begin, end = _required_date_pair(begin, end)
+        data = cli.futures.mapping(_symbol(action, symbol, allow_empty=False),
+                                   begin=str(begin or ""), end=str(end or ""))
+    elif action == "bars":
+        if n is None and not (begin and end):
+            raise ValueError("bars 需要 n（最近 n 个周期）或 begin+end 成对区间")
+        data = cli.futures.bars(_symbol(action, code, allow_empty=False),
+                                n=n,
+                                begin=str(begin) if begin else None,
+                                end=str(end) if end else None,
+                                freq=str(freq) if freq else None)
+    elif action == "receipts":
+        # 交易所仓单快照（SHFE/CZCE/GFEX 三所；按业务月，只留当月最后一日）
+        data = cli.futures.receipts(month=str(begin) if begin else None)
+    elif action == "holding":
+        # 每日持仓排名（按合约查会员排名；code=合约，begin=交易日，n=行数上限）
+        data = cli.futures.holding(date=str(begin or ""), contract=str(code or ""),
+                                   limit=int(n) if n else 200)
+    elif action == "settle":
+        # 每日结算参数（code=合约代码或品种前缀，begin=交易日）
+        data = cli.futures.settle(date=str(begin or ""), contract=str(code or ""))
+    else:
+        data = cli.futures.snapshot(_symbol(action, code, allow_empty=False),
+                                    freq=str(freq or "d"))
+    return success(runtime, data, output=output, max_rows=max_rows,
+                   action=action, code=code, symbol=symbol, market="cn")
+
+
+def pdf(
+    runtime: MCPRuntime,
+    action: str,
+    stock_code: str | None = None,
+    title: str | None = None,
+    begin: str | None = None,
+    end: str | None = None,
+    kind: str | None = None,
+    file_key: str | None = None,
+    source_url: str | None = None,
+    period: str | None = None,
+    limit: int = 20,
+    output: str = "sample",
+    max_rows: int = MAX_ROWS,
+) -> dict[str, Any]:
+    """公告 PDF 结构化（仅 A 股，wmshare 独有面）：检索→状态→正文 Markdown。
+
+    search 按代码/标题/公告日区间找文件；read_markdown 把公告正文抽成
+    Markdown（需 file_key 或 source_url，或 stock_code+period 直取定期报告）；
+    status 查解析状态。报告正文结构化走这里，不要用 wmshare_notice 拿原文链接。
+    """
+    if action not in PDF_ACTIONS:
+        raise ValueError(f"action 只支持 {'/'.join(PDF_ACTIONS)}")
+    limit = _optional_limit(limit, 100)
+    cli = runtime.client("cn")
+    if action == "search":
+        begin, end = _required_date_pair(begin, end)
+        data = cli.pdf_doc.search(
+            stock_code=str(stock_code or ""), title=str(title or ""),
+            announce_date_from=str(begin or ""), announce_date_to=str(end or ""),
+            status="", kind=str(kind or ""), limit=limit)
+    elif action == "read_markdown":
+        if not any([file_key, source_url,
+                    (stock_code and period)]):
+            raise ValueError(
+                "pdf.read_markdown 需要 file_key 或 source_url，或 stock_code+period")
+        data = cli.pdf_doc.read_markdown(
+            file_key=str(file_key or ""), source_url=str(source_url or ""),
+            stock_code=str(stock_code or ""), period=str(period or ""))
+    else:
+        if not file_key and not source_url:
+            raise ValueError("pdf.status 需要 file_key 或 source_url")
+        data = cli.pdf_doc.status(file_key=str(file_key or ""),
+                                  source_url=str(source_url or ""))
+    return success(runtime, data, output=output, max_rows=max_rows,
+                   action=action, stock_code=stock_code, market="cn")
+
+
 def _symbol(context: str, value: str | None, *, allow_empty: bool = True) -> str:
     if value is None or not str(value).strip():
         if allow_empty:
@@ -928,7 +1354,7 @@ def _symbol(context: str, value: str | None, *, allow_empty: bool = True) -> str
 
 
 
-def _unique_symbols(values: list[str]) -> list[str]:
+def _unique_symbols(values: Sequence[str]) -> list[str]:
     out = [str(value).strip() for value in values if str(value).strip()]
     if not out:
         raise ValueError("symbols 不能为空")
@@ -936,7 +1362,9 @@ def _unique_symbols(values: list[str]) -> list[str]:
 
 
 __all__ = [
-    "batch", "call", "company", "contract", "corporate", "disclosures",
-    "dividend", "estimates", "history", "intl", "market", "metrics", "notice",
-    "quote", "screen", "search", "segments", "statement", "status", "symbols",
+    "backtest", "batch", "call", "company", "contract", "corporate",
+    "disclosures", "dividend", "estimates", "etf", "futures", "history",
+    "income", "intl", "macro", "market", "metrics", "notice", "pdf", "quote",
+    "screen", "search", "segments", "statement", "status", "symbols", "toplist",
+    "valuation",
 ]

@@ -1,15 +1,20 @@
-# 指标码「原始单位」台账（人工维护源）
+# 指标码单位台账（人工维护源 = 2.0 运行时换算声明）
 #
-# 平台 API 默认返回**原始单位**，SDK 不做隐式换算（换算只在目录显式声明
-# unit: percent/yi_yuan/lot 时发生）。但上游 cn 名带 (亿)/(万)/(%) 等后缀，
-# 与真实数值并不总一致——本台账逐码登记「实测口径」，供文档与适配层展示。
+# 2.0 语义翻转：SDK 默认输出**基础单位**（率=小数、额=元、量=股）。本台账逐码
+# 登记「上游实测口径」（native_unit），SDK 据此把登记码默认换算到基础单位——
+#   $VOLUME 族：手 → 股（×100）
+#   宏观房地产 4 码：亿元 → 元（×1e8）
+#   $ROC_TTM 族：百分数 → 小数（×0.01）
+# 需要原始口径时走显式逃生口：cli.call(_units="native") / indicator.get(native=True)。
+# 精选组显式声明 unit 的码以声明为准，不与本台账叠加（防双重换算）。
+# 适配层（indicator_adapter）的 native_unit 列与本台账同源。
 #
 # live 实测：2026-11-13（600519 / 113050）。新增或修正条目必须带 note 说明依据。
 schema_version: 1
 as_of: "2026-11-13"
 
-# 与「基础单位」不一致、需要显式提示的码。
-# base_unit 是 SDK 公开契约里的口径，native_unit 是实际返回值口径。
+# 与「基础单位」不一致的码：base_unit 是 SDK 公开契约口径（换算后），
+# native_unit 是上游实际口径（= 本 SDK 的换算依据）。
 overrides:
   # ---- 成交量：指标层是「手」，kline 层已换算为「股」 ----
   # 依据：$VOLUME_DAY * 100 / $EQUITY_FREE_SHARES == $TURNOVER_RATE（10 位全等），
@@ -31,6 +36,12 @@ overrides:
   "$ROC_TTM_LAST":           {base_unit: ratio, native_unit: percent, note: "实测 1.76 = 176%"}
   "$BONUS_FUNDS_TOTAL_RATE": {base_unit: ratio, native_unit: percent, note: "实测 182.16 = 182%"}
 
+  # 注：$CURRENCY_RESERVE_FOREX / _GOLD 的「(亿)(美元)」也是历史命名——值已是美元原值
+  # （2026-11-23 实测 forex 3.405e12=3.4 万亿、gold 3.064e11=3064 亿；上游 Base=亿美元×1e8，
+  # 展示层 /1e8 还原成亿美元）。**不登记 overrides**：base==native(usd) 无换算语义，
+  # 登记了反而会被 _ledger_tokens 当 scale（若加 usd token）重复放大 1e8。
+  # 语义由 taxonomy 的 unit_kind=usd_amount 承载（见 _catalog/taxonomy.yaml code_overrides）。
+
 # cn 带 (亿)/(万亿)/(万元)/(千元) 但数值已是基础单位：命名遗留，不改值。
 naming_legacy:
   pattern: '\\((?:亿|万亿|万元|千元|万|千)[^)]*\\)'
@@ -48,8 +59,11 @@ invariants:
     desc: "$MV_LAST == $CLOSE_LAST * $EQUITY_TOTAL_SHARES_LAST（元）"
     codes: ["$MV_LAST", "$CLOSE_LAST", "$EQUITY_TOTAL_SHARES_LAST"]
 
-# 门面接口（非指标码）的单位口径，供文档与测试锚定。
+# 门面接口（非指标码）的单位口径，供文档、测试锚定与运行时换算。
 # 这些走函数域 units 声明或纯转置，不在 metrics.json 里。
+# 2.0 起 facades.fields 中 CONVERSIONS 词表内 token（percent/yi_yuan/lot）
+# 是**运行时换算声明**（units.apply_facade_units 消费）；price/zhang/money 等
+# 原生口径 token 不换算、仅供文档与审计。
 facades:
   "cbond.bars":
     # live 实测 2026-11-13（123291）：close=132, volume=220864, amount=29107595
@@ -59,7 +73,42 @@ facades:
       high: price
       low: price
       close: price
-      volume: zhang       # 转债面值口径
+      volume: zhang       # 转债面值口径（原生，不换算）
       amount: money
     invariant: "amount ≈ close * volume"
     note: "列式窗口按位转行，不改数值；不复权"
+  "etf.views":
+    # ETF 九视图（card/nav/share/div/portfolio/profile/premium/asset/rank）
+    # 共用字段单位：落库为 % / 亿元原生口径，2.0 起统一换算到基础单位
+    # （占比/涨幅/折溢价 %→小数、规模亿元→元、份额亿份→份），mode=series 的
+    # 序列行同规则（递归换算）。
+    fields:
+      chg_w1: percent
+      chg_m1: percent
+      chg_m3: percent
+      premium_pct: percent
+      premium_mean: percent
+      stock_ratio: percent
+      bond_ratio: percent
+      cash_ratio: percent
+      other_ratio: percent
+      fund_ratio: percent
+      net_asset: yi_yuan
+      fd_share: yi_yuan
+    invariant: "五类 *_ratio 合计 ≤ 1.0（换算后小数）；net_asset ≥ 0"
+    note: "ETF 九视图共用单位声明（apply_facade_units 递归消费）"
+  "futures.bars":
+    # 期货原生口径显式豁免（与 FuturesApi docstring 同口径）：价格=元、量=手
+    # （一手=合约乘数）、金额=万元——与交易所披露一致，不换算到全库基础单位。
+    fields:
+      open: price
+      high: price
+      low: price
+      close: price
+      settle: price
+      pre_settle: price
+      volume: lot         # 手（原生，不换算）
+      open_interest: lot
+      oi_chg: lot
+      amount: money       # 万元（原生，不换算）
+    note: "主力连续历史K线（eval 点读面）；price/lot/money 为文档审计 token 不换算"

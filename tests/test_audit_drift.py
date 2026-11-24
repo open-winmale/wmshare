@@ -50,15 +50,20 @@ def test_drift_default_is_green_and_machine_readable(capsys):
     result = json.loads(capsys.readouterr().out)
     assert result["pass"] is True
     assert result["errors"] == []
-    assert result["warnings"]  # shape 声明滞后是发现项，不掩盖
+    # 批 A/B/C（2026-11-16）后 shape 声明滞后清零；WARN 的发现能力由
+    # test_collect_drift_catches_bad_declarations 与 strict monkeypatch 用例守护，
+    # 这里只要求默认档不拦、报告机器可读。
+    assert result["warnings"] == []
     assert result["strict"] is False
     info = result["info"]
-    assert info["guard_declared"] == 50
-    assert info["functions"] == 288
-    assert info["markets"]["total"] == 2752
-    assert info["markets"]["declared"] == 569
-    assert info["markets"]["undeclared"] == 2183
-    assert info["markets"]["by_market"] == {"cn": 498, "hk": 25, "us": 46}
+    # guarded 87 = 85 + suspend_history/lifecycle 的 date_iso 不变量（2026-11-23 停复牌史）；
+    # functions 358 = 355 + 3（两读面 + 简称史）
+    assert info["guard_declared"] == 92  # + holding/settle ranges（2026-11-24）
+    assert info["functions"] == 368  # +概念目录1 +仓单3 +持仓2 +结算2（2026-11-24）
+    assert info["markets"]["total"] == 2983
+    assert info["markets"]["declared"] == 728
+    assert info["markets"]["undeclared"] == 2255
+    assert info["markets"]["by_market"] == {"cn": 658, "hk": 26, "us": 44}
     # .internal/UNIT_AUDIT.md 是本机联网 matrix 产物，不进 git 跟踪面；
     # CI 里不存在时 sections 为 0，只能要求非负，不能假设报告一定在。
     assert isinstance(info["matrix_sections"], int)
@@ -91,12 +96,27 @@ def test_drift_is_green_when_audit_report_missing(monkeypatch, capsys, tmp_path)
     assert result["errors"] == [] and result["pass"] is True
 
 
-def test_strict_upgrades_shape_warnings_to_failure(capsys):
+def test_strict_upgrades_shape_warnings_to_failure(monkeypatch, capsys):
+    """存量 WARN 已清零（drift 默认档 exit 0）；用注入的 WARN 验证 strict 升级语义。"""
     mod = _load()
+    # 当前仓库状态：零 WARN，strict 也应全绿
+    assert mod.main(["drift", "--strict", "--json"]) == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["pass"] is True and out["warnings"] == []
+
+    # 注入一条 WARN：strict 必须升级为失败
+    real = mod.collect_drift
+
+    def with_warning(cat, inventory_doc, metrics_doc, strict=False):
+        result = real(cat, inventory_doc, metrics_doc, strict=strict)
+        result["warnings"] = ["shape: x.fn units 字段 ['ghost'] 不在 returns_shape"]
+        result["pass"] = False
+        return result
+
+    monkeypatch.setattr(mod, "collect_drift", with_warning)
     assert mod.main(["drift", "--strict", "--json"]) == 1
-    result = json.loads(capsys.readouterr().out)
-    assert result["pass"] is False and result["strict"] is True
-    assert result["warnings"]
+    out = json.loads(capsys.readouterr().out)
+    assert out["pass"] is False and out["strict"] is True and out["warnings"]
 
 
 def test_collect_drift_catches_bad_declarations():
@@ -138,3 +158,41 @@ def test_exempt_note_suppresses_missing_range_error():
     cat = FakeCat(guards, ["pct"], domain_notes=["量级豁免：合并值≈0 时合法地极大"])
     result = mod.collect_drift(cat, INVENTORY, {"metrics": []})
     assert result["errors"] == [] and result["pass"] is True
+
+
+def test_shape_fields_collects_nested_object_fields():
+    """嵌套守护字段（segments.query_region 型 {domestic: {tr, ...}}）不算滞后。
+
+    运行时 walk 会下探未声明键的嵌套容器，守护按字段名匹配到嵌套层；
+    _shape_fields 须递归收集，否则合法声明被误报为 WARN。
+    """
+    mod = _load()
+    shape = {"kind": "object", "fields": [
+        {"name": "source", "type": "string"},
+        {"name": "domestic", "type": "object", "fields": [
+            {"name": "tr", "type": "float64"},
+            {"name": "pct", "type": "float64"},
+        ]},
+        {"name": "rows", "type": "array",
+         "items": {"kind": "object", "fields": [{"name": "margin"}]}},
+    ]}
+    assert mod._shape_fields(shape) == {"source", "domestic", "rows",
+                                        "tr", "pct", "margin"}
+    assert mod._shape_fields(None) == set()
+
+
+def test_collect_drift_nested_guard_fields_are_not_stale():
+    mod = _load()
+    guards = {"x.fn": {"ranges": {"tr": [-1e13, 1e13], "pct": [0, 1],
+                                  "ghost": [0, 1]}}}
+    cat = FakeCat(guards, [])
+    cat._shapes = []
+    cat.function = lambda name: {"name": name, "domain": "d", "notes": [],
+                                 "returns_shape": {"kind": "object", "fields": [
+                                     {"name": "domestic", "type": "object",
+                                      "fields": [{"name": "tr"},
+                                                 {"name": "pct"}]}]}}
+    result = mod.collect_drift(cat, INVENTORY, {"metrics": []})
+    assert result["errors"] == []
+    assert result["warnings"] == ["shape: x.fn ranges 字段 ['ghost'] 不在 returns_shape"
+                                  "（疑似上游 shape 声明滞后，需逐函数核实 returns.shape 覆盖）"]

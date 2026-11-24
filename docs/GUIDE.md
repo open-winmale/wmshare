@@ -2,30 +2,27 @@
 
 本指南是 **how-to + 解释层**：会做什么 → 怎么做好。其他层各有其位——
 教程看 [README](../README.md) 与 [examples/](../examples/README.md)（可运行课程），
-接口参考看 [API.md](API.md)（按资产类别分章的 135 个核心接口，生成物），
+接口参考看 [API.md](API.md)（按资产类别分章的 185 个核心接口，生成物），
 AI 用法看 [AI.md](AI.md)。
 
 > 代码块里的输出注释都是**真实运行结果**（2026-10-29，cn 市场，免费档凭证），
-> 数值会随行情变化，口径与量级不会。README、SKILL 与演示客户端（`demo_client()`）
-> 里的示例值取自更早日期的实测快照，同一指标不同日数值不同（如 TTM 股息率
-> 0.0396→0.0379），属正常漂移。
+> 数值会随行情变化，口径与量级不会。README、SKILL 与各文档示例里的值取自
+> 更早日期的实测，同一指标不同日数值不同（如 TTM 股息率 0.0396→0.0379），
+> 属正常漂移。
 
 ## 1. 安装与凭证
 
 ```bash
 pip install wmshare                  # 基础安装
-pip install "wmshare[dataframe]"     # 可选：pandas 支持（_df=True）
 python3 -c "import wmshare; print(wmshare.__version__)"   # 验证安装
 ```
 
-不配凭证先试：`cli = wmshare.demo_client()`——随包离线演示客户端（2026-10-30
-真实 API 固定快照；10 只演示宇宙 + 当日真实全市场 screener，
-**非实时数据**），调用面覆盖公开示例（例外：`screener.query` 依赖全市场索引列、
-`backtest` 的 pb/ps/pr 估值规则依赖对应序列，演示快照都没有，均显式报
-`demo_unsupported`；`backtest` 的均线与 pe 规则可用 120 根演示日 K 真跑）；
-examples/ 的凭证示例都支持 `--demo` 旗标零凭证试跑。看真实数据按下节配凭证。
+不配凭证先试：`cli = wmshare.Client.from_env()`——无凭据自动免注册**免费试用**
+（真实数据，按来源网络限流，需网络；`WMSHARE_DISABLE_ANON=1` 可关闭）。examples/ 的
+示例统一 `main(cli=None)`，无凭证即可跑。要长期额度/更高限频按下节配置凭证（可选）。
 
-凭证在开放平台（`https://open.winmale.com`）控制台的「我的 → 开放平台 → 我的应用」页获取，
+凭证在开放平台（`https://open.winmale.com`）控制台的
+「我的 → 开放平台 → 我的应用」页获取，
 `AppId（Client ID）` 与 `API Key（Client Secret）` **两个值缺一不可**。配置任选其一：
 
 ```bash
@@ -42,12 +39,12 @@ export WMSHARE_CLIENT_ID=<AppId> WMSHARE_CLIENT_SECRET=<API Key>
 
 ### 2.1 双层 API：门面 + 目录
 
-- **门面层** `cli.<命名空间>.<方法>()`：22 个命名空间、135 个核心接口，方法名动宾化可猜
+- **门面层** `cli.<命名空间>.<方法>()`：31 个命名空间、185 个核心接口，方法名动宾化可猜
   （`kline.bars`、`dividend.yield_ttm`、`screener.screen_limit_up`）。
-- **目录层** `cli.call("<域>.<函数名>", ...)`：288 个底层函数按目录合同直调，
+- **目录层** `cli.call("<域>.<函数名>", ...)`：368 个底层函数按目录合同直调，
   参数名以 `cat.function(name)["params"]` 为准。门面未包装的函数经属性直达
   （如 `cli.dividend.index_where_high_yield_5()`）；目录之外的名字显式报错——
-  门面不遮蔽目录函数，288 个都能直达。
+  门面不遮蔽目录公开函数（internal 辅助除外），292 个都能直达。
 
 两层的名字对不上是常态：目录按上游域组织，门面按使用视角命名（如目录 `bonus` 对应
 门面 `dividend`），17 个域挂 20 个门面。不必背映射——`cat.search("分红")` 一查即得；
@@ -77,9 +74,10 @@ cat.functions_by_domain()             # 按域列全部函数名（cli.call 的�
 | 金额 / 价格 / 市值 | 元（报表原币） | — |
 | 股数 / 成交量 | 股 | — |
 
-唯一例外：`cli.screener` 宽度接口的 `up_pct`/`down_pct`/`pct_of_total` 是**百分数数值**
-（80.3 = 80.3%），同返回的 `median_pct` 与涨跌幅仍是小数。
-每次返回前 SDK 做量级与关系不变量校验，违例抛 `DataError`——**数据在报警，不要吞掉**。
+无例外：宽度接口 `up_pct`/`down_pct`/`pct_of_total` 1.x 曾是百分数数值，2.0 起**统一小数**
+（0.803 = 80.3%），同返回的 `median_pct` 与涨跌幅同样是小数。
+返回前 SDK 做单位换算与关键不变量校验，违例抛 `DataError`——**数据在报警，不要吞掉**。
+精选 78 码另带口径与量级守护；其余码不做量级判定，口径以返回值/注释为准。
 逃生口：`_raw=True`（返回上游原始行，字段名与规范化后不同）、`_units="native"`
 （保留上游原单位，如 volume=手、百分数不折算）、`Client(validate=False)`（关校验留换算）。
 
@@ -123,7 +121,7 @@ import wmshare
 
 cli = wmshare.Client.from_env()
 
-# 最近 N 根日 K（按日期降序；percent 为小数）
+# 最近 N 根日 K（2.0：date 升序=旧→新；percent 为小数）
 cli.kline.bars("600519", n=3)
 # [{'date': '2026-10-29', 'close': 1354, 'percent': 0.017471}, ...]
 
@@ -141,11 +139,11 @@ cli.kline.min1("600519")                # 当日 1 分钟分时
 # 主力资金净流入（元）
 cli.moneyflow.last("600519")            # net_mf = 821186700（8.2 亿元）
 
-# 三大报表（多期科目行：cn 中文名 / k 科目键 / vals 各期值）
-cli.statements.income("600519", years=1)    # 25 行科目
-cli.statements.balance("600519", years=3)
-cli.statements.compare("600519")            # 合并 vs 母公司
-# 完整可运行版：examples/11_statements_tour.py（含审计意见、diffp 小数读法）
+# 三大报表 + 主要指标（三加一，cn/hk/us；行 = {k: 披露科目原文, vals: {期次: 值}}）
+cli.statements.income("600519", years=1)          # 利润表，披露原币（元）
+cli.statements.indicators("00700", years=2)       # 主要指标（fin_indicator 宽表）
+cli.statements.income("600519", period="quarter") # 季报全档，期次键 "2026:Q1"
+# 完整可运行版：examples/11_statements_tour.py（含审计意见）
 
 # 指标码取数（码先查目录；分位 0=最低 1=最高）
 cli.indicator.get("600519", "$PCT_PE_TTM_10Y_LAST")   # 0.2115（近 10 年 21% 分位）
@@ -191,7 +189,7 @@ b = cli.cbond.board()                   # 行 = 快照行 + event/callHits/reset
 # 可转债：条款事件流（下修提案/实施、强赎/不强赎、回售、除权调价、转股期等 9 类）
 evs = cli.cbond.event_list()            # 90 日回看；行含 convert_price_old/new 与公告原文链接
 
-# 可转债：转债日 K（列式 MAP：open/close/high/low/volume/amount；samplingName 日期降序）
+# 可转债：转债日 K 窗口（列式 MAP：open/close/high/low/volume/amount；读行式用 cbond.bars，date 升序）
 kw = cli.cbond.kline_window("113050", 60)
 
 # 可转债：一条链路跑完一期日更（取数 → 三道闸 → 事实包 → 成稿 → 出图）
@@ -215,14 +213,14 @@ cli.screener.screen_volume_spike("600519")  # 放量？
 res = cli.screener.query(
     "$BONUS_RATE_3Y_AVG_LAST > 0.03 && $ROE_TTM_LAST > 0.15 && !$IS_ST",
     order="$BONUS_RATE_3Y_AVG_LAST", limit=10)
-res["count"]                                 # 全市场命中数（不受 limit 截断）
-res["rows"][0]                               # {'symbol': '900948', 'name': '伊泰B股',
-                                             #  '$BONUS_RATE_3Y_AVG_LAST': 0.2104, ...}
+res["data"]["count"]                          # 全市场命中数（不受 limit 截断）
+res["data"]["rows"][0]                        # {'symbol': '900948', 'name': '伊泰B股',
+                                              #  '$BONUS_RATE_3Y_AVG_LAST': 0.2104, ...}
 cli.screener.query("$ROE_TTM_LAST > 0.30", limit=0)   # 只要命中数（不拉行）
 
-# 全市场宽度（服务端索引直出；*_pct 是百分数数值、median_pct 是小数）
+# 全市场宽度（服务端索引直出；2.0：*_pct 与 median_pct 均为小数）
 cli.screener.index_breadth_summary()
-# {'total': 5685, 'up': 540, 'down': 5002, 'up_pct': 9.5, 'median_pct': -0.0154, ...}
+# {'total': 5685, 'up': 540, 'down': 5002, 'up_pct': 0.095, 'median_pct': -0.0154, ...}
 # total = 当日参与涨跌统计的家数（全市场列表是 5,375，含停牌等不参与统计的）
 cli.screener.index_top_movers(limit=10)     # 涨幅榜（desc=False 跌幅榜）
 
@@ -308,8 +306,8 @@ import wmshare
 cli = wmshare.Client.from_env()
 
 t = cli.index.trend("index.hs300", "5y")     # 宽基：11 个键（index.hs300/csi500/sz50/…）
-t["n"], t["points"][0], t["points"][-1]      # 730 个周频点；points[0] 是最新点（新→旧）
-t["pe_pct"], t["pb_pct"]                     # 0.7671 / 0.5753（小数，0.7671 = 76.7% 分位）
+t["data"]["n"], t["data"]["points"].iloc[0], t["data"]["points"].iloc[-1]      # 730 个周频点；升序（旧→新），最新点在末行
+t["data"]["pe_pct"], t["data"]["pb_pct"]     # 0.7671 / 0.5753（小数，0.7671 = 76.7% 分位）
 t["pe_pct_window"]                           # '5y'：实际生效的分位窗口
 
 for k in cli.index.universe_keys("industry"):    # 申万一级 31 个键
@@ -372,7 +370,7 @@ cron 每交易日收盘后分批增量（16:20 宽基、16:23/16:26 申万一级
 
 | 现象 | 含义 |
 |---|---|
-| `points` 是**新→旧** | `points[0]` 是最新点。写成 `points[-1]` 会拿到 2016 年的值 |
+| `points` 是**升序**（旧→新，2.0 标准） | 最新点在 `points.iloc[-1]`。写成 `points.iloc[0]` 会拿到 2016 年的值 |
 | `pe_pct` 为 `None` 且 `pe_missing=True` | 该主体**当前无 PE**（行业整体亏损），不是数据缺失 |
 | `pe_pct` 为 `None` 且 `win_trunc=True` | 窗口盖不住（如 10y），可降窗口重取 |
 | `dv_has_history=False` | 股息率**只有当前值、无历史序列**，因此没有股息率分位 |
@@ -388,42 +386,58 @@ cron 每交易日收盘后分批增量（16:20 宽基、16:23/16:26 申万一级
 
 | 入口 | 用途 | 请求数（N 个标的） | 关键参数 |
 |---|---|---|---|
-| `batch_all(name, symbols)` | 一站式：自动分批并聚合 | ⌈N/500⌉ | `on_batch_error="raise"/"skip"` |
-| `batch_iter(name, symbols)` | 逐批流式：进度/中断/落盘 | ⌈N/500⌉ | 逐批 yield `BatchResult` |
-| `call_batch(name, symbols)` | 单批（≤500） | 1 | `on_error` 是**票级**，勿做容错 |
+| `batch_all(name, symbols)` | 一站式：自动分批并聚合 | 路由接口 1 次；其余 ⌈N/500⌉ | `on_batch_error="raise"/"skip"` |
+| `batch_iter(name, symbols)` | 逐批流式：进度/中断/落盘 | 同上 | 逐批 yield `BatchResult` |
+| `call_batch(name, symbols)` | 单批（≤500，路由接口不限） | 1 | `on_error` 是**票级**，勿做容错 |
 
-**批量省的是请求次数，不是 EC。** 开放平台开放 API 按计算量（EC）计费：
-多标的批量在服务端仍按标的数逐票计算，一轮全市场 ≈ 12 批 × 每标的固定成本，
-重放几百遍就是数亿 EC。两个习惯：① `BatchResult.ec_cost` 与
+**批量省的是请求次数，多数接口不省 EC。** 开放平台开放 API 按计算量（EC）计费：
+除批量原生路由接口（如 `kline.snapshot`，按量计费）外，多标的批量在服务端仍按
+标的数逐票计算，重放几百遍就是数亿 EC。两个习惯：① `BatchResult.ec_cost` 与
 `cli.last_ec_cost` 会回传每次消耗，单次超过 `Client(ec_warn_threshold=…)`
 （默认 10 万）SDK 直接告警；② 全市场**最新快照**类数据（资金流等）优先用
 服务端一次取数接口（如 `cli.moneyflow.board()`），逐票批量留给确需逐票
-历史的场景，并配合 `batch_iter` 边取边落盘。
+历史的场景，并配合 `batch_iter` 边取边落盘。动手前可用
+`cli.cost_estimate(name, **params)` 先估 EC 区间。
 
-### 5.2 一站式：全市场 = 11 次请求
+### 5.2 一站式：全市场快照 = 1 次请求
 
 ```python
 codes = [r["symbol"] for r in cli.stocks.list()]
-res = cli.batch_all("kline.snapshot", codes)
-len(res.results), res.requests    # (5375, 11)——逐票要 5,375 次，批量 11 次
-res.to_df()                       # 每标的一行长表（symbol 列在前；需 pandas）
+res = cli.batch_all("kline.snapshot", codes)   # 批量原生路由：单次 eval
+len(res.results), res.requests    # 全市场一轮 1 次请求（逐票要 5,375 次）
+res.to_df()                       # 每标的一行长表（symbol 列在前）
 ```
 
+**`kline.snapshot` 传列表自动走批量原生（2.0 默认，推荐）**：单次请求、按量计费
+60~90 EC/票；≥2,000 票的准全市场清单自动走空参捷径（≈11~15 万 EC，对比逐票
+拼接首算的数千万 EC）：
+
+```python
+res = cli.kline.snapshot(codes)   # 自动路由 kline.snapshot_batch，1 次请求
+res.results["600519"]["ma60"]     # 23 字段快照（kline_date/kline_sas 为 None）
+```
+
+`batch_all`/`call_batch` 对 `kline.snapshot` 同样自动路由且不再分批；
+`kline_date/kline_sas` 索引未物化置 None，价格为索引 EOD 快照值（盘中实时价用
+`live`/`batch_live`），ETF/新上市等索引外标的自动回退逐票快照（数值一致）。
+`Client(native_batch=False)` 或 `native_batch_min=N` 可回到逐票拼接语义。
+其余接口的批量仍是「同次计算逐票计费」，继续按本节习惯控制 EC。
+
 实测（2026-10-30，免费档，当时全市场 5,691 家）：500 标的单批 0.7–4 秒（随网络波动），
-A 股全市场 12 批 9–16 秒一次跑完，0 错误；20 只银行股单批 0.06 秒 1 次请求。
+全市场一波 9–16 秒跑完，0 错误；20 只银行股单批 0.06 秒 1 次请求。
 历史类多行结果（`kline.bars`/`dividend.history`）建议改用 `batch_iter` 边取边落盘。
 
 ### 5.3 容错与续跑
 
 - **批级容错**：`batch_all(..., on_batch_error="skip")` 跳过失败批继续，失败批进 `errors`
   （键形如 `batch#3[1000:1500]`）。**不要用 `call_batch(on_error="skip")` 做容错**——
-  它逐票发请求，11 批会放大成 5,375 次、正好制造 429。
+  它逐票发请求，全市场会放大成 5,375 次、正好制造 429。
 - **429 续跑**：限流在任何模式下都会停止并给出续跑位置——消息含已完成标的数与
   `codes[done:]` 切片，稍后续跑 `batch_all(name, codes[done:])` 即可，不要无脑重试。
 - **算力超限**：单批触发 `CALC_LIMIT_EXCEEDED` 时减小 `batch_size`。
 - 三个入口的 `name`/`symbols` 都是位置参数；`_raw=True`/`_units="native"` 通用；
-  批量入口不提供 `_df`（长表用 `to_df()`）。
-- **`name` 必须是目录函数名**（288 个，`cat.functions_by_domain()` 可查）；指标码不是
+  批量入口的 `results` 恒为行数组/逐票 MAP（长表用 `to_df()`，门面级 DF 见第 4 章）。
+- **`name` 必须是目录函数名**（`cat.functions_by_domain()` 可查）；指标码不是
   函数名——一票多码用 `cli.indicator.metrics(sym, codes)`（传 `"indicator.get"` 会报
   `CatalogError`）。**全市场按指标条件选股不要逐票批量**：一条表达式交给
   `cli.screener.query(...)`（服务端索引引擎，见第 3 章与 10.1）。
@@ -433,7 +447,8 @@ A 股全市场 12 批 9–16 秒一次跑完，0 错误；20 只银行股单批 
 `Client(market="cn")` 只传 A 股代码。混入他市场代码 SDK 直接报 `UsageError`——
 网关不校验批内代码，但错误市场的代码会在本市场引擎里走错数据管线，返回的
 close/涨跌幅不可信（实测同一港股标的混批后涨跌方向都相反）。跨市场分别调用：
-A 股 12 批 + 港股 6 批 + 美股 11 批 = 29 次请求。
+`kline.snapshot` 每市场 1 次请求（批量原生路由），其余接口按 ⌈N/500⌉ 分批
+（A 股 12 批 + 港股 6 批 + 美股 11 批 = 29 次）。
 
 ## 6. 多市场与港美专项
 
@@ -465,30 +480,87 @@ us.intl.query_sellshort("AAPL")       # 美股沽空
 宏观走 `cli.macro`（上游原生口径：$CPI 等价格指数=点、$GDP/$M2=元；中债收益率=小数）：
 
 ```python
-cli.macro.query("$CPI", 6)            # 时序：series 每点含 sas/annual/sampling/value（最新在前）
+cli.macro.query("$CPI", 6)            # 信封：data.series 为 DataFrame（sas 升序）；台账码默认换算
 cli.macro.asof("$GDP")                # 最新单值（元；实测 107107120000000 ≈ 107.1 万亿）
 cli.macro.sampling_of("$CPI")         # 原生频率 "month"/"quarter"/"year"/"day"
 cli.macro.bond_curve("中债国债收益率曲线", "10年")   # 0.0168 = 1.68%（小数）
 cli.macro.nev_monthly("零跑", "sales")               # 行业情报单值（名单精确匹配，掉榜 None）
 ```
 
-期货走指标码层（主力连续，日/周/月三族；`symbol` 传任意 A 股代码绑定期间上下文，
-合约键经 `fut_symbol` 指定——国内 `cn.SR.ZCE`（后缀非 .CZCE）/`cn.RB.SHF`，外盘 `global.CL`）：
+期货走 `cli.futures` 门面（主力连续，**须 cn 客户端**；合约键 `RB.SHF`/`global.CL`，
+单位为期货原生口径：价格=元、量=手、金额=万元）。数据统一读 store 直读的
+`futures.query_bars`：**日频只含交易日**、最新一根随上游日更、同数据版本复跑近零成本；
+周/月线是上游周期 bar（成交量为周期合计），SDK 不做二次聚合；外盘仅日线。
+
+```python
+cli.futures.snapshot("RB.SHF")                       # 最新日频 11 字段 + date
+cli.futures.get("AL.SHF", "settle", freq="m")        # 单字段单值（外盘换 global. 前缀）
+cli.futures.bars("AL.SHF", n=6, freq="m")            # 历史K线 DataFrame（date=周期起点，升序）；
+                                                     # n=根数；begin/end 与 n 二选一（含端点）；
+                                                     # 长区间用 m 频（行数省 20 倍，d 硬顶 3000）
+cli.cost_estimate("futures.bars", n=120)             # 先估成本（按行计费）
+```
+
+指标码层（FUT 前缀码）适合自建 eval 序列；**标量求值继承 A 股锚点的报告期上下文，
+会锚到锚点股最新财报期末而不是今天**——取当前值请用上面的门面：
 
 ```python
 cli.indicator.get("600519", "$FUT_CLOSE")                           # 缺省 cn.SR.ZCE
 cli.indicator.get("600519", "$FUT_CLOSE", fut_symbol="global.CL")   # 外盘 WTI
 ```
 
-代码表与口径详见 [API.md](API.md)「期货」「宏观」两章。
+代码表与口径详见 [API.md](API.md)「期货」「宏观」「美宏观」三章。
+
+### 6.2 汇率、官方储备与美国宏观
+
+**人民币外汇汇率**走 `cli.fx`——口径是「**每 1 单位**外币折人民币」（USD≈7.1、
+JPY≈0.042）；上游原始中间价是「每 100 外币」口径（美元≈670），SDK 已统一 /100
+归一，看到 600+ 量级的美元值说明读的是未归一原值：
+
+```python
+cli.fx.rate("USD")                     # {'ccy','date','middle','buy','cash_buy'}
+cli.fx.history("USD", n=30)            # 日线 DataFrame（date 升序）
+cli.fx.bars("USD", begin="2026-11-01", end="2026-11-21")   # 区间
+cli.fx.list()                          # 在库币种（USD/EUR/JPY/HKD…）
+```
+
+`middle` 是央行授权发布的中间价（缺失按前值填充、连续）；`buy` 是中行汇买价
+（仅发布日写入、可能有缺口）。两者口径不同，勿混用。
+
+**官方储备**挂在 `cli.macro` 的 `reserves*` 家族，月频（外汇 + 黄金）：
+
+```python
+cli.macro.reserves()                   # 清单：kind/label/available/value
+cli.macro.reserves_asof("forex")       # {'date': '2026-10', 'value': 3405178000000}
+cli.macro.reserves_history("forex", n=6)
+```
+
+**量纲铁律**：`value` 是**美元数值**（外汇≈3.4e12 = 3.4 万亿美元、黄金≈3.1e11
+= 3064 亿美元），不是元、也不是亿美元——除 1e12 得万亿美元。黄金是**市值口径**，
+没有吨数/盎司。`sdr` 上游无生产者，清单里 `available=False`、`reserves_asof`
+返回 `None`（不返回 0）。
+
+**美国宏观序列**走 `cli.us_macro`（精选 88 条 × 11 主题）：
+
+```python
+cli.us_macro.topics()                        # 11 主题及其序列清单（零取数成本）
+cli.us_macro.search("通胀", 5)                # 中文/英文检索 → id + 中文名 + 说明
+cli.us_macro.series_meta("GDP")              # units/frequency/status/has_data
+cli.us_macro.points("GDP", limit=20)         # 点序列 DataFrame（date 升序）
+```
+
+**口径铁律**：本域**不做统一单位换算**——GDP 是十亿美元（Billions of Dollars）、
+UNRATE 是百分数（Percent）、PAYEMS 是千人（Thousands of Persons）。跨序列比较前
+必须先读 `series_meta().units`，否则量级必错。`status="pre_approval_required"`
+的序列在上游即被版权粘住、永不抓取（`has_data=False` 如实标注）。
 
 ## 7. pandas 与 DataFrame
 
-可运行版本：`examples/08_pandas_analysis.py`。需要 `pip install "wmshare[dataframe]"`。
+可运行版本：`examples/08_pandas_analysis.py`（pandas 为 2.0 硬依赖，随包安装）。
 
 ```python
-df = cli.kline.bars("600519", n=120, _df=True).sort_values("date")
-# bars 按日期降序返回（最新在前），先升序再算指标——直接 rolling 会算在最老一段上
+df = cli.kline.bars("600519", n=120)  # 2.0：默认 DataFrame，date 已升序
+# 2.0：bars 默认 DataFrame 且 date 已升序，直接 rolling 即可（1.x「降序返回」的坑已移除）
 df["ma20"] = df["close"].rolling(20).mean()
 
 snap = cli.batch_all("kline.snapshot", codes).to_df()   # BatchResult 长表
@@ -506,7 +578,7 @@ poller.start()               # 或切后台：daemon 线程定时轮询；退出
 
 消费进度按 `(group, consumer)` 存服务端，ack 前崩溃会重投（at-least-once）；
 进度超保留期抛 `StreamResetError`，按消息用 `seek_oldest()` 重置。
-完整可运行版：`examples/10_notice_monitor.py`（`--demo` 零凭证演示 ack 语义）。
+完整可运行版：`examples/10_notice_monitor.py`（ack 语义端到端）。
 
 ## 9. 故障排查
 
@@ -542,9 +614,10 @@ poller.start()               # 或切后台：daemon 线程定时轮询；退出
 ## 10. 配额与性能实测
 
 免费档：500 次/小时、5,000 次/日（更高额度与条款以开放平台为准）。
-按请求次数计费意味着批量是乘法级省**请求次数**：全市场 4 个指标 × 11 批 = 44 次，
-仍占小时额度不到 10%。实测基线（2026-10-29，当时全市场 5,691 家）：快照 12 批约 9 秒、
-0 错误；`res.requests` 字段可直接对比标的数看省了多少。
+按请求次数计费意味着批量是乘法级省**请求次数**：非路由接口全市场 4 个指标 × 11 批
+= 44 次，仍占小时额度不到 10%；`kline.snapshot` 走批量原生后全市场 1 次请求。
+实测基线（2026-10-29，当时全市场 5,691 家）：全市场一波 9 秒、0 错误；
+`res.requests` 字段可直接对比标的数看省了多少。
 
 注意口径：SDK 配额按请求次数算，开放平台 EC 按**计算量**算（第 5.1 节）——
 批量对前者是省、对后者不省。EC 消耗经 `BatchResult.ec_cost` /
@@ -583,8 +656,8 @@ poller.start()               # 或切后台：daemon 线程定时轮询；退出
 
 - **和直接下交易所数据比，图什么？** 目录先行 + 单位统一 + 数据守护 + 批量限流治理——
   取数正确性的工程问题 SDK 替你管了。
-- **数据能离线吗？** 目录（288 个函数/2752 个指标码/代码表）随包离线；行情财报数据在云端，
+- **数据能离线吗？** 目录（368 个函数/2983 个指标码/代码表）随包离线；行情财报数据在云端，
   需凭证与额度。
-- **支持哪些 Python？** ≥3.11（3.10 已 EOL，1.19.0 起不再支持）；pandas 为可选依赖。
+- **支持哪些 Python？** ≥3.11（3.10 已 EOL，1.19.0 起不再支持）；pandas 自 2.0 起为核心依赖。
 - **怎么贡献/报漏洞？** 见 [CONTRIBUTING](../CONTRIBUTING.md) 与 [SECURITY](../SECURITY.md)；
   agent 贡献者另见 [AGENTS.md](../AGENTS.md)。

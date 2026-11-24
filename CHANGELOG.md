@@ -5,10 +5,949 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-> 兼容政策：2.0 前 minor 版本可能携带行为变更，均在对应版本段以「行为变更」标注；
-> 升级前请扫一眼 Removed / Changed 段。
+> 兼容政策：见 [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md)——破坏性变更只能在
+> MAJOR；弃用至少保留 1 个 MINOR，并在 `Deprecated` 段登记替代写法与移除版本。
+> 升级前请扫一眼 Removed / Changed / Deprecated 段。
 
-## [Unreleased]
+## [3.7.1] - 2026-11-24
+
+### Fixed
+
+- **`valuation.daily_basic` / `daily_basic_multi` 排序契约**：服务端原生按日期
+  降序返回（同日按字段名），此前门面只在分页时假设升序、从未最终排序，违反
+  2.0「date 升序」契约（2026-11-24 live 实测 11-13 → 11-10）。现按
+  `(date, field)`（单票）与 `(symbol, date, field)`（多票）统一升序。
+- **`etf.nav` 等视图的 `net_asset` 上游量级异常**：2026-11-24 实测全 ETF 返回
+  1e18 量级（疑管道口径变更），原先整单抛 `DataError` 使 nav 视图不可用。现把
+  该字段置空并在 `data.note` 说明，净值/份额等其余字段照常返回。
+- **`pdf_doc.read_text` / `read_markdown` / `status` 空参**：文件键、链接、票码
+  全空时在本地抛 `UsageError(code="params")`，不再打上游换一个 `ok=False`。
+
+### Changed
+
+- `pdf_doc.search` 的 `text_chars` 量级上限 1e7 → 5e7（巨型年报实测 1,450 万字符）。
+- `board.concept_list` 口径文案统一为**周更**（周六 09:00 片 / 09:15 merge，
+  最多滞后一周；此前文档误写「日更」）；上游锚点前移 `361c9530`。
+- live 测试两处 2.0 形态漂移修正：ETF 九视图断言读 `meta.view`/`data`；
+  `pdf_doc.search` 按 DataFrame 形态取行。
+
+## [3.7.0] - 2026-11-24
+
+### Added
+
+- **期货每日持仓排名**：`cli.futures.holding(date="", contract="", limit=200)`（第 184 个
+  核心接口）——交易所会员成交/多空持仓排名，按成交量降序；单次 `limit` 上限 **500**。
+  读面先按合约过滤再规范化（上游单日约 1 万行，全量规范化曾达 ≈121 万 EC）；
+  上游 pandas NaN 以 BSON NaN 落库，统一归一为 0（此前会让网关返回 HTTP 200 空包）。
+  MCP `wmshare_market` 新增 `holding` action；`examples/33_futures_holding.py`。
+- **期货每日结算参数**：`cli.futures.settle(date="", contract="")`（第 185 个核心接口）——
+  结算价/涨跌停板/保证金率/手续费率，支持品种前缀过滤（如 `CU`）。`fee_rate` 为
+  ‰ 原值，保证金率多为小数（个别品种上游给 50），`settle` 价格单位随合约。
+  MCP `wmshare_market` 新增 `settle` action。
+
+### Changed
+
+- 目录规模：29 域 / 368 函数 / 185 核心接口 + 18 组合接口 / 2,983 指标码 /
+  33 示例；守护覆盖率下限 25.00%（92/368，同步 AGENTS.md、ci.yml、release.yml）。
+- 上游锚点前移 `9b4869f6`（持仓 NaN 归一 + 结算参数过滤下推）。
+- `docs/LIMITS.md` 登记 `futures.holding` 单次 500 行上限，以及
+  `kline.query_bars` / `bonus.query_list` / `cbond.kline_window` / `cbond.query`
+  的服务端单次上限（1000 / 500 / 1000 / 500）。
+
+### Fixed
+
+- live 测试两处既有漂移：`futures.mapping` 断言改吃 DataFrame（2.0 门面形态）；
+  `futures.receipts` 的 title 唯一性放行郑商所红枣CJ/花生PK 的上游重复行
+  （同档同值输出两遍，qty=0）。
+
+## [3.6.0] - 2026-11-24
+
+### Added
+
+- **期货仓单快照**：`cli.futures.receipts(month=None)`（第 183 个核心接口）——交易所
+  注册仓单量（吨/张逐行，读 `unit` 字段），覆盖 SHFE/CZCE/GFEX，DCE 反爬未采；
+  上游按月 REPLACE，只保留当月最后一次抓取快照，**不是逐日历史**。MCP
+  `wmshare_market` 新增 `receipts` action；`examples/32_futures_receipts.py`。
+
+### Changed
+
+- **指标适配层单位治理**：`unit_kind=unknown` 从 247（8.28%）降至 57（1.91%）。
+  新增 ownership/日期/指数成交额·均价·涨跌额/持股股本/布尔族/量能族/行业营收·成本/
+  期货结算价等分类规则；上游「手」与「万元」口径因台账未登记换算，继续保留
+  `unknown` 并逐条登记 `taxonomy.yaml::unit_unknown_allowlist`（含原因）。
+  `validate_metric_taxonomy` 现强制 unknown 比例 ≤2%、unknown 与 allowlist 严格
+  1:1；`report_metric_taxonomy` 输出残余清单与原因。
+- 目录规模：29 域 / 364 函数 / 183 核心接口 + 18 组合接口 / 2,983 指标码 /
+  32 示例；守护覆盖率下限 24.72%（90/364，同步 AGENTS.md、ci.yml、release.yml）。
+
+### Fixed
+
+- 文档口径：`batch_all("kline.snapshot")` 全市场为 **1 次**请求（原生批量路由，
+  不再分批），README/API.md/SKILL/AI/examples 同步；`examples/README.md` 示例数
+  22 → 32；README 说明 `inventory 377 = 364 对外 + 13 个 internal helper`；
+  README/AI 明确 MCP 走 stdio、由客户端子进程启动、不监听端口；移除无门禁的
+  331/298 函数计数与 5,691/12 次历史值。
+- 新增文档门禁：示例数按目录真值、MCP stdio、inventory 差额、API.md 批量示例 1 次；
+  `ReadmeClient.batch_all` 对原生路由返回 1 次，避免测试掩盖文档错误。
+
+## [3.5.0] - 2026-11-24
+
+### Added
+
+- **概念板块目录**：`cli.board.concept_list(limit=0)`（第 182 个核心接口）——读
+  服务端日更物化档的 memo 点查（不做索引扫描），行形 `name/count/members`：
+  成员数降序、同数按概念名升序；`members` 为成员 6 位代码（门面返回升序，
+  底层 `cli.call` 保持物化序）。与 `board.concepts_of` / `concept_members`
+  同源（上游概念标签当前截面，含指数/风格标签不分流；无 PIT 历史，不能回测
+  历史成份）。未物化时段返回受控错误并引导等 cron，不静默空表。
+  `estimate_cost` 实测档：memo 点查 ≈110 EC（limit 不影响；物化冷态由服务端
+  cron 承担）。MCP `wmshare_market` 新增 `board.concept_list` action；
+  `examples/31_board_concept_list.py`。
+
+### Changed
+
+- 目录规模：29 域 / 361 函数 / 182 核心接口 + 18 组合接口（friendly 200）/
+  31 示例；守护覆盖率下限 24.44% → 24.65%（89/361，同步 AGENTS.md 与 ci.yml）。
+- 上游锚点前移 `873bc2d4`（概念目录周更物化 cron + 片内免 strip 优化）。
+- **补记（3.0.1 漏记）**：`[3.0.1]` 段当时只记期货修复，同 tag 内已含的外汇
+  四接口（`cli.fx.rate/history/bars/list`）与宏观储备三接口
+  （`cli.macro.reserves/reserves_history/reserves_asof`）在此补记——代码自
+  3.0.1 起即在，本条为文档补录，不改变任何行为。
+
+## [3.4.0] - 2026-11-24
+
+### Added
+
+- **历史涨跌停价序列**：`cli.stocks.limit_price_history(symbol, n=None, begin=None,
+  end=None)`——逐日 `date/name/close/high/low/percent/basis/limit_up/limit_down/
+  band/rule/is_st`（date 升序）。`basis` 用后复权/不复权因子还原交易所除权参考
+  前收——除权日直接 `close/(1+percent)` 会错（600519 2024-06-19 实测：原始口径
+  1521.5，交易所参考价 1490.62，本接口到分一致），非除权日与当日快照同口径回退。
+  规则表按日期切档：主板 1996-12-16 前无涨跌幅限制、之后 10%（ST 5% 至
+  2026-05-05，2026-05-06 起 10%）；创业板 2020-08-24 前 10%（ST 5%）后 20%；
+  科创板 20%；北交所 2020-07-27 前 `unbounded` 后 30%。IPO 无涨跌幅窗口标
+  `rule=ipo`、缺价 `no_price`、超带宽 `unbounded`，价格为空不猜。`n` 与
+  `begin/end` 二选一（区间切片含 end，逐日锚点翻页有 `LimitError` 快速失败）。
+  MCP `wmshare_market` 新增 `limit_price_history` action；`estimate_cost` 提供
+  实测档位（n=120 冷 ≈1.7 万 EC，2026-11-24 实测）。
+
+### Changed
+
+- **moneyflow 单次行数上限 500**：服务端 `moneyflow.query_bars*` 单次超过 500 行
+  显式拒绝（`LimitError`，拒绝文案全程可读、EC≈0，引导锚点分页）——替换此前
+  单笔最高 ≈5.15M EC 的隐性天花板；`estimate_cost` 与接口文档同步。
+- 目录规模：29 域 / 360 函数 / 181 核心接口 + 18 组合接口 / 30 示例；守护覆盖
+  率下限维持 24.44%；上游锚点前移 `f74b1eed`（script 仓全市场分红物化部署）。
+
+## [3.3.0] - 2026-11-24
+
+### Added
+
+- **大宗交易域 `market.blocktrade`**：`cli.blocktrade.by_date(trade_date, limit)` /
+  `by_symbol(symbol, limit)`——单日榜按成交额降序、单票历史 date 升序；行内只有
+  证券代码（名称需 join stocks/info）；额=元、量=股（上游万元/万股已换算）；
+  同票同日多笔各成一行；成交额≈价×量可自检。
+- **ST/停复牌变动史**：`cli.stocks.suspend_history(symbol, begin?, end?)`（单票
+  停复牌事件：date/type S|R/timing）、`cli.stocks.name_history(symbol)`（简称
+  变更史）与 `cli.stocks.lifecycle(symbol)`（合并派生
+  rename/st_enter/st_exit/suspend/resume 时间轴）——停复牌按交易日、简称变更按
+  生效日，date 升序；ST 判定=简称含 ST（覆盖 *ST/SST）；不含上市/退市事件。
+- **概念标签与成份**：`cli.board.concepts_of(symbol)`（单票概念标签）与
+  `cli.board.concept_members(concept, limit)`（概念成份股，名称包含匹配、代码
+  升序）——标签为索引物化数组；当前截面无 PIT 历史，不能回测历史成份。
+
+### Changed
+
+- **免注册访问改走公开池**：`Client.from_env()` 凭据双缺时不再申领匿名凭据，
+  改为直接构造免注册客户端——请求不带访问令牌，服务端按来源网络记账；
+  `Client.auth_mode`（`"credentials"` / `"public_pool"`）判别访问方式。接口、
+  签名与返回形态不变；`Client.anonymous()` 与 CLI `--anonymous` 保留为「强制
+  免注册」；存量 `~/.wmshare/anon_credentials.env` 不再被读取；
+  `WMSHARE_DISABLE_ANON=1` 语义不变。免注册被拒改报终态码
+  `ip_rate_limited` / `pool_unavailable` / `ip_banned`（不重试），`anon_*` 四码
+  转为保留码（见 [ERRORS.md §5](docs/ERRORS.md)）。
+- 目录规模：29 域 / 360 函数 / 180 核心接口 + 18 组合接口 / 29 MCP 工具；守护
+  覆盖率下限 23.57% → 24.44%。
+
+### Deprecated
+
+- `Client.anonymous(refresh=True)`：免注册访问不再落盘凭据，`refresh` 已无意义，
+  调用时触发 `DeprecationWarning`；计划 4.0.0 移除（调用方删掉该参数即可）。
+
+## [3.2.0] - 2026-11-23
+
+### Added
+
+- **板块资金流域 `market.board`**：`cli.board.moneyflow(src, trade_date, limit)` /
+  `moneyflow_last(src, limit)`——三张日频全市场榜单（ths 概念 386 行/日、ths 行业
+  90 行/日、dc 概念+行业 1,081 行/日）。额=元（ths 原值亿元已换算）、率=小数、
+  板块指数=点位；三源板块代码/名称不互通、不做跨源映射；缺失字段为空（不补 0）。
+- **每日涨跌停价**：`cli.stocks.limit_price(symbol)` / `limit_prices()`——规则价
+  =前收盘×(1±带宽) 四舍五入到分，带宽按代码号段（30x/68x=20%、北交所=30%、
+  其余=10%，ST 按板块带宽）；`rule=unbounded/delisting/no_price` 时价格为空
+  （新股无涨跌幅日/退市整理期，不猜）。当日快照——历史序列需历史 ST 状态，
+  随后续版本提供。
+- **股东户数历史**：`cli.equity.query_holdernum_history(symbol, limit=40)`——单票
+  多期户数（实测 600519 108 期、2001-12 起），date 升序，比例与 `query_holdernum`
+  同为小数；单票上限 300 期。
+- **美国宏观序列域 `market.us_macro`**（原计划 3.1，随本版发出）：
+  `cli.us_macro.topics/search/series_meta/points`，精选 88 条 × 11 主题；单位随
+  序列而变（读 `series_meta().units`）、空值跳过不补 0、需授权序列
+  `has_data=False` 永不抓取。
+- `cli.equity.query_holdernum` 输出补 `holder_total_num`（户数本身）。
+- MCP：`wmshare_corporate` 增 `query_holdernum_history`；`wmshare_market` 增
+  `stocks.limit_price/limit_prices` 与 `board.moneyflow/moneyflow_last`（新增
+  `src`/`date` 参数）。
+
+### Fixed
+
+- **MCP 输出形态**：DataFrame 在 MCP 边界统一转结构化行数组（NaN/NaT→null，可直接
+  `json.dumps`），修复此前返回 pandas 截断文本预览（列被折、行被省略）；时间序列
+  超 `max_rows` 保留**最新**一段，排名类列表保留头部。
+- MCP `_limit_tree` 把 `symbol` 误并入 `blocks`（`wmshare_company` 每次多报 1 行）
+  ——symbol 及后续顶层键留在顶层。
+- MCP 推荐工具路由：futures → `wmshare_futures`、calendar → `wmshare_call`，修复
+  「按推荐调用必报 domain 只支持…」；并加不变量测试锁死。
+- `docs/GUIDE.md` 函数计数漂移（328 → 目录真值）。
+
+### Changed
+
+- 目录规模：28 域 / 352 函数 / 173 核心接口 + 18 组合接口 / 29 MCP 工具；守护
+  覆盖率下限 22.60% → 23.57%。
+- 3.0.1 发布说明漏记的外汇/储备七接口补记：`cli.fx.rate/history/bars/list`（每 1
+  单位外币折人民币；中间价与中行牌价分列）与 `cli.macro.reserves/reserves_history/
+  reserves_asof`（月频外汇+黄金，值=美元数值；SDR 上游无生产者如实标注）。
+
+## [3.0.1] - 2026-11-23
+
+### Fixed
+
+- **`cli.futures` 读面改 store 直读**（`futures.query_bars`）：修复 `get`/`snapshot`
+  的「最新值」被锚到 A 股锚点报告期末（实测停在 2026-09-30）的问题；日频只含
+  交易日（不再有周末/未更新占位行），`n` 为根数，`begin/end` 含端点。
+- 修复外盘合约键归一化：`global.CL` 曾被切成 `gloBAL.CL` 导致全部外盘不可寻址。
+- `estimate_cost("futures.bars")` 按 store 行数重标（冷 ≈190+126 EC/行、同日复跑
+  版本键缓存 ≈135 EC），区间按跨度估算而非固定 120。
+
+### Changed
+
+- `cli.futures.snapshot` 输出新增 `date` 键（周期起点口径，便于核对新鲜度）。
+- 周/月线为上游周期 bar（成交量为周期合计），SDK 不做二次聚合；外盘仅日线。
+- `_raw=True` 保持 2.9 的 `{sas, vals}` 形态（`sas` 周期戳、`vals` 按 `$码`
+  顺序、新→旧），行只含交易日。
+
+## [3.0.0] - 2026-11-23
+
+### Removed
+
+- **demo 模式整体移除**（一次性大版本，参照 2.0.0 先例；匿名试用已覆盖其用户面
+  职责）：
+  - `wmshare.demo_client()` / `DemoClient` 不再随包分发。迁移：
+    `wmshare.Client.from_env()`——凭据双缺自动回落匿名试用（免注册、真实数据、
+    免费额度，2.8.0 起）。
+  - `wmshare` CLI 的 `--demo` 旗标、`wmshare-mcp` 的 `--demo` 与
+    `WMSHARE_MCP_DEMO` 环境变量：去掉该旗标即可（无凭证自动匿名）。
+  - 错误码 `demo_unsupported` / `demo_symbol` / `demo_limit` / `demo_market`：
+    不再存在；CI 离线夹具内部改用 `replay_unsupported` 等（tests/ 私有，
+    不在公开错误表）。
+  - MCP 信封 `meta.demo` / `meta.as_of` / `meta.data_freshness="snapshot"` 溯源键、
+    status 工具的 `demo`/`demo_notice`/`demo_snapshot` 键组：`retrieved_at` 与
+    `data_freshness`（恒 `live`）保留。2.9.0 的「demo 快照不回放历史序列」承诺随
+    demo 一并失效——历史序列直接真实取数（`cli.futures.bars`）。
+  - 打包数据 `_demo_data.json` 与维护者工具 `tools/generate_demo_snapshot.py`。
+- CI 离线测试改由 `tests/replay_client.py` 回放夹具驱动（数据冻结于
+  `tests/fixtures/replay_data.json`，字节级锚定在 `tests/test_replay_fixture.py`）；
+  examples/ 移除全部 `--demo` 分支，统一 `main(cli=None)` + `Client.from_env()`。
+
+### Changed
+
+- README 首屏「零凭证先试」与 GUIDE/AI/SKILL/QUICKSTART_EN 动线全部切匿名试用：
+  无凭证自动匿名成为唯一零凭证路径（真实数据、需网络）。
+- `api_pack.json` 移除逐接口 `demo` 样本字段与 `demo_covered`/`demo_snapshot` 元数据
+  （`test` 一键测试物料与真实拍摄 `sample` 保留）。
+
+## [2.9.0] - 2026-11-23
+
+### Added
+
+- `cli.futures.bars(fut_code, n=, begin=, end=, freq=, fields=, _raw=)`：期货主力连续**历史K线**（此前只有 `get`/`snapshot` 单值与 `mapping` 映射，历史序列只能裸 eval）。与 `kline.bars` 同形——date 升序、DataFrame 默认、`_raw=True` 逃生口；`freq=d/w/m`（日 11 字段 / 周月 8 字段），点数硬顶 d 3000 / w 600 / m 300（成本按点×码线性，暖态 ≈8-11 EC/点·码，2026-11-23 实测）。`date` 为周期起点口径（月=当月 1 日、周=ISO 周一、日=当日）。demo 快照不回放历史序列（显式 `demo_unsupported`）。
+- `wmshare_futures` MCP 工具新增 `bars` action（`n` 或 `begin+end` 二选一）——AI 代理经 MCP 可直达期货历史K线。
+
+## [2.8.0] - 2026-11-21
+
+### Changed
+
+- **`Client.from_env()` 凭据双缺时自动回落匿名试用**（登录墙拆除）：未配置任何
+  凭据时自动领取一份匿名试用额度（本地有存档则复用），`pip install` 后零注册
+  即可取真实数据；凭据独立存放 `~/.wmshare/anon_credentials.env`，不覆盖付费
+  凭据文件。服务端未开放匿名试用时保持 2.6.0 的「缺少凭证」报错口径；
+  名额满/网络失败报错合并注册指引。影响面：原先依赖「无凭据必报错」的自动化
+  脚本。迁移：设 `WMSHARE_DISABLE_ANON=1` 恢复 2.6.0 行为。裸 `Client()` 与
+  部分凭据的成对校验不变；MCP 复用 from_env 同步获益。
+
+### Fixed
+
+- `wmshare` 主命令的匿名回退与 SDK 收敛：CLI 不再自建第二条回退链
+  （原实现在 SDK 回落生效后成为死路，且绕过 `WMSHARE_DISABLE_ANON`）；
+  文案同步额度对齐后的口径（服务端 `ec_balance` 为准）。
+
+## [2.7.0] - 2026-11-21
+
+### Added
+
+- **`wmshare` 主命令（一次调用出成品文件，不用写 Python）**：`pip install wmshare`
+  即得命令行入口，与 `wmshare-mcp` 并列。四个任务动词直出 `--out` 成品
+  （`.md`/`.csv`/`.xlsx`）：`wmshare screen`（screener.query 全市场选股）、
+  `wmshare income`（收息排行/诊断/日历/拆解成套落盘 + manifest）、
+  `wmshare index trend`（PE/PB 历史分位）、`wmshare cbond daily`
+  （转债日更 daily→article→figures 一条链）；其余目录函数用
+  `wmshare call kline.query_bars sym=600519 limit=30` 透传（参数按目录声明
+  归一类型，未知参数报合法集合）。**无凭证时自动回退 `Client.anonymous()`
+  匿名试用**（一次性小配额；`anon_*` 失败给注册指引），`--demo` 走离线快照；
+  全局旗标（`--demo/--anonymous/--market/--json`）在子命令前后均可放置。
+  `setup`/`doctor` 复用 `wmshare-mcp` 同款实现（同一份凭证文件）。
+- **成品出口层 `wmshare.export`**（不进目录、不占 FRIENDLY_INDEX/COMPOSITE_METHODS，
+  不影响任何计数门禁）：`to_markdown()`（表头自动带 `as_of` 与「比率=小数、
+  金额=元、股数=股」口径约定，把口径契约做成交付物的一部分）、`write()`
+  （按扩展名分派 `.md/.csv/.xlsx/.png`；已成稿文本原样直通；缺可选依赖抛
+  `UsageError(code="extra")` 并给安装命令，不静默降级；PNG 中文复用
+  `cb.figures` 的五平台 CJK 字体探测）、`write_bundle()`（多产物一次落盘 +
+  `manifest.json` 记录行数/as_of/版本）。xlsx 需新增 extra
+  `pip install "wmshare[excel]"`；`extra` 错误码已登记 [ERRORS.md](docs/ERRORS.md)。
+- 新增示例 `examples/21_cli_export.py`（成品出口三件套，支持 `--demo`）；示例
+  课程 20→21，README/GUIDE/docs/README 计数同步。
+
+### Fixed
+
+- **修复 `cli.cbond.daily()` 在 2.0 契约下必崩的成品链**（自 2.0 起生效的回归）：
+  编排层经门面 `cbond.board()` 取数已得 DataFrame，仍按 `isinstance(list)` 判定
+  → live 每次抛「cbond.board() 返回空」，`article()/figures()` 整链不可用；
+  测试桩直接返 list 绕过收口点所以全绿。修复=形状容错（`_as_rows()`），并新增
+  「经门面 DataFrame」回归测试 + 示例 14 端到端用例；顺带修复示例 14 的
+  `rows.get("rows")` 兜底（对 DataFrame 恒空 → 静默 0 行）与事实桶查找
+  （facts/derived 两桶合并索引，此前 live 下 StopIteration 被上游必崩掩盖）。
+- **修复文档信封漂移（照抄即失败）**：README 选股示例 `res["count"]` →
+  `res["data"]["count"]`（`screener.query` 2.0 起返回统一信封）、GUIDE 同段与
+  `index.trend` 读法、examples 04/17 同款；`test_docs` 的 README 执行桩改返
+  真实信封形态（此前返扁平 dict 把旧写法焊成绿色——门禁失效根源）。
+- `wmshare_call` 的 `mode` schema 补登 `"cost"`：tools 层早已实现成本估算
+  （不发请求），但 pydantic Literal 漏登记，经 MCP 协议传 `mode="cost"` 被
+  schema 拒绝而文档宣称支持——三层（实现/合同/文档）对齐，测试基线同步。
+- `cli.cbond.daily()` docstring 请求次数如实化（enrich/curves 默认全开时约
+  24+ 次而非「三次」），`budget` 门面默认 30 与 `DEFAULT_BUDGET=60` 对齐。
+- 文档漂移清扫：QUICKSTART_EN 示例计数与 `cat.metric` 行为描述（实返 None）、
+  AI.md 演示快照日期（→2026-11-19）、SKILL.md `up_pct` 示例值（80.3→0.803，
+  2.0 小数契约）。
+- README 新增「不写 Python：`wmshare` 命令行出成品」节与收息排行/ETF 一览
+  意图行；按店面纪律先删 10 行（匿名说明压缩、分工 quote 合并、主站 bullet
+  合并、where 语法段去重）后提限 330→339。
+
+## [2.6.0] - 2026-11-21
+
+### Added
+
+- **匿名试用（免注册取数）**：`Client.anonymous()` 类方法——无凭据时向服务端
+  领取一份一次性小配额凭据并落盘，之后照常 `cli.*` 调用。服务端侧
+  （`openapi.anonymous_trial.enabled`，默认关闭）为每次领取新建独立
+  `anon_open_*` 应用：初始 500,000 EC、单次 CU 上限对齐余额、不参与每周
+  补满、创建 7 天后由 TTL 自动回收；当日活跃名额与全平台发放总量受服务端
+  上限约束。凭据写入独立文件 `~/.wmshare/anon_credentials.env`
+  （`WMSHARE_ANON_CREDENTIALS` 可覆盖），**永不写入付费凭据文件**；
+  凭据失效后 `anonymous(refresh=True)` 重新申领（受当日名额限制）。
+  新增 4 个错误码 `anon_unavailable` / `anon_quota` / `anon_failed` /
+  `anon_bad_response`（见 docs/ERRORS.md），示例 `examples/20_anonymous_trial.py`。
+- **disc.income 域 +3 公开原子**（收息编排下沉 `sys/income` 后按需暴露，331 函数）：
+  - `income.score_explain(symbols)`：单票四维评分逐项解释（为什么是这个档）；
+  - `income.rating_all(industry, gates)`：全量收息排行行（不限 top_n=100 的
+    `cli.dividend.rating` 上限；注意全量直读 ≈1.17M EC，分页场景用）；
+  - `income.diag_fields()`：收息诊断字段清单（字段单一事实源，随目录走）。
+  - cron 物化编排 `income.materialize*` 登记为 internal helpers，**不进 SDK
+    公开目录**——物化属服务端 cron 职责，SDK 侧直调会被误用为实时全市场重算。
+  - 目录锚点随上游 scripts 仓 `86e68303` 同步（upstream_rev / metric_taxonomy /
+    计数门禁 328→331、235/96）。
+
+### Fixed
+
+- 示例计数与 Discussions 入口（40374cc）：`examples/02_catalog_tour.py` 陈旧
+  计数改动态打印；issue 模板补 Discussions/QQ 群联系通道；README 问题反馈
+  条目并入 Discussions 分流。
+
+## [2.5.0] - 2026-11-20
+
+### Added
+
+- **收息场景闭环（disc.income 域，4 个场景接口）**：与 web 应用台「收息佬」、开放平台
+  wm-income 技能共享同一评分 SoT（`sys/income/score.xs`，真值在服务端、SDK 不重算）。
+  - `cli.dividend.rating(top_n, grade, industry, min_yield, gates)`：全市场收息排行
+    （四维评分 + 档位 + 股息分排序 + 资格门）。memo 直读零冷算；**COLD_CACHE 显式
+    失败**（cron 未就绪），绝不现场重算全市场评分。实测 ≈15k~70k EC。
+  - `cli.dividend.diagnose(symbols, include_history)`：收息诊断**原生批量**（一次
+    eval 按票计价）——四维评分逐项解释 + 静态下限双腿复原 + 榜内位置 + 十年国债参照；
+    deep 档才带分红史/方案。实测 ≈10k EC/票。
+  - `cli.dividend.calendar(cal_from, cal_to, codes)`：分红日历（公告/登记/除息/到账
+    四日期任一命中即返回；stocks enrich）。实测 ≈20k/月。
+  - `cli.dividend.decomp(symbols, years)`：N 年持有收益拆解（≤10 票批量；总收益 =
+    价格 + 股息贡献，hfq−nr 差值口径含再投效应）。热态 ≈10k/票；
+    **AT 锚点指标序列首查有冷物化尖刺（单票可达 ~20 万 EC），复查即热**。
+
+### Changed
+
+- 评分真值层从 `web_echo/v2income` 迁入 `sys/income`（catalog 化，10 函数进公开目录）；
+  web 收息佬前端按 file_name 直调的 `decomp.xs`/`calendar.xs` 改薄壳（路径不变零改动）；
+  skillhub `wm_income.xs` 编排改调 sys 函数。三面共享 SoT，消除双实现。
+- 收息榜直读 EC 优化：循环去 DEFAULT 链 + topn 截断早停——同语义 95 万 → **5.4 万 EC**
+  （实测；老版 skill 同语义贴 fuel 顶）。
+- `indices.members_daily` 上游新函数（前向 PIT 成分快照）随 `cli.index.members_history`
+  门面公开（并发会话交付，随本版四源发布）。
+
+### Fixed
+
+- `hist_stats` 窗口测试与 5b5f781 白名单放开（5y/10y）对齐。
+- llms-full 体积预算 412k → 424k（income 场景新节）。
+
+## [2.4.2] - 2026-11-19
+
+### Fixed
+- **英文 Quickstart 计费模型写反**（`docs/QUICKSTART_EN.md`）：原文「Requests are
+  billed **per request**, not per row — which is why batching matters」与 EC 的真实
+  计费口径相反——EC 按服务端物化行计，批量只省请求数与调度、**不省 EC**（见
+  `docs/LIMITS.md` §4）。英文用户照此跑全市场会严重超额。改为双计费口径说明
+  （限流按请求 / 计费按 EC 行），并补 `cli.cost_estimate` 先估后取入口。同文件
+  修正 2,752→2,983 指标码、132→152 核心接口、快照日期、示例输出值与示例数。
+- **`demo_client()` 的同签名承诺不成立**：DemoClient 缺 8 个命名空间
+  （`cbond`/`etf`/`intl`/`segments`/`filings`/`forecast`/`workout`/`estimates`）
+  与多个方法，README 推荐的 `cli.notice.has_buyback(...)` 在 demo 上直接
+  `AttributeError`——等于「假装没有这个能力」。新增 `_UnsupportedNamespace` 垫片：
+  属性存在且可调用，调用即抛 `UsageError(code="demo_unsupported")`，并按 live
+  门面挂真实 `__signature__`；dunder 名仍走 `AttributeError`。
+- **单位口径文档自相矛盾**：README/GUIDE 称「全库返回前做量级校验」，而
+  `docs/INDICATORS.md` 明说只有精选 78 码带守护（函数级 66/317 ≈ 20.8%）。
+  两处表述已对齐；同时把文档示例里 `up_pct` 的 80.3 / 9.5 改为小数
+  （0.803 / 0.095），与 2.0「`*_pct` 一律小数」契约一致——此前测试 FakeClient
+  直接返回百分数，把错误示例焊死成绿色。
+- **`docs/ERRORS.md` 处理范式示例无法运行**：`from wmshare import QuotaError`
+  报 `ImportError`（`QuotaError` 未从包根导出），而 `test_errors_doc_in_sync`
+  只比对「生成器输出 == 文档」，把错行硬编码进生成器后门禁永远绿。已导出
+  `QuotaError`（`LimitError` 子类，纯增量）、示例补 `import time`。
+- **`estimate_cost` 严重低估多票成本**：`valuation.daily_basic` 分支忽略
+  `syms` 票数，200 票时报的是单票价（低估一个数量级以上）。按 2026-11-19 live
+  实测 9 个点（1/5/10/30/50 票 × 跨度 1/18/90 自然日）拟合为
+  `150 + 票数 × (230 + 20 × 跨度)`，全部落点误差 <12%；`syms>1` 时 note
+  明示「EC 按票计价，批量不省算力」。
+- 对外计数与日期漂移：`server.json` 描述 2,752→2,983（MCP Registry 机器可读
+  描述）、`SKILL.md` 5,691→5,375 家与 12→11 次请求、`GUIDE.md` 空参捷径阈值
+  ≥4,000→≥2,000 票与 311→317 函数、README 12→11 次请求、examples 的
+  `wmshare[dataframe]` 死引用（2.0 起 pandas 为核心依赖）、README/examples 的
+  「18 个示例全部支持离线」实际为 3 纯离线 + 14 `--demo` + 1 需凭证。
+
+### Changed
+- **门禁扫描面扩围**：`test_docs_no_stale_counts` 纳入 `QUICKSTART_EN`、
+  `METRIC_ADAPTER`、`examples/README`、`server.json` 并补英文计数 pattern；
+  扩围后立刻抓出 3 处此前漏掉的真实漂移。
+  `test_demo_signatures_cover_live_facade_params` 不再对 demo 缺失方法
+  `continue` 静默跳过（缺失即失败），新增
+  `test_demo_unbacked_calls_raise_demo_unsupported`、
+  `test_quickstart_en_matches_runtime`、`test_pct_example_values_are_decimals`、
+  `test_errors_doc_snippet_imports_resolve` 四条防回归门禁。
+- `docs/PROMOTION.md` 迁出仓库（→ 工作区 `../promo/`）：推广执行手册属方案/流程
+  类文档，`CONTRIBUTING.md` 明确要求不入库。
+- **release 流水线新增前置质量门禁**（`.github/workflows/release.yml`）：
+  job 链改为 `gates → release → publish-pypi`，PyPI 上传前跑与 `ci.yml` 同款的
+  离线门禁（leak / catalog / taxonomy / units / 版本互校 / 许可证 / 守卫覆盖率 /
+  8 个生成物漂移 / mypy / pytest）。此前 release.yml 只做版本互校 + twine check，
+  1.21.0 因此把指向已下线底层函数的门面直接发上 PyPI，次日才出补丁；发布件不可
+  撤回，故门禁必须前置到流水线而非依赖人工记忆。
+
+## [2.4.1] - 2026-11-19
+
+### Fixed / Changed
+- **`valuation.daily_basic` 读窗下推（EC 大幅下降）**：此前无论请求多窄的区间，
+  都会先读满 1,500 个日文档再由 XS 侧过滤——13 天窗口实测扫 727 个文档、
+  11,944 EC。现在 `begin/end` 通过 kernel `window` + `anchorTs` 锚点**下推到
+  读面**，只读窗口覆盖的日文档：13 天窗口 **249~962 EC**（降 92%）、单日
+  **578 EC**（原 1,707，降 66%）、1 年 **8,626 EC**（原 23,371，降 63%）；
+  不给 `begin/end` 时行为不变（全表扫 ≈23,414 EC）。
+  - `meta.window` 新增 `pushed_down` 标志；`scan_days`/`scan_limit` 反映本次
+    实际读窗（下推后按跨度算出，不是固定 1,500）。
+  - `as_of` 合同不变（窗口查询时单独点查表内最新，≈33 EC）。
+  - 正确性：6 个标的 × 6 种跨度（单日/两日/月内/半年/全年/跨年）与「全量读后
+    过滤」逐行完全一致。
+  - `estimate_cost("valuation.daily_basic")` 模型按新成本结构重写：有窗口时
+    ≈25~40 EC/日文档 + 地板，无窗口时 ≈2.0~2.6 万 EC。
+  - `docs/BACKLOG.md`：该项原记为「依赖上游 kernel 能力、未排期」，属**未实测
+    的误判**（kernel 锚点在 `alt.valuation_daily` 上完全可用）；已更正为落地。
+
+## [2.4.0] - 2026-11-19
+
+### Added
+- **`valuation.daily_basic` 读窗口可见化与自动翻页**：信封 `meta` 新增
+  `window` 段（`scan_days` / `scan_limit` / `oldest_scanned` / `truncated` /
+  `requested_begin`）。此前超过服务端读窗口（1,500 日文档）更早的日期**静默
+  缺席**，调用方无从判断；现在 `truncated=True` 明示区间左端可能缺行，SDK 按
+  `oldest_scanned` 自动向前翻页（上限 10 片 ≈15,000 交易日）拼成完整升序序列，
+  回 `meta.pages`。live 实测 600519 自 2015 起 → 2 片 724 行（此前只能拿到
+  最近 ~200~727 日且不知被截断）。
+- **`cli.valuation.daily_basic_coverage(symbol, begin, end)`**：可用范围发现。
+  不拉序列，只取一个日窗口的 `window` 元数据，返回
+  `{as_of, oldest_scanned, scan_days, scan_limit, truncated, pages}`——先探
+  「这段区间有没有数据 / 表能回溯到多早」再决定要不要拉整段。
+- **多票每日估值序列**：服务端 `valuation.daily_basic_multi(syms, begin, end,
+  fields)`（一次 eval 内循环多票）与 SDK `cli.valuation.daily_basic_multi
+  (symbols, ...)`。行合同与单票完全一致（`{date, symbol, field, value}` 升序，
+  可直接 concat 分组），`meta.per_symbol` 给每票的 `count` /
+  `oldest_scanned` / `truncated`。**EC 仍按票计价**——批量只省请求调度，不省
+  算力；≥200 票时 SDK 告警成本量级。
+- 2.3.0 新面补齐 `estimate_cost` 成本模型（全部 live 实测，无 `cache_hit`
+  拍脑袋档）：`buyback.snapshot` 170~750、`notice.type_keys/type_regex`
+  5~20、`toplist.by_date` 170~13,000（冷/热差）、`toplist.by_symbol`
+  185~1,600、`futures.mapping` 160~5,000（note 提示全历史 ≈21.4 万）、
+  `pdf_doc.search` 按行 150~200/行。
+- **demo 快照重拍 2026-11-19**：2.3.0 的三批新面此前在 demo 侧一律
+  `demo_unsupported`，现在全部真实回放——`equity.buyback_snapshot`（演示宇宙
+  10 票）、`toplist.by_date/by_symbol`（整日榜单 95 行 + 单票历史）、
+  `futures.mapping`（RB.SHF/IF.CFX 各 121 行）、`notice.categories/
+  category_regex`（14 类目改为从快照回放）、`pdf_doc.search/read_text/
+  read_markdown/status/find_by_*`。榜单盘后 T+1 落库，生成器向前回退最多 5 天
+  取最近有数据日并记 `toplist.date`。
+
+### Changed
+- 计数：24 域 / **317** 底层函数 / 2983 指标码 / **152** 核心接口 /
+  **169** friendly API；guard 66/317 = 20.82%。
+- `docs/BACKLOG.md`：daily_basic 四项候选闭环（分页+truncated、coverage、
+  多票批量、成本再校准）；`begin/end` ts 下推保留为**上游依赖**（需 kernel
+  日文档级过滤）；卫生窗 `limit≤0` 排查完成。
+
+### Fixed
+- **fmt_maps 跨标的缓存串号（13 域，严重）**：缓存键只有「行数:首:末日期」
+  不含标的，两只票同交易日区间、同窗口长度必然撞键——`kline.query_bars` 对
+  任意标的都返回首调标的的 K 线（实测 600519/000858/601318/688981 全同）。
+  各域新增 `rows_owner` 探测标的字段并拼进指纹，缓存键 v1→v2 避开线上旧档。
+- **`pdf_doc.search` 恒返回空数组**（自 2026-11-09）：循环里裸 `APPEND(out, v)`
+  不改 `out`，静默 0 行；连带 `read_markdown` 的 `stock_code` 回退与
+  `find_ready` 全废。改 `out = out.append(v)`。
+- **`toplist.by_symbol` 复跑无折扣**：取数仅 37 EC，成本全在逐 doc 扫全市场
+  行；按数据版本键（store 最新 `trade_date`）缓存 + 凑满 limit 即停，
+  冷 2,349 → 热 185 EC。
+- **`limit≤0` 语义不一致**：`kline.query_bars(..., 0)` 返 0 行、
+  `moneyflow.query_bars(..., 0)` 返 200 行（kernel 默认而非域默认）。三域
+  包装层统一归一（`kline.store_window_limit` / `moneyflow.store_limit` /
+  `bonus.store_query`）。
+
+## [2.3.1] - 2026-11-19
+
+### Docs
+- **`valuation.daily_basic` 读窗事故登记与合同校准（SDK 代码无变更）**：
+  2026-11-19 午间发现端点只回最新 ~200 交易日——kernel/analysis 读面对
+  `limit≤0` 取 200 默认，XS `store_query(s, 0)` 显式传 0 不被 `DEFAULT` 替换
+  （11-18 实测曾为全量 726 日 / 18,317 EC，当日服务端发布波收紧；store 数据
+  始终完好）。服务端 script 侧当日修复：`store_query` 包装层把 ≤0 归一到
+  `DEFAULT_LIMIT`（015032f2 / pipeline-5982），修复后实测 600519/000001
+  全量各回 727 日（2023-11-20 起）、历史窗口 `ok=true`。LIMITS §1 窗口行按
+  修复后实测校准：合同窗口 1,500 行（XS `DEFAULT_LIMIT`），累积 >1,500 日
+  （≈6 年）后更早区间静默缺席（无 `truncated` 标志）。服务端候选清单移至
+  [docs/BACKLOG.md](docs/BACKLOG.md)（`[Unreleased]` 按仓纪律保持为空）。
+
+## [2.3.0] - 2026-11-19
+
+### Added
+- **龙虎榜域 `market.toplist`**：`cli.toplist.by_date(trade_date, limit)`（指定
+  交易日全市场榜单）与 `cli.toplist.by_symbol(symbol, limit)`（单票上榜事件
+  历史）。同票多上榜原因各一行（榜单原值行合同）；15 字段行：率为小数
+  （上游百分数 /100）、金额=元、日期=ISO，11 个金额/率量级守护（结构性宽界，
+  live 锚点单日 95 行、最大成交额 ≈8.5e9 元）。席位/营业部明细上游无落库，
+  不提供按席位查询（明示缺口）。
+- **期货换月映射 `cli.futures.mapping(symbol, begin, end)`**：主力连续码 →
+  当日实际合约（换月追踪，随日线日更；`RB.SHF` 全历史 date 升序，窗口可空）。
+  期货域首个目录函数（此前期货走 `$FUT_*` 指标码）。
+- **回购六口径快照 `cli.equity.buyback_snapshot(symbol)`**：exec/plan ×
+  近1年/累计 × 含/不含注销式（元/原币；无数据源字段为 None 不伪造 0；
+  A股 plan_*/cancel_* 齐全，港股仅 exec_*）。live 实测四标的量级
+  2.4e8~5.1e10。
+- **公告类目表 `cli.notice.categories()` / `cli.notice.category_regex(key)`**：
+  14 类目键列表与类目→匹配正则解析（未知键原样透传，可直接传自定义正则）。
+- **公告 PDF 全文域 `disc.pdf_doc`**：`cli.pdf_doc.search / read_text /
+  read_markdown / status / find_by_url / find_by_key` 六个纯读面
+  （pdftotext 预览正文 + 财报 markdown/经营评述挂接 + 转换状态）。
+  写面（submit/ensure 触发抓取任务）标 internal 不进公开门面。
+- 随包目录 24 域 / 316 底层函数 / 2983 指标码 / 150 核心接口 / 167 friendly；
+  friendly 层门面委托器支持跨命名空间域函数（corp.equity 域含
+  buyback.snapshot）。
+
+### Changed
+- **指标目录刷新 2752→2983**（上游 catalog 2026-11 重生成）：`$BUYBACK_AMT_*`
+  6 码等 231 个新码随包可查。语义跟随两码：`$BONUS_RATE_TTM_LAST` /
+  `$DPS_TTM_LAST` 上游改报告期 LTM 口径（taxonomy 锁定表同步；实测值仍为
+  小数，精选组 range [0,1] 兼容）。
+- 「基金净值未覆盖」口径修正（llms.txt / SKILL.md）：ETF 九视图自 2.0 已
+  覆盖，排除面=场外/LOF/货基（生产端明确排除，非欠账）。
+
+### Fixed
+- docs/PROMOTION.md 计数对齐当前真值；CHANGELOG 1.7.x 历史段「港美三大报表
+  数据未上线」加注记（已随 v2.0 全量上线）。
+- guard_coverage 门禁阈值与 tests 基线对齐（0.156→0.2026，CI 同步——
+  此前 CI 阈值过时会让回退漏拦）。
+
+## [2.2.1] - 2026-11-18
+
+### Fixed
+- **`estimate_cost("valuation.daily_basic")` 档位纠偏**：此前标 `cache_hit`
+  4~200 EC，实测（2026-11-18 生产 probe）**不是缓存**——按扫描行计费：
+  1 日 × 1 字段 = 1,707 EC，1 日 × 8 字段 = 1,851，13 交易日 × 2 字段 = 2,038，
+  全史 726 docs × 8 字段 = 18,317。现模型 `measured`：无窗口 → 1,707~18,317；
+  传 begin/end → 地板 + ≈23 EC/自然日。以 `metering.ec_cost` 为准不变。
+
+
+## [2.2.0] - 2026-11-18
+
+### Added
+- **区间取数自动分页**：`cli.kline.bars(begin=, end=)`（日 K）与
+  `cli.moneyflow.bars(begin=, end=)` 不传 `n` 时按「锚点切片」自动补齐——
+  每片走服务端锚点窗口（`kline.query_at_anchor(_adj)`、`moneyflow.query_bars_anchor`），
+  只物化 `≤ end` 的行、覆盖 `begin` 即停，跨片去重后升序返回。**任意长度区间一次
+  拿全量、不静默截断**，计费 ≈ 区间实际行数（服务端窗口读取，客户端不砍量）。
+  显式传 `n=` 保持「区间内最近 n 根」单次语义。
+- 目录新增 `moneyflow.query_bars_anchor`（+= 300 个底层函数）；`kline.query_at_anchor`
+  / `_adj` 补齐 `normalize_with`+`units`+`ranges`+`checks` 声明（锚点入口与正排查询
+  **行合同逐字一致**，守护函数 59 → 61）。
+- `_fields=` 列投影（`cli.call`/`call_batch`/`batch_all` 与 kline/moneyflow/cbond/
+  margin 门面）：换算/排序之后只保留指定字段，按请求顺序输出；未知字段报
+  `UsageError(code="params")`。**不降 EC**（EC 按服务端物化行计），只收窄返回体。
+- `BatchResult.truncated`：准全市场捷径下结果是否为请求集子集（停牌/索引外标的
+  缺席时显式披露，便于用小清单补拉）。
+- 文档资产：`docs/COMPATIBILITY.md`（MAJOR/MINOR/PATCH 语义 + 弃用流程）、
+  `docs/LIMITS.md`（硬限制与配方）、`docs/ERRORS.md`（错误码全集，源码扫描生成）、
+  `docs/DATA_CALENDAR.md`（数据生产日历，兄弟仓缺失时 SKIP）、`docs/changelog.xml`
+  （RSS）、`docs/fields.json`（236 个公开函数的字段/单位/范围）、
+  `docs/indicators/`（2,753 个指标单页）。API.md 输出字段表新增「单位/换算」与
+  「守护范围」两列。
+
+### Changed
+- **`kline.snapshot` 批量捷径阈值 4,000 → 2,000**：与服务端 `snapshot_batch` 对齐
+  （去重 ≥2,000 的清单上游本来就按全市场扫描计费，空参捷径另享按日缓存）。
+  大清单中停牌标的会进 `truncated`，用小清单（<2,000，逐票按量路径含停牌行）补拉。
+- `estimate_cost` 校准：区间查询改 `range_rows` 模型（按区间交易日密度）、
+  `kline.snapshot` 认 `symbol=` 批量参数并区分空参捷径、缓存类接口拆出 `cache_hit`
+  档（hist_stats/daily_basic/indices.trend 分别≈4~200/4~200/1~50 EC）。
+- demo 与 live 门面**签名逐字对齐**（58 对方法零漂移）：补齐 `_fields`/`freq`/
+  `_raw`/`fut_symbol`/`native`/`min_ratio`/`idx` 等形参，`kline.last` 由「返回 23
+  字段快照」修正为「返回 9 字段 bar」（与 live 一致）；未回放的能力一律
+  `UsageError(code="demo_unsupported")`，不再以缺少形参抛 `TypeError` 或吞掉参数。
+- `_validate_snapshot` 扩展数据质量校验：calendar（升序/唯一/≤as_of）、margin
+  （沪深成对、余额>0、universe 去重≤500）、futures（价格>0）。
+- 单位台账补登记 `$VOLUME_AR_DAY`（手）与 `$ROC_TTM_LAST`（百分数）。
+
+### Fixed
+- **`cli.margin.universe()` 复跑 46 万 EC**：规范化（`margin.fmt_universe_maps` 的
+  `CONOF` 逐行求值）此前每次调用都重算，按 AST 节点计费 —— 4,133 行 ≈462,976 EC，
+  占整条链路 99.99%。现按同一数据版本键缓存规范化结果，复跑实测 **105 EC**
+  （降 99.98%）；首次物化成本不变，数据日更后键自动失效。
+- `estimate_cost("kline.snapshot", symbol=[...])` 曾按单票估算（门面参数名与目录
+  参数名不同的历史坑），现三种写法（`sym`/`codes`/`symbol`）都按票数估算。
+- 4 个接口返回说明为空、10 个参数说明为 `—`、组合接口参数兜底缺失。
+- `test_live.py` 中与 2.0 升序契约相反的降序断言（含 `index.trend` 新信封）。
+
+### Removed
+- `docs/COST_MATRIX.md` 与 `tools/gen_cost_matrix.py`：成本信息不对用户暴露，
+  对外只保留运行时 `cli.cost_estimate` 与 `docs/LIMITS.md` 的硬限制；实测成本
+  审计进维护者内部工具 `tools/audit_ec.py`（写 `.internal/`，不进 CI/文档）。
+
+## [2.1.0] - 2026-11-18
+
+### Added
+- `cli.valuation.daily_basic(symbol, begin, end, fields)`：个股每日估值序列——
+  服务端物化宽表（`alt.valuation_daily`，仅 CN，airflow
+  `pipeline.cn.valuation_daily` 每日 16:25 物化、SLA 当日 17:00）。8 字段
+  （pe_ttm/pb/ps/pr/total_mv/circ_mv/turnover_rate/dv_ttm）全部服务端现成
+  口径直出、2.0 基础单位；长表信封 `{ok, as_of, data, meta}`，`as_of` 为
+  表内最新行日期供调用方判新鲜度。数据自物化日起可用，历史回填深度见
+  域目录 notes（诚实缺行，不伪造）。
+- `estimate_cost`：`valuation.daily_basic` 归入 cached_eval 档（物化表近似
+  免费读；首日回补另计）。
+- demo 模式对该面显式 `demo_unsupported`（物化表未投产，无罐头不伪造）。
+
+### Changed
+- 目录扩容：`fund.valuation` 域（+1 函数 = 299 个底层函数 / 21 个数据域 /
+  138 个核心接口）；inventory.json 手工同步该条目（extractor 白名单已加
+  `valuation`，下次上游重跑提取不丢失）。
+
+## [2.0.1] - 2026-11-17
+
+### Fixed
+- `demo_client().cost_estimate(...)` 缺失（GUIDE 推荐的先估后取在演示模式直接
+  AttributeError）：EC 预估模型上提为模块级 `estimate_cost`，真实客户端与 demo
+  共用同一套函数，纯离线零请求。
+
+### Changed
+- 无行为变更；`Client._EC_*` 类属性保留为模块常量的别名（既有取值不破）。
+
+## [2.0.0] - 2026-11-17
+
+> **标准化大版本**：接口形态全面对齐行业标准（对标主流金融数据 SDK 的可用性基线），
+> 项目无兼容负担，全部破坏性变更集中在本次，不做渐进弃用。
+
+### 迁移指南（1.x → 2.0）
+
+1. **返回类型**：门面（`cli.ns.method`）查询/序列类默认返回 **pandas DataFrame**
+   （date 列 ISO、**升序**=旧→新）；单行取数仍为 dict；面板/时序组合面（index.trend、
+   valuation.hist_stats、etf 九视图、macro.query、workout.board、screener.query）
+   返回统一信封 `{ok, as_of, data, meta}`——原平铺键迁入 `data`。
+   `_df` 参数**移除**（默认即 DF）；`_raw=True` 仍取上游原始行。
+   底层 `cli.call` / `cli.call_batch` 保持规范化行数组（`BatchResult.to_df()` 出长表）。
+   pandas 升级为硬依赖（原 `wmshare[dataframe]` extra 移除）。
+2. **序列方向**：全库翻转为**升序**（旧→新）——1.x 透传上游「新→旧」是全局 footgun。
+   最新点从 `rows[0]` 改为 `rows.iloc[-1]`；index.trend 的 `points`/`med` 同步翻转。
+3. **单位**：率=小数、额=元、量=股**全库强制**。units.yaml 台账升级为运行时换算源：
+   指标层成交量（手→股）、宏观房地产（亿元→元）、`$ROC_TTM` 族（百分数→小数）默认换算；
+   逃生口 `indicator.get/metrics(native=True)`、`cli.call(_units="native")`。
+   ETF 九视图同理（占比/涨幅/折溢价 %→小数、规模亿元→元、份额亿份→份）。
+   screener 宽度 `*_pct` 百分数反例移除（统一小数）。
+4. **命名空间净化**：55 个 `internal: true` 目录辅助（fmt_* 等）退出友好/类型化
+   门面属性直达——确需请 `cli.call("ns.fmt_x", ...)`。
+5. **日期**：入参统一 `YYYY-MM-DD`（`wmshare.normalize_date` 归一辅助公开）；
+   cbond.article/figures 接受 ISO；statements 季次键 `2026:Q1` → `2026-Q1`。
+6. **期货**：新增 `cli.futures.get/snapshot`（锚定封装，不再传 A 股 symbol hack）；
+   量=手、金额=万元为期货原生口径（显式豁免基础单位）。
+7. **kline.bars**：指数 `freq` 非 D 显式报错（1.x 静默返回空序列）。
+
+### Added
+- **交易日历**（P1 数据面）：`cli.calendar.days/is_open/next`（20 号域 market.calendar；
+  采集腿 airflow `tasks/cn_trade_calendar.py`，读侧 `sys/calendar`）。
+- **市场级两融**（P1 数据面）：`cli.margin.market_summary/universe`（1.x「上游无数据集」
+  声明移除；采集腿 `tasks/cn_margin_summary.py` / `cn_margin_universe.py`）。
+- **期货门面**：`cli.futures.get/snapshot`（82 品种，内部 cn 锚定封装）。
+- **EC 成本预估**：`cli.cost_estimate(name, **params)` 返回 EC 区间 + 模型说明；
+  MCP `wmshare_call(mode="cost")` 同步暴露（无模型接口如实返回 None，不编造）。
+- **info.profile 扩列**：5 → 10 字段（full_name/name_en/industry_l1/listing_board/
+  business_scope），缺码自动剔除重试一次并实例级记忆。
+- **批量原生路由**（并入 1.22.1/1.22.2 主线特性）：`kline.snapshot` 收代码列表 ≥3 票
+  自动改走 `kline.snapshot_batch`——单次 eval、EC 按量（60~90 EC/票）而非 N×逐票首算
+  （10,250 EC/票）；≥4,000 票的准全市场清单走空参捷径（服务端一次投影 + 客户端过滤，
+  约 11~15 万 EC，停牌/索引外标的静默缺席）；`batch_all` 对路由接口不再分批；
+  非路由接口 ≥200 票拼接会显式告警 EC 放大。`Client(native_batch=False)` 或
+  `native_batch_min=N` 可回到逐票拼接语义；沿用 1.x 的逐票拼接口径不受影响。
+- `units.yaml` 台账/facades 升级为运行时换算声明；`market.fund` 域注册（19/20 号域）。
+
+### Changed
+- **kline.bars/moneyflow.bars/margin.query/dividend.history/cbond.bars/statements 等全部
+  门面**：默认 DataFrame + 升序（见迁移指南 1/2）；begin/end 过滤路径同样升序。
+- **index.trend**：统一信封；`data.points` 为 DataFrame 升序；预热缓存未命中
+  `ok=False + meta.cache="miss"`（不再返回全 None 平铺结构）。
+- **screener**：query 返回信封（data.count/rows DF）；宽度接口默认 DF；
+  `$INDUSTRY_CUR_1` 等返回列与 indicator/macro 同一台账换算管线。
+- **macro.query/asof/spots**：台账换算 + series 升序 + 信封。
+- **etf 九视图**：统一信封 + units.yaml facades 换算（原「禁二次换算」的本地护栏
+  迁入目录声明层）。
+- **命名空间**：friendly 25 个 / core 137 / 底层 298（calendar 域 + futures/margin 新面）；
+  `market.fund`/`market.calendar` 域注册；inventory 300 函数（calendar 4 + margin 2 新增）。
+- **demo 快照**：与 live 同形（DataFrame/升序/信封）；2.0 新面（futures/calendar/
+  margin 市场面/screener.query）显式 `demo_unsupported`，不伪造数据。
+
+### Removed
+- `_df` 参数（全门面）；`wmshare[dataframe]` extra；
+- fmt_* 内部函数的属性直达（改 `cli.call`）；
+- 指数 freq=W/M 的静默空序列。
+
+>>>>>>> 5d9ccdf (chore(release): 2.0.0 版本六处对齐 + 安全策略表修正)
+
+<<<<<<< HEAD
+## [1.22.2] - 2026-11-17
+### Changed
+- **准全市场清单（≥4000 票）走空参捷径**：批量原生调用改传空数组（服务端
+  非停牌全市场投影）+ 客户端过滤，避免数千元素数组字面量按 AST 逐元素计费
+  （实测 5,693 票省 ≈11 万 EC，全市场一轮 256K → ≈15 万 EC）。捷径语义下
+  停牌/ETF/无效票在 `results` 中静默缺席。
+### Fixed
+- GitHub 的 v1.22.1 tag 固定于 6525db8（不含本补丁，功能完整可用）；
+  1.22.2 为其即时性能修订。
+## [1.22.1] - 2026-11-17
+### Added
+- **`kline.snapshot(list)` 自动路由批量原生**（`BATCH_NATIVE_ROUTES`）：传代码列表
+  （≥ `Client(native_batch_min=3)` 票）不再拼 N 次单票调用，而是单次 eval 调
+  `kline.snapshot_batch` 并适配回逐票合同——返回 `BatchResult`，`results` 为
+  `{代码: 23 字段 MAP}`（`kline_date/kline_sas` 因索引未物化为 None；ETF/新上市
+  等索引外标的自动回退逐票快照，数值一致）。EC 从 N×均线首算 10,250 EC/票
+  降为按量 60~90 EC/票：500 票从 ≈550 万 → 3.3~4.4 万（约 150 倍）。
+- `Client(native_batch=True/False)`、`Client(native_batch_min=N)`：批量原生路由开关
+  与阈值；`batch_all`/`call_batch`（raise 模式）同样命中路由且不分批。
+- 拼接护栏：非路由接口 ≥200 票拼进单次 eval 时发出 EC 线性放大提示（不阻断）。
+### Changed
+- **（平台侧，script 仓 57eb307f）`kline.snapshot_batch` 双路径计费**：codes 1~1999
+  逐票点查 + 一次批量投影（60~90 EC/票，2026-11-17 实测 500 票纯 A 股 3.3~4.4 万 EC）；
+  ≥2000 全市场无过滤扫描（含停牌，~14.8 万 EC）；空参仍为非停牌全市场投影 + 按日缓存。
+- 索引未收录代码（ETF/新上市/无效码）回退 `kline.snapshot`（memo 化；无效码返回
+  全零，与逐票拼接语义一致），回退行 `row=-1`。
+- 背景：某 pro 用户以 `batch_all("kline.snapshot", 全市场清单)` 日扫一轮，
+  1.19.0 拼接路径 2 分钟烧 6,300 万 EC（12 笔 ≥500 万单次告警）。本版配合平台
+  双路径把它压到 ≈15 万 EC/轮（约 430 倍）。老版本（≤1.21）用户请升级后改用
+  `cli.kline.snapshot(codes)`；服务端双路径对旧版本的拼接路径无回旋（首触照旧计价）。
+=======
+
+## [1.22.0] - 2026-11-16
+### Added
+- **`kline.snapshot_batch(codes)` 多标的行情快照**：走当日全市场索引批量投影，
+  全市场 5,686 票约 142,260 EC（25 EC/行），按自然日缓存后重复调用约 28 EC。
+  替代「把上百个代码拼成一个 MAP 逐票调 `snapshot`」的写法——后者每票要付均线
+  首算费约 10,250 EC，150 票即 156 万 EC。返回索引原始 `[{row, values}]` 结构
+  （`values` 内为 `$指标`→值）；逐行扁平化会额外烧约 107 万 EC，故不做。
+  均线/价格字段与逐票 `snapshot` 逐值一致；价格类为索引快照值（非实时 tick）。
+  目录 288 → 289 函数。
+
+### Changed
+- `kline.snapshot` 加按「标的+自然日」缓存：首个新标的仍约 10,250 EC（均线需
+  回看 K 线序列），重复调用降到约 26 EC。notes 补成本模型与 `snapshot_batch` 指引。
+
+## [1.21.2] - 2026-11-16
+
+### Fixed
+- **清除随 1.21.0/1.21.1 发布到公开文档的数据商名称**：`statements` 门面类 docstring
+  中的第三方数据商来源点名已改为中性口径表述；`docs/API.md` 与 `llms-full.txt`
+  由生成器同步。此前该词经语句传播进入生成物，触发内容规范门禁失败。
+
+## [1.21.1] - 2026-11-16
+
+### Fixed
+- **修正 PyPI 1.21.0 门面指向已下线的底层函数**：1.21.0 的 statements 门面
+  委托一个目录函数（内部命名空间，现已随后续上游回归移除）——从 PyPI 安装
+  1.21.0 的用户调用 `cli.statements.income()` 会报「未知函数」。本版改为
+  SDK 内置读取脚本实现（三加一 × cn/hk/us，读 fin_* 宽表），含
+  `indicators()`（主要指标）。
+
+### Notes
+- 1.21.0 的 rest 行为（`period` 二档、`quarters`、`compare/tree/years`
+  下线）保持不变；本次仅修正底层取数实现与文档。
+
+## [1.21.0] - 2026-11-16
+
+### Changed（BREAKING）
+- **statements 门面对齐平台专业版实现（三加一 × cn/hk/us）**：数据源 =
+  fin_income / fin_balance / fin_cashflow / fin_indicator 宽表（季度粒度、
+  披露原币、列名=披露科目原文），读取脚本与专业版三表页同构（一次
+  `store.query` 窗口批量取回全部期次后透视成行式）——底层为 SDK 内置读取
+  脚本（组合门面），不再委托任何目录函数；`period="annual"|"quarter"` 二档
+  （quarter 为季报全档，期次键 "2026:Q1"）；`years` 上限 1..12（专业版同
+  窗口）。新增 `indicators()`（主要指标，fin_indicator）。
+- **下线内部提取库派生面**：`compare`（合并 vs 母公司）/`tree`（目录树）/
+  `years`（期间列举）三方法与 `scope` 参数移除——其数据来自平台内部提取库，
+  按数据边界不再对外提供；`audit` 保留（读 fin_balance 宽表 opinionType）。
+- statements 转为组合门面登记（COMPOSITE_METHODS），目录合同
+  fund.statements 回归内部页面口径（v1.3.1，附对外数据源注记）；
+  friendly 计数 135→129 核心 / 4→8 组合（137 friendly）。
+
+### Fixed
+- 文档机制保持：组合接口按 composite 渲染路径出参数表与示例；
+  手写计数（README/GUIDE/AI/INDICATORS/SKILL/docs）与运行时真值一致
+  （288 函数 / 129 核心 / 137 friendly / 8 组合）。
+
+### Notes
+- raw-eval 读取不经过目录合同的单位换算与量级守护层（与专业版页面同级）；
+  列映射由消费侧负责。上游 script 仓同步回归原状（statement 家族保留给
+  内部页面/附注），本版本与上游部署同窗口发布。
+
+
+## [1.20.7] - 2026-11-16
+
+### Fixed
+- **`cbond.card` 合同与实现对齐**：上游 `xs:catalog` 注释声明八键、实现与实测
+  均为九键（漏 `concepts`）——上游 `../script` 注释已补（upstream_rev
+  `3829a93e`），SDK 随包目录同步重抽取。
+- **`cbond.card` 文档去掉误导性"懒加载"表述**：函数一次同步全量返回九键
+  （"懒加载"只描述前端列表/详情页分工，不应出现在接口合同里）。
+  新 cn 同时写明退市/停牌债分支行为（quote 空对象、counts 为 nil，
+  其余按债键照常返回）。
+- **`cbond.card` 补 `returns.shape`**：顶层九键 + terms 15 键 / counts 9 键
+  嵌套结构化（live 实测 127119 取证；quote 76 键声明为 object 并指向
+  `cbond.one_quote` 结构）。
+
+### Notes
+- live 对账：`cbond.card("127119")` 声明 9 键 ↔ 运行时 9 键，零幻影零漏列。
+- 验收：drift `--strict` exit 0、check_version 六源一致、5 个生成器
+  `--check` rc=0、taxonomy sidecar 同步、mypy 零问题、check_leak 绿、
+  全量 **1967 passed / 94 skipped / 0 failed**。
+- 域版本：`market.cbond` 1.4.0 → 1.4.1。API 行为无变化（合同/文档修正）。
+
+## [1.20.6] - 2026-11-16
+
+### Fixed
+- **returns_shape 声明滞后清零（drift WARN 29 → 0）**：units/ranges 守护声明引用的
+  字段未出现在 `returns_shape` 合同里，机器读 openapi/llms.txt 会以为返回行没有这些
+  字段——文档比实际"少说了字段"，用户按文档取数会拿漏。三批治理：
+  - **T1（segments）**：`query_region` 的 `domestic`/`overseas` 从 `cn` 文本升级为
+    结构化嵌套 fields；`snapshot` 补全七键结构（含 `overview` 嵌套
+    `max_name/max_ratio/product_tags/profile`、`coverage` 结构化）。
+    **修正一处 desc 笔误**：快照顶层键是 `products`（复数），desc 误写单数。
+  - **T2（forecast）**：`yjyg_rows`/`yjkb_rows` 补 SDK 侧 `returns.shape` 覆盖
+    （字段集 = 上游 shape ∪ fixtures，补齐被守护的 `rev_amp_*`/`np_yoy`/`roe` 等）；
+    `snapshot` 的 `yjyg`/`yjkb`/`next_disclosure` 结构化嵌套。
+  - **T3（normalize_with 错位，18 条）**：9 个 fmt 行规范化函数的 `returns.shape`
+    按 XS row 函数字面量重写，13 个 query 函数经目录优先级链自动继承修正
+    （`fmt_maps` 一处修正顺带修好 5 个 estimates/intl 函数的文档合同）。
+    **`equity.query_hgt` 文档曾只列 3 字段、实际返回 7**，此类失真全部消除。
+- **`_shape_fields` 递归化**：`tools/audit_units.py` 现在递归收集嵌套 fields，
+  与运行时 `walk` 下探嵌套容器的语义对齐。
+
+### Changed
+- **`drift --strict` 纳入门禁**（AGENTS.md 门禁清单 + CI 同款）：shape/units/ranges
+  声明漂移 ERROR/WARN 均拦截，防合同回归。
+- **llms-full.txt 预算 320K → 350K 字节**：shape 合同化带来约 20KB 正当合同增长；
+  预算防的是"内联 205KB INDICATORS.md"反模式（真内联约 540K），守护语义不变。
+
+### Added
+- **`tests/test_normalized_query_shapes_cover_guards`**：13 个改动函数的守护字段
+  ⊆ returns_shape 回归锚。
+- `tests/test_audit_drift.py` +2 嵌套用例、2 处断言随 WARN 清零更新（默认档断 `[]`，
+  strict 升级语义用注入 WARN 验证）。
+- `tests/test_units.py` +2 回归：segments/forecast 嵌套换算与量级守护
+  （负例须取"percent 换算后仍超界"的值）。
+
+### Notes
+- **字段面取证三层**：XS row 函数字面量（服务端写死的输出键）+ fixtures 并集 +
+  **live 对账 23 接口双向核验**（声明的字段运行时都在、运行时的字段声明都覆盖、
+  守护换算生效）。4 个接口（national_team/pledge_detail/release/query_reports）
+  上游暂无数据，以 XS 字面量为据。
+- 验收：drift `--strict` exit 0、16 项静态门禁绿、mypy 零问题、
+  5 个生成器 `--check` rc=0、全量 **1967 passed / 94 skipped / 0 failed**、
+  分支覆盖率 **88% ≥ 85%**。
+- 域版本：`corp.equity` 2.1.1、`fund.estimates` 1.1.1、`market.intl` 1.2.1、
+  `fund.segments` 1.0.3、`disc.events` 1.1.2。API 行为无变化（纯合同/文档修正）。
+
+## [1.20.5] - 2026-11-14
+
+### Fixed
+- **随包目录与上游抽取结果的漂移消除**：用官方 `tools/extract_from_scripts.py`
+  从上游重生成 `generated/inventory.json` / `metrics.json`（生成物禁止手改），
+  `upstream_rev` 锚定 `9d6bfd25`；`cbond.card.returns` 描述补齐
+  `projects / share / holders / institution`。连带重跑
+  `extract_metric_taxonomy.py` 与 6 个生成器，`test_extractor_check_no_drift`
+  恢复绿色。
+- **撤回未走暴露审批的目录扩容**：并发会话曾把 3 个上游**尚未部署、未 live
+  验证**的财报目录函数收进发布白名单（inventory 294 → 297、域版本升到 1.5.0）。
+  本版恢复白名单为 5 项、域回 `v1.3.0`、inventory 回到 **294 函数 / 2752 指标**，
+  并同步恢复受影响的 7 处手写计数（288 函数口径）。上游 A1/A2 仍待部署，
+  如需收录须在部署并 live 验证后单独走暴露审批。
+
+### Changed
+- **内部目录命名空间不再出现在对外清单**：底层函数名仍留在随包目录
+  （`cli.statements.*` 友好门面的目录感知委托依赖 `cat.function()`），但
+  `docs/API.md` 附录函数表、`docs/openapi.json` description、`llms*.txt`
+  的单位声明段、以及 README / GUIDE / INDICATORS / swagger / examples / 技能文档
+  一律不再回显内部命名空间，用户侧只见 `cli.statements.balance/income/...`。
+  生成器通过共享的 `INTERNAL_CATALOG_NS` 统一判定；**运行时调用与 API 行为不变**，
+  `cli.call(...)` 对底层名仍可用。历史版本段两处旧口径同步改写为友好接口名。
+- 与上述可见性策略对齐 P1 的两个门禁（`test_docs` / `test_unit_visibility`），
+  并新增反向约束，未削弱防线。
+
+### Added
+- **`tests/test_extract_exposure.py`**（4 用例）：extract 同步的暴露面防回归门禁，
+  用抽取器自身的 `in_scope()` / 白名单做聚合计数校验（不逐条列未审批 name），
+  钉住三份生成物 `upstream_rev` 一致、随包目录与确定性渲染一致。
+- **`tests/test_internal_ns_visibility.py`**（5 用例）：断言内部命名空间零泄漏到
+  全部对外资产、友好门面 7 个方法仍在且每个都能回溯到目录契约、
+  目录中的内部函数数量受控、`doc_hidden()` 规则覆盖该命名空间。
+
+### Notes
+- 验收：16 项静态门禁 + `check_leak`（205 文件）+ mypy 28 文件零问题、
+  6 个生成器 `--check` rc=0、全量 **1869 passed / 94 skipped / 0 failed**、
+  `--cov-branch` **88.31% ≥ 85%**。
 
 ## [1.20.4] - 2026-11-14
 
@@ -764,7 +1703,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **SKILL.md 撤下过期拦截断言**：`kline.live`/`min1` 自 1.5.0 根因修复并部署，意图决策树
   不再提示「被服务端策略拦截」；凭证文件说明补 KEY 名示例。
 - docs/API.md 补两条已知边界（域 notes 数据驱动）：fund.statements 港美三大报表合同已
-  预留、数据未上线（调用返回空）；bonus.query_count_window 上游 count 聚合缺陷恒 0
+  预留、数据未上线（调用返回空；2026-11 注：已随 v2.0 全量上线）；bonus.query_count_window 上游 count 聚合缺陷恒 0
   （SDK window_stats 已绕开，直调该函数得 0）。
 
 ### Added
@@ -855,7 +1794,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   配置方法本就内置于 401/403/429 错误消息与 AI skill，README 不再重复；快速上手仅留
   一行指针）；腾出的篇幅换成 cn/hk/us 市场覆盖矩阵——逐能力标注三市场支持度，并如实
   注记实测边界（美股日 K 停更于 2026-03-13：上游美股价量为 live-only 策略，最新价量走
-  `cli.kline.live / snapshot`；港美股三大报表合同已预留、数据未上线）。联动：
+  `cli.kline.live / snapshot`；港美股三大报表合同已预留、数据未上线；2026-11 注：三大报表已随 v2.0 全量上线）。联动：
   `gen_api_docs.py` 能力总览措辞改为"错误消息即完整指引"并重生成 `docs/API.md`；
   `CONTRIBUTING.md` 同步去 README 章节引用。
 
@@ -1072,7 +2011,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   目录的 YAML 声明做唯一一次换算。本次实际换算的字段：
   - `kline.query_bars / query_last / query_bars_adj / query_last_live` 的 `volume`：
     手 → 股（×100，A 股/港美/ETF 同口径）；
-  - `rptdom.statement_compare` 的 `diffp`（差额占比）：百分数 → 小数；
+  - `cli.statements.compare` 的 `diffp`（差额占比）：百分数 → 小数；
   - `forecast.yjyg_*` 的 `np_amp_* / rev_amp_*` 与 `yjkb_*` 的 `np_yoy / rev_yoy / roe`：
     百分数 → 小数（含 `forecast.snapshot` 嵌套行）。
 - **指标层金额口径文档修正**：实测全部为**元**（历史文档误标"亿元"；上游 cn 名中的
@@ -1099,7 +2038,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - README 的 `cat.search()` 行内引用补充 `cat = wmshare.load()` 装载步骤；
   示例风格统一为 `wmshare.load()`。
 - kline 复权 `query_bars_adj` 不套 `volume_amount` 不变量（复权价与成交额不可比）。
-- `rptdom.statement_tree` 派生行口径文档化（pct 行=原生百分数、`fmt="x"` 行=倍数、
+- `cli.statements.tree` 派生行口径文档化（pct 行=原生百分数、`fmt="x"` 行=倍数、
   科目行=元）；树视图适合展示核对，跨接口运算用 `compare()`。
 - 目录 upstream rev 同步至上游 454585e5（函数/指标计数不变）。
 

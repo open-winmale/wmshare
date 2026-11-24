@@ -62,16 +62,19 @@ def test_methods_match_catalog_both_ways():
         ns, short = full.split(".", 1)
         if ns in FRIENDLY_NAMESPACES:
             continue  # 友好层接管，生成层仍生成但被遮蔽
+        if load().function(full).get("internal"):
+            assert not hasattr(GENERATED_NAMESPACES[ns], short), f"{full} 应退出类型化门面"
+            continue
         assert hasattr(GENERATED_NAMESPACES[ns], short), f"目录函数 {full} 缺少生成方法"
 
 
 def test_typed_dispatch(cli):
     cli.bonus.snapshot_yield_ttm(sym="600519")
     assert last_xs(cli) == ['return bonus.snapshot_yield_ttm("600519")']
-    cli.rptdom.statement(sym="600519", domain="fin.income_statement")
+    cli.rptdom.statement(sym="600519", domain="fin.income_statement", opts={"n": 5})
     xs = last_xs(cli)
     assert xs[0] == 'xs.require("sys/rptdom/init.xs")'
-    assert xs[-1] == 'return rptdom.statement("600519", "fin.income_statement")'
+    assert xs[-1] == 'return rptdom.statement("600519", "fin.income_statement", {"n": 5})'
 
 
 def test_typed_optional_param_omitted(cli):

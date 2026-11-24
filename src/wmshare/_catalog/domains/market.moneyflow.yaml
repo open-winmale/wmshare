@@ -1,5 +1,5 @@
 id: market.moneyflow
-version: 1.1.0
+version: 1.2.0
 cn: 资金流向
 kind: raw
 category: market
@@ -12,11 +12,15 @@ units:
   date: YYYY-MM-DD
 requires: {path: sys/moneyflow/init.xs, preloaded: true}
 notes:
+  - 可用性：仅 A 股（EOD 日频，不含停牌）——bars/last/live 的 symbol 为 6 位 A 股裸码
   - 日频为 EOD 落库；query_last_live 为外部公开源当日读数（HTTP，短 TTL；非盘中行情）
   - 非 Level2：为单子分级聚合口径，非逐笔委托
   - query_last 上游返回单条 MAP 而非数组，XS normalizer 只吃数组；命中
     NotSupportedType:record 属上游返回形态问题，SDK 以 ServerError 透出且
     不重试、不静默转空，需要数组口径请用 query_bars(limit=1) / query_valid(limit=1)
+  - 单次行数上限 500（2026-11-24 起 store_limit 无条件拒绝超限请求；背景 11-16
+    limit=10000 全历史单笔 5.15M EC）——更长历史走 cli.moneyflow.bars(begin=, end=)
+    锚点分页（计费 ≈ 区间实际行数），不做服务端跨段拼接
 functions:
   - name: moneyflow.query_bars
     cn: 资金流向历史
@@ -24,10 +28,25 @@ functions:
     layer: L0
     params:
       - {name: sym, type: string, required: true, desc: 6 位裸码}
-      - {name: limit, type: int, required: false, default: 20, desc: 根数，默认 20}
+      - {name: limit, type: int, required: false, default: 20,
+         desc: 根数，默认 20；单次上限 500（超限服务端拒绝，长历史走 bars 区间分页）}
     returns: {desc: ARR · 资金流行（date/net_mf/elg_net/lg_net/md_net/sm_net）, shape_ref: inventory}
     example: 'moneyflow.query_bars("600519", 20)'
     normalize_with: moneyflow.fmt_maps
+  - name: moneyflow.query_bars_anchor
+    cn: 锚点前资金流
+    kind: raw
+    layer: L1
+    returns: {desc: ARR · 资金流行（字段与 query_bars 一致）, shape_ref: inventory}
+    example: 'moneyflow.query_bars_anchor("600519", 20, anchor.date())'
+    normalize_with: moneyflow.fmt_maps
+    notes:
+      - 行合同与 query_bars 完全一致，只是窗口右端锚在 anchor_date（store.query
+        anchorTs 能力，与 kline.store_window_anchor 同款 opts）；参数取 inventory
+        合同 [sym, limit, anchor_date]
+      - moneyflow.bars 区间查询的锚点分页切片入口——只物化 ≤end 的行、覆盖 begin
+        即停，计费 ≈ 区间实际行数
+      - 守护声明随 query_bars（金额=元已为基础单位；range 界须实测分布，不猜界）
   - name: moneyflow.query_last
     cn: 最新资金流向
     kind: raw
@@ -47,7 +66,8 @@ functions:
     layer: L0
     params:
       - {name: sym, type: string, required: true}
-      - {name: limit, type: int, required: false, default: 20}
+      - {name: limit, type: int, required: false, default: 20,
+         desc: 根数，默认 20；单次上限 500（随 query_bars，超限服务端拒绝）}
     returns: {desc: ARR · 资金流行}
     example: 'moneyflow.query_valid("600519", 20)'
   - name: moneyflow.query_last_live
@@ -59,12 +79,44 @@ functions:
     returns: {desc: MAP · 资金流快照}
     example: 'moneyflow.query_last_live("000807")'
   - name: moneyflow.snapshot
-    cn: 资金流向快照
+    cn: 资金流向快照（金额均为元；net_mv_ratio 为小数）
     kind: raw
     layer: L0
     params:
       - {name: sym, type: string, required: true}
-    returns: {desc: MAP · 快照}
+    ranges:
+      net_mv_ratio: [-0.5, 0.5]
+      net_mf: [-1.0e+11, 1.0e+11]
+      net_5d: [-2.0e+11, 2.0e+11]
+      net_10d: [-3.0e+11, 3.0e+11]
+      net_20d: [-5.0e+11, 5.0e+11]
+      elg_net: [-1.0e+11, 1.0e+11]
+      lg_net: [-1.0e+11, 1.0e+11]
+      md_net: [-1.0e+11, 1.0e+11]
+      sm_net: [-1.0e+11, 1.0e+11]
+    returns:
+      desc: MAP · 快照
+      shape:
+        kind: object
+        cn: 资金流快照（金额元，比率为小数）
+        fields:
+          - {name: symbol, type: string, cn: 标的代码}
+          - {name: name, type: string, cn: 标的简称}
+          - {name: industry, type: string, cn: 行业码}
+          - {name: mf_date, type: string, cn: 资金流数据日期}
+          - {name: quote_date, type: string, cn: 行情日期}
+          - {name: source, type: string, cn: 数据来源标识}
+          - {name: net_mf, type: float64, cn: 主力净流入（元）}
+          - {name: elg_net, type: float64, cn: 超大单净额（元）}
+          - {name: lg_net, type: float64, cn: 大单净额（元）}
+          - {name: md_net, type: float64, cn: 中单净额（元）}
+          - {name: sm_net, type: float64, cn: 小单净额（元）}
+          - {name: net_5d, type: float64, cn: 近 5 日主力净流入（元）}
+          - {name: net_10d, type: float64, cn: 近 10 日主力净流入（元）}
+          - {name: net_20d, type: float64, cn: 近 20 日主力净流入（元）}
+          - {name: net_mv_ratio, type: float64, cn: 主力净流入/市值（小数）}
+          - {name: trend_5d, type: string, cn: 5 日趋势标记}
+          - {name: trend_20d, type: string, cn: 20 日趋势标记}
     example: 'moneyflow.snapshot("600519")'
   - name: moneyflow.snapshot_net_mf
     cn: 最新主力净流入
@@ -75,17 +127,40 @@ functions:
     returns: {desc: float · 主力净流入（元）}
     example: 'moneyflow.snapshot_net_mf("600519")'
   - name: moneyflow.board
-    cn: 全市场资金流快照
+    cn: 全市场资金流快照（金额均为元；net_mv_ratio 为小数）
     kind: raw
     layer: L0
     params: []
-    returns: {desc: ARR · 资金流行（symbol/name/net_mf/net_mv_ratio/lg_net/elg_net/md_net/sm_net/industry，按主力净流入降序）, shape_ref: inventory}
+    ranges:
+      net_mv_ratio: [-0.5, 0.5]
+      net_mf: [-1.0e+11, 1.0e+11]
+      elg_net: [-1.0e+11, 1.0e+11]
+      lg_net: [-1.0e+11, 1.0e+11]
+      md_net: [-1.0e+11, 1.0e+11]
+      sm_net: [-1.0e+11, 1.0e+11]
+    returns:
+      desc: ARR · 资金流行（symbol/name/net_mf/net_mv_ratio/lg_net/elg_net/md_net/sm_net/industry，按主力净流入降序）
+      shape:
+        kind: array
+        items:
+          kind: object
+          cn: 全市场资金流行
+          fields:
+            - {name: symbol, type: string, cn: 标的代码}
+            - {name: name, type: string, cn: 标的简称}
+            - {name: industry, type: string, cn: 行业码}
+            - {name: net_mf, type: float64, cn: 主力净流入（元）}
+            - {name: elg_net, type: float64, cn: 超大单净额（元）}
+            - {name: lg_net, type: float64, cn: 大单净额（元）}
+            - {name: md_net, type: float64, cn: 中单净额（元）}
+            - {name: sm_net, type: float64, cn: 小单净额（元）}
+            - {name: net_mv_ratio, type: float64, cn: 主力净流入/市值（小数）}
     example: 'moneyflow.board()'
     notes:
       - 服务端索引一次取数（免逐票批量）
       - 日频 EOD 口径，非交易日数据不变；仅 A 股（不含停牌）
   # ---- L1：格式化 ----
-  - {name: moneyflow.fmt_maps, cn: 资金流行规范化, kind: raw, layer: L1}
-  - {name: moneyflow.fmt_lines, cn: 资金流文本行, kind: raw, layer: L1}
-  - {name: moneyflow.fmt_line, cn: 单条资金流文本, kind: raw, layer: L1}
-  - {name: moneyflow.fmt_snapshot_line, cn: 资金流快照一行文本, kind: raw, layer: L1}
+  - {name: moneyflow.fmt_maps, cn: 资金流行规范化, kind: raw, layer: L1, internal: true}
+  - {name: moneyflow.fmt_lines, cn: 资金流文本行, kind: raw, layer: L1, internal: true}
+  - {name: moneyflow.fmt_line, cn: 单条资金流文本, kind: raw, layer: L1, internal: true}
+  - {name: moneyflow.fmt_snapshot_line, cn: 资金流快照一行文本, kind: raw, layer: L1, internal: true}

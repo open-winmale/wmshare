@@ -7,6 +7,7 @@ from pathlib import Path
 import yaml
 
 import wmshare
+from fake_client import fake_client
 from wmshare.indicator_adapter import IndicatorAdapter
 
 REPO = Path(__file__).resolve().parents[1]
@@ -25,8 +26,10 @@ EXPECTED = {
     "$ROE_AVG3": ("stock", "profitability", "annual", "3y", ["parent"], "ratio"),
     "$ROE_TTM_LAST": ("stock", "profitability", "ttm", "none", [], "ratio"),
     "$TR_TTM_YOY_LAST": ("stock", "growth", "ttm", "none", [], "ratio"),
-    "$BONUS_RATE_TTM_LAST": ("stock", "dividend", "ttm", "none", [], "ratio"),
-    "$DPS_TTM_LAST": ("stock", "dividend", "ttm", "none", [], "per_share"),
+    # 上游 2026-11 起 cn 分支为报告期 LTM 口径（引用 $BONUS_RATE_RPT_LAST；hk 分支现金窗口），
+    # 实测值仍为小数（茅台 3.57%→0.0357，与精选组 range [0,1] 兼容）
+    "$BONUS_RATE_TTM_LAST": ("stock", "dividend", "latest_report", "none", [], "ratio"),
+    "$DPS_TTM_LAST": ("stock", "dividend", "latest_report", "none", [], "per_share"),  # 同上：上游报告期口径
     "$MV_LAST": ("stock", "quote", "snapshot", "none", ["total"], "money"),
     "$MV_FREE_LAST": ("stock", "quote", "snapshot", "none", ["free_float"], "money"),
     "$ID_ROE_TTM": ("industry", "profitability", "ttm", "none", ["overall"], "ratio"),
@@ -51,7 +54,8 @@ def test_sidecar_is_one_to_one_with_metrics():
     rows = tax["metrics"]
     codes = [r["code"] for r in rows]
     assert tax["schema_version"] == 1
-    assert tax["stats"]["count"] == len(rows) == 2752
+    # 2752→2983：上游 catalog 2026-11-19 刷新（同 test_compat_contract）
+    assert tax["stats"]["count"] == len(rows) == 2983
     assert len(codes) == len(set(codes))
     assert set(codes) == metrics
 
@@ -106,14 +110,25 @@ def test_dead_codes_are_exactly_drop_stubs():
 
 def test_quality_thresholds():
     stats = _taxonomy()["stats"]
-    assert stats["other"] <= 0.05
-    assert stats["caliber_unknown"] <= 0.30
-    # unit unknown 不作为硬门禁，但必须被显式记录，便于后续收紧。
-    assert 0 <= stats["unit_unknown"] <= 1
+    cfg = yaml.safe_load(TAXONOMY.read_text(encoding="utf-8")) or {}
+    quality = cfg.get("quality") or {}
+    assert stats["other"] <= float(quality.get("other_max", 0.05))
+    assert stats["caliber_unknown"] <= float(quality.get("caliber_unknown_max", 0.30))
+    assert stats["unit_unknown"] <= float(quality.get("unit_unknown_max", 0.05))
+
+
+def test_unit_unknown_codes_are_allowlisted():
+    """每个残余 unknown 必须显式登记原因；已归类项必须移出白名单。"""
+    cfg = yaml.safe_load(TAXONOMY.read_text(encoding="utf-8")) or {}
+    allow = cfg.get("unit_unknown_allowlist") or {}
+    unknown = {r["code"] for r in _taxonomy()["metrics"]
+               if r["unit_kind"] == "unknown"}
+    assert unknown == set(allow)
+    assert all(str(reason or "").strip() for reason in allow.values())
 
 
 def test_all_codes_are_grouped_or_flat_exactly_once():
-    ad = IndicatorAdapter(wmshare.demo_client())
+    ad = IndicatorAdapter(fake_client())
     result = ad.combinable_groups()
     grouped = [code for group in result["groups"] for code in group["codes"]]
     flat = [row["code"] for row in result["flat"]]
@@ -124,7 +139,7 @@ def test_all_codes_are_grouped_or_flat_exactly_once():
 
 
 def test_unknown_fields_never_enter_groups():
-    ad = IndicatorAdapter(wmshare.demo_client())
+    ad = IndicatorAdapter(fake_client())
     by_code = {r["code"]: r for r in _taxonomy()["metrics"]}
     for group in ad.combinable_groups()["groups"]:
         for code in group["codes"]:
@@ -137,7 +152,7 @@ def test_unknown_fields_never_enter_groups():
 
 
 def test_group_id_is_recomputable():
-    ad = IndicatorAdapter(wmshare.demo_client())
+    ad = IndicatorAdapter(fake_client())
     by_code = {r["code"]: r for r in _taxonomy()["metrics"]}
     for group in ad.combinable_groups()["groups"]:
         example = by_code[group["codes"][0]]
@@ -149,7 +164,7 @@ def test_group_id_is_recomputable():
 
 
 def test_market_restricted_code_is_partitioned_by_market():
-    ad = IndicatorAdapter(wmshare.demo_client())
+    ad = IndicatorAdapter(fake_client())
     cn = ad.combinable_groups(scope="stock", topic="solvency", market="cn")
     hk = ad.combinable_groups(scope="stock", topic="solvency", market="hk")
     cn_codes = {code for group in cn["groups"] for code in group["codes"]}

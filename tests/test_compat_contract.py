@@ -24,7 +24,8 @@ OPENAPI = REPO / "docs" / "openapi.json"
 def test_metrics_json_schema_and_fields_unchanged():
     doc = json.loads(METRICS.read_text(encoding="utf-8"))
     assert doc["schema_version"] == 2
-    assert doc["count"] == len(doc["metrics"]) == 2752
+    # 2752→2983：上游 metric-memo-catalog 2026-11-19 刷新（9→11 月新码全量带入，含 $BUYBACK_AMT_* 6 码）
+    assert doc["count"] == len(doc["metrics"]) == 2983
     allowed = {"code", "cn", "markets", "gated"}
     for row in doc["metrics"]:
         assert set(row) <= allowed, f"{row['code']} 出现了 metrics.json 之外的字段"
@@ -33,9 +34,9 @@ def test_metrics_json_schema_and_fields_unchanged():
 
 def test_indicator_api_signatures_unchanged():
     assert list(inspect.signature(IndicatorApi.get).parameters) == [
-        "self", "symbol", "code", "fut_symbol"]
+        "self", "symbol", "code", "fut_symbol", "native"]  # 2.0：native keyword-only
     assert list(inspect.signature(IndicatorApi.metrics).parameters) == [
-        "self", "symbol", "codes", "fut_symbol"]
+        "self", "symbol", "codes", "fut_symbol", "native"]  # 2.0：native keyword-only
 
 
 def test_catalog_public_signatures_unchanged():

@@ -19,6 +19,8 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _introspect import is_internal_catalog_name  # noqa: E402
 
 RAW = "https://raw.githubusercontent.com/open-winmale/wmshare/main"
 
@@ -32,7 +34,66 @@ FULL_PARTS = [
 
 # docs/INDICATORS.md 约 205 KB，内联会让 llms-full.txt 从 ~281 KB 涨到 ~486 KB，
 # 超出大上下文 agent 的实用预算。改为头部指标族摘要 + 链接，并把预算写成硬断言。
-FULL_SIZE_BUDGET = 320_000  # bytes（UTF-8），不是字符数
+# 2026-11-16 批 C：fmt 行规范化 shape 合同化（+20 KB 文档合同），预算 320K→350K；
+# 2026-11-16 W3：etf 九视图组合门面文档（+4 KB），预算 350K→360K；
+# 2026-11-19 批次1：pdf_doc 域 + 回购快照/公告类目（+2 KB），预算 360K→399K；
+# 2026-11-19 批次3：market.toplist + market.futures 域（+3 KB），预算 399K→406K；
+# 真内联 INDICATORS 全文仍会到 ~540 KB，守护语义不变。
+# 2026-11-23：futures.bars 历史K线门面（API.md 小节 + GUIDE 期货段 + 计数位），预算 424.6K→426.6K；
+# 2026-11-23：futures.query_bars 目录注册（API.md 附录行 + guard manifest 行 + 计数位），预算 426.6K→429K；
+# 2026-11-23：外汇(4)+储备(3) 双域（API.md 新章节 + 附录 7 行 + 信封文档），预算 429K→445K；
+# 2026-11-23：户数历史（equity.query_holdernum_history）把全文推到 455,468 B，超出上一档 468 B。
+# 已先压缩该接口 notes（API.md 不含 notes，无收益）；按先例提预算，一次留出 P2 余量——
+# 后续 ⑥⑦⑧⑨ 每个接口在 API.md 约 0.5-0.8 KB，462K 可覆盖 M1+M2。
+# 2026-11-23 修正：板块资金流域（19 字段 × 2 接口 + 章节）实际 13.4 KB，465,621 B 再破 462K。
+# 2026-11-23 结构化压缩（M2 定案）：API.md 的「附录：全量底层函数目录」占 150 KB+，
+# 从 llms-full 中剥掉（保留指向 docs/API.md 的指针）——接口章节仍是全文，长尾目录
+# 按需查 API.md。全文回落到 ~310 KB，M2（⑧⑨⑦-B）新增接口有充足余量。
+FULL_SIZE_BUDGET = 468_000  # 2026-11-23 P2 批次；bytes（UTF-8）；禁内联 INDICATORS 全文与 API 附录
+
+API_APPENDIX_HEADING = "## 附录：全量底层函数目录"
+
+
+def _strip_api_appendix(text: str) -> str:
+    """剥掉 API.md 的全量函数附录（约 150 KB），换成指向原文的指针。
+
+    llms-full 是「大上下文 agent 直读」物；接口章节（参数/字段/示例）保留全文，
+    长尾目录函数表体积大且可用 cat.search / docs/API.md 按需查。
+    """
+    idx = text.find(API_APPENDIX_HEADING)
+    if idx < 0:
+        return text
+    return (text[:idx].rstrip()
+            + "\n\n> 附录「全量底层函数目录」未内联（约 150 KB）：完整表见 "
+            f"[API.md]({RAW}/docs/API.md)，或运行时用 cat.search / cat.function 查询。\n")
+
+
+def _function_notes_digest(cat) -> str:
+    """附录未内联时保留「函数级注意事项」摘要（坑位不能因体积被藏起来）。
+
+    只列有 notes 的目录函数（函数名 + 中文名 + notes 原文），不带宽表。
+    """
+    rows: list[str] = []
+    for domain in cat.domains.values():
+        dnotes = domain.get("notes") or []
+        if dnotes:
+            rows.append(f"- **{domain.get('cn') or domain.get('id')} 域**："
+                        + "；".join(dnotes))
+        for fn in domain.get("functions") or []:
+            name = fn.get("name")
+            if not name or is_internal_catalog_name(name):
+                continue
+            # 目录函数合同里的 notes 是 yaml 与上游 inventory 注解的合并结果
+            # （indices.weights 等坑位只在 inventory 侧），必须走 cat.function。
+            meta = cat.function(name) or {}
+            notes = meta.get("notes") or fn.get("notes") or []
+            if not notes:
+                continue
+            rows.append(f"- `{name}`（{fn.get('cn') or ''}）：" + "；".join(notes))
+    if not rows:
+        return ""
+    return ("## 函数级注意事项（全量函数附录未内联，坑位摘要）\n\n"
+            + "\n".join(rows))
 
 
 def _indicators_brief(cat) -> str:
@@ -58,13 +119,17 @@ def _guard_manifest_lines(cat) -> str:
     llms.txt / llms-full.txt 是 agent 直读的上下文；此前单位口径只有自然语言描述，
     逐函数声明藏在 cat.function() 里。这里按 JSON 逐条列出，agent 可在取数前解析。
     """
-    manifest = cat.guard_manifest()
+    # 内部命名空间（如 rptdom）不对外露出底层函数名：其友好接口的单位声明
+    # 已在 openapi.json 的 x-wmshare-guards 中按 operation 给出，此处不重复列。
+    manifest = {k: v for k, v in cat.guard_manifest().items()
+                if not is_internal_catalog_name(k)}
     lines = [
         "## 单位与守护声明（机器可读）",
         "",
         f"> 共 {len(manifest)} 个函数带 units / ranges / checks 声明；"
         "每行 `` `函数名`: JSON ``，键为 units（换算）/ ranges（量级界）/ checks（不变量）。"
-        "SDK 在返回前按声明换算并校验，违例抛 DataError；原生口径用 `_units=\"native\"`。",
+        "SDK 在返回前按声明换算并校验，违例抛 DataError；原生口径用 `_units=\"native\"`。"
+        "内部命名空间的函数声明见 openapi.json 的 `x-wmshare-guards`（按友好接口）。",
         "",
     ]
     lines += [f"- `{name}`: {json.dumps(guards, ensure_ascii=False, sort_keys=True)}"
@@ -115,13 +180,21 @@ def build_llms_txt() -> str:
         "## Docs",
         "",
         f"- [README]({RAW}/README.md)：安装、凭证配置、选股实战（10 行全市场筛选）、能力与市场覆盖矩阵",
-        f"- [English Quickstart]({RAW}/docs/QUICKSTART_EN.md)：英文快速上手（offline demo / live 首调 / 批量与单位契约）",
+        f"- [English Quickstart]({RAW}/docs/QUICKSTART_EN.md)：英文快速上手（免注册首调 / 长期额度 / 批量与单位契约）",
         f"- [使用指南 GUIDE]({RAW}/docs/GUIDE.md)：单票菜谱、批量取数、多市场、pandas、故障排查",
         f"- [指标库 INDICATORS]({RAW}/docs/INDICATORS.md)：全量指标码按族导航——命名语法、"
         "11 组精选口径、死码清单与场景速查（先查码，禁止自算已有指标）",
+        f"- [指标单页索引]({RAW}/docs/indicators/README.md)：逐码一页（类型/市场/单位/"
+        "取数示例），长尾检索与 AI 引用入口",
         f"- [AI 用法]({RAW}/docs/AI.md)：MCP server、skill、文档上下文与报错驱动的 Agent 接入路径",
         f"- [API 参考]({RAW}/docs/API.md)：{len(FRIENDLY_INDEX)} 个核心接口 + "
-        f"{composite_total} 个组合接口的参数 / 返回 / 单位口径",
+        f"{composite_total} 个组合接口的参数 / 返回 / 单位口径（字段字典 "
+        f"[fields.json]({RAW}/docs/fields.json)）",
+        f"- [限制与配额]({RAW}/docs/LIMITS.md)：单次/批量/限流/重试硬限制、"
+        "先估后取（`cli.cost_estimate`）与取数配方",
+        f"- [错误码]({RAW}/docs/ERRORS.md)：异常层级 + 全部 `code`（含义/可重试/处理）",
+        f"- [数据日历]({RAW}/docs/DATA_CALENDAR.md)：各数据集更新频率与过期阈值；"
+        f"[兼容政策]({RAW}/docs/COMPATIBILITY.md)：弃用窗口与迁移表",
         f"- [Agent Skill]({RAW}/src/wmshare/skills/wmshare/SKILL.md)：随包分发的 agent 用法合同"
         "（目录先行、单位铁律、决策树、坑位）",
         f"- [可运行示例]({RAW}/examples/README.md)：{n_examples} 个编号示例"
@@ -131,7 +204,9 @@ def build_llms_txt() -> str:
         "## Key Concepts",
         "",
         "- **单位铁律**：比率/涨跌幅/分位一律小数（0.0396 = 3.96%、0.42 = 42% 分位），"
-        "金额=元、量=股；唯一例外是 cli.screener 宽度接口的 `*_pct`（百分数数值）",
+        "金额=元、量=股，全库无例外（宽度接口 *_pct 1.x 曾为百分数，2.0 起统一小数）；"
+        "门面查询/序列默认 DataFrame 且 date 升序（旧→新），面板/时序组合面为 "
+        "统一信封 {ok, as_of, data, meta}；底层 cli.call 保持行数组",
         "- **目录先行**：`wmshare.load()` 后 `cat.search(\"中文\")` 检索函数与指标码、"
         '`cat.function(name)["params"]` 查合同；禁止编造指标码（未知名在发请求前即报错）',
         "- **指标码命名**：`$主题+[窗口 3Y/5Y/10Y]+[统计量 TTM/YOY/AVG/MIN/TREND]+[_LAST]`；"
@@ -181,8 +256,8 @@ def build_llms_txt() -> str:
         "",
         "- 不是撮合级/组合级回测引擎（单股均线买卖点回测用 `cli.backtest.run`：次日开盘成交、"
         "T+1、整手、固定费用，不复现盘口与分红税），不是数据库（数据经云端 API 运行时获取）",
-        "- 基金净值 / 期权 / 债券（可转债除外）未覆盖；期货经 `$FUT_*` 指标码 + "
-        "`fut_symbol` 覆盖（主力连续日/周/月）",
+        "- 场外/LOF/货基基金（仅场内 ETF 九视图）、期权、债券（可转债除外）未覆盖；"
+        "期货经 `$FUT_*` 指标码 + `fut_symbol` 覆盖（主力连续日/周/月）",
         "- 美股日 K 已日更（周/月 K 由日线派生）；最新价量用 `cli.kline.live / snapshot`",
         "- 港股十大流通股东与回购上游有管线、SDK 接口待路由（见 CHANGELOG/ROADMAP）",
         "",
@@ -190,7 +265,7 @@ def build_llms_txt() -> str:
         "## Optional",
         "",
         f"- [openapi.json]({RAW}/docs/openapi.json)：OpenAPI 3.1 机器可读合同",
-        f"- [llms-full.txt]({RAW}/llms-full.txt)：本页所列文档的全文拼接（大上下文 agent 直读）",
+        f"- [llms-full.txt]({RAW}/llms-full.txt)：本页所列文档拼接（接口章节全文；API 全量函数附录与指标库全文未内联，按需查原文）",
         "- 指标库全文约 205 KB **未内联**进 llms-full.txt：头部只给指标族摘要，"
         f"全量指标码按 [INDICATORS]({RAW}/docs/INDICATORS.md) 取原文",
         f"- [CONTRIBUTING]({RAW}/CONTRIBUTING.md)：贡献门禁与内容规范",
@@ -209,6 +284,8 @@ def build_llms_full_txt() -> str:
              + _guard_manifest_lines(cat) + "\n"]
     for rel in FULL_PARTS:
         body = (REPO / rel).read_text(encoding="utf-8")
+        if rel == "docs/API.md":
+            body = _strip_api_appendix(body) + "\n\n" + _function_notes_digest(cat)
         parts.append(f"\n\n---\n\n<!-- 来源：{rel} -->\n\n{body.strip()}")
     content = parts[0] + "".join(parts[1:]) + "\n"
     size = len(content.encode("utf-8"))

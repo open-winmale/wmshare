@@ -56,11 +56,18 @@ def test_openapi_exposes_guards_for_every_mapped_operation():
 
 
 def test_llms_carry_machine_readable_guard_section():
+    import sys
+    sys.path.insert(0, str(REPO / "tools"))
+    from _introspect import is_internal_catalog_name  # noqa: E402
     man = wmshare.load().guard_manifest()
     for name in ("llms.txt", "llms-full.txt"):
         text = (REPO / name).read_text(encoding="utf-8")
         assert "## 单位与守护声明（机器可读）" in text
         for fn_name in man:
+            if is_internal_catalog_name(fn_name):
+                # 内部命名空间声明改由 openapi 的 x-wmshare-guards 按友好接口给出。
+                assert f"- `{fn_name}`: " not in text, (name, fn_name)
+                continue
             assert f"- `{fn_name}`: " in text, (name, fn_name)
 
 

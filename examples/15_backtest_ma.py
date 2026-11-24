@@ -1,11 +1,10 @@
 """单股回测：均线金叉买、死叉卖，看逐笔成交明细与净值汇总。
 
-前提：凭证必填（export WMSHARE_CLIENT_ID=... WMSHARE_CLIENT_SECRET=...）；`--demo` 用随包演示数据（120 根，非实时）
+前提：凭证可选——无凭证自动免注册免费试用（真实数据、需网络）
 运行：python examples/15_backtest_ma.py
 学到：backtest.run 一条调用出成交明细；口径固定（次日开盘、T+1、整手、佣金/印花）
 文档：docs/GUIDE.md（单票菜谱·单股回测）
 """
-import sys
 
 import wmshare
 from wmshare import WmshareError
@@ -18,15 +17,10 @@ def _pct(value, sign="+"):
     return "—" if value is None else f"{value:{sign}.2%}"
 
 
-def main(cli=None, demo: bool = False) -> None:
+def main(cli=None) -> None:
     if cli is None:
-        if demo:
-            cli = wmshare.demo_client()
-            print("(演示模式：随包罐头数据，非真实行情)")
-            print()
-        else:
-            # 回测要取全历史日 K：默认 max_limit=500 根不够长区间
-            cli = wmshare.Client.from_env(max_limit=None)
+        # 回测要取全历史日 K：默认 max_limit=500 根不够长区间
+        cli = wmshare.Client.from_env(max_limit=None)
     try:
         res = cli.backtest.run(SYMBOL, fast=FAST, slow=SLOW)
     except WmshareError as e:
@@ -56,4 +50,4 @@ def main(cli=None, demo: bool = False) -> None:
 
 
 if __name__ == "__main__":
-    main(demo="--demo" in sys.argv)
+    main()
