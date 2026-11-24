@@ -9,6 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > MAJOR；弃用至少保留 1 个 MINOR，并在 `Deprecated` 段登记替代写法与移除版本。
 > 升级前请扫一眼 Removed / Changed / Deprecated 段。
 
+## [3.7.1] - 2026-11-24
+
+### Fixed
+
+- **`valuation.daily_basic` / `daily_basic_multi` 排序契约**：服务端原生按日期
+  降序返回（同日按字段名），此前门面只在分页时假设升序、从未最终排序，违反
+  2.0「date 升序」契约（2026-11-24 live 实测 11-13 → 11-10）。现按
+  `(date, field)`（单票）与 `(symbol, date, field)`（多票）统一升序。
+- **`etf.nav` 等视图的 `net_asset` 上游量级异常**：2026-11-24 实测全 ETF 返回
+  1e18 量级（疑管道口径变更），原先整单抛 `DataError` 使 nav 视图不可用。现把
+  该字段置空并在 `data.note` 说明，净值/份额等其余字段照常返回。
+- **`pdf_doc.read_text` / `read_markdown` / `status` 空参**：文件键、链接、票码
+  全空时在本地抛 `UsageError(code="params")`，不再打上游换一个 `ok=False`。
+
+### Changed
+
+- `pdf_doc.search` 的 `text_chars` 量级上限 1e7 → 5e7（巨型年报实测 1,450 万字符）。
+- `board.concept_list` 口径文案统一为**周更**（周六 09:00 片 / 09:15 merge，
+  最多滞后一周；此前文档误写「日更」）；上游锚点前移 `361c9530`。
+- live 测试两处 2.0 形态漂移修正：ETF 九视图断言读 `meta.view`/`data`；
+  `pdf_doc.search` 按 DataFrame 形态取行。
+
 ## [3.7.0] - 2026-11-24
 
 ### Added
