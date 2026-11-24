@@ -261,6 +261,10 @@ SPLICE_WARN_MIN = 200
 # 系数来自仓库内记录的 live 实测（GUIDE §配额实测 / CHANGELOG / examples/17），
 # 是「区间估算」不是承诺——实际消耗以 meta.metering 回传为准。
 EC_PER_ROW = (60, 75)                 # 行数驱动类接口（K 线/资金流/分红列表）每行 EC
+# moneyflow 服务端单次行数上限（script sys/moneyflow store_limit，2026-11-24 起）。
+# 2026-11-16 实证 limit=10000 全历史单笔 5.15M EC（fmt_maps 规范化放大），服务端
+# 对超限显式拒绝并携带引导文案；本常量供门面预检与 estimate_cost 对齐口径。
+MONEYFLOW_SERVER_CAP = 500
 EC_SCREENER_BASE = (70, 1_000)        # 轻列条件选股
 EC_SCREENER_HEAVY = (40_000, 60_000)  # 重列（TTM 同比/年化族）
 EC_SCREENER_COLD_NOTE = ("fields 引用未物化重列时有一次全市场物化成本，"
@@ -317,6 +321,15 @@ def estimate_cost(name: str, params: dict[str, Any] | None = None, *,
                             f"超出会显式报错）× {EC_PER_ROW} EC/行")
             return out
         n = rows if (rows and rows > 0) else (120 if "query_bars" in name else 20)
+        if name.startswith("moneyflow.") and n > MONEYFLOW_SERVER_CAP:
+            # 服务端单次上限（2026-11-24 起，script sys/moneyflow store_limit）：
+            # limit>500 直接被拒绝，估算按上限值并注明，不给虚假的行数预算
+            n = MONEYFLOW_SERVER_CAP
+            out.update(ec_lo=n * EC_PER_ROW[0], ec_hi=n * EC_PER_ROW[1],
+                       model="rows",
+                       note=f"服务端单次上限 {n} 行（超限显式拒绝）；更长历史走 "
+                            f"moneyflow.bars(begin=, end=) 锚点分页 × {EC_PER_ROW} EC/行")
+            return out
         out.update(ec_lo=n * EC_PER_ROW[0], ec_hi=n * EC_PER_ROW[1],
                    model="rows", note=f"按 {n} 行 × {EC_PER_ROW} EC/行估算")
     elif name == "kline.snapshot" or name == "kline.snapshot_batch":

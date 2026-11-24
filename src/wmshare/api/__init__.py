@@ -43,6 +43,7 @@ from wmshare.units import (apply_facade_units, finish_metric, is_index_symbol,
 
 # 期货门面的求值锚点（cn 默认锚）与日期归一（client.py 单一事实源）
 from wmshare.client import DEFAULT_SYMBOLS as _DEFAULT_SYMBOLS  # noqa: E402
+from wmshare.client import MONEYFLOW_SERVER_CAP as _MONEYFLOW_SERVER_CAP  # noqa: E402
 from wmshare.client import normalize_date as _normalize_date  # noqa: E402
 
 # 服务端分桶 label 的排序前缀（如 i_涨停 / h_+5%~10%），单字母+下划线，对用户是噪音
@@ -610,8 +611,9 @@ class MoneyflowApi(_Api):
              _raw: bool = False, _fields: Any = None) -> Any:
         """资金流历史（DataFrame：date/net_mf/elg_net/lg_net/md_net/sm_net，date 升序）。
 
-        :param n: 条数，默认 20。区间查询：显式传 n=只取区间内最近 n 根（不补页）；
-            不传 n=自动锚点切片补齐（每片 ≤ max_limit，覆盖 begin 即停）
+        :param n: 条数，默认 20，单次上限 500（服务端拒绝更大值，超限抛 LimitError
+            引导分页）。区间查询：显式传 n=只取区间内最近 n 根（不补页）；
+            不传 n=自动锚点切片补齐（每片 ≤ min(max_limit, 500)，覆盖 begin 即停）
         :param begin: 起始日期（含，YYYY-MM-DD），须与 end 同时提供；区间上限 5 年
         :param end: 结束日期（含）
         :param _raw: True=上游原始行（跳过规范化/换算）
@@ -623,6 +625,12 @@ class MoneyflowApi(_Api):
         显式传 n 为单次请求，超出单次上限显式报错（不静默截断）。
         """
         _warn_large_moneyflow_list(symbol)
+        if n is not None and int(n) > _MONEYFLOW_SERVER_CAP:
+            raise LimitError(
+                f"moneyflow.bars: n={int(n)} 超过服务端单次上限 {_MONEYFLOW_SERVER_CAP}"
+                "（2026-11-16 实测单笔 5.15M EC 事故治理，服务端无条件拒绝）；"
+                "取更长历史请不传 n= 用 begin=/end= 自动锚点分页（计费≈区间行数），"
+                f"或显式分段每次 n<={_MONEYFLOW_SERVER_CAP}", code="limit")
         if begin is not None or end is not None:
             if not (begin and end):
                 raise UsageError("begin 与 end 需同时提供", code="range")
@@ -630,7 +638,9 @@ class MoneyflowApi(_Api):
                 raise UsageError("_raw=True 时不支持 begin/end（原始行无扁平日期字段）",
                                  code="range")
             begin_iso = _normalize_date(begin)
-            limit = min(int(n) if n is not None else (self._c.max_limit or 10000), 10000)
+            # 切片/单片大小钳到服务端上限：max_limit 调大只增加片数，不放大单片
+            limit = min(int(n) if n is not None else (self._c.max_limit or 10000),
+                        _MONEYFLOW_SERVER_CAP, 10000)
             if n is None and isinstance(symbol, str):
                 # 锚点切片（与 kline.bars 同口径）：覆盖由结构保证，不估算根数
                 merged: dict[str, dict] = {}

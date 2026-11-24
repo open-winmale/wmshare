@@ -18,6 +18,9 @@ notes:
   - query_last 上游返回单条 MAP 而非数组，XS normalizer 只吃数组；命中
     NotSupportedType:record 属上游返回形态问题，SDK 以 ServerError 透出且
     不重试、不静默转空，需要数组口径请用 query_bars(limit=1) / query_valid(limit=1)
+  - 单次行数上限 500（2026-11-24 起 store_limit 无条件拒绝超限请求；背景 11-16
+    limit=10000 全历史单笔 5.15M EC）——更长历史走 cli.moneyflow.bars(begin=, end=)
+    锚点分页（计费 ≈ 区间实际行数），不做服务端跨段拼接
 functions:
   - name: moneyflow.query_bars
     cn: 资金流向历史
@@ -25,7 +28,8 @@ functions:
     layer: L0
     params:
       - {name: sym, type: string, required: true, desc: 6 位裸码}
-      - {name: limit, type: int, required: false, default: 20, desc: 根数，默认 20}
+      - {name: limit, type: int, required: false, default: 20,
+         desc: 根数，默认 20；单次上限 500（超限服务端拒绝，长历史走 bars 区间分页）}
     returns: {desc: ARR · 资金流行（date/net_mf/elg_net/lg_net/md_net/sm_net）, shape_ref: inventory}
     example: 'moneyflow.query_bars("600519", 20)'
     normalize_with: moneyflow.fmt_maps
@@ -62,7 +66,8 @@ functions:
     layer: L0
     params:
       - {name: sym, type: string, required: true}
-      - {name: limit, type: int, required: false, default: 20}
+      - {name: limit, type: int, required: false, default: 20,
+         desc: 根数，默认 20；单次上限 500（随 query_bars，超限服务端拒绝）}
     returns: {desc: ARR · 资金流行}
     example: 'moneyflow.query_valid("600519", 20)'
   - name: moneyflow.query_last_live

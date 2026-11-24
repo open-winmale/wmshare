@@ -315,6 +315,31 @@ def test_moneyflow_range_pagination_slices_until_covered():
         in evals[1]["json"]["xs_lines"][0]
 
 
+def test_moneyflow_n_over_server_cap_raises():
+    """moneyflow 单次行数上限 500（2026-11-16 单笔 5.15M EC 事故治理，2026-11-24 起
+    script store_limit 无条件拒绝）：门面预检拦截并引导锚点分页，即使 max_limit 放开。"""
+    cli = Client(base_url="https://t", client_id="i", client_secret="s",
+                 catalog=load(), max_limit=None)
+    with pytest.raises(LimitError) as ei:
+        cli.moneyflow.bars("600519", n=501)
+    msg = str(ei.value)
+    assert "500" in msg and "begin=" in msg  # 上限值 + 分页引导
+
+
+def test_moneyflow_range_slice_clamped_to_server_cap():
+    """max_limit 调大只增加片数：moneyflow 锚点切片单片钳到服务端上限 500
+    （服务端对单片 >500 无条件拒绝，2026-11-24 起）。"""
+    cli = Client(base_url="https://t", client_id="i", client_secret="s",
+                 catalog=load(), max_limit=2000,
+                 session=_SeqSession([[{"date": "2026-09-30", "net_mf": 1},
+                                       {"date": "2026-01-05", "net_mf": 2}]]))
+    cli.session.result = [{"date": "2026-09-30", "net_mf": 1},
+                          {"date": "2026-01-05", "net_mf": 2}]  # 不饱和 → 一片即停
+    cli.moneyflow.bars("600519", begin="2026-01-05", end="2026-09-30")
+    assert 'moneyflow.query_bars_anchor("600519", 500, "2026-09-30")' \
+        in last_ev(cli)["xs_lines"][0]
+
+
 class _SeqSession(FakeSession):
     """按调用次序依次返回不同结果（锚点切片用）。"""
 
