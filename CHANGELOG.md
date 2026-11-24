@@ -36,7 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `WMSHARE_DISABLE_ANON=1` 语义不变。免注册被拒改报终态码
   `ip_rate_limited` / `pool_unavailable` / `ip_banned`（不重试），`anon_*` 四码
   转为保留码（见 [ERRORS.md §5](docs/ERRORS.md)）。
-- 目录规模：29 域 / 360 函数 / 180 核心接口 + 5 组合接口 / 29 MCP 工具；守护
+- 目录规模：29 域 / 360 函数 / 180 核心接口 + 18 组合接口 / 29 MCP 工具；守护
   覆盖率下限 23.57% → 24.44%。
 
 ### Deprecated

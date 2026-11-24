@@ -19,7 +19,7 @@
 
 Changed
 - **免注册访问改走公开池**：`Client.from_env()` 凭据双缺时不再申领匿名凭据， 改为直接构造免注册客户端——请求不带访问令牌，服务端按来源网络记账； `Client.auth_mode`（`&quot;credentials&quot;` / `&quot;public_pool&quot;`）判别访问方式。接口、 签名与返回形态不变；`Client.anonymous()` 与 CLI `--anonymous` 保留为「强制 免注册」；存量 `~/.wmshare/anon_credentials.env` 不再被读取； `WMSHARE_DISABLE_ANON=1` 语义不变。免注册被拒改报终态码 `ip_rate_limited` / `pool_unavailable` / `ip_banned`（不重试），`anon_*` 四码 转为保留码（见 [ERRORS.md §5](docs/ERRORS.md)）。
-- 目录规模：29 域 / 360 函数 / 180 核心接口 + 5 组合接口 / 29 MCP 工具；守护 覆盖率下限 23.57% → 24.44%。
+- 目录规模：29 域 / 360 函数 / 180 核心接口 + 18 组合接口 / 29 MCP 工具；守护 覆盖率下限 23.57% → 24.44%。
 
 Deprecated
 - `Client.anonymous(refresh=True)`：免注册访问不再落盘凭据，`refresh` 已无意义， 调用时触发 `DeprecationWarning`；计划 4.0.0 移除（调用方删掉该参数即可）。</description>
