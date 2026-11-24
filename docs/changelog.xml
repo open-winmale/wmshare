@@ -8,6 +8,22 @@
     <lastBuildDate>Tue, 24 Nov 2026 00:00:00 +0800</lastBuildDate>
     <atom:link href="https://github.com/open-winmale/wmshare/raw/main/docs/changelog.xml" rel="self" type="application/rss+xml"/>
     <item>
+      <title>wmshare 3.6.0 (2026-11-24)</title>
+      <link>https://github.com/open-winmale/wmshare/releases/tag/v3.6.0</link>
+      <guid isPermaLink="false">wmshare:3.6.0</guid>
+      <pubDate>Tue, 24 Nov 2026 00:00:00 +0800</pubDate>
+      <description>Added
+- **期货仓单快照**：`cli.futures.receipts(month=None)`（第 183 个核心接口）——交易所 注册仓单量（吨/张逐行，读 `unit` 字段），覆盖 SHFE/CZCE/GFEX，DCE 反爬未采； 上游按月 REPLACE，只保留当月最后一次抓取快照，**不是逐日历史**。MCP `wmshare_market` 新增 `receipts` action；`examples/32_futures_receipts.py`。
+
+Changed
+- **指标适配层单位治理**：`unit_kind=unknown` 从 247（8.28%）降至 57（1.91%）。 新增 ownership/日期/指数成交额·均价·涨跌额/持股股本/布尔族/量能族/行业营收·成本/ 期货结算价等分类规则；上游「手」与「万元」口径因台账未登记换算，继续保留 `unknown` 并逐条登记 `taxonomy.yaml::unit_unknown_allowlist`（含原因）。 `validate_metric_taxonomy` 现强制 unknown 比例 ≤2%、unknown 与 allowlist 严格 1:1；`report_metric_taxonomy` 输出残余清单与原因。
+- 目录规模：29 域 / 364 函数 / 183 核心接口 + 18 组合接口 / 2,983 指标码 / 32 示例；守护覆盖率下限 24.72%（90/364，同步 AGENTS.md、ci.yml、release.yml）。
+
+Fixed
+- 文档口径：`batch_all(&quot;kline.snapshot&quot;)` 全市场为 **1 次**请求（原生批量路由， 不再分批），README/API.md/SKILL/AI/examples 同步；`examples/README.md` 示例数 22 → 32；README 说明 `inventory 377 = 364 对外 + 13 个 internal helper`； README/AI 明确 MCP 走 stdio、由客户端子进程启动、不监听端口；移除无门禁的 331/298 函数计数与 5,691/12 次历史值。
+- 新增文档门禁：示例数按目录真值、MCP stdio、inventory 差额、API.md 批量示例 1 次； `ReadmeClient.batch_all` 对原生路由返回 1 次，避免测试掩盖文档错误。</description>
+    </item>
+    <item>
       <title>wmshare 3.5.0 (2026-11-24)</title>
       <link>https://github.com/open-winmale/wmshare/releases/tag/v3.5.0</link>
       <guid isPermaLink="false">wmshare:3.5.0</guid>
@@ -290,17 +306,6 @@ Fixed
 
 Changed
 - 目录扩容：`fund.valuation` 域（+1 函数 = 299 个底层函数 / 21 个数据域 / 138 个核心接口）；inventory.json 手工同步该条目（extractor 白名单已加 `valuation`，下次上游重跑提取不丢失）。</description>
-    </item>
-    <item>
-      <title>wmshare 2.0.1 (2026-11-17)</title>
-      <link>https://github.com/open-winmale/wmshare/releases/tag/v2.0.1</link>
-      <guid isPermaLink="false">wmshare:2.0.1</guid>
-      <pubDate>Tue, 17 Nov 2026 00:00:00 +0800</pubDate>
-      <description>Changed
-- 无行为变更；`Client._EC_*` 类属性保留为模块常量的别名（既有取值不破）。
-
-Fixed
-- `demo_client().cost_estimate(...)` 缺失（GUIDE 推荐的先估后取在演示模式直接 AttributeError）：EC 预估模型上提为模块级 `estimate_cost`，真实客户端与 demo 共用同一套函数，纯离线零请求。</description>
     </item>
   </channel>
 </rss>

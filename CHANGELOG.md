@@ -9,6 +9,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > MAJOR；弃用至少保留 1 个 MINOR，并在 `Deprecated` 段登记替代写法与移除版本。
 > 升级前请扫一眼 Removed / Changed / Deprecated 段。
 
+## [3.6.0] - 2026-11-24
+
+### Added
+
+- **期货仓单快照**：`cli.futures.receipts(month=None)`（第 183 个核心接口）——交易所
+  注册仓单量（吨/张逐行，读 `unit` 字段），覆盖 SHFE/CZCE/GFEX，DCE 反爬未采；
+  上游按月 REPLACE，只保留当月最后一次抓取快照，**不是逐日历史**。MCP
+  `wmshare_market` 新增 `receipts` action；`examples/32_futures_receipts.py`。
+
+### Changed
+
+- **指标适配层单位治理**：`unit_kind=unknown` 从 247（8.28%）降至 57（1.91%）。
+  新增 ownership/日期/指数成交额·均价·涨跌额/持股股本/布尔族/量能族/行业营收·成本/
+  期货结算价等分类规则；上游「手」与「万元」口径因台账未登记换算，继续保留
+  `unknown` 并逐条登记 `taxonomy.yaml::unit_unknown_allowlist`（含原因）。
+  `validate_metric_taxonomy` 现强制 unknown 比例 ≤2%、unknown 与 allowlist 严格
+  1:1；`report_metric_taxonomy` 输出残余清单与原因。
+- 目录规模：29 域 / 364 函数 / 183 核心接口 + 18 组合接口 / 2,983 指标码 /
+  32 示例；守护覆盖率下限 24.72%（90/364，同步 AGENTS.md、ci.yml、release.yml）。
+
+### Fixed
+
+- 文档口径：`batch_all("kline.snapshot")` 全市场为 **1 次**请求（原生批量路由，
+  不再分批），README/API.md/SKILL/AI/examples 同步；`examples/README.md` 示例数
+  22 → 32；README 说明 `inventory 377 = 364 对外 + 13 个 internal helper`；
+  README/AI 明确 MCP 走 stdio、由客户端子进程启动、不监听端口；移除无门禁的
+  331/298 函数计数与 5,691/12 次历史值。
+- 新增文档门禁：示例数按目录真值、MCP stdio、inventory 差额、API.md 批量示例 1 次；
+  `ReadmeClient.batch_all` 对原生路由返回 1 次，避免测试掩盖文档错误。
+
 ## [3.5.0] - 2026-11-24
 
 ### Added
