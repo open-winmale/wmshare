@@ -1054,6 +1054,60 @@ def test_limit_prices_snapshot(cli):
         assert float(one["limit_up"]) > float(one["limit_down"]) > 0
 
 
+def test_limit_price_history_series(cli):
+    """历史涨跌停价：逐日规则价、ST 5%、创业板改革、IPO 与除权参考价。"""
+    out = _call_or_xfail(lambda: cli.stocks.limit_price_history("600519", n=60))
+    rows = out.to_dict("records") if hasattr(out, "to_dict") else list(out)
+    assert len(rows) >= 20, f"600519 近 60 日应返回足量行，实际 {len(rows)}"
+    dates = [str(r["date"]) for r in rows]
+    assert dates == sorted(dates), f"date 必须升序：{dates[:3]}…"
+    for r in rows:
+        if r["rule"] in {"main10", "main5", "gem10", "gem5",
+                         "gem20", "star20", "bse30"}:
+            assert float(r["limit_up"]) > float(r["limit_down"]) > 0
+
+    # 主板 ST 5%：*ST天龙 2003-05-12/13 连续跌停（不是 10%）
+    st = _call_or_xfail(lambda: cli.stocks.limit_price_history(
+        "600234", begin="2003-05-12", end="2003-05-13"))
+    st_rows = st.to_dict("records") if hasattr(st, "to_dict") else list(st)
+    assert [r["rule"] for r in st_rows] == ["main5", "main5"]
+    assert float(st_rows[0]["close"]) == float(st_rows[0]["limit_down"])
+    assert float(st_rows[0]["low"]) == float(st_rows[0]["close"])
+
+    # 主板 ST 制度切换：2026-05-06 起 5% → 10%（603021 ST华鹏/*ST华鹏）
+    cut = _call_or_xfail(lambda: cli.stocks.limit_price_history(
+        "603021", begin="2026-04-29", end="2026-05-08"))
+    cut_rows = cut.to_dict("records") if hasattr(cut, "to_dict") else list(cut)
+    pre = [r for r in cut_rows if str(r["date"]) < "2026-05-06"]
+    post = [r for r in cut_rows if str(r["date"]) >= "2026-05-06"]
+    assert pre and post, f"603021 应同时有 5/6 前后行：{cut_rows}"
+    assert all(r["band"] == 0.05 and r["rule"] == "main5" for r in pre)
+    assert all(r["band"] == 0.10 and r["rule"] == "main10" for r in post)
+
+    # 创业板改革：2020-08-24 起 10% → 20%
+    gem = _call_or_xfail(lambda: cli.stocks.limit_price_history(
+        "300750", begin="2020-08-21", end="2020-08-24"))
+    gem_rows = gem.to_dict("records") if hasattr(gem, "to_dict") else list(gem)
+    assert [r["band"] for r in gem_rows] == [0.10, 0.20]
+    assert float(gem_rows[-1]["basis"]) == 192.23
+
+    # 科创板 IPO 前 5 个交易日无涨跌幅（rule=ipo，价格为空）
+    ipo = _call_or_xfail(lambda: cli.stocks.limit_price_history(
+        "688981", begin="2020-07-16", end="2020-07-24"))
+    ipo_rows = ipo.to_dict("records") if hasattr(ipo, "to_dict") else list(ipo)
+    assert [r["rule"] for r in ipo_rows[:5]] == ["ipo"] * 5
+    assert all(r["limit_up"] is None or r["limit_up"] != r["limit_up"]
+               for r in ipo_rows[:5])
+
+    # 除权参考价：600519 2024-06-19 除息 30.876 元，前收 1490.62（非 1521.5）
+    ex = _call_or_xfail(lambda: cli.stocks.limit_price_history(
+        "600519", begin="2024-06-19", end="2024-06-19"))
+    ex_rows = ex.to_dict("records") if hasattr(ex, "to_dict") else list(ex)
+    assert len(ex_rows) == 1 and str(ex_rows[0]["date"]) == "2024-06-19"
+    assert abs(float(ex_rows[0]["basis"]) - 1490.62) < 0.01
+    assert float(ex_rows[0]["limit_up"]) == 1639.68
+
+
 def test_holdernum_history_series(cli):
     """股东户数历史（raw 多期档）：日期升序、末期与快照同值、比例=小数。"""
     out = _call_or_xfail(lambda: cli.equity.query_holdernum_history("600519", 8))

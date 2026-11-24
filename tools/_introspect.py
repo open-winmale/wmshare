@@ -53,6 +53,8 @@ METHOD_EXAMPLE_VALUES = {
     ("blocktrade", "by_symbol"): {"limit": "10"},
     # ST/停复牌史：停复牌可带区间；简称史/时间轴按票
     ("stocks", "suspend_history"): {"begin": '"2026-01-01"', "end": '"2026-11-23"'},
+    # 历史涨跌停价：n 与 begin/end 互斥，示例取 n 缺省形态
+    ("stocks", "limit_price_history"): {"n": "30", "_skip": ("begin", "end")},
     # 概念：concept_members 的概念名必须给真实值（占位会打红示例执行测试）
     ("board", "concepts_of"): {},
     ("board", "concept_members"): {"name": '"白酒"', "limit": "10"},
@@ -261,6 +263,10 @@ FALLBACK_RETURNS = {
     ("index", "members_history"):
         "MAP · {ok, as_of, data: {key, begin, end, members: [{symbol, name, weight,"
         " …]}}}（begin 时点的成分名单快照）",
+    ("stocks", "limit_price_history"):
+        "历史涨跌停价行表：date/name/close/high/low/percent/basis/limit_up/"
+        "limit_down/band/rule/is_st，date 升序（basis=除权参考前收；"
+        "rule=ipo/unbounded/no_price 时价格为空）",
 }
 # 无目录 shape 的核心门面返回说明补全（取自各方法 docstring 首句，人话口径；
 # 开放平台接口文档站的「返回」段直接渲染该文本——不加 ARR·/MAP· 前缀，

@@ -1306,6 +1306,126 @@ class StocksApi(_Api):
         """
         return self._c.call("stocks.limit_price", sym=symbol)
 
+    def limit_price_history(self, symbol: str, n: int | None = None,
+                            begin: str | None = None,
+                            end: str | None = None) -> Any:
+        """单票历史涨跌停价（DataFrame，date 升序；规则价，非成交价）。
+
+        逐日字段 date/name/close/high/low/percent/basis/limit_up/limit_down/
+        band/rule/is_st：
+
+        - basis = 交易所除权参考前收盘。库内 percent/chg 都相对**未调整**前收，
+          除权日直接用 close/(1+percent) 会错；本接口用后复权/不复权 close
+          比值还原 ``prev_close × f_prev / f_cur``，到分对齐交易所参考价；
+        - limit_up/down = ROUND(basis×(1±band), 2)；
+        - band 按板块+制度日期：主板 1996-12-16 前无限制、之后 10%（ST 5% 至
+          2026-05-05，2026-05-06 起 ST 10%）；创业板 2020-08-24 前 10%
+          （ST 5%）、之后 20%；科创板 20%；北交所 2020-07-27 前无限制、
+          之后 30%；
+        - rule = main10/main5/gem10/gem5/gem20/star20/bse30/ipo/unbounded/
+          no_price。ipo=上市首 N 个交易日无涨跌停（科创板/2020-08-24 后
+          创业板/2023-04-10 后主板 5 日；北交所/旧制 1 日，旧制 44% 不建模），
+          unbounded=当日涨跌幅超带宽 0.2pp 或制度无限制，no_price=缺价；
+          停牌日无 K 线不出行；历史退市整理期无逐日状态源，不标 delisting；
+        - ST 段来自 ``stocks.name_history``（简称含 ST 或以 ``*`` 开头的风险
+          警示段；简称史自 2000 年起，此前按非 ST）。
+
+        成本：需读不复权+后复权两档 K 线（≈2×行数×60~75 EC 冷态）+ name_history
+        （≈110~2000 EC）+ 一次锚点探针（≈300 EC）；n 越小越省，复跑走
+        kline 窗口缓存更省（2026-11-24 实测 n=120 冷 ≈1.7 万 EC）。
+
+        :returns: DataFrame/行表 · date/name/close/high/low/percent/basis/
+            limit_up/limit_down/band/rule/is_st（date 升序）
+        :param symbol: 6 位 A 股代码（也接受 .SH/.SZ/.BJ 后缀）
+        :param n: 最近 N 个交易日（默认 120）；与 begin/end 互斥
+        :param begin: 起始日期（含，YYYY-MM-DD），须与 end 同时提供；与 n 互斥
+        :param end: 结束日期（含）
+        """
+        from wmshare.limit import board_of, build_rows, merge_bars, st_segments
+
+        code = self._c._canon_symbol(str(symbol))
+        if not board_of(code):
+            raise UsageError(
+                "limit_price_history 仅支持 A 股 6 位代码（如 600519/000001）",
+                code="symbol")
+
+        def _fetch(adj: str | None, begin_d: date, end_d: date,
+                   limit: int) -> list[dict[str, Any]]:
+            """锚点切片取 [begin, end]（end 含）；query_at_anchor 锚点本身不含。"""
+            fn = "kline.query_at_anchor_adj" if adj else "kline.query_at_anchor"
+            anchor = (end_d + timedelta(days=1)).isoformat()
+            found: dict[str, dict[str, Any]] = {}
+            for _ in range(_MAX_RANGE_SLICES):
+                kw: dict[str, Any] = {"sym": code, "limit": limit,
+                                      "anchor_date": anchor}
+                if adj:
+                    kw["adj"] = adj
+                chunk = self._c.call(fn, **kw)
+                if not isinstance(chunk, list) or not chunk:
+                    break
+                dates: list[str] = []
+                for r in chunk:
+                    d = str(r.get("date") or "")[:10]
+                    if d:
+                        dates.append(d)
+                        found.setdefault(d, r)
+                if not dates or len(chunk) < limit or min(dates) <= begin_d.isoformat():
+                    break
+                nxt = min(dates)
+                if nxt == anchor:
+                    raise LimitError(
+                        f"limit_price_history: 锚点未前移（anchor={anchor}）",
+                        code="range")
+                anchor = nxt
+            else:
+                raise LimitError(
+                    f"limit_price_history: 区间切了 {_MAX_RANGE_SLICES} 片仍未覆盖 begin",
+                    code="range")
+            lo, hi = begin_d.isoformat(), end_d.isoformat()
+            return [found[d] for d in sorted(found) if lo <= d <= hi]
+
+        if begin is not None or end is not None:
+            if not (begin and end):
+                raise UsageError("begin 与 end 需同时提供", code="range")
+            if n is not None:
+                raise UsageError("n 与 begin/end 二选一", code="range")
+            b, e = _range_bounds(str(begin), str(end))
+            fetch_begin = b - timedelta(days=15)
+            if (e - fetch_begin).days > MAX_RANGE_DAYS:
+                fetch_begin = b
+            span = max(1, (e - fetch_begin).days + 1)
+            cap = int(self._c.max_limit or 10000)
+            limit = min(10000, cap, max(20, int(span * 0.7) + 10))
+            nr_rows = _fetch(None, fetch_begin, e, limit)
+            hfq_rows = _fetch("hfq", fetch_begin, e, limit)
+            trim_begin, want = b.isoformat(), None
+        else:
+            want = 120 if n is None else int(n)
+            if want <= 0:
+                raise UsageError("n 需为正整数", code="params")
+            limit = min(want + 1, 10000)
+            nr_rows = self._c.call("kline.query_bars", sym=code, limit=limit)
+            hfq_rows = self._c.call("kline.query_bars_adj", sym=code,
+                                    limit=limit, adj="hfq")
+            trim_begin = None
+        nr_rows = _rows(nr_rows)
+        if not isinstance(nr_rows, list) or not nr_rows:
+            return _out([])
+        merged = merge_bars(nr_rows, _rows(hfq_rows))
+        if not merged:
+            return _out([])
+        probe = self._c.call("kline.query_at_anchor", sym=code, limit=1,
+                             anchor_date=merged[0]["date"])
+        first_is_listing = not isinstance(probe, list) or len(probe) == 0
+        segments = st_segments(
+            _rows(self._c.call("stocks.name_history", sym=code)))
+        rows = build_rows(code, merged, segments, first_is_listing)
+        if trim_begin is not None:
+            rows = [r for r in rows if r["date"] >= trim_begin]
+        elif want is not None and len(rows) > want:
+            rows = rows[-want:]
+        return _out(rows)
+
     def suspend_history(self, symbol: str, begin: str = "",
                         end: str = "") -> Any:
         """单票停复牌事件（按交易日升序）。
@@ -4080,6 +4200,8 @@ FRIENDLY_INDEX: list[tuple[str, str, str, str, str]] = [
     ("market", "stocks", "list", "全市场证券列表", "stocks.query_list"),
     ("market", "stocks", "limit_prices", "全市场涨跌停价", "stocks.limit_prices"),
     ("market", "stocks", "limit_price", "单票涨跌停价", "stocks.limit_price"),
+    ("market", "stocks", "limit_price_history", "单票历史涨跌停价",
+     "组合接口（kline.query_bars[_adj] + stocks.name_history）"),
     ("market", "stocks", "suspend_history", "单票停复牌事件", "stocks.suspend_history"),
     ("market", "stocks", "name_history", "单票简称变更史", "stocks.name_history"),
     ("market", "stocks", "lifecycle", "单票 ST/停复牌时间轴", "stocks.lifecycle"),

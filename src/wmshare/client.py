@@ -426,6 +426,17 @@ def estimate_cost(name: str, params: dict[str, Any] | None = None, *,
     elif name == "stocks.limit_price":
         out.update(ec_lo=30, ec_hi=60, model="measured",
                    note="单票索引点查 ≈30-50 EC（无全市场投影）")
+    elif name == "stocks.limit_price_history":
+        # 历史序列需同时读不复权+后复权两档（除权参考价用 hfq/nr 因子还原），
+        # 外加简称史（≈110~2000 EC）与一次锚点探针；n 越小越省，复跑无缓存。
+        hist_n = rows if (rows and rows > 0) else 120
+        if p.get("begin") and p.get("end"):
+            hist_days = max(1, abs(_days_between(p["begin"], p["end"])) + 1)
+            hist_n = int(hist_days * 0.7) + 2
+        out.update(ec_lo=hist_n * 2 * 60 + 110, ec_hi=hist_n * 2 * 75 + 2_100,
+                   model="measured",
+                   note="2026-11-24 实测 n=120 冷 ≈1.7 万 EC（不复权/后复权各 ≈8.3k + "
+                        "简称史 111 + 锚点 297）；n 越小越省，复跑走 kline 窗口缓存")
     elif name.startswith("toplist."):
         # 实测（2026-11-19 live，修复后）：
         #   by_date 单日整榜 95 行 冷 12,858 → 热 175 EC（fmt_maps 指纹缓存）

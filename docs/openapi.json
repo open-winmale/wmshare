@@ -3342,6 +3342,59 @@
         }
       }
     },
+    "/stocks/limit_price_history": {
+      "post": {
+        "operationId": "stocks_limit_price_history",
+        "summary": "单票历史涨跌停价（DataFrame，date 升序；规则价，非成交价）。",
+        "description": "逐日字段 date/name/close/high/low/percent/basis/limit_up/limit_down/、band/rule/is_st：、- basis = 交易所除权参考前收盘。库内 percent/chg 都相对**未调整**前收，、除权日直接用 close/(1+percent) 会错；本接口用后复权/不复权 close、比值还原 ``prev_close × f_prev / f_cur``，到分对齐交易所参考价；、- limit_up/down = ROUND(basis×(1±band), 2)；、- band 按板块+制度日期：主板 1996-12-16 前无限制、之后 10%（ST 5% 至、2026-05-05，2026-05-06 起 ST 10%）；创业板 2020-08-24 前 10%、（ST 5%）、之后 20%；科创板 20%；北交所 2020-07-27 前无限制、、之后 30%；、- rule = main10/main5/gem10/gem5/gem20/star20/bse30/ipo/unbounded/、no_price。ipo=上市首 N 个交易日无涨跌停（科创板/2020-08-24 后、创业板/2023-04-10 后主板 5 日；北交所/旧制 1 日，旧制 44% 不建模），、unbounded=当日涨跌幅超带宽 0.2pp 或制度无限制，no_price=缺价；、停牌日无 K 线不出行；历史退市整理期无逐日状态源，不标 delisting；、- ST 段来自 ``stocks.name_history``（简称含 ST 或以 ``*`` 开头的风险、警示段；简称史自 2000 年起，此前按非 ST）。、成本：需读不复权+后复权两档 K 线（≈2×行数×60~75 EC 冷态）+ name_history、（≈110~2000 EC）+ 一次锚点探针（≈300 EC）；n 越小越省，复跑走、kline 窗口缓存更省（2026-11-24 实测 n=120 冷 ≈1.7 万 EC）。、:returns: DataFrame/行表 · date/name/close/high/low/percent/basis/、limit_up/limit_down/band/rule/is_st（date 升序）、组合接口（kline.query_bars[_adj] + stocks.name_history）。SDK 调用：`cli.stocks.limit_price_history(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "市场行情"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "symbol": {
+                    "type": "string",
+                    "description": "6 位 A 股代码（也接受 .SH/.SZ/.BJ 后缀）"
+                  },
+                  "n": {
+                    "type": "integer",
+                    "description": "最近 N 个交易日（默认 120）；与 begin/end 互斥"
+                  },
+                  "begin": {
+                    "type": "string",
+                    "description": "起始日期（含，YYYY-MM-DD），须与 end 同时提供；与 n 互斥"
+                  },
+                  "end": {
+                    "type": "string",
+                    "description": "结束日期（含）"
+                  }
+                },
+                "required": [
+                  "symbol"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "历史涨跌停价行表：date/name/close/high/low/percent/basis/limit_up/limit_down/band/rule/is_st，date 升序（basis=除权参考前收；rule=ipo/unbounded/no_price 时价格为空）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/stocks/suspend_history": {
       "post": {
         "operationId": "stocks_suspend_history",

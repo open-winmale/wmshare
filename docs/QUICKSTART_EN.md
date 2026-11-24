@@ -105,8 +105,8 @@ by default (`Client(max_limit=...)` to adjust).
 The in-depth documentation is in Chinese:
 [GUIDE.md](GUIDE.md) (task recipes, batching, troubleshooting) ·
 [INDICATORS.md](INDICATORS.md) (indicator catalog) ·
-[API.md](API.md) (180 core endpoints) ·
-[examples/](../examples/README.md) (29 runnable numbered examples: guest access
+[API.md](API.md) (181 core endpoints) ·
+[examples/](../examples/README.md) (30 runnable numbered examples: guest access
 by default, 4 fully offline) ·
 [AGENTS.md](../AGENTS.md) and
 [SKILL.md](../src/wmshare/skills/wmshare/SKILL.md) for agent integration.

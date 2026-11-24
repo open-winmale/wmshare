@@ -88,7 +88,8 @@ MarketAction = Literal[
     "minute", "is_etf", "bars", "last", "live", "query", "latest", "universe",
     "latest_quotes", "of_stock", "call_hits", "kline_window", "keys", "members",
     "weights", "valuation", "hist_stats", "list", "trend", "universe_keys",
-    "limit_price", "limit_prices", "moneyflow", "moneyflow_last",
+    "limit_price", "limit_prices", "limit_price_history", "moneyflow",
+    "moneyflow_last",
     "by_date", "by_symbol", "suspend_history", "name_history", "lifecycle",
     "concepts_of", "concept_members",
 ]

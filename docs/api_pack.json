@@ -2,9 +2,9 @@
   "schema_version": 2,
   "generated_by": "tools/gen_api_docs.py",
   "meta": {
-    "core": 180,
+    "core": 181,
     "composite": 18,
-    "docs_visible": 175,
+    "docs_visible": 176,
     "variants": 21,
     "domains": 29,
     "categories": [
@@ -3558,8 +3558,9 @@
           },
           "notes": [
             "当日快照（非历史序列）：索引一次投影，全市场冷 ≈14 万 EC、同日复跑 ≈75 EC",
-            "带宽按代码号段：30x/68x=20%、43/83/87/88/92（北交所）=30%、其余=10%；ST 股按板块带宽（2026-11-23 全市场实测未见 5% 档）",
+            "带宽按代码号段：30x/68x=20%、43/83/87/88/92（北交所）=30%、其余主板=10%；ST 按板块带宽（主板 ST 2026-05-06 起 10%，此前 5%；历史序列按日期切档）。2026-11-24 探针：2026-05-05 前主板 ST 样本 max|pct|≤5.08%、10% 档 0 命中；5/6 后 max 10.59%、10% 档命中",
             "前收盘 = ROUND(close/(1+percent), 2)（A 股报价恒为分，snap 到分消除 percent 四位小数误差）；限价 ROUND 到分",
+            "除权除息日：全市场索引只有原始 percent，前收未按除权参考价调整；历史序列 cli.stocks.limit_price_history 已用 hfq/nr 因子还原（快照除权日以历史序列为准）",
             "rule=unbounded（当日涨跌幅超带宽 0.2 个百分点，如新股无涨跌幅日）/delisting（退市整理期）/no_price 时价格字段为 nil，不猜",
             "停牌股不返回；新股上市前 5 个交易日无涨跌停，索引未物化上市日期——快照按板块带宽给理论价，超带宽会被标 unbounded，其余次新股请用 listingdate 自查（已知边界）"
           ],
@@ -3626,6 +3627,45 @@
               "market": "cn"
             }
           }
+        },
+        {
+          "key": "stocks.limit_price_history",
+          "ns": "stocks",
+          "method": "limit_price_history",
+          "cn": "单票历史涨跌停价",
+          "composite": false,
+          "desc": "单票历史涨跌停价（DataFrame，date 升序；规则价，非成交价）。",
+          "params": [
+            {
+              "name": "symbol",
+              "required": true,
+              "desc": "6 位 A 股代码（也接受 .SH/.SZ/.BJ 后缀）"
+            },
+            {
+              "name": "n",
+              "required": false,
+              "desc": "最近 N 个交易日（默认 120）；与 begin/end 互斥"
+            },
+            {
+              "name": "begin",
+              "required": false,
+              "desc": "起始日期（含，YYYY-MM-DD），须与 end 同时提供；与 n 互斥"
+            },
+            {
+              "name": "end",
+              "required": false,
+              "desc": "结束日期（含）"
+            }
+          ],
+          "returns": {
+            "kind": "text",
+            "desc": "历史涨跌停价行表：date/name/close/high/low/percent/basis/limit_up/limit_down/band/rule/is_st，date 升序（basis=除权参考前收；rule=ipo/unbounded/no_price 时价格为空）",
+            "fields": []
+          },
+          "notes": [],
+          "docs_visible": true,
+          "example": "cli.stocks.limit_price_history(\"600519\", n=30)",
+          "test": null
         },
         {
           "key": "stocks.suspend_history",

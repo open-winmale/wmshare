@@ -853,6 +853,9 @@ def market(
         data = cli.stocks.limit_price(_symbol(action, symbol))
     elif domain == "stocks" and action == "limit_prices":
         data = cli.stocks.limit_prices()
+    elif domain == "stocks" and action == "limit_price_history":
+        data = cli.stocks.limit_price_history(
+            _symbol(action, symbol), n=n, begin=begin, end=end)
     elif domain == "stocks" and action == "suspend_history":
         data = cli.stocks.suspend_history(_symbol(action, symbol),
                                           begin=begin or "", end=end or "")
