@@ -4009,6 +4009,248 @@
         }
       }
     },
+    "/futures/holding": {
+      "post": {
+        "operationId": "futures_holding",
+        "summary": "期货每日持仓排名（按合约查会员排名）。",
+        "description": "数据源为上游期货持仓排名，按交易日一档（单日约 1 万行）。给 ``contract``、时返回该合约会员按成交量降序的前 ``limit`` 行；不给 contract 时按上游顺序、截取（跨合约排序成本过高，不提供全市场排名）。、:returns: DataFrame/行表 · date/contract/broker/vol/vol_chg/long_hld/、long_chg/short_hld/short_chg（量=手/张，上游原值，不做换算）、底层目录函数 `futures.holding`。SDK 调用：`cli.futures.holding(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "市场行情"
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "date": {
+                    "type": "string",
+                    "description": "交易日 ``YYYYMMDD`` 或 ``YYYY-MM-DD``；空=最新交易日"
+                  },
+                  "contract": {
+                    "type": "string",
+                    "description": "合约代码（如 ``A2701``）；空=全市场（上游顺序）"
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "description": "行数上限（默认 200；给 contract 时按成交量降序取前 limit）"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "持仓排名行",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "date": {
+                        "type": "string",
+                        "description": "交易日 YYYYMMDD"
+                      },
+                      "contract": {
+                        "type": "string",
+                        "description": "合约代码（上游 symbol）"
+                      },
+                      "broker": {
+                        "type": "string",
+                        "description": "期货公司会员"
+                      },
+                      "vol": {
+                        "type": "number",
+                        "description": "成交量（手/张，上游原值）"
+                      },
+                      "vol_chg": {
+                        "type": "number",
+                        "description": "成交量增减"
+                      },
+                      "long_hld": {
+                        "type": "number",
+                        "description": "多头持仓"
+                      },
+                      "long_chg": {
+                        "type": "number",
+                        "description": "多头持仓增减"
+                      },
+                      "short_hld": {
+                        "type": "number",
+                        "description": "空头持仓"
+                      },
+                      "short_chg": {
+                        "type": "number",
+                        "description": "空头持仓增减"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "vol": [
+              0,
+              10000000.0
+            ],
+            "vol_chg": [
+              -10000000.0,
+              10000000.0
+            ],
+            "long_hld": [
+              0,
+              10000000.0
+            ],
+            "long_chg": [
+              -10000000.0,
+              10000000.0
+            ],
+            "short_hld": [
+              0,
+              10000000.0
+            ],
+            "short_chg": [
+              -10000000.0,
+              10000000.0
+            ]
+          }
+        }
+      }
+    },
+    "/futures/settle": {
+      "post": {
+        "operationId": "futures_settle",
+        "summary": "期货每日结算参数（结算价/手续费/保证金率）。",
+        "description": "数据源为上游期货结算参数，按交易日一档（单日约 874 行）。``contract``、可给完整合约代码（``CU2612.SHF``）或品种前缀（``CU``）。、费率口径不统一：``fee_rate`` 为 ‰ 原值；保证金率多为小数（0.11=11%），、个别品种上游给 50（视为 50%），SDK 不做换算。``settle`` 价格单位随合约、（元/吨、元/桶等）。、:returns: DataFrame/行表 · date/contract/settle/fee_rate/fee/、delivery_fee/b_hedge_margin_rate/s_hedge_margin_rate/、long_margin_rate/short_margin_rate、底层目录函数 `futures.settle`。SDK 调用：`cli.futures.settle(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "市场行情"
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "date": {
+                    "type": "string",
+                    "description": "交易日 ``YYYYMMDD`` 或 ``YYYY-MM-DD``；空=最新交易日"
+                  },
+                  "contract": {
+                    "type": "string",
+                    "description": "合约代码 或品种前缀；空=全市场"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "结算参数行",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "date": {
+                        "type": "string",
+                        "description": "交易日 YYYYMMDD"
+                      },
+                      "contract": {
+                        "type": "string",
+                        "description": "合约代码（如 CU2612.SHF）"
+                      },
+                      "settle": {
+                        "type": "number",
+                        "description": "结算价（合约计价单位，随品种）"
+                      },
+                      "fee_rate": {
+                        "type": "number",
+                        "description": "交易手续费率（上游原值，‰ 口径）"
+                      },
+                      "fee": {
+                        "type": "number",
+                        "description": "交易手续费（元，上游原值）"
+                      },
+                      "delivery_fee": {
+                        "type": "number",
+                        "description": "交割手续费（元，上游原值）"
+                      },
+                      "b_hedge_margin_rate": {
+                        "type": "number",
+                        "description": "买套保保证金率（小数，0.1=10%）"
+                      },
+                      "s_hedge_margin_rate": {
+                        "type": "number",
+                        "description": "卖套保保证金率"
+                      },
+                      "long_margin_rate": {
+                        "type": "number",
+                        "description": "多头保证金率"
+                      },
+                      "short_margin_rate": {
+                        "type": "number",
+                        "description": "空头保证金率"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "settle": [
+              0,
+              10000000.0
+            ],
+            "fee_rate": [
+              0,
+              100
+            ],
+            "fee": [
+              0,
+              100000.0
+            ],
+            "delivery_fee": [
+              0,
+              100000.0
+            ],
+            "b_hedge_margin_rate": [
+              0,
+              100
+            ],
+            "s_hedge_margin_rate": [
+              0,
+              100
+            ],
+            "long_margin_rate": [
+              0,
+              100
+            ],
+            "short_margin_rate": [
+              0,
+              100
+            ]
+          }
+        }
+      }
+    },
     "/statements/audit": {
       "post": {
         "operationId": "statements_audit",

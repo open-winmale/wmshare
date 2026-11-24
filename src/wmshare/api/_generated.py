@@ -942,6 +942,39 @@ class FuturesNS(_Ns):
             kw["month"] = month
         return _out(self._client.call("futures.receipts", **kw, _raw=_raw), _raw)
 
+    def holding(self, date: str | None = None, contract: str | None = None, limit: int | None = None, _raw: bool = False) -> Any:
+        """期货每日持仓排名（按合约查会员排名）
+
+:param date: 交易日 YYYYMMDD 或 YYYY-MM-DD（空=最新交易日）
+:param contract: 合约代码（如 A2701）；空=全市场按上游顺序截 limit
+:param limit: 返回行数上限（默认 200）；给 contract 时按成交量降序取前 limit
+
+:returns: ARR · 持仓行（给 contract 时按 vol 降序；不给时上游顺序）
+        """
+        kw: dict[str, Any] = {}
+        if date is not None:
+            kw["date"] = date
+        if contract is not None:
+            kw["contract"] = contract
+        if limit is not None:
+            kw["limit"] = limit
+        return _out(self._client.call("futures.holding", **kw, _raw=_raw), _raw)
+
+    def settle(self, date: str | None = None, contract: str | None = None, _raw: bool = False) -> Any:
+        """期货每日结算参数
+
+:param date: 交易日 YYYYMMDD 或 YYYY-MM-DD（空=最新交易日）
+:param contract: 合约代码（如 CU2612.SHF）或品种前缀（如 CU）；空=全市场
+
+:returns: ARR · 结算行（contract 升序）
+        """
+        kw: dict[str, Any] = {}
+        if date is not None:
+            kw["date"] = date
+        if contract is not None:
+            kw["contract"] = contract
+        return _out(self._client.call("futures.settle", **kw, _raw=_raw), _raw)
+
 class FxNS(_Ns):
     """外汇汇率（market.fx）"""
 

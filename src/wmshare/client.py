@@ -523,6 +523,23 @@ def estimate_cost(name: str, params: dict[str, Any] | None = None, *,
         out.update(ec_lo=100, ec_hi=1_500, model="estimate",
                    note="按月单 doc 点查（≈61 品种），月键 memo 命中后近乎免费；"
                         "非逐日历史（上游按月 REPLACE 只留当月最后一日）")
+    elif name == "futures.holding":
+        # 实测（2026-11-24 live）：单日 10,532 行全量规范化 ≈121 万 EC；
+        # 已改过滤下推（先按合约筛/截断再 CONOF），单合约会员行实测最多 90。
+        _lim = min(int(p.get("limit") or 200), 500)
+        out.update(ec_lo=200, ec_hi=3_000 + 120 * _lim, model="estimate",
+                   note=f"过滤下推后按命中行规范化 ≈120 EC/行 × {_lim} 行；"
+                        "单日全量 10,532 行 ≈121 万 EC（2026-11-24 实测）已避免；"
+                        "单合约会员行实测最多 90")
+    elif name == "futures.settle":
+        _ct = str(p.get("contract") or "").strip()
+        if _ct:
+            out.update(ec_lo=200, ec_hi=8_000, model="estimate",
+                       note="按合约代码前缀先过滤再规范化（前缀为空才规范化全量）")
+        else:
+            out.update(ec_lo=2_000, ec_hi=90_000, model="measured",
+                       note="全市场单日 874 行规范化 ≈8.2 万 EC（2026-11-24 live）；"
+                            "传 contract/品种前缀可降到数千 EC")
     elif name == "futures.bars":
         # 实测（2026-11-23 live，store 直读 futures.query_bars）：
         # 1 行冷 317 / 6 行 947 / 21 行 2,844 / 250 行 31,691 EC

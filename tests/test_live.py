@@ -330,8 +330,9 @@ def test_toplist_by_date_and_symbol(cli):
 
 def test_futures_mapping(cli):
     """期货换月映射：RB.SHF 全历史行合同（date/symbol/mapping_symbol 升序）"""
-    rows = _call_or_xfail(lambda: cli.futures.mapping("RB.SHF"))
-    assert isinstance(rows, list) and rows
+    df = _call_or_xfail(lambda: cli.futures.mapping("RB.SHF"))
+    rows = df.to_dict("records") if hasattr(df, "to_dict") else list(df)
+    assert rows
     dates = [str(r["date"]) for r in rows]
     assert dates == sorted(dates), "mapping 应为 date 升序"
     assert all(r["symbol"] == "RB.SHF" and r["mapping_symbol"] for r in rows)
@@ -1002,15 +1003,52 @@ def test_board_concept_tags(cli):
 
 
 def test_futures_receipts(cli):
-    """交易所仓单快照：行形齐、unit 非空、title 唯一（按月口径，非逐日历史）。"""
+    """交易所仓单快照：行形齐、unit 非空、title 基本唯一（按月口径，非逐日历史）。"""
     df = _call_or_xfail(lambda: cli.futures.receipts())
     rows = df.to_dict("records") if hasattr(df, "to_dict") else list(df)
     if not rows:
         pytest.skip("该月无仓单档（上游按月 REPLACE，月初可能未抓取）")
     assert all(r["unit"] for r in rows), "每行应有 unit（吨/张）"
     titles = [r["title"] for r in rows]
-    assert len(titles) == len(set(titles)), "title 应唯一"
+    # 郑商所仓单表对红枣CJ/花生PK 会把同一行输出两遍（qty=0，2026-11-23 档实测），
+    # 属上游原样数据；除这两项外重复即说明读面拼档出错。
+    dup = {t for t in titles if titles.count(t) > 1}
+    assert dup <= {"CZCE.红枣CJ", "CZCE.花生PK"}, f"非预期重复 title：{sorted(dup)}"
     assert {str(r["exchange"]) for r in rows} <= {"SHFE", "CZCE", "GFEX", "DCE"}
+
+
+def test_futures_holding(cli):
+    """每日持仓排名：按合约返回会员排名，vol 降序、合约一致。"""
+    dates = _call_or_xfail(lambda: cli.call("futures.holding_dates"))
+    if not dates:
+        pytest.skip("无持仓排名档（采集器未跑）")
+    probe = _call_or_xfail(lambda: cli.futures.holding(limit=1))
+    rows0 = probe.to_dict("records") if hasattr(probe, "to_dict") else list(probe)
+    if not rows0:
+        pytest.skip("最新交易日无持仓行")
+    contract = str(rows0[0]["contract"])
+    df = _call_or_xfail(lambda: cli.futures.holding(contract=contract, limit=10))
+    rows = df.to_dict("records") if hasattr(df, "to_dict") else list(df)
+    assert rows, f"{contract} 应有会员排名行"
+    assert all(str(r["contract"]) == contract for r in rows)
+    vols = [float(r["vol"]) for r in rows]
+    assert vols == sorted(vols, reverse=True), "应按成交量降序"
+    assert {"broker", "long_hld", "short_hld"} <= set(rows[0])
+
+
+def test_futures_settle(cli):
+    """每日结算参数：品种前缀过滤生效、合约升序、结算价为正。"""
+    dates = _call_or_xfail(lambda: cli.call("futures.settle_dates"))
+    if not dates:
+        pytest.skip("无结算参数档（采集器未跑）")
+    df = _call_or_xfail(lambda: cli.futures.settle(contract="CU"))
+    rows = df.to_dict("records") if hasattr(df, "to_dict") else list(df)
+    if not rows:
+        pytest.skip("最新交易日无 CU 结算参数")
+    contracts = [str(r["contract"]) for r in rows]
+    assert all(c.startswith("CU") for c in contracts), "品种前缀过滤应生效"
+    assert contracts == sorted(contracts), "应按合约升序"
+    assert all(float(r["settle"]) > 0 for r in rows)
 
 
 def test_board_concept_list(cli):

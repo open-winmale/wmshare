@@ -75,7 +75,7 @@ ValuationAction = Literal[
 ]
 ValuationMetric = Literal["pe", "pb", "ps", "pr"]
 ToplistAction = Literal["by_date", "by_symbol"]
-FuturesAction = Literal["get", "mapping", "snapshot", "bars", "receipts"]
+FuturesAction = Literal["get", "mapping", "snapshot", "bars", "receipts", "holding", "settle"]
 PdfAction = Literal["search", "read_markdown", "status"]
 CompanyBlock = Literal[
     "profile", "income", "balance", "cashflow", "indicators", "dividend", "notices"
@@ -613,13 +613,13 @@ def build_server(runtime: MCPRuntime | None = None) -> FastMCP:
     @mcp.tool()
     @protocol
     def wmshare_futures(
-        action: Annotated[FuturesAction, Field(description="get=合约字段取值 / mapping=主力连续映射 / snapshot=合约快照 / bars=主力连续历史K线 / receipts=交易所仓单快照（按月）")],
+        action: Annotated[FuturesAction, Field(description="get=合约字段取值 / mapping=主力连续映射 / snapshot=合约快照 / bars=主力连续历史K线 / receipts=交易所仓单快照（按月） / holding=每日持仓排名（按合约） / settle=每日结算参数")],
         code: Annotated[str | None, Field(description="get/snapshot/bars 需要的主力连续代码，如 AL.SHF / RB.SHF / global.CL")] = None,
         symbol: Annotated[str | None, Field(description="mapping 需要的品种代码，如 RB")] = None,
         field: Annotated[str, Field(description="get 的字段（close/open/…）")] = "close",
         freq: Annotated[str | None, Field(description="频率 d/w/m；snapshot/bars 缺省 d")] = None,
         native: Annotated[bool, Field(description="get=true 保留上游原值口径")] = False,
-        n: Annotated[int | None, Field(description="bars 取最近 n 根（日频为交易日根数；默认 120；与 begin/end 二选一）")] = None,
+        n: Annotated[int | None, Field(description="bars 取最近 n 根（日频为交易日根数；默认 120；与 begin/end 二选一）；holding 时为行数上限（默认 200，上限 500）")] = None,
         begin: DateArg = None,
         end: DateArg = None,
         output: OutputArg = "sample",
@@ -632,6 +632,10 @@ def build_server(runtime: MCPRuntime | None = None) -> FastMCP:
         wmshare_call(mode='cost') 预估；begin/end 需成对提供。bars 按行计费
         （冷 ≈190+126 EC/行、同日复跑版本键缓存 ≈135 EC；行数硬顶 d 3000/w 600/m 300），
         长区间建议 freq='m'；周/月线为上游周期 bar（不做二次聚合）。
+
+        holding=每日持仓排名（code=合约如 A2701，begin=交易日，n=行数上限；
+        按成交量降序）；settle=每日结算参数（code=合约代码或品种前缀如 CU，
+        begin=交易日）。
         """
         return tools.futures(rt, action, code=code, symbol=symbol, field=field,
                              freq=freq, native=native, n=n, begin=begin, end=end,

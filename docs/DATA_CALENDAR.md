@@ -2,7 +2,7 @@
 
 本页由 `tools/gen_data_calendar.py` 从兄弟仓 `../airflow/data_monitor/stats_config.py` 的 `STATS_CHECKS` 生成（禁止手改）。用途：说明每个数据集**多久没更新算过期**、提前预警阈值与优先级；精确 cron 见 airflow `dag_registry.yaml`。
 
-共 **112** 个监控数据集。`过期阈值` = 最新业务期龄超过即 FAIL（红）；`预警阈值` = 提前降级 WARN（黄）。
+共 **114** 个监控数据集。`过期阈值` = 最新业务期龄超过即 FAIL（红）；`预警阈值` = 提前降级 WARN（黄）。
 
 ## 分组概览
 
@@ -16,6 +16,7 @@
 | 大宗交易 | 1 | 0 | 0 | 1 |
 | 宏观 | 81 | 0 | 73 | 8 |
 | 并购重组 | 1 | 0 | 0 | 1 |
+| 期货 | 2 | 0 | 0 | 2 |
 | 机构持仓 | 3 | 0 | 3 | 0 |
 | 沪港通 | 1 | 0 | 0 | 1 |
 | 盈利预测 | 2 | 0 | 2 | 0 |
@@ -138,6 +139,8 @@
 | 宏观 | 股基成交额 | cn | `cn_macro_stockfund_turnover` | 月 | 45 天 | — | P2 |
 | 宏观 | 食饮产量 | cn | `cn_macro_nbs_food` | 月 | 60 天 | — | P2 |
 | 并购重组 | 并购重组 | cn | `cn_stock_bgcz` | 时间戳 | 10 天 | — | P2 |
+| 期货 | 期货每日持仓排名 | cn | `cn_fut_holding` | 日 | 10 天 | 4 天 | P2 |
+| 期货 | 期货每日结算参数 | cn | `cn_fut_settle` | 日 | 10 天 | 4 天 | P2 |
 | 沪港通 | 沪港通持股 | cn | `cn_stock_gdyj_hgtcg` | 日 | 10 天 | — | P2 |
 | 简称变更史 | 简称变更史 | cn | `cn_namechange` | 事件驱动 | 30 天 | — | P2 |
 | 股东 | 十大股东 | cn | `cn_stock_free_holders` | 季（A 股） | 90 天 | — | P2 |

@@ -40,13 +40,13 @@ def _load(path: Path, name: str):
 def test_guard_coverage_cannot_regress():
     mod = _load(GUARD_TOOL, "guard_coverage_baseline")
     result = mod.collect(mod.DEFAULT_DOMAINS)
-    assert result["functions"] == 364  # +概念目录1 +仓单3（2026-11-24）
+    assert result["functions"] == 368  # +概念目录1 +仓单3 +持仓2 +结算2（2026-11-24）
     assert result["guarded"] >= 90
     # 分子 85 = 83（板块资金流）+ blocktrade.by_date/by_symbol（价格/量/额 ranges）。
     # 分母 355 的稀释项均为无数值守护语义的检索/工具函数（批次1 9 条 + mapping/
     # fmt_maps/notice 类目等——audit_units 的函数级 units 仅接受换算词
     # lot/percent/yi_yuan，字符串返回值无 ranges 语义）。
-    assert result["ratio"] >= 0.2472  # 仓单后 90/364=0.24725（只许变好；此前 89/361=0.2465）
+    assert result["ratio"] >= 0.25  # 持仓/结算后 92/368=0.25（只许变好；此前 90/364=0.24725）
     zero = {name for name, stat in result["per_domain"].items()
             if stat["functions"] > 0 and stat["guarded"] == 0}
     assert zero <= ZERO_GUARD_BASELINE, f"新增零守护域：{sorted(zero - ZERO_GUARD_BASELINE)}"

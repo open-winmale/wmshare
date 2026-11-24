@@ -1,5 +1,5 @@
 id: market.futures
-version: 1.1.0
+version: 1.2.0
 cn: 期货
 kind: raw
 category: market
@@ -110,5 +110,87 @@ functions:
       - 仓单量口径=交易所披露的注册仓单量（吨/张逐行），不是成交量/持仓量
   - {name: futures.receipts_latest, cn: 最新仓单快照, kind: raw, layer: L1, internal: true}
   - {name: futures.receipts_months, cn: 仓单可用月份, kind: raw, layer: L1, internal: true}
+  - name: futures.holding
+    cn: 期货每日持仓排名（按合约查会员排名）
+    kind: raw
+    layer: L0
+    params:
+      - {name: date, type: string, required: false, desc: 交易日 YYYYMMDD 或 YYYY-MM-DD（空=最新交易日）}
+      - {name: contract, type: string, required: false, desc: 合约代码（如 A2701）；空=全市场按上游顺序截 limit}
+      - {name: limit, type: int, required: false, desc: 返回行数上限（默认 200）；给 contract 时按成交量降序取前 limit}
+    ranges:
+      vol: [0, 1.0e+7]
+      vol_chg: [-1.0e+7, 1.0e+7]
+      long_hld: [0, 1.0e+7]
+      long_chg: [-1.0e+7, 1.0e+7]
+      short_hld: [0, 1.0e+7]
+      short_chg: [-1.0e+7, 1.0e+7]
+    returns:
+      desc: ARR · 持仓行（给 contract 时按 vol 降序；不给时上游顺序）
+      shape:
+        kind: array
+        cn: 持仓排名行
+        items:
+          kind: object
+          cn: 持仓排名行
+          fields:
+            - {name: date, type: string, cn: 交易日 YYYYMMDD}
+            - {name: contract, type: string, cn: 合约代码（上游 symbol）}
+            - {name: broker, type: string, cn: 期货公司会员}
+            - {name: vol, type: float64, cn: 成交量（手/张，上游原值）}
+            - {name: vol_chg, type: float64, cn: 成交量增减}
+            - {name: long_hld, type: float64, cn: 多头持仓}
+            - {name: long_chg, type: float64, cn: 多头持仓增减}
+            - {name: short_hld, type: float64, cn: 空头持仓}
+            - {name: short_chg, type: float64, cn: 空头持仓增减}
+    example: 'futures.holding("", "A2701", 20)'
+    notes:
+      - 上游期货持仓排名接口，按交易日一档（单日约 1 万行）；上游单次 4000 行已分页拉满
+      - 量=手/张（随交易所惯例，不做换算）；vol_chg 等增减可负
+      - 成本：先在原始行层按合约过滤/截断再规范化（单日全量规范化约 121 万 EC，按合约查询约数百 EC）
+      - 不给 contract 时不做跨合约成交量排序（1 万行 SORTBY 会放大 EC 数百倍），按上游顺序截前 limit
+  - name: futures.settle
+    cn: 期货每日结算参数
+    kind: raw
+    layer: L0
+    params:
+      - {name: date, type: string, required: false, desc: 交易日 YYYYMMDD 或 YYYY-MM-DD（空=最新交易日）}
+      - {name: contract, type: string, required: false, desc: 合约代码（如 CU2612.SHF）或品种前缀（如 CU）；空=全市场}
+    ranges:
+      settle: [0, 1.0e+7]
+      fee_rate: [0, 100]
+      fee: [0, 1.0e+5]
+      delivery_fee: [0, 1.0e+5]
+      b_hedge_margin_rate: [0, 100]
+      s_hedge_margin_rate: [0, 100]
+      long_margin_rate: [0, 100]
+      short_margin_rate: [0, 100]
+    returns:
+      desc: ARR · 结算行（contract 升序）
+      shape:
+        kind: array
+        cn: 结算参数行
+        items:
+          kind: object
+          cn: 结算参数行
+          fields:
+            - {name: date, type: string, cn: 交易日 YYYYMMDD}
+            - {name: contract, type: string, cn: 合约代码（如 CU2612.SHF）}
+            - {name: settle, type: float64, cn: 结算价（合约计价单位，随品种）}
+            - {name: fee_rate, type: float64, cn: 交易手续费率（上游原值，‰ 口径）}
+            - {name: fee, type: float64, cn: 交易手续费（元，上游原值）}
+            - {name: delivery_fee, type: float64, cn: 交割手续费（元，上游原值）}
+            - {name: b_hedge_margin_rate, type: float64, cn: 买套保保证金率（小数，0.1=10%）}
+            - {name: s_hedge_margin_rate, type: float64, cn: 卖套保保证金率}
+            - {name: long_margin_rate, type: float64, cn: 多头保证金率}
+            - {name: short_margin_rate, type: float64, cn: 空头保证金率}
+    example: 'futures.settle("", "CU")'
+    notes:
+      - 上游期货结算参数接口，按交易日一档（单日约 874 行）
+      - "费率口径不统一：fee_rate 为 ‰ 原值；保证金率多为小数（0.11=11%），个别品种上游给 50（视为 50%），不做换算"
+      - settle 价格单位随合约（元/吨、元/桶等），不是统一元；跨品种比较前先看合约单位
+      - 成本：先在原始行层按合约代码前缀过滤再规范化（全量约 8.2 万 EC，前缀过滤后通常数十行）
+  - {name: futures.holding_dates, cn: 持仓排名可用交易日, kind: raw, layer: L1, internal: true}
+  - {name: futures.settle_dates, cn: 结算参数可用交易日, kind: raw, layer: L1, internal: true}
   # ---- L1：格式化 ----
   - {name: futures.fmt_maps, cn: 映射行规范化, kind: raw, layer: L1, internal: true}

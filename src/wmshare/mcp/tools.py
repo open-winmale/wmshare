@@ -1256,6 +1256,9 @@ def futures(
     freq=d/w/m。mapping 冷查实测 ≈21.4 万 EC、热查 ≈141 EC——先 cost 预估。
     bars 走 store 直读，按**行数**计费（冷 ≈190+126 EC/行、同日复跑命中数据版本键
     缓存 ≈135 EC），长区间建议 freq='m'（行数省约 20 倍）。snapshot/get 单行 ≈135~320 EC。
+    holding=每日持仓排名（code=合约如 A2701、begin=交易日、n=行数上限；单合约
+    ≈200~3 千 EC）；settle=每日结算参数（code=合约代码或品种前缀；前缀过滤后
+    数千 EC，全市场 ≈8.2 万 EC）。
     """
     if action not in FUTURES_ACTIONS:
         raise ValueError(f"action 只支持 {'/'.join(FUTURES_ACTIONS)}")
@@ -1280,6 +1283,13 @@ def futures(
     elif action == "receipts":
         # 交易所仓单快照（SHFE/CZCE/GFEX 三所；按业务月，只留当月最后一日）
         data = cli.futures.receipts(month=str(begin) if begin else None)
+    elif action == "holding":
+        # 每日持仓排名（按合约查会员排名；code=合约，begin=交易日，n=行数上限）
+        data = cli.futures.holding(date=str(begin or ""), contract=str(code or ""),
+                                   limit=int(n) if n else 200)
+    elif action == "settle":
+        # 每日结算参数（code=合约代码或品种前缀，begin=交易日）
+        data = cli.futures.settle(date=str(begin or ""), contract=str(code or ""))
     else:
         data = cli.futures.snapshot(_symbol(action, code, allow_empty=False),
                                     freq=str(freq or "d"))

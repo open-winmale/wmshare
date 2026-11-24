@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "generated_by": "tools/gen_api_docs.py",
-  "count": 290,
+  "count": 292,
   "domains": [
     {
       "id": "corp.equity",
@@ -4591,6 +4591,84 @@
             "change": [
               -1000000000.0,
               1000000000.0
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "futures.holding",
+          "cn": "期货每日持仓排名（按合约查会员排名）",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "vol": [
+              0,
+              10000000.0
+            ],
+            "vol_chg": [
+              -10000000.0,
+              10000000.0
+            ],
+            "long_hld": [
+              0,
+              10000000.0
+            ],
+            "long_chg": [
+              -10000000.0,
+              10000000.0
+            ],
+            "short_hld": [
+              0,
+              10000000.0
+            ],
+            "short_chg": [
+              -10000000.0,
+              10000000.0
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "futures.settle",
+          "cn": "期货每日结算参数",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "settle": [
+              0,
+              10000000.0
+            ],
+            "fee_rate": [
+              0,
+              100
+            ],
+            "fee": [
+              0,
+              100000.0
+            ],
+            "delivery_fee": [
+              0,
+              100000.0
+            ],
+            "b_hedge_margin_rate": [
+              0,
+              100
+            ],
+            "s_hedge_margin_rate": [
+              0,
+              100
+            ],
+            "long_margin_rate": [
+              0,
+              100
+            ],
+            "short_margin_rate": [
+              0,
+              100
             ]
           },
           "checks": [],

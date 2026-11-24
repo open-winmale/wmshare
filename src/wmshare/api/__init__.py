@@ -10,7 +10,7 @@
     ``_raw=True`` 取上游原始行（list[dict]，跳过规范化与换算）——诊断逃生口；
   - 本层是目录合同的薄翻译：高频方法显式包装；目录内其余非内部函数经 ``__getattr__``
     属性直达（如 ``cli.kline.screen_above_ma20``）；目录标 ``internal: true`` 的
-    规范化辅助（fmt_* 等）不再直达，请走 ``cli.call``——364 个底层函数零遮蔽；
+    规范化辅助（fmt_* 等）不再直达，请走 ``cli.call``——368 个底层函数零遮蔽；
   - 选股能力集中在 ``cli.screener``：单票筛选器（bool）、全市场宽度/涨跌榜与
     全市场条件选股 ``query()``（服务端索引直出）显式包装，kline 目录的其余筛选
     函数经属性直达。
@@ -3865,6 +3865,44 @@ class FuturesApi(_Api):
         rows = self._c.call("futures.receipts", month=month or "", _raw=_raw)
         return _out(rows, raw=_raw)
 
+    def holding(self, date: str = "", contract: str = "", limit: int = 200,
+                _raw: bool = False) -> Any:
+        """期货每日持仓排名（按合约查会员排名）。
+
+        数据源为上游期货持仓排名，按交易日一档（单日约 1 万行）。给 ``contract``
+        时返回该合约会员按成交量降序的前 ``limit`` 行；不给 contract 时按上游顺序
+        截取（跨合约排序成本过高，不提供全市场排名）。
+
+        :param date: 交易日 ``YYYYMMDD`` 或 ``YYYY-MM-DD``；空=最新交易日
+        :param contract: 合约代码（如 ``A2701``）；空=全市场（上游顺序）
+        :param limit: 行数上限（默认 200；给 contract 时按成交量降序取前 limit）
+        :returns: DataFrame/行表 · date/contract/broker/vol/vol_chg/long_hld/
+            long_chg/short_hld/short_chg（量=手/张，上游原值，不做换算）
+        """
+        rows = self._c.call("futures.holding", date=date or "",
+                            contract=contract or "", limit=limit, _raw=_raw)
+        return _out(rows, raw=_raw)
+
+    def settle(self, date: str = "", contract: str = "", _raw: bool = False) -> Any:
+        """期货每日结算参数（结算价/手续费/保证金率）。
+
+        数据源为上游期货结算参数，按交易日一档（单日约 874 行）。``contract``
+        可给完整合约代码（``CU2612.SHF``）或品种前缀（``CU``）。
+
+        费率口径不统一：``fee_rate`` 为 ‰ 原值；保证金率多为小数（0.11=11%），
+        个别品种上游给 50（视为 50%），SDK 不做换算。``settle`` 价格单位随合约
+        （元/吨、元/桶等）。
+
+        :param date: 交易日 ``YYYYMMDD`` 或 ``YYYY-MM-DD``；空=最新交易日
+        :param contract: 合约代码 或品种前缀；空=全市场
+        :returns: DataFrame/行表 · date/contract/settle/fee_rate/fee/
+            delivery_fee/b_hedge_margin_rate/s_hedge_margin_rate/
+            long_margin_rate/short_margin_rate
+        """
+        rows = self._c.call("futures.settle", date=date or "",
+                            contract=contract or "", _raw=_raw)
+        return _out(rows, raw=_raw)
+
     def mapping(self, symbol: str, begin: str = "", end: str = "",
                 _raw: bool = False) -> Any:
         """主力换月映射（主力连续码 → 当日实际合约；date 升序）。
@@ -4291,6 +4329,8 @@ FRIENDLY_INDEX: list[tuple[str, str, str, str, str]] = [
     ("market", "futures", "bars", "期货主力连续历史K线", "futures.query_bars（store 直读）"),
     ("market", "futures", "mapping", "主力换月映射", "futures.mapping"),
     ("market", "futures", "receipts", "交易所仓单快照", "futures.receipts"),
+    ("market", "futures", "holding", "期货每日持仓排名", "futures.holding"),
+    ("market", "futures", "settle", "期货每日结算参数", "futures.settle"),
     ("fundamentals", "statements", "audit", "审计意见", "rptdom.statement_audit"),
     ("fundamentals", "indicator", "get", "取单个指标", "指标代码直查"),
     ("fundamentals", "indicator", "metrics", "批量取指标", "指标代码批量直查"),

@@ -10,6 +10,8 @@
 |---|---|---|---|
 | `Client(max_limit=500)` 单次行数/标的数 | **500** | 批量标的数超限抛 `LimitError(code="limit")` | `batch_all()` 自动分批；或构造时显式放开 |
 | `moneyflow.query_bars` 服务端单次行数上限 | **500** | 2026-11-24 起 script `store_limit` 对超限**无条件拒绝**（背景：11-16 老客户端 `limit=10000` 全历史单笔 5.15M EC）；SDK 门面 `moneyflow.bars` 预先拦截并引导分页 | 更长历史走 `moneyflow.bars(begin=, end=)` 自动锚点分页（计费≈区间行数），或显式分段 n≤500 |
+| `kline.query_bars` / `bonus.query_list` / `cbond.kline_window` / `cbond.query` 服务端单次上限 | **1000 / 500 / 1000 / 500** | 2026-11-24 起 script 侧对超限**无条件拒绝**（同 moneyflow 范式；`INT(文案)` 受控抛错，EC≈0）；SDK 门面先按 `max_limit` 拦截，服务端上限是兜底 | `kline.bars(begin=, end=)` 锚点分页；bonus 按年分段；cbond 减小 n/limit |
+| `futures.holding` 单次行数上限 | **500** | 单合约会员行实测最多 90（2026-11-23）；不给合约时按上游顺序截取，不做跨合约成交量排序（1 万行 SORTBY 成本过高） | 减小 `limit`；按合约查询才有会员排名 |
 | 区间查询行数上限 | **10,000**/片 | `kline.bars` 日 K 与 `moneyflow.bars` 区间自动锚点切片补齐（`kline.bars` 每片 ≤ `max_limit`；`moneyflow.bars` 每片 ≤ min(`max_limit`, 500)，覆盖 begin 即停，任意区间完整返回）；`dividend.history` 单次请求，超出显式报 `LimitError(code="range")` | 分红长区间：调大 `max_limit` 或收窄窗口 |
 | 单一批次拼接票数告警 | **200** | 非原生路由接口逐票拼接 ≥200 票发 `UserWarning`（EC 随票数放大） | 用批量原生接口或 `batch_all()` 分批 |
 | 批量原生「准全市场」捷径阈值 | **2,000** | ≥2,000 票改传空数组（与服务端全市场扫描阈值对齐：≥2000 的数组清单上游本来就按全市场扫描计费，空参捷径另享按日 memo，复跑 ≈28 EC）；停牌/索引外标的缺席 → `BatchResult.truncated=True` | 缺席标的用小清单补拉（<2,000 票走逐票按量路径，含停牌行，≈58 EC/票） |

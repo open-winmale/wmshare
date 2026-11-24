@@ -42,7 +42,7 @@ jobs:
       - name: License consistency gate (BSD-3-Clause)
         run: python tools/check_license.py --check
       - name: Guard coverage floor (no regression)
-        run: python tools/guard_coverage.py --min 0.2472
+        run: python tools/guard_coverage.py --min 0.25
       - name: API docs drift gate
         run: python tools/gen_api_docs.py --check
       - name: Typed facade drift gate

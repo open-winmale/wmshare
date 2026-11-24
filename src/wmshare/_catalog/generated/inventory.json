@@ -1,6 +1,6 @@
 {
  "schema_version": 2,
- "upstream_rev": "edcb70e1",
+ "upstream_rev": "9b4869f6",
  "domains": {
   "blocktrade": {
    "entry": "sys/blocktrade/init.xs",
@@ -160,7 +160,7 @@
   "toplist",
   "valuation"
  ],
- "function_count": 377,
+ "function_count": 381,
  "functions": [
   {
    "name": "blocktrade.by_date",
@@ -5316,6 +5316,37 @@
    ]
   },
   {
+   "name": "futures.holding",
+   "cn": "期货每日持仓排名（按合约查会员排名）",
+   "example": "futures.holding(\"\", \"A2701\", 20)",
+   "returns": "ARR · 持仓行(date/contract/broker/vol/vol_chg/long_hld/long_chg/short_hld/short_chg)",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": [
+    {
+     "name": "date",
+     "type": "any"
+    },
+    {
+     "name": "contract",
+     "type": "any"
+    },
+    {
+     "name": "limit",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "futures.holding_dates",
+   "cn": "持仓排名可用交易日",
+   "example": "futures.holding_dates()",
+   "returns": "ARR · 日期(YYYYMMDD 升序)",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": []
+  },
+  {
    "name": "futures.mapping",
    "cn": "主力换月映射",
    "example": "futures.mapping(\"RB.SHF\", \"\", \"\")",
@@ -5470,6 +5501,33 @@
    "cn": "仓单快照可用月份",
    "example": "futures.receipts_months()",
    "returns": "ARR · 月份(YYYYMM 升序)",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": []
+  },
+  {
+   "name": "futures.settle",
+   "cn": "期货每日结算参数",
+   "example": "futures.settle(\"\", \"CU\")",
+   "returns": "ARR · 结算行(date/contract/settle/fee_rate/fee/delivery_fee/*margin_rate)",
+   "returns_shape": null,
+   "min_args": 0,
+   "params": [
+    {
+     "name": "date",
+     "type": "any"
+    },
+    {
+     "name": "contract",
+     "type": "any"
+    }
+   ]
+  },
+  {
+   "name": "futures.settle_dates",
+   "cn": "结算参数可用交易日",
+   "example": "futures.settle_dates()",
+   "returns": "ARR · 日期(YYYYMMDD 升序)",
    "returns_shape": null,
    "min_args": 0,
    "params": []
