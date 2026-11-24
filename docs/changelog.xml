@@ -8,6 +8,19 @@
     <lastBuildDate>Tue, 24 Nov 2026 00:00:00 +0800</lastBuildDate>
     <atom:link href="https://github.com/open-winmale/wmshare/raw/main/docs/changelog.xml" rel="self" type="application/rss+xml"/>
     <item>
+      <title>wmshare 3.5.0 (2026-11-24)</title>
+      <link>https://github.com/open-winmale/wmshare/releases/tag/v3.5.0</link>
+      <guid isPermaLink="false">wmshare:3.5.0</guid>
+      <pubDate>Tue, 24 Nov 2026 00:00:00 +0800</pubDate>
+      <description>Added
+- **概念板块目录**：`cli.board.concept_list(limit=0)`（第 182 个核心接口）——读 服务端日更物化档的 memo 点查（不做索引扫描），行形 `name/count/members`： 成员数降序、同数按概念名升序；`members` 为成员 6 位代码（门面返回升序， 底层 `cli.call` 保持物化序）。与 `board.concepts_of` / `concept_members` 同源（上游概念标签当前截面，含指数/风格标签不分流；无 PIT 历史，不能回测 历史成份）。未物化时段返回受控错误并引导等 cron，不静默空表。 `estimate_cost` 实测档：memo 点查 ≈110 EC（limit 不影响；物化冷态由服务端 cron 承担）。MCP `wmshare_market` 新增 `board.concept_list` action； `examples/31_board_concept_list.py`。
+
+Changed
+- 目录规模：29 域 / 361 函数 / 182 核心接口 + 18 组合接口（friendly 200）/ 31 示例；守护覆盖率下限 24.44% → 24.65%（89/361，同步 AGENTS.md 与 ci.yml）。
+- 上游锚点前移 `873bc2d4`（概念目录周更物化 cron + 片内免 strip 优化）。
+- **补记（3.0.1 漏记）**：`[3.0.1]` 段当时只记期货修复，同 tag 内已含的外汇 四接口（`cli.fx.rate/history/bars/list`）与宏观储备三接口 （`cli.macro.reserves/reserves_history/reserves_asof`）在此补记——代码自 3.0.1 起即在，本条为文档补录，不改变任何行为。</description>
+    </item>
+    <item>
       <title>wmshare 3.4.0 (2026-11-24)</title>
       <link>https://github.com/open-winmale/wmshare/releases/tag/v3.4.0</link>
       <guid isPermaLink="false">wmshare:3.4.0</guid>
@@ -288,34 +301,6 @@ Changed
 
 Fixed
 - `demo_client().cost_estimate(...)` 缺失（GUIDE 推荐的先估后取在演示模式直接 AttributeError）：EC 预估模型上提为模块级 `estimate_cost`，真实客户端与 demo 共用同一套函数，纯离线零请求。</description>
-    </item>
-    <item>
-      <title>wmshare 2.0.0 (2026-11-17)</title>
-      <link>https://github.com/open-winmale/wmshare/releases/tag/v2.0.0</link>
-      <guid isPermaLink="false">wmshare:2.0.0</guid>
-      <pubDate>Tue, 17 Nov 2026 00:00:00 +0800</pubDate>
-      <description>Added
-- **交易日历**（P1 数据面）：`cli.calendar.days/is_open/next`（20 号域 market.calendar； 采集腿 airflow `tasks/cn_trade_calendar.py`，读侧 `sys/calendar`）。
-- **市场级两融**（P1 数据面）：`cli.margin.market_summary/universe`（1.x「上游无数据集」 声明移除；采集腿 `tasks/cn_margin_summary.py` / `cn_margin_universe.py`）。
-- **期货门面**：`cli.futures.get/snapshot`（82 品种，内部 cn 锚定封装）。
-- **EC 成本预估**：`cli.cost_estimate(name, **params)` 返回 EC 区间 + 模型说明； MCP `wmshare_call(mode=&quot;cost&quot;)` 同步暴露（无模型接口如实返回 None，不编造）。
-- **info.profile 扩列**：5 → 10 字段（full_name/name_en/industry_l1/listing_board/ business_scope），缺码自动剔除重试一次并实例级记忆。
-- **批量原生路由**（并入 1.22.1/1.22.2 主线特性）：`kline.snapshot` 收代码列表 ≥3 票 自动改走 `kline.snapshot_batch`——单次 eval、EC 按量（60~90 EC/票）而非 N×逐票首算 （10,250 EC/票）；≥4,000 票的准全市场清单走空参捷径（服务端一次投影 + 客户端过滤， 约 11~15 万 EC，停牌/索引外标的静默缺席）；`batch_all` 对路由接口不再分批； 非路由接口 ≥200 票拼接会显式告警 EC 放大。`Client(native_batch=False)` 或 `native_batch_min=N` 可回到逐票拼接语义；沿用 1.x 的逐票拼接口径不受影响。
-- `units.yaml` 台账/facades 升级为运行时换算声明；`market.fund` 域注册（19/20 号域）。
-
-Changed
-- **kline.bars/moneyflow.bars/margin.query/dividend.history/cbond.bars/statements 等全部 门面**：默认 DataFrame + 升序（见迁移指南 1/2）；begin/end 过滤路径同样升序。
-- **index.trend**：统一信封；`data.points` 为 DataFrame 升序；预热缓存未命中 `ok=False + meta.cache=&quot;miss&quot;`（不再返回全 None 平铺结构）。
-- **screener**：query 返回信封（data.count/rows DF）；宽度接口默认 DF； `$INDUSTRY_CUR_1` 等返回列与 indicator/macro 同一台账换算管线。
-- **macro.query/asof/spots**：台账换算 + series 升序 + 信封。
-- **etf 九视图**：统一信封 + units.yaml facades 换算（原「禁二次换算」的本地护栏 迁入目录声明层）。
-- **命名空间**：friendly 25 个 / core 137 / 底层 298（calendar 域 + futures/margin 新面）； `market.fund`/`market.calendar` 域注册；inventory 300 函数（calendar 4 + margin 2 新增）。
-- **demo 快照**：与 live 同形（DataFrame/升序/信封）；2.0 新面（futures/calendar/ margin 市场面/screener.query）显式 `demo_unsupported`，不伪造数据。
-
-Removed
-- `_df` 参数（全门面）；`wmshare[dataframe]` extra；
-- fmt_* 内部函数的属性直达（改 `cli.call`）；
-- 指数 freq=W/M 的静默空序列。</description>
     </item>
   </channel>
 </rss>

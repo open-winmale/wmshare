@@ -9,6 +9,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > MAJOR；弃用至少保留 1 个 MINOR，并在 `Deprecated` 段登记替代写法与移除版本。
 > 升级前请扫一眼 Removed / Changed / Deprecated 段。
 
+## [3.5.0] - 2026-11-24
+
+### Added
+
+- **概念板块目录**：`cli.board.concept_list(limit=0)`（第 182 个核心接口）——读
+  服务端日更物化档的 memo 点查（不做索引扫描），行形 `name/count/members`：
+  成员数降序、同数按概念名升序；`members` 为成员 6 位代码（门面返回升序，
+  底层 `cli.call` 保持物化序）。与 `board.concepts_of` / `concept_members`
+  同源（上游概念标签当前截面，含指数/风格标签不分流；无 PIT 历史，不能回测
+  历史成份）。未物化时段返回受控错误并引导等 cron，不静默空表。
+  `estimate_cost` 实测档：memo 点查 ≈110 EC（limit 不影响；物化冷态由服务端
+  cron 承担）。MCP `wmshare_market` 新增 `board.concept_list` action；
+  `examples/31_board_concept_list.py`。
+
+### Changed
+
+- 目录规模：29 域 / 361 函数 / 182 核心接口 + 18 组合接口（friendly 200）/
+  31 示例；守护覆盖率下限 24.44% → 24.65%（89/361，同步 AGENTS.md 与 ci.yml）。
+- 上游锚点前移 `873bc2d4`（概念目录周更物化 cron + 片内免 strip 优化）。
+- **补记（3.0.1 漏记）**：`[3.0.1]` 段当时只记期货修复，同 tag 内已含的外汇
+  四接口（`cli.fx.rate/history/bars/list`）与宏观储备三接口
+  （`cli.macro.reserves/reserves_history/reserves_asof`）在此补记——代码自
+  3.0.1 起即在，本条为文档补录，不改变任何行为。
+
 ## [3.4.0] - 2026-11-24
 
 ### Added
