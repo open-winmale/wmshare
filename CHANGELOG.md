@@ -9,6 +9,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > MAJOR；弃用至少保留 1 个 MINOR，并在 `Deprecated` 段登记替代写法与移除版本。
 > 升级前请扫一眼 Removed / Changed / Deprecated 段。
 
+## [3.3.0] - 2026-11-24
+
+### Added
+
+- **大宗交易域 `market.blocktrade`**：`cli.blocktrade.by_date(trade_date, limit)` /
+  `by_symbol(symbol, limit)`——单日榜按成交额降序、单票历史 date 升序；行内只有
+  证券代码（名称需 join stocks/info）；额=元、量=股（上游万元/万股已换算）；
+  同票同日多笔各成一行；成交额≈价×量可自检。
+- **ST/停复牌变动史**：`cli.stocks.suspend_history(symbol, begin?, end?)`（单票
+  停复牌事件：date/type S|R/timing）、`cli.stocks.name_history(symbol)`（简称
+  变更史）与 `cli.stocks.lifecycle(symbol)`（合并派生
+  rename/st_enter/st_exit/suspend/resume 时间轴）——停复牌按交易日、简称变更按
+  生效日，date 升序；ST 判定=简称含 ST（覆盖 *ST/SST）；不含上市/退市事件。
+- **概念标签与成份**：`cli.board.concepts_of(symbol)`（单票概念标签）与
+  `cli.board.concept_members(concept, limit)`（概念成份股，名称包含匹配、代码
+  升序）——标签为索引物化数组；当前截面无 PIT 历史，不能回测历史成份。
+
+### Changed
+
+- **免注册访问改走公开池**：`Client.from_env()` 凭据双缺时不再申领匿名凭据，
+  改为直接构造免注册客户端——请求不带访问令牌，服务端按来源网络记账；
+  `Client.auth_mode`（`"credentials"` / `"public_pool"`）判别访问方式。接口、
+  签名与返回形态不变；`Client.anonymous()` 与 CLI `--anonymous` 保留为「强制
+  免注册」；存量 `~/.wmshare/anon_credentials.env` 不再被读取；
+  `WMSHARE_DISABLE_ANON=1` 语义不变。免注册被拒改报终态码
+  `ip_rate_limited` / `pool_unavailable` / `ip_banned`（不重试），`anon_*` 四码
+  转为保留码（见 [ERRORS.md §5](docs/ERRORS.md)）。
+- 目录规模：29 域 / 360 函数 / 180 核心接口 + 5 组合接口 / 29 MCP 工具；守护
+  覆盖率下限 23.57% → 24.44%。
+
+### Deprecated
+
+- `Client.anonymous(refresh=True)`：免注册访问不再落盘凭据，`refresh` 已无意义，
+  调用时触发 `DeprecationWarning`；计划 4.0.0 移除（调用方删掉该参数即可）。
+
 ## [3.2.0] - 2026-11-23
 
 ### Added
