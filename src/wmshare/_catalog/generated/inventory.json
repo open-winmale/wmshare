@@ -1,6 +1,6 @@
 {
  "schema_version": 2,
- "upstream_rev": "873bc2d4",
+ "upstream_rev": "c5f02ffa",
  "domains": {
   "blocktrade": {
    "entry": "sys/blocktrade/init.xs",
@@ -2750,13 +2750,17 @@
   {
    "name": "cbond.query",
    "cn": "按标的查条款事件",
-   "example": "cbond.query(\"600519\")",
+   "example": "cbond.query(\"600519\", 100)",
    "returns": "ARR · 规范化事件行",
    "returns_shape": null,
    "min_args": 1,
    "params": [
     {
      "name": "sym",
+     "type": "any"
+    },
+    {
+     "name": "limit",
      "type": "any"
     }
    ]

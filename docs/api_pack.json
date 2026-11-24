@@ -6750,6 +6750,11 @@
               "name": "symbol",
               "required": true,
               "desc": "转债代码"
+            },
+            {
+              "name": "limit",
+              "required": false,
+              "desc": "返回行数上限，默认 500（服务端上限同值）"
             }
           ],
           "returns": {
@@ -6759,17 +6764,18 @@
           },
           "notes": [],
           "docs_visible": true,
-          "example": "cli.cbond.query(\"113050\")",
+          "example": "cli.cbond.query(\"113050\", limit=10)",
           "test": {
             "kwargs": {
-              "symbol": "113050"
+              "symbol": "113050",
+              "limit": 10
             },
             "path": "/v1/analysis/xs/eval",
             "body": {
               "symbol": "113050",
               "xs_lines": [
                 "xs.require(\"sys/cbond/init.xs\")",
-                "return cbond.query(\"113050\")"
+                "return cbond.query(\"113050\", 10)"
               ],
               "args": {
                 "print.plain": true
@@ -6861,7 +6867,7 @@
             {
               "name": "n",
               "required": true,
-              "desc": "窗口根数"
+              "desc": "窗口根数（服务端单次上限 1000，超过显式报错）"
             }
           ],
           "returns": {
@@ -6906,7 +6912,7 @@
                 {
                   "name": "n",
                   "required": false,
-                  "desc": "窗口根数，默认 120"
+                  "desc": "窗口根数，默认 120（服务端单次上限 1000，超过显式报错）"
                 }
               ]
             }
@@ -6937,7 +6943,7 @@
             {
               "name": "n",
               "required": false,
-              "desc": "窗口根数，默认 120"
+              "desc": "窗口根数，默认 120（服务端单次上限 1000，超过显式报错）"
             }
           ],
           "returns": {
@@ -17188,7 +17194,7 @@
             {
               "name": "limit",
               "required": false,
-              "desc": "条数，默认 20；区间查询时默认取 max_limit（上限 10000）"
+              "desc": "条数，默认 20；服务端单次上限 500（分红十年≈80 条，"
             },
             {
               "name": "begin",

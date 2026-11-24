@@ -433,9 +433,12 @@ class CbondNS(_Ns):
         """单标的条款事件"""
         return _out(self._client.call("cbond.event_rows_of", sym=sym, _raw=_raw), _raw)
 
-    def query(self, sym: Any, _raw: bool = False) -> Any:
+    def query(self, sym: Any, limit: Any | None = None, _raw: bool = False) -> Any:
         """按标的查条款事件"""
-        return _out(self._client.call("cbond.query", sym=sym, _raw=_raw), _raw)
+        kw: dict[str, Any] = {"sym": sym}
+        if limit is not None:
+            kw["limit"] = limit
+        return _out(self._client.call("cbond.query", **kw, _raw=_raw), _raw)
 
     def call_hits(self, code: Any, trig: Any, _raw: bool = False) -> Any:
         """强赎触发计数

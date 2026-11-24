@@ -1,6 +1,7 @@
 """cli.backtest.run：取数、切片、参数校验与注册（mock 传输，不联网）。"""
 from __future__ import annotations
 
+import copy
 import datetime as dt
 import re
 
@@ -28,7 +29,11 @@ def _rows(closes=None):
 
 
 class FakeSession:
-    """按顺序返回预置结果：第一次取 K 线，第二次取估值统计。"""
+    """按请求内容路由预置结果：含 HIST_STATS 的请求回估值序列（dict），其余回 K 线。
+
+    2026-11-24 起回测改「区间锚点分页」会多次取 K 线，按调用顺序喂数据会错位；
+    内容路由 + 深拷贝（单位换算就地修改，同一对象复用会重复 ×100）更贴近真实网关。
+    """
 
     def __init__(self, results):
         self.calls = []
@@ -48,9 +53,17 @@ class FakeSession:
             def json(self):
                 if url.endswith("/v1/oauth/token"):
                     return {"data": {"access_token": "tok", "expires_in": 3600}}
-                results = self._results
-                result = results.pop(0) if len(results) > 1 else results[0]
-                return {"success": True, "data": {"result": result}}
+                xs = " ".join((json or {}).get("xs_lines") or [])
+                lists = [r for r in self._results if isinstance(r, list)]
+                dicts = [r for r in self._results if not isinstance(r, list)]
+                if "HIST_STATS" in xs and dicts:
+                    result = dicts[0]
+                elif lists:
+                    result = lists[0]
+                else:
+                    result = dicts[0] if dicts else []
+                return {"success": True,
+                        "data": {"result": copy.deepcopy(result)}}
 
         R._results = self.results
         return R()
@@ -80,8 +93,13 @@ def test_run_fetches_full_history_and_returns_trades():
     cli = _client(max_limit=None)
     res = cli.backtest.run("600519", fast=2, slow=3)
     lines = _last_json(cli)["xs_lines"]
-    assert any("kline.query_bars_adj" in ln for ln in lines)
-    assert any("10000" in ln and "qfq" in ln for ln in lines)
+    # 全历史走区间锚点分页（2026-11-24：单次窗口上限 1000，全历史必须分页）
+    assert any("kline.query_at_anchor_adj" in ln for ln in lines)
+    assert any("qfq" in ln for ln in lines)
+    # 每片根数不超过服务端上限 1000
+    nums = [int(m) for ln in lines
+            for m in re.findall(r"query_at_anchor_adj\([^,]+, (\d+)", ln)]
+    assert nums and max(nums) <= 1000
     assert _last_json(cli)["symbol"] == "600519"
     assert res["symbol"] == "600519"
     assert res["trades"] and res["trades"][0]["side"] == "buy"
@@ -103,19 +121,31 @@ def test_begin_end_sliced_locally():
 
 
 def test_window_reduces_fetch_size():
-    """给区间只取区间需要的根数（EC 按请求行数计费，别为两年窗口拉一万根）。"""
+    """给区间只取区间内的行（EC 按请求行数计费）：请求的窗口边界与区间一致。"""
     rows = _rows()
     cli = _client(rows, max_limit=None)
     cli.backtest.run("600519", fast=2, slow=3, begin=rows[0]["date"], end=rows[-1]["date"])
-    line = next(ln for ln in _last_json(cli)["xs_lines"] if "kline.query_bars_adj" in ln)
-    match = re.search(r"kline\.query_bars_adj\([^,]+, (\d+)", line)
-    assert match and int(match.group(1)) < 100
+    line = next(ln for ln in _last_json(cli)["xs_lines"]
+                if "kline.query_at_anchor_adj" in ln)
+    assert rows[-1]["date"] in line          # 右端锚在区间 end
+    match = re.search(r"query_at_anchor_adj\([^,]+, (\d+)", line)
+    assert match and int(match.group(1)) <= 1000
 
 
-def test_max_limit_translated_to_fix():
-    cli = _client()                                   # 默认 max_limit=500
-    with pytest.raises(UsageError, match="max_limit=None"):
-        cli.backtest.run("600519")
+def test_full_history_works_with_default_max_limit():
+    """默认 max_limit=500 也能取全历史（2026-11-24 起不再需要 max_limit=None）：
+    每片 ≤500，多片拼接。"""
+    rows = _rows()
+    cli = _client(rows)                       # 默认 max_limit=500
+    res = cli.backtest.run("600519", fast=2, slow=3)
+    assert res["symbol"] == "600519"
+    evals = _eval_calls(cli)
+    assert len(evals) > 1                     # 全历史分多片
+    for ev in evals:
+        for ln in ev["xs_lines"]:
+            m = re.search(r"query_at_anchor_adj\([^,]+, (\d+)", ln)
+            if m:
+                assert int(m.group(1)) <= 500
 
 
 def test_empty_rows_raise_data_error():
@@ -160,8 +190,9 @@ def test_pe_rule_fetches_hist_stats_and_trades():
     cli = _client(rows, {"series": series}, max_limit=None)
     res = cli.backtest.run("600519", rule="pe", buy=20, sell=40)
     calls = _eval_calls(cli)
-    assert len(calls) == 2
-    assert any('HIST_STATS("3y", "pe")' in ln for ln in calls[1]["xs_lines"])
+    hist = [c for c in calls
+            if any('HIST_STATS("3y", "pe")' in ln for ln in c["xs_lines"])]
+    assert len(hist) == 1 and calls[-1] is hist[0]   # 估值序列只取一次且在最后
     assert res["rule"] == "pe(buy=20, sell=40)"
     assert res["caliber"]["valuation"] == {"metric": "pe", "window": "3y"}
     assert [t["side"] for t in res["trades"]] == ["buy", "sell"]

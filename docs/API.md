@@ -1583,13 +1583,14 @@ cli.cbond.of_stock("113050")
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
 | `symbol` | string | 是 | — | 转债代码 |
+| `limit` | integer | 否 | `500` | 返回行数上限，默认 500（服务端上限同值） |
 
 **输出**：ARR · 规范化事件行
 
 **示例**
 
 ```python
-cli.cbond.query("113050")
+cli.cbond.query("113050", limit=10)
 ```
 
 #### `cli.cbond.call_hits` — 强赎触发计数
@@ -1620,7 +1621,7 @@ cli.cbond.call_hits("113050", trig=130.0)
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
 | `symbol` | string | 是 | — | 转债代码 |
-| `n` | integer | 是 | — | 窗口根数 |
+| `n` | integer | 是 | — | 窗口根数（服务端单次上限 1000，超过显式报错） |
 
 **输出**：MAP · K线列
 
@@ -1639,7 +1640,7 @@ cli.cbond.kline_window("113050", n=30)
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
 | `symbol` | string | 是 | — | 转债代码（6 位裸码） |
-| `n` | integer | 否 | `120` | 窗口根数，默认 120 |
+| `n` | integer | 否 | `120` | 窗口根数，默认 120（服务端单次上限 1000，超过显式报错） |
 
 **输出**：ARR · 行 {date, open, high, low, close, volume, amount}（列式窗口按位转行；量=张，价/额=元；不复权）
 
@@ -4029,7 +4030,7 @@ cli.forecast.next_disclosure("600519")
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
 | `symbol` | string | 是 | — | 6 位裸码 |
-| `limit` | integer | 否 | `None` | 条数，默认 20；区间查询时默认取 max_limit（上限 10000） |
+| `limit` | integer | 否 | `None` | 条数，默认 20；服务端单次上限 500（分红十年≈80 条， |
 | `begin` | string | 否 | `None` | 起始日期（含，YYYY-MM-DD，按除权日），须与 end 同时提供；上限 5 年 |
 | `end` | string | 否 | `None` | 结束日期（含） |
 
@@ -5573,7 +5574,7 @@ A 股交易日历——区间交易日、是否开市、之后 N 个交易日。
 | `cbond.fmt_quote` | 快照行规范化 | 原始数据 | L1 | `row:object`（签名） | MAP · 转债快照行；字段 bondCode:string（转债代码） / bondName:string（转债简称） / stockCode:string（正股代码） / stockName:string（正股简称） / convertPrice:float?（当期转股价） / convertPriceInitial:float?（初始转股价） / bondPrice:float?（转债价（元，面值 100）） / stockPrice:float?（正股现价） / transferValue:float?（转股价值） / premiumRatio:float?（转股溢价率（百分比数值 4.87 = +4.87%，可为负）） / remainSize:float?（未转股余额（元）） / issueScale:float?（发行规模（元）） / couponExplain:string?（票面利率说明（含分年票息表）） / couponIr:float?（当年票息（百分比数值，随剩余年限变化，非恒定）） / bondExpire:float?（债券年限（年，不是价格）） / redeemValue:float?（到期赎回价（元，面值的百分比数值）） / valueDate:string?（转股价值基准日） / redeemTrig:float?（强赎触发价（正股口径）） / resaleTrig:float?（回售触发价（正股口径）） / transferStart:string?（转股起始日） / expireDate:string?（到期日 YYYY-MM-DD） / listDate:string?（上市日） / asOf:string?（快照日 YYYY-MM-DD） / quoteUrl:string?（行情页链接） / detailUrl:string?（详情页链接） / outstanding:bool（在市（未转股余额>0 且未到期）） | — |
 | `cbond.event_list` | 转债条款事件列表 | 原始数据 | L0 | — | ARR · 条款事件行 | — | 例：`cli.call("cbond.event_list")`
 | `cbond.event_rows_of` | 单标的条款事件 | 原始数据 | L0 | `sym:any`（签名） | ARR · 条款事件行 | — | 例：`cli.call("cbond.event_rows_of", sym='600519')`
-| `cbond.query` | 按标的查条款事件 | 原始数据 | L0 | `sym:any`（签名） | ARR · 规范化事件行 | — | 例：`cli.call("cbond.query", sym='600519')`
+| `cbond.query` | 按标的查条款事件 | 原始数据 | L0 | `sym:any` · `limit:any`（签名） | ARR · 规范化事件行 | — | 例：`cli.call("cbond.query", sym='600519', limit=100)`
 | `cbond.fmt_event` | 条款事件行规范化 | 原始数据 | L1 | `row:object`（签名） | MAP · 规范化事件行 | — |
 | `cbond.call_hits` | 强赎触发计数 | 原始数据 | L0 | `code:any` · `trig:any`（签名） | int · 近 30 个交易日正股收盘 ≥ 触发价的天数 | — | 例：`cli.call("cbond.call_hits", code='113050', trig=130)`
 | `cbond.kline_window` | 转债日K窗口 | 原始数据 | L0 | `code:any` · `n:any`（签名） | MAP · K线列 | — | 例：`cli.call("cbond.kline_window", code='113050', n=60)`

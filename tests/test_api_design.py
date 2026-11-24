@@ -340,6 +340,60 @@ def test_moneyflow_range_slice_clamped_to_server_cap():
         in last_ev(cli)["xs_lines"][0]
 
 
+def test_kline_n_over_server_cap_raises():
+    """kline 单次窗口上限 1000（2026-11-24 起，script kline.store_window_limit）：
+    门面预检拦截并引导 begin/end 区间分页；即使 max_limit=None 也拦。"""
+    cli = Client(base_url="https://t", client_id="i", client_secret="s",
+                 catalog=load(), max_limit=None)
+    with pytest.raises(LimitError) as ei:
+        cli.kline.bars("600519", n=1001)
+    msg = str(ei.value)
+    assert "1000" in msg and "begin=" in msg
+
+
+def test_kline_n_at_cap_passes_precheck():
+    """边界值 1000 不拦（放行到服务端）。"""
+    cli = Client(base_url="https://t", client_id="i", client_secret="s",
+                 catalog=load(), max_limit=None, session=FakeSession([]))
+    cli.kline.bars("600519", n=1000)
+    assert "kline.query_bars(" in last_ev(cli)["xs_lines"][0]
+
+
+def test_cbond_n_param_is_caught_by_max_limit_fuse():
+    """cbond 的 n 参数此前完全绕过通用保险丝（只认 limit/lim）——2026-11-24 修。
+    直接走 client.call 验证保险丝本体（门面另有服务端上限预检会先命中）。"""
+    cli = Client(base_url="https://t", client_id="i", client_secret="s",
+                 catalog=load(), session=FakeSession())  # 默认 max_limit=500
+    with pytest.raises(LimitError) as ei:
+        cli.call("cbond.kline_window", code="113050", n=10**9)
+    assert "n=" in str(ei.value) and "500" in str(ei.value)
+    # 门面层：超大 n 先被服务端上限预检拦（消息带 1000）
+    with pytest.raises(LimitError):
+        cli.cbond.bars("113050", n=10**9)
+    with pytest.raises(LimitError):
+        cli.cbond.kline_window("113050", 10**9)
+
+
+def test_cbond_n_over_server_cap_raises_even_without_max_limit():
+    """cbond 服务端上限 1000：max_limit=None 时门面仍拦。"""
+    cli = Client(base_url="https://t", client_id="i", client_secret="s",
+                 catalog=load(), max_limit=None)
+    with pytest.raises(LimitError) as ei:
+        cli.cbond.bars("113050", n=1001)
+    assert "1000" in str(ei.value)
+    with pytest.raises(LimitError):
+        cli.cbond.query("113050", limit=501)
+
+
+def test_dividend_history_limit_over_server_cap_raises():
+    """分红历史服务端上限 500（十年≈80 条）：门面预检拦截。"""
+    cli = Client(base_url="https://t", client_id="i", client_secret="s",
+                 catalog=load(), max_limit=None)
+    with pytest.raises(LimitError) as ei:
+        cli.dividend.history("600519", limit=501)
+    assert "500" in str(ei.value)
+
+
 class _SeqSession(FakeSession):
     """按调用次序依次返回不同结果（锚点切片用）。"""
 

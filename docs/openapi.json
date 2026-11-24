@@ -2608,7 +2608,7 @@
       "post": {
         "operationId": "cbond_query",
         "summary": "按转债标的查条款事件（下修/回售/赎回等，规范化事件行）。",
-        "description": "底层目录函数 `cbond.query`。SDK 调用：`cli.cbond.query(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "description": "事件行由服务端 90 日全表过滤得到（行数随该标的历史事件增长），、故有单次上限；超过上限服务端显式拒绝（不静默截断）。、底层目录函数 `cbond.query`。SDK 调用：`cli.cbond.query(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "市场行情"
         ],
@@ -2622,6 +2622,10 @@
                   "symbol": {
                     "type": "string",
                     "description": "转债代码"
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "description": "返回行数上限，默认 500（服务端上限同值）"
                   }
                 },
                 "required": [
@@ -2712,7 +2716,7 @@
                   },
                   "n": {
                     "type": "integer",
-                    "description": "窗口根数"
+                    "description": "窗口根数（服务端单次上限 1000，超过显式报错）"
                   }
                 },
                 "required": [
@@ -2758,7 +2762,7 @@
                   },
                   "n": {
                     "type": "integer",
-                    "description": "窗口根数，默认 120"
+                    "description": "窗口根数，默认 120（服务端单次上限 1000，超过显式报错）"
                   }
                 },
                 "required": [
@@ -8666,7 +8670,7 @@
       "post": {
         "operationId": "dividend_history",
         "summary": "分红历史明细 → DataFrame（ex_date 升序；dps=元/股、payout_ratio=小数）。",
-        "description": "字段：announce/ex_date/pay/dps/total/content/sas/payout_ratio/bonus_share/、record_date（与目录 returns 契约一致）。、底层目录函数 `bonus.query_list`。SDK 调用：`cli.dividend.history(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "description": "字段：announce/ex_date/pay/dps/total/content/sas/payout_ratio/bonus_share/、record_date（与目录 returns 契约一致）。、超限显式报错；区间查询时按上限截断取数）、底层目录函数 `bonus.query_list`。SDK 调用：`cli.dividend.history(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
         "tags": [
           "信息披露"
         ],
@@ -8682,7 +8686,7 @@
                   },
                   "limit": {
                     "type": "integer",
-                    "description": "条数，默认 20；区间查询时默认取 max_limit（上限 10000）"
+                    "description": "条数，默认 20；服务端单次上限 500（分红十年≈80 条，"
                   },
                   "begin": {
                     "type": "string",

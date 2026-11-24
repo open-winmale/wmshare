@@ -3114,13 +3114,14 @@ cli.cbond.of_stock("113050")
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
 | `symbol` | string | 是 | — | 转债代码 |
+| `limit` | integer | 否 | `500` | 返回行数上限，默认 500（服务端上限同值） |
 
 **输出**：ARR · 规范化事件行
 
 **示例**
 
 ```python
-cli.cbond.query("113050")
+cli.cbond.query("113050", limit=10)
 ```
 
 #### `cli.cbond.call_hits` — 强赎触发计数
@@ -3151,7 +3152,7 @@ cli.cbond.call_hits("113050", trig=130.0)
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
 | `symbol` | string | 是 | — | 转债代码 |
-| `n` | integer | 是 | — | 窗口根数 |
+| `n` | integer | 是 | — | 窗口根数（服务端单次上限 1000，超过显式报错） |
 
 **输出**：MAP · K线列
 
@@ -3170,7 +3171,7 @@ cli.cbond.kline_window("113050", n=30)
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
 | `symbol` | string | 是 | — | 转债代码（6 位裸码） |
-| `n` | integer | 否 | `120` | 窗口根数，默认 120 |
+| `n` | integer | 否 | `120` | 窗口根数，默认 120（服务端单次上限 1000，超过显式报错） |
 
 **输出**：ARR · 行 {date, open, high, low, close, volume, amount}（列式窗口按位转行；量=张，价/额=元；不复权）
 
@@ -5560,7 +5561,7 @@ cli.forecast.next_disclosure("600519")
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
 | `symbol` | string | 是 | — | 6 位裸码 |
-| `limit` | integer | 否 | `None` | 条数，默认 20；区间查询时默认取 max_limit（上限 10000） |
+| `limit` | integer | 否 | `None` | 条数，默认 20；服务端单次上限 500（分红十年≈80 条， |
 | `begin` | string | 否 | `None` | 起始日期（含，YYYY-MM-DD，按除权日），须与 end 同时提供；上限 5 年 |
 | `end` | string | 否 | `None` | 结束日期（含） |
 

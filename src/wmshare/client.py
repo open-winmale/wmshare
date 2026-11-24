@@ -265,6 +265,14 @@ EC_PER_ROW = (60, 75)                 # 行数驱动类接口（K 线/资金流/
 # 2026-11-16 实证 limit=10000 全历史单笔 5.15M EC（fmt_maps 规范化放大），服务端
 # 对超限显式拒绝并携带引导文案；本常量供门面预检与 estimate_cost 对齐口径。
 MONEYFLOW_SERVER_CAP = 500
+# kline/bonus/cbond 服务端单次上限（script 同族治理，2026-11-24 起）。
+# kline 实测 EC 线性 ≈67 EC/行（500→33,741 / 1000→67,241 / 2000→134,241）；
+# 内核 store.query 硬顶 10000 行且超过静默半量，故服务端显式拒绝、门面预检引导
+# 改用 begin/end 区间锚点分页（计费≈区间行数）。
+KLINE_SERVER_CAP = 1000
+BONUS_SERVER_CAP = 500
+CBOND_KLINE_CAP = 1000
+CBOND_QUERY_CAP = 500
 EC_SCREENER_BASE = (70, 1_000)        # 轻列条件选股
 EC_SCREENER_HEAVY = (40_000, 60_000)  # 重列（TTM 同比/年化族）
 EC_SCREENER_COLD_NOTE = ("fields 引用未物化重列时有一次全市场物化成本，"
@@ -321,14 +329,26 @@ def estimate_cost(name: str, params: dict[str, Any] | None = None, *,
                             f"超出会显式报错）× {EC_PER_ROW} EC/行")
             return out
         n = rows if (rows and rows > 0) else (120 if "query_bars" in name else 20)
-        if name.startswith("moneyflow.") and n > MONEYFLOW_SERVER_CAP:
-            # 服务端单次上限（2026-11-24 起，script sys/moneyflow store_limit）：
-            # limit>500 直接被拒绝，估算按上限值并注明，不给虚假的行数预算
-            n = MONEYFLOW_SERVER_CAP
+        # 服务端单次上限（2026-11-24 起，script 各域同族治理）：超限直接拒绝，
+        # 估算按上限值并注明，不给虚假的行数预算。
+        cap = 0
+        if name.startswith("moneyflow."):
+            cap = MONEYFLOW_SERVER_CAP
+        elif name.startswith("kline.query_bars"):
+            cap = KLINE_SERVER_CAP
+        elif name.startswith("bonus.query_list"):
+            cap = BONUS_SERVER_CAP
+        elif name.startswith("cbond.query"):
+            cap = CBOND_QUERY_CAP
+        if cap and n > cap:
+            n = cap
+            page_hint = ("kline.bars(begin=, end=)" if name.startswith("kline.")
+                         else f"{name.split('.')[0]}.bars(begin=, end=)"
+                         if name.startswith("moneyflow.") else "分段查询")
             out.update(ec_lo=n * EC_PER_ROW[0], ec_hi=n * EC_PER_ROW[1],
                        model="rows",
                        note=f"服务端单次上限 {n} 行（超限显式拒绝）；更长历史走 "
-                            f"moneyflow.bars(begin=, end=) 锚点分页 × {EC_PER_ROW} EC/行")
+                            f"{page_hint} 锚点分页 × {EC_PER_ROW} EC/行")
             return out
         out.update(ec_lo=n * EC_PER_ROW[0], ec_hi=n * EC_PER_ROW[1],
                    model="rows", note=f"按 {n} 行 × {EC_PER_ROW} EC/行估算")
@@ -1512,8 +1532,13 @@ class Client:
             if not provided and "default" not in p and p.get("required"):
                 raise UsageError(f"{name}: 缺少必填参数 {p['name']}", code="params")
         if self.max_limit is not None:
+            # "n" 也是窗口根数参数（kline.bars / cbond.bars / cbond.kline_window 都用
+            # n）——此前只认 limit/lim，导致 cbond.*(n=10**9) 完全绕过保险丝
+            # （2026-11-24 审计实证）。三种命名一视同仁。
             for p in params:
-                if p["name"] in ("limit", "lim") and p["type"] == "int":
+                # type 可能是 "any"（cbond/macro 等 xs 侧 any 签名）——只对真实
+                # int 值判定，故放宽类型门不引入误伤。
+                if p["name"] in ("limit", "lim", "n") and p["type"] in ("int", "any"):
                     v = kwargs.get(p["name"], p.get("default"))
                     if isinstance(v, int) and not isinstance(v, bool) and v > self.max_limit:
                         raise LimitError(

@@ -43,6 +43,10 @@ from wmshare.units import (apply_facade_units, finish_metric, is_index_symbol,
 
 # 期货门面的求值锚点（cn 默认锚）与日期归一（client.py 单一事实源）
 from wmshare.client import DEFAULT_SYMBOLS as _DEFAULT_SYMBOLS  # noqa: E402
+from wmshare.client import BONUS_SERVER_CAP as _BONUS_SERVER_CAP  # noqa: E402
+from wmshare.client import CBOND_KLINE_CAP as _CBOND_KLINE_CAP  # noqa: E402
+from wmshare.client import CBOND_QUERY_CAP as _CBOND_QUERY_CAP  # noqa: E402
+from wmshare.client import KLINE_SERVER_CAP as _KLINE_SERVER_CAP  # noqa: E402
 from wmshare.client import MONEYFLOW_SERVER_CAP as _MONEYFLOW_SERVER_CAP  # noqa: E402
 from wmshare.client import normalize_date as _normalize_date  # noqa: E402
 
@@ -459,6 +463,13 @@ class KlineApi(_Api):
         周/月 K 与显式 n 为单次请求，超出单次上限显式报错（不静默截断）。
         """
         period = _kline_period_tag(freq)
+        # 服务端单次上限（script kline.MAX_QUERY_LIMIT=1000）：显式 n 超限直接引导，
+        # 不把百万 EC 的单笔请求发出去（区间分页路径不受此限，计费≈区间行数）。
+        if n is not None and int(n) > _KLINE_SERVER_CAP:
+            raise LimitError(
+                f"kline.bars: n={n} 超过单次上限 {_KLINE_SERVER_CAP}"
+                "（服务端单次窗口上限；更长历史请改用 begin=/end= 区间查询，"
+                "SDK 自动锚点分页、计费≈区间实际根数）", code="limit")
         if period != "D" and is_index_symbol(str(symbol)):
             raise UsageError(
                 "指数只有日频（上游不派生指数周/月 K）；周/月聚合请取日 K 后自行重采样",
@@ -471,7 +482,11 @@ class KlineApi(_Api):
                 raise UsageError("_raw=True 时不支持 begin/end（原始行无扁平日期字段）",
                                  code="range")
             begin_iso = _normalize_date(begin)
-            limit = min(int(n) if n is not None else (self._c.max_limit or 10000), 10000)
+            # 每片钳到服务端单次上限（2026-11-24）：max_limit=None 时旧逻辑给
+            # 10000，会被 script kline.MAX_QUERY_LIMIT=1000 拒绝；钳小只增片数，
+            # 总容量仍由 _MAX_RANGE_SLICES 决定。
+            limit = min(int(n) if n is not None else (self._c.max_limit or 10000),
+                        _KLINE_SERVER_CAP)
             if n is None and isinstance(symbol, str) and period == "D":
                 # 锚点切片（能力对标：任意区间完整返回）。不估算根数——覆盖由
                 # 结构保证：每片 ≤ limit 行且右端锚在 marker，最早一根 ≤ begin
@@ -827,12 +842,20 @@ class CbondApi(_Api):
         """
         return _out(self._c.call("cbond.of_stock", stk=symbol, _raw=_raw), raw=_raw)
 
-    def query(self, symbol: str) -> Any:
+    def query(self, symbol: str, limit: int = 500) -> Any:
         """按转债标的查条款事件（下修/回售/赎回等，规范化事件行）。
 
+        事件行由服务端 90 日全表过滤得到（行数随该标的历史事件增长），
+        故有单次上限；超过上限服务端显式拒绝（不静默截断）。
+
         :param symbol: 转债代码
+        :param limit: 返回行数上限，默认 500（服务端上限同值）
         """
-        return _out(self._c.call("cbond.query", sym=symbol))
+        if int(limit) > _CBOND_QUERY_CAP:
+            raise LimitError(
+                f"cbond.query: limit={limit} 超过服务端单次上限 {_CBOND_QUERY_CAP}；"
+                "事件行通常远小于该值，请减小 limit", code="limit")
+        return _out(self._c.call("cbond.query", sym=symbol, limit=limit))
 
     def call_hits(self, symbol: str, trig: float) -> Any:
         """正股近窗收盘 ≥ 强赎触发价 trig 的交易日数（int）。
@@ -846,8 +869,12 @@ class CbondApi(_Api):
         """转债日 K 窗口（列式 MAP：open/close/high/low/volume/amount；不复权）。
 
         :param symbol: 转债代码
-        :param n: 窗口根数
+        :param n: 窗口根数（服务端单次上限 1000，超过显式报错）
         """
+        if int(n) > _CBOND_KLINE_CAP:
+            raise LimitError(
+                f"cbond.kline_window: n={n} 超过服务端单次上限 {_CBOND_KLINE_CAP}；"
+                "请减小 n 或分段查询", code="limit")
         return self._c.call("cbond.kline_window", code=symbol, n=n)
 
     def bars(self, symbol: str, n: int = 120, _fields: Any = None) -> Any:
@@ -859,9 +886,13 @@ class CbondApi(_Api):
         窗口无数据时返回空 DataFrame。
 
         :param symbol: 转债代码（6 位裸码）
-        :param n: 窗口根数，默认 120
+        :param n: 窗口根数，默认 120（服务端单次上限 1000，超过显式报错）
         :param _fields: 列投影（list/逗号串）：只保留指定字段
         """
+        if int(n) > _CBOND_KLINE_CAP:
+            raise LimitError(
+                f"cbond.bars: n={n} 超过服务端单次上限 {_CBOND_KLINE_CAP}；"
+                "请减小 n 或分段查询", code="limit")
         raw = self._c.call("cbond.kline_window", code=symbol, n=n)
         if not isinstance(raw, dict):
             # 异常形态原值透传（dict 行数组仍走 DF 收口）；空窗口给空 DataFrame
@@ -1806,18 +1837,29 @@ class BacktestApi(_Api):
                 except ValueError:
                     raise UsageError(f"{label} 需为 YYYY-MM-DD，收到 {value!r}",
                                      code="range") from None
-        # 取数根数按区间估算（EC 按请求行数计费：全历史 1 万根约 40 万 EC，只取区间能省下来）
-        limit = 10000
-        if begin:
-            days = (date.fromisoformat(str(end)[:10]) - date.fromisoformat(str(begin)[:10])).days
-            limit = min(10000, max(int(days * 0.8) + slow + 20, slow + 2))
-        try:
-            rows = _rows(self._c.kline.bars(symbol, n=limit, adj=adj))
-        except LimitError as e:
-            raise UsageError(
-                f"回测要取的日 K 根数（{limit}）超过当前客户端单次上限 max_limit="
-                f"{self._c.max_limit}；用 wmshare.Client.from_env(max_limit=None) 重建客户端，"
-                "或缩小 begin/end 区间（EC 也随行数走）", code="limit") from e
+        # 取数走区间锚点分页（2026-11-24：单次窗口上限 1000，全历史必须分页）。
+        # 区间查询本身有 5 年上限，故按 5 年窗口循环拼接；未给区间时取全历史
+        # （1990-01-01 起）。EC 仍按请求行数计费：只取区间能省下来。
+        span_begin = date.fromisoformat(begin) if begin else date(1990, 1, 1)
+        span_end = date.fromisoformat(end) if end else date.today()
+        merged_rows: dict[str, dict] = {}
+        cursor = span_begin
+        while cursor <= span_end:
+            # 定长窗口：_range_bounds 判 (e-b).days ≤ 1825，故 1824 天（含首尾 1825）
+            chunk_end = min(cursor + timedelta(days=1824), span_end)
+            try:
+                chunk = _rows(self._c.kline.bars(
+                    symbol, begin=cursor.isoformat(), end=chunk_end.isoformat(),
+                    adj=adj))
+            except LimitError as e:
+                raise UsageError(
+                    f"回测取日 K 失败：{e}；可缩小 begin/end 区间（EC 也随行数走）",
+                    code="limit") from e
+            for r in chunk or []:
+                if isinstance(r, dict) and r.get("date"):
+                    merged_rows.setdefault(str(r["date"])[:10], r)
+            cursor = chunk_end + timedelta(days=1)
+        rows = [merged_rows[d] for d in sorted(merged_rows)]
         rows = sorted((r for r in (rows or []) if isinstance(r, dict)),
                       key=lambda r: str(r.get("date") or ""))
         if begin:
@@ -2755,11 +2797,16 @@ class DividendApi(_Api):
         字段：announce/ex_date/pay/dps/total/content/sas/payout_ratio/bonus_share/
         record_date（与目录 returns 契约一致）。
 
-        :param limit: 条数，默认 20；区间查询时默认取 max_limit（上限 10000）
+        :param limit: 条数，默认 20；服务端单次上限 500（分红十年≈80 条，
+            超限显式报错；区间查询时按上限截断取数）
         :param begin: 起始日期（含，YYYY-MM-DD，按除权日），须与 end 同时提供；上限 5 年
         :param end: 结束日期（含）
         :param _raw: True=上游原始行（跳过规范化/换算）
         """
+        if limit is not None and int(limit) > _BONUS_SERVER_CAP:
+            raise LimitError(
+                f"dividend.history: limit={limit} 超过服务端单次上限 {_BONUS_SERVER_CAP}"
+                "（分红历史约十年≈80 条）；请减小 limit", code="limit")
         if begin is not None or end is not None:
             if not (begin and end):
                 raise UsageError("begin 与 end 需同时提供", code="range")
@@ -2767,7 +2814,7 @@ class DividendApi(_Api):
                 raise UsageError("_raw=True 时不支持 begin/end（原始行无扁平日期字段）",
                                  code="range")
             fetch = min(int(limit) if limit is not None else (self._c.max_limit or 10000),
-                        10000)
+                        _BONUS_SERVER_CAP)
             rows = self._c.call("bonus.query_list", sym=symbol, limit=fetch)
             out = _per_symbol(rows, lambda r: _sort_rows_by_date(
                 _filter_by_date(r, begin, end, "ex_div", fetch), key="ex_div"))
