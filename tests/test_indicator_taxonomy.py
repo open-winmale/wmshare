@@ -110,10 +110,21 @@ def test_dead_codes_are_exactly_drop_stubs():
 
 def test_quality_thresholds():
     stats = _taxonomy()["stats"]
-    assert stats["other"] <= 0.05
-    assert stats["caliber_unknown"] <= 0.30
-    # unit unknown 不作为硬门禁，但必须被显式记录，便于后续收紧。
-    assert 0 <= stats["unit_unknown"] <= 1
+    cfg = yaml.safe_load(TAXONOMY.read_text(encoding="utf-8")) or {}
+    quality = cfg.get("quality") or {}
+    assert stats["other"] <= float(quality.get("other_max", 0.05))
+    assert stats["caliber_unknown"] <= float(quality.get("caliber_unknown_max", 0.30))
+    assert stats["unit_unknown"] <= float(quality.get("unit_unknown_max", 0.05))
+
+
+def test_unit_unknown_codes_are_allowlisted():
+    """每个残余 unknown 必须显式登记原因；已归类项必须移出白名单。"""
+    cfg = yaml.safe_load(TAXONOMY.read_text(encoding="utf-8")) or {}
+    allow = cfg.get("unit_unknown_allowlist") or {}
+    unknown = {r["code"] for r in _taxonomy()["metrics"]
+               if r["unit_kind"] == "unknown"}
+    assert unknown == set(allow)
+    assert all(str(reason or "").strip() for reason in allow.values())
 
 
 def test_all_codes_are_grouped_or_flat_exactly_once():

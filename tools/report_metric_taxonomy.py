@@ -13,23 +13,30 @@ import sys
 from collections import Counter
 from pathlib import Path
 
+import yaml
+
 REPO = Path(__file__).resolve().parents[1]
 SIDECAR = REPO / "src" / "wmshare" / "_catalog" / "generated" / "metric_taxonomy.json"
 METRICS = REPO / "src" / "wmshare" / "_catalog" / "generated" / "metrics.json"
+TAXONOMY = REPO / "src" / "wmshare" / "_catalog" / "taxonomy.yaml"
 
 
 def _load(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def build_report(sidecar: Path = SIDECAR, metrics: Path = METRICS) -> dict:
+def build_report(sidecar: Path = SIDECAR, metrics: Path = METRICS,
+                 taxonomy: Path = TAXONOMY) -> dict:
     tax = _load(sidecar)
     cn = {m["code"]: m.get("cn", "") for m in _load(metrics)["metrics"]}
+    cfg = yaml.safe_load(taxonomy.read_text(encoding="utf-8")) or {}
+    reasons = cfg.get("unit_unknown_allowlist") or {}
     rows = tax["metrics"]
     n = len(rows)
     other = [{"code": r["code"], "cn": cn.get(r["code"], ""), "scope": r["scope"]}
              for r in rows if r["topic"] == "other"]
-    unit_unknown = [{"code": r["code"], "cn": cn.get(r["code"], ""), "topic": r["topic"]}
+    unit_unknown = [{"code": r["code"], "cn": cn.get(r["code"], ""),
+                     "topic": r["topic"], "reason": reasons.get(r["code"], "")}
                     for r in rows if r["unit_kind"] == "unknown"]
     return {
         "count": n,
@@ -48,9 +55,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--sidecar", type=Path, default=SIDECAR)
     ap.add_argument("--metrics", type=Path, default=METRICS)
+    ap.add_argument("--taxonomy", type=Path, default=TAXONOMY)
     args = ap.parse_args(argv)
     try:
-        report = build_report(args.sidecar, args.metrics)
+        report = build_report(args.sidecar, args.metrics, args.taxonomy)
     except (OSError, ValueError, KeyError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2
@@ -68,6 +76,10 @@ def main(argv: list[str] | None = None) -> int:
         print("  other codes:")
         for row in report["other"]:
             print(f"    {row['code']} | {row['cn']} | {row['scope']}")
+    if report["unit_unknown"]:
+        print("  unit_unknown codes（allowlist 原因）:")
+        for row in report["unit_unknown"]:
+            print(f"    {row['code']} | {row['cn']} | {row['topic']} | {row['reason']}")
     return 0
 
 

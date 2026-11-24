@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "upstream_rev": "edcb70e1",
-  "taxonomy_version": "2026-11-13",
+  "taxonomy_version": "2026-11-24",
   "stats": {
     "count": 2983,
     "other": 0.00704,
     "caliber_unknown": 0.0,
-    "unit_unknown": 0.082803,
+    "unit_unknown": 0.019108,
     "dead": 20,
     "scopes": {
       "cbond": 24,
@@ -57,19 +57,19 @@
       "ytd": 14
     },
     "unit_kinds": {
-      "bool": 80,
-      "count": 27,
+      "bool": 117,
+      "count": 29,
       "days": 70,
-      "index_point": 156,
-      "money": 775,
-      "multiple": 101,
+      "index_point": 167,
+      "money": 787,
+      "multiple": 106,
       "per_share": 50,
       "percentile": 55,
-      "price": 144,
-      "ratio": 1078,
-      "shares": 18,
-      "text": 176,
-      "unknown": 247,
+      "price": 148,
+      "ratio": 1079,
+      "shares": 27,
+      "text": 285,
+      "unknown": 57,
       "usd_amount": 6
     }
   },
@@ -2487,7 +2487,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -2497,7 +2497,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -3540,7 +3540,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -3580,7 +3580,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -6948,7 +6948,7 @@
       "caliber": [
         "overall"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -6960,7 +6960,7 @@
       "caliber": [
         "overall"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -6972,7 +6972,7 @@
       "caliber": [
         "overall"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -6984,7 +6984,7 @@
       "caliber": [
         "overall"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -6996,7 +6996,7 @@
       "caliber": [
         "overall"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -7008,7 +7008,7 @@
       "caliber": [
         "overall"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -7020,7 +7020,7 @@
       "caliber": [
         "overall"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -7032,7 +7032,7 @@
       "caliber": [
         "overall"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -7044,7 +7044,7 @@
       "caliber": [
         "overall"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -7056,7 +7056,7 @@
       "caliber": [
         "overall"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -7068,7 +7068,7 @@
       "caliber": [
         "overall"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -7080,7 +7080,7 @@
       "caliber": [
         "overall"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -7260,7 +7260,7 @@
       "caliber": [
         "overall"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "ratio",
       "status": "active"
     },
     {
@@ -7272,7 +7272,7 @@
       "caliber": [
         "overall"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "ratio",
       "status": "active"
     },
     {
@@ -8819,7 +8819,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -8829,7 +8829,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -8849,7 +8849,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -8879,7 +8879,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -8889,7 +8889,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -8909,7 +8909,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -9125,7 +9125,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -9135,7 +9135,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -9145,7 +9145,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -9155,7 +9155,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -9165,7 +9165,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -9175,7 +9175,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -9195,7 +9195,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -9205,7 +9205,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "money",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -9215,7 +9215,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "count",
       "status": "active"
     },
     {
@@ -9225,7 +9225,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "count",
       "status": "active"
     },
     {
@@ -9235,7 +9235,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -9275,7 +9275,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -9295,7 +9295,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -9305,7 +9305,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -9315,7 +9315,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -9325,7 +9325,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -9335,7 +9335,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -9355,7 +9355,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -9807,7 +9807,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -9817,7 +9817,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -9827,7 +9827,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -9837,7 +9837,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -9847,7 +9847,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -9857,7 +9857,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -9867,7 +9867,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -9877,7 +9877,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -9887,7 +9887,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -9897,7 +9897,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -9957,7 +9957,7 @@
       "caliber": [
         "free_float"
       ],
-      "unit_kind": "ratio",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -10007,7 +10007,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -10217,7 +10217,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "price",
       "status": "active"
     },
     {
@@ -10227,7 +10227,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "price",
       "status": "active"
     },
     {
@@ -10237,7 +10237,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "price",
       "status": "active"
     },
     {
@@ -10247,7 +10247,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "price",
       "status": "active"
     },
     {
@@ -10787,7 +10787,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -10797,7 +10797,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -10817,7 +10817,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -10827,7 +10827,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -10837,7 +10837,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -10847,7 +10847,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -10857,7 +10857,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -10867,7 +10867,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -10897,7 +10897,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -10907,7 +10907,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -10917,7 +10917,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -10927,7 +10927,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -11157,7 +11157,7 @@
       "caliber": [
         "free_float"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -11187,7 +11187,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -11197,7 +11197,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -11229,7 +11229,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -11239,7 +11239,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -11299,7 +11299,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -11309,7 +11309,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -11379,7 +11379,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "shares",
       "status": "active"
     },
     {
@@ -11389,7 +11389,7 @@
       "period": "daily",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "shares",
       "status": "active"
     },
     {
@@ -11399,7 +11399,7 @@
       "period": "daily",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "shares",
       "status": "active"
     },
     {
@@ -11409,7 +11409,7 @@
       "period": "daily",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "shares",
       "status": "active"
     },
     {
@@ -11419,7 +11419,7 @@
       "period": "daily",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "shares",
       "status": "active"
     },
     {
@@ -11429,7 +11429,7 @@
       "period": "daily",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "shares",
       "status": "active"
     },
     {
@@ -11439,7 +11439,7 @@
       "period": "daily",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "shares",
       "status": "active"
     },
     {
@@ -11694,7 +11694,7 @@
       "caliber": [
         "weighted"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "ratio",
       "status": "active"
     },
     {
@@ -11706,7 +11706,7 @@
       "caliber": [
         "weighted"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "multiple",
       "status": "active"
     },
     {
@@ -11939,7 +11939,7 @@
       "caliber": [
         "weighted"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -11952,7 +11952,7 @@
         "weighted",
         "equal_weight"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -13236,7 +13236,7 @@
         "total",
         "overall"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "shares",
       "status": "active"
     },
     {
@@ -13248,7 +13248,7 @@
       "caliber": [
         "overall"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -13503,7 +13503,7 @@
       "caliber": [
         "overall"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "shares",
       "status": "active"
     },
     {
@@ -14415,7 +14415,7 @@
       "caliber": [
         "overall"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -14451,7 +14451,7 @@
       "caliber": [
         "overall"
       ],
-      "unit_kind": "unknown",
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -16306,7 +16306,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -16336,7 +16336,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -16346,7 +16346,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -16356,7 +16356,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "money",
       "status": "active"
     },
     {
@@ -16366,7 +16366,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "money",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -16376,7 +16376,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "index_point",
       "status": "active"
     },
     {
@@ -16386,7 +16386,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "index_point",
       "status": "active"
     },
     {
@@ -16396,7 +16396,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "index_point",
       "status": "active"
     },
     {
@@ -16406,7 +16406,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "index_point",
       "status": "active"
     },
     {
@@ -16416,7 +16416,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "index_point",
       "status": "active"
     },
     {
@@ -16426,7 +16426,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "index_point",
       "status": "active"
     },
     {
@@ -16436,7 +16436,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "index_point",
       "status": "active"
     },
     {
@@ -16446,7 +16446,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "index_point",
       "status": "active"
     },
     {
@@ -16456,7 +16456,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "index_point",
       "status": "active"
     },
     {
@@ -16466,7 +16466,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "index_point",
       "status": "active"
     },
     {
@@ -16476,7 +16476,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "index_point",
       "status": "active"
     },
     {
@@ -17216,7 +17216,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "money",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -17830,7 +17830,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -17840,7 +17840,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -17870,7 +17870,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -17900,7 +17900,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -17910,7 +17910,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -17990,7 +17990,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -18000,7 +18000,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -18050,7 +18050,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -18060,7 +18060,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -18070,7 +18070,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -18080,7 +18080,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -18090,7 +18090,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -18100,7 +18100,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -18120,7 +18120,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -18130,7 +18130,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -18140,7 +18140,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -18150,7 +18150,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -18160,7 +18160,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -18170,7 +18170,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -18180,7 +18180,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -18190,7 +18190,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -18200,7 +18200,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -18210,7 +18210,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -18398,7 +18398,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -18408,7 +18408,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -18418,7 +18418,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -18428,7 +18428,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -18438,7 +18438,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -18448,7 +18448,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -18480,7 +18480,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -18490,7 +18490,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -18500,7 +18500,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -18510,7 +18510,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -18520,7 +18520,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -18530,7 +18530,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -18540,7 +18540,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -18550,7 +18550,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -18560,7 +18560,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -18570,7 +18570,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -18580,7 +18580,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -18590,7 +18590,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -18600,7 +18600,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -18610,7 +18610,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -18620,7 +18620,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -18630,7 +18630,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -18640,7 +18640,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -18650,7 +18650,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -18660,7 +18660,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -18670,7 +18670,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -18680,7 +18680,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -18690,7 +18690,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -18700,7 +18700,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -18710,7 +18710,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -18750,7 +18750,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "ratio",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -18850,7 +18850,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -18860,7 +18860,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -18870,7 +18870,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -18880,7 +18880,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -18890,7 +18890,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -18900,7 +18900,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -20908,7 +20908,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "money",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -25568,7 +25568,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "money",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -25738,7 +25738,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "money",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -26184,7 +26184,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "money",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -28106,7 +28106,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "money",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -29899,7 +29899,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -29909,7 +29909,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -29919,7 +29919,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -29939,7 +29939,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -29949,7 +29949,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -29959,7 +29959,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -29969,7 +29969,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -29979,7 +29979,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -29989,7 +29989,7 @@
       "period": "latest_report",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -30091,7 +30091,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -30101,7 +30101,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -30111,7 +30111,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "multiple",
       "status": "active"
     },
     {
@@ -30121,7 +30121,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "multiple",
       "status": "active"
     },
     {
@@ -30131,7 +30131,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "multiple",
       "status": "active"
     },
     {
@@ -30141,7 +30141,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "multiple",
       "status": "active"
     },
     {
@@ -30151,7 +30151,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -30161,7 +30161,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -30171,7 +30171,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -30181,7 +30181,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -30191,7 +30191,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -30201,7 +30201,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -30211,7 +30211,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -30221,7 +30221,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "text",
       "status": "active"
     },
     {
@@ -30231,7 +30231,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
@@ -30241,7 +30241,7 @@
       "period": "snapshot",
       "window": "none",
       "caliber": [],
-      "unit_kind": "unknown",
+      "unit_kind": "bool",
       "status": "active"
     },
     {
