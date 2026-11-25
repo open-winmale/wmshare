@@ -5744,7 +5744,7 @@ A 股交易日历——区间交易日、是否开市、之后 N 个交易日。
 - trend 自带历史分位：rank0/(n-1) 并列取中点，pct.pe/pb/pe_med 各含 p/p3/p5/p10；win_trunc=true 表示缓存序列盖不住所选窗口，相关分位为 null（不拿短窗口冒充长窗口）
 - trend 的 pct.<col>.p 恒为 5 年分位（平台 pct_bundle 固定，与入参 window 无关）；SDK 按 window 取 p3/p5/p10 并回显 pe_pct_window，故 trend("3y")["pe_pct"] == pct.pe.p3
 - trend 覆盖宽基 11 + 申万一级 31（industry.SXX）+ 红利 14 键；L2/L3 行业未预热（ok=false），中信行业无该数据。指数/行业 PE 历史只能走 trend（$PCT_PE_TTM_* 按个股 $SYMBOL 绑定，不随 key 切换）
-- trend 口径：整体法 PE=Σ成分股市值/Σ成分股归母净利润TTM（$ID_PE_TTM_TOTAL），PB=ΣMV/ΣSE_NOGW；分母≤0 时 PE 为 nil（行业整体亏损则无 PE，SDK 标 pe_missing）。周频约 730 点（cursor.ds(3650)≈14.5 年，为覆盖 10y 分位窗口），月频约 174 点出正 PE 中位数。单键全量重算实测约 3.2M fuel/39s，故 cron 预热（交易日 16:20-16:29 增量、周六全量）而非请求时现算
+- trend 口径：整体法 PE=Σ成分股市值/Σ成分股归母净利润TTM（$ID_PE_TTM_TOTAL），PB=ΣMV/ΣSE_NOGW；分母≤0 时 PE 为 nil（行业整体亏损则无 PE，SDK 标 pe_missing）。周频约 730 点（cursor.ds(3650)≈14.5 年，为覆盖 10y 分位窗口），月频约 174 点出正 PE 中位数。单键全量重算实测约 3.2M fuel/39s，故 cron 预热（交易日 16:20-16:29 增量首批、16:25-18:55 每半小时补跑班、19:00 最终兜底、周六全量）而非请求时现算；当日点在官方日 K 落库（SLA 16:10）后由 asof 门控推进
 - 股息率只有当前值、没有历史序列（DV 无 series），因此不出股息率分位
 - indices.weights 传入未注册的指数键时上游返回 HTTP 500（不是空结果）；SDK 以 ServerError 透出，不自动重试、不降级为空数组。先用 indices.keys / indices.universe_keys 校验键
 
@@ -5992,7 +5992,7 @@ A 股龙虎榜——指定交易日全市场榜单与单票上榜历史（交易
 #### 每日估值（`fund.valuation`）
 
 **性质**：指标 · **版本**：1.1.0  
-个股每日估值宽表（服务端物化 alt.valuation_daily，airflow pipeline.cn.valuation_daily 每日 16:25 物化、SLA 当日 17:00）。每股每交易日一行， 8 字段全部服务端现成口径直出（HIST_STATS 序列 + metric 层同式），消费端零换算。 方案：docs/upstream-daily-basic-plan.md v3（2026-11-17 定稿）。
+个股每日估值宽表（服务端物化 alt.valuation_daily，airflow pipeline.cn.valuation_daily 每日 17:05 物化（2026-11-24 起从 16:25 前移至引擎 估值交付点后，起跑带就绪探针至 17:30；当日行常态当日可见，引擎延迟交付时 回退 T-1）。每股每交易日一行， 8 字段全部服务端现成口径直出（HIST_STATS 序列 + metric 层同式），消费端零换算。 方案：docs/upstream-daily-basic-plan.md v3（2026-11-17 定稿）。
 数据来源：服务端物化（kline × 财报 × 股本事件 × 分红事件，公式同平台现算核）。
 单位口径：pe_ttm=倍（MV ÷ NPTS_TTM，公告日 TTM）；pb=倍（MV ÷ 净资产，公告日时点前向填充）；ps=倍（MV ÷ TR_TTM）；pr=倍（PE_TTM ÷ ROE_TTM ÷ 100，市赚率）；total_mv=元（不复权收盘 × 总股份，变更日含当日生效）；circ_mv=元（不复权收盘 × 流通股份）；turnover_rate=小数（0.012 = 1.2%）；dv_ttm=小数（0.03 = 3%，DPS_TTM ÷ CLOSE）。
 - 可用性：仅 A 股（CN 专用表；HK/US 无流通股份源，诚实缺列不建表）

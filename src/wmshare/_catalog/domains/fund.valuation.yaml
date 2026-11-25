@@ -5,7 +5,9 @@ kind: computed
 category: fundamentals
 priority: P0
 description: 个股每日估值宽表（服务端物化 alt.valuation_daily，airflow
-  pipeline.cn.valuation_daily 每日 16:25 物化、SLA 当日 17:00）。每股每交易日一行，
+  pipeline.cn.valuation_daily 每日 17:05 物化（2026-11-24 起从 16:25 前移至引擎
+  估值交付点后，起跑带就绪探针至 17:30；当日行常态当日可见，引擎延迟交付时
+  回退 T-1）。每股每交易日一行，
   8 字段全部服务端现成口径直出（HIST_STATS 序列 + metric 层同式），消费端零换算。
   方案：docs/upstream-daily-basic-plan.md v3（2026-11-17 定稿）。
 data_origin: [服务端物化（kline × 财报 × 股本事件 × 分红事件，公式同平台现算核）]
