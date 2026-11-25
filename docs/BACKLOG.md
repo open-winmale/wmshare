@@ -68,12 +68,28 @@
   （`total_mv = close × 当日总股本`），结构上不可能错位；同批新增
   `total_share/float_share` 两列使行内自洽可验（`total_mv / total_share == close`）。
   防复发：`daily_data_guard` 新增 `valuation_daily_mv_consistency` detector
-  （行内自洽 + 跨日不冻结，近 10 交易日抽样 300 票）。
+  （行内自洽 + 跨日不冻结 + **数据日不超前**，近 10 交易日抽样 300 票）。
   存量修复：`pipeline.cn.valuation_daily.manual` 传 `{"repair_mv_days": 60}`
   重写近 N 个交易日整行（2026-11-25 已执行：600519 等 10 票 × 6 交易日抽查
   `total_mv / total_share` 与当日收盘 **diff 0.0000%**，全票 0 错值）。
   repair 窗口中更早的历史行仍保持旧口径（诚实缺列 `total_share/float_share`），
   市值族在窗口外不再保证行内自洽——需要用旧口径时请以 `as_of` 与 repair 窗口为准。
+- **2026-11-25 验收发现的第二个缺陷：无行情支撑的「当日伪行」（已修，待部署）**：
+  首轮 repair 成功后仍有一半标的（实测 3,069 / 5,695 票）带
+  `trade_date=2026-11-25` 的行，形态固定为「3~4 个字段、无
+  `total_share/float_share`、无 `pe_ttm/pb/ps/pr`，`total_mv` **严格等于**
+  前一日值」（1,408/1,408 抽样全中）——旧口径 `$*_LAST` 冻结 tip 的另一面。
+  11-25 的 K 线要到 16:10 才落库，这些行没有任何行情支撑，却被 clean 洗成
+  V2 文档把 `as_of` 顶到 11-25（API 面 `as_of=2026-11-25` 而当日无行）。
+  根因：`_merge_raw_doc_rows` 的「旧行按 trade_date 全保留」在**整窗重算**
+  模式下也是无条件保留，所以 repair 只重写 K 线覆盖的交易日、伪日永不清除。
+  修法：`replace_symbol_rows(..., authoritative_window=(lo, hi))`——整窗重算
+  （backfill/repair）时，`day >= lo` 的旧行必须由本轮结果背书，本轮没有即删；
+  `lo` 取「N 个交易日前的日历日」（**不能取结果最小日**，否则 backfill 的
+  PE-only 历史会被全删）。增量模式不传窗口（只产前沿+补行，不能拿它删别日）。
+  检测：detector 增加 `phantom_symbols/phantom_count`（行的 `trade_date` 晚于
+  「交易日历里已过 16:10 的最近交易日」即判伪日，占比 >1% → error）。
+- **`float_share` 与 `total_share` 相等（上游口径）**：股本变动快照披露的
 - **`float_share` 与 `total_share` 相等（上游口径）**：股本变动快照披露的
   「流通股份」实测恒等于「总股份」；真实可流通口径是「无限售股份」，当前不进表。
   需要自由流通市值时暂无逐日源（`daily_basic.circ_mv` 因此等于 `total_mv`）。
