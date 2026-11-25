@@ -6,6 +6,7 @@ from collections.abc import Sequence
 from typing import Any
 
 import wmshare
+from wmshare.catalog import is_internal_name
 from wmshare.client import BatchResult
 from wmshare.errors import CatalogError, LimitError
 from wmshare.mcp.apis import (
@@ -133,6 +134,14 @@ def contract(
     """Return the offline contract for a function or curated metric code."""
     cat = wmshare.load()
     if kind == "function":
+        # 内部命名空间（如 rptdom）不给合同：它是实现细节，给出合同等于引导
+        # Agent 直接调内部函数（真实事故：搜到 rptdom.statement 就照着调，
+        # 撞上对普通用户无意义的 fin.* 全名 domain）。对外请用 friendly API。
+        if is_internal_name(str(name)):
+            raise CatalogError(
+                f"{name} 是内部实现函数，不提供对外合同；"
+                "三表与审计请用 cli.statements.balance/income/cashflow/indicators/audit，"
+                "或用 wmshare_search(kind='api') 查 friendly API")
         data = cat.function(str(name))
     elif kind == "api":
         data = route_contract(str(name))

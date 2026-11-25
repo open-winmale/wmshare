@@ -18,7 +18,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
-from wmshare.catalog import Catalog, load  # noqa: E402
+from wmshare.catalog import INTERNAL_CATALOG_NS, Catalog, load  # noqa: E402
 
 OUT = REPO / "src" / "wmshare" / "api" / "_generated.py"
 
@@ -140,12 +140,15 @@ def generate() -> str:
     skipped_internal = 0
     for dom_id in sorted(cat.domains):
         for fn in cat.domains[dom_id].get("functions") or []:
+            ns = fn["name"].split(".", 1)[0]
             # 2.0 命名空间净化：internal: true（fmt_* 规范化辅助等内部函数）
             # 不再进类型化门面——属性直达噪音下架，仍可经 ``cli.call`` 调用。
-            if fn.get("internal"):
+            # 内部命名空间（INTERNAL_CATALOG_NS，如 rptdom）整域同办：它们是
+            # 实现细节，对外只经友好门面（cli.statements.*）暴露；留着会让
+            # Agent 搜到就照着调，撞上对普通用户无意义的参数契约。
+            if fn.get("internal") or ns in INTERNAL_CATALOG_NS:
                 skipped_internal += 1
                 continue
-            ns = fn["name"].split(".", 1)[0]
             per_ns.setdefault(ns, []).append(cat.function(fn["name"]))
 
     out = [HEADER, BASE]

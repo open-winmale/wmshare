@@ -2037,16 +2037,31 @@ class Client:
         self.close()
 
     def __dir__(self) -> list[str]:
-        """IDE 补全/交互式探索可见全部命名空间：友好门面 + 类型化门面 + 底层目录。"""
+        """IDE 补全/交互式探索可见全部命名空间：友好门面 + 类型化门面 + 底层目录。
+
+        内部命名空间（``INTERNAL_CATALOG_NS``）不进补全——它们不是用户接口，
+        列出来只会把人引到不该调的函数上（历史事故：Agent 搜到 ``rptdom.statement``
+        就照着调，而它要求 ``fin.*`` 全名 domain）。
+        """
         from wmshare.api import FRIENDLY_NAMESPACES, GENERATED_NAMESPACES
+        from wmshare.catalog import INTERNAL_CATALOG_NS
         return sorted({*super().__dir__(), *FRIENDLY_NAMESPACES,
-                       *GENERATED_NAMESPACES, *self.catalog.namespaces()})
+                       *(set(GENERATED_NAMESPACES) - INTERNAL_CATALOG_NS),
+                       *(self.catalog.namespaces() - INTERNAL_CATALOG_NS)})
 
     def __getattr__(self, ns: str) -> Any:
         """client.bonus.query_list(...) —— 友好 API 优先，其次类型化门面，最后通用门面。"""
         if ns.startswith("_"):
             raise AttributeError(ns)
         from wmshare.api import FRIENDLY_NAMESPACES, GENERATED_NAMESPACES
+        from wmshare.catalog import INTERNAL_CATALOG_NS
+        # 内部命名空间先拦：拦在三条查找之前，否则 _Namespace 兜底（下方最后
+        # 一行）照样会放行。底层仍可 cli.call("<ns>.xxx", ...)。
+        if ns in INTERNAL_CATALOG_NS:
+            raise AttributeError(
+                f"命名空间 {ns!r} 是内部实现，不经属性直达；"
+                f"三表与审计请用 cli.statements.balance/income/cashflow/indicators/audit；"
+                f"确需底层请 cli.call({ns + '.xxx'!r}, ...)")
         cls = FRIENDLY_NAMESPACES.get(ns)
         if cls is not None:
             return cls(self)
@@ -2056,7 +2071,8 @@ class Client:
         if ns not in self.catalog.namespaces():
             raise AttributeError(
                 f"命名空间 {ns!r} 不在目录中；可用友好入口 "
-                f"{sorted(FRIENDLY_NAMESPACES)} 或底层命名空间 {sorted(self.catalog.namespaces())}")
+                f"{sorted(FRIENDLY_NAMESPACES)} 或底层命名空间 "
+                f"{sorted(self.catalog.namespaces() - INTERNAL_CATALOG_NS)}")
         return _Namespace(self, ns)
 
 

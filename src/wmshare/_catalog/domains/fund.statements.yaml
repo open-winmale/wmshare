@@ -30,7 +30,9 @@ functions:
     layer: L0
     params:
       - {name: sym, type: string, required: true, desc: 6 位裸码}
-      - {name: domain, type: string, required: true, enum: [fin.balance_sheet, fin.income_statement, fin.cashflow_statement]}
+      - {name: domain, type: string, required: true,
+         enum: [fin.balance_sheet, fin.income_statement, fin.cashflow_statement],
+         desc: 报表域全名（非 income/balance 短名；对应 fin.balance_sheet/fin.income_statement/fin.cashflow_statement）}
       - {name: opts, type: object, required: false, desc: '{scope: 合并|母公司(默认合并), n: 期数(默认5), years: 年份数组}'}
     returns: {desc: ARR · 科目行（科目代码/中文名×期次列）}
     example: 'rptdom.statement("600519", "fin.income_statement", {"scope": "合并", "n": 5})'
@@ -40,7 +42,9 @@ functions:
     layer: L0
     params:
       - {name: sym, type: string, required: true}
-      - {name: domain, type: string, required: true, enum: [fin.balance_sheet, fin.income_statement, fin.cashflow_statement]}
+      - {name: domain, type: string, required: true,
+         enum: [fin.balance_sheet, fin.income_statement, fin.cashflow_statement],
+         desc: 报表域全名（非 income/balance 短名）}
     returns: {desc: ARR · 年份}
     example: 'rptdom.statement_years("600519", "fin.income_statement")'
   - name: rptdom.statement_compare
@@ -49,7 +53,9 @@ functions:
     layer: L0
     params:
       - {name: sym, type: string, required: true}
-      - {name: domain, type: string, required: true}
+      - {name: domain, type: string, required: true,
+         enum: [fin.balance_sheet, fin.income_statement, fin.cashflow_statement],
+         desc: 报表域全名（非 income/balance 短名）}
       - {name: opts, type: object, required: false, desc: 同 statement（差额/差额占比%为派生计算）}
     returns: {desc: 'ARR · 科目行 + 合并/母公司/差额/差额占比'}
     example: 'rptdom.statement_compare("600519", "fin.income_statement", {"n": 2})'
@@ -65,7 +71,9 @@ functions:
     layer: L0
     params:
       - {name: sym, type: string, required: true}
-      - {name: domain, type: string, required: true}
+      - {name: domain, type: string, required: true,
+         enum: [fin.balance_sheet, fin.income_statement, fin.cashflow_statement],
+         desc: 报表域全名（非 income/balance 短名）}
       - {name: opts, type: object, required: false, desc: 同 statement}
     returns: {desc: ARR · 树序科目行；含派生比率行（LD/IBD_RATE/GM 等 pct 行）}
     example: 'rptdom.statement_tree("600519", "fin.balance_sheet", {"scope": "合并", "n": 5})'

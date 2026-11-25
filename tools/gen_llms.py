@@ -75,6 +75,12 @@ def _function_notes_digest(cat) -> str:
     """
     rows: list[str] = []
     for domain in cat.domains.values():
+        # 整域内部（如 fund.statements / rptdom）连 notes 一起略去：域级 notes
+        # 常写「domain 取值 fin.xxx」这类内部参数契约，对 Agent 是误导而非指引
+        # （它读不到函数，却记住了参数名）。
+        if any(is_internal_catalog_name(f.get("name", ""))
+               for f in domain.get("functions") or []):
+            continue
         dnotes = domain.get("notes") or []
         if dnotes:
             rows.append(f"- **{domain.get('cn') or domain.get('id')} 域**："

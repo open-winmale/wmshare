@@ -546,8 +546,15 @@ def metric_groups_lines(doc: dict) -> list[str]:
 
 
 def render_domain(doc: dict) -> list[str]:
-    """附录域节：域合同（描述/单位/notes）+ 底层函数表（不含指标组，其在文档主体）。"""
+    """附录域节：域合同（描述/单位/notes）+ 底层函数表（不含指标组，其在文档主体）。
+
+    整域内部（函数命名空间落在 INTERNAL_CATALOG_NS，如 fund.statements/rptdom）
+    时连域级 notes 一起略去：notes 常写「domain 取值 fin.xxx」这类内部参数契约，
+    函数表已隐藏，留着 notes 只会让读者记住用不上的参数名。
+    """
     kind = doc["kind"]
+    internal_domain = any(is_internal_catalog_name(f.get("name", ""))
+                          for f in doc.get("functions") or [])
     lines = [
         f"#### {doc['cn']}（`{doc['id']}`）",
         "",
@@ -558,8 +565,9 @@ def render_domain(doc: dict) -> list[str]:
         lines.append(f"数据来源：{'、'.join(doc['data_origin'])}。")
     if doc.get("units"):
         lines.append("单位口径：" + "；".join(f"{k}={esc(v)}" for k, v in doc["units"].items()) + "。")
-    for n in doc.get("notes") or []:
-        lines.append(f"- {esc(n)}")
+    if not internal_domain:
+        for n in doc.get("notes") or []:
+            lines.append(f"- {esc(n)}")
     lines.append("")
 
     fns = [f for f in (doc.get("functions") or []) if not doc_hidden(f)]

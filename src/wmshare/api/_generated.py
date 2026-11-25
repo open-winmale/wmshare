@@ -2273,60 +2273,6 @@ class ReserveNS(_Ns):
         """
         return _out(self._client.call("reserve.asof", kind=kind, _raw=_raw), _raw)
 
-class RptdomNS(_Ns):
-    """财务报表（fund.statements）"""
-
-    def statement(self, sym: str, domain: str, opts: dict | None = None, _raw: bool = False) -> Any:
-        """三报表科目×期次透视
-
-:param sym: 6 位裸码
-:param opts: {scope: 合并|母公司(默认合并), n: 期数(默认5), years: 年份数组}
-
-:returns: ARR · 科目行（科目代码/中文名×期次列）
-        """
-        kw: dict[str, Any] = {"sym": sym, "domain": domain}
-        if opts is not None:
-            kw["opts"] = opts
-        return _out(self._client.call("rptdom.statement", **kw, _raw=_raw), _raw)
-
-    def statement_years(self, sym: str, domain: str, _raw: bool = False) -> Any:
-        """报表可用年报（Q4 档，降序）
-
-:returns: ARR · 年份
-        """
-        return _out(self._client.call("rptdom.statement_years", sym=sym, domain=domain, _raw=_raw), _raw)
-
-    def statement_compare(self, sym: str, domain: str, opts: dict | None = None, _raw: bool = False) -> Any:
-        """合并 vs 母公司报表比较
-
-:param opts: 同 statement（差额/差额占比%为派生计算）
-
-:returns: ARR · 科目行 + 合并/母公司/差额/差额占比
-        """
-        kw: dict[str, Any] = {"sym": sym, "domain": domain}
-        if opts is not None:
-            kw["opts"] = opts
-        return _out(self._client.call("rptdom.statement_compare", **kw, _raw=_raw), _raw)
-
-    def statement_tree(self, sym: str, domain: str, opts: dict | None = None, _raw: bool = False) -> Any:
-        """三表目录树视图（树序 + 比率/占比行）
-
-:param opts: 同 statement
-
-:returns: ARR · 树序科目行；含派生比率行（LD/IBD_RATE/GM 等 pct 行）
-        """
-        kw: dict[str, Any] = {"sym": sym, "domain": domain}
-        if opts is not None:
-            kw["opts"] = opts
-        return _out(self._client.call("rptdom.statement_tree", **kw, _raw=_raw), _raw)
-
-    def statement_audit(self, sym: str, _raw: bool = False) -> Any:
-        """审计意见（Q4 年轴）
-
-:returns: MAP · {年份: 审计意见}
-        """
-        return _out(self._client.call("rptdom.statement_audit", sym=sym, _raw=_raw), _raw)
-
 class SegmentsNS(_Ns):
     """经营分部（fund.segments）"""
 
@@ -2579,7 +2525,6 @@ NAMESPACES: dict[str, type[_Ns]] = {
     "notice": NoticeNS,
     "pdf_doc": Pdf_docNS,
     "reserve": ReserveNS,
-    "rptdom": RptdomNS,
     "segments": SegmentsNS,
     "stocks": StocksNS,
     "toplist": ToplistNS,

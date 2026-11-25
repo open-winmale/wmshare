@@ -22,6 +22,20 @@ from wmshare.units import _metric_meta_valid, validate_meta
 _PACKAGE_CATALOG = Path(__file__).resolve().parent / "_catalog"
 SUPPORTED_SCHEMA_VERSION = 2
 
+#: 内部目录命名空间：函数名必须留在随包目录里（``cli.statements.audit`` 经
+#: ``catalog.function()`` 做目录感知委托，缺条目就断），但不得以底层名字出现在
+#: 任何对用户/Agent 可见的面——目录检索（``search``）、属性直达
+#: （``cli.<ns>.*``）、IDE 补全（``dir(cli)``）、文档与 llms 生成物。
+#: 底层仍可 ``cli.call("<ns>.xxx", ...)`` 调用（内部依赖与调试需要）。
+#: 新增命名空间须同步此处与 ``tests/test_internal_ns_visibility.py`` 门禁。
+INTERNAL_CATALOG_NS = frozenset({"rptdom"})
+
+
+def is_internal_name(name: str) -> bool:
+    """目录函数名是否属于内部命名空间（按 ``ns.func`` 的点前缀判定）。"""
+    return name.partition(".")[0] in INTERNAL_CATALOG_NS
+
+
 #: 随包分发的全市场代码目录（companies.<market>.json，来自上游同步冻结）
 SYMBOLS_DIR = "symbols"
 SUPPORTED_SYMBOL_MARKETS = ("cn", "hk", "us")
@@ -210,6 +224,8 @@ class Catalog:
         """按关键字（英文名/中文名，大小写不敏感）搜索函数与指标代码。
 
         kind: "all" | "function" | "metric"；返回 [{kind,name/code,cn,domain?}]。
+        内部命名空间（``INTERNAL_CATALOG_NS``）不参与函数检索——它们是实现细节，
+        露出来只会让调用方照着调内部函数（对外能力另有友好门面）。
         """
         q = query.strip().lower()
         if not q:
@@ -217,6 +233,8 @@ class Catalog:
         out: list[dict] = []
         if kind in ("all", "function"):
             for name, fn in self._functions.items():
+                if is_internal_name(name):
+                    continue
                 if q in f"{name} {fn.get('cn', '')}".lower():
                     out.append({"kind": "function", "name": name,
                                 "cn": fn.get("cn", ""), "domain": fn["domain"]})

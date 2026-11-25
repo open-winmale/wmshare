@@ -8,7 +8,7 @@ import inspect
 import pytest
 
 from wmshare.api import FRIENDLY_INDEX, FRIENDLY_NAMESPACES, GENERATED_NAMESPACES
-from wmshare.catalog import load
+from wmshare.catalog import INTERNAL_CATALOG_NS, is_internal_name, load
 
 CAT = load()
 CORE_IDS = [f"{ns}.{m}" for _, ns, m, _, _ in FRIENDLY_INDEX]
@@ -149,6 +149,10 @@ def test_generated_facade_signatures_match_catalog():
     checked = 0
     for full_name in ALL_FNS:
         ns, short = full_name.split(".", 1)
+        # 内部命名空间整域不进类型化门面（实现细节，经友好门面 / cli.call 用）
+        if ns in INTERNAL_CATALOG_NS:
+            assert ns not in GENERATED_NAMESPACES, f"内部命名空间 {ns} 不该生成门面"
+            continue
         cls = GENERATED_NAMESPACES[ns]
         # 2.0：internal: true（fmt_* 等）已退出类型化门面，只校验公开面
         if CAT.function(full_name).get("internal"):
@@ -161,7 +165,9 @@ def test_generated_facade_signatures_match_catalog():
         catalog_params = [p["name"] for p in (fn.get("params") or CAT.inventory_params(full_name))]
         assert sig_params == catalog_params, f"{full_name} 签名 {sig_params} != 目录 {catalog_params}"
         checked += 1
-    public_fns = [n for n in ALL_FNS if not CAT.function(n).get("internal")]
+    public_fns = [n for n in ALL_FNS
+                  if not CAT.function(n).get("internal")
+                  and not is_internal_name(n)]
     assert checked == len(public_fns)
 
 

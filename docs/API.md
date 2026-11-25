@@ -6145,10 +6145,6 @@ A 股龙虎榜——指定交易日全市场榜单与单票上榜历史（交易
 三大报表科目原值（资产负债 / 利润 / 现金流）多期透视、合并 vs 母公司比较、 报表目录树与审计意见——本域目录函数族服务平台内部页面（含合并/母公司口径、 目录树与溯源列）。对外报表走 `cli.statements`（组合门面：三表 + 主要指标 × cn/hk/us，读 fin_* 宽表，科目为披露原值、披露原币）。
 数据来源：定期报告披露原值、外部数据服务(主要指标)。
 单位口径：amount=报表原币（CN=元，HK=港币，US=美元）；ratio=小数（compare 的差额占比已由 SDK 从百分数换算；树视图 pct 行为原生百分数未换算）；period=报告期（年-采样，如 2024-Q4 / 2024 年报）。
-- domain 取值 fin.balance_sheet / fin.income_statement / fin.cashflow_statement
-- opts.scope = 合并(默认) \| 母公司；opts.n 期数（默认 5，年报降序）；opts.years 年份数组（如 [2024,2023]）
-- 新旧会计准则口径适配在平台内部层完成，本域输出已归一
-- 可用性注记：目录函数族面向平台内部页面（alt.bssaa LIST 投影，合并/母公司 口径与溯源列）；SDK 对外报表（cli.statements 三加一）读取全市场宽表 fin_income / fin_balance / fin_cashflow / fin_indicator（季度粒度、披露 原币、列名=披露科目原文），由 SDK 内置读取脚本实现，不经本目录函数
 
 #### 每日估值（`fund.valuation`）
 

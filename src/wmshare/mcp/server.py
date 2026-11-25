@@ -11,6 +11,7 @@ from mcp.server.fastmcp import FastMCP
 from pydantic import Field
 
 import wmshare
+from wmshare.catalog import is_internal_name
 from wmshare.mcp import apis
 from wmshare.mcp.constants import DEFAULT_MARKET, MARKETS, MAX_ROWS, SOURCE, TOOL_NAMES
 from wmshare.mcp.core import MCPRuntime, credential_values, error
@@ -851,6 +852,12 @@ def _add_resources(mcp: FastMCP, rt: MCPRuntime) -> None:
 
     @mcp.resource("wmshare://catalog/function/{name}")
     def function_contract(name: str) -> str:
+        # 内部命名空间（rptdom 等）不提供对外合同：实现细节，只经 friendly API 暴露
+        if is_internal_name(name):
+            return json.dumps(
+                {"error": f"{name} 是内部实现函数，不提供对外合同",
+                 "hint": "三表与审计用 cli.statements.*；查 friendly API 用 wmshare_search"},
+                ensure_ascii=False, sort_keys=True)
         data = wmshare.load().function(name)
         return json.dumps(data, ensure_ascii=False, sort_keys=True)
 

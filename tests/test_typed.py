@@ -4,7 +4,7 @@ import inspect
 import pytest
 
 from wmshare.api import FRIENDLY_NAMESPACES, GENERATED_NAMESPACES
-from wmshare.catalog import load
+from wmshare.catalog import INTERNAL_CATALOG_NS, load
 from wmshare.client import Client, WmshareError
 
 
@@ -48,6 +48,10 @@ def _all_catalog_fns() -> set[str]:
 def test_namespaces_cover_catalog():
     cat = load()
     for ns in cat.namespaces():
+        if ns in INTERNAL_CATALOG_NS:
+            # 内部命名空间整域不进类型化门面（实现细节，只经友好门面暴露）
+            assert ns not in GENERATED_NAMESPACES, f"内部命名空间 {ns} 不该有门面"
+            continue
         assert ns in GENERATED_NAMESPACES, f"命名空间 {ns} 缺少类型化门面"
 
 
@@ -62,6 +66,10 @@ def test_methods_match_catalog_both_ways():
         ns, short = full.split(".", 1)
         if ns in FRIENDLY_NAMESPACES:
             continue  # 友好层接管，生成层仍生成但被遮蔽
+        if ns in INTERNAL_CATALOG_NS:
+            # 内部命名空间整域不进类型化门面（实现细节，经友好门面/cli.call 用）
+            assert ns not in GENERATED_NAMESPACES, f"内部命名空间 {ns} 不该生成门面"
+            continue
         if load().function(full).get("internal"):
             assert not hasattr(GENERATED_NAMESPACES[ns], short), f"{full} 应退出类型化门面"
             continue
@@ -71,10 +79,13 @@ def test_methods_match_catalog_both_ways():
 def test_typed_dispatch(cli):
     cli.bonus.snapshot_yield_ttm(sym="600519")
     assert last_xs(cli) == ['return bonus.snapshot_yield_ttm("600519")']
-    cli.rptdom.statement(sym="600519", domain="fin.income_statement", opts={"n": 5})
+    # 内部命名空间（rptdom）不经类型化门面，底层直调仍生成正确的 require + 调用
+    cli.call("rptdom.statement", sym="600519", domain="fin.income_statement", opts={"n": 5})
     xs = last_xs(cli)
     assert xs[0] == 'xs.require("sys/rptdom/init.xs")'
     assert xs[-1] == 'return rptdom.statement("600519", "fin.income_statement", {"n": 5})'
+    with pytest.raises(AttributeError, match="内部实现"):
+        cli.rptdom
 
 
 def test_typed_optional_param_omitted(cli):

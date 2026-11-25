@@ -36,6 +36,7 @@ from wmshare.backtest import (
     valuation_by_date,
     valuation_signals,
 )
+from wmshare.catalog import is_internal_name
 from wmshare.errors import (
     ApiError, CatalogError, DataError, LimitError, ServerError, UsageError, WmshareError)
 from wmshare.units import (apply_facade_units, finish_metric, is_index_symbol,
@@ -409,6 +410,13 @@ class _Api:
         if meta.get("internal"):
             raise AttributeError(
                 f"{qualified} 是目录标注的内部辅助（internal: true），2.0 起不经属性直达；"
+                f"确需调用请 cli.call({qualified!r}, ...)，或查 docs/API.md 附录")
+        # 内部命名空间（INTERNAL_CATALOG_NS，如 rptdom）整域同办：否则
+        # cli.statements.statement(_years/_compare/_tree) 会经本动态透传绕过
+        # Client 层的拦截，把内部函数又漏回给用户（2026-11-25 审计实证）。
+        if is_internal_name(qualified):
+            raise AttributeError(
+                f"{qualified} 属于内部命名空间，不经属性直达；"
                 f"确需调用请 cli.call({qualified!r}, ...)，或查 docs/API.md 附录")
         params = meta.get("params") or client.catalog.inventory_params(qualified)
         param_names = [p["name"] for p in params]

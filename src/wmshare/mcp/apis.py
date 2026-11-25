@@ -13,6 +13,7 @@ from functools import lru_cache
 from typing import Any, Callable
 
 from wmshare.api import FRIENDLY_NAMESPACES
+from wmshare.catalog import is_internal_name
 
 _SYMBOL_NAMES = {"symbol", "sym", "stk", "code"}
 
@@ -187,7 +188,12 @@ def _catalog_function(domain: str, method: str, func: Callable[..., Any]) -> str
         r'(?:\.call|\.call_batch)\(\s*["\']([a-z][a-z0-9_]*\.[A-Za-z0-9_]+)["\']',
         source,
     )
-    return match.group(1) if match else None
+    if not match:
+        return None
+    # 内部命名空间（如 rptdom，statements.audit 的底层）不对外露出：这个字段
+    # 会经 wmshare_contract(kind='api') 与 wmshare_search(kind='api') 直接
+    # 呈现给 Agent，写上 rptdom.* 等于把实现细节又漏回去。
+    return None if is_internal_name(match.group(1)) else match.group(1)
 
 
 @lru_cache(maxsize=1)

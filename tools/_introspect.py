@@ -14,16 +14,12 @@ _PY2JSON = {"str": "string", "int": "integer", "float": "number", "bool": "boole
             "list": "array", "dict": "object", "list[str]": "array",
             "dict[str, Any]": "object", "Any": "object"}
 
-# 内部目录命名空间：函数名必须留在随包目录里（友好门面的目录感知委托依赖
-# catalog.function() 能查到），但不得以底层名字出现在任何对用户/Agent 可见的
-# 清单（docs/API.md 域函数表、openapi description、llms*.txt 等）。用户侧只
-# 暴露 cli.statements.* 这类友好接口。新增命名空间须同步本集合与门禁测试。
-INTERNAL_CATALOG_NS = frozenset({"rptdom"})
-
-
-def is_internal_catalog_name(name: str) -> bool:
-    """目录函数名是否属于不得对外露出的内部命名空间。"""
-    return name.partition(".")[0] in INTERNAL_CATALOG_NS
+# 内部目录命名空间的唯一事实源在包内（``wmshare.catalog``）——运行时收口
+# （client 属性直达 / 目录检索）与文档生成物都要用同一份集合，不能各存一份。
+from wmshare.catalog import (  # noqa: E402,F401
+    INTERNAL_CATALOG_NS,
+    is_internal_name as is_internal_catalog_name,
+)
 
 # 示例值（按参数名；文档示例口径，非编造合同）
 EXAMPLE_VALUES = {

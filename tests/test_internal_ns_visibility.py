@@ -104,3 +104,68 @@ def test_doc_hidden_rule_covers_internal_namespace():
     assert doc_hidden({"name": "rptdom.mkt_latest"})
     assert not doc_hidden({"name": "kline.query_bars"})
     assert not doc_hidden({"name": "cbond.card"})
+
+
+def test_internal_ns_absent_from_runtime_surfaces():
+    """运行时面同样不得泄露内部命名空间（2026-11-25 补齐：此前只扫文档）。
+
+    事故背景：Agent 用 ``cat.search("报表")`` 检索时首条命中 ``rptdom.statement``，
+    照着调却撞上它要求 ``fin.*`` 全名 domain —— 因为文档侧隐藏、运行时没隐藏。
+    """
+    from wmshare.client import Client
+
+    ext = _introspect()
+    cat = wmshare.load()
+    cli = Client(base_url="https://t", client_id="cid", client_secret="sec",
+                 catalog=cat, allow_custom_host=True)
+
+    leaked: list[str] = []
+    # 1) IDE 补全 / 交互探索面
+    for ns in ext.INTERNAL_CATALOG_NS:
+        if ns in dir(cli):
+            leaked.append(f"dir(cli) 含 {ns}")
+
+    # 2) 属性直达（须在生成门面与 _Namespace 兜底之前拦住）
+    for ns in ext.INTERNAL_CATALOG_NS:
+        try:
+            getattr(cli, ns)
+        except AttributeError:
+            pass
+        else:
+            leaked.append(f"cli.{ns} 属性可达")
+
+    # 3) 目录检索（MCP wmshare_search 直接透传此函数）
+    for query in ("报表", "statement", "审计"):
+        for hit in cat.search(query, limit=50):
+            name = str(hit.get("name") or "")
+            if name and ext.is_internal_catalog_name(name):
+                leaked.append(f"cat.search({query!r}) 命中 {name}")
+
+    # 4) 类型化门面不得生成内部命名空间类
+    from wmshare.api import GENERATED_NAMESPACES
+    for ns in ext.INTERNAL_CATALOG_NS:
+        if ns in GENERATED_NAMESPACES:
+            leaked.append(f"GENERATED_NAMESPACES 含 {ns}")
+
+    # 5) 友好命名空间的动态透传：cli.statements.statement 等会经 _Api.__getattr__
+    #    拼出 rptdom.* 再委托，Client 层拦截管不到（2026-11-25 审计实证）。
+    #    对外只该有组合面四表 + audit 这五个显式方法。
+    allowed = {"balance", "income", "cashflow", "indicators", "audit"}
+    for name in ("statement", "statement_years", "statement_compare", "statement_tree"):
+        if name in allowed:
+            continue
+        try:
+            getattr(cli.statements, name)
+        except AttributeError:
+            pass
+        else:
+            leaked.append(f"cli.statements.{name} 动态透传可达")
+
+    assert not leaked, f"运行时泄露内部命名空间：{leaked}"
+
+
+def test_internal_ns_still_reachable_via_call():
+    """收归内部 ≠ 删掉能力：友好门面的底层依赖必须仍可经 cli.call 调。"""
+    cat = wmshare.load()
+    for underlying in ("rptdom.statement_audit", "rptdom.statement"):
+        assert cat.function(underlying), f"{underlying} 必须留在随包目录（门面委托依赖）"

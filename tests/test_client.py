@@ -177,7 +177,9 @@ def test_dir_exposes_all_namespaces():
                  catalog=load(), session=FakeSession())
     names = set(dir(cli))
     assert {"dividend", "kline", "screener", "call", "call_batch"} <= names
-    assert {"bonus", "rptdom"} <= names            # 底层目录命名空间
+    assert {"bonus", "statements"} <= names      # 底层目录命名空间 + 友好组合门面
+    # 内部命名空间不进补全：它是实现细节，只经友好门面暴露（cli.call 仍可达）
+    assert "rptdom" not in names
 
 
 def test_partial_credentials_rejected():
@@ -244,9 +246,10 @@ def test_object_param_serialized(client):
 
 
 def test_namespace_facade(client):
-    # 通用门面（非友好命名空间）：rptdom 仍走底层函数直调
-    out = client.rptdom.statement(sym="600519", domain="fin.income_statement")
-    assert out == {"ok": True}
+    # 内部命名空间不经属性直达，但底层直调仍可用（cli.statements.audit 依赖它）
+    with pytest.raises(AttributeError, match="内部实现"):
+        client.rptdom
+    client.call("rptdom.statement", sym="600519", domain="fin.income_statement")
     xs = last_eval(client)["json"]["xs_lines"]
     assert xs[0] == 'xs.require("sys/rptdom/init.xs")'
     assert xs[-1] == 'return rptdom.statement("600519", "fin.income_statement")'
