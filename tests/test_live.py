@@ -1061,15 +1061,21 @@ def test_futures_settle(cli):
 
 
 def test_gold_symbols(cli):
-    """金交所现货品种清单：键带 .SGE 后缀、日期为 ISO、收盘为正。"""
+    """金交所现货品种清单：键带 .SGE 后缀、日期为 ISO、有成交的品种收盘为正。"""
     df = _call_or_xfail(lambda: cli.gold.symbols())
     rows = df.to_dict("records") if hasattr(df, "to_dict") else list(df)
     if not rows:
         pytest.skip("金交所现货无数据（采集器未跑）")
     assert all(str(r["symbol"]).endswith(".SGE") for r in rows)
     assert all(len(str(r["date"])) == 10 for r in rows)
-    closes = [r["close"] for r in rows if r.get("close") is not None]
-    assert closes and all(float(c) > 0 for c in closes)
+    # 部分品种当期无成交（如 Au99.95/Au100g 停做），上游 close=0 → 不作正数断言，
+    # 但至少要有一半品种有真实报价（否则说明读面整体取错）
+    closes = [float(r["close"]) for r in rows if r.get("close") is not None]
+    positive = [c for c in closes if c > 0]
+    assert len(positive) >= max(len(closes) // 2, 1), closes
+    # 主力品种必须有价：Au99.99 是探针基准（gold.symbols 的版本键就是它）
+    assert any(str(r["code"]) == "Au99.99" and float(r["close"] or 0) > 0
+               for r in rows), rows
 
 
 def test_gold_bars(cli):

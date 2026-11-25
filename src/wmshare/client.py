@@ -1486,6 +1486,11 @@ class Client:
     # 与 sym/stk 同义，同样归一代码写法。
     SYMBOL_PARAMS = ("sym", "symbol", "stk", "stock_code", "code")
     BATCH_SYMBOL_PARAMS = ("sym", "symbol", "stk", "code")
+    # 大小写敏感、不能做裸码归一的域（2026-11-25 实测踩过）：
+    # gold 的品种码形如 Au99.99 / Au(T+D)，而 V2 存储键同名大小写敏感；
+    # normalize_symbol 会把它拼上 .SGE 再转大写（AU99.99.SGE），查不到任何行。
+    # 这些域的 code 原样下发，归一由脚本侧 gold.norm_code 负责（只剥前后缀）。
+    RAW_SYMBOL_NAMESPACES = frozenset({"gold"})
     # 通用别名 → 函数实际参数名：用户按目录习惯写 symbol= / sym= 时自动落到该
     # 函数的真实标的名（cbond.of_stock 叫 stk、cbond.call_hits 叫 code）。
     SYMBOL_ALIASES = ("symbol", "sym")
@@ -1570,18 +1575,24 @@ class Client:
         def _provided(p: dict) -> bool:
             return p["name"] in kwargs or (sym_override is not None and p["name"] == sym_param)
 
+        # 大小写敏感的域（gold 现货品种码）不做裸码归一：见 RAW_SYMBOL_NAMESPACES。
+        _raw_sym = name.split(".", 1)[0] in self.RAW_SYMBOL_NAMESPACES
+
+        def _sym(value: str) -> str:
+            return value if _raw_sym else self._canon_symbol(value)
+
         last_provided = max((i for i, p in enumerate(params) if _provided(p)), default=-1)
         args = []
         for i, p in enumerate(params):
             if sym_override is not None and p["name"] == sym_param:
-                args.append(_xs_literal(self._canon_symbol(sym_override)))
+                args.append(_xs_literal(_sym(sym_override)))
             elif p["name"] in kwargs:
                 v = kwargs[p["name"]]
                 # 标的参数不论目录声明为 string 还是 any 都要归一：
                 # cbond.* / macro.* 的标的名在 xs 侧是 any 类型，
                 # 只按 type=="string" 判断会漏掉，导致 "601009.SH" 原样下发。
                 if p["name"] in self.SYMBOL_PARAMS and isinstance(v, str):
-                    v = self._canon_symbol(v)
+                    v = _sym(v)
                 args.append(_xs_literal(v))
             elif "default" in p:
                 args.append(_xs_literal(p["default"]))
