@@ -74,7 +74,7 @@
   `total_mv / total_share` 与当日收盘 **diff 0.0000%**，全票 0 错值）。
   repair 窗口中更早的历史行仍保持旧口径（诚实缺列 `total_share/float_share`），
   市值族在窗口外不再保证行内自洽——需要用旧口径时请以 `as_of` 与 repair 窗口为准。
-- **2026-11-25 验收发现的第二个缺陷：无行情支撑的「当日伪行」（已修，待部署）**：
+- **2026-11-25 验收发现的第二个缺陷：无行情支撑的「当日伪行」（已修并部署）**：
   首轮 repair 成功后仍有一半标的（实测 3,069 / 5,695 票）带
   `trade_date=2026-11-25` 的行，形态固定为「3~4 个字段、无
   `total_share/float_share`、无 `pe_ttm/pb/ps/pr`，`total_mv` **严格等于**
@@ -89,7 +89,28 @@
   PE-only 历史会被全删）。增量模式不传窗口（只产前沿+补行，不能拿它删别日）。
   检测：detector 增加 `phantom_symbols/phantom_count`（行的 `trade_date` 晚于
   「交易日历里已过 16:10 的最近交易日」即判伪日，占比 >1% → error）。
-- **`float_share` 与 `total_share` 相等（上游口径）**：股本变动快照披露的
+  该 detector 自身还有两个缺陷一并修了（同样属于「绿了但没测到」）：
+  ① 窗口下界取 `days[0]`，而 `_trade_dates_le` 是**降序**返回 → 检查范围退化成
+  最新一天，采样只覆盖 300 票 × 1 行；② 单次 `find(ts>=floor).sort(ts,-1)
+  .limit(300*10)` 在分组前全局截断，1,067 万条「一票一行」的集合里只够取到
+  最新一天的部分票。两者叠加使 `frozen`（同票跨日 `total_mv` 连续 ≥3 日同值）
+  **永久假阴性**，生产征兆是 `rows_checked == sampled_symbols`。改为
+  `min(days)` 作下界 + 「先 `distinct('symbol')` 定票、再按票取各自窗口」。
+- **2026-11-25 验收发现的第三个缺陷：radd 的 V2 删除静默空转（已修）**：
+  第二个缺陷修好 raw、`build` 与 `clean` 双双 success 之后，V2 层的 3,069
+  条 11-25 文档**一条没少**，API 对 301558/688798/900953 仍报
+  `as_of=2026-11-25`。根因不在估值链路，而在 `bssaa` 的
+  `_delete_v2_for_radd`：它把 `v2_catalog` 写死成 `alt.bssaa`，而
+  `dual_write_delete` 用 `v2_collection_for(catalog, symbol)` 选物理表——
+  普通 `bssaa` 表恰好对得上（`alt.bssaa` 是分片 catalog → `alt_bssaa_cn`），
+  独立 catalog 的表就打到别的集合上：`valuation_daily` 的真实物理表是
+  `alt_valuation_daily`，删除却指向 `alt_bssaa_cn`，`delete_many` 匹配 0 条
+  且不报错。于是 `radd`（删除后全量重写）退化成「只 upsert 本轮产出的行」，
+  **范围之外（未来日）的旧文档永久留存**——`clean` 报 success 并不代表旧档
+  已清。修法：`v2_catalog = resolve_catalog(dest_db, dest_collection) or
+  "alt.bssaa"`；未映射的 collection 仍回退旧值。已按修好的路径对 3,067 票
+  重跑一次 radd，`as_of` 回落到 11-24（900953 回落到其真实的 2024-06-11）。
+  同一坑的旁证：`index_members_daily` 等独立 catalog 的表有同样风险。
 - **`float_share` 与 `total_share` 相等（上游口径）**：股本变动快照披露的
   「流通股份」实测恒等于「总股份」；真实可流通口径是「无限售股份」，当前不进表。
   需要自由流通市值时暂无逐日源（`daily_basic.circ_mv` 因此等于 `total_mv`）。
