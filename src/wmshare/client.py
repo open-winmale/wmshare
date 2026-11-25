@@ -1083,15 +1083,15 @@ class Client:
 
         :param refresh: 已无意义，仅为兼容旧调用保留。
         .. deprecated:: 3.3.0
-           ``refresh``——免注册访问不再落盘凭据，无可刷新之物；将在下一个 MAJOR
-           版本移除，调用方删掉该参数即可。
+           ``refresh``——免注册访问不再落盘凭据，无可刷新之物；将在 5.0.0
+           移除（4.0.0 为历史基线重置，未含移除），调用方删掉该参数即可。
 
         :raises AuthError: ``client_id`` / ``client_secret`` 只给了一个（需成对提供）。
         """
         if refresh:
             warnings.warn(
                 "Client.anonymous(refresh=True) 已无意义：3.3.0 起免注册访问不再申领、"
-                "落盘凭据，refresh 参数将在下一个 MAJOR 版本移除；直接删掉该参数即可。",
+                "落盘凭据，refresh 参数将在 5.0.0 移除；直接删掉该参数即可。",
                 DeprecationWarning, stacklevel=2)
         has_id = bool(str(kw.get("client_id") or "").strip())
         has_secret = bool(str(kw.get("client_secret") or "").strip())
