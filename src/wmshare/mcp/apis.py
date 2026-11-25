@@ -43,6 +43,12 @@ _HAND_EXAMPLES: dict[str, str] = {
     "dividend.calendar": 'cli.dividend.calendar("2026-11-01", "2026-11-30")',
     "dividend.decomp": 'cli.dividend.decomp(["600900", "601088"], years=3)',
     "index.members_history": 'cli.index.members_history("index.hs300", begin="2026-11-01")',
+    # 3.6：组合面（两次取数）与金交所现货
+    "index.bars": 'cli.index.bars("index.hs300", freq="W", n=10)',
+    "kline.adj_factor": 'cli.kline.adj_factor("600519", n=3)',
+    "gold.symbols": 'cli.gold.symbols()',
+    "gold.bars": 'cli.gold.bars("Au99.99", n=5)',
+    "gold.query_bars": 'cli.gold.query_bars("Au99.99", "2026-11-01", "2026-11-24", 100)',
 }
 _SPECIAL_CATALOG: dict[tuple[str, str], str | None] = {
     ("valuation", "hist_stats"): None,

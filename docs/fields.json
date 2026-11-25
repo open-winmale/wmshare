@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "generated_by": "tools/gen_api_docs.py",
-  "count": 292,
+  "count": 295,
   "domains": [
     {
       "id": "corp.equity",
@@ -3060,6 +3060,14 @@
             "dv_ttm": [
               0,
               0.5
+            ],
+            "total_share": [
+              0,
+              10000000000000.0
+            ],
+            "float_share": [
+              0,
+              10000000000000.0
             ]
           },
           "checks": [],
@@ -3103,6 +3111,14 @@
             "dv_ttm": [
               0,
               0.5
+            ],
+            "total_share": [
+              0,
+              10000000000000.0
+            ],
+            "float_share": [
+              0,
+              10000000000000.0
             ]
           },
           "checks": [],
@@ -4898,6 +4914,277 @@
                 1e-05,
                 2000
               ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "market.gold",
+      "kind": "raw",
+      "data_origin": [
+        "外部行情源"
+      ],
+      "functions": [
+        {
+          "name": "gold.symbols",
+          "cn": "在库现货品种清单",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "close": [
+              0,
+              100000
+            ]
+          },
+          "checks": [
+            "date_iso"
+          ],
+          "fields": [
+            {
+              "name": "code",
+              "type": "string",
+              "optional": false,
+              "desc": "品种码（裸码，如 Au99.99）"
+            },
+            {
+              "name": "symbol",
+              "type": "string",
+              "optional": false,
+              "desc": "品种键（含 .SGE 后缀）"
+            },
+            {
+              "name": "date",
+              "type": "string",
+              "optional": false,
+              "desc": "最新交易日 YYYY-MM-DD"
+            },
+            {
+              "name": "close",
+              "type": "float64",
+              "optional": true,
+              "desc": "最新收盘（元/克）",
+              "range": [
+                0,
+                100000
+              ]
+            }
+          ]
+        },
+        {
+          "name": "gold.bars",
+          "cn": "金交所现货日线窗口",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "open": [
+              0,
+              100000
+            ],
+            "high": [
+              0,
+              100000
+            ],
+            "low": [
+              0,
+              100000
+            ],
+            "close": [
+              0,
+              100000
+            ],
+            "volume": [
+              0,
+              1000000000.0
+            ],
+            "amount": [
+              0,
+              10000000000000.0
+            ],
+            "percent": [
+              -0.3,
+              0.3
+            ]
+          },
+          "checks": [
+            "date_iso"
+          ],
+          "fields": [
+            {
+              "name": "date",
+              "type": "string",
+              "optional": false,
+              "desc": "交易日 YYYY-MM-DD"
+            },
+            {
+              "name": "symbol",
+              "type": "string",
+              "optional": false,
+              "desc": "品种键（含 .SGE 后缀）"
+            },
+            {
+              "name": "open",
+              "type": "float64",
+              "optional": true,
+              "desc": "开（元/克）",
+              "range": [
+                0,
+                100000
+              ]
+            },
+            {
+              "name": "high",
+              "type": "float64",
+              "optional": true,
+              "desc": "高（元/克）",
+              "range": [
+                0,
+                100000
+              ]
+            },
+            {
+              "name": "low",
+              "type": "float64",
+              "optional": true,
+              "desc": "低（元/克）",
+              "range": [
+                0,
+                100000
+              ]
+            },
+            {
+              "name": "close",
+              "type": "float64",
+              "optional": true,
+              "desc": "收（元/克）",
+              "range": [
+                0,
+                100000
+              ]
+            },
+            {
+              "name": "volume",
+              "type": "float64",
+              "optional": true,
+              "desc": "成交量（千克）",
+              "range": [
+                0,
+                1000000000.0
+              ]
+            },
+            {
+              "name": "amount",
+              "type": "float64",
+              "optional": true,
+              "desc": "成交额（元）",
+              "range": [
+                0,
+                10000000000000.0
+              ]
+            },
+            {
+              "name": "percent",
+              "type": "float64",
+              "optional": true,
+              "desc": "涨跌幅（小数，由 change1 派生）",
+              "range": [
+                -0.3,
+                0.3
+              ]
+            }
+          ]
+        },
+        {
+          "name": "gold.query_bars",
+          "cn": "金交所现货区间日线",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "close": [
+              0,
+              100000
+            ],
+            "volume": [
+              0,
+              1000000000.0
+            ],
+            "amount": [
+              0,
+              10000000000000.0
+            ]
+          },
+          "checks": [
+            "date_iso"
+          ],
+          "fields": [
+            {
+              "name": "date",
+              "type": "string",
+              "optional": false,
+              "desc": "交易日 YYYY-MM-DD"
+            },
+            {
+              "name": "symbol",
+              "type": "string",
+              "optional": false,
+              "desc": "品种键（含 .SGE 后缀）"
+            },
+            {
+              "name": "open",
+              "type": "float64",
+              "optional": true,
+              "desc": "开（元/克）"
+            },
+            {
+              "name": "high",
+              "type": "float64",
+              "optional": true,
+              "desc": "高（元/克）"
+            },
+            {
+              "name": "low",
+              "type": "float64",
+              "optional": true,
+              "desc": "低（元/克）"
+            },
+            {
+              "name": "close",
+              "type": "float64",
+              "optional": true,
+              "desc": "收（元/克）",
+              "range": [
+                0,
+                100000
+              ]
+            },
+            {
+              "name": "volume",
+              "type": "float64",
+              "optional": true,
+              "desc": "成交量（千克）",
+              "range": [
+                0,
+                1000000000.0
+              ]
+            },
+            {
+              "name": "amount",
+              "type": "float64",
+              "optional": true,
+              "desc": "成交额（元）",
+              "range": [
+                0,
+                10000000000000.0
+              ]
+            },
+            {
+              "name": "percent",
+              "type": "float64",
+              "optional": true,
+              "desc": "涨跌幅（小数，由 change1 派生）"
             }
           ]
         }

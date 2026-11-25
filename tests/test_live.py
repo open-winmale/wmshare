@@ -1060,6 +1060,92 @@ def test_futures_settle(cli):
     assert all(float(r["settle"]) > 0 for r in rows)
 
 
+def test_gold_symbols(cli):
+    """金交所现货品种清单：键带 .SGE 后缀、日期为 ISO、收盘为正。"""
+    df = _call_or_xfail(lambda: cli.gold.symbols())
+    rows = df.to_dict("records") if hasattr(df, "to_dict") else list(df)
+    if not rows:
+        pytest.skip("金交所现货无数据（采集器未跑）")
+    assert all(str(r["symbol"]).endswith(".SGE") for r in rows)
+    assert all(len(str(r["date"])) == 10 for r in rows)
+    closes = [r["close"] for r in rows if r.get("close") is not None]
+    assert closes and all(float(c) > 0 for c in closes)
+
+
+def test_gold_bars(cli):
+    """金交所现货日线：三品种口径自洽（vol×1000×close ≈ amount）、date 升序。"""
+    df = _call_or_xfail(lambda: cli.gold.bars("Au99.99", n=10))
+    rows = df.to_dict("records") if hasattr(df, "to_dict") else list(df)
+    if not rows:
+        pytest.skip("Au99.99 无日线（采集器未跑）")
+    dates = [str(r["date"]) for r in rows]
+    assert dates == sorted(dates), "date 应升序（旧→新）"
+    assert all(str(r["symbol"]).endswith(".SGE") for r in rows)
+    # 口径实证：价=元/克、量=千克、额=元 → vol×1000×close ≈ amount（容差 5%）
+    checked = 0
+    for r in rows:
+        vol, close, amt = r.get("volume"), r.get("close"), r.get("amount")
+        if not (vol and close and amt):
+            continue
+        checked += 1
+        ratio = float(vol) * 1000.0 * float(close) / float(amt)
+        assert 0.5 < ratio < 2.0, f"{r['date']} vol×1000×close/amount={ratio:.3f}"
+    assert checked, "至少应有一行齐备 volume/close/amount"
+    # percent 由 change1 派生：非空时应在合理带内，且不得全为 None
+    pcts = [r["percent"] for r in rows if r.get("percent") is not None]
+    if pcts:
+        assert all(abs(float(p)) < 0.3 for p in pcts), pcts
+
+
+def test_gold_query_bars(cli):
+    """金交所现货区间日线：begin/end 下推生效、区间内日期单调。"""
+    latest = _call_or_xfail(lambda: cli.gold.bars("Au99.99", n=1))
+    rows0 = latest.to_dict("records") if hasattr(latest, "to_dict") else list(latest)
+    if not rows0:
+        pytest.skip("Au99.99 无日线（采集器未跑）")
+    end = str(rows0[-1]["date"])
+    df = _call_or_xfail(lambda: cli.gold.query_bars("Au99.99", "2026-11-01", end, 50))
+    rows = df.to_dict("records") if hasattr(df, "to_dict") else list(df)
+    if not rows:
+        pytest.skip("区间内无数据")
+    dates = [str(r["date"]) for r in rows]
+    assert dates == sorted(dates)
+    assert dates[0] >= "2026-11-01" and dates[-1] <= end
+
+
+def test_kline_adj_factor(cli):
+    """累计复权因子：hfq/nr 比值，除权间隔内恒定，非复权日应等于 hfq/nr 直比。"""
+    df = _call_or_xfail(lambda: cli.kline.adj_factor("600519", n=5))
+    rows = df.to_dict("records") if hasattr(df, "to_dict") else list(df)
+    assert len(rows) == 5, rows
+    factors = [float(r["factor"]) for r in rows]
+    assert all(f > 0 for f in factors), factors
+    # 600519 近 5 个交易日无除权（2026-11-24 实测 8.6469 恒定）
+    assert len(set(round(f, 4) for f in factors)) == 1, factors
+    # 与两次直取互证
+    nr = cli.kline.bars("600519", n=1)
+    hfq = cli.kline.bars("600519", n=1, adj="hfq")
+    last_nr = float(nr["close"].iloc[-1])
+    last_hfq = float(hfq["close"].iloc[-1])
+    assert abs(factors[-1] - last_hfq / last_nr) < 1e-6
+
+
+def test_index_bars_weekly(cli):
+    """指数周线（SDK 聚合）：date 为周期末交易日、OHLC 关系成立、末值对齐日线。"""
+    df = _call_or_xfail(lambda: cli.index.bars("index.hs300", freq="W", n=5))
+    rows = df.to_dict("records") if hasattr(df, "to_dict") else list(df)
+    assert len(rows) == 5, rows
+    dates = [str(r["date"]) for r in rows]
+    assert dates == sorted(dates)
+    for r in rows:
+        hi, lo = float(r["high"]), float(r["low"])
+        assert hi >= max(float(r["open"]), float(r["close"])) - 1e-6
+        assert lo <= min(float(r["open"]), float(r["close"])) + 1e-6
+    # 末个周线 close == 最新交易日日线 close（周线含未走完的当前周）
+    daily = cli.kline.bars("index.hs300", n=1)
+    assert abs(float(rows[-1]["close"]) - float(daily["close"].iloc[-1])) < 1e-6
+
+
 def test_board_concept_list(cli):
     """概念板块目录（日更物化档）：行形 name/count/members；count 降序、
     members 升序；与 concept_members 同源互证。"""

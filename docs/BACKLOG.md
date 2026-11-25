@@ -55,6 +55,25 @@
 
 ## 已发布面遗留（登记不装死）
 
+- **2026-11-25 P0：估值宽表市值族前视/冻结（已修，待部署+repair）**：
+  `valuation.daily_basic` 的 `total_mv/circ_mv/turnover_rate/dv_ttm` 此前用
+  metric 层 `$MV_LAST/$MV_FREE_LAST/$TURNOVER_RATE_LAST/$BONUS_RATE_TTM_LAST`
+  配 `AT(锚日, ITER(...))` 求值。这四个码的 memo cachetype 是 symbol 级、定义里
+  带 `LAST(store.latest(...))`（`../script/sys/metric/shared/kline.xs:154,182`），
+  **取的是求值时刻的 K 线 tip**——`AT` 只改求值锚、不会让 `LAST` 回到锚日。
+  实测后果（600519，总股本 1,250,081,601）：11-19/11-20/11-23 三行的
+  `total_mv` 分别等于 11-20/11-23/11-24 收盘 × 股本（前视一天，误差 0）；
+  11-06～11-18 九个交易日四字段完全冻结（11-18 事故修复把同一 tip 写进多行）。
+  修法：行日期由 K 线交易日决定，市值族从同一行的 `close` 与**当日**股本算出
+  （`total_mv = close × 当日总股本`），结构上不可能错位；同批新增
+  `total_share/float_share` 两列使行内自洽可验（`total_mv / total_share == close`）。
+  防复发：`daily_data_guard` 新增 `valuation_daily_mv_consistency` detector
+  （行内自洽 + 跨日不冻结，近 10 交易日抽样 300 票）。
+  存量修复：`pipeline.cn.valuation_daily.manual` 传 `{"repair_mv_days": 60}`
+  重写近 60 交易日整行（部署后跑一次）。
+- **`float_share` 与 `total_share` 相等（上游口径）**：股本变动快照披露的
+  「流通股份」实测恒等于「总股份」；真实可流通口径是「无限售股份」，当前不进表。
+  需要自由流通市值时暂无逐日源（`daily_basic.circ_mv` 因此等于 `total_mv`）。
 - **数据质量审计 2026-11-24 六项结论**（来源 `.internal/data_quality_report.json`，
   处置已在版本线重置前随 3.7.1 落地，随 4.0.0 基线继承）：
   - `valuation.daily_basic` / `daily_basic_multi` date 非升序：**已修**（门面按
@@ -104,7 +123,24 @@
 | 7 | 概念板块（分类/成份/每日行情） | **已上线 3.2 + 3.3 + 3.5**：①资金流 `cli.board.moneyflow/moneyflow_last`（ths 概念/行业 + dc 概念·行业）；②概念标签 `cli.board.concepts_of`（单票 tags，≈90 EC）与 `concept_members`（名称包含匹配，代码升序；冷 ≈8.1 万 EC、当日 memo ≈200）；③目录 `cli.board.concept_list`（3.5：周更物化档 memo 点查 ≈110 EC，周六 09:00 片 / 09:15 merge，最多滞后一周；members 物化序、门面本地升序）。~~暂缓~~已闭环：物化一次实测 ≈318 万 EC（81,875 对；XS 逐元素 ~5-10 EC/op 是地板，投影 ≈15 万 只占零头），日更 ≈8.8 亿/年不可持续 → **周更 cron**（周六 09:00 片 / 09:15 merge，TTL 720h，年 ≈1.2 亿）——「cron 预算另议」落点，2026-11-24 实测后按推荐默认执行 | 小步暴露 → script cron 物化（airflow 零改动） → wmshare 域 | 已上线（资金流+标签/成份+目录） |
 | 8 | 大宗交易 | **已上线 3.3**：`cli.blocktrade.by_date/by_symbol`（额=元/量=股/价=元；单日榜成交额降序、单票 date 升序）；2010 至今全量回补 4,100/4,100 交易日、67.9 万行；B 股 price 为外币、amount 为人民币（口径差已在接口 notes 注明，不做汇率换算） | airflow → script → wmshare | 已上线 |
 | 9 | ST/停复牌变动历史（现仅时点旗标） | **已上线 3.3**：`cli.stocks.suspend_history/name_history/lifecycle`（停复牌按交易日、简称变更按生效日；ST 段由简称含 ST 判定；时间轴 rename/st_enter/st_exit/suspend/resume 日期升序）；采集 1999 起停复牌 644k 行 + 2000 起简称变更 13k 行，单票读面走清洗档点查（≈200-800 EC）；**遗留**：历史涨跌停价（⑥）已由 3.4 历史序列闭环（namechange ST 段 + hfq/nr 因子），无需再续接 | airflow → script → wmshare | 已上线 |
+| 10 | 金交所现货（Au/Ag/Pt 日线） | **已上线 4.2.0**：`cli.gold.symbols/bars/query_bars`（价=元/克、量=千克、额=元；口径实测 `volume×1000×close ≈ amount`）。数据本就在库日更（airflow `market.cn.gold_spot_daily` 17:30 → `mkt.futures_kline` exchange=SGE），此前读不到的原因是 `futures.norm_symbol` 会 UPPER 品种段，而 V2 键大小写敏感（`cn.Au99.99.SGE`）→ 恒返 0 行。独立成域而非改 futures 归一器（后者会波及全部期货键）。**遗留**：`percent` 由 `change1` 派生（上游 pre_settle/pre_close 恒 0、percent 为 nil）；远期/租赁报价合约（`*.FWD`）无 OHLC 不入库 | script → wmshare（采集零新增） | 已上线 |
+| 11 | 每日股本（total_share/float_share） | **已上线 4.1.0**：并入 `valuation.daily_basic` 字段（与市值族同源，`total_mv = close × total_share` 行内恒等）。**遗留**：上游披露的「流通股份」恒等于「总股份」，真实可流通口径是「无限售股份」——无逐日源，故 `circ_mv == total_mv` | wmshare（airflow 物化） | 已上线（口径受限） |
+| 12 | 复权因子（累计 hfq/nr） | **已上线 4.2.0**：`cli.kline.adj_factor`（组合面，两次取数内积；实测 600519 近三日 8.6469 恒定）。**口径**：累计因子（ipo 起算、长期递增）；归一因子 `factor / factor.iloc[-1]`。**遗留**：美股 hfq 无国内因子源，factor 恒 1 | wmshare（组合面，零目录改动） | 已上线 |
+| 13 | 指数周/月 K 线 | **已上线 4.2.0**：`cli.index.bars(key, freq="W"/"M")`（SDK 聚合；上游不派生指数周月 K）。date=周期内最后交易日，percent 由周期末收盘重算，含未走完的当前周期 | wmshare（组合面，零目录改动） | 已上线 |
+
+## 本轮对标复验结论（2026-11-25）
+
+- **已闭环、无需再做**：期货仓单/结算/持仓（3.7.0）、可转债 P1 四项（评级/票息/
+  十大持有人/转股结果均在 `cbond.terms`/`holders`/`latest_share`）、LPR
+  （`$LPR_1Y/$LPR_5Y` 在指标目录）。
+- **无上源、登记不做**：SHIBOR（script/airflow 全仓无落库）、沪深港通十大成交股
+  （上游无落库 + 交易所披露口径已收紧）、基金公司/基金经理主档（无源）、
+  龙虎榜营业部席位明细（`sys/toplist/query.xs` 明示上游无落库）、
+  十大流通股东（只有总口径）、增发/IPO/退市史（`disc.events` 只覆盖业绩披露，
+  `stocks.lifecycle` 明示无上市/退市日期源）、高管简历（`query_executives` 无该字段）。
+- **待探针**：行业/策略/宏观研报——airflow 有 manual 采集 DAG，落库路径未证；
+  若已落库是 0.5 天的纯暴露，否则不做。
 
 长线另立项（不入常规批次）：期权（合约/行情）、历史分钟线（平台级大工程）。
 不做清单：LOF/场外/货基、游资名录/热榜/竞价明细、第三方源资金流变体、中信行业、
-韩国宏观、组合 CRUD、tick、实时 WS 推送。
+韩国宏观、组合 CRUD、tick、实时 WS 推送、DCE 仓单（反爬）。

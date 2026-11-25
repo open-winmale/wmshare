@@ -9,6 +9,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > MAJOR；弃用至少保留 1 个 MINOR，并在 `Deprecated` 段登记替代写法与移除版本。
 > 升级前请扫一眼 Removed / Changed / Deprecated 段。
 
+## [4.2.0] - 2026-11-25
+
+### Added
+
+- `cli.gold.symbols() / bars(symbol, n) / query_bars(symbol, begin, end, limit)`：
+  **金交所现货日线**（Au99.99 / Au(T+D) / Ag(T+D) / Pt99.95 等）。数据本就在库
+  日更（airflow 每交易日 17:30 → `mkt.futures_kline` 的 `exchange="SGE"` 品种族），
+  此前读不到是因为期货归一器会 UPPER 品种段、而存储键大小写敏感。口径：
+  **价=元/克、量=千克、额=元**（实测 `volume×1000×close ≈ amount`），与期货
+  （元/吨、手、万元）不同，故独立成域。`percent` 由 `change1` 派生（上游
+  `pre_settle/pre_close` 恒 0、`percent` 为 nil）。
+- `cli.kline.adj_factor(symbol, n=120, begin=None, end=None)`：**累计复权因子**
+  （`hfq_close / nr_close`，ipo 起算、长期递增）。组合面（两次取数内积），
+  不新增目录函数；需要最新日恒为 1 的归一因子时除末值即可。
+- `cli.index.bars(key, freq="W"|"M", n=120, begin=None, end=None)`：**指数周/月 K 线**
+  （SDK 聚合；上游不派生指数周月 K）。`date`=周期内最后交易日，含未走完的当前
+  周期，`percent` 由周期末收盘重算。此前 `kline.bars(freq="W")` 对指数报
+  `UsageError(code="freq")`，该限制保留（语义不同：一个是原生派生、一个是聚合）。
+- `valuation.daily_basic` / `daily_basic_multi` 新增 **`total_share` / `float_share`**
+  两个字段（当日总股本 / 流通股本，单位股）——与市值族同源，故行内满足
+  `total_mv / total_share ≈ close`，可用作市值口径的自检锚。字段全集 8 → 10。
+  注意上游披露的「流通股份」实测恒等于「总股份」，故 `float_share == total_share`；
+  真实可流通口径为「无限售股份」，无逐日源，暂不落。
+
+### Changed
+
+- **行为修正（数据正确性）**：`valuation.daily_basic` / `daily_basic_multi` 的
+  `total_mv` / `circ_mv` / `turnover_rate` / `dv_ttm` 由「取物化时刻最新行情」
+  改为「按行日期取当日值」。字段名、单位、返回形态均不变。
+  - 缺陷事实：旧实现用 `$MV_LAST / $MV_FREE_LAST / $TURNOVER_RATE_LAST /
+    $BONUS_RATE_TTM_LAST` 配 `AT(锚日)` 求「某日的市值族」，但这四个码的缓存
+    级别是 symbol、定义里带 `LAST(store.latest(...))`——**取的是求值时刻的 K 线
+    tip**，`AT` 只改求值锚不会让 `LAST` 回到锚日。实测（600519，总股本
+    1,250,081,601）：11-19/11-20/11-23 三行的 `total_mv` 分别等于
+    11-20/11-23/11-24 收盘 × 股本（**前视一天，误差为 0**）；11-06～11-18
+    九个交易日四字段完全冻结（事故修复把同一 tip 写进多行）。
+  - 影响面：2026-11-18 起物化的全部历史行中，市值族与换手率/股息率可能存在
+    同日错位或整段冻结。`pe_ttm/pb/ps/pr` 走 `HIST_STATS` 序列，**不受影响**。
+  - 迁移：无需改代码。历史行由 airflow `pipeline.cn.valuation_daily.manual`
+    传 `{"repair_mv_days": 60}` 重写近 60 交易日整行（近窗自愈也会顺带刷新
+    缺股本列的老行）。跨窗口的自查方法：`total_mv / total_share` 应等于当日
+    `close`（偏差 >0.5% 即为旧口径遗留）。
+  - 防复发：`daily_data_guard` 新增 `valuation_daily_mv_consistency` 检测器
+    （行内自洽 + 跨日不冻结，近 10 交易日抽样 300 票），偏差或冻结即告警。
+
 ## [4.0.0] - 2026-11-25
 
 ### Changed

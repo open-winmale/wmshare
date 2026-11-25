@@ -10,7 +10,7 @@
     ``_raw=True`` 取上游原始行（list[dict]，跳过规范化与换算）——诊断逃生口；
   - 本层是目录合同的薄翻译：高频方法显式包装；目录内其余非内部函数经 ``__getattr__``
     属性直达（如 ``cli.kline.screen_above_ma20``）；目录标 ``internal: true`` 的
-    规范化辅助（fmt_* 等）不再直达，请走 ``cli.call``——368 个底层函数零遮蔽；
+    规范化辅助（fmt_* 等）不再直达，请走 ``cli.call``——371 个底层函数零遮蔽；
   - 选股能力集中在 ``cli.screener``：单票筛选器（bool）、全市场宽度/涨跌榜与
     全市场条件选股 ``query()``（服务端索引直出）显式包装，kline 目录的其余筛选
     函数经属性直达。
@@ -354,6 +354,8 @@ _FRIENDLY_NS_TO_CATALOG: dict[str, str] = {
     "us_macro": "fred",
     "board": "board",
     "blocktrade": "blocktrade",
+    "gold": "gold",
+    "futures": "futures",
 }
 
 
@@ -616,6 +618,57 @@ class KlineApi(_Api):
     def is_etf(self, symbol: str) -> bool:
         """是否场内 ETF。"""
         return bool(self._c.call("kline.is_etf", sym=symbol))
+
+    def adj_factor(self, symbol: str, n: int | None = None,
+                   begin: str | None = None,
+                   end: str | None = None) -> Any:
+        """累计复权因子（DataFrame：date/factor；factor = 后复权收盘 ÷ 不复权收盘）。
+
+        口径（**累计因子**，ipo 起算、长期递增）：同一交易日的
+        ``hfq_close / nr_close``。实测 600519 近三日 8.6469 恒定（区间内无除权），
+        除权日出现台阶；需要**归一因子**（最新日恒为 1）请自行除以末值——
+        ``factor / factor.iloc[-1]``，与 ``qfq_close / nr_close`` 同口径。
+
+        实现为两次取数的组合面（非目录函数）：不复权与后复权各读一次同窗口，
+        按 date 内积。任一档缺该日期时该行不出（诚实缺行）——后复权缺失通常
+        发生在极早期历史（无国内因子源的美股 hfq 同不复权，factor 恒 1）。
+
+        成本：两次 ``kline.bars`` 同窗口（≈2×行数×60~75 EC 冷态）；复跑走 kline
+        窗口缓存更省。区间查询复用 ``kline.bars`` 的锚点分页。
+
+        :param symbol: 6 位 A 股代码（也接受 .SH/.SZ/.BJ 后缀）；港美股支持 hfq 的
+            市场可用，但美股后复权无国内因子源（factor 恒 1）
+        :param n: 最近 N 个交易日（默认 120）；与 begin/end 互斥
+        :param begin: 起始日期（含，YYYY-MM-DD），须与 end 同时提供；与 n 互斥
+        :param end: 结束日期（含）
+        """
+        import pandas as pd
+
+        if begin is not None or end is not None:
+            if not (begin and end):
+                raise UsageError("begin 与 end 需同时提供", code="range")
+        nr = self.bars(symbol, n=n if begin is None else None,
+                       begin=begin, end=end)
+        hfq = self.bars(symbol, n=n if begin is None else None, adj="hfq",
+                        begin=begin, end=end)
+        if not isinstance(nr, pd.DataFrame) or not isinstance(hfq, pd.DataFrame):
+            raise UsageError(
+                "adj_factor: 底层未返回 DataFrame（上游异常）", code="response")
+        cols = [c for c in ("date", "close") if c in nr.columns and c in hfq.columns]
+        if len(cols) < 2:
+            raise UsageError(
+                f"adj_factor: 底层缺 date/close 列（实际 {list(nr.columns)}）",
+                code="response")
+        left = nr[cols].rename(columns={"close": "nr_close"})
+        right = hfq[cols].rename(columns={"close": "hfq_close"})
+        merged = left.merge(right, on="date", how="inner")
+        out = pd.DataFrame({
+            "date": merged["date"],
+            "factor": (merged["hfq_close"].astype(float)
+                       / merged["nr_close"].astype(float)),
+        })
+        out = out.sort_values("date", kind="stable").reset_index(drop=True)
+        return out
 
 
 class MoneyflowApi(_Api):
@@ -1256,6 +1309,85 @@ class IndexApi(_Api):
              "win_trunc": win_trunc},
             as_of=str(raw.get("asof") or ""),
             pct_source=source, dv_has_history=bool(raw.get("dv_has_history", False)))
+
+    def bars(self, key: str, freq: str = "W", n: int = 120,
+             begin: str | None = None, end: str | None = None) -> Any:
+        """指数周/月 K 线（DataFrame：date/open/high/low/close/volume/amount/percent）。
+
+        **SDK 侧聚合**（上游不派生指数周月线）：取指数日线（``kline.bars`` 的指数
+        分流）后按 ISO 周 / 自然月重采样——open=周期首、high/low=极值、close=周期
+        末、volume/amount=累计，``date`` 为周期内**最后一个交易日**，``percent``
+        由周期末收盘对上一周期末收盘重算。``kline.bars(freq="W")`` 对指数键报
+        ``UsageError(code="freq")``，周/月需求走本方法。
+
+        包含当前**未走完**的周期（date = 最新交易日），与期货/股票的「周期末 bar」
+        语义一致：该 bar 会随后续交易日继续变化。
+
+        :param key: 指数键（``keys()`` / ``universe_keys()`` 的取值域；也接受
+            ``000300`` 一类裸码与 ``index.hs300``）
+        :param freq: ``W``=周（默认）/ ``M``=月；``D`` 请直接用 ``kline.bars``
+        :param n: 周期数（默认 120）；内部按 ``n × 5`` 个交易日取源（月线 31 天）
+        :param begin: 起始日期（含，YYYY-MM-DD），须与 end 同时提供
+        :param end: 结束日期（含）
+        """
+        import pandas as pd
+
+        f = str(freq or "W").strip().upper()
+        if f in ("D", "DAY"):
+            raise UsageError(
+                "index.bars 只做周/月聚合；日线请用 cli.kline.bars(key, freq=None)",
+                code="freq")
+        if f not in ("W", "M"):
+            raise UsageError(
+                f"index.bars: freq 只支持 'W'/'M'（收到 {freq!r}）", code="freq")
+        if not str(key).strip():
+            raise UsageError("index.bars: key 不能为空", code="params")
+
+        # 源窗口：周线每周期 ≈5 个交易日，月线 ≈21；多取 20% 余量保证 n 根完整
+        span = int(n) * (5 if f == "W" else 21)
+        span = max(min(span + span // 5, _KLINE_SERVER_CAP), 1)
+        if begin is not None or end is not None:
+            if not (begin and end):
+                raise UsageError("begin 与 end 需同时提供", code="range")
+            daily = self._c.kline.bars(
+                str(key), begin=_normalize_date(begin),
+                end=_normalize_date(end), freq=None)
+        else:
+            daily = self._c.kline.bars(str(key), n=span, freq=None)
+        if not isinstance(daily, pd.DataFrame) or daily.empty:
+            return pd.DataFrame(
+                columns=["date", "open", "high", "low", "close", "volume",
+                         "amount", "percent"])
+
+        df = daily.copy()
+        df["date"] = df["date"].astype(str).str.slice(0, 10)
+        dates = pd.to_datetime(df["date"], errors="coerce")
+        if f == "W":
+            # ISO 周（周一为一周起点）：周期末 = 该周最后交易日
+            df["_bucket"] = dates.dt.to_period("W-SUN").astype(str)
+        else:
+            df["_bucket"] = dates.dt.to_period("M").astype(str)
+
+        agg: dict[str, Any] = {
+            "date": "last", "open": "first", "high": "max", "low": "min",
+            "close": "last",
+        }
+        for col in ("volume", "amount"):
+            if col in df.columns:
+                agg[col] = "sum"
+        out = df.groupby("_bucket", sort=True).agg(agg).reset_index(drop=True)
+        if "volume" not in out.columns:
+            out["volume"] = None
+        if "amount" not in out.columns:
+            out["amount"] = None
+        closes = out["close"].astype(float)
+        out["percent"] = closes.pct_change()
+        out = out[["date", "open", "high", "low", "close", "volume", "amount",
+                   "percent"]]
+        # 取最近 n 根（源窗口有 20% 余量，末尾对齐与 kline.bars 的 n 语义一致）
+        if begin is None and end is None and len(out) > int(n):
+            out = out.iloc[-int(n):]
+        return out.sort_values("date", kind="stable").reset_index(drop=True)
 
 
 # ---------------------------------------------------------------- 证券基础 market
@@ -2087,9 +2219,11 @@ class ValuationApi(_Api):
     # 5y/10y 白名单；此前误记「上限 3 年」——那是旧白名单，不是引擎限制）
     _WINDOWS = ("6m", "1y", "2y", "3y", "5y", "10y")
     # 每日估值宽表字段（服务端物化 alt.valuation_daily；2.0 基础单位，
-    # 与 _catalog/domains/valuation.yaml units 一致）
+    # 与 _catalog/domains/fund.valuation.yaml units 一致）。
+    # total_share/float_share 为 2026-11-25 新增：与市值族同源（当日收盘 × 当日
+    # 股本），故 total_mv / total_share 恒等于当日 close。
     _DAILY_FIELDS = ("pe_ttm", "pb", "ps", "pr", "total_mv", "circ_mv",
-                     "turnover_rate", "dv_ttm")
+                     "turnover_rate", "dv_ttm", "total_share", "float_share")
 
     def hist_stats(self, symbol: str, metric: str = "pe", window: str = "3y") -> dict:
         """估值指标的历史统计与每日序列（PE=TTM 口径；pr=市赚率 pr_base）。
@@ -2150,15 +2284,17 @@ class ValuationApi(_Api):
     ) -> dict:
         """个股每日估值序列（服务端物化宽表 ``valuation_daily``，仅 CN）。
 
-        每股每交易日一行（airflow pipeline.cn.valuation_daily 当日 16:25 物化、
-        SLA 17:00），8 字段全部服务端现成口径直出、2.0 基础单位（率=小数、
-        额=元）：``pe_ttm/pb/ps/pr``（HIST_STATS 同核，公告日 PIT）、
-        ``total_mv/circ_mv/turnover_rate/dv_ttm``（metric 层同式）。数据自
-        物化日起可用；历史回填深度见域目录 notes（诚实缺行，不伪造）。
+        每股每交易日一行（airflow pipeline.cn.valuation_daily 每日 17:05 物化、
+        就绪探针至 17:30），10 字段全部服务端现成口径直出、2.0 基础单位
+        （率=小数、额=元、量=股）：``pe_ttm/pb/ps/pr``（HIST_STATS 同核，公告日
+        PIT）、``total_mv/circ_mv/total_share/float_share``（**当日**收盘 ×
+        **当日**股本，行内自洽：``total_mv / total_share`` == 当日 close）、
+        ``turnover_rate``、``dv_ttm``。数据自物化日起可用；历史回填深度见域
+        目录 notes（诚实缺行，不伪造）。
 
         :param begin: ISO 起日（含），``None``/``""`` = 开区间
         :param end: ISO 止日（含），``None``/``""`` = 开区间
-        :param fields: list[str] / 逗号字符串 / ``None``（全部 8 个）
+        :param fields: list[str] / 逗号字符串 / ``None``（全部 10 个）
         :returns: 统一信封 ``{ok, as_of, data, meta}``；``data`` 为长表
             ``[{date, symbol, field, value}...]``，按 ``(date, field)`` 升序
             （同一天内按字段名）；``as_of`` 为表内最新行日期（与过滤区间无关，
@@ -2230,7 +2366,7 @@ class ValuationApi(_Api):
         :param symbols: 标的清单（list/tuple；``>=200`` 票时提示成本量级）
         :param begin: ISO 起日（含），``None``/``""`` = 开区间
         :param end: ISO 止日（含），``None``/``""`` = 开区间
-        :param fields: list[str] / 逗号字符串 / ``None``（全部 8 个）
+        :param fields: list[str] / 逗号字符串 / ``None``（全部 10 个）
         :returns: 统一信封；``data`` 为多票长表 ``[{date, symbol, field, value}]``，
             按 ``(symbol, date, field)`` 升序（每票内 date 升序、同日按字段名）；
             ``meta.per_symbol`` 给出每票的 ``count/oldest_scanned/truncated``
@@ -3894,6 +4030,60 @@ class ToplistApi(_Api):
         return _out(_sort_rows_by_date(rows), raw=_raw)
 
 
+class GoldApi(_Api):
+    """上海黄金交易所现货（Au99.99 / Au(T+D) / Ag(T+D) / Pt99.95 等）。
+
+    **计价口径与期货不同**，勿混用：价=元/克（黄金与白银同为元/克）、量=千克、
+    额=元；期货是元/吨、手、万元。故独立成本域而不并入 ``cli.futures``。
+
+    数据由 airflow 每个交易日 17:30 落库（``mkt.futures_kline`` 的
+    ``exchange="SGE"`` 品种族），日更。V2 键大小写敏感（``cn.Au99.99.SGE``）——
+    ``cli.futures.bars("Au99.99.SGE")`` 取不到（futures 归一器会 UPPER 品种段）。
+    """
+
+    def symbols(self) -> Any:
+        """在库现货品种清单（探不到的不出现，不造 0）。
+
+        :returns: DataFrame/行表 · code/symbol/date/close
+        """
+        return _out(self._c.call("gold.symbols"))
+
+    def bars(self, symbol: str, n: int = 60, _raw: bool = False) -> Any:
+        """现货日线窗口（最近 N 根，date 升序）。
+
+        ``percent`` 为 SDK 派生：上游 ``pre_settle``/``pre_close`` 恒为 0、
+        ``percent`` 为 nil，仅有 ``change1``（相对前收的绝对涨跌额）——
+        ``percent = change1 / (close - change1)``。无法派生时为 nil（不发明 0）。
+        日盘 + 前一夜盘双向计量（交易所口径），与股票日线不可直接对比。
+
+        :param symbol: 品种码（``Au99.99`` / ``Au(T+D)`` / ``Ag(T+D)`` /
+            ``Pt99.95``；带 ``.SGE`` 后缀也接受）。与 ``cli.futures`` 的合约码
+            不同：现货品种大小写敏感，勿传 ``AU99.99``
+        :param n: 根数（默认 60，上限 2000）；全历史请用 ``query_bars`` 的
+            begin/end
+        :returns: DataFrame/行表 · date/symbol/open/high/low/close/volume/
+            amount/percent
+        """
+        rows = self._c.call("gold.bars", code=symbol, limit=int(n), _raw=_raw)
+        return _out(rows, raw=_raw)
+
+    def query_bars(self, symbol: str, begin: str = "", end: str = "",
+                   limit: int = 500, _raw: bool = False) -> Any:
+        """现货区间日线（begin/end 可空；服务端 startTs/endTs 下推）。
+
+        :param symbol: 品种码（同 ``bars``）
+        :param begin: 开始日期 YYYY-MM-DD（含），空=不限
+        :param end: 结束日期 YYYY-MM-DD（含），空=不限
+        :param limit: 根数上限（默认 500，上限 2000）
+        :returns: DataFrame/行表 · 字段同 ``bars``
+        """
+        rows = self._c.call("gold.query_bars", code=symbol,
+                            begin=_normalize_date(begin) if begin else "",
+                            end=_normalize_date(end) if end else "",
+                            limit=int(limit), _raw=_raw)
+        return _out(rows, raw=_raw)
+
+
 class FuturesApi(_Api):
     def receipts(self, month: str | None = None, _raw: bool = False) -> Any:
         """交易所仓单快照（SHFE/CZCE/GFEX；按业务月，月份空=最新月）。
@@ -4271,6 +4461,11 @@ COMPOSITE_METHODS: dict[str, set[str]] = {
     # 2.5：收息诊断（索引读+四维评分+静态下限复原+榜内 rank 多源编排，真组合；
     # rating/calendar/decomp 是 income.* 直通面，在 FRIENDLY_INDEX 登记）
     "dividend": {"diagnose"},
+    # 3.6：两次取数的组合面
+    #   kline.adj_factor  = hfq 收盘 ÷ 不复权收盘（累计复权因子）
+    #   index.bars        = 指数日线 → 周/月聚合（上游不派生指数周月 K）
+    "kline": {"adj_factor"},
+    "index": {"bars"},
 }
 
 FRIENDLY_NAMESPACES: dict[str, type[_Api]] = {
@@ -4304,6 +4499,7 @@ FRIENDLY_NAMESPACES: dict[str, type[_Api]] = {
     "backtest": BacktestApi,
     "etf": EtfApi,
     "futures": FuturesApi,
+    "gold": GoldApi,
     "calendar": CalendarApi,
 }
 
@@ -4375,6 +4571,9 @@ FRIENDLY_INDEX: list[tuple[str, str, str, str, str]] = [
     ("market", "futures", "receipts", "交易所仓单快照", "futures.receipts"),
     ("market", "futures", "holding", "期货每日持仓排名", "futures.holding"),
     ("market", "futures", "settle", "期货每日结算参数", "futures.settle"),
+    ("market", "gold", "symbols", "金交所现货品种清单", "gold.symbols"),
+    ("market", "gold", "bars", "金交所现货日线", "gold.bars"),
+    ("market", "gold", "query_bars", "金交所现货区间日线", "gold.query_bars"),
     ("fundamentals", "statements", "audit", "审计意见", "rptdom.statement_audit"),
     ("fundamentals", "indicator", "get", "取单个指标", "指标代码直查"),
     ("fundamentals", "indicator", "metrics", "批量取指标", "指标代码批量直查"),

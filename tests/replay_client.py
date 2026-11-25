@@ -76,6 +76,8 @@ _REPLAY_NAMESPACE_NAMES = (
     "board",
     # 3.3 大宗交易（sys/blocktrade）：同上，未拍摄 → 整域 replay_unsupported
     "blocktrade",
+    # 3.6 金交所现货（sys/gold）：同上，未拍摄 → 整域 replay_unsupported
+    "gold",
 )
 
 

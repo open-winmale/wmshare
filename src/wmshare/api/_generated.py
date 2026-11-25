@@ -1026,6 +1026,48 @@ class FxNS(_Ns):
             kw["limit"] = limit
         return _out(self._client.call("fx.query_bars", **kw, _raw=_raw), _raw)
 
+class GoldNS(_Ns):
+    """金交所现货（market.gold）"""
+
+    def symbols(self, _raw: bool = False) -> Any:
+        """在库现货品种清单
+
+:returns: ARR · 品种清单（按候选顺序；探不到的不出现）
+        """
+        return _out(self._client.call("gold.symbols", _raw=_raw), _raw)
+
+    def bars(self, code: str, limit: int = 60, _raw: bool = False) -> Any:
+        """金交所现货日线窗口
+
+:param code: 品种码（Au99.99 / Au(T+D) / Ag(T+D) / Pt99.95；带 .SGE 后缀也接受）
+:param limit: 根数（1..2000；<=0 归一到 60——不是「取全部」，全历史请用 query_bars 的 begin/end）
+
+:returns: ARR · 现货日线（date 升序）
+        """
+        kw: dict[str, Any] = {"code": code}
+        if limit is not None:
+            kw["limit"] = limit
+        return _out(self._client.call("gold.bars", **kw, _raw=_raw), _raw)
+
+    def query_bars(self, code: str, begin: str | None = None, end: str | None = None, limit: int = 500, _raw: bool = False) -> Any:
+        """金交所现货区间日线
+
+:param code: 品种码（同 bars）
+:param begin: 开始日期 YYYY-MM-DD（可空）
+:param end: 结束日期 YYYY-MM-DD（可空）
+:param limit: 根数上限（1..2000）
+
+:returns: ARR · 现货日线（date 升序）
+        """
+        kw: dict[str, Any] = {"code": code}
+        if begin is not None:
+            kw["begin"] = begin
+        if end is not None:
+            kw["end"] = end
+        if limit is not None:
+            kw["limit"] = limit
+        return _out(self._client.call("gold.query_bars", **kw, _raw=_raw), _raw)
+
 class IncomeNS(_Ns):
     """收息（disc.income）"""
 
@@ -2469,7 +2511,7 @@ class ValuationNS(_Ns):
 :param sym: 6 位裸码
 :param begin: ISO 起日（含），""=开区间
 :param end: ISO 止日（含），""=开区间
-:param fields: 字段子集 ARR，nil/空=全部 8 个
+:param fields: 字段子集 ARR，nil/空=全部 10 个
 
 :returns: MAP 信封 {ok, as_of, data, meta}；data=长表 [{date, symbol, field, value}] 升序
         """
@@ -2488,7 +2530,7 @@ class ValuationNS(_Ns):
 :param syms: 标的清单 ARR（≥1）
 :param begin: ISO 起日（含），""=开区间
 :param end: ISO 止日（含），""=开区间
-:param fields: 字段子集 ARR，nil/空=全部 8 个
+:param fields: 字段子集 ARR，nil/空=全部 10 个
 
 :returns: MAP 信封 {ok, as_of, data, meta}；data=多票长表 [{date, symbol, field, value}] 升序，meta.per_symbol 给每票 count/oldest_scanned/truncated
         """
@@ -2526,6 +2568,7 @@ NAMESPACES: dict[str, type[_Ns]] = {
     "fred": FredNS,
     "futures": FuturesNS,
     "fx": FxNS,
+    "gold": GoldNS,
     "income": IncomeNS,
     "indices": IndicesNS,
     "intl": IntlNS,

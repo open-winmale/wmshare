@@ -2,11 +2,11 @@
   "schema_version": 2,
   "generated_by": "tools/gen_api_docs.py",
   "meta": {
-    "core": 185,
-    "composite": 18,
-    "docs_visible": 180,
+    "core": 188,
+    "composite": 20,
+    "docs_visible": 185,
     "variants": 21,
-    "domains": 29,
+    "domains": 30,
     "categories": [
       {
         "key": "market",
@@ -25,7 +25,7 @@
         "cn": "参考数据"
       }
     ],
-    "test_ready": 174,
+    "test_ready": 177,
     "sampled": 170,
     "samples_provenance": {
       "captured_at": "2026-11-23",
@@ -790,7 +790,47 @@
           }
         }
       ],
-      "composites": []
+      "composites": [
+        {
+          "key": "kline.adj_factor",
+          "ns": "kline",
+          "method": "adj_factor",
+          "cn": "累计复权因子（DataFrame：date/factor；factor = 后复权收盘 ÷ 不复权收盘）。",
+          "composite": true,
+          "desc": "累计复权因子（DataFrame：date/factor；factor = 后复权收盘 ÷ 不复权收盘）。",
+          "params": [
+            {
+              "name": "symbol",
+              "required": true,
+              "desc": "6 位 A 股代码（也接受 .SH/.SZ/.BJ 后缀）；港美股支持 hfq 的"
+            },
+            {
+              "name": "n",
+              "required": false,
+              "desc": "最近 N 个交易日（默认 120）；与 begin/end 互斥"
+            },
+            {
+              "name": "begin",
+              "required": false,
+              "desc": "起始日期（含，YYYY-MM-DD），须与 end 同时提供；与 n 互斥"
+            },
+            {
+              "name": "end",
+              "required": false,
+              "desc": "结束日期（含）"
+            }
+          ],
+          "returns": {
+            "kind": "text",
+            "desc": null,
+            "fields": []
+          },
+          "notes": [],
+          "docs_visible": true,
+          "example": null,
+          "test": null
+        }
+      ]
     },
     {
       "ns": "screener",
@@ -9281,7 +9321,52 @@
           }
         }
       ],
-      "composites": []
+      "composites": [
+        {
+          "key": "index.bars",
+          "ns": "index",
+          "method": "bars",
+          "cn": "指数周/月 K 线（DataFrame：date/open/high/low/close/volume/amount/percent）。",
+          "composite": true,
+          "desc": "指数周/月 K 线（DataFrame：date/open/high/low/close/volume/amount/percent）。",
+          "params": [
+            {
+              "name": "key",
+              "required": true,
+              "desc": "指数键（``keys()`` / ``universe_keys()`` 的取值域；也接受"
+            },
+            {
+              "name": "freq",
+              "required": false,
+              "desc": "``W``=周（默认）/ ``M``=月；``D`` 请直接用 ``kline.bars``"
+            },
+            {
+              "name": "n",
+              "required": false,
+              "desc": "周期数（默认 120）；内部按 ``n × 5`` 个交易日取源（月线 31 天）"
+            },
+            {
+              "name": "begin",
+              "required": false,
+              "desc": "起始日期（含，YYYY-MM-DD），须与 end 同时提供"
+            },
+            {
+              "name": "end",
+              "required": false,
+              "desc": "结束日期（含）"
+            }
+          ],
+          "returns": {
+            "kind": "text",
+            "desc": null,
+            "fields": []
+          },
+          "notes": [],
+          "docs_visible": true,
+          "example": null,
+          "test": null
+        }
+      ]
     },
     {
       "ns": "futures",
@@ -9783,6 +9868,261 @@
           "docs_visible": true,
           "example": "cli.futures.settle(date=\"2026-06-30\")",
           "test": null
+        }
+      ],
+      "composites": []
+    },
+    {
+      "ns": "gold",
+      "cn": "上海黄金交易所现货",
+      "chapter": "金交所现货",
+      "category": "market",
+      "domain": "market.gold",
+      "domain_cn": "金交所现货",
+      "domain_description": "上海黄金交易所现货品种日线（Au99.99 / Au(T+D) / Ag(T+D) / Pt99.95 等）。 数据由 airflow market.cn.gold_spot_daily 每个交易日 17:30 落库到 `mkt.futures_kline`（exchange=SGE，与国内期货主力连续同集合、不同品种族）， 本域提供品种清单、日线窗口与区间查询三个读面。",
+      "domain_units": {
+        "date": "YYYY-MM-DD",
+        "price": "元/克（open/high/low/close）",
+        "volume": "千克",
+        "amount": "元",
+        "percent": "小数（0.01 = 1%）"
+      },
+      "interfaces": [
+        {
+          "key": "gold.symbols",
+          "ns": "gold",
+          "method": "symbols",
+          "cn": "金交所现货品种清单",
+          "composite": false,
+          "desc": "在库现货品种清单（探不到的不出现，不造 0）。",
+          "params": [],
+          "returns": {
+            "kind": "array",
+            "desc": null,
+            "fields": [
+              {
+                "name": "code",
+                "desc": "品种码（裸码，如 Au99.99）"
+              },
+              {
+                "name": "symbol",
+                "desc": "品种键（含 .SGE 后缀）"
+              },
+              {
+                "name": "date",
+                "desc": "最新交易日 YYYY-MM-DD"
+              },
+              {
+                "name": "close",
+                "desc": "最新收盘（元/克）"
+              }
+            ]
+          },
+          "notes": [
+            "结果按整表版本键缓存（以 Au99.99 最新日期代表），日内复跑只付首次探测成本"
+          ],
+          "docs_visible": true,
+          "example": "cli.gold.symbols()",
+          "test": {
+            "kwargs": {},
+            "path": "/v1/analysis/xs/eval",
+            "body": {
+              "symbol": "600519",
+              "xs_lines": [
+                "return gold.symbols()"
+              ],
+              "args": {
+                "print.plain": true
+              },
+              "script_files": {},
+              "mode": "call",
+              "market": "cn"
+            }
+          }
+        },
+        {
+          "key": "gold.bars",
+          "ns": "gold",
+          "method": "bars",
+          "cn": "金交所现货日线",
+          "composite": false,
+          "desc": "现货日线窗口（最近 N 根，date 升序）。",
+          "params": [
+            {
+              "name": "symbol",
+              "required": true,
+              "desc": "品种码（``Au99.99`` / ``Au(T+D)`` / ``Ag(T+D)`` /"
+            },
+            {
+              "name": "n",
+              "required": false,
+              "desc": "根数（默认 60，上限 2000）；全历史请用 ``query_bars`` 的"
+            }
+          ],
+          "returns": {
+            "kind": "array",
+            "desc": null,
+            "fields": [
+              {
+                "name": "date",
+                "desc": "交易日 YYYY-MM-DD"
+              },
+              {
+                "name": "symbol",
+                "desc": "品种键（含 .SGE 后缀）"
+              },
+              {
+                "name": "open",
+                "desc": "开（元/克）"
+              },
+              {
+                "name": "high",
+                "desc": "高（元/克）"
+              },
+              {
+                "name": "low",
+                "desc": "低（元/克）"
+              },
+              {
+                "name": "close",
+                "desc": "收（元/克）"
+              },
+              {
+                "name": "volume",
+                "desc": "成交量（千克）"
+              },
+              {
+                "name": "amount",
+                "desc": "成交额（元）"
+              },
+              {
+                "name": "percent",
+                "desc": "涨跌幅（小数，由 change1 派生）"
+              }
+            ]
+          },
+          "notes": [
+            "数据版本键缓存——最新交易日变化即换键，日内复跑命中缓存"
+          ],
+          "docs_visible": true,
+          "example": "cli.gold.bars(\"600519\", n=30)",
+          "test": {
+            "kwargs": {
+              "symbol": "600519",
+              "n": 30
+            },
+            "path": "/v1/analysis/xs/eval",
+            "body": {
+              "symbol": "600519",
+              "xs_lines": [
+                "return gold.bars(\"600519\", 30)"
+              ],
+              "args": {
+                "print.plain": true
+              },
+              "script_files": {},
+              "mode": "call",
+              "market": "cn"
+            }
+          }
+        },
+        {
+          "key": "gold.query_bars",
+          "ns": "gold",
+          "method": "query_bars",
+          "cn": "金交所现货区间日线",
+          "composite": false,
+          "desc": "现货区间日线（begin/end 可空；服务端 startTs/endTs 下推）。",
+          "params": [
+            {
+              "name": "symbol",
+              "required": true,
+              "desc": "品种码（同 ``bars``）"
+            },
+            {
+              "name": "begin",
+              "required": false,
+              "desc": "开始日期 YYYY-MM-DD（含），空=不限；默认 ''"
+            },
+            {
+              "name": "end",
+              "required": false,
+              "desc": "结束日期 YYYY-MM-DD（含），空=不限；默认 ''"
+            },
+            {
+              "name": "limit",
+              "required": false,
+              "desc": "根数上限（默认 500，上限 2000）"
+            }
+          ],
+          "returns": {
+            "kind": "array",
+            "desc": null,
+            "fields": [
+              {
+                "name": "date",
+                "desc": "交易日 YYYY-MM-DD"
+              },
+              {
+                "name": "symbol",
+                "desc": "品种键（含 .SGE 后缀）"
+              },
+              {
+                "name": "open",
+                "desc": "开（元/克）"
+              },
+              {
+                "name": "high",
+                "desc": "高（元/克）"
+              },
+              {
+                "name": "low",
+                "desc": "低（元/克）"
+              },
+              {
+                "name": "close",
+                "desc": "收（元/克）"
+              },
+              {
+                "name": "volume",
+                "desc": "成交量（千克）"
+              },
+              {
+                "name": "amount",
+                "desc": "成交额（元）"
+              },
+              {
+                "name": "percent",
+                "desc": "涨跌幅（小数，由 change1 派生）"
+              }
+            ]
+          },
+          "notes": [
+            "begin/end 通过服务端 startTs/endTs 下推（不客户端过滤）；区间无数据返回空数组"
+          ],
+          "docs_visible": true,
+          "example": "cli.gold.query_bars(\"600519\", begin=\"2026-01-01\", end=\"2026-03-31\", limit=10)",
+          "test": {
+            "kwargs": {
+              "symbol": "600519",
+              "begin": "2026-01-01",
+              "end": "2026-03-31",
+              "limit": 10
+            },
+            "path": "/v1/analysis/xs/eval",
+            "body": {
+              "symbol": "600519",
+              "xs_lines": [
+                "return gold.query_bars(\"600519\", \"2026-01-01\", \"2026-03-31\", 10)"
+              ],
+              "args": {
+                "print.plain": true
+              },
+              "script_files": {},
+              "mode": "call",
+              "market": "cn"
+            }
+          }
         }
       ],
       "composites": []
@@ -12671,7 +13011,7 @@
             {
               "name": "fields",
               "required": false,
-              "desc": "list[str] / 逗号字符串 / ``None``（全部 8 个）"
+              "desc": "list[str] / 逗号字符串 / ``None``（全部 10 个）"
             }
           ],
           "returns": {
@@ -12692,7 +13032,7 @@
             "body": {
               "symbol": "600519",
               "xs_lines": [
-                "return valuation.daily_basic(\"600519\", \"2026-01-01\", \"2026-03-31\", [\"pe_ttm\", \"pb\", \"ps\", \"pr\", \"total_mv\", \"circ_mv\", \"turnover_rate\", \"dv_ttm\"])"
+                "return valuation.daily_basic(\"600519\", \"2026-01-01\", \"2026-03-31\", [\"pe_ttm\", \"pb\", \"ps\", \"pr\", \"total_mv\", \"circ_mv\", \"turnover_rate\", \"dv_ttm\", \"total_share\", \"float_share\"])"
               ],
               "args": {
                 "print.plain": true
@@ -12801,7 +13141,7 @@
             {
               "name": "fields",
               "required": false,
-              "desc": "list[str] / 逗号字符串 / ``None``（全部 8 个）"
+              "desc": "list[str] / 逗号字符串 / ``None``（全部 10 个）"
             }
           ],
           "returns": {

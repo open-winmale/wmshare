@@ -20,7 +20,7 @@
 
 ## 单位与守护声明（机器可读）
 
-> 共 91 个函数带 units / ranges / checks 声明；每行 `` `函数名`: JSON ``，键为 units（换算）/ ranges（量级界）/ checks（不变量）。SDK 在返回前按声明换算并校验，违例抛 DataError；原生口径用 `_units="native"`。内部命名空间的函数声明见 openapi.json 的 `x-wmshare-guards`（按友好接口）。
+> 共 94 个函数带 units / ranges / checks 声明；每行 `` `函数名`: JSON ``，键为 units（换算）/ ranges（量级界）/ checks（不变量）。SDK 在返回前按声明换算并校验，违例抛 DataError；原生口径用 `_units="native"`。内部命名空间的函数声明见 openapi.json 的 `x-wmshare-guards`（按友好接口）。
 
 - `blocktrade.by_date`: {"ranges": {"amount": [0, 100000000000.0], "price": [0, 10000.0], "volume": [0, 1000000000.0]}}
 - `blocktrade.by_symbol`: {"ranges": {"amount": [0, 100000000000.0], "price": [0, 10000.0], "volume": [0, 1000000000.0]}}
@@ -75,6 +75,9 @@
 - `fx.list`: {"ranges": {"middle": [1e-05, 2000]}}
 - `fx.query_bars`: {"checks": ["date_iso"], "ranges": {"buy": [1e-05, 2000], "middle": [1e-05, 2000]}}
 - `fx.rate`: {"ranges": {"buy": [1e-05, 2000], "cash_buy": [1e-05, 2000], "middle": [1e-05, 2000]}}
+- `gold.bars`: {"checks": ["date_iso"], "ranges": {"amount": [0, 10000000000000.0], "close": [0, 100000], "high": [0, 100000], "low": [0, 100000], "open": [0, 100000], "percent": [-0.3, 0.3], "volume": [0, 1000000000.0]}}
+- `gold.query_bars`: {"checks": ["date_iso"], "ranges": {"amount": [0, 10000000000000.0], "close": [0, 100000], "volume": [0, 1000000000.0]}}
+- `gold.symbols`: {"checks": ["date_iso"], "ranges": {"close": [0, 100000]}}
 - `income.decomp`: {"ranges": {"items[].dividend_return": [-0.5, 10], "items[].total_return": [-1, 50]}}
 - `income.diagnose`: {"ranges": {"items[].bond_yield_10y": [0, 0.2], "items[].score.total": [0, 100]}}
 - `income.rating_rows`: {"ranges": {"rows[].dividend_score": [0, 0.5], "rows[].payout": [0, 20], "rows[].score.total": [0, 100], "rows[].yield_ttm": [0, 0.5], "universe": [0, 100000.0]}}
@@ -111,8 +114,8 @@
 - `stocks.suspend_history`: {"checks": ["date_iso"]}
 - `toplist.by_date`: {"ranges": {"amount": [0, 50000000000.0], "amount_ratio": [0, 3], "close": [0, 10000.0], "float_mv": [0, 10000000000000.0], "net_amount": [-10000000000.0, 10000000000.0], "net_ratio": [-1, 1], "pct_chg": [-1, 1], "seat_amount": [0, 50000000000.0], "seat_buy": [0, 50000000000.0], "seat_sell": [0, 50000000000.0], "turnover_rate": [0, 2]}}
 - `toplist.by_symbol`: {"ranges": {"amount": [0, 50000000000.0], "amount_ratio": [0, 3], "close": [0, 10000.0], "float_mv": [0, 10000000000000.0], "net_amount": [-10000000000.0, 10000000000.0], "net_ratio": [-1, 1], "pct_chg": [-1, 1], "seat_amount": [0, 50000000000.0], "seat_buy": [0, 50000000000.0], "seat_sell": [0, 50000000000.0], "turnover_rate": [0, 2]}}
-- `valuation.daily_basic`: {"ranges": {"circ_mv": [0, 50000000000000.0], "dv_ttm": [0, 0.5], "pb": [0, 200], "pe_ttm": [0, 3000], "pr": [0, 2000], "ps": [0, 500], "total_mv": [0, 50000000000000.0], "turnover_rate": [0, 1]}}
-- `valuation.daily_basic_multi`: {"ranges": {"circ_mv": [0, 50000000000000.0], "dv_ttm": [0, 0.5], "pb": [0, 200], "pe_ttm": [0, 3000], "pr": [0, 2000], "ps": [0, 500], "total_mv": [0, 50000000000000.0], "turnover_rate": [0, 1]}}
+- `valuation.daily_basic`: {"ranges": {"circ_mv": [0, 50000000000000.0], "dv_ttm": [0, 0.5], "float_share": [0, 10000000000000.0], "pb": [0, 200], "pe_ttm": [0, 3000], "pr": [0, 2000], "ps": [0, 500], "total_mv": [0, 50000000000000.0], "total_share": [0, 10000000000000.0], "turnover_rate": [0, 1]}}
+- `valuation.daily_basic_multi`: {"ranges": {"circ_mv": [0, 50000000000000.0], "dv_ttm": [0, 0.5], "float_share": [0, 10000000000000.0], "pb": [0, 200], "pe_ttm": [0, 3000], "pr": [0, 2000], "ps": [0, 500], "total_mv": [0, 50000000000000.0], "total_share": [0, 10000000000000.0], "turnover_rate": [0, 1]}}
 
 
 
@@ -222,7 +225,7 @@ for r in res["data"]["rows"][:5]:
 
 ## 基本功能
 
-随包离线目录：**29 个数据域 · 368 个底层函数 · 2983 个指标代码**（上游 inventory 381 = 368 对外 + 13 个 internal helper）；友好层 **185 个核心接口**，
+随包离线目录：**30 个数据域 · 371 个底层函数 · 2983 个指标代码**（上游 inventory 384 = 371 对外 + 13 个 internal helper）；友好层 **188 个核心接口**，
 按使用视角组织为（11 个指标组、78 个精选常用指标代码，`cat.search("中文")` 可编程检索）：
 
 | 门面 | 核心能力 | 单位口径 |
@@ -266,7 +269,7 @@ for r in res["data"]["rows"][:5]:
 - **全市场批量**：`cli.batch_all(name, codes)` 把 A 股 5,375 家压成 **11 次请求**（`kline.snapshot` 等原生批量接口 1 次）绕开限流。
 - **全市场筛选服务端直出**：`cli.screener.query("$ROE_TTM_LAST > 0.15")` 一条表达式扫全市场索引
   （`count`=真实命中数）；涨跌全景/分桶/行业分布/涨跌榜同走服务端预计算索引，毫秒级。
-- **离线目录防编造**：368 个底层函数、185 个核心接口、2,983 个指标码离线可查
+- **离线目录防编造**：371 个底层函数、188 个核心接口、2,983 个指标码离线可查
   （`cat.search("中文")`），目录之外的名字显式报错。
 - **免注册先试**：`Client.from_env()` 无凭证自动免注册免费试用（真实数据，按来源网络限流；`WMSHARE_DISABLE_ANON=1` 可关闭）。
 - **数据守护**：全库统一单位（比率=小数、金额=元、量=股），返回前做单位换算与关键不变量校验；**精选 78 码另带口径与量级守护**（违例抛 `DataError`），其余码只保底不变量，口径以返回值/注释为准。
@@ -275,7 +278,7 @@ for r in res["data"]["rows"][:5]:
 
 - **先查目录再写代码**（一行验证）：
   `python3 -c "import wmshare; print(wmshare.load().search('股息'))"`
-- **本地 MCP server**（stdio，由客户端子进程启动，不监听端口）：29 个 task tools；全部 203 个 friendly API——185 登记 + 18 个组合接口——均可用
+- **本地 MCP server**（stdio，由客户端子进程启动，不监听端口）：29 个 task tools；全部 208 个 friendly API——188 登记 + 20 个组合接口——均可用
   `wmshare_call(target=..., mode="api")` 兜底，macro 域仅此路径。配置：`pip install "wmshare[mcp]"`
   → `wmshare-mcp setup --client-id <AppId> --client-secret-stdin --market cn`（提示后粘贴 API Key，
   `wmshare-mcp doctor` 体检）；客户端最小配置
@@ -452,7 +455,7 @@ t["data"]["pe_pct"], t["data"]["pe_pct_window"], t["data"]["pct"]["pe"]["p3"]  #
 
 - **AI 原生**：随包 [SKILL.md](src/wmshare/skills/wmshare/SKILL.md)、[AI 用法](docs/AI.md)、本地 MCP server（skill 可复制进 .agents/.zcode/.claude 的 skills/）；生态工具 [big-winner](https://github.com/open-winmale/big-winner)
 - **命令行与成品出口**：`wmshare screen/income/index/cbond` 直出 md/csv/xlsx（见「不写 Python」节）；`wmshare.export` 把信封/DataFrame 落成带口径表头的成品（`write_bundle` 附 manifest.json）
-- **文档中心 [docs/](docs/README.md)**：使用指南 GUIDE（单票菜谱/批量/多市场/故障排查）· 指标库 [INDICATORS.md](docs/INDICATORS.md)（全量指标码按数据类型分章）· AI 用法 · llms.txt 索引 · [API 参考](docs/API.md)（按资产类别分章的 185 个核心接口 + 指标组）
+- **文档中心 [docs/](docs/README.md)**：使用指南 GUIDE（单票菜谱/批量/多市场/故障排查）· 指标库 [INDICATORS.md](docs/INDICATORS.md)（全量指标码按数据类型分章）· AI 用法 · llms.txt 索引 · [API 参考](docs/API.md)（按资产类别分章的 188 个核心接口 + 指标组）
 - **可转债日更管线**：`cli.cbond.daily()` → `article()` → `figures()` 一条命令出图文（每个数字带 `sources` 与 `as_of`，缺条目抛错而非补猜测值）；实战 notebook 见 [docs/notebooks/cb_double_low.ipynb](docs/notebooks/cb_double_low.ipynb)（2026-11-07 真实数据）
 - **示例课程 [examples/](examples/README.md)**：33 个编号示例（入门→进阶→生产→AI→成品出口）——无凭证自动免注册免费试用（需网络），CI 注入离线回放夹具端到端覆盖
 - **问题反馈 / 交流**：使用提问、数据口径与指标码请求走 [Discussions](https://github.com/open-winmale/wmshare/discussions)；可复现的 bug 提 [GitHub Issues](https://github.com/open-winmale/wmshare/issues)；也欢迎加 QQ 群 `1127142074`（搜索「wmshare开源交流群」）
@@ -484,7 +487,7 @@ backtest/macro/toplist/futures/pdf/intl/notice 等）；
 
 **它不是**：撮合级/组合级回测引擎（单股均线买卖点回测用 `cli.backtest.run`：次日开盘成交、
 T+1、整手、佣金/印花固定，不复现盘口排队与分红税）；数据库（数据经云端 API 运行时获取，
-不随包分发）；全品类数据超市（29 个数据域，覆盖 A 股个股常用研究数据、宏观时序与期货主力连续指标码，
+不随包分发）；全品类数据超市（30 个数据域，覆盖 A 股个股常用研究数据、宏观时序与期货主力连续指标码，
 场外/LOF/货基基金（仅场内 ETF 九视图）、期权、债券（可转债除外）未覆盖）。
 
 ## 1. 环境前置
@@ -592,7 +595,7 @@ cat.metrics_in_group("dividend")                         # 指标组内全部精
 | 行业目录 / 行业成分 | `cli.stocks.industries(1)`（申万/恒生；美股目录树暂缺）/ `cli.stocks.industry_members("银行")`（中文名或代码 S48） |
 | 少量标的单批（≤500） | `cli.call_batch("kline.snapshot", ["600519", "000001"])` 或任意单标的接口传 list：`cli.kline.last(["600519", "000001"])`；`to_df()` 出每标的一行长表 |
 
-完整 185 个核心接口 + 18 个组合接口（可转债 3 + 回测 1 + 报表 4 + ETF 9 + 收息诊断 1）与全部底层函数：仓库用户看 docs/GUIDE.md（上手）与
+完整 188 个核心接口 + 20 个组合接口（可转债 3 + 回测 1 + 报表 4 + ETF 9 + 收息诊断 1 + 复权因子 1 + 指数周月线 1）与全部底层函数：仓库用户看 docs/GUIDE.md（上手）与
 docs/API.md（参考）；pip 用户用 `cat.search(...)` / `cat.function(...)` 查（同一份合同）。
 全量指标码（2983 个）按数据类型分章的导航、命名语法与死码清单见 docs/INDICATORS.md（生成物）。
 
@@ -704,7 +707,7 @@ cp -r "$(python3 -c 'import wmshare; print(wmshare.skill_dir())')" ~/.agents/ski
 
 本指南是 **how-to + 解释层**：会做什么 → 怎么做好。其他层各有其位——
 教程看 [README](../README.md) 与 [examples/](../examples/README.md)（可运行课程），
-接口参考看 [API.md](API.md)（按资产类别分章的 185 个核心接口，生成物），
+接口参考看 [API.md](API.md)（按资产类别分章的 188 个核心接口，生成物），
 AI 用法看 [AI.md](AI.md)。
 
 > 代码块里的输出注释都是**真实运行结果**（2026-10-29，cn 市场，免费档凭证），
@@ -741,9 +744,9 @@ export WMSHARE_CLIENT_ID=<AppId> WMSHARE_CLIENT_SECRET=<API Key>
 
 ### 2.1 双层 API：门面 + 目录
 
-- **门面层** `cli.<命名空间>.<方法>()`：31 个命名空间、185 个核心接口，方法名动宾化可猜
+- **门面层** `cli.<命名空间>.<方法>()`：32 个命名空间、188 个核心接口，方法名动宾化可猜
   （`kline.bars`、`dividend.yield_ttm`、`screener.screen_limit_up`）。
-- **目录层** `cli.call("<域>.<函数名>", ...)`：368 个底层函数按目录合同直调，
+- **目录层** `cli.call("<域>.<函数名>", ...)`：371 个底层函数按目录合同直调，
   参数名以 `cat.function(name)["params"]` 为准。门面未包装的函数经属性直达
   （如 `cli.dividend.index_where_high_yield_5()`）；目录之外的名字显式报错——
   门面不遮蔽目录公开函数（internal 辅助除外），292 个都能直达。
@@ -1360,7 +1363,7 @@ poller.start()               # 或切后台：daemon 线程定时轮询；退出
 
 - **和直接下交易所数据比，图什么？** 目录先行 + 单位统一 + 数据守护 + 批量限流治理——
   取数正确性的工程问题 SDK 替你管了。
-- **数据能离线吗？** 目录（368 个函数/2983 个指标码/代码表）随包离线；行情财报数据在云端，
+- **数据能离线吗？** 目录（371 个函数/2983 个指标码/代码表）随包离线；行情财报数据在云端，
   需凭证与额度。
 - **支持哪些 Python？** ≥3.11（3.10 已 EOL，1.19.0 起不再支持）；pandas 自 2.0 起为核心依赖。
 - **怎么贡献/报漏洞？** 见 [CONTRIBUTING](../CONTRIBUTING.md) 与 [SECURITY](../SECURITY.md)；
@@ -1380,8 +1383,8 @@ wmshare 取数代码**。优先用 MCP；没有 MCP 时用 skill 或文档上下
 - **目录先行**：指标码与函数可编程检索（`cat.search("中文")`），AI 不需要"背"接口，
   查一下再用；编造的码在发请求前就被 `CatalogError` 拦下。
 - **本地 MCP server**：29 个 task tools 覆盖发现、行情、财务、治理、披露、收息、估值、
-  ETF、回测、宏观、龙虎榜、期货、公告结构化与批量；全部 203 个 friendly API（185 登记 +
-  18 个组合接口）均可经 `wmshare_call(mode="api")` 兜底（macro 长尾与
+  ETF、回测、宏观、龙虎榜、期货、公告结构化与批量；全部 208 个 friendly API（188 登记 +
+  20 个组合接口）均可经 `wmshare_call(mode="api")` 兜底（macro 长尾与
   `cbond.article/figures` 仅网关路径）。输出统一 units/rows/next_action。
   结果是**结构化行数组**（DataFrame 在 MCP 边界统一转 records，NaN/NaT→null，
   可直接 `json.dumps`）；时间序列超 `max_rows` 保留**最新**一段，排名类列表仍保留头部。
@@ -1540,7 +1543,7 @@ python3 -c "import wmshare; print(wmshare.load().metric('\$PE_TTM_LAST'))"
 
 <!-- GENERATED by tools/gen_api_docs.py — do not hand-edit -->
 
-共 **29** 个数据域 · **185** 个核心接口 · **11** 个指标组（指标目录全量 2983 个指标代码）；全量 368 个底层函数见文末折叠附录。核心接口按资产类别分章，每接口一节（输入参数 / 输出字段 / 示例）。
+共 **30** 个数据域 · **188** 个核心接口 · **11** 个指标组（指标目录全量 2983 个指标代码）；全量 371 个底层函数见文末折叠附录。核心接口按资产类别分章，每接口一节（输入参数 / 输出字段 / 示例）。
 
 ## 能力总览
 
@@ -1560,6 +1563,7 @@ python3 -c "import wmshare; print(wmshare.load().metric('\$PE_TTM_LAST'))"
 | `market.cbond`（可转债） | 转债全市场面板（快照+最新事件+盘中价+callHits+下修地板价）、转债合约快照全表、转债最新快照、正股关联转债、转债条款事件列表… | price=元（转债价/转股价，面值 100 口径）；ratio=小数（SDK 基础单位；上游 percent 已按 percent 声明换算） |
 | `market.fund`（场内基金（ETF）） | 公司档案：名称/行业/组织类型/上市日期 | — |
 | `market.futures`（期货） | 主力换月映射、主力连续历史 K 线（store 直读）、交易所仓单快照（按业务月）、期货每日持仓排名（按合约查会员排名）、期货每日结算参数 | date=YYYY-MM-DD |
+| `market.gold`（金交所现货） | 在库现货品种清单、金交所现货日线窗口、金交所现货区间日线 | date=YYYY-MM-DD；price=元/克（open/high/low/close）；volume=千克；amount=元；percent=小数（0.01 = 1%） |
 | `market.index`（指数） | 指数键列表、指数成分、指数权重股、指数成分日快照（前向 PIT：begin 时点的成分名单）、指数估值时序（key 为指数键，如 index.hs300；可用键由 indices.universe_keys 枚举）… | money=元（市值）；ratio=小数（roe_ttm 等比率，指标层口径）；weight=小数（披露权重，上游 fmt 已换算，SDK 不再处理） |
 | `market.kline`（行情K线） | 历史 K 线、历史 K 线（周/月周期）、最新一根 K 线、是否场内 ETF、盘中日K快照… | price=元；volume=股（cn 由脚本的手 ×100 换算；港美上游即披露股，不再换算）；amount=元（本币）；percent=小数（0.01 = 1%） |
 | `market.margin`（融资融券） | 个股融资融券、最新两融、市场级两融汇总、两融标的名单 | money=元（融资买入额/偿还额/余额）；shares=股（融券卖出量/偿还量/余量） |
@@ -1570,7 +1574,7 @@ python3 -c "import wmshare; print(wmshare.load().metric('\$PE_TTM_LAST'))"
 | `fund.indicators`（指标层） | 指标组：估值、盈利与回报（含杜邦）、成长、营收与利润规模、现金流… | ratio=小数（如 0.332 = 33.2%；指标层比率统一为小数，不是 15.0=15%）；money=元（与报表/资金流同口径；精选指标声明了量级守护范围） |
 | `fund.segments`（经营分部） | 产品/商品分部、业务线分部、主营标签占比、地区/境内外分部、经营分部截面快照… | money=元（分部收入 tr / 成本 cost 原币口径，实测元；tr_text 为披露展示串如「2334.83亿」）；ratio=小数（占比 ratio/pct、毛利率 margin、同比 yoy；0.332 = 33.2%） |
 | `fund.statements`（财务报表） | 三报表科目×期次透视、报表可用年报（Q4 档，降序）、合并 vs 母公司报表比较、三表目录树视图（树序 + 比率/占比行）、审计意见（Q4 年轴） | amount=报表原币（CN=元，HK=港币，US=美元）；ratio=小数（compare 的差额占比已由 SDK 从百分数换算；树视图 pct 行为原生百分数未换算）；period=报告期（年-采样，如 2024-Q4 / 2024 年报） |
-| `fund.valuation`（每日估值） | 个股每日估值序列、多票每日估值序列 | pe_ttm=倍（MV ÷ NPTS_TTM，公告日 TTM）；pb=倍（MV ÷ 净资产，公告日时点前向填充）；ps=倍（MV ÷ TR_TTM）；pr=倍（PE_TTM ÷ ROE_TTM ÷ 100，市赚率）；total_mv=元（不复权收盘 × 总股份，变更日含当日生效）；circ_mv=元（不复权收盘 × 流通股份）；turnover_rate=小数（0.012 = 1.2%）；dv_ttm=小数（0.03 = 3%，DPS_TTM ÷ CLOSE） |
+| `fund.valuation`（每日估值） | 个股每日估值序列、多票每日估值序列 | pe_ttm=倍（MV ÷ NPTS_TTM，公告日 TTM）；pb=倍（MV ÷ 净资产，公告日时点前向填充）；ps=倍（MV ÷ TR_TTM）；pr=倍（PE_TTM ÷ ROE_TTM ÷ 100，市赚率）；total_mv=元（**当日**不复权收盘 × **当日**总股份，变更日含当日生效）；circ_mv=元（**当日**不复权收盘 × **当日**流通股份）；turnover_rate=小数（0.012 = 1.2%）；dv_ttm=小数（0.03 = 3%，DPS_TTM ÷ CLOSE）；total_share=股（当日总股本）；float_share=股（当日流通股本；上游披露口径「流通股份」恒等于「总股份」） |
 | `disc.bonus`（分红） | 分红历史明细、最近一次分红、指定报告期分红、财报期每股分红、财报期每股分红（截至日）… | dps=元/股；total=元（窗口合计金额）；window=如 "3y" / "5y" 窗口字符串；rate=小数（0.03 = 3%） |
 | `disc.events`（业绩披露事件） | 业绩预告历史、最新业绩预告、业绩快报历史、最新业绩快报、财报预约披露历史… | money=元（预告/快报区间与单期金额）；yoy=小数（0.1467 = 14.67%；SDK 自动由脚本的百分数口径换算）；date=YYYY-MM-DD |
 | `disc.filings`（定期报告清单） | 定期报告列表、最新一条定期报告 | date=YYYY-MM-DD |
@@ -1590,7 +1594,7 @@ python3 -c "import wmshare; print(wmshare.load().metric('\$PE_TTM_LAST'))"
 
 | 分类 | 数据域 |
 |---|---|
-| **市场行情** | `market.blocktrade`（大宗交易）, `market.board`（板块资金流）, `market.calendar`（交易日历）, `market.cbond`（可转债）, `market.fund`（场内基金（ETF））, `market.futures`（期货）, `market.index`（指数）, `market.kline`（行情K线）, `market.margin`（融资融券）, `market.moneyflow`（资金流向）, `market.stocks`（证券与行业基础）, `market.toplist`（龙虎榜） |
+| **市场行情** | `market.blocktrade`（大宗交易）, `market.board`（板块资金流）, `market.calendar`（交易日历）, `market.cbond`（可转债）, `market.fund`（场内基金（ETF））, `market.futures`（期货）, `market.gold`（金交所现货）, `market.index`（指数）, `market.kline`（行情K线）, `market.margin`（融资融券）, `market.moneyflow`（资金流向）, `market.stocks`（证券与行业基础）, `market.toplist`（龙虎榜） |
 | **财务基本面** | `fund.estimates`（盈利预测与研报）, `fund.indicators`（指标层）, `fund.segments`（经营分部）, `fund.statements`（财务报表）, `fund.valuation`（每日估值） |
 | **信息披露** | `disc.bonus`（分红）, `disc.events`（业绩披露事件）, `disc.filings`（定期报告清单）, `disc.income`（收息）, `disc.notice`（公告）, `disc.pdf_doc`（公告 PDF 全文）, `disc.workout`（契约套利） |
 | **参考数据** | `corp.equity`（股东与股本）, `market.fx`（外汇汇率）, `market.intl`（港美股披露）, `market.macro`（宏观）, `market.us_macro`（美宏观） |
@@ -1634,7 +1638,7 @@ cat.function("bonus.snapshot_yield_ttm")["params"]   # 函数合同：参数/返
 
 **三原则**：① 批次只能同一市场（跨市场混批 SDK 直接报错）；② 容错用批级`on_batch_error="skip"`（跳过失败批继续），**不要**用 `call_batch(on_error="skip")`——它是票级逐票请求，会放大请求数正好制造 429；③ 单批撞 `CALC_LIMIT_EXCEEDED`（算力超限）减小 `batch_size`，遇 429 停止并按消息里的 `codes[done:]` 续跑。
 
-**指标码不是批量 `name`**：`name` 必须是目录函数名（368 个，如 `kline.snapshot`），传 `indicator.get` 会报 CatalogError。一票多码用 `cli.indicator.metrics(sym, codes)`；全市场指标码没有批量入口，需逐票调用（指标取数是按 `(标的, 码)` 寻址，不是按标的切片）。
+**指标码不是批量 `name`**：`name` 必须是目录函数名（371 个，如 `kline.snapshot`），传 `indicator.get` 会报 CatalogError。一票多码用 `cli.indicator.metrics(sym, codes)`；全市场指标码没有批量入口，需逐票调用（指标取数是按 `(标的, 码)` 寻址，不是按标的切片）。
 
 ```python
 codes = [r["symbol"] for r in cli.stocks.list()]      # 全市场代码池（A 股 5,375 家）
@@ -1854,6 +1858,31 @@ cli.kline.snapshot("600519")
 ```python
 cli.kline.is_etf("600519")
 ```
+
+#### 组合接口（研究级封装）
+
+以下方法同样是 `cli.<命名空间>.<方法>()` 门面，**可直接调用**；区别只在于底层不是单一目录函数，而是跨多个接口 + 本地计算串成一条链路。**取数仍走客户端**（请求次数与 EC 照常计，EC 按请求行数），本地只负责规则与汇总。
+
+| 方法 | 签名 | 输出 |
+|---|---|---|
+| `cli.kline.adj_factor` | `adj_factor(symbol, n=None, begin=None, end=None)` | — |
+
+**`cli.kline.adj_factor`** — 累计复权因子（DataFrame：date/factor；factor = 后复权收盘 ÷ 不复权收盘）。
+
+口径（**累计因子**，ipo 起算、长期递增）：同一交易日的 `hfq_close / nr_close`。实测 600519 近三日 8.6469 恒定（区间内无除权）， 除权日出现台阶；需要**归一因子**（最新日恒为 1）请自行除以末值—— `factor / factor.iloc[-1]`，与 `qfq_close / nr_close` 同口径。
+
+实现为两次取数的组合面（非目录函数）：不复权与后复权各读一次同窗口， 按 date 内积。任一档缺该日期时该行不出（诚实缺行）——后复权缺失通常 发生在极早期历史（无国内因子源的美股 hfq 同不复权，factor 恒 1）。
+
+成本：两次 `kline.bars` 同窗口（≈2×行数×60~75 EC 冷态）；复跑走 kline 窗口缓存更省。区间查询复用 `kline.bars` 的锚点分页。
+
+市场可用，但美股后复权无国内因子源（factor 恒 1）
+
+| 参数 | 类型 | 必填 | 默认 | 说明 |
+|---|---|---|---|---|
+| `symbol` | string | 是 | — | 6 位 A 股代码（也接受 .SH/.SZ/.BJ 后缀）；港美股支持 hfq 的 |
+| `n` | integer | 否 | `None` | 最近 N 个交易日（默认 120）；与 begin/end 互斥 |
+| `begin` | string | 否 | `None` | 起始日期（含，YYYY-MM-DD），须与 end 同时提供；与 n 互斥 |
+| `end` | string | 否 | `None` | 结束日期（含） |
 
 ### 场内 ETF 说明
 
@@ -3402,6 +3431,30 @@ cli.index.trend(key="index.hs300", window="5y")
 cli.index.universe_keys()
 ```
 
+#### 组合接口（研究级封装）
+
+以下方法同样是 `cli.<命名空间>.<方法>()` 门面，**可直接调用**；区别只在于底层不是单一目录函数，而是跨多个接口 + 本地计算串成一条链路。**取数仍走客户端**（请求次数与 EC 照常计，EC 按请求行数），本地只负责规则与汇总。
+
+| 方法 | 签名 | 输出 |
+|---|---|---|
+| `cli.index.bars` | `bars(key, freq='W', n=120, begin=None, end=None)` | — |
+
+**`cli.index.bars`** — 指数周/月 K 线（DataFrame：date/open/high/low/close/volume/amount/percent）。
+
+**SDK 侧聚合**（上游不派生指数周月线）：取指数日线（`kline.bars` 的指数 分流）后按 ISO 周 / 自然月重采样——open=周期首、high/low=极值、close=周期 末、volume/amount=累计，`date` 为周期内**最后一个交易日**，`percent` 由周期末收盘对上一周期末收盘重算。`kline.bars(freq="W")` 对指数键报 `UsageError(code="freq")`，周/月需求走本方法。
+
+包含当前**未走完**的周期（date = 最新交易日），与期货/股票的「周期末 bar」 语义一致：该 bar 会随后续交易日继续变化。
+
+`000300` 一类裸码与 `index.hs300`）
+
+| 参数 | 类型 | 必填 | 默认 | 说明 |
+|---|---|---|---|---|
+| `key` | string | 是 | — | 指数键（``keys()`` / ``universe_keys()`` 的取值域；也接受 |
+| `freq` | string | 否 | `'W'` | ``W``=周（默认）/ ``M``=月；``D`` 请直接用 ``kline.bars`` |
+| `n` | integer | 否 | `120` | 周期数（默认 120）；内部按 ``n × 5`` 个交易日取源（月线 31 天） |
+| `begin` | string | 否 | `None` | 起始日期（含，YYYY-MM-DD），须与 end 同时提供 |
+| `end` | string | 否 | `None` | 结束日期（含） |
+
 ## 期货
 
 **2.0 新面** `cli.futures`：连续合约 read 面（store 直读 `futures.query_bars`；须 cn 客户端；量=手、金额=万元为期货原生口径）。日频只含交易日，最新一根随上游日更；周/月线为上游周期 bar（成交量为周期合计），SDK 不做二次聚合；外盘仅日线：
@@ -3635,6 +3688,98 @@ cli.futures.holding(date="2026-06-30", limit=10)
 
 ```python
 cli.futures.settle(date="2026-06-30")
+```
+
+## 金交所现货
+
+### 上海黄金交易所现货（`cli.gold`）
+
+- **计价口径与期货不同**，勿混用：价=元/克（黄金与白银同为元/克）、量=千克、 额=元；期货是元/吨、手、万元。故独立成本域而不并入 `cli.futures`。
+- 数据由 airflow 每个交易日 17:30 落库（`mkt.futures_kline` 的 `exchange="SGE"` 品种族），日更。V2 键大小写敏感（`cn.Au99.99.SGE`）—— `cli.futures.bars("Au99.99.SGE")` 取不到（futures 归一器会 UPPER 品种段）。
+
+#### `cli.gold.symbols` — 金交所现货品种清单
+
+在库现货品种清单（探不到的不出现，不造 0）。
+
+**输入参数**：无。
+
+**输出字段**
+
+| 字段 | 类型 | 单位/换算 | 守护范围 | 说明 |
+|---|---|---|---|---|
+| `code` | string | — | — | 品种码（裸码，如 Au99.99） |
+| `symbol` | string | — | — | 品种键（含 .SGE 后缀） |
+| `date` | string | — | — | 最新交易日 YYYY-MM-DD |
+| `close` | float? | — | [0, 100000] | 最新收盘（元/克） |
+
+**示例**
+
+```python
+cli.gold.symbols()
+```
+
+#### `cli.gold.bars` — 金交所现货日线
+
+现货日线窗口（最近 N 根，date 升序）。
+
+**输入参数**
+
+| 参数 | 类型 | 必填 | 默认 | 说明 |
+|---|---|---|---|---|
+| `symbol` | string | 是 | — | 品种码（``Au99.99`` / ``Au(T+D)`` / ``Ag(T+D)`` / |
+| `n` | integer | 否 | `60` | 根数（默认 60，上限 2000）；全历史请用 ``query_bars`` 的 |
+
+**输出字段**
+
+| 字段 | 类型 | 单位/换算 | 守护范围 | 说明 |
+|---|---|---|---|---|
+| `date` | string | — | — | 交易日 YYYY-MM-DD |
+| `symbol` | string | — | — | 品种键（含 .SGE 后缀） |
+| `open` | float? | — | [0, 100000] | 开（元/克） |
+| `high` | float? | — | [0, 100000] | 高（元/克） |
+| `low` | float? | — | [0, 100000] | 低（元/克） |
+| `close` | float? | — | [0, 100000] | 收（元/克） |
+| `volume` | float? | — | [0, 1e+09] | 成交量（千克） |
+| `amount` | float? | — | [0, 1e+13] | 成交额（元） |
+| `percent` | float? | — | [-0.3, 0.3] | 涨跌幅（小数，由 change1 派生） |
+
+**示例**
+
+```python
+cli.gold.bars("600519", n=30)
+```
+
+#### `cli.gold.query_bars` — 金交所现货区间日线
+
+现货区间日线（begin/end 可空；服务端 startTs/endTs 下推）。
+
+**输入参数**
+
+| 参数 | 类型 | 必填 | 默认 | 说明 |
+|---|---|---|---|---|
+| `symbol` | string | 是 | — | 品种码（同 ``bars``） |
+| `begin` | string | 否 | `''` | 开始日期 YYYY-MM-DD（含），空=不限 |
+| `end` | string | 否 | `''` | 结束日期 YYYY-MM-DD（含），空=不限 |
+| `limit` | integer | 否 | `500` | 根数上限（默认 500，上限 2000） |
+
+**输出字段**
+
+| 字段 | 类型 | 单位/换算 | 守护范围 | 说明 |
+|---|---|---|---|---|
+| `date` | string | — | — | 交易日 YYYY-MM-DD |
+| `symbol` | string | — | — | 品种键（含 .SGE 后缀） |
+| `open` | float? | — | — | 开（元/克） |
+| `high` | float? | — | — | 高（元/克） |
+| `low` | float? | — | — | 低（元/克） |
+| `close` | float? | — | [0, 100000] | 收（元/克） |
+| `volume` | float? | — | [0, 1e+09] | 成交量（千克） |
+| `amount` | float? | — | [0, 1e+13] | 成交额（元） |
+| `percent` | float? | — | — | 涨跌幅（小数，由 change1 派生） |
+
+**示例**
+
+```python
+cli.gold.query_bars("600519", begin="2026-01-01", end="2026-03-31", limit=10)
 ```
 
 ## 宏观
@@ -4458,7 +4603,7 @@ cli.valuation.hist_stats("600519", metric="pe", window="3y")
 | `symbol` | string | 是 | — | 6 位 A 股裸码（自动归一前缀/后缀） |
 | `begin` | string | 否 | `None` | ISO 起日（含），``None``/``""`` = 开区间 |
 | `end` | string | 否 | `None` | ISO 止日（含），``None``/``""`` = 开区间 |
-| `fields` | object | 否 | `None` | list[str] / 逗号字符串 / ``None``（全部 8 个） |
+| `fields` | object | 否 | `None` | list[str] / 逗号字符串 / ``None``（全部 10 个） |
 
 **输出**：MAP · {ok, as_of, data: [{date, symbol, field, value}], meta}（8 字段长表，date 升序；as_of=表内最新行日期；meta.window.truncated 标读窗口截断）
 
@@ -4479,7 +4624,7 @@ cli.valuation.daily_basic("600519", begin="2026-01-01", end="2026-03-31")
 | `symbols` | object | 是 | — | 标的清单（list/tuple；``>=200`` 票时提示成本量级） |
 | `begin` | string | 否 | `None` | ISO 起日（含），``None``/``""`` = 开区间 |
 | `end` | string | 否 | `None` | ISO 止日（含），``None``/``""`` = 开区间 |
-| `fields` | object | 否 | `None` | list[str] / 逗号字符串 / ``None``（全部 8 个） |
+| `fields` | object | 否 | `None` | list[str] / 逗号字符串 / ``None``（全部 10 个） |
 
 **输出**：MAP · {ok, as_of, data: [{date, symbol, field, value}], meta}（多票长表，行合同与 daily_basic 一致；meta.per_symbol 给每票 count/oldest_scanned/truncated）
 
@@ -7151,7 +7296,7 @@ cli.info.profile("600519")
 - **指标层 域**：指标代码带 _LAST 后缀 = 最新截面值；不带后缀 = 随最新财报期取值；指标层比率统一为小数（0.332=33.2%），金额统一为元（上游 cn 名偶带 "(%)"/"(亿)" 后缀， 是命名遗留、不代表数值口径）；业绩预告的同比/幅度字段 SDK 已换算为小数（disc.events 域）；新旧会计准则适配在指标计算内部完成，输出口径已归一；精选指标中声明 range 的代码由 SDK 在返回前做量级守护（违例抛 DataError）；units.yaml 台账登记的码（成交量族=手、宏观房地产=亿元、$ROC_TTM 族=百分数） 由 SDK 默认换算到基础单位；非登记且未精选的代码按上游原值返回。 原始口径逃生口：indicator.get/metrics(native=True)、cli.call(_units="native")
 - **经营分部 域**：可用性：仅 A 股（定期报告分部披露）；opts = {source: clean|raw, limit: 截断条数}；clean 为平台清洗归一口径，raw 为披露明细；行结构 {name, tr, tr_text, cost, margin, ratio}；margin = (tr - cost) / tr（小数）， cost 缺失时为 nil；ratio 仅 income 维填充占比、其余维为 0 占位；query_region 双形态：opts.source=clean（默认）返回 MAP {domestic, overseas, report_sas}， source=raw 返回披露明细 ARR；无数据时返回 nil；各维可用报告期不同（coverage/list_sas 可查）；products 维在部分公司为空；脚本原生输出即基础单位（元/小数），SDK 不做换算，仅做量级守护
 - **财务报表 域**：domain 取值 fin.balance_sheet / fin.income_statement / fin.cashflow_statement；opts.scope = 合并(默认) | 母公司；opts.n 期数（默认 5，年报降序）；opts.years 年份数组（如 [2024,2023]）；新旧会计准则口径适配在平台内部层完成，本域输出已归一；可用性注记：目录函数族面向平台内部页面（alt.bssaa LIST 投影，合并/母公司 口径与溯源列）；SDK 对外报表（cli.statements 三加一）读取全市场宽表 fin_income / fin_balance / fin_cashflow / fin_indicator（季度粒度、披露 原币、列名=披露科目原文），由 SDK 内置读取脚本实现，不经本目录函数
-- **每日估值 域**：可用性：仅 A 股（CN 专用表；HK/US 无流通股份源，诚实缺列不建表）；数据自物化日起可用；历史回填由样本 DAG 提供（pe/pb/ps/pr ≤3y，引擎窗口硬顶； mv 族回走窗口见方案 §5/§9），更早区间诚实缺行；行内缺失字段诚实缺列（不零填充）；亏损期 pe_ttm 缺行与平台现算口径一致
+- **每日估值 域**：可用性：仅 A 股（CN 专用表；HK/US 无流通股份源，诚实缺列不建表）；数据自物化日起可用；历史回填由样本 DAG 提供（pe/pb/ps/pr ≤3y，引擎窗口硬顶； mv 族受 K 线单次读取上限约束，约 250 交易日内可逐日回算），更早区间诚实缺行；**口径（2026-11-25 修正）**：市值族取「当日收盘 × 当日股本」，不随物化时刻的 最新行情漂移。此前实现用 metric 层 `$MV_LAST` 一族（symbol 级缓存、恒为求值时 刻 tip）配 `AT(锚日)`，会把 T 的市值写进 T-1 的行，事故修复还会造成整段冻结； 修正后行内满足 `total_mv / total_share ≈ close`；行内缺失字段诚实缺列（不零填充）；亏损期 pe_ttm 缺行与平台现算口径一致；float_share 与 total_share 在上游披露口径中相等（披露项名为「流通股份」但 实为总股本）；真实可流通口径为「无限售股份」，本表暂不落
 - `valuation.daily_basic`（个股每日估值序列）：as_of = 表内最新行日期（与 begin/end 过滤无关，供调用方判新鲜度）； 未知字段名在 meta.requested_unknown 里如实回报，不静默丢弃
 - `valuation.daily_basic_multi`（多票每日估值序列）：行合同与 valuation.daily_basic 完全一致，可 concat 后按 symbol 分组； EC 仍按票计价（批量只省请求调度，不省算力），地板 ≈1；707 EC/票； 单票读窗口 1；500 日文档，meta.per_symbol 各项的 truncated 标出被截断的票
 - **大宗交易 域**：行内只有证券代码（无简称）；要名称请用 cli.stocks.list 或 cli.info.profile 关联；单日榜按成交额降序取前 N；单票历史按日期收集、SDK 门面统一升序（date 升序）；买卖方为营业部/机构名称原文；同一交易日同票可有多笔（不同价格/买卖方）；B 股（900xxx.SH / 200xxx.SZ）price 为外币报价（美元/港币）、amount 仍为人民币， price×volume≠amount 属正常口径差；本接口不做汇率换算，跨市场比较需自行折算；2010 年至今全量（约 3,900 个交易日 / 60 万行）；早于 2010 年上游无数据
@@ -7178,6 +7323,10 @@ cli.info.profile("600519")
 - `fx.rate`（最新汇率）：量级界覆盖日元/韩元（每单位约 0.005-0.05）到英镑/欧元（约 8-10）；越界即疑似未归一的每 100 外币原值
 - `fx.history`（汇率日线序列）：数据版本键缓存——最新入库日期变化即换键，日内复跑命中缓存
 - `fx.query_bars`（汇率区间日线）：begin/end 通过服务端 startTs/endTs 下推（不客户端过滤）；区间无数据返回空数组
+- **金交所现货 域**：**计价口径**：价=元/克（黄金与白银同为元/克）、量=千克、额=元。实测 `volume × 1000 × close ≈ amount`（Au99.99 2026-11-24：10590.78 千克 × 777.72 元/克 = 8.24e9 ≈ amount 8.28e9），与国内期货（元/吨、手、万元） 完全不同，故独立成域而不并入 futures；percent 为 SDK 派生：上游 `pre_settle`/`pre_close` 恒为 0、`percent` 为 nil， 仅有 `change1`（相对前收的绝对涨跌额）——`percent = change1 / (close - change1)` （实测 777.72 - (-3.68) = 781.40 = 前一交易日收盘）。无法派生时为 nil，不发明 0；settle / 持仓量 / 持仓变化 对现货无意义，上游恒 0，本域不出这些字段；**键大小写敏感**：V2 键不做大小写归一，实存 `cn.Au99.99.SGE` / `cn.Au(T+D).SGE`。`cli.futures.bars("Au99.99.SGE")` 取不到（futures 归一器 会 UPPER 品种段），必须用本域 `cli.gold.bars("Au99.99")`；品种清单由 `gold.symbols` 实探得出（候选清单见 script `sys/gold/init.xs`）， 不在库的品种不出现、不造 0；标注 .FWD 的远期/租赁报价合约不入库（无 OHLC）；日期口径：trade_date 的 bar 含「当日 9:00-15:30 日盘 + 前一夜盘 20:00-02:30」 双向计量（交易所口径），与股票日线不可直接对比
+- `gold.symbols`（在库现货品种清单）：结果按整表版本键缓存（以 Au99.99 最新日期代表），日内复跑只付首次探测成本
+- `gold.bars`（金交所现货日线窗口）：数据版本键缓存——最新交易日变化即换键，日内复跑命中缓存
+- `gold.query_bars`（金交所现货区间日线）：begin/end 通过服务端 startTs/endTs 下推（不客户端过滤）；区间无数据返回空数组
 - **指数 域**：可用性：指数键与申万行业为 cn 口径；v1.1.0 函数前缀 index.* → indices.*：上游内建 index 常量 MAP 占名（selector policy violation），cli.index 门面不变；成员行 roe_ttm/pe_ttm 等为指标层原值（比率小数、倍数口径），SDK 不再换算；valuation.series 为季采样点（d/pe/pb），前端/调用方可自行算分位；trend.base/med 为周频/月频点，均为降序（新→旧）；trend 自带历史分位：rank0/(n-1) 并列取中点，pct.pe/pb/pe_med 各含 p/p3/p5/p10；win_trunc=true 表示缓存序列盖不住所选窗口，相关分位为 null（不拿短窗口冒充长窗口）；trend 的 pct.<col>.p 恒为 5 年分位（平台 pct_bundle 固定，与入参 window 无关）；SDK 按 window 取 p3/p5/p10 并回显 pe_pct_window，故 trend("3y")["pe_pct"] == pct.pe.p3；trend 覆盖宽基 11 + 申万一级 31（industry.SXX）+ 红利 14 键；L2/L3 行业未预热（ok=false），中信行业无该数据。指数/行业 PE 历史只能走 trend（$PCT_PE_TTM_* 按个股 $SYMBOL 绑定，不随 key 切换）；trend 口径：整体法 PE=Σ成分股市值/Σ成分股归母净利润TTM（$ID_PE_TTM_TOTAL），PB=ΣMV/ΣSE_NOGW；分母≤0 时 PE 为 nil（行业整体亏损则无 PE，SDK 标 pe_missing）。周频约 730 点（cursor.ds(3650)≈14.5 年，为覆盖 10y 分位窗口），月频约 174 点出正 PE 中位数。单键全量重算实测约 3.2M fuel/39s，故 cron 预热（交易日 16:20-16:29 增量首批、16:25-18:55 每半小时补跑班、19:00 最终兜底、周六全量）而非请求时现算；当日点在官方日 K 落库（SLA 16:10）后由 asof 门控推进；股息率只有当前值、没有历史序列（DV 无 series），因此不出股息率分位；indices.weights 传入未注册的指数键时上游返回 HTTP 500（不是空结果）；SDK 以 ServerError 透出，不自动重试、不降级为空数组。先用 indices.keys / indices.universe_keys 校验键
 - **港美股披露 域**：客户端 market 参数须与标的注册市场一致：cn 客户端调港美股代码会 400 market mismatch（v1.1.0 起如实标注）；A股标的调用多返回空（对应数据集为港美股口径）；港股盈利预测行保留披露原文中文键（财政年度/纯利/每股盈利等）；数值为披露原文口径 不做换算：纯利=百万（港元）、每股盈利/每股股息=仙（cents，如 eps 2550 = 25.50 港元）、 fiscal_year=年份（2026-10-28 港股龙头样本实测）；issue_info 为美股发行快照（发行价/数量/日期），字段以披露源为准
 - **行情K线 域**：复权 adj 取值 nr(不复权,默认)/qfq(前复权)/hfq(后复权)；周期 period 取值 D(日,默认)/W(周)/M(月)——周/月为服务端预派生（日期=周期末交易日）； 指数键只有日频，period 非 D 返回空数组。美股后复权日线无国内因子源（hfq 端点实测 与不复权逐位相同），after 为历史快照、不随日更更新；指数键（index.hs300 / 399xxx 等）自动分流指数点位；指数无复权，*_adj 忽略 adj；盘中三分工：query_last_live=最新一根快照；query_bars_live=最近 n 根日 K（外部行情源）； query_min1_live=当日 1 分钟分时（有损合成采样，非逐笔 Level2）；ETF（沪 51/52/56/58、深 159，共 1600+ 只）日线有数据；分时/live 查询无分钟源会被拦截；query_bars_live 读预热变量而非实时请求：冷缓存返回空数组（尚未预热）， 语义不是「该标的无数据」；按防坑清单不得把空数组当 0 或静默降级， 需显式标注缓存状态，或改用 query_bars 取已入库日 K；指数键（index.hs300 / 399xxx）在 query_last_live / query_last_live_many / query_min1_live 三个个股盘中入口下无数据；上游另有 query_index_last_live / query_index_last_live_many / query_index_min1_live / query_index_min1_live_meta。 SDK 不自动改写路由，调用方须显式选指数入口；返回空 MAP 或 nil 属入口不匹配， 不得解读为「指数无行情」；返回根数：财报季 query_bars 不因披露进度截断；日频回测口径仍按已披露数据截断；脚本原生 volume 为手（仅 cn/ETF）；港美上游即股——SDK 的手×100 换算只在 market="cn" 生效，港美原值直出；换算后守护 volume×close≈amount 不变量 （query_bars_adj 为复权价，不套该不变量）；_units="native"/_raw=True 可取原值

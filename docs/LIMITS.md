@@ -17,6 +17,9 @@
 | 批量原生「准全市场」捷径阈值 | **2,000** | ≥2,000 票改传空数组（与服务端全市场扫描阈值对齐：≥2000 的数组清单上游本来就按全市场扫描计费，空参捷径另享按日 memo，复跑 ≈28 EC）；停牌/索引外标的缺席 → `BatchResult.truncated=True` | 缺席标的用小清单补拉（<2,000 票走逐票按量路径，含停牌行，≈58 EC/票） |
 | `margin.universe` 服务端上限 | **5,000** 行 | 默认 `limit=None` = 全量（≈4,010 行） | 按需传 `limit` 降 EC |
 | `valuation.daily_basic` 返回窗口 | **1,500** 行（最新优先；XS 端 `DEFAULT_LIMIT`） | 2026-11-19 修复后实测：600519/000001 全量各回 **727 日**（2023-11-20 起，3y 全量可见）。背景：11-19 服务端发布波后 kernel 读面对 `limit≤0` 取 200 默认，曾使端点只回最新 ~200 交易日（11-19 午间发现，store 数据始终完好）；script `store_query` 包装层已把 ≤0 归一到 `DEFAULT_LIMIT`（commit `015032f2`，pipeline-5982）。计费按扫描行：floor ≈1,707 EC + ≈23 EC/日（估 `begin/end` 收窄，字段数几乎不加价） | 累积 >1,500 日（≈6 年）后更早区间**曾静默缺席**；**2.4.0 起**信封 `meta.window.truncated` 明示截断，SDK 按 `oldest_scanned` 自动向前翻页（上限 10 片 ≈15,000 交易日），跨窗口查询不再需要调用方手工拼接。可用范围可先查 [cli.valuation.daily_basic_coverage](API.md) |
+| `gold.bars` / `gold.query_bars` 单次上限 | **2,000** 根 | 金交所现货日线（≈5,800 根全历史，2002 起）；超限在 script 侧归一到 2,000，不静默截断 | 更长区间用 `query_bars` 的 `begin=/end=` 分段（服务端 startTs/endTs 下推） |
+| `kline.adj_factor` 成本 | **2× 同窗口** | 组合面：不复权与后复权各读一次 `kline.bars`（≈2×行数×60~75 EC 冷态），按 date 内积算 `hfq_close / nr_close` | 减小 `n`，或复跑（两次底层调用都走 kline 窗口缓存） |
+| `index.bars` 源窗口 | **n×5（周）/ n×21（月）** 个交易日 | SDK 聚合面：先取这么多日线再重采样，留 20% 余量保证 n 根完整；单次不超过 `kline.MAX_QUERY_LIMIT=1000` | 长区间用 `begin=/end=`（复用 `kline.bars` 的锚点分页，不受单次上限约束） |
 
 ## 2. 批量与全市场
 

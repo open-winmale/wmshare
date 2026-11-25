@@ -1,0 +1,113 @@
+id: market.gold
+version: 1.0.0
+cn: 金交所现货
+kind: raw
+category: market
+priority: P2
+description: 上海黄金交易所现货品种日线（Au99.99 / Au(T+D) / Ag(T+D) / Pt99.95 等）。
+  数据由 airflow market.cn.gold_spot_daily 每个交易日 17:30 落库到
+  `mkt.futures_kline`（exchange=SGE，与国内期货主力连续同集合、不同品种族），
+  本域提供品种清单、日线窗口与区间查询三个读面。
+data_origin: [外部行情源]
+units:
+  date: YYYY-MM-DD
+  price: 元/克（open/high/low/close）
+  volume: 千克
+  amount: 元
+  percent: 小数（0.01 = 1%）
+requires: {path: sys/gold/init.xs, preloaded: true}
+notes:
+  - '**计价口径**：价=元/克（黄金与白银同为元/克）、量=千克、额=元。实测
+    `volume × 1000 × close ≈ amount`（Au99.99 2026-11-24：10590.78 千克 ×
+    777.72 元/克 = 8.24e9 ≈ amount 8.28e9），与国内期货（元/吨、手、万元）
+    完全不同，故独立成域而不并入 futures'
+  - 'percent 为 SDK 派生：上游 `pre_settle`/`pre_close` 恒为 0、`percent` 为 nil，
+    仅有 `change1`（相对前收的绝对涨跌额）——`percent = change1 / (close - change1)`
+    （实测 777.72 - (-3.68) = 781.40 = 前一交易日收盘）。无法派生时为 nil，不发明 0'
+  - 'settle / 持仓量 / 持仓变化 对现货无意义，上游恒 0，本域不出这些字段'
+  - '**键大小写敏感**：V2 键不做大小写归一，实存 `cn.Au99.99.SGE` /
+    `cn.Au(T+D).SGE`。`cli.futures.bars("Au99.99.SGE")` 取不到（futures 归一器
+    会 UPPER 品种段），必须用本域 `cli.gold.bars("Au99.99")`'
+  - '品种清单由 `gold.symbols` 实探得出（候选清单见 script `sys/gold/init.xs`），
+    不在库的品种不出现、不造 0；标注 .FWD 的远期/租赁报价合约不入库（无 OHLC）'
+  - '日期口径：trade_date 的 bar 含「当日 9:00-15:30 日盘 + 前一夜盘 20:00-02:30」
+    双向计量（交易所口径），与股票日线不可直接对比'
+functions:
+  - name: gold.symbols
+    cn: 在库现货品种清单
+    kind: raw
+    layer: L0
+    params: []
+    returns:
+      desc: ARR · 品种清单（按候选顺序；探不到的不出现）
+      shape:
+        kind: array
+        cn: 品种清单
+        items:
+          kind: object
+          cn: 现货品种
+          fields:
+            - {name: code, type: string, cn: 品种码（裸码，如 Au99.99）}
+            - {name: symbol, type: string, cn: 品种键（含 .SGE 后缀）}
+            - {name: date, type: string, cn: 最新交易日 YYYY-MM-DD}
+            - {name: close, type: float64, cn: 最新收盘（元/克）, optional: true}
+    example: 'gold.symbols()'
+    ranges:
+      close: [0, 100000]
+    checks: [date_iso]
+    notes: [结果按整表版本键缓存（以 Au99.99 最新日期代表），日内复跑只付首次探测成本]
+  - name: gold.bars
+    cn: 金交所现货日线窗口
+    kind: raw
+    layer: L0
+    params:
+      - {name: code, type: string, required: true, desc: '品种码（Au99.99 / Au(T+D) / Ag(T+D) / Pt99.95；带 .SGE 后缀也接受）'}
+      - {name: limit, type: int, required: false, default: 60, desc: '根数（1..2000；<=0 归一到 60——不是「取全部」，全历史请用 query_bars 的 begin/end）'}
+    returns:
+      desc: ARR · 现货日线（date 升序）
+      shape:
+        kind: array
+        cn: 现货日线
+        items:
+          kind: object
+          cn: 现货日线行
+          fields:
+            - {name: date, type: string, cn: 交易日 YYYY-MM-DD}
+            - {name: symbol, type: string, cn: 品种键（含 .SGE 后缀）}
+            - {name: open, type: float64, cn: 开（元/克）, optional: true}
+            - {name: high, type: float64, cn: 高（元/克）, optional: true}
+            - {name: low, type: float64, cn: 低（元/克）, optional: true}
+            - {name: close, type: float64, cn: 收（元/克）, optional: true}
+            - {name: volume, type: float64, cn: 成交量（千克）, optional: true}
+            - {name: amount, type: float64, cn: 成交额（元）, optional: true}
+            - {name: percent, type: float64, cn: 涨跌幅（小数，由 change1 派生）, optional: true}
+    example: 'gold.bars("Au99.99", 5)'
+    ranges:
+      open: [0, 100000]
+      high: [0, 100000]
+      low: [0, 100000]
+      close: [0, 100000]
+      volume: [0, 1.0e+9]
+      amount: [0, 1.0e+13]
+      percent: [-0.3, 0.3]
+    checks: [date_iso]
+    notes: [数据版本键缓存——最新交易日变化即换键，日内复跑命中缓存]
+  - name: gold.query_bars
+    cn: 金交所现货区间日线
+    kind: raw
+    layer: L0
+    params:
+      - {name: code, type: string, required: true, desc: 品种码（同 bars）}
+      - {name: begin, type: string, required: false, desc: 开始日期 YYYY-MM-DD（可空）}
+      - {name: end, type: string, required: false, desc: 结束日期 YYYY-MM-DD（可空）}
+      - {name: limit, type: int, required: false, default: 500, desc: 根数上限（1..2000）}
+    returns:
+      desc: ARR · 现货日线（date 升序）
+      shape_ref: inventory
+    example: 'gold.query_bars("Au99.99", "2026-11-01", "2026-11-24", 100)'
+    ranges:
+      close: [0, 100000]
+      volume: [0, 1.0e+9]
+      amount: [0, 1.0e+13]
+    checks: [date_iso]
+    notes: [begin/end 通过服务端 startTs/endTs 下推（不客户端过滤）；区间无数据返回空数组]

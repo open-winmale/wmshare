@@ -86,6 +86,10 @@ INCLUDED_NS = frozenset({
     "board",
     # 3.3：A股大宗交易（上游日频全市场明细直读，market.blocktrade 域）
     "blocktrade",
+    # 3.6：金交所现货（mkt.futures_kline exchange=SGE 直读，market.gold 域；
+    # 键大小写敏感 cn.Au99.99.SGE，独立于 futures 域——futures.norm_symbol 会
+    # UPPER 品种段导致 SGE 品种恒返 0 行）
+    "gold",
 })
 # rptdom 只保留三表透视族（年报 PDF 提取类 rows/notes/note_index 不发布）
 RPTDOM_KEEP = frozenset({"statement", "statement_years", "statement_compare", "statement_tree", "statement_audit"})

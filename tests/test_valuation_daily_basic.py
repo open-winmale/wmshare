@@ -64,11 +64,11 @@ def test_daily_basic_registered_in_catalog():
     assert fn["name"] == "valuation.daily_basic"
     dom = cat.domains["fund.valuation"]
     assert dom["category"] == "fundamentals"
-    # 8 字段全部有量级声明（audit_units / guard_manifest 依赖）
+    # 10 字段全部有量级声明（audit_units / guard_manifest 依赖）
     ranges = (fn.get("ranges") or dom.get("ranges") or {})
     assert set(ranges) >= {
         "pe_ttm", "pb", "ps", "pr", "total_mv", "circ_mv",
-        "turnover_rate", "dv_ttm"}
+        "turnover_rate", "dv_ttm", "total_share", "float_share"}
 
 
 # ---- 门面：字段校验与调用构造 ----
@@ -80,7 +80,7 @@ def test_daily_basic_default_all_fields_passthrough():
     body = s.calls[-1]["json"]["xs_lines"]
     assert body[-1] == ('return valuation.daily_basic("600519", "2026-01-01", "2026-11-16", '
                         '["pe_ttm", "pb", "ps", "pr", "total_mv", "circ_mv", '
-                        '"turnover_rate", "dv_ttm"])')
+                        '"turnover_rate", "dv_ttm", "total_share", "float_share"])')
 
 
 def test_daily_basic_fields_forms_and_dedup():

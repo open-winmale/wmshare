@@ -1,6 +1,6 @@
 {
  "schema_version": 2,
- "upstream_rev": "14956002",
+ "upstream_rev": "d3d4a88f",
  "domains": {
   "blocktrade": {
    "entry": "sys/blocktrade/init.xs",
@@ -52,6 +52,10 @@
   },
   "fx": {
    "entry": "sys/fx/init.xs",
+   "exports": []
+  },
+  "gold": {
+   "entry": "sys/gold/init.xs",
    "exports": []
   },
   "income": {
@@ -147,6 +151,7 @@
   "fred",
   "futures",
   "fx",
+  "gold",
   "indices",
   "intl",
   "kline",
@@ -160,7 +165,7 @@
   "toplist",
   "valuation"
  ],
- "function_count": 381,
+ "function_count": 384,
  "functions": [
   {
    "name": "blocktrade.by_date",
@@ -5715,6 +5720,211 @@
      "type": "string"
     }
    ]
+  },
+  {
+   "name": "gold.bars",
+   "cn": "金交所现货日线窗口",
+   "example": "gold.bars(\"Au99.99\", 5)",
+   "returns": "ARR · 现货日线行",
+   "returns_shape": {
+    "kind": "array",
+    "cn": "现货日线",
+    "items": {
+     "kind": "object",
+     "cn": "现货日线行",
+     "fields": [
+      {
+       "name": "date",
+       "type": "string",
+       "cn": "交易日 YYYY-MM-DD"
+      },
+      {
+       "name": "symbol",
+       "type": "string",
+       "cn": "品种键（含 .SGE 后缀）"
+      },
+      {
+       "name": "open",
+       "type": "float64",
+       "cn": "开（元/克）",
+       "optional": true
+      },
+      {
+       "name": "high",
+       "type": "float64",
+       "cn": "高（元/克）",
+       "optional": true
+      },
+      {
+       "name": "low",
+       "type": "float64",
+       "cn": "低（元/克）",
+       "optional": true
+      },
+      {
+       "name": "close",
+       "type": "float64",
+       "cn": "收（元/克）",
+       "optional": true
+      },
+      {
+       "name": "volume",
+       "type": "float64",
+       "cn": "成交量（千克）",
+       "optional": true
+      },
+      {
+       "name": "amount",
+       "type": "float64",
+       "cn": "成交额（元）",
+       "optional": true
+      },
+      {
+       "name": "percent",
+       "type": "float64",
+       "cn": "涨跌幅（小数，由 change1 派生）",
+       "optional": true
+      }
+     ]
+    }
+   },
+   "min_args": 1,
+   "params": [
+    {
+     "name": "code",
+     "type": "string"
+    },
+    {
+     "name": "limit",
+     "type": "int"
+    }
+   ]
+  },
+  {
+   "name": "gold.query_bars",
+   "cn": "金交所现货区间日线",
+   "example": "gold.query_bars(\"Au99.99\", \"2026-11-01\", \"2026-11-24\", 100)",
+   "returns": "ARR · 现货日线行",
+   "returns_shape": {
+    "kind": "array",
+    "cn": "现货日线",
+    "items": {
+     "kind": "object",
+     "cn": "现货日线行",
+     "fields": [
+      {
+       "name": "date",
+       "type": "string",
+       "cn": "交易日 YYYY-MM-DD"
+      },
+      {
+       "name": "symbol",
+       "type": "string",
+       "cn": "品种键（含 .SGE 后缀）"
+      },
+      {
+       "name": "open",
+       "type": "float64",
+       "cn": "开（元/克）",
+       "optional": true
+      },
+      {
+       "name": "high",
+       "type": "float64",
+       "cn": "高（元/克）",
+       "optional": true
+      },
+      {
+       "name": "low",
+       "type": "float64",
+       "cn": "低（元/克）",
+       "optional": true
+      },
+      {
+       "name": "close",
+       "type": "float64",
+       "cn": "收（元/克）",
+       "optional": true
+      },
+      {
+       "name": "volume",
+       "type": "float64",
+       "cn": "成交量（千克）",
+       "optional": true
+      },
+      {
+       "name": "amount",
+       "type": "float64",
+       "cn": "成交额（元）",
+       "optional": true
+      },
+      {
+       "name": "percent",
+       "type": "float64",
+       "cn": "涨跌幅（小数，由 change1 派生）",
+       "optional": true
+      }
+     ]
+    }
+   },
+   "min_args": 1,
+   "params": [
+    {
+     "name": "code",
+     "type": "string"
+    },
+    {
+     "name": "begin",
+     "type": "string"
+    },
+    {
+     "name": "end",
+     "type": "string"
+    },
+    {
+     "name": "limit",
+     "type": "int"
+    }
+   ]
+  },
+  {
+   "name": "gold.symbols",
+   "cn": "在库现货品种清单",
+   "example": "gold.symbols()",
+   "returns": "ARR · 品种清单",
+   "returns_shape": {
+    "kind": "array",
+    "cn": "品种清单",
+    "items": {
+     "kind": "object",
+     "cn": "现货品种",
+     "fields": [
+      {
+       "name": "code",
+       "type": "string",
+       "cn": "品种码（裸码，如 Au99.99）"
+      },
+      {
+       "name": "symbol",
+       "type": "string",
+       "cn": "品种键（含 .SGE 后缀）"
+      },
+      {
+       "name": "date",
+       "type": "string",
+       "cn": "最新交易日 YYYY-MM-DD"
+      },
+      {
+       "name": "close",
+       "type": "float64",
+       "cn": "最新收盘（元/克）",
+       "optional": true
+      }
+     ]
+    }
+   },
+   "min_args": 0,
+   "params": []
   },
   {
    "name": "income.calendar_events",

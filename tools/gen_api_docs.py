@@ -54,6 +54,7 @@ CHAPTERS: list[tuple[str, list[str]]] = [
     ("可转债", ["cbond"]),
     ("指数", ["index"]),
     ("期货", ["futures"]),  # 2.0：连续合约快照门面（$FUT_* 指标码求值封装）
+    ("金交所现货", ["gold"]),  # 3.6：SGE 现货（价=元/克、量=千克，与期货口径不同）
     ("宏观", ["macro", "fx", "us_macro"]),  # fx=人民币汇率（中间价/牌价日线）；us_macro=美国宏观序列（单位随序列而变）
     ("财务基本面", ["statements", "segments", "valuation", "estimates", "indicator"]),
     ("信息披露与公司行动", ["notice", "filings", "pdf_doc", "forecast", "dividend", "equity", "workout"]),

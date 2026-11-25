@@ -6,9 +6,9 @@ from wmshare.catalog import load
 def test_load_and_stats():
     cat = load()
     s = cat.stats()
-    assert s["domains"] == 29, s  # +market.board（板块资金流）+ market.blocktrade（大宗交易，2026-11-23）
-    assert s["functions"] == 368, s  # +概念目录1/仓单3/持仓2/结算2（2026-11-24）
-    assert s["raw"] == 264 and s["computed"] == 104, s  # 持仓/结算 4（raw +4，2026-11-24）
+    assert s["domains"] == 30, s  # +market.gold（金交所现货，2026-11-25）
+    assert s["functions"] == 371, s  # +gold 3（品种清单/日线/区间日线，2026-11-25）
+    assert s["raw"] == 267 and s["computed"] == 104, s  # +gold 3 全 raw（2026-11-25）
     assert s["metric_catalog_total"] == 2983, s
     assert s["upstream_rev"], "inventory 应锚定 upstream rev"
 
@@ -82,7 +82,8 @@ def test_namespaces_and_metrics():
             "cbond", "workout", "indices", "intl", "stocks", "macro",
             "valuation",
             "calendar", "buyback", "toplist", "futures",
-            "income", "fx", "reserve", "fred", "board", "blocktrade"} == cat.namespaces()  # 2.5 income + 3.0 fx/reserve + 3.1 fred + 3.2 board + 3.3 blocktrade
+            "income", "fx", "reserve", "fred", "board", "blocktrade",
+            "gold"} == cat.namespaces()  # 2.5 income + 3.0 fx/reserve + 3.1 fred + 3.2 board + 3.3 blocktrade + 3.6 gold
     m = cat.metric("$PE_TTM_LAST")
     assert m and m["cn"]
     assert cat.metric("$NOT_EXIST") is None
@@ -147,6 +148,6 @@ def test_catalog_shipped_inside_package():
     cdir = catmod.catalog_dir()
     assert cdir == pkg_root / "_catalog"
     assert (cdir / "schema" / "domain.schema.json").is_file()
-    assert len(list((cdir / "domains").glob("*.yaml"))) == 29  # +market.us_macro / board / blocktrade（2026-11-23）
+    assert len(list((cdir / "domains").glob("*.yaml"))) == 30  # +market.gold（2026-11-25）
     for g in ("inventory.json", "metrics.json"):
         assert (cdir / "generated" / g).is_file()
