@@ -70,7 +70,10 @@
   防复发：`daily_data_guard` 新增 `valuation_daily_mv_consistency` detector
   （行内自洽 + 跨日不冻结，近 10 交易日抽样 300 票）。
   存量修复：`pipeline.cn.valuation_daily.manual` 传 `{"repair_mv_days": 60}`
-  重写近 60 交易日整行（部署后跑一次）。
+  重写近 N 个交易日整行（2026-11-25 已执行：600519 等 10 票 × 6 交易日抽查
+  `total_mv / total_share` 与当日收盘 **diff 0.0000%**，全票 0 错值）。
+  repair 窗口中更早的历史行仍保持旧口径（诚实缺列 `total_share/float_share`），
+  市值族在窗口外不再保证行内自洽——需要用旧口径时请以 `as_of` 与 repair 窗口为准。
 - **`float_share` 与 `total_share` 相等（上游口径）**：股本变动快照披露的
   「流通股份」实测恒等于「总股份」；真实可流通口径是「无限售股份」，当前不进表。
   需要自由流通市值时暂无逐日源（`daily_basic.circ_mv` 因此等于 `total_mv`）。
