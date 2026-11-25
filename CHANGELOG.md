@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > MAJOR；弃用至少保留 1 个 MINOR，并在 `Deprecated` 段登记替代写法与移除版本。
 > 升级前请扫一眼 Removed / Changed / Deprecated 段。
 
+## [4.2.1] - 2026-11-25
+
+### Fixed
+
+- 站点接口文档生成：`kline.adj_factor` / `index.bars` 两条组合面在
+  `tools/_introspect.py::FALLBACK_RETURNS` 补返回说明（站点生成器
+  `scripts/gen-api-docs.py` 要求每个接口有返回说明与字段表，缺则拒绝生成并
+  报「返回说明与字段表双缺」）。接口行为与 4.2.0 完全一致。
+
 ## [4.2.0] - 2026-11-25
 
 ### Added
