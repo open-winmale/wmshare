@@ -822,7 +822,7 @@
           ],
           "returns": {
             "kind": "text",
-            "desc": null,
+            "desc": "DataFrame · date/factor（累计复权因子 = 后复权收盘 ÷ 不复权收盘，ipo 起算；需归一因子时除以末值）",
             "fields": []
           },
           "notes": [],
@@ -9358,7 +9358,7 @@
           ],
           "returns": {
             "kind": "text",
-            "desc": null,
+            "desc": "DataFrame · date/open/high/low/close/volume/amount/percent（SDK 聚合；date=周期内最后交易日，含未走完的当前周期）",
             "fields": []
           },
           "notes": [],

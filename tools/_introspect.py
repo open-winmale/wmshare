@@ -328,6 +328,13 @@ FALLBACK_RETURNS.update({
     ("intl", "query_profit_forecast"): "港股盈利预测（披露原文中文键：财政年度/纯利/每股盈利等）",
     ("intl", "query_sellshort"): "港美沽空（沽空量/占比，shares=股）",
     ("intl", "issue_info"): "美股发行信息快照（发行价/数量/日期，以披露源为准）",
+    # 3.6：两次取数的组合面（不新增目录函数，returns 靠本表兜底）
+    ("kline", "adj_factor"):
+        "DataFrame · date/factor（累计复权因子 = 后复权收盘 ÷ 不复权收盘，"
+        "ipo 起算；需归一因子时除以末值）",
+    ("index", "bars"):
+        "DataFrame · date/open/high/low/close/volume/amount/percent（SDK 聚合；"
+        "date=周期内最后交易日，含未走完的当前周期）",
 })
 
 

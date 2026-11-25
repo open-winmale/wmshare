@@ -324,7 +324,7 @@ cli.kline.is_etf("600519")
 
 | 方法 | 签名 | 输出 |
 |---|---|---|
-| `cli.kline.adj_factor` | `adj_factor(symbol, n=None, begin=None, end=None)` | — |
+| `cli.kline.adj_factor` | `adj_factor(symbol, n=None, begin=None, end=None)` | DataFrame · date/factor（累计复权因子 = 后复权收盘 ÷ 不复权收盘，ipo 起算；需归一因子时除以末值） |
 
 **`cli.kline.adj_factor`** — 累计复权因子（DataFrame：date/factor；factor = 后复权收盘 ÷ 不复权收盘）。
 
@@ -1896,7 +1896,7 @@ cli.index.universe_keys()
 
 | 方法 | 签名 | 输出 |
 |---|---|---|
-| `cli.index.bars` | `bars(key, freq='W', n=120, begin=None, end=None)` | — |
+| `cli.index.bars` | `bars(key, freq='W', n=120, begin=None, end=None)` | DataFrame · date/open/high/low/close/volume/amount/percent（SDK 聚合；date=周期内最后交易日，含未走完的当前周期） |
 
 **`cli.index.bars`** — 指数周/月 K 线（DataFrame：date/open/high/low/close/volume/amount/percent）。
 
