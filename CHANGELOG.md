@@ -9,6 +9,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > MAJOR；弃用至少保留 1 个 MINOR，并在 `Deprecated` 段登记替代写法与移除版本。
 > 升级前请扫一眼 Removed / Changed / Deprecated 段。
 
+## [4.2.2] - 2026-11-25
+
+### Fixed
+
+- **内部目录命名空间不再对外暴露底层函数名**。此前隐藏规则只落在文档生成器，
+  运行时完全没有过滤：内部命名空间的五个函数属性直达、`dir(cli)` 补全可见、
+  `cat.search("报表")` 首条即命中内部函数。Agent 照着检索结果调用，又撞上
+  该函数要求 `fin.*` 全名 domain，形成误导路径。现在统一由
+  `wmshare.catalog.INTERNAL_CATALOG_NS` 收口：
+  - `cat.search()` 跳过内部命名空间（MCP `wmshare_search` 随之修复）
+  - `dir(cli)` 不再列出；内部命名空间的属性直达报错并给出替代指引
+  - `cli.statements.statement` / `statement_years` / `statement_compare` /
+    `statement_tree` 四条动态透传一并关闭——它们此前会经 `_Api.__getattr__`
+    绕过 Client 层拦截，把内部函数漏回给用户
+  - MCP `wmshare_contract(kind="function")` 与
+    `wmshare://catalog/function/{name}` 资源对内部函数拒绝并给替代指引；
+    `api_routes` 的 `catalog_function` 字段对内部底层置 `null`
+  - 类型化门面不再生成内部命名空间类；`gen_llms` / `gen_api_docs` 略去整域
+    notes（此前 `llms-full.txt` 与 `docs/API.md` 会输出「domain 取值
+    fin.balance_sheet / ...」这类内部参数契约）
+  - 保留 `cli.call()` 对内部函数的底层直调（`cli.statements.audit` 依赖它）、
+    `cat.function()` 目录查询，以及 `cat.namespaces()` / `stats()` 的全量口径
+
+  对外接口 `cli.statements.balance / income / cashflow / indicators / audit`
+  行为完全一致，无需迁移。
+
+- 内部三表透视族的 `domain` 参数补齐取值说明，并给其中两个函数补上与另两个
+  一致的 enum 声明（此前四者对同一参数口径不一）。
+
 ## [4.2.1] - 2026-11-25
 
 ### Fixed
