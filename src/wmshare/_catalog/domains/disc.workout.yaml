@@ -1,0 +1,19 @@
+id: disc.workout
+version: 1.0.0
+cn: 契约套利
+kind: raw
+category: disclosure
+priority: P2
+description: 契约套利条款事件——要约收购/换股吸收合并/现金选择权等（披露原文提取），
+  提供进行中看板与单票条款查询。同业数据商暂无对应接口，属平台独有面。
+data_origin: [披露原文提取, 平台数据服务]
+units:
+  price: 元（公告对价/现价）
+requires: {path: sys/workout/init.xs, preloaded: false}
+notes:
+  - 可用性：仅 A 股（要约收购/换股/现金选择权等沪深披露）
+  - 'board() 返回 {as_of, deals, quotes} 进行中看板；query(sym) 返回单票规范化条款行'
+  - '现价 < 公告对价 的折价窗口由调用方自行判定，SDK 不内置收益测算（算法放工具仓）'
+functions:
+  - {name: workout.board, cn: 进行中契约套利看板, layer: L0}
+  - {name: workout.query, cn: 单票契约套利条款, layer: L0}

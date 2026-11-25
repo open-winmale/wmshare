@@ -1,0 +1,235 @@
+id: disc.bonus
+version: 1.3.3
+cn: 分红
+kind: raw
+category: disclosure
+priority: P0
+description: 分红历史明细（预案/实施）、每股股利、窗口合计。列表与 DPS 为披露原值；
+  股息率/派息率 TTM 快照及全市场筛选为计算派生（函数级标注性质）。
+data_origin: [公司公告披露]
+units:
+  dps: 元/股
+  total: 元（窗口合计金额）
+  window: '如 "3y" / "5y" 窗口字符串'
+  rate: 小数（0.03 = 3%）
+requires: {path: sys/bonus/init.xs, preloaded: true}
+notes:
+  - 可用性：仅 A 股（公司公告分红方案披露）
+  - '已知问题：最新年度/中期分红记录的 net_profit/payout_ratio 列可能回填滞后（暂为 0），
+    仅影响 history 明细展示；筛选/快照走 TTM 派息指标（$BONUS_TTM_RATE_LAST）不受影响。
+    screen_quality 默认「精品」窗口=股息率>3% 且派息率 30%–70%，出界判 False 属设计'
+  - '已知问题：直调 bonus.query_count_window 恒返回 0（上游 count 聚合存在缺陷）；
+    需要窗口计数用 dividend.window_stats / dividend.history 自行统计（SDK 已按除权日
+    自行计数绕开该缺陷）'
+functions:
+  - name: bonus.query_list
+    cn: 分红历史明细
+    kind: raw
+    layer: L0
+    params:
+      - {name: sym, type: string, required: true, desc: 6 位裸码}
+      - {name: limit, type: int, required: false, desc: 条数}
+    returns: {desc: 'ARR · 分红行（announce/ex_date/pay/dps/total/content/sas/payout_ratio/bonus_share/record_date）'}
+    ranges:
+      dps: [0, 500]
+      payout_ratio: [0, 20]
+      total: [0, 2.0e+12]
+      net_profit: [0, 1.0e+12]
+    example: 'bonus.query_list("600519", 20)'
+    normalize_with: bonus.fmt_maps
+    notes: [输出为规范化的扁平行（announce/ex_date/pay/dps/total/content/sas/payout_ratio/bonus_share/record_date），不再嵌套 props]
+  - name: bonus.query_last
+    cn: 最近一次分红
+    kind: raw
+    layer: L0
+    params:
+      - {name: sym, type: string, required: true}
+    returns: {desc: 分红行 MAP 或 nil}
+    example: 'bonus.query_last("600519")'
+  - name: bonus.query_at_sas
+    cn: 指定报告期分红
+    kind: raw
+    layer: L0
+    params:
+      - {name: sym, type: string, required: true}
+      - {name: sas, type: string, required: true, desc: '报告期，如 "2024-Q4"'}
+    returns: {desc: 分红行 MAP 或 nil}
+    example: 'bonus.query_at_sas("600519", "2024-Q4")'
+  - name: bonus.dps_rpt
+    cn: 财报期每股分红
+    kind: raw
+    layer: L0
+    params:
+      - {name: sym, type: string, required: true}
+    returns: {desc: float · 财报期每股分红（元/股）}
+    example: 'bonus.dps_rpt("600519")'
+  - name: bonus.dps_rpt_asof
+    cn: 财报期每股分红（截至日）
+    kind: raw
+    layer: L0
+    params:
+      - {name: rows, type: array, required: true, desc: dps_rpt 结果}
+      - {name: asof, type: string, required: true, desc: 截至日期}
+    returns: {desc: 截至日的 DPS}
+    example: 'bonus.dps_rpt_asof(rows, "2025-06-30")'
+  - name: bonus.query_dps_window
+    cn: 窗口内每股股利合计
+    kind: computed
+    layer: L0
+    params:
+      - {name: sym, type: string, required: true}
+      - {name: window, type: string, required: true, desc: 窗口（如 3y）}
+    returns: {desc: float · 元/股}
+    example: 'bonus.query_dps_window("600519", "3y")'
+  - name: bonus.query_total_window
+    cn: 窗口内总分红
+    kind: computed
+    layer: L0
+    params:
+      - {name: sym, type: string, required: true}
+      - {name: window, type: string, required: true}
+    returns: {desc: float · 元}
+    example: 'bonus.query_total_window("600519", "3y")'
+  - name: bonus.query_count_window
+    cn: 窗口内分红次数
+    kind: computed
+    layer: L0
+    params:
+      - {name: sym, type: string, required: true}
+      - {name: window, type: string, required: true}
+    returns: {desc: int}
+    example: 'bonus.query_count_window("600519", "5y")'
+    notes: ['已知问题：上游 count 聚合当前恒为 0（同窗口 sum 正常），待上游修复；SDK 的 window_stats 暂不返回该值']
+  - name: bonus.query_valid
+    cn: 有效分红序列（过滤无效行）
+    kind: raw
+    layer: L0
+    params:
+      - {name: sym, type: string, required: true}
+      - {name: limit, type: int, required: false}
+    returns: {desc: ARR · 分红行}
+    example: 'bonus.query_valid("600519", 20)'
+  - name: bonus.snapshot
+    cn: 股息快照（比率均为小数：yield_ttm=0.036 即 3.6%）
+    kind: computed
+    layer: L0
+    units: {}
+    ranges:
+      yield_ttm: [0, 0.5]
+      yield_lyr: [0, 0.5]
+      yield_3y_avg: [0, 0.5]
+      yield_3y_min: [0, 0.5]
+      payout_ttm: [0, 5]
+      pct_yield_3y: [0, 1]
+      bonus_npts_rate: [0, 1]
+      dps_ttm: [0, 200]
+      pe_ttm: [-500, 5000]
+      mv: [0, 5.0e+12]
+      bonus_ttm: [0, 1.0e+12]
+      bonus_total: [0, 2.0e+12]
+    returns:
+      desc: MAP · 股息/率快照
+      shape:
+        kind: object
+        cn: 股息快照（比率字段全部为小数，金额为元）
+        fields:
+          - {name: symbol, type: string, cn: 标的代码}
+          - {name: name, type: string, cn: 标的简称}
+          - {name: industry, type: string, cn: 行业码（如 industry.S34）}
+          - {name: quote_date, type: string, cn: 行情日期}
+          - {name: is_suspend, type: bool, cn: 是否停牌}
+          - {name: yield_ttm, type: float64, cn: TTM 股息率（小数）}
+          - {name: yield_lyr, type: float64, cn: LYR 股息率（小数）}
+          - {name: yield_3y_avg, type: float64, cn: 近 3 年股息率均值（小数）}
+          - {name: yield_3y_min, type: float64, cn: 近 3 年股息率最小值（小数）}
+          - {name: yield_3y_trend, type: string, cn: 近 3 年股息率趋势标记（如 valley）}
+          - {name: pct_yield_3y, type: float64, cn: 股息率 3 年分位比例（小数，0~1）}
+          - {name: payout_ttm, type: float64, cn: TTM 分红率（小数）}
+          - {name: dps_ttm, type: float64, cn: TTM 每股分红（元）}
+          - {name: pe_ttm, type: float64, cn: TTM 市盈率（倍）}
+          - {name: mv, type: float64, cn: 总市值（元）}
+          - {name: bonus_ttm, type: float64, cn: TTM 分红总额（元）}
+          - {name: bonus_total, type: float64, cn: 上市以来分红总额（元）}
+          - {name: bonus_3y_trend, type: string, cn: 3 年分红趋势标记}
+          - {name: bonus_npts_rate, type: float64, cn: 分红分位比例（小数，0~1）}
+    example: 'bonus.snapshot("600519")'
+  - name: bonus.snapshot_yield_ttm
+    cn: LTM 股息率
+    kind: computed
+    layer: L0
+    params:
+      - {name: sym, type: string, required: true}
+    returns: {desc: 'float · 小数（0.0396 = 3.96%）'}
+    example: 'bonus.snapshot_yield_ttm("600519")'
+    notes: [股息率 = TTM 分红总额 / 最新市值；数值为小数口径]
+  - name: bonus.snapshot_payout_ttm
+    cn: TTM 派息率
+    kind: computed
+    layer: L0
+    params:
+      - {name: sym, type: string, required: true}
+    returns: {desc: 'float · 小数（0.799 = 79.9%）'}
+    example: 'bonus.snapshot_payout_ttm("600519")'
+    notes: [派息率 = TTM 分红 / 归母净利 TTM；数值为小数口径]
+  # ---- L1：单票质量筛选（computed）----
+  - {name: bonus.screen_active, cn: 近年有分红, kind: computed, layer: L1}
+  - {name: bonus.screen_has_dividend, cn: 有分红记录, kind: computed, layer: L1}
+  - {name: bonus.screen_high_yield, cn: 高股息, kind: computed, layer: L1}
+  - {name: bonus.screen_ample_payout, cn: 慷慨派息, kind: computed, layer: L1}
+  - {name: bonus.screen_danger_payout, cn: 派息不可持续, kind: computed, layer: L1}
+  - {name: bonus.screen_quality, cn: 分红质量优, kind: computed, layer: L1}
+  - {name: bonus.screen_stable_yield, cn: 股息稳定, kind: computed, layer: L1}
+  - {name: bonus.screen_improving_yield, cn: 股息改善, kind: computed, layer: L1}
+  - {name: bonus.screen_trend_ok, cn: 分红趋势健康, kind: computed, layer: L1}
+  - {name: bonus.screen_declining_yield, cn: 股息下滑, kind: computed, layer: L1}
+  - {name: bonus.screen_undervalued_yield, cn: 低估+高股息, kind: computed, layer: L1}
+  # ---- L1：全市场筛选积木（computed，内部用途）----
+  - {name: bonus.index_where_active, cn: where·有分红, kind: computed, layer: L1}
+  - {name: bonus.index_where_no_dividend, cn: where·无分红, kind: computed, layer: L1}
+  - {name: bonus.index_where_has_dividend, cn: where·有记录, kind: computed, layer: L1}
+  - {name: bonus.index_where_high_yield, cn: where·高股息, kind: computed, layer: L1}
+  - {name: bonus.index_where_high_yield_5, cn: where·连续5年高股息, kind: computed, layer: L1}
+  - {name: bonus.index_where_ample_payout, cn: where·慷慨派息, kind: computed, layer: L1}
+  - {name: bonus.index_where_danger_payout, cn: where·派息危险, kind: computed, layer: L1}
+  - {name: bonus.index_where_quality, cn: where·质量, kind: computed, layer: L1}
+  - {name: bonus.index_where_stable, cn: where·稳定, kind: computed, layer: L1}
+  - {name: bonus.index_where_improving, cn: where·改善, kind: computed, layer: L1}
+  - {name: bonus.index_where_declining, cn: where·下滑, kind: computed, layer: L1}
+  - {name: bonus.index_where_trend_up, cn: where·趋势向上, kind: computed, layer: L1}
+  - {name: bonus.index_where_undervalued, cn: where·低估, kind: computed, layer: L1}
+  - {name: bonus.index_yield_bin_expr, cn: 股息率分桶 where 表达式, kind: computed, layer: L1}
+  - {name: bonus.index_field_load, cn: 分红索引字段预加载, kind: computed, layer: L1}
+  - {name: bonus.index_field_load_analysis, cn: 分红分析字段预加载, kind: computed, layer: L1}
+  - {name: bonus.index_fields_basic, cn: 分红基础字段列表, kind: computed, layer: L1}
+  - {name: bonus.index_fields_analysis, cn: 分红分析字段列表, kind: computed, layer: L1}
+  # ---- L1：格式化（raw 传递）----
+  - name: bonus.fmt_maps
+    internal: true
+    cn: 分红行规范化
+    kind: raw
+    layer: L1
+    returns:
+      desc: ARR · 规范化分红行
+      shape:
+        kind: array
+        cn: 规范化分红行列表
+        items:
+          kind: object
+          cn: 分红行
+          fields:
+            - {name: sas, type: string, cn: SAS, optional: true}
+            - {name: ex_date, type: string, cn: 除权日, optional: true}
+            - {name: ex_div, type: string, cn: 除权除息日, optional: true}
+            - {name: dps, type: float64, cn: 每股股利, optional: true}
+            - {name: total, type: float64, cn: 分红总额, optional: true}
+            - {name: ccy, type: string, cn: 货币, optional: true}
+            - {name: announce, type: string, cn: 公告日, optional: true}
+            - {name: pay, type: string, cn: 派息日, optional: true}
+            - {name: content, type: string, cn: 方案摘要, optional: true}
+            - {name: net_profit, type: float64, cn: 归母净利润, optional: true}
+            - {name: payout_ratio, type: float64, cn: 派息率, optional: true}
+            - {name: bonus_share, type: float64, cn: 每股送股数（0=无，转增未暴露）, optional: true}
+            - {name: record_date, type: string, cn: 股权登记日, optional: true}
+  - {name: bonus.fmt_lines, cn: 分红文本行, kind: raw, layer: L1, internal: true}
+  - {name: bonus.fmt_line, cn: 单条分红文本, kind: raw, layer: L1, internal: true}
+  - {name: bonus.fmt_snapshot_line, cn: 股息快照一行文本, kind: raw, layer: L1, internal: true}

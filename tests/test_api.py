@@ -1,0 +1,536 @@
+"""友好 API 层测试：注册表同步、命名统一、调用翻译（mock 传输，不联网）。"""
+import inspect
+
+import pytest
+import pandas as pd
+
+from wmshare.api import FRIENDLY_INDEX, FRIENDLY_NAMESPACES
+from wmshare.catalog import load
+from wmshare.client import Client, WmshareError
+from wmshare.errors import UsageError
+
+
+class FakeSession:
+    def __init__(self):
+        self.calls = []
+        self.token_count = 0
+        self.eval_result = {"ok": True}
+
+    def post(self, url, json=None, data=None, headers=None, timeout=None):
+        self.calls.append({"url": url, "json": json})
+        class R:
+            status_code = 200
+            text = "{}"
+            def raise_for_status(self):
+                pass
+            def json(self):
+                if url.endswith("/v1/oauth/token"):
+                    self._cls.token_count += 1
+                    return {"data": {"access_token": "tok-1", "expires_in": 3600}}
+                return {"success": True, "data": {"result": self._cls.eval_result}}
+        R._cls = self
+        return R()
+
+
+@pytest.fixture()
+def cli():
+    return Client(base_url="https://t.example", client_id="i", client_secret="s",
+                  catalog=load(), session=FakeSession())
+
+
+def last_xs(c: Client) -> list[str]:
+    return [x for x in c.session.calls if x["url"].endswith("/xs/eval")][-1]["json"]["xs_lines"]
+
+
+def test_registry_in_sync_with_classes():
+    # 注册表每条都能解析到真实方法
+    for _, ns, method, cn, _u in FRIENDLY_INDEX:
+        assert ns in FRIENDLY_NAMESPACES, ns
+        assert hasattr(FRIENDLY_NAMESPACES[ns], method), f"{ns}.{method}"
+        assert cn
+    # 每个公开方法都在注册表中（防漏文档）；组合接口单列 COMPOSITE_METHODS
+    from wmshare.api import COMPOSITE_METHODS
+
+    indexed = {(ns, m) for _, ns, m, _, _ in FRIENDLY_INDEX}
+    composite = {(ns, m) for ns, names in COMPOSITE_METHODS.items() for m in names}
+    for ns, cls in FRIENDLY_NAMESPACES.items():
+        for name, member in inspect.getmembers(cls):
+            if name.startswith("_") or not inspect.isfunction(member):
+                continue
+            assert (ns, name) in indexed or (ns, name) in composite, \
+                f"方法 {ns}.{name} 未登记 FRIENDLY_INDEX 或 COMPOSITE_METHODS"
+    # 反向：登记的组合接口必须真实存在，防止改名后残留
+    for ns, name in composite:
+        assert hasattr(FRIENDLY_NAMESPACES[ns], name), f"{ns}.{name} 不存在"
+
+
+def test_symbol_param_uniform():
+    """命名统一性：凡按标的查询的方法，首参必须是 symbol（全市场类方法可无 symbol）。"""
+    for ns, cls in FRIENDLY_NAMESPACES.items():
+        for name, member in inspect.getmembers(cls, inspect.isfunction):
+            if name.startswith("_"):
+                continue
+            params = list(inspect.signature(member).parameters)
+            if "symbol" in params:
+                assert params[1] == "symbol", \
+                    f"{ns}.{name} 含 symbol 但非首参：{params}"
+
+
+def test_kline_bars_dispatch(cli):
+    cli.kline.bars("600519", n=5)
+    assert last_xs(cli) == ['__r := kline.query_bars("600519", 5)',
+                            'return kline.fmt_maps(__r)']
+    cli.kline.bars("600519", n=5, adj="qfq", _raw=True)
+    assert last_xs(cli) == ['return kline.query_bars_adj("600519", 5, "qfq")']
+    # 复权序列也走规范化（输出字段与不复权一致）
+    cli.kline.bars("600519", n=5, adj="qfq")
+    assert last_xs(cli) == ['__r := kline.query_bars_adj("600519", 5, "qfq")',
+                            'return kline.fmt_maps(__r)']
+
+
+def test_kline_bars_period_dispatch(cli):
+    """freq 分发：D 走日 K 原函数；W/M 走周期函数；非法值抛 UsageError。"""
+    cli.kline.bars("AAPL", n=5, freq="W")
+    assert last_xs(cli) == ['__r := kline.query_bars_period("AAPL", 5, "W")',
+                            'return kline.fmt_maps(__r)']
+    cli.kline.bars("AAPL", n=5, freq="monthly", adj="qfq")
+    assert last_xs(cli) == [
+        '__r := kline.query_bars_period_adj("AAPL", 5, "M", "qfq")',
+        'return kline.fmt_maps(__r)']
+    # D/None 保持原路径（回归：不因新参数改变既有生成行）
+    for freq in (None, "D", "daily", ""):
+        cli.kline.bars("600519", n=5, freq=freq)
+        assert last_xs(cli) == ['__r := kline.query_bars("600519", 5)',
+                                'return kline.fmt_maps(__r)']
+    with pytest.raises(WmshareError):
+        cli.kline.bars("600519", n=5, freq="Q")
+    # 区间 + 周频：单次请求 limit=max_limit（W/M 无锚点变体，覆盖守护兜底）
+    cli.session.eval_result = [{"date": "2026-11-06", "close": 342.37}]
+    bars = cli.kline.bars("AAPL", freq="W", begin="2026-01-01", end="2026-11-30")
+    assert last_xs(cli) == ['__r := kline.query_bars_period("AAPL", 500, "W")',
+                            'return kline.fmt_maps(__r)']
+    assert isinstance(bars, pd.DataFrame) and list(bars["date"]) == ["2026-11-06"]
+
+
+def test_last_returns_normalized_latest_row(cli):
+    # last() 取 store.latest 的单行原始记录（非数组），由 SDK 收口成 bars() 同款 9 字段
+    raw = {"annual": 2026, "sampling": "D294", "samplingTs": 1792512000,
+           "open": 1300.0, "high": 1320.0, "low": 1290.0, "close": 1309.69,
+           "volume": 30000, "amount": 3929070000.0, "percent": 1.234}
+    cli.session.eval_result = dict(raw)
+    bar = cli.kline.last("600519")
+    assert bar["date"] == "2026-10-21" and bar["close"] == 1309.69
+    assert bar["sas"] == "2026:D294"
+    assert bar["percent"] == pytest.approx(0.01234)
+    assert bar["volume"] == 3000000.0
+    assert last_xs(cli) == ['return kline.query_last("600519")']
+    cli.session.eval_result = [{"date": "2026-10-21", "net_mf": -161756700}]
+    assert cli.moneyflow.last("600519") == {"date": "2026-10-21", "net_mf": -161756700}
+    cli.session.eval_result = []
+    assert cli.kline.last("600519") is None
+
+
+def test_statements_translation(cli):
+    """statements 门面走 eval_result（内置读取脚本，专业版同款窗口读取）。"""
+    cli.statements.income("600519", years=3)
+    xs = last_xs(cli)
+    body = " ".join(xs)
+    assert 'store.query("fin.income"' in body
+    assert 'sym := "600519"' in body
+    # period 二档：annual 与 quarter 的档位过滤字面量不同
+    cli.statements.income("600519", years=2, period="annual")
+    assert 'IF("annual" == "annual"' in " ".join(last_xs(cli))
+    cli.statements.income("600519", years=2, period="quarter")
+    assert 'IF("quarter" == "annual"' in " ".join(last_xs(cli))
+    cli.statements.balance("00700", period="quarter")
+    body_b = " ".join(last_xs(cli))
+    assert 'store.query("fin.balance"' in body_b
+    with pytest.raises(UsageError, match="period"):
+        cli.statements.income("600519", period="Q2")
+    with pytest.raises(UsageError, match="years"):
+        cli.statements.income("600519", years=13)
+
+
+
+def test_notice_and_dividend(cli):
+    cli.notice.list("600519", window="3m", keyword="回购", limit=5)
+    assert last_xs(cli) == ['__r := notice.query_by_symbol("600519", "90", "回购", 5)',
+                            'return notice.fmt_maps(__r)']
+    cli.notice.list("600519", window="3m", keyword="回购", limit=5, _raw=True)
+    assert last_xs(cli) == ['return notice.query_by_symbol("600519", "90", "回购", 5)']
+    cli.notice.find("600519", "2026-01-01", "2026-03-31", keyword="回购", limit=10)
+    assert last_xs(cli) == ['__r := notice.query_find("2026-01-01", "2026-03-31", "回购", "600519", 10)',
+                            'return notice.fmt_maps(__r)']
+    # market 缺省不上送（行为与 1.20.5 字节一致）；显式 "hk" 才上送
+    cli.notice.recent(window="7d", market="hk")
+    assert last_xs(cli) == ['__r := notice.query_recent("7", "", 50, "hk")',
+                            'return notice.fmt_maps(__r)']
+    cli.dividend.yield_ttm("600519")
+    assert last_xs(cli) == ['return bonus.snapshot_yield_ttm("600519")']
+
+
+def test_notice_window_rejects_unknown_token(cli):
+    from wmshare import UsageError
+    with pytest.raises(UsageError, match="未知窗口"):
+        cli.notice.list("600519", window="2w")
+    with pytest.raises(UsageError, match="未知窗口"):
+        cli.notice.recent(window="2w")
+    with pytest.raises(UsageError, match="未知窗口"):
+        cli.notice.by_category("回购", window="2w")
+
+
+def test_dividend_last_returns_normalized_latest_row(cli):
+    cli.session.eval_result = [{"announce": "2026-06-22", "ex_div": "2026-06-26",
+                                "dps": 28.02}]
+    assert cli.dividend.last("600519") == cli.session.eval_result[0]
+    assert last_xs(cli) == ['__r := bonus.query_list("600519", 1)',
+                            'return bonus.fmt_maps(__r)']
+    cli.session.eval_result = []
+    assert cli.dividend.last("600519") is None
+
+
+def test_dynamic_facade_accepts_positional_args(cli):
+    cli.kline.screen_above_ma20("600519")
+    assert last_xs(cli) == ['return kline.screen_above_ma20("600519")']
+    cli.dividend.query_dps_window("600519", "3y")
+    assert last_xs(cli) == ['return bonus.query_dps_window("600519", "3y")']
+    with pytest.raises(WmshareError, match="同时以位置和关键字"):
+        cli.kline.screen_above_ma20("600519", sym="600519")
+    with pytest.raises(WmshareError, match="最多接受"):
+        cli.kline.screen_above_ma20("600519", "extra")
+
+
+def test_notice_find_normalizes_stock_code(cli):
+    cli.notice.find("sh.600519.SH", "2026-01-01", "2026-01-31")
+    assert last_xs(cli)[0] == ('__r := notice.query_find("2026-01-01", "2026-01-31", '
+                               '"", "600519", 50)')
+
+
+def test_raw_plus_date_range_is_rejected(cli):
+    from wmshare import UsageError
+    with pytest.raises(UsageError, match="_raw=True"):
+        cli.kline.bars("600519", begin="2026-01-01", end="2026-01-31", _raw=True)
+    with pytest.raises(UsageError, match="_raw=True"):
+        cli.moneyflow.bars("600519", begin="2026-01-01", end="2026-01-31", _raw=True)
+
+
+def test_close_respects_injected_session():
+    class S:
+        closed = False
+        def close(self):
+            self.closed = True
+    s = S()
+    c = Client(base_url="https://t.example", client_id="i", client_secret="s",
+               catalog=load(), session=s)
+    c.close()
+    assert s.closed is False
+    owned = Client(base_url="https://t.example", client_id="i", client_secret="s",
+                   catalog=load())
+    owned.session.close = lambda: None
+    owned.close()  # 自建 session 应可关闭且不抛错
+
+
+def test_indicator_anti_fabrication(cli):
+    with pytest.raises(KeyError, match="未知指标"):
+        cli.indicator.get("600519", "$NOT_EXIST")
+    cli.indicator.get("600519", "$PE_TTM_LAST")
+    assert last_xs(cli) == ["return $PE_TTM_LAST"]
+    cli.indicator.metrics("600519", ["$PE_TTM_LAST", "$ROE_TTM_LAST"])
+    assert last_xs(cli) == ["return {\"$PE_TTM_LAST\": $PE_TTM_LAST, \"$ROE_TTM_LAST\": $ROE_TTM_LAST}"]
+
+
+def test_info_profile(cli):
+    cli.info.profile("600519")  # 2.0 扩列：10 字段档案摘要
+    assert last_xs(cli) == ['return {"name": $NAME, "full_name": $ORG_FULLNAME, '
+                            '"name_en": $NAMEEN, "industry_l1": $INDUSTRY_CUR_1, '
+                            '"industry": $INDUSTRY_CUR, "style_industry": $STYLE_INDUSTRY, '
+                            '"org_type": $ORG_ORGTYPE, "listing_date": $ORG_LISTINGDATE, '
+                            '"listing_board": $LISTING_BOARD, '
+                            '"business_scope": $ORG_BUSINESSSCOPE}']
+
+
+def test_unknown_param_still_guards(cli):
+    # 友好层为强类型签名：越权参数在 Python 层即被拒
+    with pytest.raises(TypeError):
+        cli.kline.bars("600519", bogus=1)
+    # 通用 call() 层同守
+    from wmshare.client import WmshareError
+    with pytest.raises(WmshareError, match="未知参数"):
+        cli.call("kline.query_bars", sym="600519", bogus=1)
+
+
+def test_getattr_delegates_catalog_functions(cli):
+    """__getattr__ 兜底：友好类未显式包装的目录函数经属性直达，零遮蔽。"""
+    # kline 命名空间的筛选器（未显式包装）可直达
+    cli.kline.screen_above_ma20(sym="600519")
+    assert last_xs(cli) == ['return kline.screen_above_ma20("600519")']
+    # dividend 命名空间映射到目录 bonus 命名空间，窗口函数同理
+    cli.dividend.query_dps_window(sym="600519", window="3y")
+    assert last_xs(cli) == ['return bonus.query_dps_window("600519", "3y")']
+    # 委托函数带可读名（便于调试与 repr）
+    fn = cli.kline.screen_above_ma20
+    assert fn.__name__ == "screen_above_ma20"
+    assert fn.__qualname__ == "KlineApi.screen_above_ma20"
+
+
+def test_getattr_rejects_non_catalog_names(cli):
+    """目录之外的名字显式 AttributeError，且提示可发现性入口。"""
+    with pytest.raises(AttributeError, match="cat.search"):
+        cli.kline.no_such_fn
+    # 双下划线永不委托（不干扰 pickle/copy 等协议探测）
+    with pytest.raises(AttributeError):
+        cli.kline.__deepcopy__
+
+
+def test_dividend_screeners_promoted(cli):
+    """杀手锏筛选器提为显式方法，可经 cli.dividend.screen_* 调用。"""
+    cli.dividend.screen_quality("600519", min_yield=0.03, payout_max=1.0)
+    # payout_min 未传 → 补 nil 保位（调用字面量按位置绑定，跳洞会把 1.0 错绑进 payout_min）
+    assert last_xs(cli) == ['return bonus.screen_quality("600519", 0.03, nil, 1.0)']
+    cli.dividend.screen_high_yield("600519")
+    assert last_xs(cli) == ['return bonus.screen_high_yield("600519")']
+    cli.dividend.screen_undervalued_yield("600519", min_yield=0.04)
+    assert last_xs(cli) == ['return bonus.screen_undervalued_yield("600519", 0.04)']
+
+
+def test_screener_translation(cli):
+    """选股门面：单票筛选器直译目录合同；宽度接口默认由服务端解析最新查询索引。"""
+    cli.screener.screen_limit_up("600519")
+    assert last_xs(cli) == ['return kline.screen_limit_up("600519")']
+    cli.screener.screen_momentum_20d("600519", min_chg=0.15)
+    assert last_xs(cli) == ['return kline.screen_momentum_20d("600519", 0.15)']
+    cli.screener.screen_volume_spike("600519")
+    assert last_xs(cli) == ['return kline.screen_volume_spike("600519", 1.5)']
+    cli.screener.index_breadth_summary()
+    assert last_xs(cli) == ['return kline.index_breadth_summary(LatestIndexKey())']
+    cli.screener.index_top_movers(limit=10, desc=False)
+    assert last_xs(cli) == ['return kline.index_top_movers(LatestIndexKey(), 10, false)']
+    # 其余 kline 目录筛选器经属性直达（委托），零遮蔽
+    cli.screener.screen_above_ma120("600519")
+    assert last_xs(cli) == ['return kline.screen_above_ma120("600519")']
+    with pytest.raises(AttributeError, match="cat.search"):
+        cli.screener.no_such_fn
+
+
+def test_screener_top_movers_limit_clamped(cli):
+    """eval 拼脚本路径同样受 max_limit/10000 防脱库钳制（不发请求直接拒绝）。"""
+    from wmshare import LimitError
+    with pytest.raises(LimitError, match="超过单次上限"):
+        cli.screener.index_top_movers(limit=20000)
+    cli.screener.index_top_movers(limit=10)
+    assert last_xs(cli) == ['return kline.index_top_movers(LatestIndexKey(), 10, true)']
+
+
+def test_screener_query_builds_index_spec(cli):
+    """全市场条件选股：一条 XS 出 count + 前 N 行（服务端索引，不是逐票 eval）。"""
+    pd = pytest.importorskip("pandas")
+    cli.session.eval_result = {"count": 108,
+                               "rows": [["900948", "伊泰B股", 0.2104, 0.1631, False]]}
+    res = cli.screener.query(
+        "$BONUS_RATE_3Y_AVG_LAST > 0.03 && $ROE_TTM_LAST > 0.15 && !$IS_ST",
+        order="$BONUS_RATE_3Y_AVG_LAST", limit=10)
+    xs = last_xs(cli)
+    assert xs[0] == "idx := LatestIndexKey()"
+    assert xs[1].startswith("_ := INDEX_FIELD_LOAD(idx, ") and "$IS_ST" in xs[1]
+    assert ('"where": "$BONUS_RATE_3Y_AVG_LAST > 0.03 && $ROE_TTM_LAST > 0.15 && !$IS_ST"'
+            in xs[2])
+    assert xs[2].endswith('"result": "row_ids"})')
+    assert ('"order": "$BONUS_RATE_3Y_AVG_LAST", "order_desc": true, "limit": 10, '
+            '"offset": 0') in xs[3]
+    assert xs[4].startswith("return") and "LEN(ids)" in xs[4]
+    # 2.0 统一信封：count/rows 进 data；rows 为 DataFrame（行键 = symbol/name + 指标码原文）
+    assert res["ok"] is True and res["data"]["count"] == 108
+    rows = res["data"]["rows"]
+    assert isinstance(rows, pd.DataFrame)
+    assert rows.iloc[0].to_dict() == {"symbol": "900948", "name": "伊泰B股",
+                                      "$BONUS_RATE_3Y_AVG_LAST": 0.2104,
+                                      "$ROE_TTM_LAST": 0.1631, "$IS_ST": False}
+
+
+def test_screener_query_fields_and_count_only(cli):
+    """fields 覆盖默认列集合；limit=0 只查 count（不再写第二条索引查询）。"""
+    cli.session.eval_result = {"count": 0, "rows": []}
+    cli.screener.query("$ROE_TTM_LAST > 0.3", fields=["$PE_TTM_LAST"])
+    xs = last_xs(cli)
+    assert xs[1] == "_ := INDEX_FIELD_LOAD(idx, $SYMBOL, $NAME, $PE_TTM_LAST)"
+    assert '"order"' not in xs[3]          # 未传 order 不生成 order 键
+    cli.session.eval_result = {"count": 164, "rows": []}
+    res0 = cli.screener.query("$ROE_TTM_LAST > 0.3", limit=0)
+    assert res0["data"]["count"] == 164  # 信封 + 空 DataFrame
+    assert isinstance(res0["data"]["rows"], pd.DataFrame) and res0["data"]["rows"].empty
+    xs = last_xs(cli)
+    assert len([ln for ln in xs if "INDEX_QUERY_SPEC" in ln]) == 1
+    assert xs[-1] == 'return {"count": LEN(ids), "rows": []}'
+
+
+def test_screener_query_validates(cli):
+    """where/order/fields 的指标码走目录白名单；Python 式布尔词直接报 XS 语法。"""
+    from wmshare import CatalogError, UsageError
+    with pytest.raises(CatalogError, match="防编造"):
+        cli.screener.query("$NOT_A_CODE > 1")
+    with pytest.raises(UsageError, match="XS 表达式"):
+        cli.screener.query("$ROE_TTM_LAST > 0.15 and 1")
+    with pytest.raises(UsageError, match=r"没有 \$指标码"):
+        cli.screener.query("ROE_TTM_LAST > 0.15")
+    with pytest.raises(UsageError, match="order 必须是单个指标码"):
+        cli.screener.query("$ROE_TTM_LAST > 0.15", order="roe")
+    with pytest.raises(CatalogError, match="防编造"):
+        cli.screener.query("$ROE_TTM_LAST > 0.15", fields=["$PE_NO_SUCH_LAST"])
+    with pytest.raises(UsageError, match="idx 只接受索引键"):
+        cli.screener.query("$ROE_TTM_LAST > 0.15", idx='index.cnall" }')
+
+
+def test_screener_query_limit_df_and_passthrough(cli):
+    """limit 受 max_limit 钳制；rows 默认 DataFrame（2.0 信封）；非 MAP 原样透传。"""
+    from wmshare import LimitError
+    with pytest.raises(LimitError, match="超过单次上限"):
+        cli.screener.query("$ROE_TTM_LAST > 0.15", limit=20000)
+    pd = pytest.importorskip("pandas")
+    cli.session.eval_result = {"count": 1, "rows": [["600519", "贵州茅台", 0.33]]}
+    res = cli.screener.query("$ROE_TTM_LAST > 0.3")
+    assert isinstance(res["data"]["rows"], pd.DataFrame)
+    assert list(res["data"]["rows"].columns) == ["symbol", "name", "$ROE_TTM_LAST"]
+    cli.session.eval_result = [{"ok": True}]
+    assert cli.screener.query("$ROE_TTM_LAST > 0.3") == [{"ok": True}]  # 异常形态透传
+
+
+def test_screener_breadth_supports_df(cli):
+    """2.0：宽度接口默认 DataFrame，且 pct_of_total 百分数已统一换算为小数。"""
+    pd = pytest.importorskip("pandas")
+    cli.session.eval_result = [{"label": "i_涨停", "count": 109, "pct_of_total": 1.9}]
+    df = cli.screener.index_breadth_bins()
+    assert isinstance(df, pd.DataFrame)
+    assert list(df.columns) == ["label", "count", "pct_of_total"]
+    assert df.iloc[0]["label"] == "涨停"   # 服务端排序前缀在展示层剥除
+    assert float(df.iloc[0]["pct_of_total"]) == pytest.approx(0.019)  # 1.9% → 小数
+
+
+def test_screener_bins_label_prefix_stripped(cli):
+    """分桶 label/bin 的服务端排序前缀（i_/h_/g_）对用户是噪音，友好层剥除（2026-10-30 实测）。"""
+    cli.session.eval_result = [
+        {"label": "i_涨停", "count": 32, "pct_of_total": 0.6},
+        {"label": "h_+5%~10%", "count": 113, "pct_of_total": 2.0},
+    ]
+    rows = cli.screener.index_breadth_bins()
+    assert list(rows["label"]) == ["涨停", "+5%~10%"]
+    cli.session.eval_result = [{"bin": "g_+3%~5%", "industry": "银行", "count": 4}]
+    rows = cli.screener.index_breadth_bin_industries()
+    assert rows.iloc[0]["bin"] == "+3%~5%"
+    # 非标行进 DataFrame 不误伤（str 行按 pandas 语义落 NaN，剥离仍只作用于 dict 行）
+    cli.session.eval_result = [{"label": "涨停"}, {"x": 1}]
+    rows = cli.screener.index_breadth_bins()
+    assert rows.iloc[0]["label"] == "涨停" and rows.iloc[1]["x"] == 1
+
+
+# ---------------------------------------------------------------------------
+# 2.x：_fields 列投影（客户端选项；在换算/排序之后收窄返回体，不降 EC）
+# ---------------------------------------------------------------------------
+
+
+def test_call_fields_projects_rows_in_request_order(cli):
+    cli.session.eval_result = [
+        {"date": "2026-11-17", "close": 10.0, "extra": 1},
+        {"date": "2026-11-16", "close": 9.8, "extra": 2},
+    ]
+    rows = cli.call("kline.query_bars", sym="600519", limit=2,
+                    _fields=["close", "date"])
+    assert rows == [{"close": 10.0, "date": "2026-11-17"},
+                    {"close": 9.8, "date": "2026-11-16"}]
+    # 逗号串等价
+    rows = cli.call("kline.query_bars", sym="600519", limit=2, _fields="date")
+    assert rows == [{"date": "2026-11-17"}, {"date": "2026-11-16"}]
+
+
+def test_call_fields_projects_mapping(cli):
+    cli.session.eval_result = {"symbol": "600519", "close": 10.0, "ma20": 9.9}
+    assert cli.call("kline.snapshot", sym="600519", _fields=["ma20"]) == {"ma20": 9.9}
+
+
+def test_call_fields_unknown_field_raises(cli):
+    cli.session.eval_result = [{"date": "2026-11-17", "close": 10.0}]
+    with pytest.raises(UsageError) as ei:
+        cli.call("kline.query_bars", sym="600519", _fields=["nope"])
+    assert ei.value.code == "params"
+    assert "可用字段" in str(ei.value)
+
+
+def test_call_fields_rejects_scalar_result(cli):
+    cli.session.eval_result = 3.14
+    with pytest.raises(UsageError) as ei:
+        cli.call("kline.query_bars", sym="600519", _fields=["close"])
+    assert ei.value.code == "params"
+
+
+def test_call_fields_empty_rows_returns_empty(cli):
+    cli.session.eval_result = []
+    assert cli.call("kline.query_bars", sym="600519", _fields=["date"]) == []
+
+
+def test_call_fields_invalid_type_raises_before_request(cli):
+    with pytest.raises(UsageError) as ei:
+        cli.call("kline.query_bars", sym="600519", _fields={"date": 1})
+    assert ei.value.code == "params"
+    assert not cli.session.calls  # 早失败：未发请求
+
+
+def test_call_batch_fields_projects_each_symbol(cli):
+    cli.session.eval_result = {
+        "600519": [{"date": "2026-11-17", "close": 10.0, "volume": 1}],
+        "000001": [{"date": "2026-11-17", "close": 8.0, "volume": 2}],
+    }
+    res = cli.call_batch("kline.query_bars", ["600519", "000001"],
+                         _fields=["date", "close"])
+    assert res.results == {
+        "600519": [{"date": "2026-11-17", "close": 10.0}],
+        "000001": [{"date": "2026-11-17", "close": 8.0}],
+    }
+    assert res.truncated is False
+
+
+def test_batch_all_aggregates_truncated(cli, monkeypatch):
+    from wmshare.client import BatchResult
+
+    def fake_iter(*_a, **_k):
+        yield BatchResult(results={"600519": {"close": 10.0}}, requested=2,
+                          truncated=False)
+        yield BatchResult(results={"000001": {"close": 8.0}}, requested=2,
+                          truncated=True)
+
+    monkeypatch.setattr(cli, "batch_iter", fake_iter)
+    out = cli.batch_all("kline.query_bars", ["600519", "000001"])
+    assert out.truncated is True
+    assert set(out.results) == {"600519", "000001"}
+
+
+def test_cost_estimate_accepts_facade_symbol_list():
+    """门面参数名 `symbol=[...]` 也要被批量模型识别（否则按单票 1 万 EC 低估）。"""
+    from wmshare.client import estimate_cost
+
+    est = estimate_cost("kline.snapshot", {"symbol": ["600519", "000001", "510300"]})
+    assert est["model"] == "batch_per_symbol"
+    assert est["ec_hi"] < 1_000
+
+
+def test_index_members_history_builds_members_daily_eval(cli):
+    """成分日快照（前向 PIT）：key/begin/end 直拼 indices.members_daily 求值。"""
+    cli.session.eval_result = {
+        "ok": True, "as_of": "2026-11-19", "data": [], "meta": {"key": "hs300"},
+    }
+    out = cli.index.members_history("index.hs300", begin="2026-11-01")
+    assert last_xs(cli) == ['return indices.members_daily("index.hs300", "2026-11-01", "")']
+    assert out["ok"] is True
+    # 裸键与全键等价（归一在服务端 members_key_normalize）
+    cli.index.members_history("hs300")
+    assert last_xs(cli) == ['return indices.members_daily("hs300", "", "")']
+
+
+def test_index_members_history_empty_key_raises(cli):
+    with pytest.raises(UsageError):
+        cli.index.members_history("")
+
+
+def test_index_members_history_non_map_upstream_degrades_loud(cli):
+    """上游返回非 MAP → 信封 ok=False（不抛、不冒充空表成功）。"""
+    cli.session.eval_result = ["not", "a", "map"]
+    out = cli.index.members_history("index.hs300")
+    assert out["ok"] is False and out["data"] == []

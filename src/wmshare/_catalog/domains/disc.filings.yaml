@@ -1,0 +1,40 @@
+id: disc.filings
+version: 1.0.0
+cn: 定期报告清单
+kind: raw
+category: disclosure
+priority: P0
+description: 年报/半年报/季报清单（报告期、标题、PDF 链接）。与 fund.statements
+  （结构化数字）分工：清单与原文链接走本域，结构化科目数字走三表。
+data_origin: [交易所披露]
+units:
+  date: YYYY-MM-DD
+requires: {path: sys/filings/init.xs, preloaded: true}
+notes:
+  - 可用性：仅 A 股（交易所定期报告披露）
+  - 'type_key 取值：all | annual(年报) | semi(半年报) | quarter(季报)'
+functions:
+  - name: filings.query
+    cn: 定期报告列表
+    kind: raw
+    layer: L0
+    params:
+      - {name: sym, type: string, required: true, desc: 6 位裸码}
+      - {name: type_key, type: string, required: false, default: all, enum: [all, annual, semi, quarter]}
+      - {name: limit, type: int, required: false}
+    returns: {desc: ARR · 报告行（报告期/类型/标题/PDF 链接）}
+    example: 'filings.query("600519", "annual", 5)'
+  - name: filings.latest
+    cn: 最新一条定期报告
+    kind: raw
+    layer: L0
+    params:
+      - {name: sym, type: string, required: true}
+      - {name: type_key, type: string, required: false, default: all}
+    returns: {desc: 报告行 MAP 或 nil}
+    example: 'filings.latest("600519", "annual")'
+  # ---- L1：辅助 ----
+  - {name: filings.type_zh, cn: type_key 转中文, kind: raw, layer: L1}
+  - {name: filings.fmt_maps, cn: 报告行规范化列表, kind: raw, layer: L1, internal: true}
+  - {name: filings.fmt_map, cn: 单条报告规范化, kind: raw, layer: L1, internal: true}
+  - {name: filings.fmt_date_short, cn: 日期缩短 YYYY-MM-DD, kind: raw, layer: L1, internal: true}

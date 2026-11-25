@@ -1,0 +1,205 @@
+id: disc.notice
+version: 1.2.0
+cn: 公告
+kind: raw
+category: disclosure
+priority: P0
+description: 公告检索（单票/日期/类别/区间）与公告信号（回购/减持/增持/股权激励证据行）。
+  公告标题与元数据为资讯源直采；signal_* 为窗口判定的薄计算（证据行仍为公告原值）。
+data_origin: [披露公告库(含港股)]
+units:
+  window: '枚举 "7d"|"1m"|"3m"|"6m"|"1y"|"3y"|"5y" 或天数整数'
+  date: YYYY-MM-DD
+requires: {path: sys/notice/init.xs, preloaded: true}
+notes:
+  - type_regex 按公告标题/类型正则过滤；market 缺省 cn，港股自动路由
+functions:
+  - name: notice.query_by_symbol
+    cn: 单票公告列表
+    kind: raw
+    layer: L0
+    params:
+      - {name: sym, type: string, required: true, desc: 6 位裸码（港股 5 位）}
+      - {name: window, type: string, required: false, desc: 时间窗}
+      - {name: type_regex, type: string, required: false, desc: 类型正则}
+      - {name: limit, type: int, required: false}
+    returns: {desc: ARR · 公告行（date/title/type/url/pdf_url）}
+    example: 'notice.query_by_symbol("600519", "3m", "", 20)'
+    normalize_with: notice.fmt_maps
+  - name: notice.query_recent
+    cn: 近期公告（全市场）
+    kind: raw
+    layer: L0
+    params:
+      - {name: window, type: string, required: false}
+      - {name: type_regex, type: string, required: false}
+      - {name: limit, type: int, required: false}
+      - {name: market, type: string, required: false, desc: 缺省 cn}
+    returns: {desc: ARR · 公告行（date/title/type/url/pdf_url）}
+    example: 'notice.query_recent("7d", "", 50)'
+    normalize_with: notice.fmt_maps
+  - name: notice.query_by_category
+    cn: 按类别查公告
+    kind: raw
+    layer: L0
+    params:
+      - {name: category, type: string, required: true}
+      - {name: window, type: string, required: false}
+      - {name: limit, type: int, required: false}
+      - {name: market, type: string, required: false}
+    returns: {desc: ARR · 公告行（date/title/type/url/pdf_url）}
+    example: 'notice.query_by_category("回购", "1m", 20)'
+    normalize_with: notice.fmt_maps
+  - name: notice.query_on_date
+    cn: 指定日期公告
+    kind: raw
+    layer: L0
+    params:
+      - {name: date, type: string, required: true}
+      - {name: type_regex, type: string, required: false}
+      - {name: limit, type: int, required: false}
+      - {name: market, type: string, required: false}
+    returns: {desc: ARR · 公告行（date/title/type/url/pdf_url）}
+    example: 'notice.query_on_date("2026-09-30")'
+    normalize_with: notice.fmt_maps
+  - name: notice.query_find
+    cn: 按日期区间查公告
+    kind: raw
+    layer: L0
+    params:
+      - {name: from_date, type: string, required: true}
+      - {name: to_date, type: string, required: true}
+      - {name: type_regex, type: string, required: false}
+      - {name: stock_code, type: string, required: false}
+      - {name: limit, type: int, required: false}
+      - {name: market, type: string, required: false}
+    returns: {desc: ARR · 公告行（date/title/type/url/pdf_url）}
+    example: 'notice.query_find("2026-01-01", "2026-03-31", "业绩", "", 50)'
+    normalize_with: notice.fmt_maps
+  # ---- L0：信号（窗口判定薄计算，证据行=公告原值）----
+  - name: notice.signal_has_buyback
+    cn: 窗口内是否有回购公告
+    kind: computed
+    layer: L0
+    params:
+      - {name: sym, type: string, required: true}
+      - {name: window, type: string, required: false}
+    returns: {desc: bool}
+    example: 'notice.signal_has_buyback("600519", "6m")'
+  - name: notice.signal_has_reduction
+    cn: 窗口内是否有减持公告
+    kind: computed
+    layer: L0
+    params:
+      - {name: sym, type: string, required: true}
+      - {name: window, type: string, required: false}
+    returns: {desc: bool}
+    example: 'notice.signal_has_reduction("600519", "6m")'
+  - name: notice.signal_has_insider_buy
+    cn: 窗口内是否有增持公告
+    kind: computed
+    layer: L0
+    params:
+      - {name: sym, type: string, required: true}
+      - {name: window, type: string, required: false}
+    returns: {desc: bool}
+    example: 'notice.signal_has_insider_buy("600519", "6m")'
+  - name: notice.signal_has_equity_incentive
+    cn: 窗口内是否有股权激励公告
+    kind: computed
+    layer: L0
+    params:
+      - {name: sym, type: string, required: true}
+      - {name: window, type: string, required: false}
+    returns: {desc: bool}
+    example: 'notice.signal_has_equity_incentive("600519", "1y")'
+  - name: notice.signal_evidence_rows
+    cn: 信号证据（原始公告行）
+    kind: raw
+    layer: L0
+    params:
+      - {name: sym, type: string, required: true}
+      - {name: type_regex, type: string, required: true}
+      - {name: window, type: string, required: false}
+      - {name: lim, type: int, required: false}
+    returns: {desc: ARR · 公告行}
+    example: 'notice.signal_evidence_rows("600519", "回购", "1y", 10)'
+  - name: notice.signal_evidence_buyback
+    cn: 回购证据（规范化行）
+    kind: computed
+    layer: L0
+    params:
+      - {name: sym, type: string, required: true}
+      - {name: window, type: string, required: false}
+    returns: {desc: ARR · 规范化证据行}
+    example: 'notice.signal_evidence_buyback("600519", "1y")'
+  - name: notice.signal_evidence_reduction
+    cn: 减持证据（规范化行）
+    kind: computed
+    layer: L0
+    params:
+      - {name: sym, type: string, required: true}
+      - {name: window, type: string, required: false}
+    returns: {desc: ARR · 规范化证据行}
+    example: 'notice.signal_evidence_reduction("600519", "1y")'
+  # ---- L1：通用信号与检索辅助 ----
+  - {name: notice.signal_has, cn: 窗口内是否匹配类型正则, kind: computed, layer: L1}
+  - {name: notice.signal_has_category, cn: 窗口内是否有指定类别, kind: computed, layer: L1}
+  - {name: notice.signal_no_reduction, cn: 窗口内是否无减持, kind: computed, layer: L1}
+  - {name: notice.signal_evidence, cn: 信号证据（规范化）, kind: computed, layer: L1}
+  - {name: notice.query_symbols_on_date, cn: 指定日期出现公告的代码列表, kind: raw, layer: L1}
+  - {name: notice.query_stats_recent, cn: 近期公告类别计数, kind: raw, layer: L1}
+  - name: notice.type_keys
+    cn: 公告类目键列表
+    kind: raw
+    layer: L1
+    params: []
+    returns: {desc: ARR · 类目键列表（reduction/insider_buy/buyback/equity_incentive/forecast/dividend/risk/mna/contract/pledge/issue/report/suspend/correct）}
+    example: 'notice.type_keys()'
+    notes:
+      - 类目表含简繁对照，同一类目可扫 A股 + 港股表；配合 query_* 的 type_regex 参数使用
+  - name: notice.type_regex
+    cn: 公告类目匹配正则
+    kind: raw
+    layer: L1
+    params:
+      - {name: key, type: string, required: true, desc: 类目键；未知键原样透传（可直接传自定义正则）}
+    returns: {desc: string · NOTICE_TYPE 匹配正则}
+    example: 'notice.type_regex("buyback")'
+  - {name: notice.query_build, cn: 构建公告 Mongo filter, kind: raw, layer: L1, status: internal}
+  - {name: notice.query_build_visible, cn: 构建可见日公告 filter, kind: raw, layer: L1, status: internal}
+  - {name: notice.query_date_range, cn: 日期区间条件, kind: raw, layer: L1, status: internal}
+  - {name: notice.query_ts_range, cn: 入库时间区间条件, kind: raw, layer: L1, status: internal}
+  # ---- L1：正文读取（纯读，未就绪不入队）----
+  - name: notice.read_text
+    cn: 公告正文读取（纯读，未就绪不入队）
+    kind: raw
+    layer: L1
+    params:
+      - {name: sym, type: string, required: true, desc: 6 位裸码/港股 5 位}
+      - {name: date, type: string, required: true, desc: 'YYYY-MM-DD；传 url 时可空串'}
+      - {name: url, type: string, required: false, desc: 'PDF链接；空则由 sym+date 定位'}
+      - {name: full, type: bool, required: false, desc: false=前4000字预览，true=全量}
+    returns:
+      desc: MAP · 正文与状态
+      shape:
+        kind: object
+        cn: 正文读取结果
+        fields:
+          - {name: ok, type: bool, cn: 是否取到正文}
+          - {name: status, type: string, cn: 文档状态}
+          - {name: text, type: string, cn: 正文}
+          - {name: text_chars, type: int, cn: 实际字符数}
+          - {name: text_truncated, type: bool, cn: 是否截断}
+          - {name: file_key, type: string, cn: 文档键}
+          - {name: source_url, type: string, cn: PDF链接}
+          - {name: announce_date, type: string, cn: 披露日}
+          - {name: title, type: string, cn: 标题}
+          - {name: error, type: string, cn: 错误码}
+          - {name: note, type: string, cn: 说明}
+    example: 'notice.read_text("600519", "2026-03-15", "", false)'
+  # ---- L1：格式化 ----
+  - {name: notice.fmt_maps, cn: 公告行规范化, kind: raw, layer: L1, internal: true}
+  - {name: notice.fmt_lines, cn: 公告文本行, kind: raw, layer: L1, internal: true}
+  - {name: notice.fmt_line, cn: 单条公告文本, kind: raw, layer: L1, internal: true}
+  - {name: notice.fmt_count_by_type, cn: 按类型计数, kind: raw, layer: L1, internal: true}

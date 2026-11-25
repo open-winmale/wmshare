@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>wmshare releases</title>
+    <link>https://github.com/open-winmale/wmshare</link>
+    <description>wmshare 版本变更与接口弃用公告（由 CHANGELOG.md 生成）</description>
+    <language>zh-CN</language>
+    <lastBuildDate>Wed, 25 Nov 2026 00:00:00 +0800</lastBuildDate>
+    <atom:link href="https://github.com/open-winmale/wmshare/raw/main/docs/changelog.xml" rel="self" type="application/rss+xml"/>
+    <item>
+      <title>wmshare 1.0.0 (2026-11-25)</title>
+      <link>https://github.com/open-winmale/wmshare/releases/tag/v1.0.0</link>
+      <guid isPermaLink="false">wmshare:1.0.0</guid>
+      <pubDate>Wed, 25 Nov 2026 00:00:00 +0800</pubDate>
+      <description>Changed
+- **版本线重置**：自本版本起以 1.0.0 重新开始版本线，git 提交历史同步重置为 单基线提交。代码功能面与重置前最后一版（3.7.1）完全一致，此前 1.7.0–3.7.1 的发布记录与逐版发行说明可在 PyPI 历史版本页查阅。安装注意：PyPI 上旧线 3.7.1 仍然存在且版本号更高，`pip install wmshare` 会继续解析到 3.7.1—— 需要新线请显式指定 `pip install &quot;wmshare==1.0.0&quot;`，后续 1.x 版本号涨过 3.7.1 前均需如此。</description>
+    </item>
+  </channel>
+</rss>
