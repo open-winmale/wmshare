@@ -1,0 +1,10 @@
+# `$c_not_delist` — 非退市
+
+**类型/市场**：股票行情与筛选 · 未声明（以 `cat.search` 为准）
+**单位/换算**：—（默认基础单位：率=小数 / 额=元 / 量=股）
+**族前缀**：`$c_*`（筛选器条件码）
+
+取数：`cli.indicator.get("600519", "$c_not_delist")` · 多码 `cli.indicator.metrics("600519", ["$c_not_delist"])`
+
+检索与批量见 [GUIDE](../GUIDE.md)；全量码表 [INDICATORS.md](../INDICATORS.md)；
+目录核实用 `cat.search("$c_not_delist")` / `cat.function("indicator.get")`。

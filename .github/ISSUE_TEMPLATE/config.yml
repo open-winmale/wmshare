@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 使用提问 / 指标码与数据需求
+    url: https://github.com/open-winmale/wmshare/discussions
+    about: 使用问题、数据口径讨论、指标码与数据源请求请走 Discussions（Issues 只收可复现的 bug）
+  - name: 交流群（QQ）
+    url: https://github.com/open-winmale/wmshare#更多
+    about: 群号 1127142074（搜索「wmshare开源交流群」），README「更多」章节也有二维码

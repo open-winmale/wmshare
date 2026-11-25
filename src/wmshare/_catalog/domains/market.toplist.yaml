@@ -1,0 +1,93 @@
+id: market.toplist
+version: 1.0.0
+cn: 龙虎榜
+kind: raw
+category: market
+priority: P1
+description: A 股龙虎榜——指定交易日全市场榜单与单票上榜历史（交易所披露口径，
+  日频落库直读）。同票多上榜原因各一行（榜单原值行合同）。席位/营业部明细
+  （top_inst）上游无落库，不提供按席位查询。
+data_origin: [交易所披露]
+units:
+  date: YYYY-MM-DD
+requires: {path: sys/toplist/init.xs, preloaded: true}
+notes:
+  - 行合同：同票多上榜原因各一行；率为小数（上游百分数已 /100）、金额=元、日期=ISO
+  - ranges 为结构性宽界（2026-11-19 live 锚点：单日 95 行、涨跌幅 ±20cm 内、
+    成交额最大 ≈8.5e9 元），用于拦数量级错位；后续按分布实测收紧
+  - 复跑近免费：fmt_maps 规范化结果按行指纹缓存（榜单历史不可变，36a5de20 范式）
+  - 席位/营业部明细（外部行情源的席位接口）无落库——不提供 by_seat
+functions:
+  - name: toplist.by_date
+    cn: 指定交易日龙虎榜
+    kind: raw
+    layer: L0
+    params:
+      - {name: trade_date, type: string, required: true, desc: 交易日（YYYY-MM-DD 或 YYYYMMDD）}
+      - {name: limit, type: int, required: false, default: 100, desc: 条数上限}
+    ranges: {close: [0, 1.0e+4], pct_chg: [-1, 1], turnover_rate: [0, 2], amount_ratio: [0, 3], amount: [0, 5.0e+10], float_mv: [0, 1.0e+13], seat_buy: [0, 5.0e+10], seat_sell: [0, 5.0e+10], seat_amount: [0, 5.0e+10], net_amount: [-1.0e+10, 1.0e+10], net_ratio: [-1, 1]}
+    returns:
+      desc: ARR · 榜单行（同票多上榜原因各一行）
+      shape:
+        kind: array
+        cn: 龙虎榜榜单行
+        items:
+          kind: object
+          cn: 上榜事件行
+          fields:
+            - {name: date, type: string, cn: 交易日}
+            - {name: symbol, type: string, cn: 6 位裸码}
+            - {name: name, type: string, cn: 简称}
+            - {name: close, type: float64, cn: 收盘价（元）}
+            - {name: pct_chg, type: float64, cn: 涨跌幅（小数）}
+            - {name: turnover_rate, type: float64, cn: 换手率（小数）}
+            - {name: amount, type: float64, cn: 当日成交额（元）}
+            - {name: amount_ratio, type: float64, cn: 成交额占流通比（小数）}
+            - {name: float_mv, type: float64, cn: 流通市值（元）}
+            - {name: seat_buy, type: float64, cn: 榜单席位买入额（元）}
+            - {name: seat_sell, type: float64, cn: 榜单席位卖出额（元）}
+            - {name: seat_amount, type: float64, cn: 榜单席位成交额（元）}
+            - {name: net_amount, type: float64, cn: 席位净买入额（元）}
+            - {name: net_ratio, type: float64, cn: 净买入额/流通市值（小数）}
+            - {name: reason, type: string, cn: 上榜原因}
+    example: 'toplist.by_date("2026-11-18", 50)'
+    normalize_with: toplist.fmt_maps
+  - name: toplist.by_symbol
+    cn: 单票上榜历史
+    kind: raw
+    layer: L0
+    params:
+      - {name: sym, type: string, required: true, desc: 6 位裸码（自动拼交易所后缀）}
+      - {name: limit, type: int, required: false, default: 100, desc: 最近事件条数}
+    ranges: {close: [0, 1.0e+4], pct_chg: [-1, 1], turnover_rate: [0, 2], amount_ratio: [0, 3], amount: [0, 5.0e+10], float_mv: [0, 1.0e+13], seat_buy: [0, 5.0e+10], seat_sell: [0, 5.0e+10], seat_amount: [0, 5.0e+10], net_amount: [-1.0e+10, 1.0e+10], net_ratio: [-1, 1]}
+    returns:
+      desc: ARR · 上榜事件行（字段与 by_date 一致；按日期升序返回）
+      shape:
+        kind: array
+        cn: 龙虎榜事件行
+        items:
+          kind: object
+          cn: 上榜事件行
+          fields:
+            - {name: date, type: string, cn: 交易日}
+            - {name: symbol, type: string, cn: 6 位裸码}
+            - {name: name, type: string, cn: 简称}
+            - {name: close, type: float64, cn: 收盘价（元）}
+            - {name: pct_chg, type: float64, cn: 涨跌幅（小数）}
+            - {name: turnover_rate, type: float64, cn: 换手率（小数）}
+            - {name: amount, type: float64, cn: 当日成交额（元）}
+            - {name: amount_ratio, type: float64, cn: 成交额占流通比（小数）}
+            - {name: float_mv, type: float64, cn: 流通市值（元）}
+            - {name: seat_buy, type: float64, cn: 榜单席位买入额（元）}
+            - {name: seat_sell, type: float64, cn: 榜单席位卖出额（元）}
+            - {name: seat_amount, type: float64, cn: 榜单席位成交额（元）}
+            - {name: net_amount, type: float64, cn: 席位净买入额（元）}
+            - {name: net_ratio, type: float64, cn: 净买入额/流通市值（小数）}
+            - {name: reason, type: string, cn: 上榜原因}
+    example: 'toplist.by_symbol("000530", 20)'
+    normalize_with: toplist.fmt_maps
+    notes:
+      - 龙虎榜是事件表——未上榜的日子无行；判断「近 N 日是否上榜」用行数与
+        date 字段推断，不是补零序列
+  # ---- L1：格式化 ----
+  - {name: toplist.fmt_maps, cn: 榜单行规范化, kind: raw, layer: L1, internal: true}

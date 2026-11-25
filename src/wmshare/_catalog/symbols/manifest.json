@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "kind": "symbols-manifest",
+  "source": "upstream symbol service (synced snapshot)",
+  "markets": {
+    "cn": {"file": "companies.cn.json", "count": 5375, "as_of": "2026-06-10"},
+    "hk": {"file": "companies.hk.json", "count": 2673, "as_of": "2026-06-10"},
+    "us": {"file": "companies.us.json", "count": 5687, "as_of": "2026-08-10"}
+  }
+}

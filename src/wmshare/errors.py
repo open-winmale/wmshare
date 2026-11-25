@@ -1,0 +1,113 @@
+"""统一异常体系：全部继承 WmshareError，并带 code/status 便于程序化分类。
+
+CatalogError 同时继承 KeyError，兼容既有 `except KeyError` 用法。
+"""
+from __future__ import annotations
+
+# 401/403/429 的统一引导文案：错误消息里直接给出可执行的申请步骤，
+# 避免用户只看到原始 HTTP 状态而不知道下一步做什么。
+APPID_GUIDANCE = (
+    "申请自己的 AppID：打开 https://open.winmale.com 登录 → "
+    "右上角「我的」→「开放平台」→「我的应用」→「查看应用信息」，复制两个值（缺一不可）：client_id 与 api-key；"
+    "然后设置 WMSHARE_CLIENT_ID / WMSHARE_CLIENT_SECRET，"
+    "或写入 ~/.wmshare/credentials.env。"
+)
+
+# 配额终态码（与 winmale 网关 error registry 对齐）：持续性，重试无意义。
+QUOTA_CODES = frozenset({
+    "EC_BALANCE_EXHAUSTED", "DAILY_EC_CAP_EXCEEDED",
+    "INSIGHT_CREDIT_EXHAUSTED", "DAILY_INSIGHT_CREDIT_CAP_EXCEEDED",
+})
+
+QUOTA_GUIDANCE = (
+    "配额已耗尽，重试无效：平台默认应用仍有每周额度（每周一补满）；"
+    "自建附加应用为一次性额度、不参与每周补充——"
+    "可到 open.winmale.com「我的应用」换用默认应用凭证，或升级会员/充值。"
+)
+
+
+class WmshareError(RuntimeError):
+    """带修复建议的统一错误基类。"""
+
+    def __init__(self, message: str, *, code: str = "", status: int | None = None):
+        super().__init__(message)
+        self.code = code
+        self.status = status
+
+
+class AuthError(WmshareError):
+    """凭证缺失/无效/被拒（OAuth 400/401/403 或 eval 401/403）。
+
+    凭证缺失、无效、被撤销都会落到这里；缺凭证路径的消息附免注册回落指引
+    （``Client.from_env()`` 凭据双缺时走免注册免费试用），所有路径都含
+    申请与配置自己 AppID 的步骤，程序可用 ``code`` / ``status`` 分类。免注册
+    访问下来源网络被封禁时为 ``code="ip_banned"``。
+    """
+
+
+class UsageError(WmshareError):
+    """调用方式错误：未知/缺失参数、_df 依赖缺失等。"""
+
+
+class LimitError(WmshareError):
+    """请求体积/窗口超限，或服务端限流（HTTP 429）。
+
+    客户端 ``max_limit``/日期区间用 ``code="limit"``/``"range"``；
+    服务端限流用 ``code="rate_limited"`` 且 ``status=429``，消息包含
+    重试建议和申请自己的 AppID 的步骤。免注册访问（``Client.from_env()``
+    无凭证）下另有两个终态码，SDK 不重试：来源网络频次到顶
+    ``code="ip_rate_limited"``、服务端暂停免注册额度 ``code="pool_unavailable"``。
+    """
+
+    def __init__(self, message: str, *, code: str = "", status: int | None = None,
+                 retry_after: float | None = None):
+        super().__init__(message, code=code, status=status)
+        self.retry_after = retry_after
+
+
+class QuotaError(LimitError):
+    """配额耗尽（持续性，重试无意义）：周钱包空 / 当日到顶 / insight 额度尽。
+
+    服务端 ``error.code``（如 ``EC_BALANCE_EXHAUSTED``、``DAILY_EC_CAP_EXCEEDED``）
+    原样透传到 ``code``。与限流不同，这类 429 **不会自动重试**——恢复手段是
+    换用平台默认应用凭证、等每周补满，或升级会员/充值；程序化处理直接
+    ``except QuotaError``。``isinstance`` 兼容 ``LimitError`` 捕获。
+    """
+
+
+class TransportError(WmshareError):
+    """网络层失败（连接/超时，重试耗尽）。"""
+
+
+class ServerError(WmshareError):
+    """服务端 5xx。"""
+
+
+class ApiError(WmshareError):
+    """服务端返回业务错误（success=false 或其他 4xx）。"""
+
+
+class DataError(WmshareError):
+    """返回数据未通过单位量级守护或关系不变量校验（code="range" / "invariant"）。
+
+    换算声明与实际数据不符、上游口径变化都会在这里暴露，而不是把错误量级的
+    数据静默交给用户。消息包含字段/实际值/期望范围与逃生口：
+    ``_raw=True``（上游原始行）、``_units="native"``（保留上游原单位）、
+    ``Client(validate=False)``（关闭校验、保留换算）。
+    """
+
+
+class StreamResetError(WmshareError):
+    """公告订阅流的消费进度已超出保留期（服务端事件已过 TTL）。
+
+    用 ``seek_oldest(market)`` 重置进度，之后只能读回保留期内剩余数据；
+    保持进度不落后通常意味着缩短轮询间隔或提高消费吞吐。
+    """
+
+
+class CatalogError(WmshareError, KeyError):
+    """目录中不存在该函数/域/指标/不兼容版本（同时兼容 KeyError 捕获）。"""
+
+    def __str__(self) -> str:
+        # KeyError.__str__ 会再加一层 repr 引号；SDK 用户看到的应是普通消息。
+        return str(self.args[0]) if self.args else ""

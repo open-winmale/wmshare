@@ -1,0 +1,137 @@
+id: market.cbond
+version: 1.4.1
+cn: 可转债
+kind: raw
+category: market
+priority: P1
+description: 可转债合约快照、条款事件（下修/回售/赎回等）、正股关联、强赎触发计数、
+  独立日 K 与盘中 1 分钟。日 K 无复权（转债无除权口径）。
+data_origin: [发行条款披露, 平台数据服务]
+units:
+  price: 元（转债价/转股价，面值 100 口径）
+  ratio: 小数（SDK 基础单位；上游 percent 已按 percent 声明换算）
+requires: {path: sys/cbond/init.xs, preloaded: false}
+notes:
+  - 可用性：仅 A 股（沪深可转债）
+  - 'quote_list/latest_quotes/board 为全市场快照（按日更新）；of_stock 按正股取关联债'
+  - '在市判据用 outstanding 字段（余额>0 且未到期）。仅判 remainSize>0 会把已到期债当在标'
+  - 'callHits 统计正股无复权收盘 ≥ 强赎触发价的近 30 个交易日天数，仅股价已跨线时返回；勿以单日价判定已满足'
+  - 'resetFloor / resetMeeting 等 reset* 字段取自 resetEvent（仍在进行中的下修提议），不是 event'
+  - 'event 是最新一条公告，不分类型——回售/转股结果会挤掉下修提议，取下修信息须用 resetEvent'
+  - 'kline_window 返回 store 列式窗口（open/close/high/low/volume/amount），samplingName 为降序需自行反转'
+  - 'min1_live 为缓存命中制，miss 返回 nil'
+  - 'event_list 深度是 90 个 YEAR_DAY 文档（约 111 自然日），更老的条款公告不在返回内'
+  - 'board 不含 volume/amount——成交额与换手率须经 kline_window 批量取（call_batch，每批 ≤120 只）'
+  - 'board 不含债券信用评级、基金持仓、正股流通市值；需评级时用 notice 域公告原文抽取，勿以其他指标冒充'
+  - 'kline_window 可批量：标的参数名为 code，call_batch 一次 eval 拼 MAP 即覆盖全表（省请求次数，不省 EC）'
+functions:
+  - {name: cbond.board, cn: 转债全市场面板（快照+最新事件+盘中价+callHits+下修地板价）, layer: L0, units: {premiumRatio: percent, couponIr: percent}, ranges: {premiumRatio: [-100, 1000], couponIr: [0, 0.15]}, returns: {desc: ARR · 转债面板行（快照行 + event/resetEvent/outstanding/callHits/resetFloor 等）, shape_ref: inventory}, notes: ['bondPercent 仅盘中 live 命中时返回', 'callHits 仅正股收盘已跨触发价时返回']}
+  - {name: cbond.quote_list, cn: 转债合约快照全表, layer: L0, units: {premium_ratio: percent, coupon_ir: percent}, ranges: {premium_ratio: [-100, 1000], coupon_ir: [0, 0.15]}, returns: {desc: ARR · 原始快照行（snake_case，未规范化）}, notes: ['量级界与同域 board / latest_quotes / of_stock 对齐（同一快照源）']}
+  - {name: cbond.latest_quotes, cn: 转债最新快照, layer: L0, units: {premiumRatio: percent, couponIr: percent}, ranges: {premiumRatio: [-100, 1000], couponIr: [0, 0.15]}, returns: {desc: ARR · 规范化快照行（每债取 asOf 最新一行）, shape_ref: inventory}}
+  - {name: cbond.of_stock, cn: 正股关联转债, layer: L0, units: {premiumRatio: percent, couponIr: percent}, ranges: {premiumRatio: [-100, 1000], couponIr: [0, 0.15]}, returns: {desc: ARR · 该公司全部转债快照行（含已到期历史债，按 outstanding 过滤）, shape_ref: inventory}}
+  - {name: cbond.fmt_quote, cn: 快照行规范化, layer: L1, returns: {desc: MAP · 规范化快照行, shape_ref: inventory}, internal: true}
+  - {name: cbond.event_list, cn: 转债条款事件列表, layer: L0}
+  - {name: cbond.event_rows_of, cn: 单标的条款事件, layer: L0}
+  - {name: cbond.query, cn: 按标的查条款事件, layer: L0}
+  - {name: cbond.fmt_event, cn: 条款事件行规范化, layer: L1, internal: true}
+  - {name: cbond.call_hits, cn: 强赎触发计数, layer: L0, returns: {desc: int · 近 30 个交易日正股收盘 ≥ 触发价的天数}}
+  - {name: cbond.kline_window, cn: 转债日K窗口, layer: L0}
+  - {name: cbond.min1_live, cn: 转债盘中1分钟, layer: L0}
+  - {name: cbond.min1_meta, cn: 转债盘中元信息, layer: L0}
+  - {name: cbond.universe_codes, cn: 转债代码全集, layer: L0}
+  - name: cbond.card
+    cn: 转债个券详情（一次全量返回九键；退市/停牌债 quote 为空、counts 为 nil，其余按债键照常返回）
+    layer: L0
+    returns:
+      desc: 'MAP · {quote, terms, counts, region, concepts, projects, share, holders, institution}'
+      shape:
+        kind: object
+        cn: 个券详情（同步全量加载，无二级触发）
+        fields:
+          - {name: quote, type: object, cn: 最新快照（76 键，结构同 cbond.one_quote 输出，另补实时正股 stockMv/stockPb/stockPe/stockDiv/stockRoe；无当日快照为空对象）}
+          - name: terms
+            type: object
+            cn: 条款档案（结构同 cbond.terms）
+            fields:
+              - {name: asOf, type: string, cn: 数据时点}
+              - {name: bondCode, type: string, cn: 转债代码}
+              - {name: bondName, type: string, cn: 转债简称}
+              - {name: bondRating, type: string, cn: 债项评级}
+              - {name: callClause, type: string, cn: 强赎条款原文}
+              - {name: resetClause, type: string, cn: 下修条款原文}
+              - {name: putClause, type: string, cn: 回售条款原文}
+              - {name: guaranteeType, type: string, cn: 担保方式, optional: true}
+              - {name: guarantor, type: string, cn: 担保人, optional: true}
+              - {name: issueRating, type: string, cn: 发行评级}
+              - {name: newestRating, type: string, cn: 最新评级, optional: true}
+              - {name: issueObject, type: string, cn: 发行对象}
+              - {name: ratingComp, type: string, cn: 评级展望/机构, optional: true}
+              - {name: suitability, type: string, cn: 适当性匹配}
+              - {name: remark, type: string, cn: 备注, optional: true}
+          - name: counts
+            type: object
+            cn: 强赎/下修/回售三项计数与窗口（无快照为 nil）
+            fields:
+              - {name: callHits, type: int64, cn: 已满足强赎条件天数}
+              - {name: callNeed, type: int64, cn: 强赎所需天数}
+              - {name: callWindow, type: int64, cn: 强赎观察窗口}
+              - {name: resetHits, type: int64, cn: 已满足下修条件天数}
+              - {name: resetNeed, type: int64, cn: 下修所需天数}
+              - {name: resetWindow, type: int64, cn: 下修观察窗口}
+              - {name: putHits, type: int64, cn: 已满足回售条件天数}
+              - {name: putNeed, type: int64, cn: 回售所需天数}
+              - {name: putWindow, type: int64, cn: 回售观察窗口}
+          - {name: region, type: string, cn: 正股注册地}
+          - {name: concepts, type: array, cn: 正股概念标签（≤12）, items: {type: string}}
+          - {name: projects, type: object, cn: 募集资金投向档案（结构同 cbond.projects，含 asOf/items/progress/planInputTotal 等）}
+          - {name: share, type: object, cn: 转股结果（结构同 cbond.latest_share，无数据为空对象）}
+          - {name: holders, type: object, cn: 十大持有人（结构同 cbond.holders，无数据为空对象）}
+          - {name: institution, type: object, cn: 机构持仓（结构同 cbond.institution，无数据为空对象）}
+  - {name: cbond.one_quote, cn: 单债最新快照（只 fmt 命中行）, layer: L0, units: {premiumRatio: percent, couponIr: percent}, ranges: {premiumRatio: [-100, 1000], couponIr: [0, 0.15]}}
+  - {name: cbond.terms, cn: 转债条款档案（条款原文/评级/担保）, layer: L0}
+  - {name: cbond.terms_list, cn: 转债条款档案全表（terms DAG 未跑返回空）, layer: L1}
+  - {name: cbond.counts, cn: 强赎/下修/回售三项计数与窗口, layer: L0, ranges: {callHits: [0, 30], resetHits: [0, 30], putHits: [0, 30]}}
+  - {name: cbond.count_hits, cn: 正股收盘≥触发价天数（按交易日窗）, layer: L0, notes: ['窗口按交易日非日历日；序列新→旧须配 $KLINE_HAS 掩码']}
+  - {name: cbond.count_below, cn: 正股收盘<触发价天数（下修/回售用）, layer: L0}
+  - name: cbond.history
+    cn: 转债近 N 日历史（快照+债 K；快照上线前区间自动补齐）
+    layer: L0
+    ranges:
+      convertedRatio: [0, 1]
+      remainingYears: [0, 100]
+      close: [0, 2000]
+      transferValue: [0, 2000]
+      convertPrice: [0, 2000]
+      stockPrice: [0, 5000]
+      remainSize: [0, 1.0e+11]
+    returns:
+      desc: ARR · 转债历史行
+      shape:
+        kind: array
+        items:
+          kind: object
+          cn: 转债历史行（premiumRatio 为百分数口径，如 43.71=43.71%；ytmPreTax 为小数）
+          fields:
+            - {name: date, type: string, cn: 日期}
+            - {name: close, type: float64, cn: 转债收盘价（元）}
+            - {name: convertPrice, type: float64, cn: 转股价（元）}
+            - {name: transferValue, type: float64, cn: 转股价值（元）}
+            - {name: stockPrice, type: float64, cn: 正股收盘价（元）}
+            - {name: premiumRatio, type: float64, cn: 溢价率（百分数口径）}
+            - {name: convertedRatio, type: float64, cn: 已转股比例（小数）}
+            - {name: remainingYears, type: float64, cn: 剩余年限（年）}
+            - {name: remainSize, type: float64, cn: 剩余规模（元）}
+            - {name: ytmPreTax, type: float64, cn: 税前到期收益率（小数）}
+            - {name: amount, type: float64, cn: 成交额（元）, optional: true}
+            - {name: turnover, type: float64, cn: 换手率, optional: true}
+  - {name: cbond.notices, cn: 正股近 5 年转债相关公告（上限 200）, layer: L0}
+  - {name: cbond.market, cn: 转债市场截面（价格/溢价中位数与折价只数）, layer: L0, units: {premiumMedian: percent}, ranges: {premiumMedian: [-100, 1000], discountN: [0, 2000]}}
+  - {name: cbond.concepts_of, cn: 正股概念标签（精确题材匹配前 12）, layer: L0}
+  - {name: cbond.holders, cn: 十大持有人最新报告, layer: L0}
+  - {name: cbond.holders_list, cn: 十大持有人报告序列, layer: L1}
+  - {name: cbond.institution, cn: 机构持仓（基金数与持仓市值下限）, layer: L0}
+  - {name: cbond.fund_hold_of, cn: 机构持仓聚合（底层读取）, layer: L1}
+  - {name: cbond.latest_share, cn: 最新转股结果（剩余规模与已转股比例）, layer: L0, ranges: {convertedRatio: [0, 1]}}
+  - {name: cbond.share_list, cn: 转股结果公告序列（约 24 份覆盖 6 年）, layer: L1}
+  - {name: cbond.projects, cn: 转债募集资金投向, layer: L0}
+  - {name: cbond.project_of, cn: 募集资金投向档案（底层读取）, layer: L1}

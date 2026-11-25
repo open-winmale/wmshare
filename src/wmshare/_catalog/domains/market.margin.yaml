@@ -1,0 +1,34 @@
+id: market.margin
+version: 1.1.0
+cn: 融资融券
+kind: raw
+category: market
+priority: P1
+description: 个股融资融券日频——融资买入/偿还/余额，融券卖出/偿还/余量。金额=元、
+  量=股，与全库基础单位一致。
+data_origin: [交易所披露, 平台数据服务]
+units:
+  money: 元（融资买入额/偿还额/余额）
+  shares: 股（融券卖出量/偿还量/余量）
+requires: {path: sys/margin/init.xs, preloaded: true}
+notes:
+  - 可用性：仅 A 股（沪深交易所两融披露口径，无港美形态）
+  - '1.1.0 起含市场级面：market_summary（沪深两融汇总日表，BSE 无公开口径缺席）
+     与 universe（当前可两融标的 ≈4,010 行；源为沪深保证金比例表，不含调入调出
+     日期故 in_date/out_date 为空）——采集腿 airflow tasks/cn_margin_summary.py
+     与 tasks/cn_margin_universe.py；此前「上游无独立数据集」声明就此移除'
+  - 'latest(sym) 返回最新一日单行'
+  - '市场级 EC（2026-11-17 live 实测）：逐行物化 ≈100~115 EC/行——
+     market_summary 默认 60 行 ≈6 千 EC；universe 不传 limit = 全量
+     ≈4,010 行 ≈45 万 EC，按需传 limit 线性降低（cli.cost_estimate 可先估）'
+  - 'market_summary 源无 融资偿还额/融券偿还量 两列（交易所未披露），对应字段
+     返回 null，不造假填充'
+functions:
+  - {name: margin.query, cn: 个股融资融券, layer: L0, normalize_with: margin.fmt_maps}
+  - {name: margin.latest, cn: 最新两融, layer: L0, normalize_with: margin.fmt_maps}
+  - {name: margin.market_summary, cn: 市场级两融汇总, layer: L0, normalize_with: margin.fmt_summary_maps, ranges: {fin_balance: [0, 1.0e+13], loan_balance: [0, 1.0e+11], fin_buy_amt: [0, 1.0e+12], loan_sell_vol: [0, 1.0e+11]}}
+  - {name: margin.universe, cn: 两融标的名单, layer: L0, normalize_with: margin.fmt_universe_maps}
+  - {name: margin.fmt_maps, cn: 两融行规范化, layer: L1, internal: true}
+  - {name: margin.fmt_line, cn: 两融单行文本, layer: L1, internal: true}
+  - {name: margin.fmt_summary_maps, cn: 市场汇总行规范化, layer: L1, internal: true}
+  - {name: margin.fmt_universe_maps, cn: 标的行规范化, layer: L1, internal: true}
