@@ -611,6 +611,9 @@ class ReplayClient:
             balance=self._statement("balance"),
             cashflow=self._statement("cashflow"),
             audit=self._statement_audit,
+            notes=self._statement_notes,
+            notes_index=self._statement_notes_index,
+            policies=self._statement_policies,
         )
         self.indicator = SimpleNamespace(
             get=self._indicator_get,
@@ -1189,6 +1192,60 @@ class ReplayClient:
     def _statement_audit(self, symbol: str) -> dict[str, str]:
         self._require_symbol(symbol)
         return dict(self._data["statements"]["audit"])
+
+    def _statement_notes(self, symbol: str, code: str,
+                         period: str | None = None) -> dict[str, Any]:
+        self._require_symbol(symbol)
+        sym = str(symbol or "").strip()
+        if sym != "600519":
+            raise UsageError("回放附注快照只覆盖 600519", code="replay_symbol")
+        key = str(code or "").strip()
+        book = self._data["statements"].get("notes", {})
+        card = book.get(key)
+        if card is None:  # 中文名回退（与真实门面脚本内双匹配同语义）
+            for c, v in book.items():
+                if str(v.get("cn", "")) == key:
+                    card = v
+                    break
+        if card is None:
+            return {"found": False, "code": key, "cn": "",
+                    "period": str(period or ""), "source": "", "sections": []}
+        out = dict(card)
+        if period:
+            out["period"] = str(period)
+        return out
+
+    def _statement_notes_index(self, symbol: str) -> Any:
+        self._require_symbol(symbol)
+        sym = str(symbol or "").strip()
+        if sym != "600519":
+            raise UsageError("回放附注快照只覆盖 600519", code="replay_symbol")
+        rows = [dict(r) for r in self._data["statements"].get("notes_index", [])]
+        rows.sort(key=lambda r: str(r.get("period", "")), reverse=True)
+        rows.sort(key=lambda r: str(r.get("code", "")))
+        from wmshare.client import to_output_frame
+        return to_output_frame(rows)
+
+    def _statement_policies(self, symbol: str, period: str | None = None,
+                            hist_years: int = 0,
+                            with_quote: bool = True) -> dict[str, Any]:
+        self._require_symbol(symbol)
+        sym = str(symbol or "").strip()
+        if sym != "600519":
+            raise UsageError("回放政策卡快照只覆盖 600519", code="replay_symbol")
+        snap = dict(self._data["statements"].get("policies", {}))
+        periods = list(snap.get("periods", []))
+        if period and period in periods:
+            snap["period"] = str(period)
+        hy = int(hist_years or 0)
+        if hy > 0:
+            keep = set(periods[:hy])
+            snap["hist"] = [h for h in snap.get("hist", [])
+                            if h.get("period") in keep]
+        if not with_quote:
+            snap["cards"] = [{k: v for k, v in c.items() if k != "quote"}
+                             for c in snap.get("cards", [])]
+        return snap
 
     def _indicator_get(self, symbol: str, code: str, fut_symbol: str | None = None,
                        native: bool = False, **kw: Any) -> Any:

@@ -151,6 +151,76 @@ def test_statements_translation(cli):
         cli.statements.income("600519", years=13)
 
 
+def test_statements_notes_translation(cli):
+    """附注组合门面：require 行 + 科目双匹配 + 缺省期脚本内解析。"""
+    cli.session.eval_result = {"found": True, "code": "MFNS", "cn": "货币资金",
+                               "period": "2025-12-31", "source": "fulltext",
+                               "sections": [{"title": "货币资金", "rows": []}]}
+    card = cli.statements.notes("600519", "MFNS", period="2025-12-31")
+    assert card["found"] is True and card["code"] == "MFNS"
+    xs = last_xs(cli)
+    assert xs[0] == 'xs.require("sys/rptdom/init.xs")'
+    body = " ".join(xs)
+    assert 'raw := TRIM(STRING("MFNS"))' in body
+    assert 'want := "2025-12-31"' in body
+    assert "rptdom.notes_for(sym, key, want[:10])" in body
+    # 中文名：脚本内扫目录 cn 匹配；缺省期 → note_index 解析最新期
+    cli.statements.notes("600519", "货币资金")
+    body = " ".join(last_xs(cli))
+    assert 'raw := TRIM(STRING("货币资金"))' in body
+    assert "rptdom.note_index(sym)" in body
+    # 指标码写法 $MFNS → 剥 $ 后同目录码（skill 门面同款）
+    cli.statements.notes("600519", "$MFNS", period="2025-12-31")
+    assert 'raw := TRIM(STRING("MFNS"))' in " ".join(last_xs(cli))
+    # found=false 形状透传（未入库，勿外推）
+    cli.session.eval_result = {"found": False, "code": "NOPE", "cn": "",
+                               "period": "", "source": "", "sections": []}
+    assert cli.statements.notes("600519", "NOPE")["found"] is False
+    # 参数校验
+    with pytest.raises(UsageError, match="仅覆盖 A 股"):
+        cli.statements.notes("00700", "MFNS")
+    with pytest.raises(UsageError, match="code 必填"):
+        cli.statements.notes("600519", "  ")
+    with pytest.raises(UsageError, match="YYYY-MM-DD"):
+        cli.statements.notes("600519", "MFNS", period="2025Q4")
+
+
+def test_statements_notes_index_translation(cli):
+    """附注覆盖角标：code 升序、期内 period 降序的稳定双排序。"""
+    cli.session.eval_result = [
+        {"code": "PPE", "cn": "固定资产", "period": "2024-12-31"},
+        {"code": "MFNS", "cn": "货币资金", "period": "2025-12-31"},
+        {"code": "MFNS", "cn": "货币资金", "period": "2024-12-31"},
+    ]
+    idx = cli.statements.notes_index("600519")
+    assert isinstance(idx, pd.DataFrame)
+    assert list(idx["code"]) == ["MFNS", "MFNS", "PPE"]
+    assert list(idx["period"]) == ["2025-12-31", "2024-12-31", "2024-12-31"]
+    xs = last_xs(cli)
+    assert xs[0] == 'xs.require("sys/rptdom/init.xs")'
+    assert "rptdom.note_index(sym)" in " ".join(xs)
+
+
+def test_statements_policies_translation(cli):
+    """会计政策卡：镜像专业版页（期次回落/hist_years 截断/with_quote 分支）。"""
+    cli.session.eval_result = {"symbol": "600519", "periods": ["2025-12-31"],
+                               "period": "2025-12-31", "cards": [], "hist": []}
+    doc = cli.statements.policies("600519")
+    assert doc["period"] == "2025-12-31"
+    body = " ".join(last_xs(cli))
+    assert '"raw__wm_report_extract"' in body and '"rpt_policy"' in body
+    assert "hist_years := 0" in body and "with_cards := 1" in body
+    cli.statements.policies("600519", period="2024-12-31", hist_years=3,
+                            with_quote=False)
+    body = " ".join(last_xs(cli))
+    assert 'period_in := "2024-12-31"' in body
+    assert "hist_years := 3" in body and "with_cards := 0" in body
+    with pytest.raises(UsageError, match="仅覆盖 A 股"):
+        cli.statements.policies("AAPL")
+    with pytest.raises(UsageError, match="hist_years"):
+        cli.statements.policies("600519", hist_years=31)
+
+
 
 def test_notice_and_dividend(cli):
     cli.notice.list("600519", window="3m", keyword="回购", limit=5)

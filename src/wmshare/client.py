@@ -446,6 +446,29 @@ def estimate_cost(name: str, params: dict[str, Any] | None = None, *,
     elif name == "stocks.limit_price":
         out.update(ec_lo=30, ec_hi=60, model="measured",
                    note="单票索引点查 ≈30-50 EC（无全市场投影）")
+    elif name == "statements.notes":
+        # 实测（2026-11-26 test-api，600519）：显式期 ≈13.8k EC；缺省期需先跑
+        # 全量角标解析（note_index 对全域初步表做 4000 档扫描+聚合）≈68 万 EC；
+        # 未入库科目（目录无此 code）地板 ≈810 EC。
+        if p.get("period"):
+            out.update(ec_lo=8_000, ec_hi=30_000, model="measured",
+                       note="显式期实测 ≈1.4 万 EC（2026-11-26 test-api）；幅度随"
+                            "科目的域数（每域一次 80 档初步表扫描+卡片组装）")
+        else:
+            out.update(ec_lo=650_000, ec_hi=1_000_000, model="measured",
+                       note="缺省期=脚本内先跑附注角标解析 ≈68 万 EC（2026-11-26 "
+                            "test-api 实测）；**强烈建议显式传 period**（降至 ≈1.4 万）")
+    elif name == "statements.notes_index":
+        out.update(ec_lo=900_000, ec_hi=1_000_000, model="measured",
+                   note="全量角标一次扫描聚合 ≈97 万 EC（2026-11-26 test-api 实测"
+                        " 600519=742 行）；接近沙箱计算上限，勿并发/循环调用")
+    elif name == "statements.policies":
+        hy = p.get("hist_years")
+        full_hist = not hy
+        out.update(ec_lo=35_000, ec_hi=80_000, model="measured",
+                   note="实测（2026-11-26 test-api）hist 截 2 期 ≈3.8 万 / 全期历史"
+                        " ≈7.3 万 EC；with_quote=False 跳过当期卡（cards 空、仅 hist）"
+                        + ("，本估算按全期档" if full_hist else "，本估算按截 N 期档"))
     elif name == "stocks.limit_price_history":
         # 历史序列需同时读不复权+后复权两档（除权参考价用 hfq/nr 因子还原），
         # 外加简称史（≈110~2000 EC）与一次锚点探针；n 越小越省，复跑无缓存。

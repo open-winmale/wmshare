@@ -3,8 +3,8 @@
   "generated_by": "tools/gen_api_docs.py",
   "meta": {
     "core": 188,
-    "composite": 20,
-    "docs_visible": 185,
+    "composite": 23,
+    "docs_visible": 188,
     "variants": 21,
     "domains": 30,
     "categories": [
@@ -12135,6 +12135,103 @@
               }
             ]
           }
+        },
+        {
+          "key": "statements.notes",
+          "ns": "statements",
+          "method": "notes",
+          "cn": "财报附注明细：某科目某报告期的已提取附注（A 股）→ dict。",
+          "composite": true,
+          "desc": "财报附注明细：某科目某报告期的已提取附注（A 股）→ dict。",
+          "params": [
+            {
+              "name": "symbol",
+              "required": true,
+              "desc": "6 位 A 股代码（附注库仅覆盖 A 股）"
+            },
+            {
+              "name": "code",
+              "required": true,
+              "desc": "科目目录代码（如 MFNS/$MFNS/IO/PPE）或科目中文名"
+            },
+            {
+              "name": "period",
+              "required": false,
+              "desc": "报告期 YYYY-MM-DD（年报/半年报档）；缺省取该科目最新期（成本 50×，见上）"
+            }
+          ],
+          "returns": {
+            "kind": "text",
+            "desc": null,
+            "fields": []
+          },
+          "notes": [],
+          "docs_visible": true,
+          "example": null,
+          "test": null
+        },
+        {
+          "key": "statements.notes_index",
+          "ns": "statements",
+          "method": "notes_index",
+          "cn": "财报附注覆盖角标：该司哪些科目哪些期有附注（A 股）→ DataFrame。",
+          "composite": true,
+          "desc": "财报附注覆盖角标：该司哪些科目哪些期有附注（A 股）→ DataFrame。",
+          "params": [
+            {
+              "name": "symbol",
+              "required": true,
+              "desc": "6 位 A 股代码"
+            }
+          ],
+          "returns": {
+            "kind": "text",
+            "desc": null,
+            "fields": []
+          },
+          "notes": [],
+          "docs_visible": true,
+          "example": null,
+          "test": null
+        },
+        {
+          "key": "statements.policies",
+          "ns": "statements",
+          "method": "policies",
+          "cn": "会计政策卡：某期全套政策卡 + 全期历史卡（A 股，年报期）→ dict。",
+          "composite": true,
+          "desc": "会计政策卡：某期全套政策卡 + 全期历史卡（A 股，年报期）→ dict。",
+          "params": [
+            {
+              "name": "symbol",
+              "required": true,
+              "desc": "6 位 A 股代码"
+            },
+            {
+              "name": "period",
+              "required": false,
+              "desc": "报告期 YYYY-MM-DD（年报）；缺省最新年报"
+            },
+            {
+              "name": "hist_years",
+              "required": false,
+              "desc": "历史卡截取最近 N 期，0=全期（缺省）；默认 0"
+            },
+            {
+              "name": "with_quote",
+              "required": false,
+              "desc": "False 时跳过当期全套卡拉取（cards 为空，仅 hist；变更 diff 场景最省）；默认 True"
+            }
+          ],
+          "returns": {
+            "kind": "text",
+            "desc": null,
+            "fields": []
+          },
+          "notes": [],
+          "docs_visible": true,
+          "example": null,
+          "test": null
         }
       ],
       "composite_examples": [
@@ -22401,6 +22498,10 @@
             "desc": null,
             "fields": [
               {
+                "name": "row_kind",
+                "desc": "行种 ccass/holder/rating/short/forecast"
+              },
+              {
                 "name": "query_date",
                 "desc": "查询日期"
               },
@@ -22761,6 +22862,10 @@
             "kind": "array",
             "desc": null,
             "fields": [
+              {
+                "name": "row_kind",
+                "desc": "行种 ccass/holder/rating/short/forecast"
+              },
               {
                 "name": "query_date",
                 "desc": "查询日期"
@@ -23123,6 +23228,10 @@
             "desc": null,
             "fields": [
               {
+                "name": "row_kind",
+                "desc": "行种 ccass/holder/rating/short/forecast"
+              },
+              {
                 "name": "query_date",
                 "desc": "查询日期"
               },
@@ -23484,6 +23593,10 @@
             "desc": null,
             "fields": [
               {
+                "name": "row_kind",
+                "desc": "行种 ccass/holder/rating/short/forecast"
+              },
+              {
                 "name": "query_date",
                 "desc": "查询日期"
               },
@@ -23844,6 +23957,10 @@
             "kind": "array",
             "desc": null,
             "fields": [
+              {
+                "name": "row_kind",
+                "desc": "行种 ccass/holder/rating/short/forecast"
+              },
               {
                 "name": "query_date",
                 "desc": "查询日期"

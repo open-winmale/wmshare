@@ -26,7 +26,8 @@ LimitArg = Annotated[int, Field(ge=1, le=100, description="返回条数上限")]
 DateArg = Annotated[str | None, Field(description="日期，格式 YYYY-MM-DD")]
 
 StatementAction = Literal[
-    "income", "balance", "cashflow", "indicators", "audit"
+    "income", "balance", "cashflow", "indicators", "audit",
+    "notes", "notes_index", "policies",
 ]
 SegmentAction = Literal[
     "business", "products", "region", "income", "coverage", "periods", "snapshot"
@@ -314,12 +315,29 @@ def build_server(runtime: MCPRuntime | None = None) -> FastMCP:
         symbol: Annotated[str | None, Field(description="标的代码；所有 action 都需要")] = None,
         market: MarketArg = None,
         years: Annotated[int, Field(ge=1, le=10, description="报表期数")] = 5,
+        code: Annotated[str | None, Field(description="notes 必需：附注科目目录代码或中文名（如 MFNS/货币资金）")] = None,
+        period: Annotated[str | None, Field(description="notes/policies 报告期 YYYY-MM-DD；缺省取最新期/最新年报")] = None,
+        hist_years: Annotated[int | None, Field(ge=0, le=30, description="policies 历史卡截取最近 N 期，0=全期")] = 0,
+        with_quote: Annotated[bool, Field(description="policies 当期卡是否含 quote 政策原文（False 省 EC）")] = True,
         output: OutputArg = "sample",
         max_rows: MaxRowsArg = MAX_ROWS,
     ) -> dict[str, Any]:
-        """取三大报表（cn/hk/us 宽表）或审计意见。"""
+        """取三大报表（cn/hk/us 宽表）、审计意见，或财报深研提取库视图
+        （仅 A 股）：notes 附注明细 / notes_index 附注覆盖角标 / policies
+        会计政策卡（当期含 quote 原文 + hist 全期历史卡）。
+
+        示例：action='notes', symbol='600519', code='货币资金'（该科目最新
+        期附注）；action='policies', symbol='600519', hist_years=3（最近 3
+        期政策卡 diff 底稿）。
+
+        EC 档位（2026-11-26 test-api 实测）：notes 显式期 ≈1.4 万 / 缺省期
+        ≈68 万（先跑全量角标解析，例行查询请显式传 period）；notes_index
+        ≈97 万（勿循环调用）；policies ≈3.8 万~7.3 万。
+        """
         return tools.statement(rt, action, symbol=symbol, market=market,
-                               years=years, output=output, max_rows=max_rows)
+                               years=years, code=code, period=period,
+                               hist_years=hist_years, with_quote=with_quote,
+                               output=output, max_rows=max_rows)
 
     @mcp.tool()
     @protocol

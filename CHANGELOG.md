@@ -9,6 +9,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > MAJOR；弃用至少保留 1 个 MINOR，并在 `Deprecated` 段登记替代写法与移除版本。
 > 升级前请扫一眼 Removed / Changed / Deprecated 段。
 
+## [4.4.0] - 2026-11-26
+
+### Added
+
+- **`cli.statements.notes` / `notes_index` / `policies`：财报附注与会计政策组合门面（仅 A 股）**，
+  与平台专业版「经营分析·会计政策」页及 skill 侧 `wm-statements view=notes` 同构，读取脚本镜像上游实现：
+  - `notes(symbol, code, period=None)` → 附注明细卡 `{found, code, cn, period, source, sections}`。
+    科目认目录代码（MFNS/IO/PPE 等 53 码）也认中文名（脚本内按附注目录双匹配）；
+    `period` 缺省在脚本内解析该科目最新期（单次请求）；`found=false` = 该科目该期
+    尚未入附注库（覆盖以返回为准，勿外推）；`source` 为平台提取车道标识（全文车道
+    优先、存量车道回落）。不做聊天侧的段数截断，返回全量卡片。
+  - `notes_index(symbol)` → 附注覆盖角标 DataFrame `{code, cn, period}`（code 升序、
+    期内 period 降序；periods 为各提取车道并集）。查明细前先探覆盖，避免空跑。
+  - `policies(symbol, period=None, hist_years=0, with_quote=True)` → 会计政策卡
+    `{symbol, periods, period, cards, hist}`（镜像专业版页合同）：当期全套卡含
+    `quote` 政策原文串；`hist` 全期历史卡**不含 quote**（体积控制），`hist_years>0`
+    截最近 N 期。提取车道按期解析（全文车道优先、无车道存量回落，两线卡不混），
+    跨期 diff 不出假变更；`period` 不在期次表回落最新年报；仅年报期（12-31）。
+  - MCP `wmshare_statement` 同步新增 `notes` / `notes_index` / `policies` 三个 action
+    （新增 `code` / `period` / `hist_years` / `with_quote` 参数）。
+  - **EC 成本（2026-11-26 test-api 实测，已登记 `estimate_cost`）**：`notes` 显式期
+    ≈1.4 万 EC、缺省期先跑全量角标解析 ≈68 万 EC（**例行查询请显式传期**）；
+    `notes_index` ≈97 万 EC/次（近沙箱计算上限，勿循环调用）；`policies` ≈3.8 万~7.3 万 EC。
+  - 组合门面（eval 读取脚本），不新增目录函数、不经过目录合同的单位换算与量级守护层；
+    附注库覆盖为持续扩充的白名单制，以 `notes_index` / `found` 返回为准。
+
 ## [4.3.0] - 2026-11-26
 
 ### Changed

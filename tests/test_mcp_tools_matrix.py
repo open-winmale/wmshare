@@ -265,7 +265,14 @@ def test_intl_rejects_cn_market(runtime):
 # ---- statement / segments / dividend / estimates / corporate ----
 @pytest.mark.parametrize("action", list(STATEMENT_ACTIONS))
 def test_statement_every_action(runtime, action):
-    _ok(tools.statement(runtime, action, symbol="600519"), action=action)
+    # code 仅 notes 分派消费（科目键/中文名），其余 action 忽略
+    _ok(tools.statement(runtime, action, symbol="600519", code="IO"),
+        action=action)
+
+
+def test_statement_notes_requires_code(runtime):
+    with pytest.raises(ValueError, match="notes 需要 code"):
+        tools.statement(runtime, "notes", symbol="600519")
 
 
 @pytest.mark.parametrize("action", list(SEGMENT_ACTIONS))

@@ -54,6 +54,7 @@ COMPANY_BLOCKS = (
 )
 STATEMENT_ACTIONS = (
     "income", "balance", "cashflow", "indicators", "audit",
+    "notes", "notes_index", "policies",
 )
 SEGMENT_ACTIONS = (
     "business", "products", "region", "income", "coverage", "periods", "snapshot",

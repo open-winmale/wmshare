@@ -18,7 +18,7 @@ REPO = Path(__file__).resolve().parents[1]
 # 字节级锚：CI 是干净 checkout，快照数据被改动即红；若确为有意更新，
 # 须同步本常量并复核 content_hash。
 REPLAY_DATA_SHA256 = (
-    "e4b72dd7acb59e8d7bf9f4d376d280e6185b25fd3321b670029c4e78ae5ab3a6"
+    "8f9f0fc582f5773e70ffba32c5f8eaa4a503ea1612e839741685dd9837c793c3"
 )
 
 

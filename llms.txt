@@ -1,6 +1,6 @@
 # wmshare
 
-> 覆盖 A 股、港股、美股的 Python 财经数据 SDK：30 个数据域、371 个底层函数、2983 个指标码、188 个核心接口 + 20 个组合接口（共 208 个 friendly API）。BSD-3-Clause 开源；取数需开放平台凭证（环境变量 WMSHARE_CLIENT_ID / WMSHARE_CLIENT_SECRET，见 README）。
+> 覆盖 A 股、港股、美股的 Python 财经数据 SDK：30 个数据域、371 个底层函数、2983 个指标码、188 个核心接口 + 23 个组合接口（共 211 个 friendly API）。BSD-3-Clause 开源；取数需开放平台凭证（环境变量 WMSHARE_CLIENT_ID / WMSHARE_CLIENT_SECRET，见 README）。
 
 ## Docs
 
@@ -10,12 +10,12 @@
 - [指标库 INDICATORS](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/INDICATORS.md)：全量指标码按族导航——命名语法、11 组精选口径、死码清单与场景速查（先查码，禁止自算已有指标）
 - [指标单页索引](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/indicators/README.md)：逐码一页（类型/市场/单位/取数示例），长尾检索与 AI 引用入口
 - [AI 用法](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/AI.md)：MCP server、skill、文档上下文与报错驱动的 Agent 接入路径
-- [API 参考](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/API.md)：188 个核心接口 + 20 个组合接口的参数 / 返回 / 单位口径（字段字典 [fields.json](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/fields.json)）
+- [API 参考](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/API.md)：188 个核心接口 + 23 个组合接口的参数 / 返回 / 单位口径（字段字典 [fields.json](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/fields.json)）
 - [限制与配额](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/LIMITS.md)：单次/批量/限流/重试硬限制、先估后取（`cli.cost_estimate`）与取数配方
 - [错误码](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/ERRORS.md)：异常层级 + 全部 `code`（含义/可重试/处理）
 - [数据日历](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/DATA_CALENDAR.md)：各数据集更新频率与过期阈值；[兼容政策](https://raw.githubusercontent.com/open-winmale/wmshare/main/docs/COMPATIBILITY.md)：弃用窗口与迁移表
 - [Agent Skill](https://raw.githubusercontent.com/open-winmale/wmshare/main/src/wmshare/skills/wmshare/SKILL.md)：随包分发的 agent 用法合同（目录先行、单位铁律、决策树、坑位）
-- [可运行示例](https://raw.githubusercontent.com/open-winmale/wmshare/main/examples/README.md)：33 个编号示例（全部支持演示客户端离线试跑），CI 端到端覆盖
+- [可运行示例](https://raw.githubusercontent.com/open-winmale/wmshare/main/examples/README.md)：34 个编号示例（全部支持演示客户端离线试跑），CI 端到端覆盖
 - [CHANGELOG](https://raw.githubusercontent.com/open-winmale/wmshare/main/CHANGELOG.md)：版本历史
 
 ## Key Concepts
@@ -85,6 +85,9 @@
 - `cli.statements.cashflow(symbol: 'str', years: 'int' = 5, period: 'str' = 'annual') -> 'Any'`：现金流量表（fin_cashflow 宽表；cn/hk/us）→ DataFrame（k=科目原文，vals=各期值）。
 - `cli.statements.income(symbol: 'str', years: 'int' = 5, period: 'str' = 'annual') -> 'Any'`：利润表（fin_income 宽表；cn/hk/us）→ DataFrame（k=科目原文，vals=各期值）。
 - `cli.statements.indicators(symbol: 'str', years: 'int' = 5, period: 'str' = 'annual') -> 'Any'`：主要指标（fin_indicator 宽表；cn/hk/us）→ DataFrame（k=指标原文，vals=各期值）。
+- `cli.statements.notes(symbol: 'str', code: 'str', period: 'str | None' = None) -> 'Any'`：财报附注明细：某科目某报告期的已提取附注（A 股）→ dict。
+- `cli.statements.notes_index(symbol: 'str') -> 'Any'`：财报附注覆盖角标：该司哪些科目哪些期有附注（A 股）→ DataFrame。
+- `cli.statements.policies(symbol: 'str', period: 'str | None' = None, hist_years: 'int' = 0, with_quote: 'bool' = True) -> 'Any'`：会计政策卡：某期全套政策卡 + 全期历史卡（A 股，年报期）→ dict。
 
 ## When NOT to use
 

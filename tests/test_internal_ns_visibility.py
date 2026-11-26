@@ -57,11 +57,13 @@ def test_internal_ns_absent_from_every_public_asset():
 
 
 def test_friendly_statements_facade_is_intact():
-    """隐藏内部名字不得以牺牲 cli.statements.* 为代价（组合门面：三加一 + audit）。"""
+    """隐藏内部名字不得以牺牲 cli.statements.* 为代价（组合门面：三加一 +
+    audit + 4.4 附注/会计政策三面）。"""
     docs = (REPO / "docs" / "API.md").read_text(encoding="utf-8")
     spec = (REPO / "docs" / "openapi.json").read_text(encoding="utf-8")
     composite = COMPOSITE_METHODS.get("statements", set())
-    assert composite == {"balance", "income", "cashflow", "indicators"}
+    assert composite == {"balance", "income", "cashflow", "indicators",
+                         "notes", "notes_index", "policies"}
     assert _FRIENDLY_NS_TO_CATALOG.get("statements") == "rptdom"
     for method in sorted(composite | {"audit"}):
         assert f"cli.statements.{method}" in docs, f"docs/API.md 缺少 {method}"

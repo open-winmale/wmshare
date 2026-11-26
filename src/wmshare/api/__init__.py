@@ -2105,6 +2105,14 @@ class StatementsApi(_Api):
     统一为 ISO 风格连字符）。``years`` 期数 1..12（与专业版前端窗口对齐）。
     ``audit`` 读审计意见（按报告期对齐的年轴口径，仅 cn）。
 
+    ``notes`` / ``notes_index`` / ``policies``（4.4.0，仅 cn）读财报深研
+    提取库：附注明细按「科目 × 报告期」点查（科目认目录代码也认中文名，
+    ``notes_index`` 先探覆盖）；会计政策卡镜像专业版「经营分析·会计政策」
+    页（当期全套含 quote 原文 + 全期历史卡供跨期 diff，提取车道按期解析）。
+    覆盖到哪家/哪期/哪个科目以返回为准（``found=false`` / 空角标 = 尚未
+    入库，勿外推）。三者同为组合门面，不经过目录合同的单位换算与量级
+    守护层。
+
     ``kind`` 取值：``balance``（资产负债）/``income``（利润）/``cashflow``
     （现金流）/``indicators``（主要指标）。
     """
@@ -2190,6 +2198,135 @@ class StatementsApi(_Api):
     def audit(self, symbol: str) -> Any:
         """审计意见（按年报，返回 {年份: 意见}；cn）。"""
         return self._c.call("rptdom.statement_audit", sym=symbol)
+
+    # ---- 财报附注 / 会计政策（4.4.0，仅 cn；组合门面，读取脚本见 _stmt_xs） ----
+
+    @staticmethod
+    def _cn_symbol(symbol: str) -> str:
+        """附注/会计政策提取库仅覆盖 A 股：校验 6 位数字代码。"""
+        s = str(symbol or "").strip()
+        if len(s) != 6 or not s.isdigit():
+            raise UsageError(
+                f"附注/会计政策库仅覆盖 A 股（6 位代码），收到 {symbol!r}",
+                code="params") from None
+        return s
+
+    @staticmethod
+    def _validate_period(period: str | None) -> str:
+        """报告期归一：空值放行（上游解析最新期），非空必须 YYYY-MM-DD。"""
+        p = str(period or "").strip()
+        if p and not re.fullmatch(r"\d{4}-\d{2}-\d{2}", p):
+            raise UsageError(f"period 需为 YYYY-MM-DD，收到 {period!r}",
+                             code="params") from None
+        return p
+
+    def notes(self, symbol: str, code: str,
+              period: str | None = None) -> Any:
+        """财报附注明细：某科目某报告期的已提取附注（A 股）→ dict。
+
+        平台附注提取库按「科目 × 报告期」点查，返回
+        ``{found, code, cn, period, source, sections}``。``sections`` 为
+        附注卡片列表（``title`` / ``columns`` / ``rows[{item, c1..cN,
+        row_type}]`` / ``page`` / ``table_id`` / ``unit_note`` /
+        ``unit_scale``；``hint`` 段有提示才带）：金额为披露原值字符串
+        （千分位），单位语义见 ``unit_note``/``unit_scale``；合计行以
+        ``item=="合计"`` 识别（``row_type`` 上游不保证打 sum 标）。
+        ``found=false`` 表示该科目该期尚未入附注库——覆盖到哪家、哪期、
+        哪个科目以返回为准，勿外推；``source`` 为平台提取车道标识，值以
+        返回为准（全文车道优先、存量车道回落）。``code`` 认科目目录代码
+        （``MFNS``/``IO``/``PPE``，``$MFNS`` 指标码写法亦可，脚本内剥 `$`）
+        也认科目中文名（如"货币资金"，脚本内按目录双匹配）；``period``
+        缺省取该科目
+        最新期（脚本内解析，单次请求）。**成本注意（实测 2026-11-26）**：
+        显式传 ``period`` ≈1.4 万 EC；缺省期需先跑全量角标解析 ≈68 万
+        EC——例行查询请显式给期。覆盖面先用 :meth:`notes_index` 探明。
+        本方法为组合门面，不经过目录合同的单位换算与量级守护层。
+
+        :param symbol: 6 位 A 股代码（附注库仅覆盖 A 股）
+        :param code: 科目目录代码（如 MFNS/$MFNS/IO/PPE）或科目中文名
+        :param period: 报告期 YYYY-MM-DD（年报/半年报档）；缺省取该科目最新期（成本 50×，见上）
+        """
+        from wmshare._stmt_xs import build_notes_xs
+
+        sym = self._cn_symbol(symbol)
+        key = str(code or "").strip()
+        if not key:
+            raise UsageError(
+                "code 必填：科目目录代码（如 MFNS）或科目中文名",
+                code="params") from None
+        want = self._validate_period(period)
+        card = self._c.eval_result(build_notes_xs(sym, key, want),
+                                   symbol=sym, market="cn")
+        if not isinstance(card, dict):
+            raise UsageError(
+                "notes: 底层未返回附注卡（上游异常）", code="response")
+        return card
+
+    def notes_index(self, symbol: str) -> Any:
+        """财报附注覆盖角标：该司哪些科目哪些期有附注（A 股）→ DataFrame。
+
+        行 ``{code, cn, period}``（code 升序、期内 period 降序）。periods
+        为各提取车道的并集（上游按期过滤会误丢存量期，故角标不过滤车道）。
+        查明细（:meth:`notes`）前先用本方法探明覆盖，避免对未入库科目空跑。
+        **成本注意（实测 2026-11-26）**：全量角标扫描聚合 ≈97 万 EC/次
+        （600519=742 行），接近沙箱计算上限——勿在循环/并发里调用；
+        日常点查直接 :meth:`notes` 显式传期即可。
+
+        :param symbol: 6 位 A 股代码
+        """
+        from wmshare._stmt_xs import build_notes_index_xs
+
+        sym = self._cn_symbol(symbol)
+        rows = self._c.eval_result(build_notes_index_xs(sym),
+                                   symbol=sym, market="cn")
+        if not isinstance(rows, list):
+            raise UsageError(
+                "notes_index: 底层未返回行数组（上游异常）", code="response")
+        # 稳定双排序：code 升序、期内 period 降序（ISO 串字典序即时间序）
+        rows.sort(key=lambda r: str(r.get("period", "")), reverse=True)
+        rows.sort(key=lambda r: str(r.get("code", "")))
+        return _out(rows)
+
+    def policies(self, symbol: str, period: str | None = None,
+                 hist_years: int = 0, with_quote: bool = True) -> Any:
+        """会计政策卡：某期全套政策卡 + 全期历史卡（A 股，年报期）→ dict。
+
+        镜像平台专业版「经营分析·会计政策」页合同，返回
+        ``{symbol, periods, period, cards, hist}``：``periods`` 年报期降序；
+        ``period`` 当期（缺省最新年报，请求期不在期次表则回落最新）；
+        ``cards`` 当期全套卡（含 ``quote`` 政策原文串；``with_quote=False``
+        时**整个跳过当期拉取**、``cards`` 为空——变更 diff 场景只用
+        ``hist`` 即可，最省）；``hist`` 最近期历史卡（**恒不含 quote** 控
+        体积，``hist_years>0`` 截最近 N 期；hist 取「最新期」序列，与所点
+        ``period`` 无关）。卡字段：``policy_id``（21 族）、``asset_class`` /
+        ``scope`` / ``status`` / ``params`` / ``page_start`` /
+        ``page_end`` / ``checkbox`` / ``cross_ref`` / ``amount_domain``。
+        跨期变更检测请用 ``hist``：提取车道已按期解析（全文车道优先、
+        存量车道回落，两线卡不混），避免车道差异进 diff 出假变更。
+        仅年报期（period 以 12-31 结尾）。本方法为组合门面，不经过目录
+        合同的单位换算与量级守护层。
+
+        :param symbol: 6 位 A 股代码
+        :param period: 报告期 YYYY-MM-DD（年报）；缺省最新年报
+        :param hist_years: 历史卡截取最近 N 期，0=全期（缺省）
+        :param with_quote: False 时跳过当期全套卡拉取（cards 为空，仅 hist；变更 diff 场景最省）
+        """
+        from wmshare._stmt_xs import build_policy_xs
+
+        sym = self._cn_symbol(symbol)
+        want = self._validate_period(period)
+        if isinstance(hist_years, bool) or not isinstance(hist_years, int) \
+                or not 0 <= hist_years <= 30:
+            raise UsageError(
+                f"hist_years 只支持 0~30（0=全期），收到 {hist_years!r}",
+                code="range") from None
+        doc = self._c.eval_result(
+            build_policy_xs(sym, want, hist_years, with_quote),
+            symbol=sym, market="cn")
+        if not isinstance(doc, dict):
+            raise UsageError(
+                "policies: 底层未返回政策卡包（上游异常）", code="response")
+        return doc
 
 
 class SegmentsApi(_Api):
@@ -4520,7 +4657,10 @@ class FuturesApi(_Api):
 COMPOSITE_METHODS: dict[str, set[str]] = {
     "cbond": {"daily", "article", "figures"},
     "backtest": {"run"},
-    "statements": {"balance", "income", "cashflow", "indicators"},
+    "statements": {"balance", "income", "cashflow", "indicators",
+                   # 4.4：财报深研提取库（附注明细/覆盖角标/会计政策卡，
+                   # 读取脚本同构上游 sys/rptdom 与专业版会计政策页）
+                   "notes", "notes_index", "policies"},
     "etf": {"card", "nav", "share", "div", "portfolio", "profile", "premium", "asset", "rank"},
     # 2.5：收息诊断（索引读+四维评分+静态下限复原+榜内 rank 多源编排，真组合；
     # rating/calendar/decomp 是 income.* 直通面，在 FRIENDLY_INDEX 登记）

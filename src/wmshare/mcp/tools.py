@@ -580,18 +580,35 @@ def statement(
     market: str | None = None,
     kind: str = "income",
     years: int = 5,
+    code: str | None = None,
+    period: str | None = None,
+    hist_years: int | None = 0,
+    with_quote: bool = True,
     output: str = "sample",
     max_rows: int = MAX_ROWS,
 ) -> dict[str, Any]:
-    """Fetch curated statement views: three statements + audit (fin_* wide tables)."""
+    """Fetch curated statement views: three statements + audit + notes/policies."""
     if action not in STATEMENT_ACTIONS:
         raise ValueError(f"action 只支持 {'/'.join(STATEMENT_ACTIONS)}")
     selected_market = _market(market or runtime.market)
     cli = runtime.client(market)
     if action in {"income", "balance", "cashflow", "indicators"}:
         data = getattr(cli.statements, action)(str(symbol), years=int(years))
-    else:
+    elif action == "audit":
         data = cli.statements.audit(_symbol(action, symbol))
+    elif action == "notes":
+        note_key = str(code or "").strip()
+        if not note_key:
+            raise ValueError(
+                "notes 需要 code：附注科目目录代码（如 MFNS/IO/PPE）或科目中文名")
+        data = cli.statements.notes(_symbol(action, symbol), note_key,
+                                    period=period)
+    elif action == "notes_index":
+        data = cli.statements.notes_index(_symbol(action, symbol))
+    else:  # policies
+        data = cli.statements.policies(_symbol(action, symbol), period=period,
+                                       hist_years=int(hist_years or 0),
+                                       with_quote=bool(with_quote))
     return success(runtime, data, output=output, max_rows=max_rows,
                    action=action, kind=kind, symbol=symbol,
                    market=selected_market)

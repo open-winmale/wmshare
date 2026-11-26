@@ -206,6 +206,45 @@ def test_statements_audit(cli):
     assert all(str(k).isdigit() for k in doc)
 
 
+def test_statements_notes(cli):
+    card = cli.statements.notes(MAIN, "MFNS")
+    assert isinstance(card, dict)
+    assert {"found", "code", "cn", "period", "source", "sections"} <= set(card)
+    if card["found"]:
+        sec = card["sections"][0]
+        assert {"title", "rows"} <= set(sec)
+
+
+def test_statements_notes_cn_name(cli):
+    # 中文名走脚本内目录双匹配，与目录码同形
+    card = cli.statements.notes(MAIN, "货币资金")
+    assert isinstance(card, dict) and {"found", "sections"} <= set(card)
+
+
+def test_statements_notes_index(cli):
+    rows = cli.statements.notes_index(MAIN)
+    if hasattr(rows, "columns"):  # DataFrame
+        assert {"code", "cn", "period"} <= set(rows.columns)
+        records = rows.to_dict("records")
+    else:
+        records = rows
+    assert isinstance(records, list)
+    if records:
+        assert {"code", "cn", "period"} <= set(records[0])
+
+
+def test_statements_policies(cli):
+    doc = cli.statements.policies(MAIN)
+    assert isinstance(doc, dict)
+    assert {"periods", "period", "cards", "hist"} <= set(doc)
+    if doc["period"]:
+        assert doc["period"].endswith("12-31")  # 政策卡仅年报期
+    if doc["cards"]:
+        assert {"policy_id", "params"} <= set(doc["cards"][0])
+    if doc["hist"]:
+        assert "quote" not in doc["hist"][0]  # hist 不带 quote（体积控制）
+
+
 
 def test_indicator_get_and_metrics(cli):
     pe = cli.indicator.get(MAIN, "$PE_TTM_LAST")
