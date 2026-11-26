@@ -32,13 +32,14 @@ functions:
     cn: 港美股行规范化
     layer: L1
     returns:
-      desc: ARR · 规范化港美股行（字段并集按行取，缺字段为空）
+      desc: ARR · 规范化港美股行（字段并集按行取，缺字段为空；row_kind 行种判别）
       shape:
         kind: array
         items:
           kind: object
           cn: 港美股行
           fields:
+            - {name: row_kind, type: string, cn: 行种 ccass/holder/rating/short/forecast}
             - {name: query_date, type: string, cn: 查询日期, optional: true}
             - {name: participant_id, type: string, cn: 参与者ID, optional: true}
             - {name: participant_name, type: string, cn: 参与者名称, optional: true}
