@@ -221,9 +221,43 @@
   龙虎榜营业部席位明细（`sys/toplist/query.xs` 明示上游无落库）、
   十大流通股东（只有总口径）、增发/IPO/退市史（`disc.events` 只覆盖业绩披露，
   `stocks.lifecycle` 明示无上市/退市日期源）、高管简历（`query_executives` 无该字段）。
-- **待探针**：行业/策略/宏观研报——airflow 有 manual 采集 DAG，落库路径未证；
-  若已落库是 0.5 天的纯暴露，否则不做。
+- **研报探针结论（2026-11-26，no-go 本批不做）**：raw 层**有数据**但清洗档**全空**，
+  所以不成立「0.5 天纯暴露」：
+  - `raw 层 cn_stock_research_report` 2,601 篇（个股研报，字段 `result`）
+  - `raw 层 cn_strategy_research_report` 47 篇（策略研报）
+  - `raw 层 cn_industry_research_report` 217 篇（行业研报，**无对应清洗规则**）
+  - `raw 层 cn_macro_research_report` **集合不存在**
+  - 清洗档 `datastore.alt_bssaa_cn` 里 `research_report` / `strategy_research` /
+    `industry_research` 的 distinct symbol 全是 **0** —— 规则在 `bssaa/config.py:5924`
+    （`research_report.LIST`）与 `strategy_research_report.LIST` 里，但从未产出
+  - 顺带发现一处配置笔误：`bssaa/config.py:5996` 的宏观研报规则指向
+    `cn_marco_research_report`（**marco** 拼错），而 raw 侧即使拼对也不存在该集合
+  结论：要做研报域，得先把清洗链路跑通（查 source DAG 为何不产/是否未调度）+
+  补行业研报规则，成本 > 0.5 天，按本清单原定判据**暂不做**；登记备查。
 
-长线另立项（不入常规批次）：期权（合约/行情）、历史分钟线（平台级大工程）。
+长线另立项（不入常规批次）：**期权** 与 **历史分钟线**——两者都是平台级工程，
+本轮只立要点、不做实现，先探上游再排期。
+
+- **期权（合约 / 行情 / 希腊字母）** 要点：
+  - 上游：**未探针**（`market.futures` 覆盖的是期货；平台是否有期权合约主档与日行情
+    的落库未证）。立项第一步是只读探针：查 raw/平台是否有 ETF 期权（50ETF/300ETF/
+    500ETF/创业板ETF/科创板50ETF）与商品期权的合约表、日行情表、行权价/到期日字段。
+  - 数据量（粗估）：A 股 ETF 期权在挂合约约 1~3 千张/日，10 年 → 数百万至千万行级；
+    商品期权另计。加合约主档（含到期/行权价/合约单位）。
+  - EC：按行计费（60~75 EC/行），全历史单次拉取不可行 → 必须服务端物化 + 门面分页；
+    隐含波动率/希腊字母若上游不给，自算需标的收盘 + 无风险利率 + 分红，属派生层工作。
+  - 读面契约（草案）：`cli.option.contracts(underlying)`（在挂合约）、
+    `bars(contract, n/begin/end)`、`chain(underlying, date)`（T 型报价 + IV）。
+  - 阻塞点：无合约主档即无法定 symbol 编码规则，先探针。
+- **历史分钟线** 要点：
+  - 上游：`kline` 族只有**当日分时**（`kline.min1` 为实时快照，非历史档）；历史分钟
+    要么靠采集侧长期积累（从现在起存，最快要一年才有可用样本），要么外购。
+  - 数据量（粗估）：A 股 5,700 票 × 240 分钟 × 250 交易日 ≈ **3.4 亿行/年**；
+    V2 按「一行一文档」存储不可行（当前 `alt_valuation_daily` 1,062 万行已占 10.6M docs），
+    必须按票×日分块（如每票每日一个 doc 内嵌 240 行）或列式落冷存。
+  - EC：单根 1 分钟 K 约 60~75 EC → 单票一年 `240×250×60 ≈ 360 万 EC`，
+    全市场一年不可承受 → 只能做「按需物化 + 明确配额」或离线数据包分发。
+  - 读面契约（草案）：`cli.kline.min_bars(symbol, date)`（单票单日 240 根）+
+    `min_bars_range(begin, end)`（受配额约束）；不做实时推送（见不做清单 tick/WS）。
 不做清单：LOF/场外/货基、游资名录/热榜/竞价明细、第三方源资金流变体、中信行业、
 韩国宏观、组合 CRUD、tick、实时 WS 推送、DCE 仓单（反爬）。
