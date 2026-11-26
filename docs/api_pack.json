@@ -19086,7 +19086,7 @@
             {
               "name": "symbol",
               "required": true,
-              "desc": "6 位 A 股裸码（自动归一前缀/后缀）"
+              "desc": "6 位裸码（A 股，也可带 .SH/.SZ/.BJ 后缀）"
             }
           ],
           "returns": {
@@ -19107,7 +19107,9 @@
               }
             ]
           },
-          "notes": [],
+          "notes": [
+            "仅 A 股：非 cn 客户端调用抛 UsageError(code=\"market\")；港股没有「十大流通股东」同口径数据，主要股东权益披露用 cli.intl.query_shareholders"
+          ],
           "docs_visible": true,
           "example": "cli.equity.query_holder10(\"600519\")",
           "test": {
@@ -20667,7 +20669,9 @@
               }
             ]
           },
-          "notes": [],
+          "notes": [
+            "仅 A 股有方案面；港股标的返回空表（港股回购数据走 cli.equity.buyback_snapshot 的 exec_* 口径）"
+          ],
           "docs_visible": true,
           "example": "cli.equity.query_buyback_plan(\"600519\", limit=10)",
           "test": {
@@ -20765,7 +20769,9 @@
               }
             ]
           },
-          "notes": [],
+          "notes": [
+            "仅 A 股有明细面；港股标的返回空表（走 cli.equity.buyback_snapshot）"
+          ],
           "docs_visible": true,
           "example": "cli.equity.query_buyback_detail(\"600519\")",
           "test": {

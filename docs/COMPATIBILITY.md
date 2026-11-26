@@ -50,6 +50,7 @@
 | CLI `--anonymous`「显式匿名试用（一次性小配额）」 | 同一旗标：强制免注册免费试用（忽略已配置的凭证） | 3.3.0 | 生效（行为变更；旗标不变） |
 | `Client.anonymous(refresh=True)` 重新申领凭据 | `Client.anonymous()`（强制免注册；`refresh` 已无意义） | 3.3.0 | 弃用：仅 `refresh` 参数，计划 **5.0.0** 移除（4.0.0 为历史基线重置，代码与 3.7.1 一致，未含移除） |
 | 错误码 `anon_unavailable` / `anon_quota` / `anon_failed` / `anon_bad_response` | 不再触发；免注册被拒改报 `ip_rate_limited` / `pool_unavailable` / `ip_banned` | 3.3.0 | 保留码（仍登记在 [ERRORS.md §5](ERRORS.md)），计划 **5.0.0** 移除 |
+| `valuation.daily_basic` 的 `circ_mv` / `float_share`：收盘 × 上游「流通股份」（该字段恒等于总股本，故 `circ_mv ≡ total_mv`） | 收盘 × **当日无限售股份**（自由流通口径，常态 `circ_mv ≤ total_mv`）；要旧口径请用 `total_mv` | 4.3.0 | 生效（行为修正：签名/字段集不变，仅数值口径；历史行以 repair 窗口为界，窗口外仍为旧口径） |
 
 > 2.0.0 与 3.0.0 是无兼容负担的一次性大版本：全部破坏性变更集中在该版本，未做
 > 渐进弃用（2.0.0 拆 `_df` 与单位口径，3.0.0 拆 demo 模式——免注册试用已覆盖其

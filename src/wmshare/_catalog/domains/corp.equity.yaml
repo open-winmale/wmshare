@@ -1,5 +1,5 @@
 id: corp.equity
-version: 2.3.0
+version: 2.4.0
 cn: 股东与股本
 kind: raw
 category: reference
@@ -32,7 +32,7 @@ notes:
     sampling 如 Q4）'
 functions:
   # ---- 股东 ----
-  - {name: equity.query_holder10, cn: 最新一期十大股东, layer: L0, normalize_with: equity.fmt_holder10, ranges: {hold_num_ratio: [0, 1]}}
+  - {name: equity.query_holder10, cn: 最新一期十大股东, layer: L0, normalize_with: equity.fmt_holder10, ranges: {hold_num_ratio: [0, 1]}, notes: ['仅 A 股：非 cn 客户端调用抛 UsageError(code="market")；港股没有「十大流通股东」同口径数据，主要股东权益披露用 cli.intl.query_shareholders']}
   - {name: equity.query_holdernum, cn: 最新股东户数, layer: L0, normalize_with: equity.fmt_holdernum, ranges: {hold_ratio_total: [0, 1], freehold_ratio_total: [0, 1], total_num_ratio: [-1, 1], avg_freeshares_ratio: [-1, 1], avg_hold_amt: [0, 1.0e+09], avg_free_shares: [0, 1.0e+10]}, notes: [total_num_ratio 为股东户数环比变化率，可为负（户数减少），下界取 -1；原下界 0 会让默认调用抛 DataError]}
   - name: equity.query_holdernum_history
     cn: 股东户数历史序列
@@ -89,8 +89,8 @@ functions:
   - {name: equity.query_national_team, cn: 国家队持股, layer: L0, normalize_with: equity.fmt_national_team, units: {shares_ratio: percent, shares_ratio_change: percent}, ranges: {shares_ratio: [0, 1], shares_ratio_change: [-1, 1]}}
   # ---- 治理事件 ----
   - {name: equity.query_release, cn: 限售解禁日程, layer: L0, normalize_with: equity.fmt_release, units: {total_shares_ratio: percent, unlimited_ratio: percent}, ranges: {total_shares_ratio: [0, 1], unlimited_ratio: [0, 1]}}
-  - {name: equity.query_buyback_plan, cn: 回购方案全览, layer: L0, normalize_with: equity.fmt_buyback_plan}
-  - {name: equity.query_buyback_detail, cn: 回购执行明细, layer: L0, normalize_with: equity.fmt_buyback_detail}
+  - {name: equity.query_buyback_plan, cn: 回购方案全览, layer: L0, normalize_with: equity.fmt_buyback_plan, notes: ['仅 A 股有方案面；港股标的返回空表（港股回购数据走 cli.equity.buyback_snapshot 的 exec_* 口径）']}
+  - {name: equity.query_buyback_detail, cn: 回购执行明细, layer: L0, normalize_with: equity.fmt_buyback_detail, notes: ['仅 A 股有明细面；港股标的返回空表（走 cli.equity.buyback_snapshot）']}
   - name: buyback.snapshot
     cn: 回购六口径快照
     kind: raw

@@ -9,6 +9,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > MAJOR；弃用至少保留 1 个 MINOR，并在 `Deprecated` 段登记替代写法与移除版本。
 > 升级前请扫一眼 Removed / Changed / Deprecated 段。
 
+## [4.3.0] - 2026-11-26
+
+### Changed
+
+- **`valuation.daily_basic` 的 `circ_mv` / `float_share` 改用「无限售股份」（自由流通口径）**。
+  此前取上游股本快照的「流通股份」，实测该字段恒等于「总股份」（600519 16 档 /
+  000001 63 档 / 301558 17 档逐档核对）——于是 `circ_mv ≡ total_mv`，次新股的自由
+  流通市值被大幅高估：最极端 688801 只流通 4.16%（虚增约 24 倍）、688781 4.16%、
+  001399 5.81%，全市场 **3,082 / 6,167 票**受影响。
+  现在 `circ_mv = 当日收盘 × 当日无限售股份`，行内仍满足
+  `circ_mv / float_share == 当日 close`，常态 `circ_mv ≤ total_mv`。
+  - **影响面**：只改数值口径；签名、信封、字段集均不变（仍 10 字段）。
+  - **历史边界**：只有 repair 窗口（默认近 60 交易日）内的行被重写，窗口外的旧行
+    仍是「流通股份」口径，同一条序列可能出现一次跳变。
+  - **迁移**：需要口径一致的长历史请用 `total_mv`；或先用
+    `cli.valuation.daily_basic(symbol, begin=…, end=…)` 确认该区间的口径边界。
+
+### Fixed
+
+- `cli.equity.query_buyback_detail` / `query_buyback_plan` 对港股标的返回 `None`
+  （调用方 `len()` 直接崩）→ 改为空行数组 / 空表；`query_buyback_detail` 的
+  **返回形态保持不变**（历史契约是行数组，不经 `_out`），只把 `None` 归一为 `[]`。
+- `cli.equity.query_holder10` 对非 A 股标的静默返回空表 → 改为抛
+  `UsageError(code="market")` 并指向港股替代入口 `cli.intl.query_shareholders`
+  （口径不同：主要股东权益披露，不是「十大流通股东」）。
+
 ## [4.2.2] - 2026-11-25
 
 ### Fixed

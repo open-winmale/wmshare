@@ -197,6 +197,25 @@ def _rows(result: Any) -> Any:
     return result
 
 
+def _require_cn_market(client: Any, what: str, *, alt: str = "") -> None:
+    """仅 A 股门面的市场前置校验：非 cn 直接抛 ``UsageError(code="market")``。
+
+    仓内对「港美股函数被 A 股调用」的既有约定是宽容返回空（见
+    `market.intl.yaml` notes）。反方向（只有 A 股数据的函数被港股调用）如果也
+    静默返回空表，调用方无法区分「不支持」与「这只票没数据」——所以这里显式
+    拒绝，并在消息里给港股/美股的替代入口。
+
+    与 ``FuturesApi._require_cn_client``（期货专用的同类守卫）同源；那边消息
+    写死「期货取数」，故这里单独提供带 ``what`` 的通用版，避免文案串味。
+    """
+    mk = str(getattr(client, "market", "cn") or "cn").lower()
+    if mk == "cn":
+        return
+    hint = f"；港股/美股请改用 {alt}" if alt else ""
+    raise UsageError(
+        f"{what} 仅支持 A 股（当前 Client market={mk!r}）{hint}", code="market")
+
+
 def _sort_rows_by_date(rows: Any, key: str = "date") -> Any:
     """序列方向标准化（2.0）：按日期键**升序**（旧→新）稳定排序。
 
@@ -2230,6 +2249,8 @@ class ValuationApi(_Api):
     # 与 _catalog/domains/fund.valuation.yaml units 一致）。
     # total_share/float_share 为 2026-11-25 新增：与市值族同源（当日收盘 × 当日
     # 股本），故 total_mv / total_share 恒等于当日 close。
+    # 2026-11-26（4.3.0）起 float_share/circ_mv 改取「无限售股份」（自由流通口径），
+    # 此前取「流通股份」而上游该字段恒等于总股本 → circ_mv 曾等于 total_mv。
     _DAILY_FIELDS = ("pe_ttm", "pb", "ps", "pr", "total_mv", "circ_mv",
                      "turnover_rate", "dv_ttm", "total_share", "float_share")
 
@@ -2295,10 +2316,17 @@ class ValuationApi(_Api):
         每股每交易日一行（airflow pipeline.cn.valuation_daily 每日 17:05 物化、
         就绪探针至 17:30），10 字段全部服务端现成口径直出、2.0 基础单位
         （率=小数、额=元、量=股）：``pe_ttm/pb/ps/pr``（HIST_STATS 同核，公告日
-        PIT）、``total_mv/circ_mv/total_share/float_share``（**当日**收盘 ×
-        **当日**股本，行内自洽：``total_mv / total_share`` == 当日 close）、
-        ``turnover_rate``、``dv_ttm``。数据自物化日起可用；历史回填深度见域
-        目录 notes（诚实缺行，不伪造）。
+        PIT）、``total_mv/total_share``（**当日**收盘 × **当日**总股本）、
+        ``circ_mv/float_share``（**当日**收盘 × **当日无限售股份** = 自由流通
+        口径，2026-11-26 起；行内自洽 ``circ_mv / float_share`` == 当日 close，
+        且常态 ``circ_mv ≤ total_mv``）、``turnover_rate``、``dv_ttm``。数据自
+        物化日起可用；历史回填深度见域目录 notes（诚实缺行，不伪造）。
+
+        .. note::
+           ``circ_mv``/``float_share`` 的口径在 4.3.0 由上游「流通股份」（恒等于
+           总股本）改为「无限售股份」。**历史行以 repair 窗口为界**：窗口外旧行
+           仍是旧口径，同一条序列可能有一次跳变；需要口径一致的长历史请用
+           ``total_mv``。
 
         :param begin: ISO 起日（含），``None``/``""`` = 开区间
         :param end: ISO 止日（含），``None``/``""`` = 开区间
@@ -3234,7 +3262,20 @@ class EquityApi(_Api):
 
     # ---- 股东 ----
     def query_holder10(self, symbol: str) -> Any:
-        """最新一期十大股东（holder_name/hold_num/hold_num_ratio）。"""
+        """最新一期十大股东（holder_name/hold_num/hold_num_ratio）。
+
+        **仅 A 股**：非 cn 客户端的 ``Client.market`` 会直接抛
+        ``UsageError(code="market")``。港股没有「十大流通股东」同口径数据，
+        主要股东权益披露请改用 ``cli.intl.query_shareholders``（口径不同：
+        权益披露原文，不是按持股排序的前十大流通股东）。
+
+        :param symbol: 6 位裸码（A 股，也可带 .SH/.SZ/.BJ 后缀）
+        :raises UsageError: ``code="market"`` 当客户端市场不是 cn
+        :returns: DataFrame · holder_name/hold_num/hold_num_ratio
+        """
+        _require_cn_market(
+            self._c, "equity.query_holder10",
+            alt="cli.intl.query_shareholders（港股主要股东权益披露）")
         return _out(self._c.call("equity.query_holder10", sym=symbol))
 
     def query_holdernum(self, symbol: str) -> Any:
@@ -3333,13 +3374,26 @@ class EquityApi(_Api):
     def query_buyback_plan(self, symbol: str, limit: int = 20) -> Any:
         """回购方案全览（进度/价格上限/金额上限/起始日）。
 
+        仅 A 股有方案面；港股标的返回空表（不是 ``None``——``None`` 会让调用方
+        ``len()`` 崩，且与门面「查不到即空表」的契约不一致）。
+
         :param limit: 条数，默认 20
         """
-        return _out(self._c.call("equity.query_buyback_plan", sym=symbol,limit=limit, ))
+        return _out(self._c.call("equity.query_buyback_plan", sym=symbol,limit=limit, ) or [])
 
     def query_buyback_detail(self, symbol: str) -> Any:
-        """回购执行明细单行（已回购股数/金额/公告日）。"""
-        return self._c.call("equity.query_buyback_detail", sym=symbol)
+        """回购执行明细单行（已回购股数/金额/公告日）。
+
+        仅 A 股有明细面；港股标的返回**空行数组**（港股回购数据走
+        ``buyback_snapshot``，只给 ``exec_*`` 口径）。
+
+        .. note::
+           本方法历史上直接返回行数组（不经 ``_out``），2.0 起未改；为免静默
+           改变返回形态，这里保持「行数组」不变，只在无数据时把 ``None`` 归一为
+           ``[]``（此前港股会返回 ``None``，调用方 ``len()`` 直接崩）。
+        """
+        rows = self._c.call("equity.query_buyback_detail", sym=symbol)
+        return [] if rows is None else rows
 
     def buyback_snapshot(self, symbol: str) -> Any:
         """回购六口径快照（exec/plan × 近1年/累计 × 含/不含注销式）。

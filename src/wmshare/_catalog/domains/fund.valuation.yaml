@@ -1,5 +1,5 @@
 id: fund.valuation
-version: 1.2.0
+version: 1.3.0
 cn: 每日估值
 kind: computed
 category: fundamentals
@@ -8,8 +8,8 @@ description: 个股每日估值宽表（服务端物化 alt.valuation_daily，ai
   pipeline.cn.valuation_daily 每日 17:05 物化（2026-11-24 起从 16:25 前移至引擎
   估值交付点后，起跑带就绪探针至 17:30；当日行常态当日可见，引擎延迟交付时
   回退 T-1）。每股每交易日一行，10 字段全部服务端现成口径直出，消费端零换算；
-  **市值族与股本列同源**（total_mv = 当日不复权收盘 × 当日总股本），行内自洽。
-  方案：docs/upstream-daily-basic-plan.md v3（2026-11-17 定稿）。
+  **市值族与股本列同源**（total_mv = 当日不复权收盘 × 当日总股本，
+  circ_mv = 当日不复权收盘 × 当日无限售股份），行内自洽。
 data_origin: [服务端物化（kline × 财报 × 股本事件 × 分红事件，公式同平台现算核）]
 units:
   pe_ttm: 倍（MV ÷ NPTS_TTM，公告日 TTM）
@@ -17,11 +17,11 @@ units:
   ps: 倍（MV ÷ TR_TTM）
   pr: 倍（PE_TTM ÷ ROE_TTM ÷ 100，市赚率）
   total_mv: 元（**当日**不复权收盘 × **当日**总股份，变更日含当日生效）
-  circ_mv: 元（**当日**不复权收盘 × **当日**流通股份）
+  circ_mv: 元（**当日**不复权收盘 × **当日无限售股份**——自由流通口径，2026-11-26 起）
   turnover_rate: 小数（0.012 = 1.2%）
   dv_ttm: 小数（0.03 = 3%，DPS_TTM ÷ CLOSE）
   total_share: 股（当日总股本）
-  float_share: 股（当日流通股本；上游披露口径「流通股份」恒等于「总股份」）
+  float_share: 股（当日**无限售股份**——自由流通股本，2026-11-26 起；早年档位无该字段时回退「流通股份」）
 requires: {path: sys/valuation/init.xs, preloaded: true}
 notes:
   - 可用性：仅 A 股（CN 专用表；HK/US 无流通股份源，诚实缺列不建表）
@@ -32,8 +32,14 @@ notes:
     刻 tip）配 `AT(锚日)`，会把 T 的市值写进 T-1 的行，事故修复还会造成整段冻结；
     修正后行内满足 `total_mv / total_share ≈ close`'
   - 行内缺失字段诚实缺列（不零填充）；亏损期 pe_ttm 缺行与平台现算口径一致
-  - 'float_share 与 total_share 在上游披露口径中相等（披露项名为「流通股份」但
-    实为总股本）；真实可流通口径为「无限售股份」，本表暂不落'
+  - '**口径（2026-11-26 变更，4.3.0）**：`float_share`/`circ_mv` 改取「无限售股份」
+    （自由流通口径）。此前取上游「流通股份」，实测恒等于「总股份」，导致
+    `circ_mv` 与 `total_mv` 相同、次新股自由流通市值虚增（最极端 688801 只流通
+    4.16%，虚增约 24 倍；全市场 3,082/6,167 票受影响）。**历史行有边界**：只有
+    repair 窗口（默认近 60 交易日）内被重写，窗口外的旧行仍是「流通股份」口径，
+    同一条序列可能出现一次性跳变——需要口径一致的旧数据时用 `total_mv`，或核对
+    该票的 repair 覆盖区间。'
+  - '`circ_mv ≤ total_mv` 是常态（全流通票取等）；个别行 `circ_mv > total_mv` 说明该行仍是旧口径或上游档位异常'
 functions:
   - name: valuation.daily_basic
     cn: 个股每日估值序列
