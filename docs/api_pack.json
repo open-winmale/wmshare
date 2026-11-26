@@ -802,7 +802,7 @@
             {
               "name": "symbol",
               "required": true,
-              "desc": "6 位 A 股代码（也接受 .SH/.SZ/.BJ 后缀）；港美股支持 hfq 的"
+              "desc": "6 位 A 股代码（也接受 .SH/.SZ/.BJ 后缀）；港股 hfq 因子真实"
             },
             {
               "name": "n",

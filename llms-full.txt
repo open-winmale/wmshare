@@ -1871,15 +1871,15 @@ cli.kline.is_etf("600519")
 
 口径（**累计因子**，ipo 起算、长期递增）：同一交易日的 `hfq_close / nr_close`。实测 600519 近三日 8.6469 恒定（区间内无除权）， 除权日出现台阶；需要**归一因子**（最新日恒为 1）请自行除以末值—— `factor / factor.iloc[-1]`，与 `qfq_close / nr_close` 同口径。
 
-实现为两次取数的组合面（非目录函数）：不复权与后复权各读一次同窗口， 按 date 内积。任一档缺该日期时该行不出（诚实缺行）——后复权缺失通常 发生在极早期历史（无国内因子源的美股 hfq 同不复权，factor 恒 1）。
+实现为两次取数的组合面（非目录函数）：不复权与后复权各读一次同窗口， 按 date 内积。任一档缺该日期时该行不出（诚实缺行）——美股 after 为历史 快照、不随日更（2026-11-26 实测 AAPL 快照覆盖期内因子 ≈232.6，尾端 2026-03-13），快照窗口外美股 hfq 缺行，此时区间不重叠返空表。
 
 成本：两次 `kline.bars` 同窗口（≈2×行数×60~75 EC 冷态）；复跑走 kline 窗口缓存更省。区间查询复用 `kline.bars` 的锚点分页。
 
-市场可用，但美股后复权无国内因子源（factor 恒 1）
+（实测 00700 累计 5.9453）；美股 hfq 为历史快照（不日更），快照覆盖期内 因子真实（实测 AAPL ≈232.6）、快照外窗口返空表
 
 | 参数 | 类型 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `symbol` | string | 是 | — | 6 位 A 股代码（也接受 .SH/.SZ/.BJ 后缀）；港美股支持 hfq 的 |
+| `symbol` | string | 是 | — | 6 位 A 股代码（也接受 .SH/.SZ/.BJ 后缀）；港股 hfq 因子真实 |
 | `n` | integer | 否 | `None` | 最近 N 个交易日（默认 120）；与 begin/end 互斥 |
 | `begin` | string | 否 | `None` | 起始日期（含，YYYY-MM-DD），须与 end 同时提供；与 n 互斥 |
 | `end` | string | 否 | `None` | 结束日期（含） |
@@ -7331,7 +7331,7 @@ cli.info.profile("600519")
 - `gold.query_bars`（金交所现货区间日线）：begin/end 通过服务端 startTs/endTs 下推（不客户端过滤）；区间无数据返回空数组
 - **指数 域**：可用性：指数键与申万行业为 cn 口径；v1.1.0 函数前缀 index.* → indices.*：上游内建 index 常量 MAP 占名（selector policy violation），cli.index 门面不变；成员行 roe_ttm/pe_ttm 等为指标层原值（比率小数、倍数口径），SDK 不再换算；valuation.series 为季采样点（d/pe/pb），前端/调用方可自行算分位；trend.base/med 为周频/月频点，均为降序（新→旧）；trend 自带历史分位：rank0/(n-1) 并列取中点，pct.pe/pb/pe_med 各含 p/p3/p5/p10；win_trunc=true 表示缓存序列盖不住所选窗口，相关分位为 null（不拿短窗口冒充长窗口）；trend 的 pct.<col>.p 恒为 5 年分位（平台 pct_bundle 固定，与入参 window 无关）；SDK 按 window 取 p3/p5/p10 并回显 pe_pct_window，故 trend("3y")["pe_pct"] == pct.pe.p3；trend 覆盖宽基 11 + 申万一级 31（industry.SXX）+ 红利 14 键；L2/L3 行业未预热（ok=false），中信行业无该数据。指数/行业 PE 历史只能走 trend（$PCT_PE_TTM_* 按个股 $SYMBOL 绑定，不随 key 切换）；trend 口径：整体法 PE=Σ成分股市值/Σ成分股归母净利润TTM（$ID_PE_TTM_TOTAL），PB=ΣMV/ΣSE_NOGW；分母≤0 时 PE 为 nil（行业整体亏损则无 PE，SDK 标 pe_missing）。周频约 730 点（cursor.ds(3650)≈14.5 年，为覆盖 10y 分位窗口），月频约 174 点出正 PE 中位数。单键全量重算实测约 3.2M fuel/39s，故 cron 预热（交易日 16:20-16:29 增量首批、16:25-18:55 每半小时补跑班、19:00 最终兜底、周六全量）而非请求时现算；当日点在官方日 K 落库（SLA 16:10）后由 asof 门控推进；股息率只有当前值、没有历史序列（DV 无 series），因此不出股息率分位；indices.weights 传入未注册的指数键时上游返回 HTTP 500（不是空结果）；SDK 以 ServerError 透出，不自动重试、不降级为空数组。先用 indices.keys / indices.universe_keys 校验键
 - **港美股披露 域**：客户端 market 参数须与标的注册市场一致：cn 客户端调港美股代码会 400 market mismatch（v1.1.0 起如实标注）；A股标的调用多返回空（对应数据集为港美股口径）；港股盈利预测行保留披露原文中文键（财政年度/纯利/每股盈利等）；数值为披露原文口径 不做换算：纯利=百万（港元）、每股盈利/每股股息=仙（cents，如 eps 2550 = 25.50 港元）、 fiscal_year=年份（2026-10-28 港股龙头样本实测）；issue_info 为美股发行快照（发行价/数量/日期），字段以披露源为准
-- **行情K线 域**：复权 adj 取值 nr(不复权,默认)/qfq(前复权)/hfq(后复权)；周期 period 取值 D(日,默认)/W(周)/M(月)——周/月为服务端预派生（日期=周期末交易日）； 指数键只有日频，period 非 D 返回空数组。美股后复权日线无国内因子源（hfq 端点实测 与不复权逐位相同），after 为历史快照、不随日更更新；指数键（index.hs300 / 399xxx 等）自动分流指数点位；指数无复权，*_adj 忽略 adj；盘中三分工：query_last_live=最新一根快照；query_bars_live=最近 n 根日 K（外部行情源）； query_min1_live=当日 1 分钟分时（有损合成采样，非逐笔 Level2）；ETF（沪 51/52/56/58、深 159，共 1600+ 只）日线有数据；分时/live 查询无分钟源会被拦截；query_bars_live 读预热变量而非实时请求：冷缓存返回空数组（尚未预热）， 语义不是「该标的无数据」；按防坑清单不得把空数组当 0 或静默降级， 需显式标注缓存状态，或改用 query_bars 取已入库日 K；指数键（index.hs300 / 399xxx）在 query_last_live / query_last_live_many / query_min1_live 三个个股盘中入口下无数据；上游另有 query_index_last_live / query_index_last_live_many / query_index_min1_live / query_index_min1_live_meta。 SDK 不自动改写路由，调用方须显式选指数入口；返回空 MAP 或 nil 属入口不匹配， 不得解读为「指数无行情」；返回根数：财报季 query_bars 不因披露进度截断；日频回测口径仍按已披露数据截断；脚本原生 volume 为手（仅 cn/ETF）；港美上游即股——SDK 的手×100 换算只在 market="cn" 生效，港美原值直出；换算后守护 volume×close≈amount 不变量 （query_bars_adj 为复权价，不套该不变量）；_units="native"/_raw=True 可取原值
+- **行情K线 域**：复权 adj 取值 nr(不复权,默认)/qfq(前复权)/hfq(后复权)；周期 period 取值 D(日,默认)/W(周)/M(月)——周/月为服务端预派生（日期=周期末交易日）； 指数键只有日频，period 非 D 返回空数组。美股 after 为历史快照、不随日更更新 （2026-11-26 实测：快照覆盖期内 hfq 因子真实——AAPL 累计 ≈232.6，尾端 2026-03-13； 快照窗口外美股 hfq 缺行）。港股 hfq 因子真实（实测 00700 累计 5.9453，ipo 起算）；指数键（index.hs300 / 399xxx 等）自动分流指数点位；指数无复权，*_adj 忽略 adj；盘中三分工：query_last_live=最新一根快照；query_bars_live=最近 n 根日 K（外部行情源）； query_min1_live=当日 1 分钟分时（有损合成采样，非逐笔 Level2）；ETF（沪 51/52/56/58、深 159，共 1600+ 只）日线有数据；分时/live 查询无分钟源会被拦截；query_bars_live 读预热变量而非实时请求：冷缓存返回空数组（尚未预热）， 语义不是「该标的无数据」；按防坑清单不得把空数组当 0 或静默降级， 需显式标注缓存状态，或改用 query_bars 取已入库日 K；指数键（index.hs300 / 399xxx）在 query_last_live / query_last_live_many / query_min1_live 三个个股盘中入口下无数据；上游另有 query_index_last_live / query_index_last_live_many / query_index_min1_live / query_index_min1_live_meta。 SDK 不自动改写路由，调用方须显式选指数入口；返回空 MAP 或 nil 属入口不匹配， 不得解读为「指数无行情」；返回根数：财报季 query_bars 不因披露进度截断；日频回测口径仍按已披露数据截断；脚本原生 volume 为手（仅 cn/ETF）；港美上游即股——SDK 的手×100 换算只在 market="cn" 生效，港美原值直出；换算后守护 volume×close≈amount 不变量 （query_bars_adj 为复权价，不套该不变量）；_units="native"/_raw=True 可取原值
 - `kline.query_bars`（历史 K 线）：财报季不因披露进度截断
 - `kline.query_bars_period`（历史 K 线（周/月周期））：周/月 K 为服务端预派生（由日线聚合，日期=周期末交易日），不是客户端重采样；指数键只有日频：period 非 D 返回空数组（不静默降级成日K）；美股周/月自 2026-11 起由上游日更管线派生；更早周期为历史快照；不套 volume_amount 不变量：volume×close/amount 恒等于「期末价/期内成交均价」， 日线两者近似相等，聚合周期则天然偏离（实测月线 2,269 样本落在 [0.07, 2.59]， 周线 3,600 样本 [0.85, 1.15]）；拆股月与早年 amount 口径差异会放大到数倍， 套用 [0.4, 2.5] 会把正常序列判成单位漂移
 - `kline.query_bars_period_adj`（历史 K 线（周/月周期·复权））：close 为复权价，volume×close 与 amount 不再可比，故不套 volume_amount 不变量；复权在日线上先行完成，再按周期聚合（除权周口径比「原生 bar×周末因子」更正确）

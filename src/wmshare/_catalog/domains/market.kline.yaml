@@ -17,8 +17,9 @@ stores: [kline(前复权), kline_normal(不复权), kline_after(后复权)]
 notes:
   - 复权 adj 取值 nr(不复权,默认)/qfq(前复权)/hfq(后复权)
   - 周期 period 取值 D(日,默认)/W(周)/M(月)——周/月为服务端预派生（日期=周期末交易日）；
-    指数键只有日频，period 非 D 返回空数组。美股后复权日线无国内因子源（hfq 端点实测
-    与不复权逐位相同），after 为历史快照、不随日更更新
+    指数键只有日频，period 非 D 返回空数组。美股 after 为历史快照、不随日更更新
+    （2026-11-26 实测：快照覆盖期内 hfq 因子真实——AAPL 累计 ≈232.6，尾端 2026-03-13；
+    快照窗口外美股 hfq 缺行）。港股 hfq 因子真实（实测 00700 累计 5.9453，ipo 起算）
   - 指数键（index.hs300 / 399xxx 等）自动分流指数点位；指数无复权，*_adj 忽略 adj
   - 盘中三分工：query_last_live=最新一根快照；query_bars_live=最近 n 根日 K（外部行情源）；
     query_min1_live=当日 1 分钟分时（有损合成采样，非逐笔 Level2）
