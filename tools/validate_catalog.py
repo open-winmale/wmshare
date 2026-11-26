@@ -56,6 +56,10 @@ INTERNAL_HELPERS = {
     # 美宏观日期校验：纯字符级判断（DATE()/INT() 遇非法串会抛宿主异常 → HTTP 500），
     # 仅供 fred.points_asc 内部调用，不暴露给 SDK 用户。
     "fred.iso_date",
+    # 上游 2026-11 新增区间日 K 直调（kline.bars(sym, begin, end)）：与 friendly
+    # 组合面 cli.kline.bars 同名，直接进目录会形成「同名双面」（目录直调 vs 组合
+    # 门面）歧义——暂以内部函数登记，是否公开待独立评估（含 EC 档位/区间护栏）。
+    "kline.bars",
 }
 
 

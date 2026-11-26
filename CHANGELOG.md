@@ -9,6 +9,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > MAJOR；弃用至少保留 1 个 MINOR，并在 `Deprecated` 段登记替代写法与移除版本。
 > 升级前请扫一眼 Removed / Changed / Deprecated 段。
 
+## [4.5.0] - 2026-11-26
+
+### Added
+
+- **放行内部报表域的附注提取三函数进目录（`cli.call` 直调；4.4.0 组合面的底层原函数）**：
+  `note_index`（附注角标）/ `notes_for`（附注明细卡）/ `note_stmt_values`（报表行值），
+  挂内部命名空间下（属性面/搜索/文档/MCP 不露出，直调形如
+  `cli.call("<内部域>.notes_for", sym=…, code=…, period=…)`）。目录合同
+  （params/returns/example）落 `fund.statements.yaml` v1.4.0，
+  inventory 上游 rev 前进至 `edf8dd2d`（388 = 374 对外 + 14 内部）。
+  - **口径警示（与认证三表分离）**：`note_stmt_values` 是提取车道重建的报表行值
+    （全文车道优先、存量回落，构建期定线），**不是** `fin.balance/fin.income/fin.cashflow`
+    认证宽表——重述调整与车道回落会造成两源差异，对账必须先与
+    `cli.statements.balance/income/cashflow` diff 核对、以三表为准；正式数值结论一律
+    用三表组合面。`notes_for` 返回披露原文提取卡（原值字符串+千分位），非结构化报表数字。
+  - 内部域属性锁不松：`cli.rptdom` 属性访问 / `cat.search` / friendly 属性 / docs / MCP
+    仍不露出（仅 `cli.call` 直调）。
+  - EC 档位实测（2026-11-26 test-api）：notes_for 显式期 ≈4.2k 起（随域数放大）、
+    note_index ≈68 万、note_stmt_values ≈5.4k；已登记 `estimate_cost`。
+
+### Changed
+
+- **inventory 上游同步（964affe0 → edf8dd2d）**：上游新增 `kline.bars(sym, begin, end)`
+  （区间日 K 直调）暂登记 INTERNAL_HELPERS 不进目录——与 friendly 组合面
+  `cli.kline.bars` 同名，公开待独立评估（EC 档位/区间护栏/双面歧义）。
+
 ## [4.4.0] - 2026-11-26
 
 ### Added

@@ -7232,6 +7232,18 @@
                 0,
                 100000000000.0
               ]
+            },
+            {
+              "name": "loan_balance_amt",
+              "type": "float64",
+              "optional": true,
+              "desc": "融券余额(元)"
+            },
+            {
+              "name": "total_balance",
+              "type": "float64",
+              "optional": true,
+              "desc": "两融余额(元)"
             }
           ]
         },

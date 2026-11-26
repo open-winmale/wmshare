@@ -40,7 +40,7 @@ def _load(path: Path, name: str):
 def test_guard_coverage_cannot_regress():
     mod = _load(GUARD_TOOL, "guard_coverage_baseline")
     result = mod.collect(mod.DEFAULT_DOMAINS)
-    assert result["functions"] == 371  # +gold 3（2026-11-25）
+    assert result["functions"] == 374  # +gold 3（2026-11-25）+rptdom 附注三函数（4.5）
     assert result["guarded"] >= 90
     # 分子 85 = 83（板块资金流）+ blocktrade.by_date/by_symbol（价格/量/额 ranges）。
     # 分母 355 的稀释项均为无数值守护语义的检索/工具函数（批次1 9 条 + mapping/

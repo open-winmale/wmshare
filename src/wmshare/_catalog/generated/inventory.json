@@ -1,6 +1,6 @@
 {
  "schema_version": 2,
- "upstream_rev": "964affe0",
+ "upstream_rev": "edf8dd2d",
  "domains": {
   "blocktrade": {
    "entry": "sys/blocktrade/init.xs",
@@ -165,7 +165,7 @@
   "toplist",
   "valuation"
  ],
- "function_count": 384,
+ "function_count": 388,
  "functions": [
   {
    "name": "blocktrade.by_date",
@@ -6395,6 +6395,11 @@
      "cn": "规范化行",
      "fields": [
       {
+       "name": "row_kind",
+       "type": "string",
+       "cn": "行种 ccass/holder/rating/short/forecast"
+      },
+      {
        "name": "participant_name",
        "type": "string",
        "cn": "参与者名称",
@@ -6537,6 +6542,92 @@
     {
      "name": "limit",
      "type": "int"
+    }
+   ]
+  },
+  {
+   "name": "kline.bars",
+   "cn": "区间日 K",
+   "example": "kline.bars(\"index.shzs\", \"2019-11-01\", \"2026-11-25\")",
+   "returns": "ARR · bars",
+   "returns_shape": {
+    "kind": "array",
+    "cn": "K 线序列",
+    "items": {
+     "kind": "object",
+     "cn": "K 线 bar",
+     "fields": [
+      {
+       "name": "sas",
+       "type": "string",
+       "cn": "SAS",
+       "optional": true
+      },
+      {
+       "name": "date",
+       "type": "string",
+       "cn": "日期",
+       "optional": true
+      },
+      {
+       "name": "open",
+       "type": "float64",
+       "cn": "开",
+       "optional": true
+      },
+      {
+       "name": "high",
+       "type": "float64",
+       "cn": "高",
+       "optional": true
+      },
+      {
+       "name": "low",
+       "type": "float64",
+       "cn": "低",
+       "optional": true
+      },
+      {
+       "name": "close",
+       "type": "float64",
+       "cn": "收",
+       "optional": true
+      },
+      {
+       "name": "volume",
+       "type": "float64",
+       "cn": "量",
+       "optional": true
+      },
+      {
+       "name": "amount",
+       "type": "float64",
+       "cn": "额",
+       "optional": true
+      },
+      {
+       "name": "percent",
+       "type": "float64",
+       "cn": "涨跌幅",
+       "optional": true
+      }
+     ],
+     "name": ""
+    }
+   },
+   "min_args": 3,
+   "params": [
+    {
+     "name": "sym",
+     "type": "string"
+    },
+    {
+     "name": "begin",
+     "type": "string"
+    },
+    {
+     "name": "end",
+     "type": "string"
     }
    ]
   },
@@ -8847,6 +8938,18 @@
        "type": "float64",
        "cn": "融券余量(股)",
        "optional": true
+      },
+      {
+       "name": "loan_balance_amt",
+       "type": "float64",
+       "cn": "融券余额(元)",
+       "optional": true
+      },
+      {
+       "name": "total_balance",
+       "type": "float64",
+       "cn": "两融余额(元)",
+       "optional": true
       }
      ],
      "name": ""
@@ -8968,6 +9071,18 @@
        "name": "loan_balance",
        "type": "float64",
        "cn": "融券余量(股)",
+       "optional": true
+      },
+      {
+       "name": "loan_balance_amt",
+       "type": "float64",
+       "cn": "融券余额(元)",
+       "optional": true
+      },
+      {
+       "name": "total_balance",
+       "type": "float64",
+       "cn": "两融余额(元)",
        "optional": true
       }
      ],
@@ -10879,6 +10994,60 @@
     {
      "name": "n",
      "type": "int"
+    }
+   ]
+  },
+  {
+   "name": "rptdom.note_index",
+   "cn": "附注角标（按专业版代码）",
+   "example": "rptdom.note_index(\"600519\")",
+   "returns": "MAP",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "sym",
+     "type": "string"
+    }
+   ]
+  },
+  {
+   "name": "rptdom.note_stmt_values",
+   "cn": "财报口径报表行值（合并口径）",
+   "example": "rptdom.note_stmt_values(\"601088\", \"2025-12-31\")",
+   "returns": "MAP",
+   "returns_shape": null,
+   "min_args": 2,
+   "params": [
+    {
+     "name": "sym",
+     "type": "string"
+    },
+    {
+     "name": "period",
+     "type": "string"
+    }
+   ]
+  },
+  {
+   "name": "rptdom.notes_for",
+   "cn": "某字段某年的附注明细",
+   "example": "rptdom.notes_for(\"600519\", \"IO\", \"2025-12-31\")",
+   "returns": "MAP",
+   "returns_shape": null,
+   "min_args": 3,
+   "params": [
+    {
+     "name": "sym",
+     "type": "string"
+    },
+    {
+     "name": "code",
+     "type": "string"
+    },
+    {
+     "name": "period",
+     "type": "string"
     }
    ]
   },

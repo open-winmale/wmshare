@@ -462,6 +462,21 @@ def estimate_cost(name: str, params: dict[str, Any] | None = None, *,
         out.update(ec_lo=900_000, ec_hi=1_000_000, model="measured",
                    note="全量角标一次扫描聚合 ≈97 万 EC（2026-11-26 test-api 实测"
                         " 600519=742 行）；接近沙箱计算上限，勿并发/循环调用")
+    elif name == "rptdom.notes_for":
+        # 4.5 放行的目录直调面（组合面 cli.statements.notes 同源）。实测
+        # （2026-11-26 test-api，600519/MFNS 显式期）单域 ≈4.2k EC；域多的
+        # 科目按域数放大（每域一次 80 档初步表扫描+卡片组装）。
+        out.update(ec_lo=3_000, ec_hi=30_000, model="measured",
+                   note="显式期直调 ≈4.2k EC 起（2026-11-26 test-api 实测），"
+                        "幅度随科目的域数线性放大")
+    elif name == "rptdom.note_index":
+        out.update(ec_lo=650_000, ec_hi=1_000_000, model="measured",
+                   note="全量角标一次扫描聚合 ≈68 万 EC（2026-11-26 test-api 实测"
+                        " 600519=45 科目）；接近沙箱计算上限，勿并发/循环调用")
+    elif name == "rptdom.note_stmt_values":
+        out.update(ec_lo=4_000, ec_hi=12_000, model="measured",
+                   note="派生集合单档读取 ≈5.4k EC（2026-11-26 test-api 实测 "
+                        "600519/2025-12-31，anchors 全科目值一次返回）")
     elif name == "statements.policies":
         hy = p.get("hist_years")
         full_hist = not hy

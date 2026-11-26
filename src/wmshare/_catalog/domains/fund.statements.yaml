@@ -1,5 +1,5 @@
 id: fund.statements
-version: 1.3.1
+version: 1.4.0
 cn: 财务报表
 kind: raw
 category: fundamentals
@@ -7,7 +7,9 @@ priority: P0
 description: 三大报表科目原值（资产负债 / 利润 / 现金流）多期透视、合并 vs 母公司比较、
   报表目录树与审计意见——本域目录函数族服务平台内部页面（含合并/母公司口径、
   目录树与溯源列）。对外报表走 `cli.statements`（组合门面：三表 + 主要指标 ×
-  cn/hk/us，读 fin_* 宽表，科目为披露原值、披露原币）。
+  cn/hk/us，读 fin_* 宽表，科目为披露原值、披露原币）。4.5 起本域另含附注
+  提取三函数（note_index/notes_for/note_stmt_values）——**提取原文口径，与
+  上方认证三表（fin_* 宽表披露原值）口径分离**，各函数 notes 内有对账警示。
 data_origin: [定期报告披露原值, 外部数据服务(主要指标)]
 units:
   amount: 报表原币（CN=元，HK=港币，US=美元）
@@ -88,3 +90,50 @@ functions:
       - {name: sym, type: string, required: true}
     returns: {desc: 'MAP · {年份: 审计意见}'}
     example: 'rptdom.statement_audit("600519")'
+  # ---- 4.5 附注提取三函数（rptdom 提取原文口径，与上方认证三表宽表口径分离） ----
+  - name: rptdom.note_index
+    cn: 附注角标（提取原文口径）
+    kind: raw
+    layer: L0
+    params:
+      - {name: sym, type: string, required: true, desc: 6 位裸码（附注提取库仅覆盖 A 股）}
+    returns: {desc: 'MAP · {科目目录码: {cn, periods[报告期降序]}}（各提取车道并集）'}
+    example: 'rptdom.note_index("600519")'
+    notes: ['该司哪些科目哪些报告期已入附注提取库（覆盖角标）。periods 为各提取
+      车道并集、不按车道过滤（上游实证按期过滤会误丢存量期）——顺序不保证
+      最新在前，取最新期请取字典序最大值',
+      '本函数为提取原文口径的覆盖探测，不是报表数字接口']
+  - name: rptdom.notes_for
+    cn: 附注明细（提取原文卡）
+    kind: raw
+    layer: L0
+    params:
+      - {name: sym, type: string, required: true, desc: 6 位裸码}
+      - {name: code, type: string, required: true, desc: 科目目录码（如 MFNS/IO/PPE，53 码见附注目录；不认中文名——中文名匹配走 cli.statements.notes 组合面）}
+      - {name: period, type: string, required: true, desc: 报告期 YYYY-MM-DD（年报/半年报档）}
+    returns: {desc: 'MAP · {code, cn, period, source 车道, sections[附注卡]}'}
+    example: 'rptdom.notes_for("600519", "IO", "2025-12-31")'
+    notes: ['附注提取原文卡：columns/rows[{item, c1..cN, row_type}] 为披露原值
+      字符串（千分位），单位语义见卡内 unit_note/unit_scale；合计行以
+      item=="合计" 识别（row_type 上游不保证打 sum 标）；hint 段有提示才带',
+      '**非结构化报表数字**：卡片是披露原文提取件，数值运算请先自行解析；
+      source 为平台提取车道标识（值以返回为准，全文车道优先、存量车道回落）；
+      found 语义由 sections 非空判定（上游返回不含 found 键，组合面
+      cli.statements.notes 才归一）']
+  - name: rptdom.note_stmt_values
+    cn: 报表行值（提取车道重建，非认证三表）
+    kind: raw
+    layer: L0
+    params:
+      - {name: sym, type: string, required: true, desc: 6 位裸码}
+      - {name: period, type: string, required: true, desc: 报告期 YYYY-MM-DD（年报档）}
+    returns: {desc: 'MAP · 财报口径报表行值（合并口径）'}
+    example: 'rptdom.note_stmt_values("601088", "2025-12-31")'
+    notes: ['**口径警示（勿与三表混用）**：本函数返回由附注提取车道重建的报表
+      行值（全文车道优先、存量回落，构建期已定线），**不是**认证三表宽表
+      fin.balance / fin.income / fin.cashflow 的数字',
+      '与三表对账允许存在差异：追溯重述调整、车道回落差异都会造成两源不同；
+      对账用途必须先与 cli.statements.balance/income/cashflow 做 diff 核对，
+      差异行以三表（披露宽表）为准并注明双口径',
+      '正式数值结论一律以三表宽表（cli.statements 组合面）为准；本函数定位是
+      附注穿透时的辅助对拍']

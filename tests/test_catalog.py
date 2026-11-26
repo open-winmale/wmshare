@@ -7,8 +7,8 @@ def test_load_and_stats():
     cat = load()
     s = cat.stats()
     assert s["domains"] == 30, s  # +market.gold（金交所现货，2026-11-25）
-    assert s["functions"] == 371, s  # +gold 3（品种清单/日线/区间日线，2026-11-25）
-    assert s["raw"] == 267 and s["computed"] == 104, s  # +gold 3 全 raw（2026-11-25）
+    assert s["functions"] == 374, s  # +gold 3（2026-11-25）+rptdom 附注三函数（4.5 放行，2026-11-26）
+    assert s["raw"] == 270 and s["computed"] == 104, s  # +gold 3 全 raw +rptdom 附注三函数全 raw（4.5）
     assert s["metric_catalog_total"] == 2983, s
     assert s["upstream_rev"], "inventory 应锚定 upstream rev"
 

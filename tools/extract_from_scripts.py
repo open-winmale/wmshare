@@ -91,8 +91,15 @@ INCLUDED_NS = frozenset({
     # UPPER 品种段导致 SGE 品种恒返 0 行）
     "gold",
 })
-# rptdom 只保留三表透视族（年报 PDF 提取类 rows/notes/note_index 不发布）
-RPTDOM_KEEP = frozenset({"statement", "statement_years", "statement_compare", "statement_tree", "statement_audit"})
+# rptdom 放行面：三表透视族 + 4.5 附注提取三函数（note_index/notes_for/note_stmt_values，
+# 经 cli.call 直调；域仍属 INTERNAL_CATALOG_NS，friendly/cat.search/docs/MCP 不露出）。
+# note_stmt_values 是提取车道重建的报表行值（全文车道优先回落存量），与认证三表
+# fin.balance/income/cashflow 口径分离——yaml 合同层负责歧义声明。
+# 仍不放行：rows / periods / stmt_sas_years / describe / store 内部 helpers。
+RPTDOM_KEEP = frozenset({
+    "statement", "statement_years", "statement_compare", "statement_tree",
+    "statement_audit", "note_index", "notes_for", "note_stmt_values",
+})
 
 # 第三方数据商/竞品名 → 中性词的净化映射：词表本身即第三方痕迹，不入库，
 # 存放在 .internal/extract_sanitize.json（本地存在时启用；CI 无上游树本就跳过本工具）

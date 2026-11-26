@@ -93,7 +93,7 @@ def test_internal_ns_set_covers_inventory_prefixes():
     internal = {n for n in names if ext.is_internal_catalog_name(n)}
     assert internal, "内部命名空间函数应仍保留在目录中（门面委托依赖）"
     assert all(n.partition(".")[0] in ext.INTERNAL_CATALOG_NS for n in internal)
-    assert len(internal) == 5, f"内部命名空间函数数量变化：{len(internal)}"
+    assert len(internal) == 8, f"内部命名空间函数数量变化：{len(internal)}"  # 4.5 放行附注三函数
 
 
 def test_doc_hidden_rule_covers_internal_namespace():

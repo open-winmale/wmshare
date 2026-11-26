@@ -2946,6 +2946,14 @@
               {
                 "name": "loan_balance",
                 "desc": "融券余量(股)"
+              },
+              {
+                "name": "loan_balance_amt",
+                "desc": "融券余额(元)"
+              },
+              {
+                "name": "total_balance",
+                "desc": "两融余额(元)"
               }
             ]
           },
@@ -11674,7 +11682,7 @@
       "category": "fundamentals",
       "domain": "fund.statements",
       "domain_cn": "财务报表",
-      "domain_description": "三大报表科目原值（资产负债 / 利润 / 现金流）多期透视、合并 vs 母公司比较、 报表目录树与审计意见——本域目录函数族服务平台内部页面（含合并/母公司口径、 目录树与溯源列）。对外报表走 `cli.statements`（组合门面：三表 + 主要指标 × cn/hk/us，读 fin_* 宽表，科目为披露原值、披露原币）。",
+      "domain_description": "三大报表科目原值（资产负债 / 利润 / 现金流）多期透视、合并 vs 母公司比较、 报表目录树与审计意见——本域目录函数族服务平台内部页面（含合并/母公司口径、 目录树与溯源列）。对外报表走 `cli.statements`（组合门面：三表 + 主要指标 × cn/hk/us，读 fin_* 宽表，科目为披露原值、披露原币）。4.5 起本域另含附注 提取三函数（note_index/notes_for/note_stmt_values）——**提取原文口径，与 上方认证三表（fin_* 宽表披露原值）口径分离**，各函数 notes 内有对账警示。",
       "domain_units": {
         "amount": "报表原币（CN=元，HK=港币，US=美元）",
         "ratio": "小数（compare 的差额占比已由 SDK 从百分数换算；树视图 pct 行为原生百分数未换算）",
