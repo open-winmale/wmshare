@@ -55,7 +55,7 @@
 
 ## 已发布面遗留（登记不装死）
 
-- **2026-11-25 P0：估值宽表市值族前视/冻结（已修，待部署+repair）**：
+- **2026-11-25 P0：估值宽表市值族前视/冻结（已修、已部署、已 repair 并全量重写）**：
   `valuation.daily_basic` 的 `total_mv/circ_mv/turnover_rate/dv_ttm` 此前用
   metric 层 `$MV_LAST/$MV_FREE_LAST/$TURNOVER_RATE_LAST/$BONUS_RATE_TTM_LAST`
   配 `AT(锚日, ITER(...))` 求值。这四个码的 memo cachetype 是 symbol 级、定义里
@@ -74,6 +74,11 @@
   `total_mv / total_share` 与当日收盘 **diff 0.0000%**，全票 0 错值）。
   repair 窗口中更早的历史行仍保持旧口径（诚实缺列 `total_share/float_share`），
   市值族在窗口外不再保证行内自洽——需要用旧口径时请以 `as_of` 与 repair 窗口为准。
+  **收口实证（2026-11-25/26）**：三层缺陷修完后对全市场 5,695 票整轮 radd 重写，
+  展开 `data.list` 按集合比对最近 11 个交易日 `V2 == raw`（0 missing / 0 extra），
+  `V2@11-25 == raw@11-25 == 0`；生产 detector `status=ok`、phantom/orphan/frozen 全 0、
+  `share_coverage=1.0`，且 `rows_checked(2664) > sampled_symbols(297)`（抽样健康判据）；
+  API `as_of` 全部回落到 11-24，`total_mv/total_share` 反推价与同日收盘逐票零误差。
 - **2026-11-25 验收发现的第二个缺陷：无行情支撑的「当日伪行」（已修并部署）**：
   首轮 repair 成功后仍有一半标的（实测 3,069 / 5,695 票）带
   `trade_date=2026-11-25` 的行，形态固定为「3~4 个字段、无
@@ -117,9 +122,41 @@
   重跑一次 radd，再对全市场 5,695 票整轮重写，使 V2 == raw；`as_of` 回落到
   11-24（900953 回落到其真实的 2024-06-11）。
   同一坑的旁证：`index_members_daily` 等独立 catalog 的表有同样风险。
-- **`float_share` 与 `total_share` 相等（上游口径）**：股本变动快照披露的
-  「流通股份」实测恒等于「总股份」；真实可流通口径是「无限售股份」，当前不进表。
-  需要自由流通市值时暂无逐日源（`daily_basic.circ_mv` 因此等于 `total_mv`）。
+  **2026-11-26 穷举审计**（248 条清洗规则的全部 dest，`resolve_catalog` 逐条反解）：
+  共 6 个 distinct dest，**全部有映射、0 个落回 `alt.bssaa`**；其中 3 个是独立 catalog：
+  - `cn/valuation_daily` → `alt.valuation_daily` → 物理表 `alt_valuation_daily`（1,062 万行）
+  - `cn/index_members_daily` → `alt.index_members_daily` → `alt_index_members_daily`（12 行快照）
+  - `common/bssaa` → **`eco.macro`** → `eco_macro`（74 万行；汇率/沪深港通资金流/大盘资金流DC 3 条规则）
+  修复后这三张表的 radd 删除各打自己的物理表。新增契约单测：
+  `test_bssaa_radd_delete_tiering.py` 里参数化断言三张独立表各命中自己的 catalog，
+  并断言「248 条规则的全部 dest 都必须能反解出 catalog」（未映射即 fail，防止未来
+  新增独立 catalog 表时又静默回退）。
+  **待观察**：`eco_macro` 的 `currencyrate.PROPS` 此前若走 radd，删除一直是空转，
+  可能残留过期键——下次汇率 DAG 跑完后抽查该表 `currencyrate` 行集合是否收敛。
+- **`circ_mv` / `float_share` 用错了股本口径（2026-11-26 定位，构建侧已修）**：
+  上游 `cn.equity_change.PROPS.<sym>` 的 props 里「流通股份」**实测恒等于「总股份」**
+  （600519 16 档 / 000001 63 档 / 301558 17 档逐档相等），真实自由流通口径是
+  **「无限售股份」**——同一份 props 里就有值：
+  301558 2025-12-31 档 总股本 790,540,023 / 无限售 219,481,852（IPO 锁定 72%），
+  2026-09-28 档 无限售 790,045,023（解禁后）；000001 也有 19,405,684,991 vs
+  19,405,918,198 的真实差额。
+  旧构建取「流通股份」→ `float_share` 恒等于 `total_share`、`circ_mv` 恒等于 `total_mv`
+  （301558 这类次新股的 `circ_mv` **虚增 3.6 倍**，任何以它为权重的筛选/加权都偏）。
+  修法（airflow `tasks/valuation_marks.py`）：`EQUITY_FREE_KEY` 改为「无限售股份」，
+  缺失时回退「流通股份」（早年档位）；`circ_mv = close × 无限售股份`。
+  **影响面（2026-11-26 全量聚合，取每票最新股本档）**：6,167 票有股本档，
+  **3,082 票（50%）的 `无限售/总股本 < 99%`**，最极端的次新股只流通 4~8%：
+  688801 4.16%（旧 `circ_mv` 虚增 **24 倍**）、688781 4.16%、001399 5.81%、
+  301689 6.20%、688828 6.51%——这些票的流通市值/自由流通加权此前全错。
+  **待部署 + 历史 repair**：部署后每日增量会把前沿日与新行修正；历史需按 repair
+  窗口重算（`{"repair_mv_days": N}`，N ≤ 250=K 线窗口上限）。成本粗估：约
+  `6k EC/票`（250 行 K 线 + 股本阶梯 + 股息/PE 序列），全市场 5,695 票 ≈ **34M EC**
+  （60 日窗口）／≈ 更贵（250 日窗口），需按池余额与优先级决定窗口与抽样范围
+  （建议先做指数成分 + 次新股，再视余额扩到全市场）。SDK 侧 `float_share`/`circ_mv`
+  的口径说明与 4.3.0 CHANGELOG 的 `Changed` 待数据重写后再落。
+- **`float_share` 与 `total_share` 相等（上游口径）**（历史记录，保留备查）：股本变动快照披露的
+  「流通股份」实测恒等于「总股份」；真实可流通口径是「无限售股份」，**该字段上游有值**
+  ——见上一条。
 - **数据质量审计 2026-11-24 六项结论**（来源 `.internal/data_quality_report.json`，
   处置已在版本线重置前随 3.7.1 落地，随 4.0.0 基线继承）：
   - `valuation.daily_basic` / `daily_basic_multi` date 非升序：**已修**（门面按
