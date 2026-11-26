@@ -173,9 +173,16 @@
   替换把 2022-11..2023-11 带的 PE-only 旧行冲成无 PE 行（≈140 万行）；修=
   `CARRY_FIELDS`{pe_ttm,pb,ps,pr,dv_ttm}+序列地板 `carry_before` 窗外回带
   （回带源必须含被权威窗 prune 的行）。build 前抢救 710,799 行/4,376 票 PE
-  快照；early-clean ≈1,319 票 band PE 不可恢复（诚实登记）；历史事故回写走
-  `valuation_pe_band_restore.py`（--apply 门控、只补缺失列、排在日更 build 段
-  后防 ReplaceOne 竞态），回带结果数字随执行回填本节。
+  快照；early-clean ≈1,319 票 band PE 不可恢复（诚实登记）。
+  **回带实绩（2026-11-26 夜，回带结果数字已回填）**：CARRY 实测只救回少数
+  （restore 复扫 95% 快照行仍缺值，勿当已闭环）；`valuation_pe_band_restore.py`
+  （--apply 门控、只补缺失列、幂等可重跑、排在日更 build 段后防 17:05 竞态）
+  补齐可补 676,359 行（raw 676,019 + 验证批 340 / V2 676,018 + 验证批 340
+  + 首跑已落 1），余 34,440 行 = 行已带值或行缺失；recon 全历史三零保持、
+  `circ==total` 6,945,193 逐位不变（只补列不动行集）。首跑曾因「投影取文档
+  + 整文档 ReplaceOne」抹掉 V2 身份字段撞 `uk_symbol_catalog_ts` 唯一索引
+  崩批（1 文档已按同 ts 镜像手工恢复）——批处理写库必须 `$set` 只碰目标
+  字段，且真实退出码勿经 `| tail` 吞掉。
   SDK 侧口径说明与 4.3.0 CHANGELOG `Changed` 已随 `b24f007` 先行落地，数据面本次对齐。
 - **`float_share` 与 `total_share` 相等（上游口径）**（历史记录，保留备查）：股本变动快照披露的
   「流通股份」实测恒等于「总股份」；真实可流通口径是「无限售股份」，**该字段上游有值**
