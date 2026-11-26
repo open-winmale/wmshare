@@ -100,6 +100,17 @@ def test_percent_declarations_match_upstream_scale():
         assert "percent" not in (cat.function(n).get("units") or {}), n
 
 
+def test_min1_live_converts_cumulative_and_delta_volume():
+    """分时字段口径（2026-11-26 盘中实测）：volume/amount=当日**累计**
+    （volume 换算后为股，累计满足 volume×close≈amount）；volume_delta/
+    amount_delta=**当分钟增量**。volume_delta 此前漏在声明外、一直以手
+    直出——量=股全库默认，增量同样声明 lot。"""
+    cat = load()
+    units = cat.function("kline.query_min1_live").get("units") or {}
+    assert units.get("volume") == "lot"
+    assert units.get("volume_delta") == "lot", "当分钟增量同样要换算成股"
+
+
 def test_live_single_and_batch_share_volume_unit():
     cat = load()
     one = cat.function("kline.query_last_live").get("units") or {}

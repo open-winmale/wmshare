@@ -248,7 +248,7 @@ cli.kline.batch_live(symbols=["600519", "000001"])
 |---|---|---|---|---|
 | `symbol` | string | 是 | — | 6 位裸码（自动归一前缀/后缀；港股 5 位、美股字母码） |
 
-**输出**：MAP · 分时包 {trading_day, bars:[t,hm,close,volume,amount,...], bar_n}；休市读上一交易日
+**输出**：MAP · 分时包 {trading_day, bars:[t,hm,close,volume,amount,volume_delta,amount_delta,n,...], bar_n}；休市读上一交易日
 
 **示例**
 
@@ -5945,7 +5945,7 @@ A 股交易日历——区间交易日、是否开市、之后 N 个交易日。
 | `kline.query_last_live` | 盘中日K快照 | 原始数据 | L0 | `sym:string` | MAP · 盘中日K；字段 date:string?（日期） / open:float?（开） / high:float?（高） / low:float?（低） / close:float?（收/现价） / volume:float?（量(股)） / amount:float?（额(元)） / percent:float?（涨跌幅(小数)） / mv:float?（市值(元)） / source:string?（multi_source\|multi_source_rt\|source_a\|source_b\|source_c\|source_d） | `volume`:手→股 | 例：`cli.call("kline.query_last_live", sym='000807')`
 | `kline.query_last_live_many` | 盘中日K批量快照 | 原始数据 | L0 | `syms:array` — 裸码列表 | MAP · symbol → bar | `volume`:手→股 | 例：`cli.call("kline.query_last_live_many", syms=['600519', '000807'])`
 | `kline.query_bars_live` | 盘中拉最近 n 根日K（外部行情源 HTTP，≠分时） | 原始数据 | L0 | `sym:string` · `limit:int?` — 最近 n 个交易日 | ARR · bars | — | 例：`cli.call("kline.query_bars_live", sym='000807', limit=5)`
-| `kline.query_min1_live` | 当日 1 分钟分时（有损滚桶） | 原始数据 | L0 | `sym:string` | MAP · 分时包 {trading_day, bars:[t,hm,close,volume,amount,...], bar_n}；休市读上一交易日 | `volume`:手→股 | 例：`cli.call("kline.query_min1_live", sym='600519')`
+| `kline.query_min1_live` | 当日 1 分钟分时（有损滚桶） | 原始数据 | L0 | `sym:string` | MAP · 分时包 {trading_day, bars:[t,hm,close,volume,amount,volume_delta,amount_delta,n,...], bar_n}；休市读上一交易日 | `volume`:手→股；`volume_delta`:手→股 | 例：`cli.call("kline.query_min1_live", sym='600519')`
 | `kline.query_min1_live_meta` | 分时头（无 bars） | 原始数据 | L0 | `sym:string` | MAP · {trading_day, updated_at, bar_n} | — | 例：`cli.call("kline.query_min1_live_meta", sym='600519')`
 | `kline.snapshot` | 行情快照（单票 MAP；列表 ≥3 票自动路由批量） | 原始数据 | L0 | `sym:string` | MAP · 23 字段行情快照（价量/涨跌/均线/市值/标识） | `volume`:手→股 | 例：`cli.call("kline.snapshot", sym='600519')`
 | `kline.snapshot_batch` | 多标的行情快照（索引按量投影，60~90 EC/票） | 原始数据 | L0 | `codes:array?` — 标的代码数组；空/nil 返回全市场非停牌 | ARR · 索引原始行 [{row, values}]；values 内为 $指标→值（21 个字段） | — | 例：`cli.call("kline.snapshot_batch", codes=['600519', '000001'])`

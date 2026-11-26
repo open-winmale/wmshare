@@ -151,10 +151,12 @@ functions:
     layer: L0
     params:
       - {name: sym, type: string, required: true}
-    returns: {desc: 'MAP · 分时包 {trading_day, bars:[t,hm,close,volume,amount,...], bar_n}；休市读上一交易日'}
+    returns: {desc: 'MAP · 分时包 {trading_day, bars:[t,hm,close,volume,amount,volume_delta,amount_delta,n,...], bar_n}；休市读上一交易日'}
     example: 'kline.query_min1_live("600519")'
-    units: {volume: lot}
-    notes: [bars 列表内每分钟成交量上游为手；apply_units 会逐根下探换算成股]
+    units: {volume: lot, volume_delta: lot}
+    notes:
+      - bars 字段口径（2026-11-26 盘中实测）：volume/amount=当日**累计**（volume 换算后为股、amount 元，累计满足 volume×close≈amount）；volume_delta/amount_delta=**当分钟增量**（volume_delta 换算后为股、amount_delta 元）；n=该分钟聚合 tick 数
+      - 旧注「每分钟成交量上游为手」有误——上游 volume 是当日累计而非每分钟，每分钟量在 volume_delta（此前未换算，漏在声明外）
   - name: kline.query_min1_live_meta
     cn: 分时头（无 bars）
     kind: raw

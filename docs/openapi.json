@@ -442,7 +442,8 @@
         },
         "x-wmshare-guards": {
           "units": {
-            "volume": "lot"
+            "volume": "lot",
+            "volume_delta": "lot"
           }
         }
       }

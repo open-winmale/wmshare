@@ -1441,7 +1441,7 @@ class KlineNS(_Ns):
     def query_min1_live(self, sym: str, _raw: bool = False) -> Any:
         """当日 1 分钟分时（有损滚桶）
 
-:returns: MAP · 分时包 {trading_day, bars:[t,hm,close,volume,amount,...], bar_n}；休市读上一交易日
+:returns: MAP · 分时包 {trading_day, bars:[t,hm,close,volume,amount,volume_delta,amount_delta,n,...], bar_n}；休市读上一交易日
         """
         return _out(self._client.call("kline.query_min1_live", sym=sym, _raw=_raw), _raw)
 

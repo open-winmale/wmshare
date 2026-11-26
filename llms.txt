@@ -169,7 +169,7 @@
 - `kline.query_last_adj`: {"ranges": {"percent": [-1, 30], "volume": [0, 1000000000000.0]}, "units": {"percent": "percent", "volume": "lot"}}
 - `kline.query_last_live`: {"units": {"volume": "lot"}}
 - `kline.query_last_live_many`: {"units": {"volume": "lot"}}
-- `kline.query_min1_live`: {"units": {"volume": "lot"}}
+- `kline.query_min1_live`: {"units": {"volume": "lot", "volume_delta": "lot"}}
 - `kline.snapshot`: {"units": {"volume": "lot"}}
 - `margin.market_summary`: {"ranges": {"fin_balance": [0, 10000000000000.0], "fin_buy_amt": [0, 1000000000000.0], "loan_balance": [0, 100000000000.0], "loan_sell_vol": [0, 100000000000.0]}}
 - `moneyflow.board`: {"ranges": {"elg_net": [-100000000000.0, 100000000000.0], "lg_net": [-100000000000.0, 100000000000.0], "md_net": [-100000000000.0, 100000000000.0], "net_mf": [-100000000000.0, 100000000000.0], "net_mv_ratio": [-0.5, 0.5], "sm_net": [-100000000000.0, 100000000000.0]}}

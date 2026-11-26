@@ -5818,7 +5818,8 @@
           "layer": "L0",
           "internal": false,
           "units": {
-            "volume": "lot"
+            "volume": "lot",
+            "volume_delta": "lot"
           },
           "ranges": {},
           "checks": [],
