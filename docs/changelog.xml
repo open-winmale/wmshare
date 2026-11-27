@@ -5,8 +5,23 @@
     <link>https://github.com/open-winmale/wmshare</link>
     <description>wmshare 版本变更与接口弃用公告（由 CHANGELOG.md 生成）</description>
     <language>zh-CN</language>
-    <lastBuildDate>Thu, 26 Nov 2026 00:00:00 +0800</lastBuildDate>
+    <lastBuildDate>Fri, 27 Nov 2026 00:00:00 +0800</lastBuildDate>
     <atom:link href="https://github.com/open-winmale/wmshare/raw/main/docs/changelog.xml" rel="self" type="application/rss+xml"/>
+    <item>
+      <title>wmshare 4.6.0 (2026-11-27)</title>
+      <link>https://github.com/open-winmale/wmshare/releases/tag/v4.6.0</link>
+      <guid isPermaLink="false">wmshare:4.6.0</guid>
+      <pubDate>Fri, 27 Nov 2026 00:00:00 +0800</pubDate>
+      <description>Added
+- **MCP 全部工具字段级 outputSchema**：protocol 层把工具返回注解就地覆写为 `core.Envelope`（函数式 TypedDict，规避 ForwardRef 探测吃掉 `NotRequired` 的坑），29 个工具的 outputSchema 从宽松 object 变 `{ok, as_of, data, meta}` 字段级契约，成功/错误两路径均过 FastMCP 双重校验；新增 `wmshare://envelope` resource 说明信封结构与两形态差异。
+- **friendly API 路由示例零占位可执行**：`_example` 只产出可执行字面量 （规则推导 + 手工表 15 条），30 条 `&lt;REQUIRED&gt;` 棘轮清零并删除生产点； 自动示例统一 `cli.` 前缀，description 带返回形态后缀；新增全路由 ast.parse + 签名绑定门禁，示例不可执行直接红。
+- **wmshare_market action 枚举同源**：action 参数 description 与 `MARKET_ACTIONS` 常量同源等值断言，杜绝枚举清单双处漂移。
+
+Fixed
+- **MCP 通用网关拦截内部名**：`tools.call` / `batch` / `cost` 三入口统一拦截 `is_internal_name` 与目录 `internal: true` 项（catalog 分支复用已加载 fn）， 内部域不再可绕道通用网关直调；新增 6 组合参数化网关测试。
+- **`*_pct` 口径统一小数**：MCP instructions 与 `wmshare://units` 的百分数 旧口径写法（80.3%）统一为小数（0.803=80.3%），examples/04 与 README few-shot 同步；test_docs 口径门禁扩到 8 个 Agent 面 + stale_claims。
+- **错误码全集补登**：`gen_errors` 扫描扩为双模式（`self.code` 赋值 + `code or` 兜底，`\b` 防误报），补登 10 个漏网码（gateway_policy / credential_required / auth / catalog / tool 与 client.py HTTP 映射兜底 5 项）；SECURITY.md demo/as_of 过时描述对齐现行网关策略。</description>
+    </item>
     <item>
       <title>wmshare 4.5.0 (2026-11-26)</title>
       <link>https://github.com/open-winmale/wmshare/releases/tag/v4.5.0</link>
