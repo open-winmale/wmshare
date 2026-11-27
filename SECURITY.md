@@ -55,8 +55,8 @@ Please include:
 - **MCP gateway**: `cbond.figures` / `cbond.article` can write to arbitrary
   paths and are refused at the gateway (the local Python SDK still supports
   them). Per-call EC is capped by `WMSHARE_MCP_MAX_EC`; error envelopes carry
-  `demo` / `as_of` / `data_freshness` so a frozen demo snapshot cannot be
-  mistaken for live data.
+  `retrieved_at` / `data_freshness` provenance plus a prescriptive `error.fix`,
+  so stale answers cannot masquerade as live data.
 - **Credentials** (`client_id` / `client_secret`) are read from environment
   variables, `~/.wmshare/credentials.env`, or explicit constructor arguments.
   A credential file readable by group/other triggers a warning; set

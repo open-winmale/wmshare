@@ -172,8 +172,11 @@ def test_error_codes_bidirectional_documented():
     documented = set(re.findall(r"^\| `([a-z][a-z0-9_]*)` \| (?!含义)", text, re.M))
     scanned: set[str] = set()
     for p in sorted((REPO / "src" / "wmshare").rglob("*.py")):
-        scanned |= set(re.findall(r'code="([a-z][a-z0-9_]*)"',
-                                  p.read_text(encoding="utf-8", errors="ignore")))
+        # 变量名不许用 text：外层 text 是 ERRORS.md，循环里覆盖会打断尾部保留码断言。
+        src_text = p.read_text(encoding="utf-8", errors="ignore")
+        # 与 gen_errors 双模式同源（B2-4）：赋值/self 赋值 + `code or "x"` 兜底。
+        scanned |= set(re.findall(r'\b(?:self\.)?code\s*=\s*"([a-z][a-z0-9_]*)"', src_text))
+        scanned |= set(re.findall(r'\bcode\s+or\s+"([a-z][a-z0-9_]*)"', src_text))
     missing = scanned - documented
     extra = documented - scanned - set(QUOTA_CODES) - RESERVED_ERROR_CODES
     assert not missing, f"源码新增错误码未写入 docs/ERRORS.md：{sorted(missing)}"
@@ -223,24 +226,9 @@ def test_mcp_route_examples_quality():
     assert not fallback, f"MCP description 退化为兜底文案：{fallback[:5]}"
     placeholder = [f"{r.domain}.{r.method}" for r in routes
                    if "<REQUIRED>" in (r.example or "")]
-    # 2026-11-18 基线 30 条：示例里必填参数还是 <REQUIRED> 占位（不可执行）。
-    # 只许减少：给对应方法补 example 值后从基线删除。
-    baseline = {
-        "calendar.days", "calendar.is_open", "calendar.next",
-        "cbond.article", "cbond.call_hits", "cbond.figures", "cbond.kline_window",
-        "equity.query_capital_change_at", "equity.query_exec_change_at",
-        "futures.get", "futures.snapshot", "index.members", "index.trend",
-        "index.valuation", "index.weights", "indicator.metrics",
-        "kline.batch_live", "macro.avc_monthly", "macro.bond_curve",
-        "macro.chinaiol_monthly", "macro.cpca_top", "macro.nev_monthly",
-        "macro.nev_weekly", "macro.phone_share", "notice.by_category",
-        "notice.find", "notice.on_date", "notice.read_text", "screener.query",
-        "stocks.industry_members",
-    }
-    new = set(placeholder) - baseline
-    assert not new, f"MCP 示例出现新的 <REQUIRED> 占位：{sorted(new)[:5]}"
-    assert len(placeholder) <= len(baseline), (
-        f"MCP 占位示例变多：{len(placeholder)} > 基线 {len(baseline)}")
+    # 2026-11-27 清零：_example 只产出可执行字面量（规则推导 + _HAND_EXAMPLES 手工表），
+    # 2026-11-18 的 30 条棘轮基线全部清偿；生产点已删除，此后出现任何占位即红。
+    assert not placeholder, f"MCP 示例出现 <REQUIRED> 占位：{sorted(placeholder)[:5]}"
 
 
 def test_method_param_doc_debt_ratchet():

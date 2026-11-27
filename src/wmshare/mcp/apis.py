@@ -16,6 +16,18 @@ from wmshare.api import FRIENDLY_NAMESPACES
 from wmshare.catalog import is_internal_name
 
 _SYMBOL_NAMES = {"symbol", "sym", "stk", "code"}
+_LIST_SYMBOL_NAMES = {"symbols", "codes"}
+_DATE_NAME_HINTS = ("date", "begin", "end")
+
+#: 无默认值必填参数的按名样值（字面量，可被 ast.literal_eval）；推导不出返回 None。
+#: None 的参数不进示例，路由示例缺参由 test_mcp_apis 的签名绑定门禁红出来补手工表。
+_SAMPLE_BY_NAME: dict[str, str] = {
+    "where": '"$ROE_TTM_LAST > 0.15 && !$IS_ST"',
+    "key": '"index.hs300"',
+    "n": "5",
+    "trig": "130.0",
+    "annual": "2024",
+}
 
 # 必选参数无自然字面值的方法走手工示例（占位描述指向取值来源，禁 <REQUIRED>）。
 _HAND_EXAMPLES: dict[str, str] = {
@@ -50,6 +62,26 @@ _HAND_EXAMPLES: dict[str, str] = {
     "gold.symbols": 'cli.gold.symbols()',
     "gold.bars": 'cli.gold.bars("Au99.99", n=5)',
     "gold.query_bars": 'cli.gold.query_bars("Au99.99", "2026-11-01", "2026-11-24", 100)',
+    # B2-3：占位符清零补齐——名字/类型规则推导不出的必填参数逐条手写（禁 <REQUIRED>）。
+    # 值取自各方法 docstring 的示例口径（sampling="Q4"、field 枚举见对应说明）。
+    "cbond.article": 'cli.cbond.article(payload={"url": "<公告行 url 字段>"})',
+    "cbond.figures": 'cli.cbond.figures(payload={"url": "<公告行 url 字段>"}, out_dir="out/")',
+    "equity.query_capital_change_at":
+        'cli.equity.query_capital_change_at("600519", 2024, sampling="Q4")',
+    "equity.query_exec_change_at":
+        'cli.equity.query_exec_change_at("600519", 2024, sampling="Q4")',
+    "indicator.metrics": 'cli.indicator.metrics("600519", codes=["$ROE_TTM_LAST"])',
+    "stocks.industry_members": 'cli.stocks.industry_members("银行")',
+    "notice.by_category": 'cli.notice.by_category("回购")',
+    "macro.avc_monthly": 'cli.macro.avc_monthly("空调", field="volume_yoy")',
+    "macro.bond_curve": 'cli.macro.bond_curve("国债", tenor="10Y")',
+    "macro.chinaiol_monthly": 'cli.macro.chinaiol_monthly("多晶硅", field="volume")',
+    "macro.cpca_top": 'cli.macro.cpca_top("比亚迪", field="wholesale")',
+    "macro.nev_monthly": 'cli.macro.nev_monthly("蔚来", field="sales")',
+    "macro.nev_weekly": 'cli.macro.nev_weekly("蔚来", field="sales")',
+    "macro.phone_share": 'cli.macro.phone_share("苹果")',
+    "futures.get": 'cli.futures.get("AL.SHF")',
+    "futures.snapshot": 'cli.futures.snapshot("AL.SHF")',
 }
 _SPECIAL_CATALOG: dict[tuple[str, str], str | None] = {
     ("valuation", "hist_stats"): None,
@@ -164,17 +196,46 @@ def _recommended_tool(domain: str, method: str) -> str:
     return "wmshare_call"
 
 
+#: friendly API 反射 description 固定后缀：docstring 首行常写「→ DataFrame」，
+#: MCP 边界已转行数组+信封，后缀让形态预期不分叉（结构详见 wmshare://envelope）。
+_MCP_SHAPE_SUFFIX = "；MCP 返回行数组+信封（结构见 wmshare://envelope）"
+
+
+def _sample_value(param: inspect.Parameter) -> str | None:
+    """无默认值必填参数 → 字面量样值；推导不出返回 None（禁 <REQUIRED> 占位符）。
+
+    None 的参数不进示例，路由示例缺参会被 test_mcp_apis 的签名绑定门禁
+    红出来，逼着手工补 _HAND_EXAMPLES——门禁兜底比占位符诚实。
+    """
+    name = param.name
+    if name in _SYMBOL_NAMES:
+        return '"600519"'
+    if name in _LIST_SYMBOL_NAMES:
+        return '["$ROE_TTM_LAST"]'
+    if name in _SAMPLE_BY_NAME:
+        return _SAMPLE_BY_NAME[name]
+    if any(hint in name.lower() for hint in _DATE_NAME_HINTS):
+        return '"2026-11-20"'
+    ann = param.annotation
+    ann_s = ann if isinstance(ann, str) else getattr(ann, "__name__", "") or ""
+    if ann_s == "float":
+        return "0.01"
+    if ann_s == "bool":
+        return "False"
+    if ann_s == "int":
+        return "3"
+    return None
+
+
 def _example(target: str, params: list[inspect.Parameter]) -> str:
     if target in _HAND_EXAMPLES:
         return _HAND_EXAMPLES[target]
     parts: list[str] = []
     for param in params:
-        if param.name in _SYMBOL_NAMES:
-            parts.append(f'{param.name}="600519"')
-        elif param.default is inspect.Parameter.empty:
-            parts.append(f'{param.name}=<REQUIRED>')
-    args = ", ".join(parts)
-    return f'{target}({args})'
+        sample = _sample_value(param)
+        if sample is not None:
+            parts.append(f"{param.name}={sample}")
+    return f"cli.{target}({', '.join(parts)})"
 
 
 def _catalog_function(domain: str, method: str, func: Callable[..., Any]) -> str | None:
@@ -215,7 +276,7 @@ def api_routes() -> tuple[ApiRoute, ...]:
                 target=target,
                 domain=domain,
                 method=name,
-                description=doc.splitlines()[0].strip(),
+                description=doc.splitlines()[0].strip() + _MCP_SHAPE_SUFFIX,
                 signature=str(sig),
                 parameters=tuple(param.name for param in public_params),
                 example=_example(target, public_params),

@@ -8,7 +8,7 @@ import statistics
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, NotRequired, TypedDict
 
 import wmshare
 from wmshare._credentials import read_credentials_file
@@ -29,6 +29,27 @@ from wmshare.mcp.constants import (
     MARKETS,
     MAX_ROWS,
     SOURCE,
+)
+
+
+#: MCP 工具统一返回信封——wire 级 outputSchema 的单一事实源。``server.protocol``
+#: 就地覆写工具返回注解为本类后，FastMCP（mcp≥1.10）据此生成字段级 outputSchema，
+#: LLM 无须猜信封结构。两个 SDK 行为约束（mcp/server/fastmcp/utilities/func_metadata.py）：
+#: ① 本模块有 ``from __future__ import annotations``，类体内注解会变 ForwardRef，
+#:    CPython 对 ForwardRef 不做 NotRequired 可选键探测（__required_keys__ 全 required，
+#:    2026-11-27 spike 实证）——故必须用函数式 TypedDict 让表达式即时求值；
+#: ② NotRequired 键缺席时 ``model_dump`` 会显式输出 null（无 exclude_unset），
+#:    故可选键一律 ``Any``（空 schema 对 null 宽容，``NotRequired[str]`` 会被
+#:    jsonschema 第二层拒绝）。data/error 二选一，由 ok 判定。
+Envelope = TypedDict(
+    "Envelope",
+    {
+        "ok": bool,
+        "meta": dict[str, Any],
+        "links": dict[str, str],
+        "data": NotRequired[Any],
+        "error": NotRequired[Any],
+    },
 )
 
 

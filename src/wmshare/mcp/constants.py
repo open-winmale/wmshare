@@ -95,6 +95,12 @@ MARKET_ACTIONS = {
               "concepts_of", "concept_members", "concept_list"),
     "blocktrade": ("by_date", "by_symbol"),
 }
+
+#: wmshare_market 的 action 参数 description 文案（由 MARKET_ACTIONS 生成，唯一源不变）。
+#: LLM 直接读参数 description 选组合；tools.market 的运行时校验是兜底，两者同源。
+MARKET_ACTIONS_TEXT = "；".join(
+    f"{domain}→{'|'.join(actions)}" for domain, actions in MARKET_ACTIONS.items()
+)
 INTL_ACTIONS = (
     "query_ccass", "query_shareholders", "query_org_rating",
     "query_profit_forecast", "query_sellshort", "issue_info",

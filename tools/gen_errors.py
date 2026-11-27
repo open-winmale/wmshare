@@ -108,6 +108,28 @@ MEANINGS: dict[str, tuple[str, str, str, str]] = {
     "stream_reset": ("stream", "订阅进度超出服务端保留期", "否",
                      "`seek_oldest(market)` 后继续消费"),
     "stream_event": ("stream", "订阅事件结构异常", "是", "跳过并记录；持续失败反馈"),
+    # MCP 网关专属（B2-4 登记：此前字面量扫描盲区——self.code 赋值与运行时兜底）
+    "gateway_policy": ("params", "MCP 网关策略拒绝（低层方法/文件副作用路由）", "否",
+                       "改用 wmshare_call(mode='api'/'catalog') 或 wmshare_batch；文件类路由用本地 SDK"),
+    "credential_required": ("env", "缺少凭证（MCP 边界拒绝无凭证取数）", "否",
+                            "wmshare-mcp setup 配置凭证，或设置 WMSHARE_CLIENT_ID/SECRET 后重试"),
+    "auth": ("env", "凭证被服务端拒绝", "否",
+             "核对 client_id/client_secret；wmshare_status 自检凭证状态"),
+    "catalog": ("catalog", "目录函数不存在或合同缺失（MCP 错误信封回落码）", "否",
+                "wmshare_search 查函数名；wmshare_contract 查参数合同"),
+    "tool": ("params", "工具内部未预期错误（MCP 兜底码）", "否",
+             "wmshare_status 检查配置后缩小请求范围重试；持续复现请附 target 与参数"),
+    # client.py HTTP 错误映射兜底（B2-4 补登：`code=code or "x"` 关键字形态此前漏扫）
+    "denied": ("env", "请求被拒（HTTP 401/403 兜底码，服务端未给细分码）", "否",
+               "核对凭证有效性；应用被平台停用时到控制台核查"),
+    "http": ("env", "HTTP 非 2xx（服务端未给细分码的兜底）", "是",
+             "按 message 里的 status 退避重试；持续失败附状态码反馈"),
+    "oauth_denied": ("env", "OAuth 授权被拒", "否",
+                     "重新走授权流程；核对应用密钥与授权范围"),
+    "policy_denied": ("env", "平台策略拒绝（应用停用/权限不足）", "否",
+                      "开放平台控制台核对应用状态与权限；详情见 message"),
+    "server": ("env", "服务端内部错误（5xx 兜底码）", "是",
+               "稍后重试；持续失败附 request_id 反馈"),
 }
 
 # 服务端配额码（与网关 error registry 对齐；见 errors.QUOTA_CODES）
@@ -133,7 +155,13 @@ RESERVED: dict[str, tuple[str, str, str]] = {
                           "免注册访问不申领凭据；取数失败按新 code 处理"),
 }
 
-CODE_RE = re.compile(r'code="([a-z][a-z0-9_]*)"')
+# 两段扫描（2026-11-27 B2-4 扩展；此前 self.code 赋值与 code or 兜底全漏登 ERRORS.md）：
+#   CODE_RE     —— 传参/赋值形态 ``code="x"`` 与 ``self.code = "x"``（含空格赋值）。
+#   FALLBACK_RE —— 运行时兜底形态 ``code or "x"``（\b 挡掉 ``error_code or`` 误报）。
+# 两段都只认双引号：server.py docstring 里的 ``code='forex'`` 是 action 参数说明
+# 而非错误码，放宽到单引号会误收。
+CODE_RE = re.compile(r'\b(?:self\.)?code\s*=\s*"([a-z][a-z0-9_]*)"')
+FALLBACK_RE = re.compile(r'\bcode\s+or\s+"([a-z][a-z0-9_]*)"')
 
 
 def collect_codes() -> set[str]:
@@ -141,6 +169,7 @@ def collect_codes() -> set[str]:
     for p in sorted(SRC.rglob("*.py")):
         text = p.read_text(encoding="utf-8", errors="ignore")
         codes.update(CODE_RE.findall(text))
+        codes.update(FALLBACK_RE.findall(text))
     return codes
 
 

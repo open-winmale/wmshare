@@ -13,8 +13,15 @@ from pydantic import Field
 import wmshare
 from wmshare.catalog import is_internal_name
 from wmshare.mcp import apis
-from wmshare.mcp.constants import DEFAULT_MARKET, MARKETS, MAX_ROWS, SOURCE, TOOL_NAMES
-from wmshare.mcp.core import MCPRuntime, credential_values, error
+from wmshare.mcp.constants import (
+    DEFAULT_MARKET,
+    MARKET_ACTIONS_TEXT,
+    MARKETS,
+    MAX_ROWS,
+    SOURCE,
+    TOOL_NAMES,
+)
+from wmshare.mcp.core import Envelope, MCPRuntime, credential_values, error
 from wmshare.mcp import tools
 
 OutputMode = Literal["sample", "count", "summary"]
@@ -131,6 +138,11 @@ def build_server(runtime: MCPRuntime | None = None) -> FastMCP:
                 return tool_fn(*args, **kwargs)
             except Exception as exc:  # MCP boundary converts failures to data.
                 return error(exc, rt)
+        # wire 级 outputSchema：functools.wraps 按引用共享 __annotations__，就地覆写
+        # return 键对内层函数同样生效；FastMCP 沿 __wrapped__ 链读内层注解，生成
+        # 字段级 Envelope schema（spike 实证 mcp 1.27.1 成功/错误两路径均过校验）。
+        # 内层源码注解保持 dict[str, Any] 不动——mypy 读源码，不受运行时覆写影响。
+        wrapped.__annotations__["return"] = Envelope
         return wrapped
 
     @mcp.tool()
@@ -458,7 +470,10 @@ def build_server(runtime: MCPRuntime | None = None) -> FastMCP:
             MarketDomain,
             Field(description="市场数据域：分钟/资金流/两融/转债/指数/估值/证券全集"),
         ],
-        action: Annotated[MarketAction, Field(description="domain 下的动作；运行时会校验合法组合")],
+        action: Annotated[
+            MarketAction,
+            Field(description=f"合法组合（domain→action|action）：{MARKET_ACTIONS_TEXT}"),
+        ],
         symbol: Annotated[str | None, Field(description="标的代码；全集/转债全市场/指数 keys 可空")] = None,
         market: MarketArg = None,
         key: Annotated[str | None, Field(description="指数键；members/weights/valuation 需要")] = None,
@@ -790,6 +805,19 @@ def _add_resources(mcp: FastMCP, rt: MCPRuntime) -> None:
             f"目录：{stats['domains']} 个数据域、{stats['functions']} 个底层函数；"
             f"friendly API {apis.route_count()} 个。先用 search/contract，"
             "再用 task tools / batch / call。"
+        )
+
+    @mcp.resource("wmshare://envelope")
+    def envelope() -> str:
+        return (
+            "所有 task tools 的返回信封（字段级结构另见各工具 outputSchema）："
+            '成功 = {"ok":true,"data":…,"meta":{market,source,units,row_count,rows_total,'
+            'truncated,next_action,retrieved_at,data_freshness},"links":{console,docs}}；'
+            '失败 = {"ok":false,"error":{kind,code,message,fix[]},"meta":{source,next_action,'
+            'retrieved_at,data_freshness},"links":{console,docs}}。'
+            "解析按 ok 分支；ok=false 先读 error.fix 与 meta.next_action 纠错，"
+            "不要静默重试。data/error 二选一，SDK 序列化会在缺席一侧补 null（正常现象）。"
+            "错误码全集见 docs/ERRORS.md；单位口径见 wmshare://units。"
         )
 
     @mcp.resource("wmshare://setup")

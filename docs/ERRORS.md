@@ -30,6 +30,7 @@
 | `eval` | XS 求值表达式构造失败 | 否 | 检查参数名/字面量转义 |
 | `freq` | 频率参数不被该数据面支持（如指数周/月 K） | 否 | 改用日频后自行重采样 |
 | `function` | 目录函数不存在或签名不匹配 | 否 | 用 `cat.function` 核对 |
+| `gateway_policy` | MCP 网关策略拒绝（低层方法/文件副作用路由） | 否 | 改用 wmshare_call(mode='api'/'catalog') 或 wmshare_batch；文件类路由用本地 SDK |
 | `group` | 参数分组不合法 | 否 | 按函数签名传参 |
 | `limit` | 客户端 `max_limit` 或单次请求体积超限 | 否 | 用 `batch_all()` 分批，或 `Client(max_limit=None)` 显式放开 |
 | `market` | 市场参数不合法（只支持 cn/hk/us） | 否 | 按市场分别建 Client |
@@ -41,6 +42,7 @@
 | `symbol` | 标的代码不合法或无法归一 | 否 | 检查代码格式与市场 |
 | `symbols` | 批量标的集合不合法（空集/重复/跨市场混批） | 否 | 同市场分批调用 |
 | `taxonomy` | 指标分类 sidecar 与 metrics.json 不一致 | 否 | 重跑 `extract_metric_taxonomy.py` |
+| `tool` | 工具内部未预期错误（MCP 兜底码） | 否 | wmshare_status 检查配置后缩小请求范围重试；持续复现请附 target 与参数 |
 | `unit` | 单位声明与台账不一致 | 否 | 按 `units.yaml` 修正声明 |
 | `units` | 单位选项不合法（只支持 base/native） | 否 | 改用默认 base 或 native |
 | `window` | 窗口参数不合法（如 `window`/`n` 越界） | 否 | 按文档取值域修正 |
@@ -49,6 +51,7 @@
 
 | `code` | 含义 | 可重试 | 处理建议 |
 |---|---|---|---|
+| `catalog` | 目录函数不存在或合同缺失（MCP 错误信封回落码） | 否 | wmshare_search 查函数名；wmshare_contract 查参数合同 |
 | `catalog_dir` | 随包目录缺失或不可读 | 否 | 重装 wheel / 检查安装完整性 |
 
 ### 数据与守护
@@ -62,15 +65,22 @@
 
 | `code` | 含义 | 可重试 | 处理建议 |
 |---|---|---|---|
+| `auth` | 凭证被服务端拒绝 | 否 | 核对 client_id/client_secret；wmshare_status 自检凭证状态 |
 | `config` | 客户端构造参数或凭证配置错误 | 否 | 按消息修正配置 |
 | `credential_mode` | 凭证文件权限过宽且开启严格模式 | 否 | `chmod 600` 后重试 |
+| `credential_required` | 缺少凭证（MCP 边界拒绝无凭证取数） | 否 | wmshare-mcp setup 配置凭证，或设置 WMSHARE_CLIENT_ID/SECRET 后重试 |
+| `denied` | 请求被拒（HTTP 401/403 兜底码，服务端未给细分码） | 否 | 核对凭证有效性；应用被平台停用时到控制台核查 |
 | `endpoint_unavailable` | 端点不可达或非官方主机未放行 | 否 | 用官方端点；自定义主机需 `allow_custom_host=True` |
 | `extra` | 导出格式需要可选依赖（xlsx/png） | 否 | 按消息安装：`pip install "wmshare[excel]"` 或 `"wmshare[figures]"` |
+| `http` | HTTP 非 2xx（服务端未给细分码的兜底） | 是 | 按 message 里的 status 退避重试；持续失败附状态码反馈 |
 | `ip_banned` | 免注册访问：来源网络被禁止免注册访问（HTTP 403，IP_BANNED） | 否 | 配置自有应用凭证后不受此限制 |
 | `network` | 网络层失败（重试耗尽） | 是 | 检查网络/代理后重试 |
 | `oauth` | OAuth 取 token 失败 | 是 | 检查 client_id/secret；瞬时失败可重试 |
+| `oauth_denied` | OAuth 授权被拒 | 否 | 重新走授权流程；核对应用密钥与授权范围 |
 | `oauth_response` | OAuth 响应结构异常 | 是 | 重试；持续失败检查网关版本 |
 | `pandas` | 缺少 pandas（DataFrame 默认路径依赖） | 否 | `pip install pandas`（>=1.5） |
+| `policy_denied` | 平台策略拒绝（应用停用/权限不足） | 否 | 开放平台控制台核对应用状态与权限；详情见 message |
+| `server` | 服务端内部错误（5xx 兜底码） | 是 | 稍后重试；持续失败附 request_id 反馈 |
 
 ### 配额与限流
 

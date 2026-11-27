@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import asyncio
 import inspect
 import json
@@ -37,6 +38,7 @@ from wmshare.mcp.constants import (
     INTL_ACTIONS,
     MACRO_ACTIONS,
     MARKET_ACTIONS,
+    MARKET_ACTIONS_TEXT,
     MARKET_DOMAINS,
     NOTICE_ACTIONS,
     PDF_ACTIONS,
@@ -281,14 +283,23 @@ def test_mcp_registry_schema_and_resources() -> None:
     async def inspect_server() -> tuple[list[str], dict[str, Any]]:
         listed = await server.list_tools()
         schema = {tool.name: tool.inputSchema for tool in listed}
+        out_schema = {tool.name: tool.outputSchema for tool in listed}
         coverage = await server._resource_manager._resources["wmshare://coverage"].read()
         setup = await server._resource_manager._resources["wmshare://setup"].read()
         limits = await server._resource_manager._resources["wmshare://limits"].read()
+        envelope_doc = await server._resource_manager._resources["wmshare://envelope"].read()
+        # 成功/错误两路径经 FastMCP 信封校验不被破坏（B2-1 spike 语义固化为回归）。
+        ok_env = (await server.call_tool("wmshare_status", {}))[1]
+        err_env = (await server.call_tool("wmshare_contract", {"name": "no.such.fn"}))[1]
         return [tool.name for tool in listed], {
             "schema": schema,
+            "out_schema": out_schema,
             "coverage": json.loads(coverage),
             "setup": setup,
             "limits": limits,
+            "envelope": envelope_doc,
+            "ok_env": ok_env,
+            "err_env": err_env,
         }
     names, facts = asyncio.run(inspect_server())
     assert set(names) == set(TOOL_NAMES) and len(names) == 29
@@ -314,6 +325,19 @@ def test_mcp_registry_schema_and_resources() -> None:
     call = facts["schema"]["wmshare_call"]["properties"]
     assert "target" in call
     assert "mode" in call
+    # B2-1：wire 级信封契约——每个工具 outputSchema 必须声明字段级结构
+    # （protocol 就地覆写返回注解为 core.Envelope）。
+    for tool_name, out in facts["out_schema"].items():
+        assert out and out.get("type") == "object", f"{tool_name} 无字段级 outputSchema"
+        assert {"ok", "meta", "links"} <= set(out.get("properties") or {}), \
+            f"{tool_name} outputSchema 缺信封字段"
+        assert "ok" in (out.get("required") or []), f"{tool_name} outputSchema required 缺 ok"
+    assert "ok" in facts["envelope"] and "error" in facts["envelope"]
+    ok_env = facts["ok_env"]
+    assert ok_env["ok"] is True and {"data", "meta", "links"} <= set(ok_env)
+    err_env = facts["err_env"]
+    assert err_env["ok"] is False
+    assert {"kind", "code", "message", "fix"} <= set(err_env["error"])
 
 
 def test_function_and_api_resources_emit_json() -> None:
@@ -476,6 +500,28 @@ def test_domain_action_enums_are_machine_readable() -> None:
     # 弱断言让 schema 层静默拒绝，代码成了死路径。
     assert set(market_action["enum"]) == set(
         chain.from_iterable(MARKET_ACTIONS.values()))
+    # B2-2：action 参数 description 必须与 MARKET_ACTIONS 同源（LLM 直接按它选组合），
+    # 运行时校验（tools.market）是兜底，两者文案不许分叉。
+    assert market_action["description"] == (
+        f"合法组合（domain→action|action）：{MARKET_ACTIONS_TEXT}")
     for name, schema in facts.items():
         for definition in schema["properties"].values():
             assert definition.get("description"), (name, definition)
+
+
+def test_route_examples_are_executable() -> None:
+    """B2-3：每条 friendly API 路由示例必须零占位、cli. 前缀、可解析且签名绑定通过。
+
+    2026-11-27 起 _example 只产出字面量（规则推导 + _HAND_EXAMPLES 手工表），
+    推导不出的参数**不进示例**——缺参在这里以绑定失败红出来，逼着补手工表；
+    这比 <REQUIRED> 占位符诚实（占位符会被 LLM 原样照抄）。
+    """
+    for route in api_routes():
+        ex = route.example
+        assert "<REQUIRED>" not in ex, route.target
+        assert ex.startswith("cli."), route.target
+        call = next(n for n in ast.walk(ast.parse(ex)) if isinstance(n, ast.Call))
+        args = [ast.literal_eval(a) for a in call.args]
+        kwargs = {k.arg: ast.literal_eval(k.value) for k in call.keywords}
+        fn = getattr(FRIENDLY_NAMESPACES[route.domain], route.method)
+        inspect.signature(fn).bind(object(), *args, **kwargs)
