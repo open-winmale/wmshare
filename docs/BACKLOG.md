@@ -183,6 +183,11 @@
   + 整文档 ReplaceOne」抹掉 V2 身份字段撞 `uk_symbol_catalog_ts` 唯一索引
   崩批（1 文档已按同 ts 镜像手工恢复）——批处理写库必须 `$set` 只碰目标
   字段，且真实退出码勿经 `| tail` 吞掉。
+  **oplog 兜底评审结案（2026-11-27，终态=永久缺口）**：三证据——存储
+  Mongo 为 standalone（`isMaster` 无 setName，7.0.3，oplog 物理不存在）+
+  服务凭据对 local 库无权限 + 全仓无 mongodump 例程（ops 文档均为操作级
+  一次性备份）；且 band PE 文档本体为 ≈3 年前插入，任何日志类兜底都够
+  不到。≈1,319 early-clean 票 + 34,440 行残留维持诚实缺档，不再排期。
   SDK 侧口径说明与 4.3.0 CHANGELOG `Changed` 已随 `b24f007` 先行落地，数据面本次对齐。
 - **`float_share` 与 `total_share` 相等（上游口径）**（历史记录，保留备查）：股本变动快照披露的
   「流通股份」实测恒等于「总股份」；真实可流通口径是「无限售股份」，**该字段上游有值**
@@ -251,19 +256,22 @@
   龙虎榜营业部席位明细（`sys/toplist/query.xs` 明示上游无落库）、
   十大流通股东（只有总口径）、增发/IPO/退市史（`disc.events` 只覆盖业绩披露，
   `stocks.lifecycle` 明示无上市/退市日期源）、高管简历（`query_executives` 无该字段）。
-- **研报探针结论（2026-11-26，no-go 本批不做）**：raw 层**有数据**但清洗档**全空**，
-  所以不成立「0.5 天纯暴露」：
-  - `raw 层 cn_stock_research_report` 2,601 篇（个股研报，字段 `result`）
-  - `raw 层 cn_strategy_research_report` 47 篇（策略研报）
-  - `raw 层 cn_industry_research_report` 217 篇（行业研报，**无对应清洗规则**）
-  - `raw 层 cn_macro_research_report` **集合不存在**
-  - 清洗档 `datastore.alt_bssaa_cn` 里 `research_report` / `strategy_research` /
-    `industry_research` 的 distinct symbol 全是 **0** —— 规则在 `bssaa/config.py:5924`
-    （`research_report.LIST`）与 `strategy_research_report.LIST` 里，但从未产出
-  - 顺带发现一处配置笔误：`bssaa/config.py:5996` 的宏观研报规则指向
-    `cn_marco_research_report`（**marco** 拼错），而 raw 侧即使拼对也不存在该集合
-  结论：要做研报域，得先把清洗链路跑通（查 source DAG 为何不产/是否未调度）+
-  补行业研报规则，成本 > 0.5 天，按本清单原定判据**暂不做**；登记备查。
+- **研报探针结论（2026-11-26 no-go → 2026-11-27 清洗链已盘活，更新）**：raw 层
+  **有数据**、清洗档曾**全空**，根因是**清洗从未被执行**（规则在但无任何自动
+  路径会跑；采集 DAG 亦从未排程、纯手动）。2026-11-27 修复+实跑：
+  - 实 dump 校准推翻两条旧判断：行业报告真实行键就是 `INDUSTRY_CODE`（82 个
+    行业码，「无对应清洗规则」系注释样例拿错集合的误判）；策略/行业顶层
+    `stock_code='global'` 占位使 `FROM_RECORD/stock_code` 可用
+  - 真缺陷=宏观规则两处拼写（source `cn_marco`→`cn_macro`、name_prefix 同样
+    拼错），已修；个股/行业/策略三条规则实跑产出：
+    `cn.research_report.LIST.*` **17,381 行/2,601 票全齐**、行业 **8,619 行/82
+    符号**、策略 **230 行/1 global 符号**；guard 零产出巡检 `status=ok`
+  - 宏观 prefix 待「采集触发（补 `cn_macro_research_report` 集合）+ 部署」后
+    补跑；采集窗口已参数化（原硬编码 2024 年窗→默认近 30 天可传参）
+  - **仍未建（另立项，维持登记）**：研报 PDF 正文抓取/解析层（raw 只存
+    `REPORT_URL` 链接；`pdf_doc` 是公告域与研报无关）、SDK 研报域暴露
+    （公开面走 INTERFACE_SPEC 独立流程）、script `研究报告.个股研报.xs` 空壳
+    实现、采集/清洗日更调度（生产行为变更，盘活验证后单独确认）
 
 ## 口径核验批结论（2026-11-26：5 项待核定论 + 2 项生产探针）
 
