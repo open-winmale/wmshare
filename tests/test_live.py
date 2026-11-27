@@ -703,11 +703,11 @@ def test_screener_predicates(cli):
 
 
 def test_screener_breadth_summary(cli):
-    """涨跌全景：家数守恒；up_pct 为百分数（0~100）、median_pct 为小数。"""
+    """涨跌全景：家数守恒；*_pct 为小数（2.0 契约，0.803=80.3%），median_pct 同口径。"""
     s = _call_or_xfail(lambda: cli.screener.index_breadth_summary())
-    assert {"total", "up", "down", "flat", "up_pct", "median_pct"} <= set(s)
+    assert {"total", "up", "down", "flat", "up_pct", "down_pct", "median_pct"} <= set(s)
     assert s["up"] + s["down"] + s["flat"] == s["total"] and s["total"] > 1000
-    assert 0 <= s["up_pct"] <= 100 and 0 <= s["down_pct"] <= 100
+    assert 0 <= s["up_pct"] <= 1 and 0 <= s["down_pct"] <= 1
     assert -0.5 <= s["median_pct"] <= 0.5
 
 

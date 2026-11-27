@@ -15,6 +15,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 import wmshare
 from wmshare.api import COMPOSITE_METHODS
 from wmshare.api import FRIENDLY_INDEX, _FRIENDLY_NS_TO_CATALOG
@@ -171,3 +173,28 @@ def test_internal_ns_still_reachable_via_call():
     cat = wmshare.load()
     for underlying in ("rptdom.statement_audit", "rptdom.statement"):
         assert cat.function(underlying), f"{underlying} 必须留在随包目录（门面委托依赖）"
+
+
+@pytest.mark.parametrize("entrypoint", ["call_catalog", "call_cost", "batch"])
+@pytest.mark.parametrize("target", ["rptdom.statement", "equity.fmt_holder10"])
+def test_gateway_refuses_internal_names(entrypoint, target):
+    """通用网关（wmshare_call / wmshare_batch）是内部名暴露面的最后缺口：全拒。
+
+    2026-11-27 起 call()/batch() 在 runtime.client() 之前统一拦截
+    ``is_internal_name`` 与目录 ``internal:true``（cost 模式同样先于取数拦截），
+    堵住「Agent 从别处得知内部名后经 catalog 网关直调」的路径。
+    全部离线可跑：拦截点先于任何 client 创建（裸 MCPRuntime 零网络零凭证）。
+    负例注入=删除 tools.py 拦截块，本测试必须变红。
+    """
+    from wmshare.errors import CatalogError
+    from wmshare.mcp import tools as mcp_tools
+    from wmshare.mcp.core import MCPRuntime
+
+    rt = MCPRuntime()
+    with pytest.raises(CatalogError):
+        if entrypoint == "batch":
+            mcp_tools.batch(rt, function=target, symbols=["600519"])
+        else:
+            mcp_tools.call(
+                rt, target=target,
+                mode="catalog" if entrypoint == "call_catalog" else "cost")

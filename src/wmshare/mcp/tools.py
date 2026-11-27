@@ -440,7 +440,18 @@ def batch(
         raise ValueError("on_batch_error 只支持 raise/skip")
     if batch_size is not None and (isinstance(batch_size, bool) or not 1 <= int(batch_size) <= 500):
         raise ValueError("batch_size 只支持 1~500")
-    wmshare.load().function(str(function))  # fail before any network request
+    function_name = str(function)
+    # 与 call() 同一道闸：batch 也是通用网关，内部名/internal:true 不得经此触达
+    # （batch 按标的逐票计费，缺口后果比单发更大）。拦截必须在 runtime.client()
+    # 之前——失败要发生在任何网络请求之前。
+    if is_internal_name(function_name):
+        raise CatalogError(
+            f"{function_name} 是内部实现函数，不能经 MCP 网关批量调用；"
+            "请用 wmshare_search(kind='api') 查 friendly API")
+    fn = wmshare.load().function(function_name)  # fail before any network request
+    if fn.get("internal"):
+        raise CatalogError(
+            f"{function_name} 标记 internal:true，不对外暴露；请改用 friendly API")
     if units not in ("base", "native"):
         raise ValueError("units 只支持 base/native")
     batch_params = dict(params or {})
@@ -515,6 +526,21 @@ def call(
     selected_market = _market(market or runtime.market)
     if units not in ("base", "native"):
         raise ValueError("units 只支持 base/native")
+    target_name = str(target)
+    # 内部实现名不得经通用网关触达：contract/resource 已挡，call 是最后一个缺口。
+    # 复用 catalog.is_internal_name 单一事实源，禁止硬编码 "rptdom"。
+    if is_internal_name(target_name):
+        raise CatalogError(
+            f"{target_name} 是内部实现函数，不能经 MCP 网关调用；"
+            "请用 wmshare_search(kind='api') 查 friendly API，或 wmshare_contract 查契约")
+    fn = None
+    if mode in ("catalog", "cost"):
+        # internal:true 的 fmt_* 等辅助函数按模式补查；cost 也必须在
+        # runtime.client() 之前拦，失败才发生在任何取数之前（且离线可测）。
+        fn = wmshare.load().function(target_name)
+        if fn.get("internal"):
+            raise CatalogError(
+                f"{target_name} 标记 internal:true，不对外暴露；请改用 friendly API")
     args = dict(arguments or {})
     if mode == "api":
         cli = runtime.client(market)
@@ -540,10 +566,10 @@ def call(
                        target=str(target), mode=mode, market=selected_market)
     if mode != "catalog":
         raise ValueError("mode 只支持 catalog/api/cost")
-    fn = wmshare.load().function(str(target))
+    assert fn is not None  # mode=="catalog" 必经上方目录加载（internal 检查已过）
     allowed = {
         item["name"] for item in (
-            fn.get("params") or wmshare.load().inventory_params(str(target)) or []
+            fn.get("params") or wmshare.load().inventory_params(target_name) or []
         )
     }
     forbidden = sorted(set(args) & {"_df", "_raw", "_units"})

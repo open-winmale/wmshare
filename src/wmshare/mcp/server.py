@@ -119,9 +119,8 @@ def build_server(runtime: MCPRuntime | None = None) -> FastMCP:
             "龙虎榜→wmshare_toplist；期货主力→wmshare_futures；"
             "公告 PDF 结构化→wmshare_pdf；名字/代码不确定→先 "
             "wmshare_search/wmshare_symbols。"
-            "比率/涨跌幅/分位默认小数（0.0396=3.96%），金额=元，量=股；"
-            "screener 宽度接口的 *_pct 字段是百分数数值（80.3=80.3%）。"
-            "DataError 是数据守护报警，不要静默忽略。"
+            "比率/涨跌幅/分位/占比一律小数（0.0396=3.96%，0.803=80.3%），金额=元，量=股；"
+            "*_pct 无例外。DataError 是数据守护报警，不要静默忽略。"
         ),
     )
 
@@ -807,9 +806,10 @@ def _add_resources(mcp: FastMCP, rt: MCPRuntime) -> None:
     @mcp.resource("wmshare://units")
     def units() -> str:
         return (
-            "基础单位：比率/涨跌幅/分位=小数（0.0396=3.96%，0.42=42% 分位）；"
-            "金额/价格/市值=元；股数/成交量=股。唯一常见例外是 screener 宽度接口"
-            "的 *_pct/pct_of_total（80.3 表示 80.3%），median_pct 与涨跌幅仍是小数。"
+            "基础单位：比率/涨跌幅/分位/占比一律小数（0.0396=3.96%，0.803=80.3%，"
+            "0.42=42% 分位）；金额/价格/市值=元；股数/成交量=股。"
+            "screener 宽度接口的 *_pct/pct_of_total 2.0 起也是小数，无例外；"
+            "展示层才格式化为百分比。"
             "units=native 仅用于诊断，会绕开默认规范化；raw=True（SDK 侧 _raw）同理，"
             "两者都会在返回信封里标出 meta.guards_off=true，禁止把诊断结果当已守护数据。"
         )

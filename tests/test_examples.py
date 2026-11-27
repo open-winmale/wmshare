@@ -103,6 +103,10 @@ def test_04_screener(snapshot, capsys):
     assert "涨幅榜 Top5 / 跌幅榜 Top3" in out
     mover = snapshot["data"]["screener"]["top_movers_up"][0]["percent"]
     assert f"{mover:+.2%}" in out
+    # 2.0 契约：*_pct 是小数，示例必须 .2% 格式化展示（0.119 → "11.90%"）；
+    # 不许把 0.119 直接拼成 "0.119%"（差 100 倍的 few-shot 污染，2026-11-27 修）。
+    assert f"{summary['up_pct']:.2%}" in out
+    assert f"{summary['up_pct']}%" not in out
 
 
 def test_05_dividend_screener(snapshot, capsys):

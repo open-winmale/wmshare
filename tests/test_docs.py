@@ -600,15 +600,30 @@ def test_quickstart_en_matches_runtime():
 
 
 def test_pct_example_values_are_decimals():
-    """文档里 ``*_pct`` 的示例注释值必须是小数（2.0 契约：0.803 = 80.3%）。
+    """文档/Agent 面里 ``*_pct`` 的示例值与口径表述必须是小数（2.0 契约：0.803 = 80.3%）。
 
     2026-11-19 实测：README 与 GUIDE 曾把 ``up_pct`` 示例写成 80.3 / 9.5，与
     "全库统一小数" 的 2.0 契约相反；更糟的是 ``test_readme_python_blocks_execute``
     的 FakeClient 直接返回 80.3，把错误示例"焊死"成绿色。两处都要守，否则文档
     会持续教出 100 倍误读。
+    2026-11-27 扩面：MCP resource/instructions 与 examples 是直接投喂 LLM 的
+    few-shot，同样受本门禁约束——除示例值外，还拦「*_pct 是百分数数值 /
+    80.3 表示 / 例外口径」三类 1.x 残留表述（曾从 MCP resource 再次泄漏）。
     """
     pattern = re.compile(r"['\"]?([a-z_]*_pct)['\"]?\s*:\s*(-?[\d.]+)")
-    surfaces = {"README.md": README, "docs/GUIDE.md": GUIDE_MD}
+    stale_claims = re.compile(
+        r"(?:_pct[^\n]{0,80}(?:百分数数值|80\.3\s*表示|例外口径))"
+        r"|(?:(?:百分数数值|80\.3\s*表示)[^\n]{0,80}_pct)")
+    surfaces = {
+        "README.md": README,
+        "docs/GUIDE.md": GUIDE_MD,
+        "docs/AI.md": AI_MD,
+        "src/wmshare/mcp/server.py": (REPO / "src/wmshare/mcp/server.py").read_text(encoding="utf-8"),
+        "examples/04_screener.py": (REPO / "examples/04_screener.py").read_text(encoding="utf-8"),
+        "examples/README.md": (REPO / "examples/README.md").read_text(encoding="utf-8"),
+        "src/wmshare/skills/wmshare/SKILL.md": (REPO / "src/wmshare/skills/wmshare/SKILL.md").read_text(encoding="utf-8"),
+        "tests/test_live.py": (REPO / "tests/test_live.py").read_text(encoding="utf-8"),
+    }
     violations = []
     for name, text in surfaces.items():
         for lineno, line in enumerate(text.splitlines(), 1):
@@ -616,6 +631,9 @@ def test_pct_example_values_are_decimals():
                 value = float(raw)
                 if abs(value) > 1.0:
                     violations.append(f"{name}:{lineno} {field}={raw}")
+            if stale_claims.search(line):
+                violations.append(
+                    f"{name}:{lineno} 残留百分数口径表述: {line.strip()[:100]}")
     assert not violations, (
         "文档示例把 *_pct 写成百分数（2.0 契约是小数，0.803 = 80.3%）：\n"
         + "\n".join(violations))

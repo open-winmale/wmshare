@@ -2,13 +2,18 @@
 
 前提：凭证可选——无凭证自动免注册免费试用（真实数据、需网络）
 运行：python examples/04_screener.py
-学到：一条表达式全市场选股（count 是真命中数）；涨停/均线/放量单票筛选；全景/分桶/涨跌榜；*_pct 百分数例外口径
+学到：一条表达式全市场选股（count 是真命中数）；涨停/均线/放量单票筛选；全景/分桶/涨跌榜；全库 *_pct 统一小数口径（0.803=80.3%）
 文档：docs/GUIDE.md（单票菜谱）
 """
 import wmshare
 from wmshare import Client, WmshareError
 
 WATCHLIST = ["600519", "000858", "601088", "600900", "601318"]  # 自选股，换成你的
+
+
+def _fmt_pct(value):
+    """小数→百分比字符串（2.0 契约：*_pct 一律小数）；None 显示占位不伪造 0。"""
+    return "—" if value is None else f"{value:.2%}"
 
 
 def main(cli=None) -> None:
@@ -26,12 +31,12 @@ def main(cli=None) -> None:
             print(f"  {sym}  跳过：code={e.code} {e}")
 
     # ---- 全市场涨跌全景：服务端预计算索引直出，免本地扫描 ----
-    print("\n--- 涨跌全景（*_pct 百分数数值，median_pct 小数）---")
+    print("\n--- 涨跌全景（*_pct 一律小数，展示时格式化为百分比）---")
     try:
         s = cli.screener.index_breadth_summary()
-        print(f"  总数={s.get('total')}  涨={s.get('up')}({s.get('up_pct')}%)"
-              f"  跌={s.get('down')}({s.get('down_pct')}%)  平={s.get('flat')}"
-              f"  涨跌幅中位数={s.get('median_pct')}")
+        print(f"  总数={s.get('total')}  涨={s.get('up')}({_fmt_pct(s.get('up_pct'))})"
+              f"  跌={s.get('down')}({_fmt_pct(s.get('down_pct'))})  平={s.get('flat')}"
+              f"  涨跌幅中位数={_fmt_pct(s.get('median_pct'))}")
     except WmshareError as e:
         print(f"  跳过：code={e.code} {e}")
 
@@ -39,7 +44,7 @@ def main(cli=None) -> None:
     print("\n--- 涨跌幅分桶（前 3 档）---")
     try:
         for b in cli.screener.index_breadth_bins().head(3).to_dict("records"):
-            print(f"  {b['label']:<12} {b['count']:>5} 家（{b['pct_of_total']}%）")
+            print(f"  {b['label']:<12} {b['count']:>5} 家（{_fmt_pct(b.get('pct_of_total'))}）")
     except WmshareError as e:
         print(f"  跳过：code={e.code} {e}")
 
@@ -70,7 +75,7 @@ def main(cli=None) -> None:
     except WmshareError as e:
         print(f"  跳过：code={e.code} {e}")
 
-    # ---- 底层函数直达：门面不遮蔽目录函数，269 个都能经属性调用 ----
+    # ---- 底层函数直达：门面不遮蔽目录函数，目录收录的函数都能经属性调用 ----
     print("\n--- 底层函数直达：cli.screener.screen_up_today(sym) ---")
     for sym in WATCHLIST[:2]:
         try:
