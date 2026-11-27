@@ -1,6 +1,6 @@
 {
  "schema_version": 2,
- "upstream_rev": "edf8dd2d",
+ "upstream_rev": "64fe69ea",
  "domains": {
   "blocktrade": {
    "entry": "sys/blocktrade/init.xs",
