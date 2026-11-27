@@ -264,10 +264,20 @@
     `stock_code='global'` 占位使 `FROM_RECORD/stock_code` 可用
   - 真缺陷=宏观规则两处拼写（source `cn_marco`→`cn_macro`、name_prefix 同样
     拼错），已修；个股/行业/策略三条规则实跑产出：
-    `cn.research_report.LIST.*` **17,381 行/2,601 票全齐**、行业 **8,619 行/82
+    `cn.research_report.LIST.*` **终局 126,692 行/4,874 票**（2026-11-27 下午
+    cnall 全量重拉后终验；早盘 2,601 票/17,381 行 → ×7.3）、行业 **8,619 行/82
     符号**、策略 **230 行/1 global 符号**；guard 零产出巡检 `status=ok`
-  - 宏观 prefix 待「采集触发（补 `cn_macro_research_report` 集合）+ 部署」后
-    补跑；采集窗口已参数化（原硬编码 2024 年窗→默认近 30 天可传参）
+  - **采集链四层断裂当天全修**（akshare 1.18.63.1 升级打断采集、raw 停在
+    2024 的真根因链）：①签名只剩 `(symbol)`→`ak_params={}`+operator 注入；
+    ②无研报关股票（次新 301xxx）KeyError('infoCode')→compat 垫片归一 0 行
+    空表；③新版中文列 schema≠2024 存量英文键→transform 七键改名（bssaa
+    规则 quota/dt 硬依赖，不归一则 radd 会冲掉历史清洗档）；④transform 真
+    契约=(symbol, df, totol_pages)→整信封（镜像 default_transform_func）。
+    终局重拉 4,713 成功/17 网络失败（0.36%），全绿无熔断；早盘 71,433 行
+    中文键一次性 munge 收敛、复扫零残留
+  - **行业/策略/宏观重新采集不可用**：装版 akshare 无上游入口（report_type
+    拆分消亡），需直连东财接口（另立项）；宏观清洗规则修复已部署就位，
+    数据面等采集落地即可跑
   - **仍未建（另立项，维持登记）**：研报 PDF 正文抓取/解析层（raw 只存
     `REPORT_URL` 链接；`pdf_doc` 是公告域与研报无关）、SDK 研报域暴露
     （公开面走 INTERFACE_SPEC 独立流程）、script `研究报告.个股研报.xs` 空壳
