@@ -1088,7 +1088,7 @@ class HoldertradeNS(_Ns):
         """单票股东增减持历史
 
 :param sym: 6 位裸码或带 .SH/.SZ/.BJ 后缀
-:param limit: 最近 N 条事件
+:param limit: 最近 N 条事件（上限 200，超限受控报错；逐行收集超线性计费，limit=100 冷 ≈5 万 EC）
 
 :returns: ARR · 单票增减持事件行（date 升序；字段同 holdertrade.by_date）
         """

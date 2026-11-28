@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > MAJOR；弃用至少保留 1 个 MINOR，并在 `Deprecated` 段登记替代写法与移除版本。
 > 升级前请扫一眼 Removed / Changed / Deprecated 段。
 
+## [4.7.1] - 2026-11-28
+
+### Fixed
+
+- **股东增减持两处源端边界**：①`change_ratio`/`after_ratio` 上游偶发 >100%（源缺陷；
+  全史实测 after_ratio 1,383/482,345 行、change_ratio 143 行）此前会落键并打穿量级
+  守护，令**整次** `holdertrade.by_date`/`by_symbol` 抛 DataError——现按缺失处理
+  （不落键、不补 0），守护范围保持 [0,1] 不放宽。
+
+### Changed
+
+- **`holdertrade.by_symbol` 单次上限 200 条**（服务端受控报错，不静默截断）：逐行
+  `.append()` 收集按长度计费且超线性，实测 limit=20 ≈7,111 EC、limit=500 ≈107 万 EC，
+  故收口到 200；`estimate_cost` 改为按 limit 估算（≈4,000 EC 底 + 超线性项，
+  例如 limit=100 ≈4.6~7.9 万 EC）。更长历史用 `by_date` 按公告日取。
+
 ## [4.7.0] - 2026-11-28
 
 > 4.6.0 未单独发版，本版一并发布其变更（MCP outputSchema、friendly API 示例、

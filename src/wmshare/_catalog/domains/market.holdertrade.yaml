@@ -21,9 +21,13 @@ notes:
     未知代码原样透出
   - avg_price/after_share/after_ratio 部分行上游为 NaN/nil（源数据边界）→ 读面**不落该键**
     （不补 0，避免假 0 污染口径；NaN 落 JSON 会打穿网关成 HTTP 200 空包，2026-11-28 实证）
+  - change_ratio/after_ratio 上游偶发 >100%（源缺陷；2026-11-28 全史实测 after_ratio
+    1,383/482,345 行、change_ratio 143 行）→ 读面按缺失处理（不落该键），量级守护
+    [0,1] 保持不放宽
   - 单日榜按变动股数降序取前 N；单票历史按公告日收集、SDK 门面统一升序（date 升序）
   - 行内只有证券代码（无简称）；要名称请用 cli.stocks.list 或 cli.info.profile 关联
-  - 历史自 2010 年起（采集 initial_date=20100101）；estimate_cost 待回补后实测校准
+  - 历史自 2010 年起（采集 initial_date=20100101），全史已回补（4,954 公告日 / 482,345 行）；
+    成本档位见 estimate_cost（by_date/by_symbol 均 live 实测校准）
 functions:
   - name: holdertrade.by_date
     cn: 指定公告日股东增减持
@@ -68,7 +72,7 @@ functions:
     layer: L0
     params:
       - {name: sym, type: string, required: true, desc: 6 位裸码或带 .SH/.SZ/.BJ 后缀}
-      - {name: limit, type: int, required: false, default: 100, desc: 最近 N 条事件}
+      - {name: limit, type: int, required: false, default: 100, desc: '最近 N 条事件（上限 200，超限受控报错；逐行收集超线性计费，limit=100 冷 ≈5 万 EC）'}
     ranges:
       change_vol: [0, 1.0e+10]
       change_ratio: [0, 1]

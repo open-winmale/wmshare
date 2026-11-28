@@ -6012,14 +6012,15 @@ A 股股东增减持（按公告日全市场）——指定公告日全市场增
 - 上游不返回交易发生日（trade_date）列（2026-11-28 实测）——行只有公告日 ann_date； 增持/减持方向见 direction 字段（in_de=IN/DE 归一）
 - holder_type 中文对照（G=高管、C=大股东（≥5%，含机构）、P=机构投资者）以源披露为准， 未知代码原样透出
 - avg_price/after_share/after_ratio 部分行上游为 NaN/nil（源数据边界）→ 读面**不落该键** （不补 0，避免假 0 污染口径；NaN 落 JSON 会打穿网关成 HTTP 200 空包，2026-11-28 实证）
+- change_ratio/after_ratio 上游偶发 >100%（源缺陷；2026-11-28 全史实测 after_ratio 1,383/482,345 行、change_ratio 143 行）→ 读面按缺失处理（不落该键），量级守护 [0,1] 保持不放宽
 - 单日榜按变动股数降序取前 N；单票历史按公告日收集、SDK 门面统一升序（date 升序）
 - 行内只有证券代码（无简称）；要名称请用 cli.stocks.list 或 cli.info.profile 关联
-- 历史自 2010 年起（采集 initial_date=20100101）；estimate_cost 待回补后实测校准
+- 历史自 2010 年起（采集 initial_date=20100101），全史已回补（4,954 公告日 / 482,345 行）； 成本档位见 estimate_cost（by_date/by_symbol 均 live 实测校准）
 
 | 函数 | 中文 | 性质 | 层 | 参数 | 返回 | 单位与守护 |
 |---|---|---|---|---|---|---|
 | `holdertrade.by_date` | 指定公告日股东增减持 | 原始数据 | L0 | `ann_date:string` — 公告日 YYYY-MM-DD 或 YYYYMMDD · `limit:int=100` — 返回前 N 条（变动股数降序） | ARR · 股东增减持行（变动股数降序）；字段 date:string（公告日） / symbol:string（6 位裸码） / holder:string（股东名称） / holder_type:string?（类型代码（G/C/P）） / holder_role:string?（类型（高管/大股东/机构投资者）） / direction:string（方向（增持/减持）） / change_vol:float（变动股数（股）） / change_ratio:float?（占总股本比例（小数）） / after_share:float?（变动后持股（股）） / after_ratio:float?（变动后占比（小数）） / avg_price:float?（成交均价（元）） | 量级界 `change_vol`、`change_ratio`、`after_share`、`after_ratio`、`avg_price` | 例：`cli.call("holdertrade.by_date", ann_date='2026-11-27', limit=50)`
-| `holdertrade.by_symbol` | 单票股东增减持历史 | 原始数据 | L0 | `sym:string` — 6 位裸码或带 .SH/.SZ/.BJ 后缀 · `limit:int=100` — 最近 N 条事件 | ARR · 单票增减持事件行（date 升序；字段同 holdertrade.by_date）；字段 date:string（公告日） / symbol:string（6 位裸码） / holder:string（股东名称） / holder_type:string?（类型代码（G/C/P）） / holder_role:string?（类型（高管/大股东/机构投资者）） / direction:string（方向（增持/减持）） / change_vol:float（变动股数（股）） / change_ratio:float?（占总股本比例（小数）） / after_share:float?（变动后持股（股）） / after_ratio:float?（变动后占比（小数）） / avg_price:float?（成交均价（元）） | 量级界 `change_vol`、`change_ratio`、`after_share`、`after_ratio`、`avg_price` | 例：`cli.call("holdertrade.by_symbol", sym='600519', limit=20)`
+| `holdertrade.by_symbol` | 单票股东增减持历史 | 原始数据 | L0 | `sym:string` — 6 位裸码或带 .SH/.SZ/.BJ 后缀 · `limit:int=100` — 最近 N 条事件（上限 200，超限受控报错；逐行收集超线性计费，limit=100 冷 ≈5 万 EC） | ARR · 单票增减持事件行（date 升序；字段同 holdertrade.by_date）；字段 date:string（公告日） / symbol:string（6 位裸码） / holder:string（股东名称） / holder_type:string?（类型代码（G/C/P）） / holder_role:string?（类型（高管/大股东/机构投资者）） / direction:string（方向（增持/减持）） / change_vol:float（变动股数（股）） / change_ratio:float?（占总股本比例（小数）） / after_share:float?（变动后持股（股）） / after_ratio:float?（变动后占比（小数）） / avg_price:float?（成交均价（元）） | 量级界 `change_vol`、`change_ratio`、`after_share`、`after_ratio`、`avg_price` | 例：`cli.call("holdertrade.by_symbol", sym='600519', limit=20)`
 | `holdertrade.fmt_maps` | 股东增减持行规范化 | 原始数据 | L1 | `rows:any` — by_date/by_symbol 的原始行 | ARR · 规范化增减持行（率=小数、量=股、日期=ISO） | — |
 
 #### 指数（`market.index`）
