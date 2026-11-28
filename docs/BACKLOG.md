@@ -371,9 +371,13 @@
     不并入股票 kline 族——一行一文档 3.4 亿/年不可行的既有结论维持，票×日
     内嵌 ≤242 桶）。
   - 保留策略（已拍板）：滚动最近 1 年、无归档，稳态 ≈40 GB；TTL 机制 P1 设计项。
-  - 状态：storage/winmale/script 三仓代码已落地（单测绿、门禁 PASS）；**待
-    winmale 发版 + cron 单 job 导入 + 小样/10 交易日验收**；读面
-    `cli.kline.min_bars` 后置 P3（units 台账锚点：量=股累计→差分、额=元）。
+  - 状态（2026-11-28 当天发版闭环）：storage v1.0.166 / winmale 51966cd（test+prod
+    已发）/ script 种子已入 cron（单 job 导入 `upserted=1 preserved_custom=407`）/
+    airflow StatsCheck 已部署冒烟 PASS。管道已实弹验证：手动 trigger 全链 5.2s，
+    首跑抓出 cnall symbols 文档数组 decode bug 当日修复；非交易日台账诚实记
+    `sealed=0 missing=5695 bad=0`（5695 票 MGET 全部解信封成功）。**待周一首
+    个交易日 15:40 自动实弹 + 10 交易日验收**（docs≈票数、V2 行数、幂等重跑）；
+    读面 `cli.kline.min_bars` 后置 P3（units 台账锚点：量=股累计→差分、额=元）。
   - EC：单根 60~75 EC → 单票单日 ≈1.6-2 万 EC 维持原判；读面必须配额制 +
     memo 物化（P3 设计项）。不做实时推送（tick/WS 见不做清单）。
 不做清单：LOF/场外/货基、游资名录/热榜/竞价明细、第三方源资金流变体、中信行业、
