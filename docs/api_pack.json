@@ -691,7 +691,7 @@
           "notes": [
             "快照内 percent 已是小数、volume 上游为手；缺此声明会让同一 MAP 混用两套单位",
             "本仓精修 returns.shape 列全 23 字段；上游 xs:catalog 注释仍只列 4 字段，待跨仓补齐后可移除本覆盖",
-            "按标的+自然日缓存。首个新标的约 10,250 EC（均线需回看 K 线序列），重复调用约 26 EC",
+            "按标的+自然日缓存。CN/HK 首个新标的约 270 EC（序列字段读当日 EOD 索引，与批量同源），US 约 1.1 万 EC（US 索引未物化均线列，需回看 K 线序列）；重复调用约 30 EC",
             "传代码列表（≥3 票）时 SDK 自动路由 kline.snapshot_batch（单次 eval 按量计费 60~90 EC/票），返回 BatchResult，results 为「代码→23 字段 MAP」；kline_date/kline_sas 为 None（索引未物化），价格为索引 EOD 快照值。ETF/新上市等索引外标的自动回退逐票快照（数值与单票一致）。<3 票或 Client(native_batch=False) 保持逐票语义"
           ],
           "docs_visible": true,
