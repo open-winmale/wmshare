@@ -390,6 +390,18 @@
     6.7 天/60min≈4 个月——60min 粒度若要利用需另立目录）；降级备源站点分钟
     K 线两代接口实测全停用（Service not valid/null）。主源站点 m5/m60 免费源
     可兼作每日 seal 的 close/量额对账源。
+  - **累积路线定稿（2026-11-28 用户拍板：不购历史分钟权限，只每日累积，范围
+    仅 A 股股票）**——三条硬化已落地：① `market.cn.min1_reconcile`（airflow，
+    交易日 16:40）抽样 200 票拉快照主源站点 mkline m5 交叉对账（close 桶级
+    ≤0.5%/全天量 factor/桶数 240-242）→ raw__min1.recon_log，≥5% raise 红
+    条；首跑 5 票全绿（48/48 桶对齐、量分毫不差 factor≡1，量=股同口径）。
+    ② 滚动 1 年删除（同 DAG 尾任务，raw 顶层 trading_day + V2 顶层 ts，
+    dry_run Param）。③ 缺档 SOP：memo TTL 14 天内 `cmd/min1seal -day D` 补；
+    TTL 外显式登记永久缺档。**升档回补触发条件**：读面 `cli.kline.min_bars`
+    （P3）上线且出现深历史需求时再议（届时全市场 1 年 ≈6.8 万 calls，500
+    次/分钟档半天跑完，写入归一 seal bar 契约 + `source` 标记 + OHLC 附加
+    字段）。python V2 镜像分钟分支已补齐（kline_min 频率豁免 + DeriveTS
+    直取，含双形状 mkline 解析单测）。
   - EC：单根 60~75 EC → 单票单日 ≈1.6-2 万 EC 维持原判；读面必须配额制 +
     memo 物化（P3 设计项）。不做实时推送（tick/WS 见不做清单）。
 不做清单：LOF/场外/货基、游资名录/热榜/竞价明细、第三方源资金流变体、中信行业、
