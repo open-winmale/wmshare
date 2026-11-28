@@ -45,6 +45,10 @@ PANEL: list[tuple[str, str, dict]] = [
     ("每日估值（物化表）", "valuation.daily_basic",
      {"sym": "600519", "begin": "2026-11-01", "end": "2026-11-17"}),
     ("概念目录（物化档点查）", "board.concept_list", {"limit": 20}),
+    ("股东增减持 单日档", "holdertrade.by_date",
+     {"date": "2026-11-27", "limit": 10}),
+    ("股东增减持 单票 5 条", "holdertrade.by_symbol",
+     {"symbol": "600519", "limit": 5}),
 ]
 
 # 高成本面板（--heavy）：单次 ≥ 5 万 EC，合计可能 ≥ 30 万 EC

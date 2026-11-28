@@ -9,6 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > MAJOR；弃用至少保留 1 个 MINOR，并在 `Deprecated` 段登记替代写法与移除版本。
 > 升级前请扫一眼 Removed / Changed / Deprecated 段。
 
+## [4.7.0] - 2026-11-28
+
+> 4.6.0 未单独发版，本版一并发布其变更（MCP outputSchema、friendly API 示例、
+> action 枚举同源等，见下一条目）。
+
+### Added
+
+- **股东增减持新域 `market.holdertrade`**：`cli.holdertrade.by_date`（单公告日
+  全市场，按变动股数降序）/ `cli.holdertrade.by_symbol`（单票全史，date 升序）。
+  字段 date / symbol / holder / holder_type / holder_role / direction /
+  change_vol / change_ratio / after_share / after_ratio / avg_price；量=股、
+  率=小数、价=元。可选字段源端为 NaN 时**省略键**（不补 0），调用方以缺失
+  判断「未披露」。数据链路四层（raw `cn_holder_trade` 一公告日一档 → BSSAA
+  清洗 `cn.holdertrade.LIST` → 脚本域 → SDK/MCP），全史 2010-01 起，@daily
+  日更。附 `examples/35_holder_trade.py`；MCP 走
+  `wmshare_market(domain="holdertrade", action="by_date"|"by_symbol")`。
+  口径：上游不返回交易发生日列，行只有公告日；holder_type G=高管 / C=大股东
+  （≥5%，含机构）/ P=机构投资者，以源披露为准。
+- **`estimate_cost` 补 holdertrade 两档实测**（`model="measured"`，按生产
+  `metering.ec_cost` 冷/热实测校准，数值与日期见 note）。
+
 ## [4.6.0] - 2026-11-27
 
 ### Added

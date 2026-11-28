@@ -2,11 +2,11 @@
   "schema_version": 1,
   "generated_by": "tools/generate_api_pack_samples.py",
   "provenance": {
-    "captured_at": "2026-11-23",
+    "captured_at": "2026-11-28",
     "credentials": "maintainer",
-    "total_ec": 2197447.0,
-    "ok": 170,
-    "total": 171
+    "total_ec": 2207120.0,
+    "ok": 172,
+    "total": 172
   },
   "samples": [
     {
@@ -10568,10 +10568,6 @@
       }
     },
     {
-      "key": "pdf_doc.find_by_url",
-      "error": "RuntimeError: search 前 5 行均定位失败"
-    },
-    {
       "key": "pdf_doc.find_by_key",
       "kwargs": {
         "file_key": "<pdf_doc.search 行字段>"
@@ -10604,6 +10600,170 @@
         "title": "美心翼申:重庆美心翼申机械股份有限公司重大资产购买报告书(草案)(修订稿)",
         "updated_at": 1795396904
       }
+    },
+    {
+      "key": "holdertrade.by_date",
+      "kwargs": {
+        "ann_date": "2026-11-27",
+        "limit": 10
+      },
+      "ec": 2562.0,
+      "result": [
+        {
+          "after_ratio": null,
+          "after_share": null,
+          "change_ratio": 0.0027329999999999998,
+          "change_vol": 7129944,
+          "date": "2026-11-27",
+          "direction": "增持",
+          "holder": "杭州福斯特应用材料股份有限公司-第五期员工持股计划",
+          "holder_role": "大股东",
+          "holder_type": "C",
+          "symbol": "603806",
+          "avg_price": 10.8
+        },
+        {
+          "after_ratio": 0.080001,
+          "after_share": 34204941.0,
+          "change_ratio": 0.01,
+          "change_vol": 4275600,
+          "date": "2026-11-27",
+          "direction": "增持",
+          "holder": "国新产业资本管理有限公司",
+          "holder_role": "大股东",
+          "holder_type": "C",
+          "symbol": "002039",
+          "avg_price": null
+        },
+        {
+          "after_ratio": null,
+          "after_share": null,
+          "change_ratio": 0.0006360000000000001,
+          "change_vol": 3150000,
+          "date": "2026-11-27",
+          "direction": "减持",
+          "holder": "机构专用",
+          "holder_role": "机构投资者",
+          "holder_type": "P",
+          "symbol": "000338",
+          "avg_price": 19.67
+        },
+        {
+          "after_ratio": null,
+          "after_share": null,
+          "change_ratio": 0.007718000000000001,
+          "change_vol": 3076921,
+          "date": "2026-11-27",
+          "direction": "减持",
+          "holder": "九江经开区琥珀管理中心(有限合伙)",
+          "holder_role": "机构投资者",
+          "holder_type": "P",
+          "symbol": "301511",
+          "avg_price": null
+        },
+        {
+          "after_ratio": 0.42681800000000003,
+          "after_share": 29816425.0,
+          "change_ratio": 0.008516000000000001,
+          "change_vol": 2869400,
+          "date": "2026-11-27",
+          "direction": "减持",
+          "holder": "黎峰",
+          "holder_role": "高管",
+          "holder_type": "G",
+          "symbol": "300830",
+          "avg_price": null
+        },
+        {
+          "after_ratio": 0.032485,
+          "after_share": 4576800.0,
+          "change_ratio": 0.018746000000000002,
+          "change_vol": 2641100,
+          "date": "2026-11-27",
+          "direction": "减持",
+          "holder": "南通江山农药化工股份有限公司",
+          "holder_role": "大股东",
+          "holder_type": "C",
+          "symbol": "300927",
+          "avg_price": null
+        }
+      ]
+    },
+    {
+      "key": "holdertrade.by_symbol",
+      "kwargs": {
+        "symbol": "600519",
+        "limit": 10
+      },
+      "ec": 7111.0,
+      "result": [
+        {
+          "avg_price": 1353.7,
+          "change_ratio": 5.6e-05,
+          "change_vol": 69600,
+          "date": "2026-07-30",
+          "direction": "减持",
+          "holder": "机构专用",
+          "holder_role": "机构投资者",
+          "holder_type": "P",
+          "symbol": "600519"
+        },
+        {
+          "avg_price": 1299.52,
+          "change_ratio": 5.6e-05,
+          "change_vol": 70000,
+          "date": "2026-08-31",
+          "direction": "减持",
+          "holder": "机构专用",
+          "holder_role": "机构投资者",
+          "holder_type": "P",
+          "symbol": "600519"
+        },
+        {
+          "avg_price": 1286.0,
+          "change_ratio": 2.0000000000000003e-06,
+          "change_vol": 3000,
+          "date": "2026-10-14",
+          "direction": "减持",
+          "holder": "中信证券股份有限公司总部(非营业场所)",
+          "holder_role": "大股东",
+          "holder_type": "C",
+          "symbol": "600519"
+        },
+        {
+          "avg_price": 1312.97,
+          "change_ratio": 2.0000000000000003e-06,
+          "change_vol": 3100,
+          "date": "2026-10-15",
+          "direction": "减持",
+          "holder": "中信证券股份有限公司总部(非营业场所)",
+          "holder_role": "大股东",
+          "holder_type": "C",
+          "symbol": "600519"
+        },
+        {
+          "avg_price": 1354.0,
+          "change_ratio": 1.1000000000000001e-05,
+          "change_vol": 13800,
+          "date": "2026-10-29",
+          "direction": "减持",
+          "holder": "中信证券股份有限公司总部(非营业场所)",
+          "holder_role": "大股东",
+          "holder_type": "C",
+          "symbol": "600519"
+        },
+        {
+          "avg_price": 1410.27,
+          "change_ratio": 1.4e-05,
+          "change_vol": 16900,
+          "date": "2026-11-12",
+          "direction": "减持",
+          "holder": "机构专用",
+          "holder_role": "机构投资者",
+          "holder_type": "P",
+          "symbol": "600519"
+        }
+      ]
     }
   ]
 }

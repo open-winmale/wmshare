@@ -182,6 +182,14 @@ FALLBACK_RETURNS = {
     ("statements", "income"): "ARR · 科目行 {k: 披露科目原文, cn: 同名, vals: {期次: 值}}（披露原币）",
     ("statements", "cashflow"): "ARR · 科目行 {k: 披露科目原文, cn: 同名, vals: {期次: 值}}（披露原币）",
     ("statements", "indicators"): "ARR · 指标行 {k: 指标原文列名, cn: 同名, vals: {期次: 值}}",
+    ("statements", "notes"):
+        "MAP · {found, code, cn, period, source, sections}"
+        "（附注明细卡；found=false=该科目该期尚未入附注库，勿外推覆盖）",
+    ("statements", "notes_index"):
+        "DF · 附注覆盖角标 {code, cn, period}（code 升序、期内 period 降序）",
+    ("statements", "policies"):
+        "MAP · {symbol, periods, period, cards, hist}"
+        "（会计政策卡；cards 当期含 quote 原文，hist 全期卡不含 quote）",
     ("indicator", "get"): "数值 · 单指标当前值",
     ("indicator", "metrics"): "MAP · {code: 值}",
     ("indicator", "basic"):

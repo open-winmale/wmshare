@@ -2857,9 +2857,9 @@ cli.statements.audit("600519")
 | `cli.statements.cashflow` | `cashflow(symbol, years=5, period='annual')` | ARR · 科目行 {k: 披露科目原文, cn: 同名, vals: {期次: 值}}（披露原币） |
 | `cli.statements.income` | `income(symbol, years=5, period='annual')` | ARR · 科目行 {k: 披露科目原文, cn: 同名, vals: {期次: 值}}（披露原币） |
 | `cli.statements.indicators` | `indicators(symbol, years=5, period='annual')` | ARR · 指标行 {k: 指标原文列名, cn: 同名, vals: {期次: 值}} |
-| `cli.statements.notes` | `notes(symbol, code, period=None)` | — |
-| `cli.statements.notes_index` | `notes_index(symbol)` | — |
-| `cli.statements.policies` | `policies(symbol, period=None, hist_years=0, with_quote=True)` | — |
+| `cli.statements.notes` | `notes(symbol, code, period=None)` | MAP · {found, code, cn, period, source, sections}（附注明细卡；found=false=该科目该期尚未入附注库，勿外推覆盖） |
+| `cli.statements.notes_index` | `notes_index(symbol)` | DF · 附注覆盖角标 {code, cn, period}（code 升序、期内 period 降序） |
+| `cli.statements.policies` | `policies(symbol, period=None, hist_years=0, with_quote=True)` | MAP · {symbol, periods, period, cards, hist}（会计政策卡；cards 当期含 quote 原文，hist 全期卡不含 quote） |
 
 **`cli.statements.balance`** — 资产负债表（fin_balance 宽表；cn/hk/us）→ DataFrame（k=科目原文，vals=各期值）。
 
@@ -6011,7 +6011,7 @@ A 股股东增减持（按公告日全市场）——指定公告日全市场增
 单位口径：change_vol=股；after_share=股；change_ratio=小数；after_ratio=小数；avg_price=元。
 - 上游不返回交易发生日（trade_date）列（2026-11-28 实测）——行只有公告日 ann_date； 增持/减持方向见 direction 字段（in_de=IN/DE 归一）
 - holder_type 中文对照（G=高管、C=大股东（≥5%，含机构）、P=机构投资者）以源披露为准， 未知代码原样透出
-- avg_price/after_share/after_ratio 部分行缺失属源数据边界（缺失计 0，字段标 optional）
+- avg_price/after_share/after_ratio 部分行上游为 NaN/nil（源数据边界）→ 读面**不落该键** （不补 0，避免假 0 污染口径；NaN 落 JSON 会打穿网关成 HTTP 200 空包，2026-11-28 实证）
 - 单日榜按变动股数降序取前 N；单票历史按公告日收集、SDK 门面统一升序（date 升序）
 - 行内只有证券代码（无简称）；要名称请用 cli.stocks.list 或 cli.info.profile 关联
 - 历史自 2010 年起（采集 initial_date=20100101）；estimate_cost 待回补后实测校准

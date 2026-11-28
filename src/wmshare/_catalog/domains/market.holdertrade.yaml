@@ -19,7 +19,8 @@ notes:
     增持/减持方向见 direction 字段（in_de=IN/DE 归一）
   - holder_type 中文对照（G=高管、C=大股东（≥5%，含机构）、P=机构投资者）以源披露为准，
     未知代码原样透出
-  - avg_price/after_share/after_ratio 部分行缺失属源数据边界（缺失计 0，字段标 optional）
+  - avg_price/after_share/after_ratio 部分行上游为 NaN/nil（源数据边界）→ 读面**不落该键**
+    （不补 0，避免假 0 污染口径；NaN 落 JSON 会打穿网关成 HTTP 200 空包，2026-11-28 实证）
   - 单日榜按变动股数降序取前 N；单票历史按公告日收集、SDK 门面统一升序（date 升序）
   - 行内只有证券代码（无简称）；要名称请用 cli.stocks.list 或 cli.info.profile 关联
   - 历史自 2010 年起（采集 initial_date=20100101）；estimate_cost 待回补后实测校准

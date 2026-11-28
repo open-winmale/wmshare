@@ -550,6 +550,20 @@ def estimate_cost(name: str, params: dict[str, Any] | None = None, *,
         out.update(ec_lo=240, ec_hi=4_900, model="measured",
                    note="单票历史：冷态 ≈4,800 EC（raw 按日分档，单票过滤需扫全档）、"
                         "复跑走数据版本键缓存 ≈240 EC；limit 越小冷态越省")
+    elif name == "holdertrade.by_date":
+        # 实测（2026-11-28 live，全史回补后 4,954 日档）：41 行档 冷 2,762 / 热 1,090；
+        # 93 行档 冷 4,234 / 热 2,562——成本随当日公告笔数浮动。
+        out.update(ec_lo=1_000, ec_hi=4_500, model="measured",
+                   note="单公告日一档点查 ≈1,100~4,300 EC（2026-11-28 全史回补后实测："
+                        "41 行档 冷 2,762 / 复跑走结果缓存 1,090；93 行档 冷 4,234 / 热 2,562）；"
+                        "成本随当日公告笔数浮动")
+    elif name == "holdertrade.by_symbol":
+        # 实测（2026-11-28 live）：单票全史 冷 ≈4,000 / 热 249 EC（数据版本键缓存）；
+        # limit=20 冷态 7,111（文档命中更多、规范化行数更大）。
+        out.update(ec_lo=240, ec_hi=8_000, model="measured",
+                   note="单票历史：冷态 ≈4,000 EC（limit=5；raw 按日分档，单票过滤需扫"
+                        "全档；2026-11-28 实测 600000=3,986 / 600519=4,116）、limit=20 冷态"
+                        "≈7,100、复跑走数据版本键缓存 ≈250 EC；limit 越小冷态越省")
     elif name == "futures.mapping":
         # 实测（2026-11-19 live）：窗口 13 行 冷 833 → 热 160 EC；
         # 全历史 4,287 行 冷 214,514 EC（CONOF 逐行计费），必须传窗口。
