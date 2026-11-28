@@ -80,7 +80,7 @@ CORPORATE_ACTIONS = (
 )
 MARKET_DOMAINS = (
     "kline", "moneyflow", "margin", "cbond", "index", "valuation", "stocks",
-    "board", "blocktrade",
+    "board", "blocktrade", "holdertrade",
 )
 MARKET_ACTIONS = {
     "kline": ("minute", "is_etf"),
@@ -94,6 +94,7 @@ MARKET_ACTIONS = {
     "board": ("moneyflow", "moneyflow_last",
               "concepts_of", "concept_members", "concept_list"),
     "blocktrade": ("by_date", "by_symbol"),
+    "holdertrade": ("by_date", "by_symbol"),
 }
 
 #: wmshare_market 的 action 参数 description 文案（由 MARKET_ACTIONS 生成，唯一源不变）。

@@ -10,7 +10,7 @@
     ``_raw=True`` 取上游原始行（list[dict]，跳过规范化与换算）——诊断逃生口；
   - 本层是目录合同的薄翻译：高频方法显式包装；目录内其余非内部函数经 ``__getattr__``
     属性直达（如 ``cli.kline.screen_above_ma20``）；目录标 ``internal: true`` 的
-    规范化辅助（fmt_* 等）不再直达，请走 ``cli.call``——374 个底层函数零遮蔽；
+    规范化辅助（fmt_* 等）不再直达，请走 ``cli.call``——377 个底层函数零遮蔽；
   - 选股能力集中在 ``cli.screener``：单票筛选器（bool）、全市场宽度/涨跌榜与
     全市场条件选股 ``query()``（服务端索引直出）显式包装，kline 目录的其余筛选
     函数经属性直达。
@@ -374,6 +374,7 @@ _FRIENDLY_NS_TO_CATALOG: dict[str, str] = {
     "us_macro": "fred",
     "board": "board",
     "blocktrade": "blocktrade",
+    "holdertrade": "holdertrade",
     "gold": "gold",
     "futures": "futures",
 }
@@ -4197,6 +4198,36 @@ class BlocktradeApi(_Api):
         return _out(_sort_rows_by_date(rows))
 
 
+class HoldertradeApi(_Api):
+    """A 股股东增减持（按公告日全市场，变动股数降序；量=股/率=小数/价=元）。
+
+    上游不返回交易发生日，行只有公告日；方向见 direction（增持/减持）。
+    高管口径的持股变动另见 ``cli.equity.query_exec_change``（高管持股变动表）。
+    单票历史由门面统一为 date 升序。
+    """
+
+    def by_date(self, ann_date: str, limit: int = 100) -> Any:
+        """指定公告日全市场股东增减持（变动股数降序）。
+
+        :param ann_date: 公告日 YYYY-MM-DD（或 YYYYMMDD）
+        :param limit: 前 N 条，默认 100
+        :returns: DataFrame/行表 · date/symbol/holder/holder_type/holder_role/
+            direction/change_vol/change_ratio/after_share/after_ratio/avg_price
+        """
+        return _out(self._c.call("holdertrade.by_date",
+                                 ann_date=ann_date, limit=limit))
+
+    def by_symbol(self, symbol: str, limit: int = 100) -> Any:
+        """单票股东增减持历史（最近 N 条事件，date 升序）。
+
+        :param symbol: 6 位裸码（也接受 .SH/.SZ/.BJ 后缀）
+        :param limit: 最近事件条数，默认 100
+        :returns: DataFrame/行表 · 字段同 ``by_date``
+        """
+        rows = self._c.call("holdertrade.by_symbol", sym=symbol, limit=limit)
+        return _out(_sort_rows_by_date(rows))
+
+
 class ToplistApi(_Api):
     """A 股龙虎榜（交易所披露口径，日频）。
 
@@ -4683,6 +4714,7 @@ FRIENDLY_NAMESPACES: dict[str, type[_Api]] = {
     "stocks": StocksApi,
     "board": BoardApi,
     "blocktrade": BlocktradeApi,
+    "holdertrade": HoldertradeApi,
     "statements": StatementsApi,
     "segments": SegmentsApi,
     "valuation": ValuationApi,
@@ -4830,6 +4862,9 @@ FRIENDLY_INDEX: list[tuple[str, str, str, str, str]] = [
     ("market", "blocktrade", "by_date", "指定交易日大宗交易", "blocktrade.by_date"),
     ("market", "blocktrade", "by_symbol", "单票大宗交易历史",
      "blocktrade.by_symbol"),
+    ("market", "holdertrade", "by_date", "指定公告日股东增减持", "holdertrade.by_date"),
+    ("market", "holdertrade", "by_symbol", "单票股东增减持历史",
+     "holdertrade.by_symbol"),
     ("market", "toplist", "by_symbol", "单票上榜历史", "toplist.by_symbol"),
     ("disclosure", "forecast", "yjyg", "业绩预告历史", "forecast.yjyg_rows"),
     ("disclosure", "forecast", "yjyg_latest", "最新业绩预告", "forecast.yjyg_latest"),

@@ -2,11 +2,11 @@
   "schema_version": 2,
   "generated_by": "tools/gen_api_docs.py",
   "meta": {
-    "core": 188,
+    "core": 190,
     "composite": 23,
-    "docs_visible": 188,
+    "docs_visible": 190,
     "variants": 21,
-    "domains": 30,
+    "domains": 31,
     "categories": [
       {
         "key": "market",
@@ -25,7 +25,7 @@
         "cn": "参考数据"
       }
     ],
-    "test_ready": 177,
+    "test_ready": 179,
     "sampled": 170,
     "samples_provenance": {
       "captured_at": "2026-11-23",
@@ -5040,6 +5040,217 @@
                 "xs.require(\"sys/blocktrade/init.xs\")",
                 "__r := blocktrade.by_symbol(\"600519\", 10)",
                 "return blocktrade.fmt_maps(__r)"
+              ],
+              "args": {
+                "print.plain": true
+              },
+              "script_files": {},
+              "mode": "call",
+              "market": "cn"
+            }
+          }
+        }
+      ],
+      "composites": []
+    },
+    {
+      "ns": "holdertrade",
+      "cn": "A 股股东增减持",
+      "chapter": "A 股行情与选股",
+      "category": "market",
+      "domain": "market.holdertrade",
+      "domain_cn": "股东增减持",
+      "domain_description": "A 股股东增减持（按公告日全市场）——指定公告日全市场增减持明细（变动股数 降序）与单票历史。量=股、率=小数（上游百分数已 ×0.01）、价=元，日期=ISO 公告日。",
+      "domain_units": {
+        "change_vol": "股",
+        "after_share": "股",
+        "change_ratio": "小数",
+        "after_ratio": "小数",
+        "avg_price": "元"
+      },
+      "interfaces": [
+        {
+          "key": "holdertrade.by_date",
+          "ns": "holdertrade",
+          "method": "by_date",
+          "cn": "指定公告日股东增减持",
+          "composite": false,
+          "desc": "指定公告日全市场股东增减持（变动股数降序）。",
+          "params": [
+            {
+              "name": "ann_date",
+              "required": true,
+              "desc": "公告日 YYYY-MM-DD（或 YYYYMMDD）"
+            },
+            {
+              "name": "limit",
+              "required": false,
+              "desc": "前 N 条，默认 100"
+            }
+          ],
+          "returns": {
+            "kind": "array",
+            "desc": null,
+            "fields": [
+              {
+                "name": "date",
+                "desc": "公告日"
+              },
+              {
+                "name": "symbol",
+                "desc": "6 位裸码"
+              },
+              {
+                "name": "holder",
+                "desc": "股东名称"
+              },
+              {
+                "name": "holder_type",
+                "desc": "类型代码（G/C/P）"
+              },
+              {
+                "name": "holder_role",
+                "desc": "类型（高管/大股东/机构投资者）"
+              },
+              {
+                "name": "direction",
+                "desc": "方向（增持/减持）"
+              },
+              {
+                "name": "change_vol",
+                "desc": "变动股数（股）"
+              },
+              {
+                "name": "change_ratio",
+                "desc": "占总股本比例（小数）"
+              },
+              {
+                "name": "after_share",
+                "desc": "变动后持股（股）"
+              },
+              {
+                "name": "after_ratio",
+                "desc": "变动后占比（小数）"
+              },
+              {
+                "name": "avg_price",
+                "desc": "成交均价（元）"
+              }
+            ]
+          },
+          "notes": [
+            "非公告日/未采集日返回空数组；同一票同一公告日可有多行（不同股东各一行）"
+          ],
+          "docs_visible": true,
+          "example": "cli.holdertrade.by_date(ann_date=\"2026-11-27\", limit=10)",
+          "test": {
+            "kwargs": {
+              "ann_date": "2026-11-27",
+              "limit": 10
+            },
+            "path": "/v1/analysis/xs/eval",
+            "body": {
+              "symbol": "600519",
+              "xs_lines": [
+                "xs.require(\"sys/holdertrade/init.xs\")",
+                "__r := holdertrade.by_date(\"2026-11-27\", 10)",
+                "return holdertrade.fmt_maps(__r)"
+              ],
+              "args": {
+                "print.plain": true
+              },
+              "script_files": {},
+              "mode": "call",
+              "market": "cn"
+            }
+          }
+        },
+        {
+          "key": "holdertrade.by_symbol",
+          "ns": "holdertrade",
+          "method": "by_symbol",
+          "cn": "单票股东增减持历史",
+          "composite": false,
+          "desc": "单票股东增减持历史（最近 N 条事件，date 升序）。",
+          "params": [
+            {
+              "name": "symbol",
+              "required": true,
+              "desc": "6 位裸码（也接受 .SH/.SZ/.BJ 后缀）"
+            },
+            {
+              "name": "limit",
+              "required": false,
+              "desc": "最近事件条数，默认 100"
+            }
+          ],
+          "returns": {
+            "kind": "array",
+            "desc": null,
+            "fields": [
+              {
+                "name": "date",
+                "desc": "公告日"
+              },
+              {
+                "name": "symbol",
+                "desc": "6 位裸码"
+              },
+              {
+                "name": "holder",
+                "desc": "股东名称"
+              },
+              {
+                "name": "holder_type",
+                "desc": "类型代码（G/C/P）"
+              },
+              {
+                "name": "holder_role",
+                "desc": "类型（高管/大股东/机构投资者）"
+              },
+              {
+                "name": "direction",
+                "desc": "方向（增持/减持）"
+              },
+              {
+                "name": "change_vol",
+                "desc": "变动股数（股）"
+              },
+              {
+                "name": "change_ratio",
+                "desc": "占总股本比例（小数）"
+              },
+              {
+                "name": "after_share",
+                "desc": "变动后持股（股）"
+              },
+              {
+                "name": "after_ratio",
+                "desc": "变动后占比（小数）"
+              },
+              {
+                "name": "avg_price",
+                "desc": "成交均价（元）"
+              }
+            ]
+          },
+          "notes": [
+            "以最新落库公告日做数据版本键缓存（历史只增不改，落库即换键）"
+          ],
+          "docs_visible": true,
+          "example": "cli.holdertrade.by_symbol(\"600519\", limit=10)",
+          "test": {
+            "kwargs": {
+              "symbol": "600519",
+              "limit": 10
+            },
+            "path": "/v1/analysis/xs/eval",
+            "body": {
+              "symbol": "600519",
+              "xs_lines": [
+                "xs.require(\"sys/holdertrade/init.xs\")",
+                "__r := holdertrade.by_symbol(\"600519\", 10)",
+                "return holdertrade.fmt_maps(__r)"
               ],
               "args": {
                 "print.plain": true

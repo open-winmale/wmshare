@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "generated_by": "tools/gen_api_docs.py",
-  "count": 295,
+  "count": 297,
   "domains": [
     {
       "id": "corp.equity",
@@ -5187,6 +5187,77 @@
               "desc": "涨跌幅（小数，由 change1 派生）"
             }
           ]
+        }
+      ]
+    },
+    {
+      "id": "market.holdertrade",
+      "kind": "raw",
+      "data_origin": [
+        "平台数据服务"
+      ],
+      "functions": [
+        {
+          "name": "holdertrade.by_date",
+          "cn": "指定公告日股东增减持",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "change_vol": [
+              0,
+              10000000000.0
+            ],
+            "change_ratio": [
+              0,
+              1
+            ],
+            "after_share": [
+              0,
+              100000000000.0
+            ],
+            "after_ratio": [
+              0,
+              1
+            ],
+            "avg_price": [
+              0,
+              100000.0
+            ]
+          },
+          "checks": [],
+          "fields": []
+        },
+        {
+          "name": "holdertrade.by_symbol",
+          "cn": "单票股东增减持历史",
+          "layer": "L0",
+          "internal": false,
+          "units": {},
+          "ranges": {
+            "change_vol": [
+              0,
+              10000000000.0
+            ],
+            "change_ratio": [
+              0,
+              1
+            ],
+            "after_share": [
+              0,
+              100000000000.0
+            ],
+            "after_ratio": [
+              0,
+              1
+            ],
+            "avg_price": [
+              0,
+              100000.0
+            ]
+          },
+          "checks": [],
+          "fields": []
         }
       ]
     },

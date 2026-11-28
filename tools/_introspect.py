@@ -47,6 +47,9 @@ METHOD_EXAMPLE_VALUES = {
     # 大宗交易：单日榜需交易日；单票历史用裸码
     ("blocktrade", "by_date"): {"trade_date": '"2026-11-20"', "limit": "10"},
     ("blocktrade", "by_symbol"): {"limit": "10"},
+    # 股东增减持：单日榜需公告日（上游不返回交易发生日 trade_date 列）；单票历史用裸码
+    ("holdertrade", "by_date"): {"ann_date": '"2026-11-27"', "limit": "10"},
+    ("holdertrade", "by_symbol"): {"limit": "10"},
     # ST/停复牌史：停复牌可带区间；简称史/时间轴按票
     ("stocks", "suspend_history"): {"begin": '"2026-01-01"', "end": '"2026-11-23"'},
     # 历史涨跌停价：n 与 begin/end 互斥，示例取 n 缺省形态

@@ -1,6 +1,6 @@
 {
  "schema_version": 2,
- "upstream_rev": "64fe69ea",
+ "upstream_rev": "b58b0586",
  "domains": {
   "blocktrade": {
    "entry": "sys/blocktrade/init.xs",
@@ -56,6 +56,10 @@
   },
   "gold": {
    "entry": "sys/gold/init.xs",
+   "exports": []
+  },
+  "holdertrade": {
+   "entry": "sys/holdertrade/init.xs",
    "exports": []
   },
   "income": {
@@ -165,7 +169,7 @@
   "toplist",
   "valuation"
  ],
- "function_count": 388,
+ "function_count": 391,
  "functions": [
   {
    "name": "blocktrade.by_date",
@@ -5925,6 +5929,126 @@
    },
    "min_args": 0,
    "params": []
+  },
+  {
+   "name": "holdertrade.by_date",
+   "cn": "指定公告日股东增减持",
+   "example": "holdertrade.by_date(\"2026-11-27\", 50)",
+   "returns": "ARR · 增减持行",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "ann_date",
+     "type": "string"
+    },
+    {
+     "name": "limit",
+     "type": "int"
+    }
+   ]
+  },
+  {
+   "name": "holdertrade.by_symbol",
+   "cn": "单票股东增减持历史",
+   "example": "holdertrade.by_symbol(\"600519\", 20)",
+   "returns": "ARR · 增减持事件行",
+   "returns_shape": null,
+   "min_args": 1,
+   "params": [
+    {
+     "name": "sym",
+     "type": "string"
+    },
+    {
+     "name": "limit",
+     "type": "int"
+    }
+   ]
+  },
+  {
+   "name": "holdertrade.fmt_maps",
+   "cn": "股东增减持行规范化",
+   "example": "holdertrade.fmt_maps(holdertrade.by_date(\"2026-11-27\", 10))",
+   "returns": "ARR · 规范化增减持行",
+   "returns_shape": {
+    "kind": "array",
+    "cn": "股东增减持行",
+    "items": {
+     "kind": "object",
+     "cn": "增减持行",
+     "fields": [
+      {
+       "name": "date",
+       "type": "string",
+       "cn": "公告日"
+      },
+      {
+       "name": "symbol",
+       "type": "string",
+       "cn": "6位裸码"
+      },
+      {
+       "name": "holder",
+       "type": "string",
+       "cn": "股东名称"
+      },
+      {
+       "name": "holder_type",
+       "type": "string",
+       "cn": "类型代码(G/C/P)",
+       "optional": true
+      },
+      {
+       "name": "holder_role",
+       "type": "string",
+       "cn": "类型（高管/大股东/机构投资者）",
+       "optional": true
+      },
+      {
+       "name": "direction",
+       "type": "string",
+       "cn": "方向（增持/减持）"
+      },
+      {
+       "name": "change_vol",
+       "type": "float64",
+       "cn": "变动股数(股)"
+      },
+      {
+       "name": "change_ratio",
+       "type": "float64",
+       "cn": "占总股本比例(小数)",
+       "optional": true
+      },
+      {
+       "name": "after_share",
+       "type": "float64",
+       "cn": "变动后持股(股)",
+       "optional": true
+      },
+      {
+       "name": "after_ratio",
+       "type": "float64",
+       "cn": "变动后占比(小数)",
+       "optional": true
+      },
+      {
+       "name": "avg_price",
+       "type": "float64",
+       "cn": "均价(元)",
+       "optional": true
+      }
+     ]
+    }
+   },
+   "min_args": null,
+   "params": [
+    {
+     "name": "rows",
+     "type": "any"
+    }
+   ]
   },
   {
    "name": "income.calendar_events",

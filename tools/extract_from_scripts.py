@@ -86,6 +86,9 @@ INCLUDED_NS = frozenset({
     "board",
     # 3.3：A股大宗交易（上游日频全市场明细直读，market.blocktrade 域）
     "blocktrade",
+    # 4.7：A股股东增减持（增减持采集 raw 集合 cn_holder_trade 直读，market.holdertrade 域；
+    # 行只有公告日 ann_date——上游增减持接口不返回交易发生日列）
+    "holdertrade",
     # 3.6：金交所现货（mkt.futures_kline exchange=SGE 直读，market.gold 域；
     # 键大小写敏感 cn.Au99.99.SGE，独立于 futures 域——futures.norm_symbol 会
     # UPPER 品种段导致 SGE 品种恒返 0 行）

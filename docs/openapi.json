@@ -8586,6 +8586,244 @@
         }
       }
     },
+    "/holdertrade/by_date": {
+      "post": {
+        "operationId": "holdertrade_by_date",
+        "summary": "指定公告日全市场股东增减持（变动股数降序）。",
+        "description": ":returns: DataFrame/行表 · date/symbol/holder/holder_type/holder_role/、direction/change_vol/change_ratio/after_share/after_ratio/avg_price、底层目录函数 `holdertrade.by_date`。SDK 调用：`cli.holdertrade.by_date(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "市场行情"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "ann_date": {
+                    "type": "string",
+                    "description": "公告日 YYYY-MM-DD（或 YYYYMMDD）"
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "description": "前 N 条，默认 100"
+                  }
+                },
+                "required": [
+                  "ann_date"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "股东增减持行",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "date": {
+                        "type": "string",
+                        "description": "公告日"
+                      },
+                      "symbol": {
+                        "type": "string",
+                        "description": "6 位裸码"
+                      },
+                      "holder": {
+                        "type": "string",
+                        "description": "股东名称"
+                      },
+                      "holder_type": {
+                        "type": "string",
+                        "description": "类型代码（G/C/P）"
+                      },
+                      "holder_role": {
+                        "type": "string",
+                        "description": "类型（高管/大股东/机构投资者）"
+                      },
+                      "direction": {
+                        "type": "string",
+                        "description": "方向（增持/减持）"
+                      },
+                      "change_vol": {
+                        "type": "number",
+                        "description": "变动股数（股）"
+                      },
+                      "change_ratio": {
+                        "type": "number",
+                        "description": "占总股本比例（小数）"
+                      },
+                      "after_share": {
+                        "type": "number",
+                        "description": "变动后持股（股）"
+                      },
+                      "after_ratio": {
+                        "type": "number",
+                        "description": "变动后占比（小数）"
+                      },
+                      "avg_price": {
+                        "type": "number",
+                        "description": "成交均价（元）"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "change_vol": [
+              0,
+              10000000000.0
+            ],
+            "change_ratio": [
+              0,
+              1
+            ],
+            "after_share": [
+              0,
+              100000000000.0
+            ],
+            "after_ratio": [
+              0,
+              1
+            ],
+            "avg_price": [
+              0,
+              100000.0
+            ]
+          }
+        }
+      }
+    },
+    "/holdertrade/by_symbol": {
+      "post": {
+        "operationId": "holdertrade_by_symbol",
+        "summary": "单票股东增减持历史（最近 N 条事件，date 升序）。",
+        "description": ":returns: DataFrame/行表 · 字段同 ``by_date``、底层目录函数 `holdertrade.by_symbol`。SDK 调用：`cli.holdertrade.by_symbol(...)`；实际经网关 POST /v1/analysis/xs/eval 执行。",
+        "tags": [
+          "市场行情"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "symbol": {
+                    "type": "string",
+                    "description": "6 位裸码（也接受 .SH/.SZ/.BJ 后缀）"
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "description": "最近事件条数，默认 100"
+                  }
+                },
+                "required": [
+                  "symbol"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "单票增减持事件行",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "date": {
+                        "type": "string",
+                        "description": "公告日"
+                      },
+                      "symbol": {
+                        "type": "string",
+                        "description": "6 位裸码"
+                      },
+                      "holder": {
+                        "type": "string",
+                        "description": "股东名称"
+                      },
+                      "holder_type": {
+                        "type": "string",
+                        "description": "类型代码（G/C/P）"
+                      },
+                      "holder_role": {
+                        "type": "string",
+                        "description": "类型（高管/大股东/机构投资者）"
+                      },
+                      "direction": {
+                        "type": "string",
+                        "description": "方向（增持/减持）"
+                      },
+                      "change_vol": {
+                        "type": "number",
+                        "description": "变动股数（股）"
+                      },
+                      "change_ratio": {
+                        "type": "number",
+                        "description": "占总股本比例（小数）"
+                      },
+                      "after_share": {
+                        "type": "number",
+                        "description": "变动后持股（股）"
+                      },
+                      "after_ratio": {
+                        "type": "number",
+                        "description": "变动后占比（小数）"
+                      },
+                      "avg_price": {
+                        "type": "number",
+                        "description": "成交均价（元）"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-wmshare-guards": {
+          "ranges": {
+            "change_vol": [
+              0,
+              10000000000.0
+            ],
+            "change_ratio": [
+              0,
+              1
+            ],
+            "after_share": [
+              0,
+              100000000000.0
+            ],
+            "after_ratio": [
+              0,
+              1
+            ],
+            "avg_price": [
+              0,
+              100000.0
+            ]
+          }
+        }
+      }
+    },
     "/toplist/by_symbol": {
       "post": {
         "operationId": "toplist_by_symbol",

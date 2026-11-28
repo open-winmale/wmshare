@@ -939,6 +939,12 @@ def market(
         data = cli.blocktrade.by_date(date, limit=n or 100)
     elif domain == "blocktrade":
         data = cli.blocktrade.by_symbol(_symbol(action, symbol), limit=n or 100)
+    elif domain == "holdertrade" and action == "by_date":
+        if not date:
+            raise ValueError("holdertrade.by_date 需要 date（公告日 YYYY-MM-DD）")
+        data = cli.holdertrade.by_date(date, limit=n or 100)
+    elif domain == "holdertrade":
+        data = cli.holdertrade.by_symbol(_symbol(action, symbol), limit=n or 100)
     else:
         data = cli.stocks.list()
     return success(runtime, data, output=output, max_rows=max_rows,

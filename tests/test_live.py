@@ -1003,6 +1003,24 @@ def test_blocktrade_read_face(cli):
     assert amounts == sorted(amounts, reverse=True), "单日榜必须成交额降序"
 
 
+def test_holdertrade_read_face(cli):
+    """股东增减持：单票历史 date 升序、方向枚举合法；单日榜变动股数降序。"""
+    out = _call_or_xfail(lambda: cli.holdertrade.by_symbol("600519", 5))
+    rows = out.to_dict("records") if hasattr(out, "to_dict") else list(out)
+    if not rows:
+        pytest.skip("holdertrade 尚未回补（采集部署后解除此跳过）")
+    dates = [str(r["date"]) for r in rows]
+    assert dates == sorted(dates), f"单票历史必须 date 升序：{dates}"
+    for r in rows:
+        assert str(r["direction"]) in ("增持", "减持"), r
+        assert float(r["change_vol"]) > 0, r
+    day = _call_or_xfail(lambda: cli.holdertrade.by_date(dates[-1], 5))
+    day_rows = day.to_dict("records") if hasattr(day, "to_dict") else list(day)
+    assert day_rows, "最新一笔所在公告日应有全市场榜"
+    vols = [float(r["change_vol"]) for r in day_rows]
+    assert vols == sorted(vols, reverse=True), "单日榜必须变动股数降序"
+
+
 def test_st_lifecycle_read_face(cli):
     """ST/停复牌史：简称段按生效日升序、is_st 与简称一致；时间轴严格升序。"""
     out = _call_or_xfail(lambda: cli.stocks.name_history("000001"))

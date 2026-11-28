@@ -1068,6 +1068,35 @@ class GoldNS(_Ns):
             kw["limit"] = limit
         return _out(self._client.call("gold.query_bars", **kw, _raw=_raw), _raw)
 
+class HoldertradeNS(_Ns):
+    """股东增减持（market.holdertrade）"""
+
+    def by_date(self, ann_date: str, limit: int = 100, _raw: bool = False) -> Any:
+        """指定公告日股东增减持
+
+:param ann_date: 公告日 YYYY-MM-DD 或 YYYYMMDD
+:param limit: 返回前 N 条（变动股数降序）
+
+:returns: ARR · 股东增减持行（变动股数降序）
+        """
+        kw: dict[str, Any] = {"ann_date": ann_date}
+        if limit is not None:
+            kw["limit"] = limit
+        return _out(self._client.call("holdertrade.by_date", **kw, _raw=_raw), _raw)
+
+    def by_symbol(self, sym: str, limit: int = 100, _raw: bool = False) -> Any:
+        """单票股东增减持历史
+
+:param sym: 6 位裸码或带 .SH/.SZ/.BJ 后缀
+:param limit: 最近 N 条事件
+
+:returns: ARR · 单票增减持事件行（date 升序；字段同 holdertrade.by_date）
+        """
+        kw: dict[str, Any] = {"sym": sym}
+        if limit is not None:
+            kw["limit"] = limit
+        return _out(self._client.call("holdertrade.by_symbol", **kw, _raw=_raw), _raw)
+
 class IncomeNS(_Ns):
     """收息（disc.income）"""
 
@@ -2515,6 +2544,7 @@ NAMESPACES: dict[str, type[_Ns]] = {
     "futures": FuturesNS,
     "fx": FxNS,
     "gold": GoldNS,
+    "holdertrade": HoldertradeNS,
     "income": IncomeNS,
     "indices": IndicesNS,
     "intl": IntlNS,

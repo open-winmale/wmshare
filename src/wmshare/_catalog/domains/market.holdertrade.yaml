@@ -1,0 +1,108 @@
+id: market.holdertrade
+version: 1.0.0
+cn: 股东增减持
+kind: raw
+category: market
+priority: P2
+description: A 股股东增减持（按公告日全市场）——指定公告日全市场增减持明细（变动股数
+  降序）与单票历史。量=股、率=小数（上游百分数已 ×0.01）、价=元，日期=ISO 公告日。
+data_origin: [平台数据服务]
+units:
+  change_vol: 股
+  after_share: 股
+  change_ratio: 小数
+  after_ratio: 小数
+  avg_price: 元
+requires: {path: sys/holdertrade/init.xs, preloaded: false}
+notes:
+  - 上游不返回交易发生日（trade_date）列（2026-11-28 实测）——行只有公告日 ann_date；
+    增持/减持方向见 direction 字段（in_de=IN/DE 归一）
+  - holder_type 中文对照（G=高管、C=大股东（≥5%，含机构）、P=机构投资者）以源披露为准，
+    未知代码原样透出
+  - avg_price/after_share/after_ratio 部分行缺失属源数据边界（缺失计 0，字段标 optional）
+  - 单日榜按变动股数降序取前 N；单票历史按公告日收集、SDK 门面统一升序（date 升序）
+  - 行内只有证券代码（无简称）；要名称请用 cli.stocks.list 或 cli.info.profile 关联
+  - 历史自 2010 年起（采集 initial_date=20100101）；estimate_cost 待回补后实测校准
+functions:
+  - name: holdertrade.by_date
+    cn: 指定公告日股东增减持
+    kind: raw
+    layer: L0
+    params:
+      - {name: ann_date, type: string, required: true, desc: 公告日 YYYY-MM-DD 或 YYYYMMDD}
+      - {name: limit, type: int, required: false, default: 100, desc: 返回前 N 条（变动股数降序）}
+    ranges:
+      change_vol: [0, 1.0e+10]
+      change_ratio: [0, 1]
+      after_share: [0, 1.0e+11]
+      after_ratio: [0, 1]
+      avg_price: [0, 1.0e+05]
+    returns:
+      desc: ARR · 股东增减持行（变动股数降序）
+      shape:
+        kind: array
+        cn: 股东增减持行
+        items:
+          kind: object
+          cn: 增减持行
+          fields:
+            - {name: date, type: string, cn: 公告日}
+            - {name: symbol, type: string, cn: 6 位裸码}
+            - {name: holder, type: string, cn: 股东名称}
+            - {name: holder_type, type: string, cn: 类型代码（G/C/P）, optional: true}
+            - {name: holder_role, type: string, cn: 类型（高管/大股东/机构投资者）, optional: true}
+            - {name: direction, type: string, cn: 方向（增持/减持）}
+            - {name: change_vol, type: float64, cn: 变动股数（股）}
+            - {name: change_ratio, type: float64, cn: 占总股本比例（小数）, optional: true}
+            - {name: after_share, type: float64, cn: 变动后持股（股）, optional: true}
+            - {name: after_ratio, type: float64, cn: 变动后占比（小数）, optional: true}
+            - {name: avg_price, type: float64, cn: 成交均价（元）, optional: true}
+    normalize_with: holdertrade.fmt_maps
+    example: 'holdertrade.by_date("2026-11-27", 50)'
+    notes:
+      - 非公告日/未采集日返回空数组；同一票同一公告日可有多行（不同股东各一行）
+  - name: holdertrade.by_symbol
+    cn: 单票股东增减持历史
+    kind: raw
+    layer: L0
+    params:
+      - {name: sym, type: string, required: true, desc: 6 位裸码或带 .SH/.SZ/.BJ 后缀}
+      - {name: limit, type: int, required: false, default: 100, desc: 最近 N 条事件}
+    ranges:
+      change_vol: [0, 1.0e+10]
+      change_ratio: [0, 1]
+      after_share: [0, 1.0e+11]
+      after_ratio: [0, 1]
+      avg_price: [0, 1.0e+05]
+    returns:
+      desc: ARR · 单票增减持事件行（date 升序；字段同 holdertrade.by_date）
+      shape:
+        kind: array
+        cn: 单票增减持事件行
+        items:
+          kind: object
+          cn: 增减持行
+          fields:
+            - {name: date, type: string, cn: 公告日}
+            - {name: symbol, type: string, cn: 6 位裸码}
+            - {name: holder, type: string, cn: 股东名称}
+            - {name: holder_type, type: string, cn: 类型代码（G/C/P）, optional: true}
+            - {name: holder_role, type: string, cn: 类型（高管/大股东/机构投资者）, optional: true}
+            - {name: direction, type: string, cn: 方向（增持/减持）}
+            - {name: change_vol, type: float64, cn: 变动股数（股）}
+            - {name: change_ratio, type: float64, cn: 占总股本比例（小数）, optional: true}
+            - {name: after_share, type: float64, cn: 变动后持股（股）, optional: true}
+            - {name: after_ratio, type: float64, cn: 变动后占比（小数）, optional: true}
+            - {name: avg_price, type: float64, cn: 成交均价（元）, optional: true}
+    normalize_with: holdertrade.fmt_maps
+    example: 'holdertrade.by_symbol("600519", 20)'
+    notes:
+      - 以最新落库公告日做数据版本键缓存（历史只增不改，落库即换键）
+  - name: holdertrade.fmt_maps
+    internal: true
+    cn: 股东增减持行规范化
+    layer: L1
+    params:
+      - {name: rows, type: any, required: true, desc: by_date/by_symbol 的原始行}
+    returns:
+      desc: ARR · 规范化增减持行（率=小数、量=股、日期=ISO）
