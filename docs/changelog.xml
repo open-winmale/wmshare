@@ -8,6 +8,14 @@
     <lastBuildDate>Sat, 28 Nov 2026 00:00:00 +0800</lastBuildDate>
     <atom:link href="https://github.com/open-winmale/wmshare/raw/main/docs/changelog.xml" rel="self" type="application/rss+xml"/>
     <item>
+      <title>wmshare 4.7.2 (2026-11-28)</title>
+      <link>https://github.com/open-winmale/wmshare/releases/tag/v4.7.2</link>
+      <guid isPermaLink="false">wmshare:4.7.2</guid>
+      <pubDate>Sat, 28 Nov 2026 00:00:00 +0800</pubDate>
+      <description>Fixed
+- **`estimate_cost` 的 `holdertrade.by_date` 冷态档位修正**：此前按记忆命中态录成 1,100~4,300 EC，逐日首查实测为 **≈400 + 215 EC/行**（39 行 8,046、53 行 11,289、 74 行 16,611），区间改为 1,000~18,000 并在 note 标注复跑缓存档（≈1,100~2,600）； 避免按旧档位误判日档查询成本。</description>
+    </item>
+    <item>
       <title>wmshare 4.7.1 (2026-11-28)</title>
       <link>https://github.com/open-winmale/wmshare/releases/tag/v4.7.1</link>
       <guid isPermaLink="false">wmshare:4.7.1</guid>

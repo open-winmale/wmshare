@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > MAJOR；弃用至少保留 1 个 MINOR，并在 `Deprecated` 段登记替代写法与移除版本。
 > 升级前请扫一眼 Removed / Changed / Deprecated 段。
 
+## [4.7.2] - 2026-11-28
+
+### Fixed
+
+- **`estimate_cost` 的 `holdertrade.by_date` 冷态档位修正**：此前按记忆命中态录成
+  1,100~4,300 EC，逐日首查实测为 **≈400 + 215 EC/行**（39 行 8,046、53 行 11,289、
+  74 行 16,611），区间改为 1,000~18,000 并在 note 标注复跑缓存档（≈1,100~2,600）；
+  避免按旧档位误判日档查询成本。
+
 ## [4.7.1] - 2026-11-28
 
 ### Fixed
