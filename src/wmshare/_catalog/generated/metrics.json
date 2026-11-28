@@ -1,6 +1,6 @@
 {
  "schema_version": 2,
- "upstream_rev": "b58b0586",
+ "upstream_rev": "f0087668",
  "count": 2983,
  "metrics": [
   {
@@ -1242,10 +1242,7 @@
   },
   {
    "code": "$CCY_FIN",
-   "cn": "财报计量货币",
-   "markets": [
-    "hk"
-   ]
+   "cn": "财报计量货币"
   },
   {
    "code": "$CCY_LASTQ4",

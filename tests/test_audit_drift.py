@@ -61,9 +61,9 @@ def test_drift_default_is_green_and_machine_readable(capsys):
     assert info["guard_declared"] == 97  # + gold 3（ranges 各一，2026-11-25）+ holdertrade 两读面（ranges 各一，2026-11-28）
     assert info["functions"] == 377  # +gold 3（2026-11-25）+rptdom 附注三函数（4.5）+holdertrade 3（4.7）
     assert info["markets"]["total"] == 2983
-    assert info["markets"]["declared"] == 728
-    assert info["markets"]["undeclared"] == 2255
-    assert info["markets"]["by_market"] == {"cn": 658, "hk": 26, "us": 44}
+    assert info["markets"]["declared"] == 727  # -1：$CCY_FIN 上游收回 hk 声明（scripts f0087668，2026-11-28）
+    assert info["markets"]["undeclared"] == 2256
+    assert info["markets"]["by_market"] == {"cn": 658, "hk": 25, "us": 44}
     # .internal/UNIT_AUDIT.md 是本机联网 matrix 产物，不进 git 跟踪面；
     # CI 里不存在时 sections 为 0，只能要求非负，不能假设报告一定在。
     assert isinstance(info["matrix_sections"], int)
