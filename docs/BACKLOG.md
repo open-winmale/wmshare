@@ -355,19 +355,27 @@
   - 读面契约（草案）：`cli.option.contracts(underlying)`（在挂合约）、
     `bars(contract, n/begin/end)`、`chain(underlying, date)`（T 型报价 + IV）。
   - 阻塞点：无合约主档即无法定 symbol 编码规则，先探针。
-- **历史分钟线** 要点：
-  - 上游：**已探针（2026-11-26）**——平台无历史分钟档（datastore K 线族 period 仅
-    日档、`*min*` 零命中）；分钟只存 script 仓 Redis memo（TTL 14 天、仅当日、
-    30s 有损滚桶；设计文档明确「历史多日分时落库」为 non-goal；仅 HK 有收盘补桶
-    seal job，CN 无；无任何积累 DAG）。历史分钟要么靠采集侧长期积累（**从现在起
-    存，14 天外无回补，越晚启动丢越多**），要么外购。
-  - 数据量（粗估）：A 股 5,700 票 × 240 分钟 × 250 交易日 ≈ **3.4 亿行/年**；
-    V2 按「一行一文档」存储不可行（当前 `alt_valuation_daily` 1,062 万行已占 10.6M docs），
-    必须按票×日分块（如每票每日一个 doc 内嵌 240 行）或列式落冷存。
-  - EC：单根 1 分钟 K 约 60~75 EC → 单票一年 `240×250×60 ≈ 360 万 EC`，
-    全市场一年不可承受 → 只能做「按需物化 + 明确配额」或离线数据包分发。
-  - 读面契约（草案）：`cli.kline.min_bars(symbol, date)`（单票单日 240 根）+
-    `min_bars_range(begin, end)`（受配额约束）；不做实时推送（见不做清单 tick/WS）。
+- **历史分钟线** 要点（2026-11-28 P1 已落地，本条转为跟踪态）：
+  - 上游：平台无历史分钟档（2026-11-26 探针实锤）；分时数据**每天在产生但从不
+    落库**（memo TTL 14 天仅当日；HK 有补桶 seal、CN 无）。
+  - **seal 路线定案 v3（2026-11-28，三次收敛后）**：XS store 写全通道 denied
+    （adhoc 探针实证）→ b 安全组撤回（无鉴权 Redis 扩面+耦合内部信封）→
+    上游分钟接口降兜底（读取权限已有但偏好不用）→ **定案：winmale 仓 Go maintenance
+    handler**（`internal/sealmin1`，进程本就配置 memo Redis+存储 Mongo，
+    `@maintenance:min1_seal_cn` 直调，`openapi_ec_weekly_topup` 先例）——零
+    外购源、零安全组、零全局翻转。**分时语义=分钟收盘+量额累计（无 OHLC）**，
+    读面差分沿用 9d4ec52 口径。
+  - 存储（用户拍板：存储已切 V2，不建 V1 正表）：raw__min1/cn_kline_min 忠实
+    日志（一键一日，可全量重建 V2）+ V2 `mkt.kline_min`/`mkt_kline_min` 读面
+    （storage/v2 双写旁路；catalog 三件套已登记，check_v2_mapping 17↔17 PASS；
+    不并入股票 kline 族——一行一文档 3.4 亿/年不可行的既有结论维持，票×日
+    内嵌 ≤242 桶）。
+  - 保留策略（已拍板）：滚动最近 1 年、无归档，稳态 ≈40 GB；TTL 机制 P1 设计项。
+  - 状态：storage/winmale/script 三仓代码已落地（单测绿、门禁 PASS）；**待
+    winmale 发版 + cron 单 job 导入 + 小样/10 交易日验收**；读面
+    `cli.kline.min_bars` 后置 P3（units 台账锚点：量=股累计→差分、额=元）。
+  - EC：单根 60~75 EC → 单票单日 ≈1.6-2 万 EC 维持原判；读面必须配额制 +
+    memo 物化（P3 设计项）。不做实时推送（tick/WS 见不做清单）。
 不做清单：LOF/场外/货基、游资名录/热榜/竞价明细、第三方源资金流变体、中信行业、
 韩国宏观、组合 CRUD、tick、实时 WS 推送、DCE 仓单（反爬）。
 
