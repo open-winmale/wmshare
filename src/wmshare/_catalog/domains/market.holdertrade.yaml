@@ -26,7 +26,7 @@ notes:
     [0,1] 保持不放宽
   - 单日榜按变动股数降序取前 N；单票历史按公告日收集、SDK 门面统一升序（date 升序）
   - 行内只有证券代码（无简称）；要名称请用 cli.stocks.list 或 cli.info.profile 关联
-  - 历史自 2010 年起（采集 initial_date=20100101），全史已回补（4,954 公告日 / 482,345 行）；
+  - 历史自 2010 年起（采集 initial_date=20100101），全史已回补（4,954 公告日 / 479,961 行，上游重复行已去重）；
     成本档位见 estimate_cost（by_date/by_symbol 均 live 实测校准）
 functions:
   - name: holdertrade.by_date
